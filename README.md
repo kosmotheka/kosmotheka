@@ -1,6 +1,6 @@
 # Library
 
-> Working name. Early development: nothing usable yet.
+> Working name. Early development: the desktop catalogue works; sync, family sharing and the mobile scanner are next.
 
 A catalog for your household library — books first, then board games, comics, video games and films. Know what you own, where it is, who has read it and who borrowed it.
 
@@ -12,14 +12,26 @@ Desktop (Linux, Windows) and Android, built with [Tauri 2](https://tauri.app).
 
 ## Status
 
-Phase 0 (skeleton). See the roadmap and the architecture decision log in [`docs/`](docs/) (currently in Spanish).
+Phase 1 (desktop catalogue, local mode) is feature-complete and under manual testing:
+
+- Add books by hand or by ISBN, with data and covers from Open Library and Google Books.
+- Quick add: type or scan ISBNs one after another (USB barcode readers work too).
+- Works, editions and copies: several formats and owners per book, locations, purchase dates.
+- Edit and delete; every change is recorded as an operation, with a per-book history.
+- Accent-insensitive full-text search and filters by format, owner and location.
+- Backups (zip with covers) and CSV import/export.
+- English and Spanish.
+
+See the roadmap and the architecture decision log in [`docs/`](docs/) (currently in Spanish).
 
 ## Repository layout
 
 | Path | Contents |
 |---|---|
 | `app/` | Tauri app: React UI in `src/`, Rust core in `src-tauri/` |
-| `docs/` | Vision, decisions, roadmap, research and development setup |
+| `crates/domain/` | Domain model, validation, hybrid logical clock and operations |
+| `spec/` | Operation format: JSON Schema and conformance cases (MIT) |
+| `docs/` | Vision, decisions, roadmap, architecture, test plans and development setup |
 
 ## Development
 
@@ -38,8 +50,10 @@ Checks run in CI:
 cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test
-cd app && npm run typecheck && npm run lint
+cd app && npm run typecheck && npm run lint && npm run check:spec
 ```
+
+Tests against the real online services are opt-in: `cargo test -p library-app -- --ignored live_`.
 
 ## License
 

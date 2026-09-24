@@ -1,4 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
 
@@ -211,8 +212,12 @@ let coversDir: Promise<string> | null = null;
 
 /** URL the webview can load for a stored cover file. */
 export async function coverSrc(file: string): Promise<string> {
-  coversDir ??= invoke<string>("covers_dir");
-  return convertFileSrc(`${await coversDir}/${file}`);
+  coversDir ??= invoke<string>("covers_dir").catch((error: unknown) => {
+    coversDir = null; // let the next call try again
+    throw error;
+  });
+  // join() uses the platform's separator, which the asset protocol scope expects on Windows.
+  return convertFileSrc(await join(await coversDir, file));
 }
 
 export const externalLinks = {
