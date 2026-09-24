@@ -38,7 +38,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] App de escritorio funcionando en Linux.
 - [x] APK de depuración compilado.
 - [x] APK instalado y funcionando en un móvil real (moto g84 5G, Android 15).
-- [ ] Repo en GitHub y CI en verde (incluida la compilación en Windows).
+- [x] Repo privado en GitHub y CI en verde: lint, tests y compilación en Linux y Windows.
 - [ ] Probar en Windows a mano.
 
 ## Fase 1 — Catálogo en el escritorio (modo local)
