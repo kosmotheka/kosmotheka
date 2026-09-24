@@ -13,6 +13,7 @@ pub enum Entity {
     BookDetails,
     Member,
     Copy,
+    Publisher,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,7 +67,7 @@ const EDITION_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),
     field("title", FieldType::Text, true),
     field("subtitle", FieldType::Text, false),
-    field("publisher", FieldType::Text, false),
+    field("publisher_id", FieldType::Ref(Entity::Publisher), false),
     field("published_year", FieldType::Integer, false),
     field("language", FieldType::Text, false),
     field("cover", FieldType::Text, false),
@@ -77,6 +78,7 @@ const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
     field("open_library_id", FieldType::Text, false),
 ];
 const MEMBER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -96,6 +98,7 @@ impl Entity {
             Entity::BookDetails => "book_details",
             Entity::Member => "members",
             Entity::Copy => "copies",
+            Entity::Publisher => "publishers",
         }
     }
 
@@ -116,6 +119,7 @@ impl Entity {
             Entity::BookDetails => BOOK_DETAILS_FIELDS,
             Entity::Member => MEMBER_FIELDS,
             Entity::Copy => COPY_FIELDS,
+            Entity::Publisher => PUBLISHER_FIELDS,
         }
     }
 

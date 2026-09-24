@@ -152,5 +152,16 @@
       "invalid": "ISBN no válido:",
       "failed": "Error:"
     }
+  },
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Título, autor, editorial o ISBN",
+    "allFormats": "Todos los formatos",
+    "allOwners": "Todos los propietarios",
+    "allLocations": "Todas las ubicaciones",
+    "clear": "Quitar filtros",
+    "results_one": "{{count}} resultado",
+    "results_other": "{{count}} resultados",
+    "noResults": "Ningún libro coincide con la búsqueda."
   }
 }

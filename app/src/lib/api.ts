@@ -86,8 +86,26 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
   return invoke<CreatedBook>("create_book", { book });
 }
 
-export function listBooks(): Promise<BookSummary[]> {
-  return invoke<BookSummary[]>("list_books");
+export interface BookFilter {
+  query?: string;
+  format?: Format;
+  ownerId?: string;
+  location?: string;
+}
+
+export function listBooks(filter: BookFilter = {}): Promise<BookSummary[]> {
+  return invoke<BookSummary[]>("list_books", { filter });
+}
+
+export interface CatalogOptions {
+  authors: string[];
+  publishers: string[];
+  owners: { id: string; name: string }[];
+  locations: string[];
+}
+
+export function catalogOptions(): Promise<CatalogOptions> {
+  return invoke<CatalogOptions>("catalog_options");
 }
 
 export interface HistoryEntry {

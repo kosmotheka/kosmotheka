@@ -10,6 +10,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::error::{Error, Result};
+use crate::search;
 
 const DEVICE_ID_KEY: &str = "device_id";
 const LAST_HLC_KEY: &str = "last_hlc";
@@ -43,9 +44,18 @@ pub fn record(tx: &Transaction<'_>, intent: &str, changes: Vec<Change>) -> Resul
     };
     operation.validate()?;
 
+    // Search text can change for rows that vanish (known before) or appear (known after).
+    let mut affected = std::collections::BTreeSet::new();
+    for change in &operation.changes {
+        affected.extend(search::affected_editions(tx, change)?);
+    }
     for change in &operation.changes {
         apply(tx, change)?;
     }
+    for change in &operation.changes {
+        affected.extend(search::affected_editions(tx, change)?);
+    }
+    search::reindex(tx, &affected)?;
     tx.execute(
         "INSERT INTO operations (id, hlc, device_id, intent, changes) VALUES (?1, ?2, ?3, ?4, ?5)",
         params![

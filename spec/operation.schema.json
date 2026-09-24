@@ -39,7 +39,7 @@
       "required": ["entity", "id", "action"],
       "properties": {
         "entity": {
-          "enum": ["work", "person", "work_contributor", "edition", "book_details", "member", "copy"]
+          "enum": ["work", "person", "work_contributor", "edition", "book_details", "member", "copy", "publisher"]
         },
         "id": { "$ref": "#/$defs/uuid" },
         "action": { "enum": ["create", "update", "delete"] },
@@ -75,7 +75,7 @@
           }
         },
         {
-          "if": { "properties": { "entity": { "enum": ["person", "member"] } } },
+          "if": { "properties": { "entity": { "enum": ["person", "member", "publisher"] } } },
           "then": {
             "properties": {
               "fields": {
@@ -111,7 +111,7 @@
                   "work_id": { "$ref": "#/$defs/uuid" },
                   "title": { "type": "string" },
                   "subtitle": { "$ref": "#/$defs/text" },
-                  "publisher": { "$ref": "#/$defs/text" },
+                  "publisher_id": { "$ref": "#/$defs/ref" },
                   "published_year": { "$ref": "#/$defs/integer" },
                   "language": { "$ref": "#/$defs/text" },
                   "cover": {

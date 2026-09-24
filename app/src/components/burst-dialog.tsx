@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
+import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +64,6 @@ interface Entry {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  knownOwners: string[];
   /** Called after every saved book, so the catalog refreshes behind the dialog. */
   onChanged: () => void;
 }
@@ -84,13 +84,14 @@ function bookFrom(found: LookupResult, copy: CopyInput, title?: string): NewBook
   };
 }
 
-export function BurstDialog({ open, onOpenChange, knownOwners, onChanged }: Props) {
+export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
   const { t } = useTranslation();
   const [owner, setOwner] = useState("");
   const [format, setFormat] = useState<Format>("paperback");
   const [location, setLocation] = useState("");
   const [isbn, setIsbn] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const options = useCatalogOptions();
 
   // The queue lives in refs so fast scanning never waits for a render.
   const queue = useRef<Entry[]>([]);
@@ -198,11 +199,10 @@ export function BurstDialog({ open, onOpenChange, knownOwners, onChanged }: Prop
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
             />
-            <datalist id="burst-known-owners">
-              {knownOwners.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+            <Suggestions
+              id="burst-known-owners"
+              values={options.owners.map((o) => o.name)}
+            />
           </Field>
           <Field id="burst-format" label={t("form.fields.format")}>
             <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
@@ -221,9 +221,11 @@ export function BurstDialog({ open, onOpenChange, knownOwners, onChanged }: Prop
           <Field id="burst-location" label={t("form.fields.location")}>
             <Input
               id="burst-location"
+              list="burst-known-locations"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
+            <Suggestions id="burst-known-locations" values={options.locations} />
           </Field>
         </div>
 

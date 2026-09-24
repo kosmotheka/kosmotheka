@@ -24,14 +24,12 @@ import { type CreatedBook, createBook } from "@/lib/api";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  knownOwners: string[];
   onCreated: (result: CreatedBook, title: string) => void;
 }
 
 export function AddBookDialog({
   open,
   onOpenChange,
-  knownOwners,
   onCreated,
 }: Props) {
   const { t } = useTranslation();
@@ -91,7 +89,6 @@ export function AddBookDialog({
               value={copy}
               onChange={setCopy}
               errorFor={(field) => errors.errorFor(`copy.${field}`)}
-              knownOwners={knownOwners}
             />
           </section>
 

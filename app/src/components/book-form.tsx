@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Plus, Search, X } from "lucide-react";
 
+import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -214,6 +215,7 @@ export function EditionFields({
   const set = <K extends keyof EditionForm>(key: K, v: EditionForm[K]) =>
     onChange({ ...value, [key]: v });
   const lookup = useIsbnLookup();
+  const options = useCatalogOptions();
 
   const search = async () => {
     const found = await lookup.run(value.isbn);
@@ -285,6 +287,7 @@ export function EditionFields({
           <div key={index} className="flex gap-2">
             <Input
               aria-label={t("form.fields.author", { number: index + 1 })}
+              list="author-suggestions"
               value={author}
               onChange={(e) =>
                 set(
@@ -311,6 +314,7 @@ export function EditionFields({
             )}
           </div>
         ))}
+        <Suggestions id="author-suggestions" values={options.authors} />
         <Button
           type="button"
           variant="outline"
@@ -324,9 +328,11 @@ export function EditionFields({
         <Field id="publisher" label={t("form.fields.publisher")}>
           <Input
             id="publisher"
+            list="publisher-suggestions"
             value={value.publisher}
             onChange={(e) => set("publisher", e.target.value)}
           />
+          <Suggestions id="publisher-suggestions" values={options.publishers} />
         </Field>
         <Field
           id="publishedYear"
@@ -358,13 +364,11 @@ export function CopyFields({
   value,
   onChange,
   errorFor,
-  knownOwners,
   idPrefix = "copy",
 }: {
   value: CopyForm;
   onChange: (value: CopyForm) => void;
   errorFor: ErrorFor;
-  knownOwners: string[];
   /** Keeps element ids unique when several copy forms exist on screen. */
   idPrefix?: string;
 }) {
@@ -372,6 +376,7 @@ export function CopyFields({
   const set = <K extends keyof CopyForm>(key: K, v: CopyForm[K]) =>
     onChange({ ...value, [key]: v });
   const id = (name: string) => `${idPrefix}-${name}`;
+  const options = useCatalogOptions();
 
   return (
     <div className="space-y-4">
@@ -383,11 +388,10 @@ export function CopyFields({
             value={value.owner}
             onChange={(e) => set("owner", e.target.value)}
           />
-          <datalist id={id("known-owners")}>
-            {knownOwners.map((owner) => (
-              <option key={owner} value={owner} />
-            ))}
-          </datalist>
+          <Suggestions
+            id={id("known-owners")}
+            values={options.owners.map((owner) => owner.name)}
+          />
         </Field>
         <Field id={id("format")} label={t("form.fields.format")}>
           <Select
@@ -436,10 +440,12 @@ export function CopyFields({
       <Field id={id("location")} label={t("form.fields.location")}>
         <Input
           id={id("location")}
+          list={id("known-locations")}
           placeholder={t("form.placeholders.location")}
           value={value.location}
           onChange={(e) => set("location", e.target.value)}
         />
+        <Suggestions id={id("known-locations")} values={options.locations} />
       </Field>
     </div>
   );

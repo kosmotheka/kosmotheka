@@ -70,3 +70,5 @@ Si falla cualquiera de los dos, la transacción entera se deshace.
 - **Fusión campo a campo (Fase 2):** para decidir qué valor gana cuando dos dispositivos cambian el mismo campo, hará falta saber qué HLC escribió por última vez cada campo. Se añadirá con la sincronización; el registro de operaciones ya tiene todo lo necesario para reconstruirlo.
 - **Permisos (Fase 3):** reglas por entidad y acción («un lector no puede borrar ejemplares»).
 - Los libros dados de alta antes del hito 1.2 no tienen operaciones, y por tanto tampoco historial.
+- **Versionar el formato de las operaciones (antes de la Fase 2).** El esquema cambia con las migraciones: por ejemplo, desde el hito 1.5 la edición guarda `publisher_id` en vez de `publisher` (D29). Las operaciones antiguas del registro siguen con el formato viejo. No importa mientras no se vuelvan a aplicar; cuando se sincronice, habrá que marcar cada operación con la versión del esquema y saber convertir o rechazar las antiguas.
+- **Índice de búsqueda:** `ops::record` también reindexa las ediciones afectadas (D29), así que cualquier operación, venga de donde venga, deja la búsqueda al día.

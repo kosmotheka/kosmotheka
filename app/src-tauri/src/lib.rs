@@ -5,6 +5,7 @@ mod db;
 mod error;
 mod metadata;
 mod ops;
+mod search;
 mod settings;
 
 use tauri::Manager;
@@ -38,7 +39,8 @@ pub fn run() {
             commands::lookup_isbn,
             commands::get_settings,
             commands::save_settings,
-            commands::covers_dir
+            commands::covers_dir,
+            commands::catalog_options
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

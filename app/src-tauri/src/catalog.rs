@@ -3,13 +3,15 @@ use std::collections::HashMap;
 use library_domain::{
     Change, Entity, ErrorCode, FieldError, Format, Hlc, ValidBook, ValidCopy, ValidEdition,
 };
-use rusqlite::types::ValueRef;
+use rusqlite::params_from_iter;
+use rusqlite::types::{Value as SqlValue, ValueRef};
 use rusqlite::{Connection, OptionalExtension, Transaction};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
 use crate::error::{Error, Result};
 use crate::ops::{self, new_id};
+use crate::search;
 
 // group_concat separator that cannot appear in names typed by users.
 const LIST_SEPARATOR: char = '\u{1f}';
@@ -136,13 +138,14 @@ pub fn update_edition(
     }
 
     let mut plan = Plan::new(&tx);
+    let publisher_id = plan.publisher_id(edition)?;
     plan.update_if_changed(
         Entity::Edition,
         edition_id,
         json!({
             "title": edition.title,
             "subtitle": edition.subtitle,
-            "publisher": edition.publisher,
+            "publisher_id": publisher_id,
             "published_year": edition.published_year,
             "language": edition.language,
         }),
@@ -289,6 +292,7 @@ impl<'a> Plan<'a> {
             json!({ "kind": "book", "title": edition.title }),
         ));
         self.sync_authors(&work_id, &edition.authors)?;
+        let publisher_id = self.publisher_id(edition)?;
 
         let edition_id = new_id();
         self.changes.push(Change::create(
@@ -298,7 +302,7 @@ impl<'a> Plan<'a> {
                 "work_id": work_id,
                 "title": edition.title,
                 "subtitle": edition.subtitle,
-                "publisher": edition.publisher,
+                "publisher_id": publisher_id,
                 "published_year": edition.published_year,
                 "language": edition.language,
                 "cover": cover,
@@ -320,6 +324,14 @@ impl<'a> Plan<'a> {
         self.changes
             .push(Change::create(Entity::Copy, &copy_id, fields));
         Ok(copy_id)
+    }
+
+    fn publisher_id(&mut self, edition: &ValidEdition) -> Result<Option<String>> {
+        edition
+            .publisher
+            .as_deref()
+            .map(|name| self.find_or_create(Entity::Publisher, name))
+            .transpose()
     }
 
     fn owner_id(&mut self, copy: &ValidCopy) -> Result<Option<String>> {
@@ -515,9 +527,51 @@ fn ids(conn: &Connection, sql: &str, param: &str) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
-    let mut statement = conn.prepare(
-        "SELECT e.id, e.title, e.subtitle, e.publisher, e.published_year, bd.isbn13, e.cover,
+/// Search text and copy filters; empty means "everything".
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct BookFilter {
+    pub query: Option<String>,
+    pub format: Option<Format>,
+    pub owner_id: Option<String>,
+    pub location: Option<String>,
+}
+
+pub fn list_books(conn: &Connection, filter: &BookFilter) -> Result<Vec<BookSummary>> {
+    let mut conditions: Vec<&str> = Vec::new();
+    let mut args: Vec<SqlValue> = Vec::new();
+
+    if let Some(query) = filter.query.as_deref().and_then(search::fts_query) {
+        conditions.push("e.id IN (SELECT edition_id FROM search_index WHERE search_index MATCH ?)");
+        args.push(SqlValue::Text(query));
+    }
+    // One copy must match every copy filter at once.
+    if filter.format.is_some() || filter.owner_id.is_some() || filter.location.is_some() {
+        conditions.push(
+            "EXISTS (SELECT 1 FROM copies c WHERE c.edition_id = e.id
+                      AND (? IS NULL OR c.format = ?)
+                      AND (? IS NULL OR c.owner_id = ?)
+                      AND (? IS NULL OR c.location = ?))",
+        );
+        let text =
+            |value: Option<&str>| value.map_or(SqlValue::Null, |v| SqlValue::Text(v.to_owned()));
+        for value in [
+            text(filter.format.map(Format::as_str)),
+            text(filter.owner_id.as_deref()),
+            text(filter.location.as_deref()),
+        ] {
+            args.push(value.clone());
+            args.push(value);
+        }
+    }
+    let where_clause = if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", conditions.join(" AND "))
+    };
+
+    let mut statement = conn.prepare(&format!(
+        "SELECT e.id, e.title, e.subtitle, pu.name, e.published_year, bd.isbn13, e.cover,
             (SELECT group_concat(p.name, char(31) ORDER BY wc.position)
                FROM work_contributors wc JOIN people p ON p.id = wc.person_id
               WHERE wc.work_id = e.work_id AND wc.role = 'author'),
@@ -529,9 +583,11 @@ pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
                       WHERE c.edition_id = e.id))
          FROM editions e
          LEFT JOIN book_details bd ON bd.edition_id = e.id
-         ORDER BY e.title COLLATE NOCASE, e.id",
-    )?;
-    let rows = statement.query_map([], |row| {
+         LEFT JOIN publishers pu ON pu.id = e.publisher_id
+         {where_clause}
+         ORDER BY e.title COLLATE NOCASE, e.id"
+    ))?;
+    let rows = statement.query_map(params_from_iter(args), |row| {
         Ok(BookSummary {
             edition_id: row.get(0)?,
             title: row.get(1)?,
@@ -552,15 +608,60 @@ pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Named {
+    pub id: String,
+    pub name: String,
+}
+
+/// Values already in the catalog, for autocompletion and filters.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogOptions {
+    pub authors: Vec<String>,
+    pub publishers: Vec<String>,
+    pub owners: Vec<Named>,
+    pub locations: Vec<String>,
+}
+
+pub fn catalog_options(conn: &Connection) -> Result<CatalogOptions> {
+    let names = |sql: &str| -> Result<Vec<String>> {
+        Ok(conn
+            .prepare(sql)?
+            .query_map([], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?)
+    };
+    let owners = conn
+        .prepare("SELECT id, name FROM members ORDER BY name COLLATE NOCASE")?
+        .query_map([], |row| {
+            Ok(Named {
+                id: row.get(0)?,
+                name: row.get(1)?,
+            })
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(CatalogOptions {
+        authors: names("SELECT name FROM people ORDER BY name COLLATE NOCASE")?,
+        publishers: names("SELECT name FROM publishers ORDER BY name COLLATE NOCASE")?,
+        owners,
+        locations: names(
+            "SELECT DISTINCT location FROM copies WHERE location IS NOT NULL ORDER BY location COLLATE NOCASE",
+        )?,
+    })
+}
+
 pub fn get_book(conn: &Connection, edition_id: &str) -> Result<BookDetail> {
     let mut book = conn
         .query_row(
-            "SELECT e.id, e.work_id, e.title, e.subtitle, e.publisher, e.published_year, e.language,
+            "SELECT e.id, e.work_id, e.title, e.subtitle, pu.name, e.published_year, e.language,
                     bd.isbn13, e.cover, bd.google_books_id, bd.open_library_id,
                     (SELECT group_concat(p.name, char(31) ORDER BY wc.position)
                        FROM work_contributors wc JOIN people p ON p.id = wc.person_id
                       WHERE wc.work_id = e.work_id AND wc.role = 'author')
-               FROM editions e LEFT JOIN book_details bd ON bd.edition_id = e.id
+               FROM editions e
+               LEFT JOIN book_details bd ON bd.edition_id = e.id
+               LEFT JOIN publishers pu ON pu.id = e.publisher_id
               WHERE e.id = ?1",
             [edition_id],
             |row| {
@@ -705,7 +806,7 @@ mod tests {
         );
 
         let created = create_book(&mut conn, &book, None).unwrap();
-        let books = list_books(&conn).unwrap();
+        let books = list_books(&conn, &BookFilter::default()).unwrap();
 
         assert!(!created.existing_edition);
         assert_eq!(books.len(), 1);
@@ -732,7 +833,7 @@ mod tests {
             None,
         )
         .unwrap();
-        let books = list_books(&conn).unwrap();
+        let books = list_books(&conn, &BookFilter::default()).unwrap();
 
         assert!(second.existing_edition);
         assert_eq!(books.len(), 1);
@@ -760,7 +861,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(list_books(&conn).unwrap().len(), 2);
+        assert_eq!(list_books(&conn, &BookFilter::default()).unwrap().len(), 2);
     }
 
     #[test]
@@ -1031,5 +1132,188 @@ mod tests {
         }))
         .unwrap();
         assert_eq!(book.validate().unwrap().edition.title, "Dune");
+    }
+
+    fn search(conn: &Connection, query: &str) -> Vec<String> {
+        let filter = BookFilter {
+            query: Some(query.into()),
+            ..BookFilter::default()
+        };
+        list_books(conn, &filter)
+            .unwrap()
+            .into_iter()
+            .map(|b| b.title)
+            .collect()
+    }
+
+    #[test]
+    fn search_ignores_accents_and_case_and_matches_prefixes() {
+        let mut conn = db::open_in_memory().unwrap();
+        let mut book = new_book(
+            "El señor de los anillos",
+            None,
+            "Tersoal",
+            Format::Hardcover,
+        );
+        book.edition.authors = vec!["J. R. R. Tolkien".into()];
+        book.edition.publisher = Some("Minotauro".into());
+        create_book(&mut conn, &book, None).unwrap();
+        create_book(
+            &mut conn,
+            &new_book("Dune", None, "Tersoal", Format::Paperback),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(search(&conn, "SENOR"), vec!["El señor de los anillos"]);
+        assert_eq!(search(&conn, "tolk anill"), vec!["El señor de los anillos"]);
+        assert_eq!(search(&conn, "minotauro"), vec!["El señor de los anillos"]);
+        assert!(
+            search(&conn, "tolkien dune").is_empty(),
+            "every word must match"
+        );
+        assert_eq!(
+            search(&conn, "   ").len(),
+            2,
+            "an empty query lists everything"
+        );
+    }
+
+    #[test]
+    fn search_finds_isbn_in_either_format() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(search(&conn, "0-306-40615-2"), vec!["A"]);
+        assert_eq!(search(&conn, "978-0-306-40615-7"), vec!["A"]);
+    }
+
+    #[test]
+    fn index_follows_edits_renames_and_deletions() {
+        let mut conn = db::open_in_memory().unwrap();
+        let created = create_book(
+            &mut conn,
+            &new_book("Old title", None, "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+
+        update_edition(
+            &mut conn,
+            &created.edition_id,
+            &edition("New title", None, &["Ursula"]),
+            None,
+        )
+        .unwrap();
+        assert!(search(&conn, "old").is_empty());
+        assert_eq!(search(&conn, "ursula"), vec!["New title"]);
+
+        // Renaming a person reindexes their books.
+        let person_id: String = conn
+            .query_row("SELECT id FROM people WHERE name = 'Ursula'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            "person.rename",
+            vec![Change::update(
+                Entity::Person,
+                &person_id,
+                json!({ "name": "Le Guin" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        assert_eq!(search(&conn, "guin"), vec!["New title"]);
+
+        delete_book(&mut conn, &created.edition_id).unwrap();
+        assert!(search(&conn, "new").is_empty());
+        let rows: i64 = conn
+            .query_row("SELECT count(*) FROM search_index", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(rows, 0);
+    }
+
+    #[test]
+    fn copy_filters_need_one_copy_matching_all_of_them() {
+        let mut conn = db::open_in_memory().unwrap();
+        let mut a = new_book("A", None, "Ana", Format::Hardcover);
+        a.copy.location = Some("Salón".into());
+        create_book(&mut conn, &a, None).unwrap();
+        let b = create_book(&mut conn, &new_book("B", None, "Ana", Format::Ebook), None).unwrap();
+        add_copy(&mut conn, &b.edition_id, &copy("Bea", Format::Hardcover)).unwrap();
+        let options = catalog_options(&conn).unwrap();
+        let ana = options
+            .owners
+            .iter()
+            .find(|o| o.name == "Ana")
+            .unwrap()
+            .id
+            .clone();
+
+        let titles = |filter: BookFilter| -> Vec<String> {
+            list_books(&conn, &filter)
+                .unwrap()
+                .into_iter()
+                .map(|b| b.title)
+                .collect()
+        };
+        assert_eq!(
+            titles(BookFilter {
+                format: Some(Format::Hardcover),
+                ..Default::default()
+            }),
+            vec!["A", "B"]
+        );
+        assert_eq!(
+            titles(BookFilter {
+                owner_id: Some(ana.clone()),
+                ..Default::default()
+            }),
+            vec!["A", "B"]
+        );
+        assert_eq!(
+            titles(BookFilter {
+                format: Some(Format::Hardcover),
+                owner_id: Some(ana),
+                ..Default::default()
+            }),
+            vec!["A"],
+            "B has a hardcover (Bea's) and a copy of Ana's (ebook), but no hardcover of Ana's"
+        );
+        assert_eq!(
+            titles(BookFilter {
+                location: Some("Salón".into()),
+                ..Default::default()
+            }),
+            vec!["A"]
+        );
+    }
+
+    #[test]
+    fn publishers_are_a_shared_catalogue() {
+        let mut conn = db::open_in_memory().unwrap();
+        for (title, publisher) in [("A", "Minotauro"), ("B", "minotauro")] {
+            let mut book = new_book(title, None, "Tersoal", Format::Paperback);
+            book.edition.publisher = Some(publisher.into());
+            create_book(&mut conn, &book, None).unwrap();
+        }
+
+        let options = catalog_options(&conn).unwrap();
+
+        assert_eq!(options.publishers, vec!["Minotauro"]);
+        let books = list_books(&conn, &BookFilter::default()).unwrap();
+        assert!(
+            books
+                .iter()
+                .all(|b| b.publisher.as_deref() == Some("Minotauro"))
+        );
     }
 }

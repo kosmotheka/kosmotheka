@@ -25,11 +25,13 @@ works ──< work_contributors >── people
 | `works` | Obra: el libro en abstracto | `id`, `kind` (de momento solo `book`), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`), `position` |
-| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher`, `published_year`, `language`, `cover` (fichero, D27) |
+| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27) |
+| `publishers` | Editoriales (D29) | `id`, `name` (único, sin distinguir mayúsculas) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (único), `google_books_id`, `open_library_id` |
 | `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (único, sin distinguir mayúsculas) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
 | `operations` | Registro de todas las escrituras ([operations.md](operations.md)) | `id`, `hlc`, `device_id`, `intent`, `changes` (JSON) |
+| `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `edition_id`, `content` |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida y los ajustes (clave de Google Books) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `audiobook`, `other`. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.
@@ -39,7 +41,7 @@ works ──< work_contributors >── people
 - Toda escritura pasa por una operación ([operations.md](operations.md)).
 - Si el ISBN **ya existe**, no se duplica la edición: se añade un ejemplar nuevo a la edición existente y la app lo avisa.
 - Si no hay ISBN o es nuevo, se crean a la vez la obra, la edición y el ejemplar.
-- Autores y propietarios se buscan por nombre (sin distinguir mayúsculas) y se crean si no existen.
+- Autores, editoriales y propietarios se buscan por nombre (sin distinguir mayúsculas) y se crean si no existen.
 
 ## Pendiente en hitos posteriores
 

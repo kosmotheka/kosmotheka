@@ -34,6 +34,7 @@
 | D26 | Búsqueda por ISBN: Open Library + Google Books con clave opcional | propuesta |
 | D27 | Portadas: ficheros locales con nombre por hash | propuesta |
 | D28 | Alta rápida: guarda lo encontrado, no duplica lo que ya existe | propuesta |
+| D29 | Editoriales como catálogo y búsqueda con FTS5 | propuesta |
 
 ---
 
@@ -344,3 +345,15 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
 - **No encontrado:** queda pendiente, con un campo para escribir el título y guardarlo ahí mismo.
 - Los ISBN se procesan **en cola y en orden**, uno a uno: se puede escanear más rápido de lo que responden los servicios.
 - Los lectores de códigos USB funcionan igual: escriben el ISBN y pulsan Intro (D19).
+
+## D29 · Editoriales como catálogo y búsqueda con FTS5 — `propuesta`
+
+**Editoriales.** Pasan de ser texto libre en la edición a una tabla `publishers`, igual que los autores (`people`): se escriben una vez, se autocompletan y, cuando haya edición de catálogos, se podrán renombrar en un solo sitio. La migración convierte los textos existentes en editoriales, unificando las que solo se diferencian en mayúsculas.
+- **Consecuencia:** las operaciones anteriores a este cambio guardan `publisher` como texto, un campo que el esquema actual ya no admite. Hoy no importa, porque no hay sincronización ni se vuelven a aplicar operaciones antiguas. Antes de la Fase 2 hay que decidir cómo versionar el formato de las operaciones (anotado en [architecture/operations.md](architecture/operations.md)).
+
+**Búsqueda.** Índice de texto completo FTS5 de SQLite (`search_index`), con el tokenizador `unicode61` sin diacríticos: «senor» encuentra «Señor» y «garcia» encuentra «García». Cada libro indexa su título, subtítulo, título de la obra, autores, editorial e ISBN.
+- El índice se actualiza **dentro de `ops::record`**, con cada operación, calculando qué ediciones toca (por ejemplo, renombrar un autor reindexa todos sus libros). Así también se mantendrá al día con las operaciones que lleguen por sincronización.
+- Cada palabra buscada funciona como prefijo («tolk» encuentra «Tolkien»), y deben coincidir todas. Un ISBN, con o sin guiones, en formato de 10 o de 13 dígitos, se busca por su forma normalizada.
+- Si cambia el formato del índice, se reconstruye solo al arrancar (versión guardada en `local_state`).
+
+**Filtros:** formato, propietario y ubicación de los ejemplares, combinables con la búsqueda.

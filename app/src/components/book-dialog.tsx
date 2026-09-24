@@ -42,13 +42,12 @@ import {
 
 interface Props {
   editionId: string | null;
-  knownOwners: string[];
   onClose: () => void;
   /** Called after any change, so the catalog list can refresh. */
   onChanged: () => void;
 }
 
-export function BookDialog({ editionId, knownOwners, onClose, onChanged }: Props) {
+export function BookDialog({ editionId, onClose, onChanged }: Props) {
   const { t } = useTranslation();
   const [loaded, setLoaded] = useState<BookDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -126,7 +125,7 @@ export function BookDialog({ editionId, knownOwners, onClose, onChanged }: Props
               </div>
             </TabsContent>
             <TabsContent value="copies" className="pt-4">
-              <CopiesSection book={book} knownOwners={knownOwners} onChanged={changed} />
+              <CopiesSection book={book} onChanged={changed} />
             </TabsContent>
             <TabsContent value="history" className="pt-4">
               <HistoryList editionId={book.editionId} version={version} />
@@ -242,11 +241,9 @@ function EditionSection({ book, onSaved }: { book: BookDetail; onSaved: () => vo
 
 function CopiesSection({
   book,
-  knownOwners,
   onChanged,
 }: {
   book: BookDetail;
-  knownOwners: string[];
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
@@ -297,7 +294,6 @@ function CopiesSection({
         value={form}
         onChange={setForm}
         errorFor={errors.errorFor}
-        knownOwners={knownOwners}
         idPrefix={`copy-${editing}`}
       />
       <div className="flex justify-end gap-2">

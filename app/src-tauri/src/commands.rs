@@ -3,7 +3,9 @@ use serde::Serialize;
 use tauri::State;
 use url::Url;
 
-use crate::catalog::{self, BookDetail, BookSummary, CreatedBook, HistoryEntry};
+use crate::catalog::{
+    self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
+};
 use crate::covers::Covers;
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -94,9 +96,18 @@ pub async fn lookup_isbn(
 }
 
 #[tauri::command]
-pub fn list_books(database: State<'_, Database>) -> Result<Vec<BookSummary>> {
+pub fn list_books(
+    database: State<'_, Database>,
+    filter: Option<BookFilter>,
+) -> Result<Vec<BookSummary>> {
     let conn = database.lock()?;
-    catalog::list_books(&conn)
+    catalog::list_books(&conn, &filter.unwrap_or_default())
+}
+
+#[tauri::command]
+pub fn catalog_options(database: State<'_, Database>) -> Result<CatalogOptions> {
+    let conn = database.lock()?;
+    catalog::catalog_options(&conn)
 }
 
 #[tauri::command]

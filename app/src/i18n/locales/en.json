@@ -152,5 +152,16 @@
       "invalid": "Invalid ISBN:",
       "failed": "Failed:"
     }
+  },
+  "filters": {
+    "search": "Search",
+    "searchPlaceholder": "Title, author, publisher or ISBN",
+    "allFormats": "All formats",
+    "allOwners": "All owners",
+    "allLocations": "All locations",
+    "clear": "Clear filters",
+    "results_one": "{{count}} result",
+    "results_other": "{{count}} results",
+    "noResults": "No book matches this search."
   }
 }

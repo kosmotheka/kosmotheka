@@ -68,3 +68,19 @@
 - [ ] **Cambio a mitad de sesión.** Cambia el propietario y escanea otro. *Esperado:* el nuevo usa el propietario nuevo; los anteriores conservan el suyo.
 - [ ] **Lector USB (si tienes uno).** Escanea un código de barras con el campo enfocado. *Esperado:* igual que teclear el ISBN y pulsar Intro.
 
+## 1.5 · Buscar, filtrar y autocompletar
+
+> Conviene tener varios libros con distintos formatos, propietarios y ubicaciones (el alta rápida ayuda).
+
+- [ ] **Búsqueda sin acentos.** Escribe `senor` en el buscador. *Esperado:* aparece «El señor de los anillos…» sin pulsar nada más (medio segundo de espera como mucho) y la cabecera dice «1 resultado».
+- [ ] **Prefijos y varias palabras.** `tolk anill` encuentra el libro; `tolkien dune` no encuentra nada, porque todas las palabras deben coincidir.
+- [ ] **Por editorial y por ISBN.** Busca por el nombre de una editorial; después por un ISBN con guiones y en formato de 10 dígitos. *Esperado:* los encuentra.
+- [ ] **Caracteres raros.** Escribe `"` o `*` o `(`. *Esperado:* no aparece ningún error.
+- [ ] **Filtros.** Filtra por formato, propietario y ubicación, solos y combinados. Combinados significa «un mismo ejemplar que cumpla todo». *Esperado:* la lista se ajusta; «Quitar filtros» lo restablece.
+- [ ] **Sin resultados.** Busca algo inexistente. *Esperado:* «Ningún libro coincide…» con botón para quitar filtros (no el mensaje de catálogo vacío).
+- [ ] **Autocompletar autores y editoriales.** En «Añadir libro», al escribir en un autor o en la editorial aparecen sugerencias con los ya existentes.
+- [ ] **Autocompletar propietario y ubicación.** En el ejemplar (alta, ficha y alta rápida) se sugieren propietarios y ubicaciones ya usados.
+- [ ] **Editorial compartida.** Da de alta dos libros con `Minotauro` y `minotauro`. *Esperado:* los dos muestran «Minotauro» (una única editorial).
+- [ ] **El índice sigue los cambios.** Edita el título de un libro y búscalo por el título nuevo (lo encuentra) y por el viejo (no lo encuentra). Borra un libro y comprueba que ya no sale en la búsqueda.
+- [ ] **Migración de datos.** Los libros que tenías antes de este hito conservan su editorial (ahora como catálogo) y se encuentran en el buscador.
+

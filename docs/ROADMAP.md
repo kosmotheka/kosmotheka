@@ -72,11 +72,12 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] 1.2b Editar y borrar (añadido al plan el 25/09/2026). Ficha del libro con pestañas; al editar, cada operación solo lleva los campos que han cambiado, y editar sin cambios no registra nada. Borrar un libro elimina la edición, sus ejemplares y, si era la única edición, la obra; autores y propietarios se conservan.
 - [x] 1.3 Búsqueda por ISBN. Open Library y Google Books a la vez (D26), con clave de Google opcional en Ajustes; los fallos de un proveedor son avisos. Portadas descargadas y guardadas por hash (D27) y mostradas en la tabla y la ficha; enlaces a las fichas externas. Pruebas reales contra los servicios con `cargo test -p library-app -- --ignored live_`.
 - [x] 1.4 Alta rápida. Cola de ISBN con datos de ejemplar fijados por sesión; guarda lo encontrado al momento, no duplica lo que ya existe y deja pendiente lo no encontrado, con un campo para el título (D28). Funciona con teclado y con lectores de códigos USB.
+- [x] 1.5 Buscar y filtrar. Búsqueda de texto completo (FTS5) sin acentos, por prefijos, por editorial y por ISBN en cualquier formato; filtros por formato, propietario y ubicación; editoriales como catálogo (D29); autocompletado de autores, editoriales, propietarios y ubicaciones. Las ubicaciones siguen siendo texto libre: la jerarquía salón → estantería → balda queda para más adelante.
 
 **Mejoras pedidas tras probar el 1.1** (se harán sin prisa, junto al hito que las toque):
-- Autocompletar autores al escribir, a partir de los ya catalogados (la tabla `people` ya existe), en el 1.5.
-- Editoriales como catálogo propio, con autocompletado, en el 1.5.
-- Rellenar datos y autores consultando catálogos online (Google Books, Open Library), en el 1.3.
+- [x] Autocompletar autores al escribir, a partir de los ya catalogados (1.5).
+- [x] Editoriales como catálogo propio, con autocompletado (1.5).
+- [x] Rellenar datos y autores consultando catálogos online (Google Books, Open Library) (1.3).
 
 ## Fase 2 — Móvil y sincronización local
 

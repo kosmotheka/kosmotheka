@@ -142,6 +142,35 @@
     }
   },
   {
+    "name": "publisher created and referenced by an edition",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000050",
+      "hlc": "0001727222222222-00000005-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "publisher",
+          "id": "01997c7e-0000-7000-8000-000000000051",
+          "action": "create",
+          "fields": {
+            "name": "Minotauro"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "publisher_id": "01997c7e-0000-7000-8000-000000000051"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
     "name": "operation id is not a UUID",
     "operation": {
       "id": "42",
@@ -464,6 +493,30 @@
       "code": "missing_field",
       "change": 1,
       "field": "work_id"
+    }
+  },
+  {
+    "name": "publisher given as text instead of a reference",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "publisher": "Minotauro"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "unknown_field",
+      "change": 0,
+      "field": "publisher"
     }
   }
 ]
