@@ -72,3 +72,12 @@ jobs:
         working-directory: app
       - run: npm run tauri build -- --no-bundle
         working-directory: app
+      # Portable executable for manual testing; needs the WebView2 runtime (built into Windows 10/11).
+      - name: Upload Windows executable
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: library-windows-x64
+          path: target/release/*.exe
+          if-no-files-found: error
+          retention-days: 14
