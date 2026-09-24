@@ -21,6 +21,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::create_book,
             commands::list_books,
+            commands::get_book,
+            commands::update_edition,
+            commands::delete_book,
+            commands::add_copy,
+            commands::update_copy,
+            commands::delete_copy,
             commands::book_history
         ])
         .run(tauri::generate_context!())

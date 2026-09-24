@@ -4,7 +4,7 @@ import { BookPlus, CircleCheck } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookTable } from "@/components/book-table";
-import { HistoryDialog } from "@/components/history-dialog";
+import { BookDialog } from "@/components/book-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { supportedLanguages } from "@/i18n";
@@ -20,7 +20,7 @@ export default function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [historyBook, setHistoryBook] = useState<BookSummary | null>(null);
+  const [openBookId, setOpenBookId] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     listBooks()
@@ -110,7 +110,7 @@ export default function App() {
             </Button>
           </div>
         ) : (
-          <BookTable books={books} onShowHistory={setHistoryBook} />
+          <BookTable books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
         ))}
 
       <AddBookDialog
@@ -119,7 +119,12 @@ export default function App() {
         knownOwners={knownOwners}
         onCreated={handleCreated}
       />
-      <HistoryDialog book={historyBook} onClose={() => setHistoryBook(null)} />
+      <BookDialog
+        editionId={openBookId}
+        knownOwners={knownOwners}
+        onClose={() => setOpenBookId(null)}
+        onChanged={reload}
+      />
     </div>
   );
 }

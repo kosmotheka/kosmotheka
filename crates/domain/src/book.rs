@@ -17,6 +17,15 @@ pub enum Format {
 }
 
 impl Format {
+    pub const ALL: [Format; 6] = [
+        Format::Hardcover,
+        Format::Paperback,
+        Format::Pocket,
+        Format::Ebook,
+        Format::Audiobook,
+        Format::Other,
+    ];
+
     pub fn as_str(self) -> &'static str {
         match self {
             Format::Hardcover => "hardcover",
@@ -33,22 +42,17 @@ impl FromStr for Format {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "hardcover" => Ok(Format::Hardcover),
-            "paperback" => Ok(Format::Paperback),
-            "pocket" => Ok(Format::Pocket),
-            "ebook" => Ok(Format::Ebook),
-            "audiobook" => Ok(Format::Audiobook),
-            "other" => Ok(Format::Other),
-            _ => Err(()),
-        }
+        Format::ALL
+            .into_iter()
+            .find(|format| format.as_str() == s)
+            .ok_or(())
     }
 }
 
-/// A book as entered by the user, before validation.
-#[derive(Debug, Clone, Deserialize)]
+/// Edition data as entered by the user, before validation. Used to add and to edit.
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewBook {
+pub struct EditionInput {
     pub title: String,
     #[serde(default)]
     pub subtitle: Option<String>,
@@ -62,12 +66,12 @@ pub struct NewBook {
     pub language: Option<String>,
     #[serde(default)]
     pub isbn: Option<String>,
-    pub copy: NewCopy,
 }
 
+/// A copy as entered by the user, before validation. Used to add and to edit.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewCopy {
+pub struct CopyInput {
     #[serde(default)]
     pub owner: Option<String>,
     pub format: Format,
@@ -83,9 +87,18 @@ fn one() -> u32 {
     1
 }
 
-/// A book that passed validation: text is trimmed, empty values are `None`.
+/// A new book: its edition plus the first copy.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewBook {
+    #[serde(flatten)]
+    pub edition: EditionInput,
+    pub copy: CopyInput,
+}
+
+/// Edition that passed validation: text is trimmed, empty values are `None`.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ValidBook {
+pub struct ValidEdition {
     pub title: String,
     pub subtitle: Option<String>,
     pub authors: Vec<String>,
@@ -93,7 +106,6 @@ pub struct ValidBook {
     pub published_year: Option<i32>,
     pub language: Option<String>,
     pub isbn: Option<Isbn>,
-    pub copy: ValidCopy,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -103,6 +115,12 @@ pub struct ValidCopy {
     pub quantity: u32,
     pub location: Option<String>,
     pub acquired_on: Option<NaiveDate>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ValidBook {
+    pub edition: ValidEdition,
+    pub copy: ValidCopy,
 }
 
 /// Codes rather than messages, so the UI can translate them.
@@ -115,6 +133,8 @@ pub enum ErrorCode {
     IsbnLength,
     IsbnCharacter,
     IsbnChecksum,
+    /// Another edition already has this ISBN.
+    IsbnInUse,
 }
 
 impl From<IsbnError> for ErrorCode {
@@ -127,52 +147,45 @@ impl From<IsbnError> for ErrorCode {
     }
 }
 
+/// `field` uses the UI's names (camelCase, `copy.` prefix inside a new book).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FieldError {
-    pub field: &'static str,
+    pub field: String,
     pub code: ErrorCode,
+}
+
+impl FieldError {
+    pub fn new(field: impl Into<String>, code: ErrorCode) -> Self {
+        Self {
+            field: field.into(),
+            code,
+        }
+    }
 }
 
 pub const MAX_YEAR: i32 = 2100;
 pub const MAX_QUANTITY: u32 = 999;
 
-impl NewBook {
+impl EditionInput {
     /// Checks every field and reports all problems at once, not just the first.
-    pub fn validate(self) -> Result<ValidBook, Vec<FieldError>> {
+    pub fn validate(self) -> Result<ValidEdition, Vec<FieldError>> {
         let mut errors = Vec::new();
-        let mut fail = |field, code| errors.push(FieldError { field, code });
 
         let title = clean(Some(self.title));
         if title.is_none() {
-            fail("title", ErrorCode::Required);
+            errors.push(FieldError::new("title", ErrorCode::Required));
         }
 
         let published_year = self.published_year;
         if published_year.is_some_and(|year| !(1..=MAX_YEAR).contains(&year)) {
-            fail("publishedYear", ErrorCode::OutOfRange);
+            errors.push(FieldError::new("publishedYear", ErrorCode::OutOfRange));
         }
 
         let isbn = match clean(self.isbn) {
             Some(raw) => match Isbn::parse(&raw) {
                 Ok(isbn) => Some(isbn),
                 Err(error) => {
-                    fail("isbn", error.into());
-                    None
-                }
-            },
-            None => None,
-        };
-
-        let quantity = self.copy.quantity;
-        if !(1..=MAX_QUANTITY).contains(&quantity) {
-            fail("copy.quantity", ErrorCode::OutOfRange);
-        }
-
-        let acquired_on = match clean(self.copy.acquired_on) {
-            Some(raw) => match NaiveDate::parse_from_str(&raw, "%Y-%m-%d") {
-                Ok(date) => Some(date),
-                Err(_) => {
-                    fail("copy.acquiredOn", ErrorCode::InvalidDate);
+                    errors.push(FieldError::new("isbn", error.into()));
                     None
                 }
             },
@@ -180,27 +193,71 @@ impl NewBook {
         };
 
         match title {
-            Some(title) if errors.is_empty() => Ok(ValidBook {
+            Some(title) if errors.is_empty() => Ok(ValidEdition {
                 title,
                 subtitle: clean(self.subtitle),
-                authors: self
-                    .authors
-                    .into_iter()
-                    .filter_map(|a| clean(Some(a)))
-                    .collect(),
+                authors: dedupe_ignoring_case(
+                    self.authors.into_iter().filter_map(|a| clean(Some(a))),
+                ),
                 publisher: clean(self.publisher),
                 published_year,
                 language: clean(self.language),
                 isbn,
-                copy: ValidCopy {
-                    owner: clean(self.copy.owner),
-                    format: self.copy.format,
-                    quantity,
-                    location: clean(self.copy.location),
-                    acquired_on,
-                },
             }),
             _ => Err(errors),
+        }
+    }
+}
+
+impl CopyInput {
+    pub fn validate(self) -> Result<ValidCopy, Vec<FieldError>> {
+        let mut errors = Vec::new();
+
+        let quantity = self.quantity;
+        if !(1..=MAX_QUANTITY).contains(&quantity) {
+            errors.push(FieldError::new("quantity", ErrorCode::OutOfRange));
+        }
+
+        let acquired_on = match clean(self.acquired_on) {
+            Some(raw) => match NaiveDate::parse_from_str(&raw, "%Y-%m-%d") {
+                Ok(date) => Some(date),
+                Err(_) => {
+                    errors.push(FieldError::new("acquiredOn", ErrorCode::InvalidDate));
+                    None
+                }
+            },
+            None => None,
+        };
+
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+        Ok(ValidCopy {
+            owner: clean(self.owner),
+            format: self.format,
+            quantity,
+            location: clean(self.location),
+            acquired_on,
+        })
+    }
+}
+
+impl NewBook {
+    pub fn validate(self) -> Result<ValidBook, Vec<FieldError>> {
+        let edition = self.edition.validate();
+        let copy = self.copy.validate().map_err(|errors| {
+            errors
+                .into_iter()
+                .map(|e| FieldError::new(format!("copy.{}", e.field), e.code))
+                .collect::<Vec<_>>()
+        });
+        match (edition, copy) {
+            (Ok(edition), Ok(copy)) => Ok(ValidBook { edition, copy }),
+            (edition, copy) => {
+                let mut errors = edition.err().unwrap_or_default();
+                errors.extend(copy.err().unwrap_or_default());
+                Err(errors)
+            }
         }
     }
 }
@@ -210,20 +267,31 @@ fn clean(value: Option<String>) -> Option<String> {
     value.map(|s| s.trim().to_owned()).filter(|s| !s.is_empty())
 }
 
+/// Keeps the first spelling of each name.
+fn dedupe_ignoring_case(names: impl Iterator<Item = String>) -> Vec<String> {
+    let mut seen: Vec<String> = Vec::new();
+    let mut result = Vec::new();
+    for name in names {
+        let key = name.to_lowercase();
+        if !seen.contains(&key) {
+            seen.push(key);
+            result.push(name);
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn minimal(title: &str) -> NewBook {
         NewBook {
-            title: title.to_owned(),
-            subtitle: None,
-            authors: vec![],
-            publisher: None,
-            published_year: None,
-            language: None,
-            isbn: None,
-            copy: NewCopy {
+            edition: EditionInput {
+                title: title.to_owned(),
+                ..EditionInput::default()
+            },
+            copy: CopyInput {
                 owner: None,
                 format: Format::Paperback,
                 quantity: 1,
@@ -236,33 +304,43 @@ mod tests {
     #[test]
     fn trims_text_and_drops_empty_values() {
         let mut book = minimal("  The Name of the Wind ");
-        book.subtitle = Some("   ".to_owned());
-        book.authors = vec![" Patrick Rothfuss ".to_owned(), "".to_owned()];
+        book.edition.subtitle = Some("   ".to_owned());
+        book.edition.authors = vec![" Patrick Rothfuss ".to_owned(), "".to_owned()];
 
         let valid = book.validate().unwrap();
 
-        assert_eq!(valid.title, "The Name of the Wind");
-        assert_eq!(valid.subtitle, None);
-        assert_eq!(valid.authors, vec!["Patrick Rothfuss"]);
+        assert_eq!(valid.edition.title, "The Name of the Wind");
+        assert_eq!(valid.edition.subtitle, None);
+        assert_eq!(valid.edition.authors, vec!["Patrick Rothfuss"]);
+    }
+
+    #[test]
+    fn repeated_authors_are_kept_once() {
+        let mut book = minimal("T");
+        book.edition.authors = vec!["Ursula K. Le Guin".into(), "ursula k. le guin".into()];
+        assert_eq!(
+            book.validate().unwrap().edition.authors,
+            vec!["Ursula K. Le Guin"]
+        );
     }
 
     #[test]
     fn normalizes_isbn_and_parses_date() {
         let mut book = minimal("Title");
-        book.isbn = Some("0-306-40615-2".to_owned());
+        book.edition.isbn = Some("0-306-40615-2".to_owned());
         book.copy.acquired_on = Some("2026-09-24".to_owned());
 
         let valid = book.validate().unwrap();
 
-        assert_eq!(valid.isbn.unwrap().as_str(), "9780306406157");
+        assert_eq!(valid.edition.isbn.unwrap().as_str(), "9780306406157");
         assert_eq!(valid.copy.acquired_on, NaiveDate::from_ymd_opt(2026, 9, 24));
     }
 
     #[test]
     fn reports_every_invalid_field() {
         let mut book = minimal(" ");
-        book.published_year = Some(0);
-        book.isbn = Some("9780306406158".to_owned());
+        book.edition.published_year = Some(0);
+        book.edition.isbn = Some("9780306406158".to_owned());
         book.copy.quantity = 0;
         book.copy.acquired_on = Some("2026-02-30".to_owned());
 
@@ -271,40 +349,45 @@ mod tests {
         assert_eq!(
             errors,
             vec![
-                FieldError {
-                    field: "title",
-                    code: ErrorCode::Required
-                },
-                FieldError {
-                    field: "publishedYear",
-                    code: ErrorCode::OutOfRange
-                },
-                FieldError {
-                    field: "isbn",
-                    code: ErrorCode::IsbnChecksum
-                },
-                FieldError {
-                    field: "copy.quantity",
-                    code: ErrorCode::OutOfRange
-                },
-                FieldError {
-                    field: "copy.acquiredOn",
-                    code: ErrorCode::InvalidDate
-                },
+                FieldError::new("title", ErrorCode::Required),
+                FieldError::new("publishedYear", ErrorCode::OutOfRange),
+                FieldError::new("isbn", ErrorCode::IsbnChecksum),
+                FieldError::new("copy.quantity", ErrorCode::OutOfRange),
+                FieldError::new("copy.acquiredOn", ErrorCode::InvalidDate),
             ]
         );
     }
 
     #[test]
+    fn copy_errors_have_no_prefix_when_validated_alone() {
+        let copy = CopyInput {
+            owner: None,
+            format: Format::Ebook,
+            quantity: 0,
+            location: None,
+            acquired_on: None,
+        };
+        assert_eq!(
+            copy.validate().unwrap_err(),
+            vec![FieldError::new("quantity", ErrorCode::OutOfRange)]
+        );
+    }
+
+    #[test]
+    fn new_book_reads_edition_fields_at_the_top_level() {
+        let book: NewBook = serde_json::from_value(serde_json::json!({
+            "title": "Dune",
+            "authors": ["Frank Herbert"],
+            "copy": { "format": "pocket" }
+        }))
+        .unwrap();
+        assert_eq!(book.edition.title, "Dune");
+        assert_eq!(book.copy.quantity, 1);
+    }
+
+    #[test]
     fn format_round_trips_through_its_database_name() {
-        for format in [
-            Format::Hardcover,
-            Format::Paperback,
-            Format::Pocket,
-            Format::Ebook,
-            Format::Audiobook,
-            Format::Other,
-        ] {
+        for format in Format::ALL {
             assert_eq!(format.as_str().parse(), Ok(format));
         }
     }

@@ -7,7 +7,10 @@ pub mod isbn;
 pub mod operation;
 pub mod schema;
 
-pub use book::{ErrorCode, FieldError, Format, NewBook, NewCopy, ValidBook, ValidCopy};
+pub use book::{
+    CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook, ValidBook, ValidCopy,
+    ValidEdition,
+};
 pub use hlc::{Hlc, HlcClock};
 pub use isbn::{Isbn, IsbnError};
 pub use operation::{Action, Change, Operation, OperationError, OperationErrorCode};

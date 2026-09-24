@@ -67,7 +67,8 @@
     "isbn_length": "Un ISBN tiene 10 o 13 dígitos.",
     "isbn_character": "Un ISBN solo puede tener dígitos (y una X final).",
     "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
-    "internal": "Algo ha fallado: {{message}}"
+    "internal": "Algo ha fallado: {{message}}",
+    "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN."
   },
   "history": {
     "title": "Historial",
@@ -75,7 +76,39 @@
     "empty": "No hay cambios registrados. Los libros añadidos antes de existir el historial no lo tienen.",
     "intents": {
       "book_add": "Libro añadido",
-      "copy_add": "Ejemplar añadido"
+      "copy_add": "Ejemplar añadido",
+      "edition_edit": "Ficha editada",
+      "copy_edit": "Ejemplar editado",
+      "copy_remove": "Ejemplar borrado",
+      "book_remove": "Libro borrado"
+    }
+  },
+  "book": {
+    "tabs": {
+      "details": "Ficha",
+      "copies_one": "{{count}} ejemplar",
+      "copies_other": "{{count}} ejemplares"
+    },
+    "noAuthors": "Sin autores",
+    "edit": "Editar",
+    "delete": "Borrar libro",
+    "deleteConfirm": {
+      "title": "¿Borrar «{{title}}»?",
+      "body": "Se quitarán del catálogo la edición y todos sus ejemplares. Los autores y propietarios se conservan."
+    }
+  },
+  "copies": {
+    "empty": "Sin ejemplares: esta edición está en el catálogo, pero nadie la tiene.",
+    "noOwner": "Sin propietario",
+    "units_one": "{{count}} unidad",
+    "units_other": "{{count}} unidades",
+    "acquired": "Comprado el {{date}}",
+    "add": "Añadir ejemplar",
+    "edit": "Editar ejemplar",
+    "delete": "Borrar ejemplar",
+    "deleteConfirm": {
+      "title": "¿Borrar este ejemplar?",
+      "body": "La edición seguirá en el catálogo."
     }
   }
 }

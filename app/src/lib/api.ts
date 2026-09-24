@@ -12,7 +12,7 @@ export const formats = [
 ] as const;
 export type Format = (typeof formats)[number];
 
-export interface NewBook {
+export interface EditionInput {
   title: string;
   subtitle: string | null;
   authors: string[];
@@ -20,13 +20,18 @@ export interface NewBook {
   publishedYear: number | null;
   language: string | null;
   isbn: string | null;
-  copy: {
-    owner: string | null;
-    format: Format;
-    quantity: number;
-    location: string | null;
-    acquiredOn: string | null;
-  };
+}
+
+export interface CopyInput {
+  owner: string | null;
+  format: Format;
+  quantity: number;
+  location: string | null;
+  acquiredOn: string | null;
+}
+
+export interface NewBook extends EditionInput {
+  copy: CopyInput;
 }
 
 export interface CreatedBook {
@@ -53,7 +58,8 @@ export type FieldErrorCode =
   | "invalid_date"
   | "isbn_length"
   | "isbn_character"
-  | "isbn_checksum";
+  | "isbn_checksum"
+  | "isbn_in_use";
 
 export interface FieldError {
   field: string;
@@ -85,4 +91,53 @@ export interface HistoryEntry {
 
 export function bookHistory(editionId: string): Promise<HistoryEntry[]> {
   return invoke<HistoryEntry[]>("book_history", { editionId });
+}
+
+export interface CopyDetail {
+  id: string;
+  owner: string | null;
+  format: Format;
+  quantity: number;
+  location: string | null;
+  acquiredOn: string | null;
+}
+
+export interface BookDetail {
+  editionId: string;
+  workId: string;
+  title: string;
+  subtitle: string | null;
+  authors: string[];
+  publisher: string | null;
+  publishedYear: number | null;
+  language: string | null;
+  isbn13: string | null;
+  copies: CopyDetail[];
+}
+
+export function getBook(editionId: string): Promise<BookDetail> {
+  return invoke<BookDetail>("get_book", { editionId });
+}
+
+export function updateEdition(
+  editionId: string,
+  edition: EditionInput,
+): Promise<void> {
+  return invoke("update_edition", { editionId, edition });
+}
+
+export function deleteBook(editionId: string): Promise<void> {
+  return invoke("delete_book", { editionId });
+}
+
+export function addCopy(editionId: string, copy: CopyInput): Promise<string> {
+  return invoke<string>("add_copy", { editionId, copy });
+}
+
+export function updateCopy(copyId: string, copy: CopyInput): Promise<void> {
+  return invoke("update_copy", { copyId, copy });
+}
+
+export function deleteCopy(copyId: string): Promise<void> {
+  return invoke("delete_copy", { copyId });
 }

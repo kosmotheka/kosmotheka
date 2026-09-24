@@ -67,7 +67,8 @@
     "isbn_length": "An ISBN has 10 or 13 digits.",
     "isbn_character": "An ISBN may only contain digits (and a final X).",
     "isbn_checksum": "This ISBN is not valid: check for a typo.",
-    "internal": "Something went wrong: {{message}}"
+    "internal": "Something went wrong: {{message}}",
+    "isbn_in_use": "Another book in the catalog already has this ISBN."
   },
   "history": {
     "title": "History",
@@ -75,7 +76,39 @@
     "empty": "No recorded changes. Books added before change history existed have none.",
     "intents": {
       "book_add": "Book added",
-      "copy_add": "Copy added"
+      "copy_add": "Copy added",
+      "edition_edit": "Details edited",
+      "copy_edit": "Copy edited",
+      "copy_remove": "Copy deleted",
+      "book_remove": "Book deleted"
+    }
+  },
+  "book": {
+    "tabs": {
+      "details": "Details",
+      "copies_one": "{{count}} copy",
+      "copies_other": "{{count}} copies"
+    },
+    "noAuthors": "No authors",
+    "edit": "Edit",
+    "delete": "Delete book",
+    "deleteConfirm": {
+      "title": "Delete “{{title}}”?",
+      "body": "The edition and all its copies will be removed from the catalog. Authors and owners stay."
+    }
+  },
+  "copies": {
+    "empty": "No copies: this edition is in the catalog but nobody owns it.",
+    "noOwner": "No owner",
+    "units_one": "{{count}} unit",
+    "units_other": "{{count}} units",
+    "acquired": "Bought on {{date}}",
+    "add": "Add copy",
+    "edit": "Edit copy",
+    "delete": "Delete copy",
+    "deleteConfirm": {
+      "title": "Delete this copy?",
+      "body": "The edition stays in the catalog."
     }
   }
 }

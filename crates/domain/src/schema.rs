@@ -133,17 +133,7 @@ mod tests {
         else {
             panic!("copy.format must be a OneOf field");
         };
-        let enum_names: Vec<&str> = [
-            Format::Hardcover,
-            Format::Paperback,
-            Format::Pocket,
-            Format::Ebook,
-            Format::Audiobook,
-            Format::Other,
-        ]
-        .into_iter()
-        .map(Format::as_str)
-        .collect();
+        let enum_names: Vec<&str> = Format::ALL.into_iter().map(Format::as_str).collect();
         assert_eq!(*names, enum_names.as_slice());
     }
 }

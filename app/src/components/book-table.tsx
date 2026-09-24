@@ -1,8 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { History } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -15,10 +13,10 @@ import type { BookSummary } from "@/lib/api";
 
 export function BookTable({
   books,
-  onShowHistory,
+  onOpen,
 }: {
   books: BookSummary[];
-  onShowHistory: (book: BookSummary) => void;
+  onOpen: (book: BookSummary) => void;
 }) {
   const { t } = useTranslation();
 
@@ -38,16 +36,26 @@ export function BookTable({
           <TableHead className="text-right">
             {t("catalog.columns.copies")}
           </TableHead>
-          <TableHead className="w-10">
-            <span className="sr-only">{t("history.title")}</span>
-          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {books.map((book) => (
-          <TableRow key={book.editionId}>
+          <TableRow
+            key={book.editionId}
+            className="cursor-pointer"
+            onClick={() => onOpen(book)}
+          >
             <TableCell className="whitespace-normal">
-              <div className="font-medium">{book.title}</div>
+              <button
+                type="button"
+                className="text-left font-medium hover:underline"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpen(book);
+                }}
+              >
+                {book.title}
+              </button>
               {book.subtitle && (
                 <div className="text-sm text-muted-foreground">
                   {book.subtitle}
@@ -73,17 +81,6 @@ export function BookTable({
               {book.owners.join(", ")}
             </TableCell>
             <TableCell className="text-right">{book.copyCount}</TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("history.show", { title: book.title })}
-                title={t("history.title")}
-                onClick={() => onShowHistory(book)}
-              >
-                <History />
-              </Button>
-            </TableCell>
           </TableRow>
         ))}
       </TableBody>
