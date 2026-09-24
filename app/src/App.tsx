@@ -4,6 +4,7 @@ import { BookPlus, CircleCheck } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookTable } from "@/components/book-table";
+import { HistoryDialog } from "@/components/history-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { supportedLanguages } from "@/i18n";
@@ -19,6 +20,7 @@ export default function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [historyBook, setHistoryBook] = useState<BookSummary | null>(null);
 
   const reload = useCallback(() => {
     listBooks()
@@ -108,7 +110,7 @@ export default function App() {
             </Button>
           </div>
         ) : (
-          <BookTable books={books} />
+          <BookTable books={books} onShowHistory={setHistoryBook} />
         ))}
 
       <AddBookDialog
@@ -117,6 +119,7 @@ export default function App() {
         knownOwners={knownOwners}
         onCreated={handleCreated}
       />
+      <HistoryDialog book={historyBook} onClose={() => setHistoryBook(null)} />
     </div>
   );
 }

@@ -30,6 +30,7 @@
 | D22 | Web pública y sitio de documentación | abierta (lejano) |
 | D23 | Entorno de desarrollo en Linux: Distrobox | aceptada |
 | D24 | Tres niveles: obra, edición y ejemplar | aceptada |
+| D25 | Operaciones: cambios de entidad con etiqueta de intención | aceptada |
 
 ---
 
@@ -289,3 +290,22 @@ Para el lanzamiento: una landing y un sitio de documentación (guía de usuario,
 - Las sagas (Fase 4) se ordenan por obras.
 - **Para no complicar el alta**, la app crea la obra automáticamente al dar de alta una edición nueva. Más adelante se podrán fusionar dos obras que resulten ser la misma.
 - El esquema concreto está en [architecture/data-model.md](architecture/data-model.md).
+
+## D25 · Operaciones: cambios de entidad con etiqueta de intención — `aceptada`
+
+**Contexto.** En el hito 1.2 toda escritura pasa a ser una operación (D05). La forma que tenga condiciona la sincronización (D13), el servidor en PHP (D06) y los permisos. Lo que no depende de esta decisión: cada operación lleva un UUID v7, el identificador del dispositivo y una marca HLC, y se guarda en una tabla `operations` en la misma transacción que aplica sus cambios.
+
+**Opciones.**
+
+| | A. Cambios de entidad con etiqueta de intención | B. Operaciones con nombre |
+|---|---|---|
+| Forma | Un lote atómico de cambios `{entidad, id, crear/modificar/borrar, campos}`, con una etiqueta como `book.add` que solo sirve para el historial y para mostrarlo | Un tipo por acción (`book.add`, `copy.lend`, `copy.return`…), cada uno con sus datos y su lógica |
+| Fusión de conflictos | Uniforme: el último en escribir gana, campo a campo (HLC). Se escribe una sola vez | Cada tipo de operación define cómo se fusiona |
+| Permisos en el servidor | Por entidad y acción («un lector no puede borrar ejemplares»). Se comprueban sobre los cambios, así que no se pueden colar cambios bajo una etiqueta inocente | Por tipo de operación; el servidor vuelve a ejecutar la lógica de cada una |
+| Código duplicado Rust/PHP | Poco: aplicar cambios genéricos y validar cada entidad | Mucho: cada operación, dos veces |
+| Intención del usuario | Queda en la etiqueta | Explícita en el tipo |
+| Referentes | CRDT por campos, cr-sqlite | Replicache, Linear |
+
+**Decisión: A** (24/09/2026). Con dos implementaciones (Rust y PHP), B multiplica el código que hay que mantener en sintonía. A da gratis la fusión campo a campo que ya pedía D13. Las reglas de negocio que cruzan entidades (por ejemplo, «solo se presta un ejemplar disponible») se comprueban sobre el estado resultante, en ambos lados.
+
+El formato concreto está en [architecture/operations.md](architecture/operations.md).

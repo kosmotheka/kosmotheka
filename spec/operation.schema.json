@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Tersoal/library/spec/operation.schema.json",
+  "title": "Operation",
+  "description": "An atomic batch of entity changes with an intent label. Every write to the catalog is one operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "hlc", "intent", "changes"],
+  "properties": {
+    "id": { "$ref": "#/$defs/uuid" },
+    "hlc": {
+      "description": "Hybrid logical clock timestamp: 16-digit milliseconds, 8-hex-digit counter, device id.",
+      "type": "string",
+      "pattern": "^[0-9]{16}-[0-9a-f]{8}-.+$"
+    },
+    "intent": {
+      "description": "What the user meant, e.g. book.add. Informative only: permissions and merging look at the changes.",
+      "type": "string",
+      "pattern": "^[a-z_]+(\\.[a-z_]+)+$"
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/change" }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "text": { "type": ["string", "null"] },
+    "integer": { "type": ["integer", "null"] },
+    "date": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "ref": { "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity", "id", "action"],
+      "properties": {
+        "entity": {
+          "enum": ["work", "person", "work_contributor", "edition", "book_details", "member", "copy"]
+        },
+        "id": { "$ref": "#/$defs/uuid" },
+        "action": { "enum": ["create", "update", "delete"] },
+        "fields": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "action": { "const": "delete" } } },
+          "then": { "not": { "required": ["fields"] } }
+        },
+        {
+          "if": { "properties": { "action": { "const": "update" } } },
+          "then": { "required": ["fields"], "properties": { "fields": { "minProperties": 1 } } }
+        },
+        { "$ref": "#/$defs/entityFields" }
+      ]
+    },
+    "entityFields": {
+      "description": "Fields each entity accepts. Required fields must be present on create and may never be null. A null ref or text clears an optional field.",
+      "allOf": [
+        {
+          "if": { "properties": { "entity": { "const": "work" } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": { "enum": ["book"] },
+                  "title": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "entity": { "enum": ["person", "member"] } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": { "name": { "type": "string" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "entity": { "const": "work_contributor" } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "work_id": { "$ref": "#/$defs/uuid" },
+                  "person_id": { "$ref": "#/$defs/uuid" },
+                  "role": { "enum": ["author"] },
+                  "position": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "entity": { "const": "edition" } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "work_id": { "$ref": "#/$defs/uuid" },
+                  "title": { "type": "string" },
+                  "subtitle": { "$ref": "#/$defs/text" },
+                  "publisher": { "$ref": "#/$defs/text" },
+                  "published_year": { "$ref": "#/$defs/integer" },
+                  "language": { "$ref": "#/$defs/text" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "entity": { "const": "book_details" } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": { "isbn13": { "$ref": "#/$defs/text" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "entity": { "const": "copy" } } },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "edition_id": { "$ref": "#/$defs/uuid" },
+                  "owner_id": { "$ref": "#/$defs/ref" },
+                  "format": { "enum": ["hardcover", "paperback", "pocket", "ebook", "audiobook", "other"] },
+                  "quantity": { "type": "integer" },
+                  "location": { "$ref": "#/$defs/text" },
+                  "acquired_on": { "$ref": "#/$defs/date" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

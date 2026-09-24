@@ -66,7 +66,13 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 | 1.6 Exportar e importar | JSON completo (copia de seguridad) y CSV | Saco y recupero mis datos |
 
 **Estado:**
-- [x] 1.1 Dominio y alta manual. *Crate* `domain` (ISBN con dígito de control y paso de ISBN-10 a ISBN-13, validación que devuelve todos los errores a la vez), esquema obra/edición/ejemplar, alta manual con varios autores y listado. Un ISBN repetido añade un ejemplar a la edición existente. Las escrituras aún van directas a SQLite; pasan a operaciones en 1.2.
+- [x] 1.1 Dominio y alta manual. *Crate* `domain` (ISBN con dígito de control y paso de ISBN-10 a ISBN-13, validación que devuelve todos los errores a la vez), esquema obra/edición/ejemplar, alta manual con varios autores y listado. Un ISBN repetido añade un ejemplar a la edición existente.
+- [x] 1.2 Registro de operaciones. Operaciones como cambios de entidad con etiqueta de intención (D25), reloj HLC, identificador de dispositivo, registro `operations` aplicado en la misma transacción, especificación en `spec/` (JSON Schema y 18 casos de conformidad, licencia MIT) e historial de cada libro. Detalles en [architecture/operations.md](architecture/operations.md).
+
+**Mejoras pedidas tras probar el 1.1** (se harán sin prisa, junto al hito que las toque):
+- Autocompletar autores al escribir, a partir de los ya catalogados (la tabla `people` ya existe), en el 1.5.
+- Editoriales como catálogo propio, con autocompletado, en el 1.5.
+- Rellenar datos y autores consultando catálogos online (Google Books, Open Library), en el 1.3.
 
 ## Fase 2 — Móvil y sincronización local
 

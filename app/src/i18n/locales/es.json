@@ -68,5 +68,14 @@
     "isbn_character": "Un ISBN solo puede tener dígitos (y una X final).",
     "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
     "internal": "Algo ha fallado: {{message}}"
+  },
+  "history": {
+    "title": "Historial",
+    "show": "Ver el historial de «{{title}}»",
+    "empty": "No hay cambios registrados. Los libros añadidos antes de existir el historial no lo tienen.",
+    "intents": {
+      "book_add": "Libro añadido",
+      "copy_add": "Ejemplar añadido"
+    }
   }
 }

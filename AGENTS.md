@@ -7,7 +7,7 @@ Instructions for AI coding agents working in this repository. Human contributors
 A shared catalog for a household library (books first; board games, comics, video games, films later): what we own, where it is, who has read it and who borrowed it. Working name: **library**.
 
 - **Local-first**: the app always reads and writes its own SQLite database and works fully without a server or an account.
-- **Optional authoritative server**: in connected mode, the client sends named *operations* to the server, which re-applies them with its own rules (permissions) and is the source of truth.
+- **Optional authoritative server**: in connected mode, the client sends *operations* (atomic batches of entity changes) to the server, which checks permissions and re-applies them and is the source of truth.
 - **Local sync**: devices pair with a QR code and sync over the LAN.
 
 The full rationale lives in `docs/` (in Spanish):
@@ -33,15 +33,12 @@ Cargo.toml      Cargo workspace root
 app/            Tauri app: React UI in src/, Rust core in src-tauri/
   src-tauri/migrations/   SQLite migrations, applied on startup
   src-tauri/gen/android/  Generated Android project (committed; edit with care)
-crates/domain/  Domain types and validation, independent of Tauri and storage
-docs/           Working documentation (Spanish); data model in docs/architecture/data-model.md
+crates/domain/  Domain types, validation, HLC and operations; no storage or UI code
+spec/           Operation spec: JSON Schema and conformance cases (MIT licence)
+docs/           Working documentation (Spanish); see docs/architecture/
 ```
 
-Planned: `server/` (Symfony), `spec/` (operation spec and conformance cases, MIT).
-
-Until milestone 1.2 lands, catalog writes go straight to SQLite; they will become operations then.
-
-Update this section when the layout changes.
+Planned: `server/` (Symfony).
 
 ## Language
 
@@ -53,7 +50,8 @@ Update this section when the layout changes.
 
 - Clean, readable code. Comments are short and explain *why* when it is not obvious; never restate what the code does.
 - **Domain logic lives in Rust** (`crates/domain`), never in the React UI. The UI calls Tauri commands; it never runs SQL.
-- Every write is an **operation**: UUID v7 id, device id and a hybrid logical clock (HLC) timestamp. There are no direct row updates that bypass the operation log.
+- Every write is an **operation** (docs/architecture/operations.md): build a list of `Change`s and call `ops::record` inside a transaction. Never `INSERT`/`UPDATE`/`DELETE` catalog tables directly.
+- Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - **No user-facing string is hard-coded**: use i18n keys and add both `en` and `es` translations.

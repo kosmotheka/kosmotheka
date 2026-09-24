@@ -5,10 +5,12 @@ use rusqlite::Connection;
 use rusqlite_migration::{M, Migrations};
 
 use crate::error::{Error, Result};
+use crate::ops;
 
 const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0001_app_launches.sql")),
     M::up(include_str!("../migrations/0002_catalog.sql")),
+    M::up(include_str!("../migrations/0003_operations.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -21,6 +23,7 @@ impl Database {
         let mut conn = Connection::open(&path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         migrate(&mut conn)?;
+        ops::ensure_device_id(&conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -41,6 +44,7 @@ fn migrate(conn: &mut Connection) -> Result<()> {
 pub fn open_in_memory() -> Result<Connection> {
     let mut conn = Connection::open_in_memory()?;
     migrate(&mut conn)?;
+    ops::ensure_device_id(&conn)?;
     Ok(conn)
 }
 

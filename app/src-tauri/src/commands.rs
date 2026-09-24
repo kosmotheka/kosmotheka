@@ -1,7 +1,7 @@
 use library_domain::NewBook;
 use tauri::State;
 
-use crate::catalog::{self, BookSummary, CreatedBook};
+use crate::catalog::{self, BookSummary, CreatedBook, HistoryEntry};
 use crate::db::Database;
 use crate::error::{Error, Result};
 
@@ -16,4 +16,13 @@ pub fn create_book(database: State<'_, Database>, book: NewBook) -> Result<Creat
 pub fn list_books(database: State<'_, Database>) -> Result<Vec<BookSummary>> {
     let conn = database.lock()?;
     catalog::list_books(&conn)
+}
+
+#[tauri::command]
+pub fn book_history(
+    database: State<'_, Database>,
+    edition_id: String,
+) -> Result<Vec<HistoryEntry>> {
+    let conn = database.lock()?;
+    catalog::book_history(&conn, &edition_id)
 }

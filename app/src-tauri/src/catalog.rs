@@ -1,9 +1,12 @@
-use library_domain::{Format, ValidBook};
-use rusqlite::{Connection, OptionalExtension, Transaction, params};
+use std::collections::HashMap;
+
+use library_domain::{Change, Entity, Format, Hlc, ValidBook};
+use rusqlite::{Connection, OptionalExtension, Transaction};
 use serde::Serialize;
-use uuid::Uuid;
+use serde_json::json;
 
 use crate::error::Result;
+use crate::ops::{self, new_id};
 
 // group_concat separator that cannot appear in names typed by users.
 const LIST_SEPARATOR: char = '\u{1f}';
@@ -31,10 +34,20 @@ pub struct BookSummary {
     pub owners: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryEntry {
+    pub operation_id: String,
+    pub intent: String,
+    /// Milliseconds since the Unix epoch, from the operation's HLC.
+    pub timestamp: u64,
+}
+
 pub fn create_book(conn: &mut Connection, book: &ValidBook) -> Result<CreatedBook> {
     let tx = conn.transaction()?;
+    let mut plan = Plan::new(&tx);
 
-    let existing_edition_id = match &book.isbn {
+    let existing_edition_id: Option<String> = match &book.isbn {
         Some(isbn) => tx
             .query_row(
                 "SELECT edition_id FROM book_details WHERE isbn13 = ?1",
@@ -47,27 +60,33 @@ pub fn create_book(conn: &mut Connection, book: &ValidBook) -> Result<CreatedBoo
     let existing_edition = existing_edition_id.is_some();
     let edition_id = match existing_edition_id {
         Some(id) => id,
-        None => insert_edition(&tx, book)?,
+        None => plan.add_edition(book)?,
     };
 
     let owner_id = match &book.copy.owner {
-        Some(name) => Some(find_or_insert_by_name(&tx, "members", name)?),
+        Some(name) => Some(plan.find_or_create(Entity::Member, name)?),
         None => None,
     };
-    tx.execute(
-        "INSERT INTO copies (id, edition_id, owner_id, format, quantity, location, acquired_on)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![
-            new_id(),
-            edition_id,
-            owner_id,
-            book.copy.format.as_str(),
-            book.copy.quantity,
-            book.copy.location,
-            book.copy.acquired_on.map(|date| date.to_string()),
-        ],
-    )?;
+    plan.changes.push(Change::create(
+        Entity::Copy,
+        new_id(),
+        json!({
+            "edition_id": edition_id,
+            "owner_id": owner_id,
+            "format": book.copy.format.as_str(),
+            "quantity": book.copy.quantity,
+            "location": book.copy.location,
+            "acquired_on": book.copy.acquired_on.map(|date| date.to_string()),
+        }),
+    ));
 
+    let intent = if existing_edition {
+        "copy.add"
+    } else {
+        "book.add"
+    };
+    let changes = plan.changes;
+    ops::record(&tx, intent, changes)?;
     tx.commit()?;
     Ok(CreatedBook {
         edition_id,
@@ -75,60 +94,94 @@ pub fn create_book(conn: &mut Connection, book: &ValidBook) -> Result<CreatedBoo
     })
 }
 
-fn insert_edition(tx: &Transaction<'_>, book: &ValidBook) -> Result<String> {
-    let work_id = new_id();
-    tx.execute(
-        "INSERT INTO works (id, kind, title) VALUES (?1, 'book', ?2)",
-        params![work_id, book.title],
-    )?;
-    for (position, author) in book.authors.iter().enumerate() {
-        let person_id = find_or_insert_by_name(tx, "people", author)?;
-        tx.execute(
-            "INSERT OR IGNORE INTO work_contributors (work_id, person_id, role, position)
-             VALUES (?1, ?2, 'author', ?3)",
-            params![work_id, person_id, position as i64],
-        )?;
-    }
-
-    let edition_id = new_id();
-    tx.execute(
-        "INSERT INTO editions (id, work_id, title, subtitle, publisher, published_year, language)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![
-            edition_id,
-            work_id,
-            book.title,
-            book.subtitle,
-            book.publisher,
-            book.published_year,
-            book.language,
-        ],
-    )?;
-    tx.execute(
-        "INSERT INTO book_details (edition_id, isbn13) VALUES (?1, ?2)",
-        params![edition_id, book.isbn.as_ref().map(|isbn| isbn.as_str())],
-    )?;
-    Ok(edition_id)
+/// Collects the changes of one operation, reusing rows that already exist.
+struct Plan<'a> {
+    tx: &'a Transaction<'a>,
+    changes: Vec<Change>,
+    /// Rows created earlier in this same plan, so a repeated name is created once.
+    planned: HashMap<(Entity, String), String>,
 }
 
-/// `table` is always a literal from this module, never user input.
-fn find_or_insert_by_name(tx: &Transaction<'_>, table: &str, name: &str) -> Result<String> {
-    let existing: Option<String> = tx
-        .query_row(
-            &format!("SELECT id FROM {table} WHERE name = ?1 COLLATE NOCASE"),
-            [name],
-            |row| row.get(0),
-        )
-        .optional()?;
-    if let Some(id) = existing {
-        return Ok(id);
+impl<'a> Plan<'a> {
+    fn new(tx: &'a Transaction<'a>) -> Self {
+        Self {
+            tx,
+            changes: Vec::new(),
+            planned: HashMap::new(),
+        }
     }
-    let id = new_id();
-    tx.execute(
-        &format!("INSERT INTO {table} (id, name) VALUES (?1, ?2)"),
-        params![id, name],
-    )?;
-    Ok(id)
+
+    fn add_edition(&mut self, book: &ValidBook) -> Result<String> {
+        let work_id = new_id();
+        self.changes.push(Change::create(
+            Entity::Work,
+            &work_id,
+            json!({ "kind": "book", "title": book.title }),
+        ));
+
+        let mut author_ids: Vec<String> = Vec::new();
+        for author in &book.authors {
+            let person_id = self.find_or_create(Entity::Person, author)?;
+            if !author_ids.contains(&person_id) {
+                author_ids.push(person_id);
+            }
+        }
+        for (position, person_id) in author_ids.iter().enumerate() {
+            self.changes.push(Change::create(
+                Entity::WorkContributor,
+                new_id(),
+                json!({ "work_id": work_id, "person_id": person_id, "role": "author", "position": position }),
+            ));
+        }
+
+        let edition_id = new_id();
+        self.changes.push(Change::create(
+            Entity::Edition,
+            &edition_id,
+            json!({
+                "work_id": work_id,
+                "title": book.title,
+                "subtitle": book.subtitle,
+                "publisher": book.publisher,
+                "published_year": book.published_year,
+                "language": book.language,
+            }),
+        ));
+        self.changes.push(Change::create(
+            Entity::BookDetails,
+            &edition_id,
+            json!({ "isbn13": book.isbn.as_ref().map(|isbn| isbn.as_str()) }),
+        ));
+        Ok(edition_id)
+    }
+
+    /// For entities identified by a `name` (people, members), matched case-insensitively.
+    fn find_or_create(&mut self, entity: Entity, name: &str) -> Result<String> {
+        let key = (entity, name.to_lowercase());
+        if let Some(id) = self.planned.get(&key) {
+            return Ok(id.clone());
+        }
+        let table = entity.table();
+        let existing: Option<String> = self
+            .tx
+            .query_row(
+                &format!("SELECT id FROM {table} WHERE name = ?1 COLLATE NOCASE"),
+                [name],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let id = match existing {
+            Some(id) => id,
+            None => {
+                let id = new_id();
+                self.changes
+                    .push(Change::create(entity, &id, json!({ "name": name })));
+                id
+            }
+        };
+        self.planned.insert(key, id.clone());
+        Ok(id)
+    }
 }
 
 pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
@@ -167,14 +220,34 @@ pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
+/// Operations that touched the edition, its work or any of its copies, oldest first.
+pub fn book_history(conn: &Connection, edition_id: &str) -> Result<Vec<HistoryEntry>> {
+    let mut statement = conn.prepare(
+        "WITH related (id) AS (
+             SELECT ?1
+             UNION SELECT work_id FROM editions WHERE id = ?1
+             UNION SELECT id FROM copies WHERE edition_id = ?1
+         )
+         SELECT DISTINCT o.id, o.intent, o.hlc
+           FROM operations o, json_each(o.changes) AS change
+          WHERE json_extract(change.value, '$.id') IN (SELECT id FROM related)
+          ORDER BY o.hlc",
+    )?;
+    let rows = statement.query_map([edition_id], |row| {
+        let hlc: String = row.get(2)?;
+        Ok(HistoryEntry {
+            operation_id: row.get(0)?,
+            intent: row.get(1)?,
+            timestamp: hlc.parse::<Hlc>().map_or(0, |hlc| hlc.millis),
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
 fn split_list(joined: Option<String>) -> Vec<String> {
     joined
         .map(|s| s.split(LIST_SEPARATOR).map(str::to_owned).collect())
         .unwrap_or_default()
-}
-
-fn new_id() -> String {
-    Uuid::now_v7().to_string()
 }
 
 #[cfg(test)]
@@ -268,5 +341,45 @@ mod tests {
         .unwrap();
 
         assert_eq!(list_books(&conn).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn repeated_author_in_one_book_is_created_once() {
+        let mut conn = db::open_in_memory().unwrap();
+        let mut book = new_book("C", None, "Tersoal", Format::Paperback);
+        book.authors = vec!["Ursula K. Le Guin".into(), "ursula k. le guin".into()];
+
+        create_book(&mut conn, &book).unwrap();
+
+        assert_eq!(
+            list_books(&conn).unwrap()[0].authors,
+            vec!["Ursula K. Le Guin"]
+        );
+    }
+
+    #[test]
+    fn every_write_is_logged_and_history_follows_the_edition() {
+        let mut conn = db::open_in_memory().unwrap();
+        let created = create_book(
+            &mut conn,
+            &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+        )
+        .unwrap();
+        create_book(
+            &mut conn,
+            &new_book("A", Some("9780306406157"), "Tersoal", Format::Ebook),
+        )
+        .unwrap();
+        create_book(
+            &mut conn,
+            &new_book("Other", None, "Tersoal", Format::Ebook),
+        )
+        .unwrap();
+
+        let history = book_history(&conn, &created.edition_id).unwrap();
+
+        let intents: Vec<&str> = history.iter().map(|entry| entry.intent.as_str()).collect();
+        assert_eq!(intents, vec!["book.add", "copy.add"]);
+        assert!(history[0].timestamp <= history[1].timestamp);
     }
 }

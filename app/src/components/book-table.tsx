@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { History } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -11,7 +13,13 @@ import {
 } from "@/components/ui/table";
 import type { BookSummary } from "@/lib/api";
 
-export function BookTable({ books }: { books: BookSummary[] }) {
+export function BookTable({
+  books,
+  onShowHistory,
+}: {
+  books: BookSummary[];
+  onShowHistory: (book: BookSummary) => void;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -29,6 +37,9 @@ export function BookTable({ books }: { books: BookSummary[] }) {
           </TableHead>
           <TableHead className="text-right">
             {t("catalog.columns.copies")}
+          </TableHead>
+          <TableHead className="w-10">
+            <span className="sr-only">{t("history.title")}</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -62,6 +73,17 @@ export function BookTable({ books }: { books: BookSummary[] }) {
               {book.owners.join(", ")}
             </TableCell>
             <TableCell className="text-right">{book.copyCount}</TableCell>
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("history.show", { title: book.title })}
+                title={t("history.title")}
+                onClick={() => onShowHistory(book)}
+              >
+                <History />
+              </Button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

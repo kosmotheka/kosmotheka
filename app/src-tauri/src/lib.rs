@@ -2,6 +2,7 @@ mod catalog;
 mod commands;
 mod db;
 mod error;
+mod ops;
 
 use tauri::Manager;
 
@@ -19,7 +20,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::create_book,
-            commands::list_books
+            commands::list_books,
+            commands::book_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

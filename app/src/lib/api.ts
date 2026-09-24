@@ -75,3 +75,14 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
 export function listBooks(): Promise<BookSummary[]> {
   return invoke<BookSummary[]>("list_books");
 }
+
+export interface HistoryEntry {
+  operationId: string;
+  intent: string;
+  /** Milliseconds since the Unix epoch. */
+  timestamp: number;
+}
+
+export function bookHistory(editionId: string): Promise<HistoryEntry[]> {
+  return invoke<HistoryEntry[]>("book_history", { editionId });
+}

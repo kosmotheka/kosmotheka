@@ -1,4 +1,4 @@
-use library_domain::FieldError;
+use library_domain::{FieldError, OperationError};
 use serde::{Serialize, Serializer};
 
 #[derive(Debug, thiserror::Error)]
@@ -9,6 +9,16 @@ pub enum Error {
     Sqlite(#[from] rusqlite::Error),
     #[error(transparent)]
     Migration(#[from] rusqlite_migration::Error),
+    #[error(transparent)]
+    InvalidOperation(#[from] OperationError),
+    #[error("{entity} {id} does not exist")]
+    MissingRow { entity: &'static str, id: String },
+    #[error("this device has no id; the database was not initialised")]
+    MissingDeviceId,
+    #[error("corrupt local state: {0}")]
+    CorruptState(&'static str),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
     #[error("database lock poisoned by a panicked thread")]
     LockPoisoned,
 }
