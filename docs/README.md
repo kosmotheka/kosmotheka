@@ -11,6 +11,7 @@
 | [ROADMAP.md](ROADMAP.md) | Plan de ejecución por fases. | Borrador |
 | [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md) y [nombre del proyecto](research/naming.md). | Vivo |
 | [development/setup.md](development/setup.md) | Cómo montar el entorno de desarrollo. | Vivo |
+| [architecture/data-model.md](architecture/data-model.md) | Esquema de la base de datos local. | Vivo |
 
 ## Convenciones de la documentación
 

@@ -2006,6 +2006,7 @@ dependencies = [
 name = "library-app"
 version = "0.1.0"
 dependencies = [
+ "library-domain",
  "rusqlite",
  "rusqlite_migration",
  "serde",
@@ -2013,6 +2014,16 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "thiserror 2.0.21",
+ "uuid",
+]
+
+[[package]]
+name = "library-domain"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
  "thiserror 2.0.21",
 ]
 

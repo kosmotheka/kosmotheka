@@ -1,10 +1,19 @@
+use library_domain::NewBook;
 use tauri::State;
 
-use crate::db::{self, AppInfo, Database};
-use crate::error::Result;
+use crate::catalog::{self, BookSummary, CreatedBook};
+use crate::db::Database;
+use crate::error::{Error, Result};
 
 #[tauri::command]
-pub fn get_app_info(database: State<'_, Database>) -> Result<AppInfo> {
+pub fn create_book(database: State<'_, Database>, book: NewBook) -> Result<CreatedBook> {
+    let book = book.validate().map_err(Error::Validation)?;
+    let mut conn = database.lock()?;
+    catalog::create_book(&mut conn, &book)
+}
+
+#[tauri::command]
+pub fn list_books(database: State<'_, Database>) -> Result<Vec<BookSummary>> {
     let conn = database.lock()?;
-    db::app_info(&conn, database.path())
+    catalog::list_books(&conn)
 }

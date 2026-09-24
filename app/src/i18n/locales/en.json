@@ -1,20 +1,72 @@
 {
   "app": {
-    "title": "Hello, library",
-    "subtitle": "Phase 0 skeleton: the UI talks to Rust, and Rust talks to SQLite."
+    "title": "Library"
   },
-  "info": {
-    "loading": "Opening the database…",
-    "error": "Could not read the database: {{message}}",
-    "launchCount_one": "This app has been opened {{count}} time.",
-    "launchCount_other": "This app has been opened {{count}} times.",
-    "firstLaunch": "First launch",
-    "sqliteVersion": "SQLite version",
-    "databasePath": "Database file"
+  "catalog": {
+    "count_one": "{{count}} book",
+    "count_other": "{{count}} books",
+    "loading": "Loading the catalog…",
+    "add": "Add book",
+    "added": "“{{title}}” was added to the catalog.",
+    "addedCopy": "You already had this edition of “{{title}}”: a new copy was added to it.",
+    "empty": {
+      "title": "The catalog is empty",
+      "body": "Add your first book to get started."
+    },
+    "columns": {
+      "title": "Title",
+      "authors": "Authors",
+      "year": "Year",
+      "formats": "Formats",
+      "owners": "Owners",
+      "copies": "Copies"
+    }
   },
-  "language": {
-    "label": "Language",
-    "en": "English",
-    "es": "Español"
+  "formats": {
+    "hardcover": "Hardcover",
+    "paperback": "Paperback",
+    "pocket": "Pocket",
+    "ebook": "Ebook",
+    "audiobook": "Audiobook",
+    "other": "Other"
+  },
+  "form": {
+    "title": "Add a book",
+    "description": "Only the title is required. If the ISBN is already in the catalog, a new copy is added to that edition.",
+    "editionSection": "Edition",
+    "copySection": "Your copy",
+    "fields": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "authors": "Authors",
+      "author": "Author {{number}}",
+      "publisher": "Publisher",
+      "publishedYear": "Year",
+      "isbn": "ISBN",
+      "language": "Language",
+      "owner": "Owner",
+      "format": "Format",
+      "quantity": "Copies",
+      "acquiredOn": "Purchase date",
+      "location": "Location"
+    },
+    "placeholders": {
+      "language": "en, es…",
+      "location": "Living room, shelf 2, row 3"
+    },
+    "addAuthor": "Add author",
+    "removeAuthor": "Remove author",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "errors": {
+    "required": "This field is required.",
+    "out_of_range": "This value is out of range.",
+    "invalid_date": "This is not a valid date.",
+    "isbn_length": "An ISBN has 10 or 13 digits.",
+    "isbn_character": "An ISBN may only contain digits (and a final X).",
+    "isbn_checksum": "This ISBN is not valid: check for a typo.",
+    "internal": "Something went wrong: {{message}}"
   }
 }

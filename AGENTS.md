@@ -33,10 +33,13 @@ Cargo.toml      Cargo workspace root
 app/            Tauri app: React UI in src/, Rust core in src-tauri/
   src-tauri/migrations/   SQLite migrations, applied on startup
   src-tauri/gen/android/  Generated Android project (committed; edit with care)
-docs/           Working documentation (Spanish)
+crates/domain/  Domain types and validation, independent of Tauri and storage
+docs/           Working documentation (Spanish); data model in docs/architecture/data-model.md
 ```
 
-Planned: `crates/domain/` (domain model and operations, independent of Tauri), `server/` (Symfony), `spec/` (operation spec and conformance cases, MIT).
+Planned: `server/` (Symfony), `spec/` (operation spec and conformance cases, MIT).
+
+Until milestone 1.2 lands, catalog writes go straight to SQLite; they will become operations then.
 
 Update this section when the layout changes.
 

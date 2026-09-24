@@ -1,98 +1,122 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BookPlus, CircleCheck } from "lucide-react";
 
+import { AddBookDialog } from "@/components/add-book-dialog";
+import { BookTable } from "@/components/book-table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { supportedLanguages } from "@/i18n";
-import { type AppInfo, getAppInfo } from "@/lib/api";
+import { type BookSummary, type CreatedBook, listBooks } from "@/lib/api";
 
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; info: AppInfo }
+  | { status: "ready"; books: BookSummary[] }
   | { status: "error"; message: string };
 
 export default function App() {
   const { t, i18n } = useTranslation();
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    getAppInfo()
-      .then((info) => setState({ status: "ready", info }))
+  const reload = useCallback(() => {
+    listBooks()
+      .then((books) => setState({ status: "ready", books }))
       .catch((error: unknown) =>
         setState({ status: "error", message: String(error) }),
       );
   }, []);
 
-  return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl">{t("app.title")}</CardTitle>
-          <CardDescription>{t("app.subtitle")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <AppInfoView state={state} />
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {t("language.label")}
-            </span>
-            {supportedLanguages.map((language) => (
-              <Button
-                key={language}
-                size="sm"
-                variant={
-                  i18n.resolvedLanguage === language ? "default" : "outline"
-                }
-                onClick={() => void i18n.changeLanguage(language)}
-              >
-                {t(`language.${language}`)}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </main>
+  useEffect(reload, [reload]);
+
+  const books = useMemo(
+    () => (state.status === "ready" ? state.books : []),
+    [state],
   );
-}
+  const knownOwners = useMemo(
+    () => [...new Set(books.flatMap((book) => book.owners))].sort(),
+    [books],
+  );
 
-function AppInfoView({ state }: { state: LoadState }) {
-  const { t, i18n } = useTranslation();
-
-  if (state.status === "loading") {
-    return <p className="text-muted-foreground">{t("info.loading")}</p>;
-  }
-  if (state.status === "error") {
-    return (
-      <p className="text-destructive">
-        {t("info.error", { message: state.message })}
-      </p>
+  const handleCreated = (result: CreatedBook, title: string) => {
+    setNotice(
+      t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", {
+        title,
+      }),
     );
-  }
+    reload();
+  };
 
-  const { info } = state;
-  const firstLaunch = info.firstLaunch
-    ? new Date(info.firstLaunch).toLocaleString(i18n.resolvedLanguage)
-    : "—";
+  const openDialog = () => {
+    setNotice(null);
+    setDialogOpen(true);
+  };
 
   return (
-    <div className="space-y-3">
-      <p className="font-medium">
-        {t("info.launchCount", { count: info.launchCount })}
-      </p>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">{t("info.firstLaunch")}</dt>
-        <dd>{firstLaunch}</dd>
-        <dt className="text-muted-foreground">{t("info.sqliteVersion")}</dt>
-        <dd>{info.sqliteVersion}</dd>
-        <dt className="text-muted-foreground">{t("info.databasePath")}</dt>
-        <dd className="break-all font-mono text-xs">{info.databasePath}</dd>
-      </dl>
+    <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
+          {state.status === "ready" && (
+            <p className="text-sm text-muted-foreground">
+              {t("catalog.count", { count: books.length })}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {supportedLanguages.map((language) => (
+            <Button
+              key={language}
+              size="sm"
+              variant={i18n.resolvedLanguage === language ? "secondary" : "ghost"}
+              onClick={() => void i18n.changeLanguage(language)}
+            >
+              {language.toUpperCase()}
+            </Button>
+          ))}
+          <Button onClick={openDialog}>
+            <BookPlus /> {t("catalog.add")}
+          </Button>
+        </div>
+      </header>
+
+      {notice && (
+        <Alert>
+          <CircleCheck />
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+
+      {state.status === "loading" && (
+        <p className="text-muted-foreground">{t("catalog.loading")}</p>
+      )}
+      {state.status === "error" && (
+        <p className="text-destructive">
+          {t("errors.internal", { message: state.message })}
+        </p>
+      )}
+      {state.status === "ready" &&
+        (books.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-12 text-center">
+            <p className="font-medium">{t("catalog.empty.title")}</p>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {t("catalog.empty.body")}
+            </p>
+            <Button onClick={openDialog}>
+              <BookPlus /> {t("catalog.add")}
+            </Button>
+          </div>
+        ) : (
+          <BookTable books={books} />
+        ))}
+
+      <AddBookDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        knownOwners={knownOwners}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }

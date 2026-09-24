@@ -1,20 +1,72 @@
 {
   "app": {
-    "title": "Hola, biblioteca",
-    "subtitle": "Esqueleto de la fase 0: la interfaz habla con Rust y Rust habla con SQLite."
+    "title": "Biblioteca"
   },
-  "info": {
-    "loading": "Abriendo la base de datos…",
-    "error": "No se pudo leer la base de datos: {{message}}",
-    "launchCount_one": "Esta app se ha abierto {{count}} vez.",
-    "launchCount_other": "Esta app se ha abierto {{count}} veces.",
-    "firstLaunch": "Primer arranque",
-    "sqliteVersion": "Versión de SQLite",
-    "databasePath": "Fichero de la base de datos"
+  "catalog": {
+    "count_one": "{{count}} libro",
+    "count_other": "{{count}} libros",
+    "loading": "Cargando el catálogo…",
+    "add": "Añadir libro",
+    "added": "«{{title}}» se ha añadido al catálogo.",
+    "addedCopy": "Ya teníais esta edición de «{{title}}»: se le ha añadido un ejemplar más.",
+    "empty": {
+      "title": "El catálogo está vacío",
+      "body": "Añade tu primer libro para empezar."
+    },
+    "columns": {
+      "title": "Título",
+      "authors": "Autores",
+      "year": "Año",
+      "formats": "Formatos",
+      "owners": "Propietarios",
+      "copies": "Ejemplares"
+    }
   },
-  "language": {
-    "label": "Idioma",
-    "en": "English",
-    "es": "Español"
+  "formats": {
+    "hardcover": "Tapa dura",
+    "paperback": "Tapa blanda",
+    "pocket": "Bolsillo",
+    "ebook": "Ebook",
+    "audiobook": "Audiolibro",
+    "other": "Otro"
+  },
+  "form": {
+    "title": "Añadir un libro",
+    "description": "Solo el título es obligatorio. Si el ISBN ya está en el catálogo, se añade un ejemplar a esa edición.",
+    "editionSection": "Edición",
+    "copySection": "Tu ejemplar",
+    "fields": {
+      "title": "Título",
+      "subtitle": "Subtítulo",
+      "authors": "Autores",
+      "author": "Autor {{number}}",
+      "publisher": "Editorial",
+      "publishedYear": "Año",
+      "isbn": "ISBN",
+      "language": "Idioma",
+      "owner": "Propietario",
+      "format": "Formato",
+      "quantity": "Unidades",
+      "acquiredOn": "Fecha de compra",
+      "location": "Ubicación"
+    },
+    "placeholders": {
+      "language": "es, en…",
+      "location": "Salón, estantería 2, balda 3"
+    },
+    "addAuthor": "Añadir autor",
+    "removeAuthor": "Quitar autor",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…"
+  },
+  "errors": {
+    "required": "Este campo es obligatorio.",
+    "out_of_range": "Este valor está fuera de rango.",
+    "invalid_date": "No es una fecha válida.",
+    "isbn_length": "Un ISBN tiene 10 o 13 dígitos.",
+    "isbn_character": "Un ISBN solo puede tener dígitos (y una X final).",
+    "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
+    "internal": "Algo ha fallado: {{message}}"
   }
 }

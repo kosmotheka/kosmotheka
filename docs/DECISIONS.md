@@ -29,6 +29,7 @@
 | D21 | Proveedores de metadatos por tipo de catálogo | propuesta |
 | D22 | Web pública y sitio de documentación | abierta (lejano) |
 | D23 | Entorno de desarrollo en Linux: Distrobox | aceptada |
+| D24 | Tres niveles: obra, edición y ejemplar | aceptada |
 
 ---
 
@@ -272,3 +273,19 @@ Para el lanzamiento: una landing y un sitio de documentación (guía de usuario,
 - Los pasos exactos se documentarán en `docs/development/setup.md` a medida que se validen.
 
 **Aparte, fuera del proyecto:** Ubuntu 20.04 ya no recibe actualizaciones de seguridad estándar. Ubuntu Pro es gratuito para uso personal (hasta 5 equipos) y amplía esas actualizaciones (ESM) sin reinstalar nada.
+
+## D24 · Tres niveles: obra, edición y ejemplar — `aceptada`
+
+**Contexto.** VISION.md separa la edición (lo que tiene ISBN) del ejemplar (la copia que alguien posee). Faltaba decidir si añadir por encima la **obra**: «El nombre del viento» en tapa dura en español y en ebook en inglés son dos ediciones de la misma obra.
+
+**Decisión.** Tres niveles:
+- **Obra** (`works`): el libro en abstracto. Tiene título y autores, y en el futuro, saga y número dentro de la saga.
+- **Edición** (`editions` + `book_details`): una publicación concreta, con editorial, año, idioma, ISBN y portada. Es el `items` de D08.
+- **Ejemplar** (`copies`): lo que hay en casa, con propietario, formato, unidades, ubicación y fecha de compra.
+
+**Consecuencias.**
+- «¿Lo tengo ya?» puede responder «sí, en otra edición».
+- El estado de lectura (Fase 4) se marca sobre la obra: leer un libro no depende de la edición.
+- Las sagas (Fase 4) se ordenan por obras.
+- **Para no complicar el alta**, la app crea la obra automáticamente al dar de alta una edición nueva. Más adelante se podrán fusionar dos obras que resulten ser la misma.
+- El esquema concreto está en [architecture/data-model.md](architecture/data-model.md).

@@ -1,3 +1,4 @@
+mod catalog;
 mod commands;
 mod db;
 mod error;
@@ -13,13 +14,13 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
-
-            let database = Database::open(data_dir.join("library.sqlite3"))?;
-            db::record_launch(&*database.lock()?)?;
-            app.manage(database);
+            app.manage(Database::open(data_dir.join("library.sqlite3"))?);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![commands::get_app_info])
+        .invoke_handler(tauri::generate_handler![
+            commands::create_book,
+            commands::list_books
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
