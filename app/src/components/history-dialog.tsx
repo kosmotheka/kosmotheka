@@ -34,7 +34,7 @@ export function HistoryDialog({ book, onClose }: Props) {
   }, [book]);
 
   const describe = (intent: string) =>
-    t(`history.intents.${intent.replace(/\./g, "_")}`, { defaultValue: intent });
+    t(`history.intents.${intent.replaceAll(".", "_")}`, { defaultValue: intent });
 
   const format = (timestamp: number) =>
     new Date(timestamp).toLocaleString(i18n.resolvedLanguage, {
