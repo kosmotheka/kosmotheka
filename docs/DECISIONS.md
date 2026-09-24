@@ -31,6 +31,8 @@
 | D23 | Entorno de desarrollo en Linux: Distrobox | aceptada |
 | D24 | Tres niveles: obra, edición y ejemplar | aceptada |
 | D25 | Operaciones: cambios de entidad con etiqueta de intención | aceptada |
+| D26 | Búsqueda por ISBN: Open Library + Google Books con clave opcional | propuesta |
+| D27 | Portadas: ficheros locales con nombre por hash | propuesta |
 
 ---
 
@@ -309,3 +311,25 @@ Para el lanzamiento: una landing y un sitio de documentación (guía de usuario,
 **Decisión: A** (24/09/2026). Con dos implementaciones (Rust y PHP), B multiplica el código que hay que mantener en sintonía. A da gratis la fusión campo a campo que ya pedía D13. Las reglas de negocio que cruzan entidades (por ejemplo, «solo se presta un ejemplar disponible») se comprueban sobre el estado resultante, en ambos lados.
 
 El formato concreto está en [architecture/operations.md](architecture/operations.md).
+
+## D26 · Búsqueda por ISBN: Open Library + Google Books con clave opcional — `propuesta`
+
+**Contexto (comprobado el 25/09/2026).**
+- **Google Books sin clave** devuelve 429 («cuota diaria agotada»): las peticiones anónimas comparten una cuota global y no son fiables.
+- **Open Library** funciona sin clave, pero su endpoint clásico `/api/books` ya no existe. Hay que usar `/isbn/{isbn}.json` (la edición) y `/authors/{id}.json` (el nombre de cada autor). Su cobertura de ediciones españolas es menor: por ejemplo, no tiene *El nombre del viento* de Plaza & Janés (9788401352188).
+
+**Propuesta.**
+- Se consultan **los dos proveedores a la vez** y se combinan campo a campo: primero Google Books (mejor en español), después Open Library. Portada: primero la grande de Open Library, que tiene más resolución que la miniatura de Google.
+- **Google Books admite una clave de API opcional** (gratuita en Google Cloud) que se configura en los ajustes de la app. Se guarda solo en este dispositivo (`local_state`): no se sincroniza, no se exporta y nunca entra en el repositorio (D03, D18). Sin clave, se intenta igualmente, y si hay 429 se avisa.
+- Cada proveedor que falle (red, cuota, formato) se informa como **aviso**, sin romper la búsqueda: si el otro responde, sus datos se usan igual.
+- Los datos encontrados **rellenan el formulario**; nunca se guardan sin que el usuario pulse «Guardar».
+- Se guardan los identificadores de cada fuente (`google_books_id`, `open_library_id`) para enlazar a sus fichas.
+- Los datos de prueba de Open Library son respuestas reales. Los de Google Books siguen el formato documentado, porque no hubo cuota para grabar uno real: **hay que verificarlos con una clave**.
+
+## D27 · Portadas: ficheros locales con nombre por hash — `propuesta`
+
+- La portada se descarga al guardar, se guarda en `<datos de la app>/covers/` con nombre `<sha256>.<ext>`, y la edición registra solo ese nombre (campo `cover`).
+- **Por qué el hash:** dos dispositivos que descargan la misma portada generan el mismo nombre, y al sincronizar (Fase 2) basta con pedir los ficheros que falten por nombre. Además, las operaciones no cargan con imágenes.
+- **Seguridad:** solo se descargan URL `https` de los servidores de portadas conocidos (Open Library y Google Books), de menos de 5 MB y con tipo de imagen. Así nadie puede usar la app para hacer peticiones a otros sitios, ni a la red local.
+- La interfaz muestra las portadas mediante el protocolo `asset` de Tauri, limitado a la carpeta `covers`.
+- Pendiente: subir una portada propia desde un fichero (con el diálogo de ficheros del hito 1.6).

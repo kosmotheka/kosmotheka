@@ -19,6 +19,12 @@ pub enum Error {
     CorruptState(&'static str),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Http(#[from] reqwest::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error("cover rejected: {0}")]
+    CoverRejected(&'static str),
     #[error("database lock poisoned by a panicked thread")]
     LockPoisoned,
 }

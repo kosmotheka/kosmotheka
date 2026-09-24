@@ -69,8 +69,13 @@ const EDITION_FIELDS: &[FieldSpec] = &[
     field("publisher", FieldType::Text, false),
     field("published_year", FieldType::Integer, false),
     field("language", FieldType::Text, false),
+    field("cover", FieldType::Text, false),
 ];
-const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[field("isbn13", FieldType::Text, false)];
+const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
+    field("isbn13", FieldType::Text, false),
+    field("google_books_id", FieldType::Text, false),
+    field("open_library_id", FieldType::Text, false),
+];
 const MEMBER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),

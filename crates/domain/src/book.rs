@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::isbn::{Isbn, IsbnError};
 
@@ -66,6 +67,13 @@ pub struct EditionInput {
     pub language: Option<String>,
     #[serde(default)]
     pub isbn: Option<String>,
+    /// Remote cover to download when saving; only known cover hosts are accepted.
+    #[serde(default)]
+    pub cover_url: Option<String>,
+    #[serde(default)]
+    pub google_books_id: Option<String>,
+    #[serde(default)]
+    pub open_library_id: Option<String>,
 }
 
 /// A copy as entered by the user, before validation. Used to add and to edit.
@@ -106,6 +114,9 @@ pub struct ValidEdition {
     pub published_year: Option<i32>,
     pub language: Option<String>,
     pub isbn: Option<Isbn>,
+    pub cover_url: Option<Url>,
+    pub google_books_id: Option<String>,
+    pub open_library_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -135,6 +146,8 @@ pub enum ErrorCode {
     IsbnChecksum,
     /// Another edition already has this ISBN.
     IsbnInUse,
+    /// Not an https URL on a known cover host.
+    InvalidCoverUrl,
 }
 
 impl From<IsbnError> for ErrorCode {
@@ -164,6 +177,26 @@ impl FieldError {
 }
 
 pub const MAX_YEAR: i32 = 2100;
+
+/// Covers are only downloaded from these hosts, so the app cannot be used to make
+/// requests to arbitrary servers (or to the local network).
+pub const COVER_HOSTS: &[&str] = &[
+    "covers.openlibrary.org",
+    "books.google.com",
+    "books.googleusercontent.com",
+];
+
+pub fn parse_cover_url(raw: &str) -> Option<Url> {
+    let url = Url::parse(raw).ok()?;
+    let trusted = url.scheme() == "https"
+        && url.username().is_empty()
+        && url.password().is_none()
+        && url.port().is_none()
+        && url
+            .host_str()
+            .is_some_and(|host| COVER_HOSTS.contains(&host));
+    trusted.then_some(url)
+}
 pub const MAX_QUANTITY: u32 = 999;
 
 impl EditionInput {
@@ -192,6 +225,17 @@ impl EditionInput {
             None => None,
         };
 
+        let cover_url = match clean(self.cover_url) {
+            Some(raw) => {
+                let url = parse_cover_url(&raw);
+                if url.is_none() {
+                    errors.push(FieldError::new("coverUrl", ErrorCode::InvalidCoverUrl));
+                }
+                url
+            }
+            None => None,
+        };
+
         match title {
             Some(title) if errors.is_empty() => Ok(ValidEdition {
                 title,
@@ -203,6 +247,9 @@ impl EditionInput {
                 published_year,
                 language: clean(self.language),
                 isbn,
+                cover_url,
+                google_books_id: clean(self.google_books_id),
+                open_library_id: clean(self.open_library_id),
             }),
             _ => Err(errors),
         }
@@ -383,6 +430,37 @@ mod tests {
         .unwrap();
         assert_eq!(book.edition.title, "Dune");
         assert_eq!(book.copy.quantity, 1);
+    }
+
+    #[test]
+    fn only_https_urls_on_cover_hosts_are_accepted() {
+        for good in [
+            "https://covers.openlibrary.org/b/id/15152634-L.jpg",
+            "https://books.google.com/books/content?id=x&printsec=frontcover&img=1&zoom=1",
+        ] {
+            assert!(parse_cover_url(good).is_some(), "{good}");
+        }
+        for bad in [
+            "http://covers.openlibrary.org/b/id/1-L.jpg",
+            "https://evil.example/cover.jpg",
+            "https://covers.openlibrary.org@evil.example/x.jpg",
+            "https://covers.openlibrary.org:8443/x.jpg",
+            "https://covers.openlibrary.org.evil.example/x.jpg",
+            "file:///etc/passwd",
+            "https://192.168.1.1/x.jpg",
+        ] {
+            assert!(parse_cover_url(bad).is_none(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn untrusted_cover_url_is_a_field_error() {
+        let mut book = minimal("T");
+        book.edition.cover_url = Some("https://evil.example/c.jpg".into());
+        assert_eq!(
+            book.validate().unwrap_err(),
+            vec![FieldError::new("coverUrl", ErrorCode::InvalidCoverUrl)]
+        );
     }
 
     #[test]

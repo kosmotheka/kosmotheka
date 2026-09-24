@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookPlus, CircleCheck } from "lucide-react";
+import { BookPlus, CircleCheck, Settings } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookTable } from "@/components/book-table";
+import { SettingsDialog } from "@/components/settings-dialog";
 import { BookDialog } from "@/components/book-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [openBookId, setOpenBookId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const reload = useCallback(() => {
     listBooks()
@@ -42,11 +44,11 @@ export default function App() {
   );
 
   const handleCreated = (result: CreatedBook, title: string) => {
-    setNotice(
-      t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", {
-        title,
-      }),
+    const message = t(
+      result.existingEdition ? "catalog.addedCopy" : "catalog.added",
+      { title },
     );
+    setNotice(result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message);
     reload();
   };
 
@@ -77,6 +79,15 @@ export default function App() {
               {language.toUpperCase()}
             </Button>
           ))}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("settings.title")}
+            title={t("settings.title")}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings />
+          </Button>
           <Button onClick={openDialog}>
             <BookPlus /> {t("catalog.add")}
           </Button>
@@ -119,6 +130,7 @@ export default function App() {
         knownOwners={knownOwners}
         onCreated={handleCreated}
       />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <BookDialog
         editionId={openBookId}
         knownOwners={knownOwners}

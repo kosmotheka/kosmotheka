@@ -42,6 +42,10 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 |---|---|
 | `book.add` | Alta de un libro nuevo: obra, autores, edición, detalles y ejemplar |
 | `copy.add` | Alta con un ISBN ya catalogado: solo el ejemplar (y el propietario, si es nuevo) |
+| `edition.edit` | Cambios en la ficha: solo los campos que cambian, más autores añadidos, movidos o quitados |
+| `copy.edit` | Cambios en un ejemplar: solo los campos que cambian |
+| `copy.remove` | Borrado de un ejemplar |
+| `book.remove` | Borrado de un libro: ejemplares, detalles, edición y, si no quedan más ediciones, la obra y sus autorías |
 
 ## Reloj lógico híbrido (HLC)
 

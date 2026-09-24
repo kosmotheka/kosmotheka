@@ -41,6 +41,8 @@ jobs:
         working-directory: app
       - run: npm run lint
         working-directory: app
+      - run: npm run check:spec
+        working-directory: app
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test

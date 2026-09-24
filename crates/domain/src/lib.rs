@@ -8,8 +8,8 @@ pub mod operation;
 pub mod schema;
 
 pub use book::{
-    CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook, ValidBook, ValidCopy,
-    ValidEdition,
+    COVER_HOSTS, CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook, ValidBook,
+    ValidCopy, ValidEdition, parse_cover_url,
 };
 pub use hlc::{Hlc, HlcClock};
 pub use isbn::{Isbn, IsbnError};

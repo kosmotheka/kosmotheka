@@ -6,10 +6,19 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.add",
       "changes": [
-        { "entity": "member", "id": "01997c7e-0000-7000-8000-000000000002", "action": "create", "fields": { "name": "Tersoal" } }
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
       ]
     },
-    "expect": { "result": "valid" }
+    "expect": {
+      "result": "valid"
+    }
   },
   {
     "name": "book added as work, edition, details and copy",
@@ -18,13 +27,50 @@
       "hlc": "0001727222222222-00000001-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "book.add",
       "changes": [
-        { "entity": "work", "id": "01997c7e-0000-7000-8000-000000000011", "action": "create", "fields": { "kind": "book", "title": "The Name of the Wind" } },
-        { "entity": "edition", "id": "01997c7e-0000-7000-8000-000000000012", "action": "create", "fields": { "work_id": "01997c7e-0000-7000-8000-000000000011", "title": "The Name of the Wind", "published_year": 2007, "subtitle": null } },
-        { "entity": "book_details", "id": "01997c7e-0000-7000-8000-000000000012", "action": "create", "fields": { "isbn13": "9780756404741" } },
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "create", "fields": { "edition_id": "01997c7e-0000-7000-8000-000000000012", "format": "hardcover", "quantity": 1, "acquired_on": "2026-09-24" } }
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000011",
+          "action": "create",
+          "fields": {
+            "kind": "book",
+            "title": "The Name of the Wind"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "title": "The Name of the Wind",
+            "published_year": 2007,
+            "subtitle": null
+          }
+        },
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "create",
+          "fields": {
+            "isbn13": "9780756404741"
+          }
+        },
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "create",
+          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-000000000012",
+            "format": "hardcover",
+            "quantity": 1,
+            "acquired_on": "2026-09-24"
+          }
+        }
       ]
     },
-    "expect": { "result": "valid" }
+    "expect": {
+      "result": "valid"
+    }
   },
   {
     "name": "update of an optional field to null",
@@ -33,10 +79,19 @@
       "hlc": "0001727222222222-00000002-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.move",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "update", "fields": { "location": null } }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "location": null
+          }
+        }
       ]
     },
-    "expect": { "result": "valid" }
+    "expect": {
+      "result": "valid"
+    }
   },
   {
     "name": "delete without fields",
@@ -45,10 +100,46 @@
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.remove",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "delete" }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "delete"
+        }
       ]
     },
-    "expect": { "result": "valid" }
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "edition cover and external ids",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000040",
+      "hlc": "0001727222222222-00000004-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "cover": "3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea.jpg"
+          }
+        },
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "google_books_id": "wBqhPgAACAAJ",
+            "open_library_id": "OL7353617M"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
   },
   {
     "name": "operation id is not a UUID",
@@ -57,10 +148,20 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.add",
       "changes": [
-        { "entity": "member", "id": "01997c7e-0000-7000-8000-000000000002", "action": "create", "fields": { "name": "Tersoal" } }
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "invalid_id" }
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_id"
+    }
   },
   {
     "name": "intent is not dot-separated lowercase words",
@@ -69,10 +170,20 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "AddMember",
       "changes": [
-        { "entity": "member", "id": "01997c7e-0000-7000-8000-000000000002", "action": "create", "fields": { "name": "Tersoal" } }
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "invalid_intent" }
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
   },
   {
     "name": "operation without changes",
@@ -82,7 +193,10 @@
       "intent": "member.add",
       "changes": []
     },
-    "expect": { "result": "invalid", "code": "no_changes" }
+    "expect": {
+      "result": "invalid",
+      "code": "no_changes"
+    }
   },
   {
     "name": "change id is not a UUID",
@@ -91,10 +205,21 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.add",
       "changes": [
-        { "entity": "member", "id": "tersoal", "action": "create", "fields": { "name": "Tersoal" } }
+        {
+          "entity": "member",
+          "id": "tersoal",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "invalid_id", "change": 0 }
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_id",
+      "change": 0
+    }
   },
   {
     "name": "field the entity does not have",
@@ -103,10 +228,23 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.add",
       "changes": [
-        { "entity": "member", "id": "01997c7e-0000-7000-8000-000000000002", "action": "create", "fields": { "name": "Tersoal", "colour": "blue" } }
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal",
+            "colour": "blue"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "unknown_field", "change": 0, "field": "colour" }
+    "expect": {
+      "result": "invalid",
+      "code": "unknown_field",
+      "change": 0,
+      "field": "colour"
+    }
   },
   {
     "name": "create without a required field",
@@ -115,10 +253,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "book.add",
       "changes": [
-        { "entity": "work", "id": "01997c7e-0000-7000-8000-000000000011", "action": "create", "fields": { "kind": "book" } }
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000011",
+          "action": "create",
+          "fields": {
+            "kind": "book"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "missing_field", "change": 0, "field": "title" }
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "title"
+    }
   },
   {
     "name": "required field set to null",
@@ -127,10 +277,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.rename",
       "changes": [
-        { "entity": "member", "id": "01997c7e-0000-7000-8000-000000000002", "action": "update", "fields": { "name": null } }
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "update",
+          "fields": {
+            "name": null
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "null_required", "change": 0, "field": "name" }
+    "expect": {
+      "result": "invalid",
+      "code": "null_required",
+      "change": 0,
+      "field": "name"
+    }
   },
   {
     "name": "integer field given as text",
@@ -139,10 +301,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "edition.edit",
       "changes": [
-        { "entity": "edition", "id": "01997c7e-0000-7000-8000-000000000012", "action": "update", "fields": { "published_year": "2007" } }
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "published_year": "2007"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "wrong_type", "change": 0, "field": "published_year" }
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "published_year"
+    }
   },
   {
     "name": "date that does not exist",
@@ -151,10 +325,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.edit",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "update", "fields": { "acquired_on": "2026-02-30" } }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "acquired_on": "2026-02-30"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "wrong_type", "change": 0, "field": "acquired_on" }
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "acquired_on"
+    }
   },
   {
     "name": "value outside the allowed list",
@@ -163,10 +349,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.edit",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "update", "fields": { "format": "scroll" } }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "format": "scroll"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "wrong_type", "change": 0, "field": "format" }
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "format"
+    }
   },
   {
     "name": "reference that is not a UUID",
@@ -175,10 +373,22 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.give",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "update", "fields": { "owner_id": "Tersoal" } }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "owner_id": "Tersoal"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "wrong_type", "change": 0, "field": "owner_id" }
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "owner_id"
+    }
   },
   {
     "name": "update without fields",
@@ -187,10 +397,18 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.edit",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "update" }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update"
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "empty_update", "change": 0 }
+    "expect": {
+      "result": "invalid",
+      "code": "empty_update",
+      "change": 0
+    }
   },
   {
     "name": "delete carrying fields",
@@ -199,10 +417,21 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "copy.remove",
       "changes": [
-        { "entity": "copy", "id": "01997c7e-0000-7000-8000-000000000013", "action": "delete", "fields": { "location": null } }
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "delete",
+          "fields": {
+            "location": null
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "fields_on_delete", "change": 0 }
+    "expect": {
+      "result": "invalid",
+      "code": "fields_on_delete",
+      "change": 0
+    }
   },
   {
     "name": "error in a later change reports its index",
@@ -211,10 +440,30 @@
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "book.add",
       "changes": [
-        { "entity": "work", "id": "01997c7e-0000-7000-8000-000000000011", "action": "create", "fields": { "kind": "book", "title": "Title" } },
-        { "entity": "edition", "id": "01997c7e-0000-7000-8000-000000000012", "action": "create", "fields": { "title": "Title" } }
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000011",
+          "action": "create",
+          "fields": {
+            "kind": "book",
+            "title": "Title"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "create",
+          "fields": {
+            "title": "Title"
+          }
+        }
       ]
     },
-    "expect": { "result": "invalid", "code": "missing_field", "change": 1, "field": "work_id" }
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 1,
+      "field": "work_id"
+    }
   }
 ]

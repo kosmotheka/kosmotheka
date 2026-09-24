@@ -20,7 +20,8 @@
       "formats": "Formatos",
       "owners": "Propietarios",
       "copies": "Ejemplares"
-    }
+    },
+    "coverFailed": "No se pudo descargar la portada."
   },
   "formats": {
     "hardcover": "Tapa dura",
@@ -68,7 +69,8 @@
     "isbn_character": "Un ISBN solo puede tener dígitos (y una X final).",
     "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
     "internal": "Algo ha fallado: {{message}}",
-    "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN."
+    "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN.",
+    "invalid_cover_url": "Esta dirección de portada no está permitida."
   },
   "history": {
     "title": "Historial",
@@ -95,7 +97,8 @@
     "deleteConfirm": {
       "title": "¿Borrar «{{title}}»?",
       "body": "Se quitarán del catálogo la edición y todos sus ejemplares. Los autores y propietarios se conservan."
-    }
+    },
+    "cover": "Portada"
   },
   "copies": {
     "empty": "Sin ejemplares: esta edición está en el catálogo, pero nadie la tiene.",
@@ -110,5 +113,25 @@
       "title": "¿Borrar este ejemplar?",
       "body": "La edición seguirá en el catálogo."
     }
+  },
+  "lookup": {
+    "placeholder": "Escribe o escanea y pulsa Intro",
+    "search": "Buscar",
+    "found": "Encontrado en {{sources}}. Revisa los datos antes de guardar.",
+    "notFound": "No está en los catálogos online. Puedes rellenarlo a mano.",
+    "alreadyInCatalog": "Esta edición ya está en el catálogo: al guardar se añadirá otro ejemplar.",
+    "googleQuota": "Google Books ha rechazado la consulta (cuota agotada). Pon tu propia clave gratuita en Ajustes para mejores resultados.",
+    "unreachable": "No se pudo consultar {{source}}.",
+    "failed": "La búsqueda ha fallado. Revisa la conexión.",
+    "sources": {
+      "google_books": "Google Books",
+      "open_library": "Open Library"
+    }
+  },
+  "settings": {
+    "title": "Ajustes",
+    "description": "Se guardan solo en este dispositivo: no se sincronizan ni se exportan.",
+    "googleBooksKey": "Clave de API de Google Books (opcional)",
+    "googleBooksHelp": "Sin clave, Google Books rechaza a menudo las consultas. Crea una gratis en Google Cloud Console (APIs y servicios → Credenciales) con la API de Books activada."
   }
 }

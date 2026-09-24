@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import {
   type CopyForm,
@@ -15,6 +16,7 @@ import {
   useCommandErrors,
 } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
+import { Cover } from "@/components/cover";
 import { HistoryList } from "@/components/history-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ import {
   addCopy,
   deleteBook,
   deleteCopy,
+  externalLinks,
   getBook,
   updateCopy,
   updateEdition,
@@ -139,6 +142,7 @@ function EditionSection({ book, onSaved }: { book: BookDetail; onSaved: () => vo
   const { t } = useTranslation();
   const [form, setForm] = useState<EditionForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false);
   const errors = useCommandErrors();
 
   const save = async (event: FormEvent) => {
@@ -147,7 +151,8 @@ function EditionSection({ book, onSaved }: { book: BookDetail; onSaved: () => vo
     setSaving(true);
     errors.clear();
     try {
-      await updateEdition(book.editionId, toEditionInput(form));
+      const result = await updateEdition(book.editionId, toEditionInput(form));
+      setCoverFailed(result.coverFailed);
       setForm(null);
       onSaved();
     } catch (e) {
@@ -160,7 +165,12 @@ function EditionSection({ book, onSaved }: { book: BookDetail; onSaved: () => vo
   if (form) {
     return (
       <form onSubmit={save} noValidate className="space-y-4">
-        <EditionFields value={form} onChange={setForm} errorFor={errors.errorFor} />
+        <EditionFields
+          value={form}
+          onChange={setForm}
+          errorFor={errors.errorFor}
+          currentEditionId={book.editionId}
+        />
         {errors.message && (
           <p className="text-sm text-destructive">
             {t("errors.internal", { message: errors.message })}
@@ -192,19 +202,40 @@ function EditionSection({ book, onSaved }: { book: BookDetail; onSaved: () => vo
     [t("form.fields.language"), book.language],
     [t("form.fields.isbn"), book.isbn13],
   ];
+  const links: [string, string][] = [];
+  if (book.googleBooksId) {
+    links.push([t("lookup.sources.google_books"), externalLinks.googleBooks(book.googleBooksId)]);
+  }
+  if (book.openLibraryId) {
+    links.push([t("lookup.sources.open_library"), externalLinks.openLibrary(book.openLibraryId)]);
+  }
+
   return (
     <div className="space-y-4">
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-        {rows.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd>{value ?? "—"}</dd>
-          </div>
+      <div className="flex gap-6">
+        <Cover file={book.cover} alt={book.title} className="h-40 w-28" />
+        <dl className="grid flex-1 grid-cols-[auto_1fr] content-start gap-x-6 gap-y-2 text-sm">
+          {rows.map(([label, value]) => (
+            <div key={label} className="contents">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd>{value ?? "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      {coverFailed && (
+        <p className="text-sm text-muted-foreground">{t("catalog.coverFailed")}</p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => setForm(editionFormFrom(book))}>
+          <Pencil /> {t("book.edit")}
+        </Button>
+        {links.map(([label, url]) => (
+          <Button key={url} variant="ghost" onClick={() => void openUrl(url)}>
+            <ExternalLink /> {label}
+          </Button>
         ))}
-      </dl>
-      <Button variant="outline" onClick={() => setForm(editionFormFrom(book))}>
-        <Pencil /> {t("book.edit")}
-      </Button>
+      </div>
     </div>
   );
 }

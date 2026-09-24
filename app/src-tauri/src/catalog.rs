@@ -32,6 +32,8 @@ pub struct BookSummary {
     pub publisher: Option<String>,
     pub published_year: Option<i32>,
     pub isbn13: Option<String>,
+    /// File name inside the covers directory.
+    pub cover: Option<String>,
     pub copy_count: i64,
     pub formats: Vec<Format>,
     pub owners: Vec<String>,
@@ -49,6 +51,9 @@ pub struct BookDetail {
     pub published_year: Option<i32>,
     pub language: Option<String>,
     pub isbn13: Option<String>,
+    pub cover: Option<String>,
+    pub google_books_id: Option<String>,
+    pub open_library_id: Option<String>,
     pub copies: Vec<CopyDetail>,
 }
 
@@ -72,7 +77,12 @@ pub struct HistoryEntry {
     pub timestamp: u64,
 }
 
-pub fn create_book(conn: &mut Connection, book: &ValidBook) -> Result<CreatedBook> {
+/// `cover` is the file name of an already stored cover, if any.
+pub fn create_book(
+    conn: &mut Connection,
+    book: &ValidBook,
+    cover: Option<&str>,
+) -> Result<CreatedBook> {
     let tx = conn.transaction()?;
     let mut plan = Plan::new(&tx);
 
@@ -83,7 +93,7 @@ pub fn create_book(conn: &mut Connection, book: &ValidBook) -> Result<CreatedBoo
     let existing_edition = existing_edition_id.is_some();
     let edition_id = match existing_edition_id {
         Some(id) => id,
-        None => plan.add_edition(&book.edition)?,
+        None => plan.add_edition(&book.edition, cover)?,
     };
     plan.add_copy(&edition_id, &book.copy)?;
 
@@ -104,6 +114,7 @@ pub fn update_edition(
     conn: &mut Connection,
     edition_id: &str,
     edition: &ValidEdition,
+    new_cover: Option<&str>,
 ) -> Result<()> {
     let tx = conn.transaction()?;
     let work_id: String = tx
@@ -136,10 +147,14 @@ pub fn update_edition(
             "language": edition.language,
         }),
     )?;
+    // Without a new cover the current one stays; clearing covers is not supported yet.
+    if let Some(cover) = new_cover {
+        plan.update_if_changed(Entity::Edition, edition_id, json!({ "cover": cover }))?;
+    }
     plan.update_if_changed(
         Entity::BookDetails,
         edition_id,
-        json!({ "isbn13": edition.isbn.as_ref().map(|isbn| isbn.as_str()) }),
+        book_details_fields(edition),
     )?;
 
     // A work with a single edition takes its title from it.
@@ -266,7 +281,7 @@ impl<'a> Plan<'a> {
         Ok(())
     }
 
-    fn add_edition(&mut self, edition: &ValidEdition) -> Result<String> {
+    fn add_edition(&mut self, edition: &ValidEdition, cover: Option<&str>) -> Result<String> {
         let work_id = new_id();
         self.changes.push(Change::create(
             Entity::Work,
@@ -286,12 +301,13 @@ impl<'a> Plan<'a> {
                 "publisher": edition.publisher,
                 "published_year": edition.published_year,
                 "language": edition.language,
+                "cover": cover,
             }),
         ));
         self.changes.push(Change::create(
             Entity::BookDetails,
             &edition_id,
-            json!({ "isbn13": edition.isbn.as_ref().map(|isbn| isbn.as_str()) }),
+            book_details_fields(edition),
         ));
         Ok(edition_id)
     }
@@ -445,8 +461,16 @@ fn to_json(value: ValueRef<'_>) -> Value {
     }
 }
 
-fn edition_with_isbn(tx: &Transaction<'_>, isbn13: &str) -> Result<Option<String>> {
-    Ok(tx
+fn book_details_fields(edition: &ValidEdition) -> Value {
+    json!({
+        "isbn13": edition.isbn.as_ref().map(|isbn| isbn.as_str()),
+        "google_books_id": edition.google_books_id,
+        "open_library_id": edition.open_library_id,
+    })
+}
+
+pub fn edition_with_isbn(conn: &Connection, isbn13: &str) -> Result<Option<String>> {
+    Ok(conn
         .query_row(
             "SELECT edition_id FROM book_details WHERE isbn13 = ?1",
             [isbn13],
@@ -493,7 +517,7 @@ fn ids(conn: &Connection, sql: &str, param: &str) -> Result<Vec<String>> {
 
 pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
     let mut statement = conn.prepare(
-        "SELECT e.id, e.title, e.subtitle, e.publisher, e.published_year, bd.isbn13,
+        "SELECT e.id, e.title, e.subtitle, e.publisher, e.published_year, bd.isbn13, e.cover,
             (SELECT group_concat(p.name, char(31) ORDER BY wc.position)
                FROM work_contributors wc JOIN people p ON p.id = wc.person_id
               WHERE wc.work_id = e.work_id AND wc.role = 'author'),
@@ -515,13 +539,14 @@ pub fn list_books(conn: &Connection) -> Result<Vec<BookSummary>> {
             publisher: row.get(3)?,
             published_year: row.get(4)?,
             isbn13: row.get(5)?,
-            authors: split_list(row.get(6)?),
-            copy_count: row.get(7)?,
-            formats: split_list(row.get(8)?)
+            cover: row.get(6)?,
+            authors: split_list(row.get(7)?),
+            copy_count: row.get(8)?,
+            formats: split_list(row.get(9)?)
                 .iter()
                 .filter_map(|format| format.parse().ok())
                 .collect(),
-            owners: split_list(row.get(9)?),
+            owners: split_list(row.get(10)?),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -531,7 +556,7 @@ pub fn get_book(conn: &Connection, edition_id: &str) -> Result<BookDetail> {
     let mut book = conn
         .query_row(
             "SELECT e.id, e.work_id, e.title, e.subtitle, e.publisher, e.published_year, e.language,
-                    bd.isbn13,
+                    bd.isbn13, e.cover, bd.google_books_id, bd.open_library_id,
                     (SELECT group_concat(p.name, char(31) ORDER BY wc.position)
                        FROM work_contributors wc JOIN people p ON p.id = wc.person_id
                       WHERE wc.work_id = e.work_id AND wc.role = 'author')
@@ -548,7 +573,10 @@ pub fn get_book(conn: &Connection, edition_id: &str) -> Result<BookDetail> {
                     published_year: row.get(5)?,
                     language: row.get(6)?,
                     isbn13: row.get(7)?,
-                    authors: split_list(row.get(8)?),
+                    cover: row.get(8)?,
+                    google_books_id: row.get(9)?,
+                    open_library_id: row.get(10)?,
+                    authors: split_list(row.get(11)?),
                     copies: Vec::new(),
                 })
             },
@@ -676,7 +704,7 @@ mod tests {
             Format::Hardcover,
         );
 
-        let created = create_book(&mut conn, &book).unwrap();
+        let created = create_book(&mut conn, &book, None).unwrap();
         let books = list_books(&conn).unwrap();
 
         assert!(!created.existing_edition);
@@ -694,12 +722,14 @@ mod tests {
         create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
 
         let second = create_book(
             &mut conn,
             &new_book("A", Some("0-306-40615-2"), "tersoal", Format::Ebook),
+            None,
         )
         .unwrap();
         let books = list_books(&conn).unwrap();
@@ -720,11 +750,13 @@ mod tests {
         create_book(
             &mut conn,
             &new_book("B", None, "Tersoal", Format::Paperback),
+            None,
         )
         .unwrap();
         create_book(
             &mut conn,
             &new_book("B", None, "Tersoal", Format::Paperback),
+            None,
         )
         .unwrap();
 
@@ -737,16 +769,19 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Ebook),
+            None,
         )
         .unwrap();
         create_book(
             &mut conn,
             &new_book("Other", None, "Tersoal", Format::Ebook),
+            None,
         )
         .unwrap();
 
@@ -763,6 +798,7 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         add_copy(&mut conn, &created.edition_id, &copy("Ana", Format::Ebook)).unwrap();
@@ -782,12 +818,13 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", None, "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         let mut edited = edition("A", None, &["Patrick Rothfuss"]);
         edited.published_year = Some(2011);
 
-        update_edition(&mut conn, &created.edition_id, &edited).unwrap();
+        update_edition(&mut conn, &created.edition_id, &edited, None).unwrap();
 
         let changes = last_changes(&conn);
         assert_eq!(changes.len(), 1);
@@ -808,6 +845,7 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", None, "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
 
@@ -815,6 +853,7 @@ mod tests {
             &mut conn,
             &created.edition_id,
             &edition("A", None, &["Patrick Rothfuss"]),
+            None,
         )
         .unwrap();
 
@@ -827,6 +866,7 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("Old", None, "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
 
@@ -834,6 +874,7 @@ mod tests {
             &mut conn,
             &created.edition_id,
             &edition("New", None, &["Patrick Rothfuss"]),
+            None,
         )
         .unwrap();
 
@@ -848,12 +889,13 @@ mod tests {
         let mut conn = db::open_in_memory().unwrap();
         let mut book = new_book("A", None, "Tersoal", Format::Hardcover);
         book.edition.authors = vec!["Ana".into(), "Bea".into(), "Carla".into()];
-        let created = create_book(&mut conn, &book).unwrap();
+        let created = create_book(&mut conn, &book, None).unwrap();
 
         update_edition(
             &mut conn,
             &created.edition_id,
             &edition("A", None, &["Carla", "Ana", "Dora"]),
+            None,
         )
         .unwrap();
 
@@ -873,11 +915,13 @@ mod tests {
         create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         let second = create_book(
             &mut conn,
             &new_book("B", None, "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
 
@@ -885,6 +929,7 @@ mod tests {
             &mut conn,
             &second.edition_id,
             &edition("B", Some("9780306406157"), &[]),
+            None,
         )
         .unwrap_err();
 
@@ -899,6 +944,7 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", None, "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         let copy_id = get_book(&conn, &created.edition_id).unwrap().copies[0]
@@ -929,6 +975,7 @@ mod tests {
         let created = create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
         add_copy(&mut conn, &created.edition_id, &copy("Ana", Format::Ebook)).unwrap();
@@ -954,6 +1001,7 @@ mod tests {
         create_book(
             &mut conn,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
         )
         .unwrap();
     }

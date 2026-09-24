@@ -122,7 +122,8 @@ fn to_sql(value: &Value) -> SqlValue {
     }
 }
 
-fn read_state(conn: &Connection, key: &str) -> Result<Option<String>> {
+/// Per-device values (never synced or exported).
+pub fn read_state(conn: &Connection, key: &str) -> Result<Option<String>> {
     Ok(conn
         .query_row(
             "SELECT value FROM local_state WHERE key = ?1",
@@ -130,6 +131,17 @@ fn read_state(conn: &Connection, key: &str) -> Result<Option<String>> {
             |row| row.get(0),
         )
         .optional()?)
+}
+
+pub fn write_state(conn: &Connection, key: &str, value: Option<&str>) -> Result<()> {
+    match value {
+        Some(value) => conn.execute(
+            "INSERT OR REPLACE INTO local_state (key, value) VALUES (?1, ?2)",
+            params![key, value],
+        )?,
+        None => conn.execute("DELETE FROM local_state WHERE key = ?1", [key])?,
+    };
+    Ok(())
 }
 
 fn now_millis() -> u64 {

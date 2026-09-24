@@ -113,7 +113,12 @@
                   "subtitle": { "$ref": "#/$defs/text" },
                   "publisher": { "$ref": "#/$defs/text" },
                   "published_year": { "$ref": "#/$defs/integer" },
-                  "language": { "$ref": "#/$defs/text" }
+                  "language": { "$ref": "#/$defs/text" },
+                  "cover": {
+                    "description": "File name of the cover image: sha256 of its bytes plus extension.",
+                    "type": ["string", "null"],
+                    "pattern": "^[0-9a-f]{64}\\.(jpg|png|webp|gif)$"
+                  }
                 }
               }
             }
@@ -125,7 +130,11 @@
             "properties": {
               "fields": {
                 "additionalProperties": false,
-                "properties": { "isbn13": { "$ref": "#/$defs/text" } }
+                "properties": {
+                  "isbn13": { "$ref": "#/$defs/text" },
+                  "google_books_id": { "$ref": "#/$defs/text" },
+                  "open_library_id": { "$ref": "#/$defs/text" }
+                }
               }
             }
           }

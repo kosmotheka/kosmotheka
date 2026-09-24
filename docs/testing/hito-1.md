@@ -36,3 +36,21 @@
 - [ ] **Borrar un ejemplar.** Papelera → aparece una confirmación → Borrar. *Esperado:* desaparece; si era el último, se ve «Sin ejemplares…» y el libro sigue en la tabla con 0 ejemplares.
 - [ ] **Borrar un libro.** Pestaña «Ficha» → «Borrar libro» → confirmación → Borrar. *Esperado:* la ficha se cierra y el libro desaparece de la tabla. Si vuelves a darlo de alta con el mismo ISBN, se crea como nuevo.
 - [ ] **Cancelar un borrado.** En cualquiera de las dos confirmaciones, «Cancelar» no borra nada.
+
+## 1.3 · Búsqueda por ISBN, portadas y enlaces
+
+> Necesita conexión a internet. Google Books sin clave suele dar «cuota agotada»: lo normal es que los datos vengan de Open Library.
+> ISBN útiles: `9780140328721` (*Fantastic Mr. Fox*, está en Open Library con portada) y `9788401352188` (*El nombre del viento*, no está en Open Library).
+
+- [ ] **Buscar con el botón.** «Añadir libro» → el cursor empieza en el ISBN → escribe `9780140328721` → «Buscar». *Esperado:* spinner; después se rellenan título, autor (Roald Dahl), editorial (Puffin), año (1988) e idioma (`en`), aparece la portada a la izquierda del título y el mensaje «Encontrado en Open Library…». También aparece el aviso de cuota de Google.
+- [ ] **Buscar con Intro.** Borra el formulario, escribe el ISBN y pulsa Intro. *Esperado:* busca, no guarda.
+- [ ] **Guardar con portada.** Tras la búsqueda, pon un propietario → Guardar. *Esperado:* en la tabla sale la miniatura de la portada; en la ficha, la portada grande.
+- [ ] **Enlaces.** En la ficha de ese libro, el botón «Open Library» abre su página en el navegador.
+- [ ] **No encontrado.** Busca `9788401352188`. *Esperado:* «No está en los catálogos online…»; el formulario no se borra.
+- [ ] **Ya en el catálogo.** Busca un ISBN que ya tengas. *Esperado:* aviso en naranja de que la edición ya está y de que se añadirá otro ejemplar.
+- [ ] **ISBN inválido.** Busca `12345`. *Esperado:* «Un ISBN tiene 10 o 13 dígitos».
+- [ ] **Sin conexión.** Desconecta la red y busca. *Esperado:* avisos de que no se pudo consultar cada servicio; nada se rompe y puedes rellenar a mano.
+- [ ] **Buscar al editar.** En la ficha de un libro sin portada → «Editar» → pon su ISBN → Buscar → Guardar. *Esperado:* rellena los datos, guarda y aparece la portada. No sale el aviso de «ya en el catálogo» para el propio libro.
+- [ ] **Ajustes.** Botón del engranaje → escribe una clave de Google Books → Guardar → vuelve a abrir Ajustes. *Esperado:* la clave sigue ahí (oculta). Con una clave válida, las búsquedas dejan de mostrar el aviso de cuota y el mensaje dice «Encontrado en Google Books, Open Library».
+- [ ] **Verificar Google Books con clave real.** Con clave, busca `9788401352188` y comprueba que llegan título, autor y portada. *(Valida que la lectura de respuestas de Google, hecha sin una respuesta real, es correcta.)*
+

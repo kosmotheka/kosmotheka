@@ -54,6 +54,8 @@ Planned: `server/` (Symfony).
 - Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
+- Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
+- Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`.
 - **No user-facing string is hard-coded**: use i18n keys and add both `en` and `es` translations.
 - **Never commit secrets** (API keys, passwords, tokens). The repository will become public, so its history must be clean.
 
@@ -89,5 +91,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | Debug APK | `cd app && npm run tauri android build -- --debug --apk --target aarch64` |
 | Rust format / lint / test | `cargo fmt --all` · `cargo clippy --all-targets -- -D warnings` · `cargo test` |
 | UI build / typecheck / lint | `cd app && npm run build` · `npm run typecheck` · `npm run lint` |
+| Spec schema vs conformance cases | `cd app && npm run check:spec` |
+| Live tests against real services (network, not in CI) | `cargo test -p library-app -- --ignored live_` |
 
 `app/dist` must exist before `cargo clippy` or `cargo test`, because Tauri embeds the built UI at compile time. Run `npm run build` first.

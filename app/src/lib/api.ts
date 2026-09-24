@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
 
@@ -20,6 +20,10 @@ export interface EditionInput {
   publishedYear: number | null;
   language: string | null;
   isbn: string | null;
+  /** Remote cover to download on save (must be on a known cover host). */
+  coverUrl: string | null;
+  googleBooksId: string | null;
+  openLibraryId: string | null;
 }
 
 export interface CopyInput {
@@ -37,6 +41,8 @@ export interface NewBook extends EditionInput {
 export interface CreatedBook {
   editionId: string;
   existingEdition: boolean;
+  /** Saved, but the cover could not be downloaded. */
+  coverFailed: boolean;
 }
 
 export interface BookSummary {
@@ -47,6 +53,7 @@ export interface BookSummary {
   publisher: string | null;
   publishedYear: number | null;
   isbn13: string | null;
+  cover: string | null;
   copyCount: number;
   formats: Format[];
   owners: string[];
@@ -59,7 +66,8 @@ export type FieldErrorCode =
   | "isbn_length"
   | "isbn_character"
   | "isbn_checksum"
-  | "isbn_in_use";
+  | "isbn_in_use"
+  | "invalid_cover_url";
 
 export interface FieldError {
   field: string;
@@ -112,6 +120,9 @@ export interface BookDetail {
   publishedYear: number | null;
   language: string | null;
   isbn13: string | null;
+  cover: string | null;
+  googleBooksId: string | null;
+  openLibraryId: string | null;
   copies: CopyDetail[];
 }
 
@@ -122,7 +133,7 @@ export function getBook(editionId: string): Promise<BookDetail> {
 export function updateEdition(
   editionId: string,
   edition: EditionInput,
-): Promise<void> {
+): Promise<{ coverFailed: boolean }> {
   return invoke("update_edition", { editionId, edition });
 }
 
@@ -141,3 +152,53 @@ export function updateCopy(copyId: string, copy: CopyInput): Promise<void> {
 export function deleteCopy(copyId: string): Promise<void> {
   return invoke("delete_copy", { copyId });
 }
+
+export type Source = "google_books" | "open_library";
+
+export interface LookupResult {
+  isbn13: string;
+  found: boolean;
+  title: string | null;
+  subtitle: string | null;
+  authors: string[];
+  publisher: string | null;
+  publishedYear: number | null;
+  language: string | null;
+  coverUrl: string | null;
+  googleBooksId: string | null;
+  openLibraryId: string | null;
+  sources: Source[];
+  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+  existingEditionId: string | null;
+}
+
+export function lookupIsbn(isbn: string): Promise<LookupResult> {
+  return invoke<LookupResult>("lookup_isbn", { isbn });
+}
+
+export interface Settings {
+  googleBooksApiKey: string | null;
+}
+
+export function getSettings(): Promise<Settings> {
+  return invoke<Settings>("get_settings");
+}
+
+export function saveSettings(settings: Settings): Promise<void> {
+  return invoke("save_settings", { settings });
+}
+
+let coversDir: Promise<string> | null = null;
+
+/** URL the webview can load for a stored cover file. */
+export async function coverSrc(file: string): Promise<string> {
+  coversDir ??= invoke<string>("covers_dir");
+  return convertFileSrc(`${await coversDir}/${file}`);
+}
+
+export const externalLinks = {
+  googleBooks: (id: string) =>
+    `https://books.google.com/books?id=${encodeURIComponent(id)}`,
+  openLibrary: (id: string) =>
+    `https://openlibrary.org/books/${encodeURIComponent(id)}`,
+};

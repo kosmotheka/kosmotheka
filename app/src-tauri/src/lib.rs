@@ -1,12 +1,17 @@
 mod catalog;
 mod commands;
+mod covers;
 mod db;
 mod error;
+mod metadata;
 mod ops;
+mod settings;
 
 use tauri::Manager;
 
+use crate::covers::Covers;
 use crate::db::Database;
+use crate::metadata::Lookup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,6 +21,8 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             app.manage(Database::open(data_dir.join("library.sqlite3"))?);
+            app.manage(Covers::new(data_dir.join("covers"))?);
+            app.manage(Lookup::new()?);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -27,7 +34,11 @@ pub fn run() {
             commands::add_copy,
             commands::update_copy,
             commands::delete_copy,
-            commands::book_history
+            commands::book_history,
+            commands::lookup_isbn,
+            commands::get_settings,
+            commands::save_settings,
+            commands::covers_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,28 @@
+// Checks that spec/operation.schema.json agrees with the conformance cases.
+// Rules a JSON Schema cannot express are skipped (see spec/README.md).
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
+
+const spec = fileURLToPath(new URL("../../spec/", import.meta.url));
+const schema = JSON.parse(readFileSync(`${spec}operation.schema.json`, "utf8"));
+const cases = JSON.parse(
+  readFileSync(`${spec}conformance/operation-validation.json`, "utf8"),
+);
+const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+
+const beyondSchema = (expect, name) =>
+  ["missing_field", "null_required"].includes(expect.code) ||
+  (expect.code === "wrong_type" && name.includes("date"));
+
+let mismatches = 0;
+for (const { name, operation, expect } of cases) {
+  const valid = validate(operation);
+  const expectValid = expect.result === "valid";
+  if (valid !== expectValid && (expectValid || !beyondSchema(expect, name))) {
+    mismatches++;
+    console.error(`MISMATCH: ${name}`, validate.errors?.[0] ?? "");
+  }
+}
+if (mismatches > 0) process.exit(1);
+console.log(`spec schema agrees with ${cases.length} conformance cases`);

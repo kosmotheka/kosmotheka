@@ -20,7 +20,8 @@
       "formats": "Formats",
       "owners": "Owners",
       "copies": "Copies"
-    }
+    },
+    "coverFailed": "The cover could not be downloaded."
   },
   "formats": {
     "hardcover": "Hardcover",
@@ -68,7 +69,8 @@
     "isbn_character": "An ISBN may only contain digits (and a final X).",
     "isbn_checksum": "This ISBN is not valid: check for a typo.",
     "internal": "Something went wrong: {{message}}",
-    "isbn_in_use": "Another book in the catalog already has this ISBN."
+    "isbn_in_use": "Another book in the catalog already has this ISBN.",
+    "invalid_cover_url": "This cover address is not allowed."
   },
   "history": {
     "title": "History",
@@ -95,7 +97,8 @@
     "deleteConfirm": {
       "title": "Delete “{{title}}”?",
       "body": "The edition and all its copies will be removed from the catalog. Authors and owners stay."
-    }
+    },
+    "cover": "Cover"
   },
   "copies": {
     "empty": "No copies: this edition is in the catalog but nobody owns it.",
@@ -110,5 +113,25 @@
       "title": "Delete this copy?",
       "body": "The edition stays in the catalog."
     }
+  },
+  "lookup": {
+    "placeholder": "Type or scan and press Enter",
+    "search": "Search",
+    "found": "Found in {{sources}}. Check the data before saving.",
+    "notFound": "Not found in the online catalogues. You can fill it in by hand.",
+    "alreadyInCatalog": "This edition is already in the catalog: saving will add another copy.",
+    "googleQuota": "Google Books refused the request (quota exhausted). Add your own free API key in Settings for better results.",
+    "unreachable": "Could not reach {{source}}.",
+    "failed": "The search failed. Check your connection.",
+    "sources": {
+      "google_books": "Google Books",
+      "open_library": "Open Library"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Stored only on this device: never synced or exported.",
+    "googleBooksKey": "Google Books API key (optional)",
+    "googleBooksHelp": "Without a key, Google Books often refuses requests. Create a free key in Google Cloud Console (APIs & Services → Credentials) with the Books API enabled."
   }
 }

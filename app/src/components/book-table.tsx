@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { Cover } from "@/components/cover";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -24,6 +25,9 @@ export function BookTable({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-12">
+            <span className="sr-only">{t("book.cover")}</span>
+          </TableHead>
           <TableHead>{t("catalog.columns.title")}</TableHead>
           <TableHead>{t("catalog.columns.authors")}</TableHead>
           <TableHead className="hidden md:table-cell">
@@ -45,6 +49,9 @@ export function BookTable({
             className="cursor-pointer"
             onClick={() => onOpen(book)}
           >
+            <TableCell>
+              <Cover file={book.cover} alt="" className="h-12 w-8" />
+            </TableCell>
             <TableCell className="whitespace-normal">
               <button
                 type="button"

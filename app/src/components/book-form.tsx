@@ -1,7 +1,8 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, X } from "lucide-react";
+import { Loader2, Plus, Search, X } from "lucide-react";
 
+import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +20,10 @@ import {
   type EditionInput,
   type FieldError,
   type Format,
+  type LookupResult,
   formats,
   isCommandError,
+  lookupIsbn,
 } from "@/lib/api";
 
 // Form state keeps every value as typed text; conversion happens on submit.
@@ -33,6 +36,12 @@ export interface EditionForm {
   publishedYear: string;
   language: string;
   isbn: string;
+  /** Cover found online, downloaded when the form is saved. */
+  coverUrl: string;
+  /** Cover already stored (file name), shown when there is no new one. */
+  cover: string | null;
+  googleBooksId: string | null;
+  openLibraryId: string | null;
 }
 
 export interface CopyForm {
@@ -51,6 +60,10 @@ export const emptyEditionForm: EditionForm = {
   publishedYear: "",
   language: "",
   isbn: "",
+  coverUrl: "",
+  cover: null,
+  googleBooksId: null,
+  openLibraryId: null,
 };
 
 export const emptyCopyForm: CopyForm = {
@@ -74,6 +87,9 @@ export function toEditionInput(form: EditionForm): EditionInput {
     publishedYear: numberOrNull(form.publishedYear),
     language: orNull(form.language),
     isbn: orNull(form.isbn),
+    coverUrl: orNull(form.coverUrl),
+    googleBooksId: form.googleBooksId,
+    openLibraryId: form.openLibraryId,
   };
 }
 
@@ -96,6 +112,29 @@ export function editionFormFrom(book: BookDetail): EditionForm {
     publishedYear: book.publishedYear?.toString() ?? "",
     language: book.language ?? "",
     isbn: book.isbn13 ?? "",
+    coverUrl: "",
+    cover: book.cover,
+    googleBooksId: book.googleBooksId,
+    openLibraryId: book.openLibraryId,
+  };
+}
+
+/** Fills the form with what was found, keeping what the user typed where nothing was. */
+export function applyLookup(form: EditionForm, found: LookupResult): EditionForm {
+  const pick = (value: string | number | null, current: string) =>
+    value === null || value === "" ? current : String(value);
+  return {
+    ...form,
+    isbn: found.isbn13,
+    title: pick(found.title, form.title),
+    subtitle: pick(found.subtitle, form.subtitle),
+    authors: found.authors.length > 0 ? found.authors : form.authors,
+    publisher: pick(found.publisher, form.publisher),
+    publishedYear: pick(found.publishedYear, form.publishedYear),
+    language: pick(found.language, form.language),
+    coverUrl: found.coverUrl ?? form.coverUrl,
+    googleBooksId: found.googleBooksId ?? form.googleBooksId,
+    openLibraryId: found.openLibraryId ?? form.openLibraryId,
   };
 }
 
@@ -163,25 +202,76 @@ export function EditionFields({
   value,
   onChange,
   errorFor,
+  currentEditionId,
 }: {
   value: EditionForm;
   onChange: (value: EditionForm) => void;
   errorFor: ErrorFor;
+  /** When editing, finding this same edition by ISBN is not "already in the catalog". */
+  currentEditionId?: string;
 }) {
   const { t } = useTranslation();
   const set = <K extends keyof EditionForm>(key: K, v: EditionForm[K]) =>
     onChange({ ...value, [key]: v });
+  const lookup = useIsbnLookup();
+
+  const search = async () => {
+    const found = await lookup.run(value.isbn);
+    if (found?.found) onChange(applyLookup(value, found));
+  };
 
   return (
     <div className="space-y-4">
-      <Field id="title" label={t("form.fields.title")} error={errorFor("title")}>
-        <Input
-          id="title"
-          autoFocus
-          value={value.title}
-          onChange={(e) => set("title", e.target.value)}
+      <div className="space-y-2">
+        <Label htmlFor="isbn">{t("form.fields.isbn")}</Label>
+        <div className="flex gap-2">
+          <Input
+            id="isbn"
+            autoFocus
+            inputMode="numeric"
+            placeholder={t("lookup.placeholder")}
+            value={value.isbn}
+            onChange={(e) => set("isbn", e.target.value)}
+            onKeyDown={(e) => {
+              // Enter searches instead of submitting: this is how barcode scanners type.
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void search();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={lookup.loading || value.isbn.trim() === ""}
+            onClick={() => void search()}
+          >
+            {lookup.loading ? <Loader2 className="animate-spin" /> : <Search />}
+            {t("lookup.search")}
+          </Button>
+        </div>
+        {errorFor("isbn") && (
+          <p className="text-sm text-destructive">{errorFor("isbn")}</p>
+        )}
+        <LookupStatus lookup={lookup} currentEditionId={currentEditionId} />
+      </div>
+      <div className="flex gap-4">
+        <Cover
+          file={value.cover}
+          url={value.coverUrl || null}
+          alt={value.title}
+          className="h-36 w-24"
         />
-      </Field>
+        <div className="flex-1">
+          <Field id="title" label={t("form.fields.title")} error={errorFor("title")}>
+            <Input
+              id="title"
+              value={value.title}
+              onChange={(e) => set("title", e.target.value)}
+            />
+          </Field>
+        </div>
+      </div>
       <Field id="subtitle" label={t("form.fields.subtitle")}>
         <Input
           id="subtitle"
@@ -249,14 +339,6 @@ export function EditionFields({
             inputMode="numeric"
             value={value.publishedYear}
             onChange={(e) => set("publishedYear", e.target.value)}
-          />
-        </Field>
-        <Field id="isbn" label={t("form.fields.isbn")} error={errorFor("isbn")}>
-          <Input
-            id="isbn"
-            inputMode="numeric"
-            value={value.isbn}
-            onChange={(e) => set("isbn", e.target.value)}
           />
         </Field>
         <Field id="language" label={t("form.fields.language")}>
@@ -359,6 +441,82 @@ export function CopyFields({
           onChange={(e) => set("location", e.target.value)}
         />
       </Field>
+    </div>
+  );
+}
+
+type Lookup = ReturnType<typeof useIsbnLookup>;
+
+export function useIsbnLookup() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<LookupResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (isbn: string): Promise<LookupResult | null> => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const found = await lookupIsbn(isbn);
+      setResult(found);
+      return found;
+    } catch (e) {
+      setError(
+        isCommandError(e) && e.kind === "validation"
+          ? `errors.${e.errors[0]?.code}`
+          : "lookup.failed",
+      );
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, result, error, run };
+}
+
+export function LookupStatus({
+  lookup,
+  currentEditionId,
+}: {
+  lookup: Lookup;
+  currentEditionId?: string;
+}) {
+  const { t } = useTranslation();
+  const { result, error } = lookup;
+  if (error) return <p className="text-sm text-destructive">{t(error)}</p>;
+  if (!result) return null;
+
+  const quota = result.warnings.some(
+    (w) => w.source === "google_books" && w.kind === "quota",
+  );
+  const unreachable = result.warnings.filter((w) => w.kind !== "quota");
+  const alreadyHere =
+    result.existingEditionId !== null &&
+    result.existingEditionId !== currentEditionId;
+
+  return (
+    <div className="space-y-1 text-sm">
+      {result.found ? (
+        <p className="text-muted-foreground">
+          {t("lookup.found", {
+            sources: result.sources.map((s) => t(`lookup.sources.${s}`)).join(", "),
+          })}
+        </p>
+      ) : (
+        <p className="text-muted-foreground">{t("lookup.notFound")}</p>
+      )}
+      {alreadyHere && (
+        <p className="font-medium text-amber-600 dark:text-amber-400">
+          {t("lookup.alreadyInCatalog")}
+        </p>
+      )}
+      {quota && <p className="text-muted-foreground">{t("lookup.googleQuota")}</p>}
+      {unreachable.map((w) => (
+        <p key={w.source} className="text-muted-foreground">
+          {t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
+        </p>
+      ))}
     </div>
   );
 }
