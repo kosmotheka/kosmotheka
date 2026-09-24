@@ -70,7 +70,8 @@
     "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
     "internal": "Algo ha fallado: {{message}}",
     "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN.",
-    "invalid_cover_url": "Esta dirección de portada no está permitida."
+    "invalid_cover_url": "Esta dirección de portada no está permitida.",
+    "invalid_format": "Formato desconocido. Usa hardcover, paperback, pocket, ebook, audiobook u other."
   },
   "history": {
     "title": "Historial",
@@ -82,7 +83,8 @@
       "edition_edit": "Ficha editada",
       "copy_edit": "Ejemplar editado",
       "copy_remove": "Ejemplar borrado",
-      "book_remove": "Libro borrado"
+      "book_remove": "Libro borrado",
+      "backup_restore": "Copia restaurada"
     }
   },
   "book": {
@@ -163,5 +165,26 @@
     "results_one": "{{count}} resultado",
     "results_other": "{{count}} resultados",
     "noResults": "Ningún libro coincide con la búsqueda."
+  },
+  "data": {
+    "title": "Tus datos",
+    "description": "La copia de seguridad es un .zip con todos los libros, ejemplares y portadas, que se puede restaurar en cualquier dispositivo. El CSV tiene una fila por ejemplar, para hojas de cálculo y otras apps.",
+    "backup": "Guardar copia",
+    "restore": "Restaurar copia",
+    "exportCsv": "Exportar CSV",
+    "importCsv": "Importar CSV",
+    "backupFile": "Copia de la biblioteca",
+    "backupDone": "Copia guardada: {{books}} libros, {{copies}} ejemplares, {{covers}} portadas.",
+    "restoreDone": "Restaurados {{books}} libros, {{copies}} ejemplares y {{covers}} portadas.",
+    "csvExported_one": "Exportada {{count}} fila.",
+    "csvExported_other": "Exportadas {{count}} filas.",
+    "csvImported": "Importado: {{books}} libros nuevos, {{copies}} ejemplares añadidos a libros existentes, {{rejected}} filas rechazadas.",
+    "rejectedLine": "Línea {{line}}:",
+    "backupErrors": {
+      "not_a_backup": "Este fichero no es una copia de seguridad de esta app.",
+      "unreadable": "La copia está dañada y no se puede leer.",
+      "other_version": "Esta copia se hizo con otra versión de la app.",
+      "not_empty": "Una copia solo se puede restaurar sobre un catálogo vacío. Borra antes los libros o usa una instalación nueva."
+    }
   }
 }

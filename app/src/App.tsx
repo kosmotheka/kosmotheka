@@ -178,7 +178,11 @@ export default function App() {
           onOpenChange={setDialogOpen}
           onCreated={handleCreated}
         />
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          onChanged={reload}
+        />
         <BurstDialog open={burstOpen} onOpenChange={setBurstOpen} onChanged={reload} />
         <BookDialog
           editionId={openBookId}

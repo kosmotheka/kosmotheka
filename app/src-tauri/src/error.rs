@@ -25,6 +25,13 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("cover rejected: {0}")]
     CoverRejected(&'static str),
+    /// The reason is a code the UI translates: not_a_backup, unreadable, other_version, not_empty.
+    #[error("backup rejected: {0}")]
+    BadBackup(&'static str),
+    #[error(transparent)]
+    Zip(#[from] zip::result::ZipError),
+    #[error(transparent)]
+    Csv(#[from] csv::Error),
     #[error("database lock poisoned by a panicked thread")]
     LockPoisoned,
 }
@@ -34,6 +41,7 @@ pub enum Error {
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum ErrorPayload<'a> {
     Validation { errors: &'a [FieldError] },
+    Backup { reason: &'static str },
     Internal { message: String },
 }
 
@@ -42,6 +50,7 @@ impl Serialize for Error {
     fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
         let payload = match self {
             Error::Validation(errors) => ErrorPayload::Validation { errors },
+            Error::BadBackup(reason) => ErrorPayload::Backup { reason },
             other => ErrorPayload::Internal {
                 message: other.to_string(),
             },

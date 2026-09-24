@@ -76,6 +76,7 @@ export interface FieldError {
 
 export type CommandError =
   | { kind: "validation"; errors: FieldError[] }
+  | { kind: "backup"; reason: string }
   | { kind: "internal"; message: string };
 
 export function isCommandError(value: unknown): value is CommandError {
@@ -220,3 +221,31 @@ export const externalLinks = {
   openLibrary: (id: string) =>
     `https://openlibrary.org/books/${encodeURIComponent(id)}`,
 };
+
+export interface BackupSummary {
+  books: number;
+  copies: number;
+  covers: number;
+}
+
+export function exportBackup(path: string): Promise<BackupSummary> {
+  return invoke<BackupSummary>("export_backup", { path });
+}
+
+export function restoreBackup(path: string): Promise<BackupSummary> {
+  return invoke<BackupSummary>("restore_backup", { path });
+}
+
+export function exportCsv(path: string): Promise<number> {
+  return invoke<number>("export_csv", { path });
+}
+
+export interface CsvImportSummary {
+  booksCreated: number;
+  copiesAdded: number;
+  rejected: { line: number; errors: FieldError[] }[];
+}
+
+export function importCsv(path: string): Promise<CsvImportSummary> {
+  return invoke<CsvImportSummary>("import_csv", { path });
+}

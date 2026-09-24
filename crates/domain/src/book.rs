@@ -148,6 +148,8 @@ pub enum ErrorCode {
     IsbnInUse,
     /// Not an https URL on a known cover host.
     InvalidCoverUrl,
+    /// Not one of the known copy formats (only possible when importing files).
+    InvalidFormat,
 }
 
 impl From<IsbnError> for ErrorCode {

@@ -1,12 +1,16 @@
+use std::path::Path;
+
 use library_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook};
 use serde::Serialize;
 use tauri::State;
 use url::Url;
 
+use crate::backup::{self, BackupSummary};
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
 };
 use crate::covers::Covers;
+use crate::csv_io::{self, CsvImportSummary};
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::metadata::{Lookup, LookupResult};
@@ -170,4 +174,38 @@ pub fn save_settings(database: State<'_, Database>, settings: Settings) -> Resul
 #[tauri::command]
 pub fn covers_dir(covers: State<'_, Covers>) -> String {
     covers.dir().display().to_string()
+}
+
+// Paths come from the file dialogs the user just answered.
+
+#[tauri::command]
+pub fn export_backup(
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    path: String,
+) -> Result<BackupSummary> {
+    let conn = database.lock()?;
+    backup::export(&conn, &covers, Path::new(&path))
+}
+
+#[tauri::command]
+pub fn restore_backup(
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    path: String,
+) -> Result<BackupSummary> {
+    let mut conn = database.lock()?;
+    backup::restore(&mut conn, &covers, Path::new(&path))
+}
+
+#[tauri::command]
+pub fn export_csv(database: State<'_, Database>, path: String) -> Result<usize> {
+    let conn = database.lock()?;
+    csv_io::export(&conn, Path::new(&path))
+}
+
+#[tauri::command]
+pub fn import_csv(database: State<'_, Database>, path: String) -> Result<CsvImportSummary> {
+    let mut conn = database.lock()?;
+    csv_io::import(&mut conn, Path::new(&path))
 }

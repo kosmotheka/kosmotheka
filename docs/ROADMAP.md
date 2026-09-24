@@ -73,6 +73,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] 1.3 Búsqueda por ISBN. Open Library y Google Books a la vez (D26), con clave de Google opcional en Ajustes; los fallos de un proveedor son avisos. Portadas descargadas y guardadas por hash (D27) y mostradas en la tabla y la ficha; enlaces a las fichas externas. Pruebas reales contra los servicios con `cargo test -p library-app -- --ignored live_`.
 - [x] 1.4 Alta rápida. Cola de ISBN con datos de ejemplar fijados por sesión; guarda lo encontrado al momento, no duplica lo que ya existe y deja pendiente lo no encontrado, con un campo para el título (D28). Funciona con teclado y con lectores de códigos USB.
 - [x] 1.5 Buscar y filtrar. Búsqueda de texto completo (FTS5) sin acentos, por prefijos, por editorial y por ISBN en cualquier formato; filtros por formato, propietario y ubicación; editoriales como catálogo (D29); autocompletado de autores, editoriales, propietarios y ubicaciones. Las ubicaciones siguen siendo texto libre: la jerarquía salón → estantería → balda queda para más adelante.
+- [x] 1.6 Exportar e importar. Copia de seguridad en ZIP (datos, portadas e historial) que se restaura sobre un catálogo vacío como una sola operación; CSV de una fila por ejemplar, exportable e importable con informe de filas rechazadas (D30).
 
 **Mejoras pedidas tras probar el 1.1** (se harán sin prisa, junto al hito que las toque):
 - [x] Autocompletar autores al escribir, a partir de los ya catalogados (1.5).

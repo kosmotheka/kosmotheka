@@ -1,6 +1,8 @@
+mod backup;
 mod catalog;
 mod commands;
 mod covers;
+mod csv_io;
 mod db;
 mod error;
 mod metadata;
@@ -18,6 +20,7 @@ use crate::metadata::Lookup;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
@@ -40,7 +43,11 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::covers_dir,
-            commands::catalog_options
+            commands::catalog_options,
+            commands::export_backup,
+            commands::restore_backup,
+            commands::export_csv,
+            commands::import_csv
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

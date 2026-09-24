@@ -9,6 +9,21 @@
 > - `9780306406158`: dígito de control erróneo.
 > - `9788401352188`: *El nombre del viento* (Plaza & Janés), para las búsquedas online.
 
+## Para revisar (trabajo de la noche del 24 al 25/09/2026)
+
+**Decisiones tomadas como `propuesta`** (detalle en `docs/DECISIONS.md`):
+- **D26** Búsqueda por ISBN en Open Library y Google Books, con clave de Google opcional en Ajustes.
+- **D27** Portadas como ficheros locales con nombre por hash; solo se descargan de servidores conocidos.
+- **D28** Alta rápida: guarda al momento lo encontrado y no duplica lo que ya tienes.
+- **D29** Editoriales como catálogo propio y búsqueda de texto completo con FTS5.
+- **D30** Copia de seguridad en ZIP (restaurable solo sobre un catálogo vacío) y CSV.
+
+**Pendiente, fuera de estas pruebas:**
+- Subir los commits a GitHub (lo haces tú) y comprobar que la CI pasa en verde.
+- Probar la app en Windows con el `.exe` que genera la CI.
+- Verificar Google Books con una clave real (ver 1.3): su lectura de respuestas se hizo sin una respuesta real, porque no había cuota.
+- Antes de la Fase 2: versionar el formato de las operaciones (ver `docs/architecture/operations.md`).
+
 ## 1.1 · Alta manual y listado
 
 - [ ] **Catálogo vacío.** Sin libros, se ve el mensaje «El catálogo está vacío» con un botón para añadir.
@@ -83,4 +98,16 @@
 - [ ] **Editorial compartida.** Da de alta dos libros con `Minotauro` y `minotauro`. *Esperado:* los dos muestran «Minotauro» (una única editorial).
 - [ ] **El índice sigue los cambios.** Edita el título de un libro y búscalo por el título nuevo (lo encuentra) y por el viejo (no lo encuentra). Borra un libro y comprueba que ya no sale en la búsqueda.
 - [ ] **Migración de datos.** Los libros que tenías antes de este hito conservan su editorial (ahora como catálogo) y se encuentran en el buscador.
+
+## 1.6 · Copias de seguridad y CSV
+
+> Todo está en Ajustes (engranaje) → «Tus datos». Cada acción abre primero un diálogo de fichero; cancelar no hace nada.
+
+- [ ] **Guardar copia.** «Guardar copia» → elige carpeta → Guardar. *Esperado:* «Copia guardada: N libros, M ejemplares, K portadas» y un `library-AAAA-MM-DD.zip`. Ábrelo con un gestor de ZIP: contiene `backup.json` y la carpeta `covers/`.
+- [ ] **Restaurar sobre un catálogo con libros.** «Restaurar copia» → elige ese ZIP. *Esperado:* «Una copia solo se puede restaurar sobre un catálogo vacío…» y no cambia nada.
+- [ ] **Restaurar de verdad.** Cierra la app, mueve la carpeta `~/.local/share/com.tersoal.library/` a otro sitio (para conservarla), abre la app (catálogo vacío) → Ajustes → «Restaurar copia» → el ZIP. *Esperado:* «Restaurados N libros…»; la tabla muestra todos los libros con sus portadas, autores, editoriales y ejemplares; la búsqueda los encuentra; el historial de cada uno dice «Copia restaurada». Después puedes volver a poner tu carpeta original.
+- [ ] **Fichero que no es una copia.** Restaurar eligiendo otro ZIP cualquiera. *Esperado:* «Este fichero no es una copia de seguridad de esta app.»
+- [ ] **Exportar CSV.** «Exportar CSV» → Guardar. *Esperado:* «Exportadas N filas». Ábrelo con LibreOffice o Excel: tildes y eñes bien, una fila por ejemplar, varios autores separados por `;`.
+- [ ] **Importar CSV.** Crea un CSV con cabecera `title,authors,isbn13,format,owner` y unas filas (incluye una sin título y otra con formato `scroll`) → «Importar CSV». *Esperado:* resumen con libros nuevos, ejemplares añadidos y filas rechazadas, y debajo la lista de líneas rechazadas con su motivo. Los válidos aparecen en la tabla.
+- [ ] **CSV de ida y vuelta.** Exporta un CSV, restaura una instalación vacía (como en «Restaurar de verdad») e importa ese CSV. *Esperado:* los mismos libros y ejemplares (sin portadas: el CSV no las lleva).
 

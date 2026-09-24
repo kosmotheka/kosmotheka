@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Field } from "@/components/book-form";
+import { DataSection } from "@/components/data-section";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,9 +18,12 @@ import { getSettings, saveSettings } from "@/lib/api";
 export function SettingsDialog({
   open,
   onOpenChange,
+  onChanged,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called when a restore or an import changed the catalog. */
+  onChanged: () => void;
 }) {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState("");
@@ -44,7 +48,7 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <form onSubmit={submit} className="space-y-6">
           <DialogHeader>
             <DialogTitle>{t("settings.title")}</DialogTitle>
@@ -74,6 +78,9 @@ export function SettingsDialog({
             <Button type="submit">{t("form.save")}</Button>
           </DialogFooter>
         </form>
+        <div className="border-t pt-6">
+          <DataSection onChanged={onChanged} />
+        </div>
       </DialogContent>
     </Dialog>
   );

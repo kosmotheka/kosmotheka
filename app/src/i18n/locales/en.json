@@ -70,7 +70,8 @@
     "isbn_checksum": "This ISBN is not valid: check for a typo.",
     "internal": "Something went wrong: {{message}}",
     "isbn_in_use": "Another book in the catalog already has this ISBN.",
-    "invalid_cover_url": "This cover address is not allowed."
+    "invalid_cover_url": "This cover address is not allowed.",
+    "invalid_format": "Unknown format. Use hardcover, paperback, pocket, ebook, audiobook or other."
   },
   "history": {
     "title": "History",
@@ -82,7 +83,8 @@
       "edition_edit": "Details edited",
       "copy_edit": "Copy edited",
       "copy_remove": "Copy deleted",
-      "book_remove": "Book deleted"
+      "book_remove": "Book deleted",
+      "backup_restore": "Backup restored"
     }
   },
   "book": {
@@ -163,5 +165,26 @@
     "results_one": "{{count}} result",
     "results_other": "{{count}} results",
     "noResults": "No book matches this search."
+  },
+  "data": {
+    "title": "Your data",
+    "description": "A backup is a .zip with every book, copy and cover, restorable on any device. CSV is one row per copy, for spreadsheets and other apps.",
+    "backup": "Save backup",
+    "restore": "Restore backup",
+    "exportCsv": "Export CSV",
+    "importCsv": "Import CSV",
+    "backupFile": "Library backup",
+    "backupDone": "Backup saved: {{books}} books, {{copies}} copies, {{covers}} covers.",
+    "restoreDone": "Restored {{books}} books, {{copies}} copies and {{covers}} covers.",
+    "csvExported_one": "Exported {{count}} row.",
+    "csvExported_other": "Exported {{count}} rows.",
+    "csvImported": "Imported: {{books}} new books, {{copies}} copies added to existing books, {{rejected}} rows rejected.",
+    "rejectedLine": "Line {{line}}:",
+    "backupErrors": {
+      "not_a_backup": "This file is not a backup of this app.",
+      "unreadable": "The backup is damaged and cannot be read.",
+      "other_version": "This backup was made with a different version of the app.",
+      "not_empty": "A backup can only be restored into an empty catalog. Delete the books first, or use a fresh install."
+    }
   }
 }

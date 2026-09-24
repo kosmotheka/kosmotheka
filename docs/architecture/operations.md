@@ -46,6 +46,7 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `copy.edit` | Cambios en un ejemplar: solo los campos que cambian |
 | `copy.remove` | Borrado de un ejemplar |
 | `book.remove` | Borrado de un libro: ejemplares, detalles, edición y, si no quedan más ediciones, la obra y sus autorías |
+| `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 
 ## Reloj lógico híbrido (HLC)
 

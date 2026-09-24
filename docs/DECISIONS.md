@@ -35,6 +35,7 @@
 | D27 | Portadas: ficheros locales con nombre por hash | propuesta |
 | D28 | Alta rápida: guarda lo encontrado, no duplica lo que ya existe | propuesta |
 | D29 | Editoriales como catálogo y búsqueda con FTS5 | propuesta |
+| D30 | Copias de seguridad (ZIP) y CSV | propuesta |
 
 ---
 
@@ -357,3 +358,21 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
 - Si cambia el formato del índice, se reconstruye solo al arrancar (versión guardada en `local_state`).
 
 **Filtros:** formato, propietario y ubicación de los ejemplares, combinables con la búsqueda.
+
+## D30 · Copias de seguridad (ZIP) y CSV — `propuesta`
+
+**Copia de seguridad: un `.zip` con:**
+- `backup.json`: todas las filas del catálogo, con los mismos nombres de campo que las operaciones; el registro de operaciones como historial; el formato (`library-backup`, versión 1) y la versión del esquema de la base de datos.
+- `covers/`: las portadas que usa el catálogo.
+
+**Restaurar:**
+- Solo sobre un **catálogo vacío**. Mezclar dos catálogos es trabajo de la sincronización (Fase 2), no de una copia de seguridad.
+- Solo si la copia se hizo con la **misma versión del esquema**. Más adelante se podrá migrar una copia antigua.
+- Se restaura como **una única operación `backup.restore`** que crea todas las filas. Así pasa por la misma validación, el mismo índice de búsqueda y el mismo registro que cualquier otra escritura.
+- El **historial** original viaja en el fichero, pero **no se restaura**: el catálogo restaurado empieza con la operación de restauración. Recuperarlo encaja con la sincronización y el versionado de operaciones (Fase 2).
+- **Seguridad:** las rutas de dentro del ZIP nunca se usan para escribir en disco. Solo se aceptan portadas con nombre `<sha256>.<ext>`, y el nombre se recalcula a partir del contenido, lo que evita el ataque *zip slip* y los ficheros manipulados.
+
+**CSV:**
+- Una fila por ejemplar (una edición sin ejemplares ocupa una fila con las columnas del ejemplar vacías). Varios autores en una celda, separados por `;`. Cabeceras en inglés, estables, para que otras herramientas lo puedan leer: `title, subtitle, authors, publisher, published_year, language, isbn13, format, owner, quantity, location, acquired_on`.
+- UTF-8 con BOM, para que las hojas de cálculo reconozcan tildes y eñes.
+- **Importar añade**: cada fila válida es un alta, y si el ISBN ya existe, añade un ejemplar. Las filas con errores se informan con su número de línea y no detienen el resto. Sin formato, se usa `other`. Las portadas no viajan en el CSV.

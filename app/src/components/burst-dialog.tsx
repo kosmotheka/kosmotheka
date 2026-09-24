@@ -127,7 +127,11 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
       const invalid = isCommandError(e) && e.kind === "validation";
       update(entry.id, {
         status: invalid ? "invalid" : "failed",
-        error: invalid ? t(`errors.${e.errors[0]?.code}`) : String(e),
+        error: invalid
+          ? t(`errors.${e.errors[0]?.code}`)
+          : isCommandError(e) && e.kind === "internal"
+            ? e.message
+            : String(e),
       });
     }
   };
