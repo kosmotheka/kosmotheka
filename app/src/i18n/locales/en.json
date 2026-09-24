@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "Hello, library",
+    "subtitle": "Phase 0 skeleton: the UI talks to Rust, and Rust talks to SQLite."
+  },
+  "info": {
+    "loading": "Opening the database…",
+    "error": "Could not read the database: {{message}}",
+    "launchCount_one": "This app has been opened {{count}} time.",
+    "launchCount_other": "This app has been opened {{count}} times.",
+    "firstLaunch": "First launch",
+    "sqliteVersion": "SQLite version",
+    "databasePath": "Database file"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "es": "Español"
+  }
+}

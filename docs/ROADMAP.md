@@ -30,6 +30,17 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - **Rust que aprendes:** Cargo, *crates* y *workspaces*, estructura de un proyecto Tauri, comandos de Tauri (cómo llama la interfaz a Rust).
 - **Hecho cuando:** una ventana «Hello, library» que lee un dato de SQLite en las tres plataformas, y la CI en verde.
 
+**Estado (24/09/2026):**
+- [x] Entorno en Distrobox (D23), documentado en `development/setup.md`.
+- [x] Monorepo con *workspace* de Cargo, licencia AGPL, README y `AGENTS.md`.
+- [x] Tauri 2 + React + TypeScript + Vite + Tailwind + shadcn/ui, con i18n en inglés y español y modo oscuro según el sistema.
+- [x] `rusqlite` con migraciones y un comando que cuenta los arranques. Tests de Rust, Clippy y ESLint en verde.
+- [x] App de escritorio funcionando en Linux.
+- [x] APK de depuración compilado.
+- [ ] APK instalado en el móvil.
+- [ ] Repo en GitHub y CI en verde (incluida la compilación en Windows).
+- [ ] Probar en Windows a mano.
+
 ## Fase 1 — Catálogo en el escritorio (modo local)
 
 - *Crate* de dominio (`domain`), separado de Tauri: ediciones, ejemplares, ubicaciones, formatos (D08).

@@ -26,15 +26,17 @@ The full rationale lives in `docs/` (in Spanish):
 | Server | Symfony, PostgreSQL, Docker |
 | Operation spec | JSON Schema plus shared conformance cases |
 
-## Repository layout (planned)
+## Repository layout
 
 ```
-app/            Tauri app (src-tauri/ in Rust, src/ in React)
-crates/domain/  Domain model and operations in Rust, independent of Tauri
-server/         Symfony server
-spec/           Operation spec (JSON Schema) and conformance cases (MIT)
+Cargo.toml      Cargo workspace root
+app/            Tauri app: React UI in src/, Rust core in src-tauri/
+  src-tauri/migrations/   SQLite migrations, applied on startup
+  src-tauri/gen/android/  Generated Android project (committed; edit with care)
 docs/           Working documentation (Spanish)
 ```
+
+Planned: `crates/domain/` (domain model and operations, independent of Tauri), `server/` (Symfony), `spec/` (operation spec and conformance cases, MIT).
 
 Update this section when the layout changes.
 
@@ -71,4 +73,20 @@ Learning Rust and Tauri is a goal of this project. The maintainer is an experien
 
 ## Commands
 
-To be filled in during Phase 0 (build, test, lint, run on desktop and on Android).
+On the maintainer's machine, every toolchain command runs inside the `library-dev` Distrobox container (see `docs/development/setup.md`):
+
+```bash
+distrobox enter library-dev -- bash -ic '<command>'
+```
+
+The interactive flag (`-i`) is required: it loads the environment from `~/.bashrc`.
+
+| Task | Command (from the repo root unless noted) |
+|---|---|
+| Run desktop app | `cd app && npm run tauri dev` |
+| Run on Android device | `cd app && npm run tauri android dev` |
+| Debug APK | `cd app && npm run tauri android build -- --debug --apk --target aarch64` |
+| Rust format / lint / test | `cargo fmt --all` · `cargo clippy --all-targets -- -D warnings` · `cargo test` |
+| UI build / typecheck / lint | `cd app && npm run build` · `npm run typecheck` · `npm run lint` |
+
+`app/dist` must exist before `cargo clippy` or `cargo test`, because Tauri embeds the built UI at compile time. Run `npm run build` first.

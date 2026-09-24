@@ -58,6 +58,16 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 
 `--no-modify-path` evita que rustup toque los ficheros de la shell: la activación la hace el bloque del paso 3.
 
+### Ventana en blanco o gris (kernel antiguo)
+
+Si la ventana de Tauri sale vacía y el log muestra `amdgpu: DRM version is 3.38.0, but this driver is only compatible with 3.42.0 (kernel 5.15+)`, significa que los drivers gráficos del contenedor son más nuevos de lo que admite el kernel del sistema. Solución: renderizar WebKitGTK por software, añadiendo al bloque del paso 3:
+
+```bash
+export LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1
+```
+
+Solo afecta al desarrollo en esta máquina: la app compilada para otros usuarios no lleva estas variables.
+
 ## 5. SDK de Android (dentro del contenedor)
 
 1. Descargar las *command-line tools* (la URL actual está en developer.android.com/studio) y descomprimirlas en `~/Android/Sdk/cmdline-tools/latest`.
@@ -81,7 +91,26 @@ Se conecta por **depuración inalámbrica** (Android 11 o superior), no por USB:
 1. En el móvil: Opciones de desarrollador → Depuración inalámbrica → Vincular con código.
 2. En el contenedor: `adb pair IP:PUERTO` con el código mostrado y después `adb connect IP:PUERTO`.
 
-*(Pendiente de validar con el primer APK de la Fase 0.)*
+3. Instalar y ejecutar: `npm run tauri android dev` (desde `app/`) compila, instala y abre la app en el móvil, con recarga en caliente.
+
+## 8. Compilar un APK
+
+```bash
+cd app
+npm run tauri android build -- --debug --apk --target aarch64
+```
+
+El APK queda en `app/src-tauri/gen/android/app/build/outputs/apk/universal/debug/`. El de depuración ocupa unos 135 MB porque lleva el Rust sin optimizar y con símbolos de depuración; el de *release* es mucho más pequeño, pero tiene que ir firmado (pendiente).
+
+`--target aarch64` compila solo para ARM de 64 bits, que es lo que llevan los móviles actuales. Sin esa opción compila para las cuatro arquitecturas y tarda cuatro veces más.
+
+### Fallo al descargar Gradle (IPv6)
+
+Si la primera compilación falla en `org.gradle.wrapper.Download`, puede que la red resuelva direcciones IPv6 sin tener salida por IPv6 (en esta máquina pasa). Solución: forzar IPv4 una vez, hasta que Gradle quede descargado y en caché:
+
+```bash
+JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true npm run tauri android build -- --debug --apk --target aarch64
+```
 
 ## Versiones instaladas (24/09/2026)
 

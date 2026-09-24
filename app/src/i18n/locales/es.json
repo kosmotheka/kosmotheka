@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "Hola, biblioteca",
+    "subtitle": "Esqueleto de la fase 0: la interfaz habla con Rust y Rust habla con SQLite."
+  },
+  "info": {
+    "loading": "Abriendo la base de datos…",
+    "error": "No se pudo leer la base de datos: {{message}}",
+    "launchCount_one": "Esta app se ha abierto {{count}} vez.",
+    "launchCount_other": "Esta app se ha abierto {{count}} veces.",
+    "firstLaunch": "Primer arranque",
+    "sqliteVersion": "Versión de SQLite",
+    "databasePath": "Fichero de la base de datos"
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "English",
+    "es": "Español"
+  }
+}
