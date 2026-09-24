@@ -56,7 +56,7 @@
 
 ## 1.4 · Alta rápida (modo ráfaga)
 
-> Usa ISBN que estén en Open Library, por ejemplo `9780140328721`, `9780141346809`, `9780747532699` y `9780261103573`. Si no los encuentra, prueba otros de libros ingleses conocidos.
+> ISBN comprobados en Open Library el 25/09/2026: `9780140328721` (*Fantastic Mr. Fox*), `9780141346809` (*Percy Jackson and the Lightning Thief*), `9780747532699` (*Harry Potter and the Philosopher's Stone*), `9780261103573` (*The Fellowship of the Ring*), `9780553293357` (*Foundation*) y `9780345339683` (*The Hobbit*).
 
 - [ ] **Abrir.** Botón «Alta rápida». *Esperado:* diálogo con propietario, formato, ubicación y un campo de ISBN grande con el cursor dentro.
 - [ ] **Ráfaga.** Pon un propietario y una ubicación → escribe un ISBN + Intro → sin esperar, otro ISBN + Intro → y un tercero. *Esperado:* el campo se vacía al instante cada vez; las entradas aparecen arriba en cola («En cola…» → «Buscando…» → «Añadido») con título y portada; la tabla de detrás se actualiza sola.
