@@ -89,7 +89,8 @@ Node 22 viene de `nvm`, instalado en la carpeta personal, así que está disponi
 
 Se conecta por **depuración inalámbrica** (Android 11 o superior), no por USB:
 1. En el móvil: Opciones de desarrollador → Depuración inalámbrica → Vincular con código.
-2. En el contenedor: `adb pair IP:PUERTO` con el código mostrado y después `adb connect IP:PUERTO`.
+2. En el contenedor: `adb pair IP:PUERTO CÓDIGO`, con el puerto y el código del diálogo de vinculación. **Deja el diálogo abierto** hasta que termine: si falla o se cierra, el código caduca.
+   Tras vincular, `adb` suele descubrir el móvil por mDNS y conectarse solo (compruébalo con `adb devices`). Si no, `adb connect IP:PUERTO` con el puerto de la pantalla principal de «Depuración inalámbrica», que es distinto del de vinculación.
 
 3. Instalar y ejecutar: `npm run tauri android dev` (desde `app/`) compila, instala y abre la app en el móvil, con recarga en caliente.
 

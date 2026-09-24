@@ -37,7 +37,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] `rusqlite` con migraciones y un comando que cuenta los arranques. Tests de Rust, Clippy y ESLint en verde.
 - [x] App de escritorio funcionando en Linux.
 - [x] APK de depuración compilado.
-- [ ] APK instalado en el móvil.
+- [x] APK instalado y funcionando en un móvil real (moto g84 5G, Android 15).
 - [ ] Repo en GitHub y CI en verde (incluida la compilación en Windows).
 - [ ] Probar en Windows a mano.
 
