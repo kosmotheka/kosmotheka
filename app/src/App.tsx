@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookPlus, CircleCheck, Settings } from "lucide-react";
+import { BookPlus, CircleCheck, ScanBarcode, Settings } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookTable } from "@/components/book-table";
+import { BurstDialog } from "@/components/burst-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { BookDialog } from "@/components/book-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,6 +24,7 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [openBookId, setOpenBookId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [burstOpen, setBurstOpen] = useState(false);
 
   const reload = useCallback(() => {
     listBooks()
@@ -88,6 +90,9 @@ export default function App() {
           >
             <Settings />
           </Button>
+          <Button variant="outline" onClick={() => setBurstOpen(true)}>
+            <ScanBarcode /> {t("burst.open")}
+          </Button>
           <Button onClick={openDialog}>
             <BookPlus /> {t("catalog.add")}
           </Button>
@@ -131,6 +136,12 @@ export default function App() {
         onCreated={handleCreated}
       />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <BurstDialog
+        open={burstOpen}
+        onOpenChange={setBurstOpen}
+        knownOwners={knownOwners}
+        onChanged={reload}
+      />
       <BookDialog
         editionId={openBookId}
         knownOwners={knownOwners}

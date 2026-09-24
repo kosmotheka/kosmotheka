@@ -54,3 +54,17 @@
 - [ ] **Ajustes.** Botón del engranaje → escribe una clave de Google Books → Guardar → vuelve a abrir Ajustes. *Esperado:* la clave sigue ahí (oculta). Con una clave válida, las búsquedas dejan de mostrar el aviso de cuota y el mensaje dice «Encontrado en Google Books, Open Library».
 - [ ] **Verificar Google Books con clave real.** Con clave, busca `9788401352188` y comprueba que llegan título, autor y portada. *(Valida que la lectura de respuestas de Google, hecha sin una respuesta real, es correcta.)*
 
+## 1.4 · Alta rápida (modo ráfaga)
+
+> Usa ISBN que estén en Open Library, por ejemplo `9780140328721`, `9780141346809`, `9780747532699` y `9780261103573`. Si no los encuentra, prueba otros de libros ingleses conocidos.
+
+- [ ] **Abrir.** Botón «Alta rápida». *Esperado:* diálogo con propietario, formato, ubicación y un campo de ISBN grande con el cursor dentro.
+- [ ] **Ráfaga.** Pon un propietario y una ubicación → escribe un ISBN + Intro → sin esperar, otro ISBN + Intro → y un tercero. *Esperado:* el campo se vacía al instante cada vez; las entradas aparecen arriba en cola («En cola…» → «Buscando…» → «Añadido») con título y portada; la tabla de detrás se actualiza sola.
+- [ ] **Ya en el catálogo.** Escanea un ISBN que ya tengas. *Esperado:* «Ya estaba en el catálogo: no se añade» y el botón «Añadir otro ejemplar igualmente»; al pulsarlo pasa a «Ejemplar añadido» y en la tabla sube el número de ejemplares.
+- [ ] **No encontrado.** Escanea `9788401352188`. *Esperado:* «No encontrado online» y un campo de título; escribe el título → Guardar → «Añadido»; el libro sale en la tabla con ese ISBN.
+- [ ] **ISBN inválido.** Escribe `123` + Intro. *Esperado:* «ISBN no válido: Un ISBN tiene 10 o 13 dígitos».
+- [ ] **Resumen.** La línea de resumen cuenta bien los añadidos, los que ya estaban y los pendientes.
+- [ ] **Datos de ejemplar.** Abre la ficha de un libro añadido en ráfaga → pestaña de ejemplares. *Esperado:* el propietario, el formato y la ubicación elegidos.
+- [ ] **Cambio a mitad de sesión.** Cambia el propietario y escanea otro. *Esperado:* el nuevo usa el propietario nuevo; los anteriores conservan el suyo.
+- [ ] **Lector USB (si tienes uno).** Escanea un código de barras con el campo enfocado. *Esperado:* igual que teclear el ISBN y pulsar Intro.
+

@@ -33,6 +33,7 @@
 | D25 | Operaciones: cambios de entidad con etiqueta de intención | aceptada |
 | D26 | Búsqueda por ISBN: Open Library + Google Books con clave opcional | propuesta |
 | D27 | Portadas: ficheros locales con nombre por hash | propuesta |
+| D28 | Alta rápida: guarda lo encontrado, no duplica lo que ya existe | propuesta |
 
 ---
 
@@ -333,3 +334,13 @@ El formato concreto está en [architecture/operations.md](architecture/operation
 - **Seguridad:** solo se descargan URL `https` de los servidores de portadas conocidos (Open Library y Google Books), de menos de 5 MB y con tipo de imagen. Así nadie puede usar la app para hacer peticiones a otros sitios, ni a la red local.
 - La interfaz muestra las portadas mediante el protocolo `asset` de Tauri, limitado a la carpeta `covers`.
 - Pendiente: subir una portada propia desde un fichero (con el diálogo de ficheros del hito 1.6).
+
+## D28 · Alta rápida: guarda lo encontrado, no duplica lo que ya existe — `propuesta`
+
+El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
+- Se fijan una vez por sesión el propietario, el formato y la ubicación. Cada ISBN guarda esos valores **en el momento de escanearlo**: si se cambian a mitad de sesión, lo que ya estaba en cola no se altera.
+- **Encontrado online:** se guarda al momento, sin confirmación, con los datos y la portada encontrados. Es la diferencia con el alta normal, donde el usuario revisa antes de guardar. Se corrige después desde la ficha.
+- **Ya en el catálogo:** **no** se añade un ejemplar por defecto. Escanear algo que ya tienes suele ser un error o una comprobación («¿lo tengo?»), no una compra repetida. Hay un botón para añadirlo igualmente.
+- **No encontrado:** queda pendiente, con un campo para escribir el título y guardarlo ahí mismo.
+- Los ISBN se procesan **en cola y en orden**, uno a uno: se puede escanear más rápido de lo que responden los servicios.
+- Los lectores de códigos USB funcionan igual: escriben el ISBN y pulsan Intro (D19).

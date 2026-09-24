@@ -133,5 +133,24 @@
     "description": "Se guardan solo en este dispositivo: no se sincronizan ni se exportan.",
     "googleBooksKey": "Clave de API de Google Books (opcional)",
     "googleBooksHelp": "Sin clave, Google Books rechaza a menudo las consultas. Crea una gratis en Google Cloud Console (APIs y servicios → Credenciales) con la API de Books activada."
+  },
+  "burst": {
+    "open": "Alta rápida",
+    "title": "Alta rápida",
+    "description": "Escribe o escanea ISBN uno tras otro. Los libros encontrados se guardan al momento con los datos de ejemplar de abajo; nada se duplica.",
+    "add": "Añadir",
+    "summary": "{{added}} añadidos · {{exists}} ya estaban · {{pending}} por revisar",
+    "addCopyAnyway": "Añadir otro ejemplar igualmente",
+    "titlePlaceholder": "Título, para guardarlo igualmente",
+    "status": {
+      "queued": "En cola…",
+      "working": "Buscando…",
+      "added": "Añadido",
+      "copyAdded": "Ejemplar añadido",
+      "exists": "Ya estaba en el catálogo: no se añade",
+      "notFound": "No encontrado online",
+      "invalid": "ISBN no válido:",
+      "failed": "Error:"
+    }
   }
 }

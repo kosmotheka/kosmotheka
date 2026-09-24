@@ -133,5 +133,24 @@
     "description": "Stored only on this device: never synced or exported.",
     "googleBooksKey": "Google Books API key (optional)",
     "googleBooksHelp": "Without a key, Google Books often refuses requests. Create a free key in Google Cloud Console (APIs & Services → Credentials) with the Books API enabled."
+  },
+  "burst": {
+    "open": "Quick add",
+    "title": "Quick add",
+    "description": "Type or scan ISBNs one after another. Found books are saved at once with the copy details below; nothing is duplicated.",
+    "add": "Add",
+    "summary": "{{added}} added · {{exists}} already in the catalog · {{pending}} to review",
+    "addCopyAnyway": "Add another copy anyway",
+    "titlePlaceholder": "Title, to save it anyway",
+    "status": {
+      "queued": "Waiting…",
+      "working": "Searching…",
+      "added": "Added",
+      "copyAdded": "Copy added",
+      "exists": "Already in the catalog: not added",
+      "notFound": "Not found online",
+      "invalid": "Invalid ISBN:",
+      "failed": "Failed:"
+    }
   }
 }
