@@ -1,0 +1,106 @@
+{
+  "projectId": "4f788ac3-0772-4890-aae9-8f805bf471fb",
+  "shape": "package",
+  "pkg": "library-app",
+  "globalName": "Library",
+  "buildCmd": "sh .design-sync/prepare.sh",
+  "srcDir": "src/components/ui",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "node_modules/.cache/design-sync/ds.css",
+  "extraEntries": [
+    "lucide-react"
+  ],
+  "docsDir": "../../../../docs",
+  "docsMap": {
+    "AlertAction": "../../../../docs/groups/feedback.md",
+    "AlertDescription": "../../../../docs/groups/feedback.md",
+    "AlertDialogAction": "../../../../docs/groups/overlays.md",
+    "AlertDialogCancel": "../../../../docs/groups/overlays.md",
+    "AlertDialogContent": "../../../../docs/groups/overlays.md",
+    "AlertDialogDescription": "../../../../docs/groups/overlays.md",
+    "AlertDialogFooter": "../../../../docs/groups/overlays.md",
+    "AlertDialogHeader": "../../../../docs/groups/overlays.md",
+    "AlertDialogMedia": "../../../../docs/groups/overlays.md",
+    "AlertDialogOverlay": "../../../../docs/groups/overlays.md",
+    "AlertDialogPortal": "../../../../docs/groups/overlays.md",
+    "AlertDialogTitle": "../../../../docs/groups/overlays.md",
+    "AlertDialogTrigger": "../../../../docs/groups/overlays.md",
+    "AlertTitle": "../../../../docs/groups/feedback.md",
+    "CardAction": "../../../../docs/groups/layout.md",
+    "CardContent": "../../../../docs/groups/layout.md",
+    "CardDescription": "../../../../docs/groups/layout.md",
+    "CardFooter": "../../../../docs/groups/layout.md",
+    "CardHeader": "../../../../docs/groups/layout.md",
+    "CardTitle": "../../../../docs/groups/layout.md",
+    "DialogClose": "../../../../docs/groups/overlays.md",
+    "DialogContent": "../../../../docs/groups/overlays.md",
+    "DialogDescription": "../../../../docs/groups/overlays.md",
+    "DialogFooter": "../../../../docs/groups/overlays.md",
+    "DialogHeader": "../../../../docs/groups/overlays.md",
+    "DialogOverlay": "../../../../docs/groups/overlays.md",
+    "DialogPortal": "../../../../docs/groups/overlays.md",
+    "DialogTitle": "../../../../docs/groups/overlays.md",
+    "DialogTrigger": "../../../../docs/groups/overlays.md",
+    "SelectContent": "../../../../docs/groups/forms.md",
+    "SelectGroup": "../../../../docs/groups/forms.md",
+    "SelectItem": "../../../../docs/groups/forms.md",
+    "SelectLabel": "../../../../docs/groups/forms.md",
+    "SelectScrollDownButton": "../../../../docs/groups/forms.md",
+    "SelectScrollUpButton": "../../../../docs/groups/forms.md",
+    "SelectSeparator": "../../../../docs/groups/forms.md",
+    "SelectTrigger": "../../../../docs/groups/forms.md",
+    "SelectValue": "../../../../docs/groups/forms.md",
+    "TableBody": "../../../../docs/groups/data.md",
+    "TableCaption": "../../../../docs/groups/data.md",
+    "TableCell": "../../../../docs/groups/data.md",
+    "TableFooter": "../../../../docs/groups/data.md",
+    "TableHead": "../../../../docs/groups/data.md",
+    "TableHeader": "../../../../docs/groups/data.md",
+    "TableRow": "../../../../docs/groups/data.md",
+    "TabsContent": "../../../../docs/groups/layout.md",
+    "TabsList": "../../../../docs/groups/layout.md",
+    "TabsTrigger": "../../../../docs/groups/layout.md"
+  },
+  "guidelinesGlob": [
+    "../../../../../docs/design/brief.md",
+    "../../../../../docs/design/errors.md"
+  ],
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "AlertDialog": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "AlertDialogHeader": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "AlertDialogFooter": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "AlertDialogMedia": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "DialogFooter": {
+      "cardMode": "single",
+      "viewport": "640x420"
+    },
+    "Select": {
+      "cardMode": "column",
+      "viewport": "480x360"
+    },
+    "SelectGroup": {
+      "cardMode": "column",
+      "viewport": "480x360"
+    },
+    "Table": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
