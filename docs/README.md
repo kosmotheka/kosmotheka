@@ -15,6 +15,8 @@
 | [architecture/operations.md](architecture/operations.md) | Cómo se escribe: operaciones, HLC y validación. | Vivo |
 | [testing/hito-1.md](testing/hito-1.md) | Pruebas manuales del hito 1. | Vivo |
 | [testing/fase-2.md](testing/fase-2.md) | Pruebas manuales de la Fase 2. | Vivo |
+| [design/brief.md](design/brief.md) | Brief de diseño de interfaz (para Claude Design u otro diseñador). | Vivo |
+| [design/errors.md](design/errors.md) | Catálogo de errores y avisos: mensaje, causa y qué hacer; guía «El móvil no se empareja». | Vivo |
 | [architecture/sync.md](architecture/sync.md) | Sincronización entre dispositivos: reglas y protocolo. | Vivo |
 
 ## Convenciones de la documentación
