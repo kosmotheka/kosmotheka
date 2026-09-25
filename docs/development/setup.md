@@ -1,5 +1,7 @@
 # Entorno de desarrollo
 
+> Este documento cubre la app (Rust, Tauri, Android). El servidor Symfony usa Docker y tiene su propia guía: [server.md](server.md).
+
 > Pasos comprobados el 24/09/2026 en un Slimbook con Ubuntu 20.04 (ver D23). Semilla de la futura guía de contribución.
 
 ## Por qué un contenedor

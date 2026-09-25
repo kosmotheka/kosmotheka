@@ -11,6 +11,7 @@
 | [ROADMAP.md](ROADMAP.md) | Plan de ejecución por fases. | Borrador |
 | [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md) y [nombre del proyecto](research/naming.md). | Vivo |
 | [development/setup.md](development/setup.md) | Cómo montar el entorno de desarrollo. | Vivo |
+| [development/server.md](development/server.md) | Servidor Symfony en Docker: arranque, puertos, bases de datos y comandos. | Vivo |
 | [architecture/data-model.md](architecture/data-model.md) | Esquema de la base de datos local. | Vivo |
 | [architecture/operations.md](architecture/operations.md) | Cómo se escribe: operaciones, HLC y validación. | Vivo |
 | [testing/hito-1.md](testing/hito-1.md) | Pruebas manuales del hito 1. | Vivo |

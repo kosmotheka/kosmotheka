@@ -127,7 +127,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 
 | Hito | Qué se construye | Cómo se prueba |
 |---|---|---|
-| 3.0 Esqueleto del servidor | Symfony + PostgreSQL en Docker en `server/`; los casos de conformidad de `spec/` en PHPUnit y en la CI | Tests, CI |
+| 3.0 Esqueleto del servidor ✅ | Symfony + PostgreSQL en Docker en `server/`; los casos de conformidad de `spec/` en PHPUnit y en la CI ([guía](development/server.md)) | Tests, CI |
 | 3.1 Aplicar operaciones en PHP | El mismo motor de fusión que en Rust; casos de conformidad **de fusión** compartidos por Rust y PHP | Casos compartidos |
 | 3.2 Cuentas, bibliotecas, roles e invitaciones | Usuarios, bibliotecas (D38), membresías con rol, token por dispositivo, invitación por QR | Tests de API |
 | 3.3 La app habla con el servidor | «Conectar a un servidor»; sincronización con él como única vía (D39); permisos en la app y en el servidor (D40) | Extremo a extremo con el servidor en Docker |

@@ -47,6 +47,27 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
+  server:
+    name: Server (PHP)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, pdo_pgsql, zip
+          coverage: none
+          tools: composer
+      - run: composer install --no-interaction --no-progress
+      # The same steps as `make check`, without Docker.
+      - run: vendor/bin/php-cs-fixer fix --dry-run --diff
+      - run: vendor/bin/rector process --dry-run
+      - run: vendor/bin/phpstan analyse --memory-limit=1G
+      - run: php bin/phpunit
+
   build:
     name: Build desktop (${{ matrix.os }})
     needs: checks

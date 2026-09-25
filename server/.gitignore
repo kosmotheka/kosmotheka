@@ -1,0 +1,26 @@
+# Symfony commits .env, .env.dev and .env.test on purpose: they hold only
+# defaults and container-local credentials. Real secrets go in .env.local,
+# ignored below and by the root .gitignore.
+!/.env
+!/.env.dev
+!/.env.test
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###

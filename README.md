@@ -33,6 +33,7 @@ See the roadmap and the architecture decision log in [`docs/`](docs/) (currently
 | `app/` | Tauri app: React UI in `src/`, Rust core in `src-tauri/` |
 | `crates/domain/` | Domain model, validation, hybrid logical clock and operations |
 | `spec/` | Operation format: JSON Schema and conformance cases (MIT) |
+| `server/` | Optional sync server: Symfony, PostgreSQL, with its own Docker setup |
 | `docs/` | Vision, decisions, roadmap, architecture, test plans and development setup |
 
 ## Development
@@ -56,6 +57,14 @@ cd app && npm run typecheck && npm run lint && npm run check:spec
 ```
 
 Tests against the real online services are opt-in: `cargo test -p library-app -- --ignored live_`.
+
+The server runs in Docker; no PHP is needed on the host. See [`docs/development/server.md`](docs/development/server.md):
+
+```bash
+cd server
+make up       # PostgreSQL, PHP-FPM and nginx on http://localhost:8095
+make check    # code style, Rector, PHPStan and PHPUnit
+```
 
 ## License
 

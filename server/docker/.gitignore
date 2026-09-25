@@ -1,0 +1,4 @@
+/logs
+.env
+# Template for .env; the root .gitignore excludes .env.* by default.
+!.env.dist

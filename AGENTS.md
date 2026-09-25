@@ -23,7 +23,7 @@ The full rationale lives in `docs/` (in Spanish):
 | Desktop and Android app | Tauri 2, Rust |
 | App UI | React, TypeScript, Vite, shadcn/ui, Tailwind, react-i18next |
 | Client storage | SQLite via `rusqlite` (`bundled`) and `rusqlite_migration` |
-| Server | Symfony, PostgreSQL, Docker |
+| Server | PHP 8.5, Symfony 8, Doctrine, PostgreSQL 18, Docker |
 | Operation spec | JSON Schema plus shared conformance cases |
 
 ## Repository layout
@@ -35,10 +35,11 @@ app/            Tauri app: React UI in src/, Rust core in src-tauri/
   src-tauri/gen/android/  Generated Android project (committed; edit with care)
 crates/domain/  Domain types, validation, HLC and operations; no storage or UI code
 spec/           Operation spec: JSON Schema and conformance cases (MIT licence)
+server/         Symfony sync server (PHP), with its own Docker setup in server/docker/
 docs/           Working documentation (Spanish); see docs/architecture/
 ```
 
-Planned: `server/` (Symfony).
+Each part keeps its own tooling: the app and crates build in the `library-dev` Distrobox container, the server runs in its own Docker Compose project (`server/docker/`). The only thing they share is `spec/`, mounted read-only into the server's PHP container. See `server/AGENTS.md` for server-specific instructions.
 
 ## Language
 
@@ -54,6 +55,7 @@ Planned: `server/` (Symfony).
 - Sync must converge: any change to how operations apply needs a test in `sync.rs` that simulates devices and uses `assert_converged`.
 - Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
+- Adding a field or entity also means updating `server/src/Operation/Entity.php`, the PHP mirror of `schema.rs`.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
 - Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`.
@@ -95,5 +97,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
 | Live tests against real services (network, not in CI) | `cargo test -p library-app -- --ignored live_` |
 | Second instance with its own data (debug builds), to test LAN sync | `LIBRARY_DATA_DIR=/tmp/library-b target/debug/library-app` (with `npm run tauri dev` running) |
+
+Server commands run in Docker through the server's Makefile (`cd server && make help`): `make up`, `make check` (style, Rector, PHPStan, PHPUnit), `make fix`, `make migrate`, `make console C="…"`.
 
 `app/dist` must exist before `cargo clippy` or `cargo test`, because Tauri embeds the built UI at compile time. Run `npm run build` first.
