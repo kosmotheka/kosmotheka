@@ -1,6 +1,6 @@
 # Revisión del alcance y modelo de bibliotecas
 
-> **Estado:** acordado en conversación el 25/09/2026; todavía **no son decisiones**. Falta revisar los catálogos (sección 13). Con eso claro se rehará el plan y lo acordado pasará a [DECISIONS.md](../DECISIONS.md). Mientras tanto, el [plan de la Fase 3](fase-3.md) queda en pausa.
+> **Estado:** acordado en conversación el 25/09/2026; todavía **no son decisiones**. Los catálogos están en revisión (sección 13 bis). Con eso claro se rehará el plan y lo acordado pasará a [DECISIONS.md](../DECISIONS.md). Mientras tanto, el [plan de la Fase 3](fase-3.md) queda en pausa.
 
 ## 1. Por qué esta revisión
 
@@ -122,7 +122,10 @@ Aunque la arquitectura esté preparada, el servicio en la nube tiene costes prop
 
 ## 11. Distribución, código abierto, web e iOS
 
-- **Android:** tienda de Google (pago único como desarrollador) y **F-Droid**, el canal del software libre. **Por comprobar:** las nuevas exigencias de Google de verificar a los desarrolladores, también para las APK instaladas a mano.
+- **Android:** tienda de Google y **F-Droid**, el canal del software libre.
+  - **Cuenta de desarrollador de Google:** pago único de 25 $, sin cuota anual. Las cuentas personales nuevas tienen que pasar una prueba cerrada con al menos 12 probadores durante 14 días antes de publicar.
+  - **Verificación de desarrolladores (desde el 30/09/2026, global en 2027):** hará falta identidad verificada para que una app se instale en un Android certificado, **también las APK instaladas a mano**. Desde noviembre de 2025 hay un tipo de cuenta para distribuir a un público reducido (familia, amigos, pruebas: hasta 20 dispositivos) sin documento de identidad ni pago.
+  - iOS: 99 $ al año; descartado.
 - **Código abierto y tienda son compatibles.** Signal, Bitwarden, Thunderbird, Immich o Nextcloud publican su código y están en la tienda. Solo tú publicas con tu nombre e identificador; otros hacen un fork con otro identificador o generan su APK. Lo que aporta es confianza, contribuciones y autoalojamiento.
 - **Libre y con servicio de pago** es un modelo conocido (Nextcloud, Bitwarden, Plausible, Ghost). La AGPL (D11) lo protege: quien monte tu servidor como servicio tiene que publicar sus cambios.
 - **Web:** solo aparece en el escenario 8 (el personal en un ordenador de mostrador). En los demás no hace falta. D53 sigue abierta, sin urgencia.
@@ -172,6 +175,67 @@ El esqueleto, Docker, la calidad y la validación en PHP siguen valiendo; la val
 - Cómo se resuelve el hueco del administrador único (sección 9).
 - ¿Cuenta con contraseña o solo con código por email?
 - ¿Una biblioteca en la nube también se sincroniza por wifi? (D39)
+
+## 13 bis. Catálogos (en debate)
+
+### Lo que hay en casa
+
+| Tipo | Identificador | Costuras |
+|---|---|---|
+| Libros físicos | ISBN, sin problema | — |
+| Libros en PDF | A veces nada: ni ISBN ni código de barras | Suelen corresponder a un libro físico; buscar por título y, si no aparece, alta a mano |
+| eBooks | Igual que los PDF | Ídem |
+| Juegos de mesa | Código de barras de producto (EAN/UPC), no ISBN | De una caja enorme a una baraja (el Uno) |
+| Películas y series (DVD, Blu-ray) | Código de barras | Caja perdida, el disco en un sobre: alta sin código |
+| Cómics | — | No los colecciona, pero es un caso de uso típico |
+| Videojuegos | Físicos con código; digitales (Switch, Steam, Epic) sin nada | La mayoría no tiene código |
+
+**Colecciones:** son importantes y no están en el formulario. Se quiere poder añadir un libro de una colección que aún no se tiene, para que te lo regalen o para saber qué falta por comprar. Ya estaba en la visión («saga y número dentro de la saga», «qué tomo falta») y quedó para la Fase 4.
+
+**Conclusión del mantenedor:** el ISBN es un campo del catálogo de libros; lo demás no lo tiene y no se debe pedir. El formulario se centró en libros y nos estamos pillando los dedos.
+
+### Notas de la conversación
+
+- **Hoy ya se puede dar de alta un libro sin ISBN**: el único campo obligatorio es el título. Lo que falta es **buscar por título** en los proveedores; ahora solo se busca por ISBN (D26).
+- **El ISBN es un código de barras más.** El código de un libro es un EAN-13 que empieza por 978 o 979. Las películas y los juegos de mesa llevan otro EAN o UPC. El escáner puede leer cualquiera y la app decide qué es.
+- **Pero el código de barras solo resuelve bien los libros.** Para películas, juegos de mesa y videojuegos, los catálogos con datos buenos se consultan por título: TMDB (películas y series), BoardGameGeek (juegos de mesa), IGDB o RAWG (videojuegos). Buscar por código de barras fuera de los libros exige servicios de productos, peores y a menudo de pago.
+- **El formato ya está en el ejemplar** (tapa dura, bolsillo, ebook…). PDF y ebook son formatos de un libro, no otro catálogo. Cada tipo tendría sus formatos: DVD, Blu-ray, 4K; cartucho o digital; y la plataforma o tienda en los videojuegos (Switch, Steam, Epic).
+- **Lo digital no tiene estantería:** la ubicación sería «Steam», «mi Drive» o «Kindle».
+- **El modelo de D08 ya lo prevé:** una parte común (título, portada) y una tabla de detalles por tipo. El formulario, en cambio, empieza por el ISBN: tiene que empezar por el tipo, o por lo que se escanea o se busca.
+- **Proveedores de metadatos:** queda pendiente hablar de sus fallos (Google Books sin clave se queda sin cuota; Open Library tiene huecos en ediciones españolas).
+- **«Colección» puede significar tres cosas:** una colección editorial (Austral, Biblioteca Áurea), una saga o serie con orden (los seis libros de Dune) o una línea de producto (el básico de un juego de rol y sus suplementos). Hay que aclarar cuál o cuáles.
+- **Idea a pensar:** si el catálogo puede contener obras que **no tienes** (sin ejemplares), la colección muestra lo que falta y el deseo es una marca sobre algo que ya está en el catálogo. Hoy los deseos son una lista aparte (D36).
+
+### Colecciones y lo que falta (lo que va saliendo)
+
+**Del mantenedor:**
+- Le encajan **sagas o series** (tiene muchísimas de novelas; los cómics se organizan así) y **líneas de producto**: el fan de Catán que se compra todas las versiones, o Monopoly y Risk en versión Star Wars o El Señor de los Anillos.
+- **La editorial no agrupa:** es un campo más para filtrar, como el estudio de un videojuego o el autor. Un autor puede tener varias sagas, o participar con otros en sagas temáticas (caso real suyo).
+- **Lo que falta, con dudas:** sí quiere tenerlo apuntado y saber qué le falta, pero necesita un sitio donde solo estén esos, con filtros, para que no haga ruido. Además, de lo que falta, unas cosas están en la lista de deseos para que se las regalen y otras no, porque es una colección que va completando él.
+
+**Notas:**
+- **Una sola pieza, «serie»,** puede cubrir la saga y la línea de producto: agrupa obras, con orden o sin él. Una obra puede estar en **varias** series (el Monopoly de Star Wars está en «Monopoly» y en «Star Wars»), y una serie puede tener obras de varios autores. Faltaría la dependencia «necesita el básico» (expansiones de Catán, suplementos de rol), que ya estaba en el roadmap.
+- **Tres estados, sin listas separadas:**
+  - **Lo tengo:** tiene ejemplares. Es lo que se ve por defecto en el catálogo, así que lo que falta no hace ruido.
+  - **Me falta:** está en el catálogo sin ejemplares. Tiene su propia vista o filtro, y las series muestran los huecos.
+  - **Lo deseo:** una marca sobre algo que falta, para que te lo regalen. La lista de deseos es la vista de lo marcado. El libro fotografiado en una tienda entra como «me falta» con la marca de deseo.
+- **El deseo es de una persona:** tu deseo y el de Hugo son distintos, como las lecturas. Encaja con la reserva de regalos oculta para quien los recibe (Fase 4).
+- Con eso, todo el modelo son pocas piezas: **obra, ejemplar, serie** y **marcas por persona** (leído, deseado).
+
+### Proveedores
+
+- **Del mantenedor:** los proveedores son una ayuda opcional, nunca indispensable: se tiene que poder dar de alta cualquier cosa a mano. Como el catálogo de tipos es cerrado, se pueden integrar y validar proveedores concretos. La IA sería un complemento para cualquier catálogo, más adelante.
+- Investigación y tabla por tipo: [research/proveedores.md](../research/proveedores.md). Lo que más afecta a la arquitectura: las claves no pueden ir dentro de una app libre (las pone el usuario, o la nube hace de intermediario), y varios proveedores prohíben el uso comercial, lo que pesa sobre un servicio de pago.
+
+- **Acordado:** todos los proveedores posibles; las claves en el servidor (quien lo monte pone las suyas); sin nube, solo los proveedores sin clave, con aviso y ayuda en la app; con nube, se activan todos porque busca el servidor.
+- **Diseño:** la app tiene que seguir los patrones de Android (navegación inferior, menú lateral…) y tener una sección de ayuda. Anotado en el [brief](../design/brief.md).
+
+### Qué tipos y dónde parar
+
+- **Del mantenedor:** a la lista le faltaban los **cómics**: él no los usará, pero mucha gente sí. Y hay quien colecciona sellos, monedas, Micro Machines o Playmobil; no tiene sentido buscarlos en un catálogo. En algún momento hay que parar, porque la lista puede ser infinita. Duda: dar la opción de introducir algo a mano, con campos básicos y sin proveedores, puede liar la interfaz.
+- **Lista cerrada de tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos.
+- **Idea para lo demás: un tipo genérico «Otro»** con los campos comunes a todo (nombre, foto, descripción, año, series, notas) y sin proveedores. No lía la interfaz si es el mismo formulario de siempre sin la parte específica de cada tipo. Los campos personalizados por el usuario (lo que hace Koillection, y que ya estaba en la Fase 6) sí complican mucho la interfaz; se dejarían para cuando alguien los pida de verdad.
+- El orden de los tipos se decide al rehacer el plan.
 
 ## 14. Prioridades (propuesta para discutir después de los catálogos)
 

@@ -101,6 +101,14 @@ Por pasos: 1) escanear o teclear el ISBN; 2) ver lo encontrado (portada, título
 
 Un usuario puede tener varias bibliotecas (por ejemplo, la de la familia y una con amigos). Se trabaja con **una a la vez**, elegida con un selector siempre accesible; catálogo, deseos y altas son de la activa. El buscador ofrece «en todas» y «¿Lo tengo?» mira siempre en todas, diciendo en cuál está cada resultado. Hace falta también «Mover a otra biblioteca» en la ficha.
 
+### Que parezca una app de Android, no un pegote
+
+La app **no puede parecer una web metida en una ventana**. En Android tiene que seguir los patrones de la plataforma todo lo posible: barra de navegación inferior, menú lateral (*navigation drawer*) para lo secundario, botón atrás del sistema, hojas inferiores, botón flotante, gestos y zonas seguras. En escritorio, los patrones de una app de escritorio.
+
+### Sección de ayuda
+
+Una sección de ayuda propia, accesible desde el menú, que explique entre otras cosas qué se puede hacer sin cuenta y qué añade la nube. Por ejemplo, por qué algunos buscadores de datos (películas, videojuegos, juegos de mesa) **solo están disponibles con la nube**: necesitan una clave que no puede ir dentro de una app libre. Donde falte un buscador, la app lo avisa con calma y enlaza a esa ayuda.
+
 ## 7. Errores, avisos y ayuda (muy importante)
 
 **Patrón para todo mensaje de problema:**

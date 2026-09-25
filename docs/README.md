@@ -9,7 +9,7 @@
 | [VISION.md](VISION.md) | Visión original del proyecto (ideación del 24/09/2026). Documento histórico: las decisiones actualizadas están en DECISIONS.md. | Cerrado |
 | [DECISIONS.md](DECISIONS.md) | Registro de decisiones de arquitectura: contexto, opciones, recomendación y estado de cada una. | Vivo |
 | [ROADMAP.md](ROADMAP.md) | Plan de ejecución por fases. | Borrador |
-| [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md) y [nombre del proyecto](research/naming.md). | Vivo |
+| [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md) y [proveedores de datos por tipo](research/proveedores.md). | Vivo |
 | [development/setup.md](development/setup.md) | Cómo montar el entorno de desarrollo. | Vivo |
 | [development/server.md](development/server.md) | Servidor Symfony en Docker: arranque, puertos, bases de datos y comandos. | Vivo |
 | [plans/fase-3.md](plans/fase-3.md) | Plan detallado de la Fase 3 (servidor) y sus decisiones (D41–D53; D53 abierta). | Vivo |
