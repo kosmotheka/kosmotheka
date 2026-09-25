@@ -62,7 +62,7 @@ It is split in two layers, as in the Rust client. The **Serializer** rejects any
 - `#[MapRequestPayload(type: X::class)]` on an `array` argument maps a **list** of DTOs.
 - Strict payloads: pass `serializationContext: OperationPayload::SERIALIZATION_CONTEXT` (or an equivalent constant) so unknown keys are rejected, as the Rust client does.
 - The wire format is `snake_case`. When a property name differs, declare it with `#[SerializedName('…')]` property by property, not with a global name converter.
-- No `symfony/form`: forms are for HTML submissions. This is a JSON API.
+- The API is JSON, so no `symfony/form` there. The exceptions are the account pages (registration, email confirmation, password reset) and the admin panel, which are server-rendered with Twig and forms, following rpgutilities (D49, D50, D52).
 
 ## Errors
 

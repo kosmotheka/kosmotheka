@@ -46,6 +46,18 @@
 | D38 | Un servidor aloja varias bibliotecas desde el principio | aceptada |
 | D39 | Biblioteca conectada a un servidor: sincroniza solo con él | aceptada |
 | D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | propuesta |
+| D41 | Filas del catálogo en el servidor: clave `(library_id, id)` | aceptada |
+| D42 | Registro abierto en el servidor | aceptada |
+| D43 | Invitaciones de un solo uso que caducan en 24 horas | aceptada |
+| D44 | El lector escribe solo lo suyo: deseos y lecturas | aceptada |
+| D45 | El editor solo borra lo que creó | aceptada |
+| D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | abierta |
+| D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | aceptada |
+| D48 | Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo | aceptada |
+| D49 | Verificación obligatoria del email, con el patrón de rpgutilities | aceptada |
+| D50 | Recuperar la contraseña con el patrón de rpgutilities; revoca los demás dispositivos | aceptada |
+| D51 | Superadministrador del servidor, con acceso a todo | aceptada |
+| D52 | Panel de administración web con EasyAdmin y KPI | abierta |
 
 ---
 
@@ -441,3 +453,158 @@ Una biblioteca sin servidor se sincroniza por la wifi entre dispositivos, como e
 La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor) y **no ofrece ni registra** lo que ese rol no puede hacer: un lector no ve «Borrar». El servidor comprueba de nuevo cada operación y rechaza las que no cumplan, por si una app estuviera manipulada.
 
 **Por qué no «dejar hacer y deshacer después»** (lo que planteaba D05): con «el borrado gana» (D32), un borrado aplicado en local no se puede deshacer limpiamente, porque la lápida impediría recrear la fila. Si una app legítima nunca genera operaciones prohibidas, no hay nada que deshacer. Lo que un rol no puede hacer directamente se hace como **solicitud** (hito 3.4): por ejemplo, «pido borrar este libro», que es una operación permitida y que un administrador aprueba.
+
+## D41 · Filas del catálogo en el servidor: clave `(library_id, id)` — `aceptada`
+
+**Contexto:** en PostgreSQL todas las tablas del catálogo llevan `library_id` (D38). Los ids son UUID v7 generados en cada dispositivo y en la práctica no se repiten, pero el servidor recibe ids de clientes que no controla.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Clave primaria solo `id` | Claves foráneas de una columna, como en SQLite | Si llega un id que ya existe en otra biblioteca, hay que detectarlo en el código; si se escapa, un cambio toca datos ajenos |
+| **Clave primaria `(library_id, id)`** | La base de datos garantiza que una biblioteca nunca pisa filas de otra, aunque un cliente mande un id ajeno por error o a propósito | Las claves foráneas llevan dos columnas |
+
+**Decisión:** `(library_id, id)` en todas las tablas del catálogo y en sus tablas de soporte (`field_versions`, `tombstones`); las claves foráneas entre tablas del catálogo incluyen `library_id`, así que una fila tampoco puede apuntar a otra biblioteca. En el cliente (SQLite) no cambia nada: cada base local es una sola biblioteca.
+
+**Consecuencias:** el motor de aplicación del servidor (hito 3.1) filtra y escribe siempre con `library_id`; no hay consulta del catálogo sin él.
+
+## D42 · Registro abierto en el servidor — `aceptada`
+
+**Contexto:** D38 fija usuario y contraseña, con un token por dispositivo. Faltaba decidir cómo se crea una cuenta.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Solo por invitación (primer administrador por consola) | Nadie de fuera entra; poco que proteger | Cierra, por ahora, la puerta al servicio público |
+| **Registro abierto** | Cualquiera con la URL crea su cuenta y su biblioteca: es la base del servicio público | Exige protección contra abusos desde el principio |
+| Configurable por variable de entorno | Las dos cosas | Más trabajo ahora |
+
+**Decisión:** registro abierto. Quien se registra crea su cuenta y puede crear sus bibliotecas, de las que es administrador; las invitaciones siguen siendo la forma de unirse a una biblioteca ajena.
+
+**Consecuencias:** entra en el hito 3.2 lo necesario para un registro público: límite de peticiones por IP en el alta y el inicio de sesión (`symfony/rate-limiter`, con `trusted_proxies` bien configurado, como en Riddle). Quedan por decidir, en el plan de la Fase 3: si se verifica el email (y con ello el envío de correo), cómo se recupera una contraseña olvidada y si el servidor tiene un administrador global además de los administradores de cada biblioteca.
+
+## D43 · Invitaciones de un solo uso que caducan en 24 horas — `aceptada`
+
+**Contexto:** para unirse a una biblioteca ajena hace falta una invitación (D42). Se entrega como QR con la URL del servidor, un token y el rol con el que se entra.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| 7 días, un solo uso | Margen para enviarla a alguien que no está delante | Si se filtra, sirve durante una semana |
+| **24 horas, un solo uso** | Si se filtra (una captura, un chat), deja de servir pronto y solo para una persona | Si no se abre ese día, hay que generar otra |
+| Sin caducidad, varios usos | Un solo QR para toda la familia | Quien lo consiga entra hasta que se revoque a mano |
+
+**Decisión:** un solo uso y 24 horas. El administrador puede revocarla antes y generar otra en cualquier momento. En la base de datos solo se guarda el hash del token.
+
+**Consecuencias:** la app debe explicar, al escanear una invitación caducada o ya usada, que se pida otra al administrador (entrada nueva en `docs/design/errors.md` cuando se implemente, en el hito 3.2).
+
+## D44 · El lector escribe solo lo suyo: deseos y lecturas — `aceptada`
+
+**Contexto:** el lector no modifica el catálogo (obras, ediciones, ejemplares…). Quedaba por decidir si puede apuntar cosas propias.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Sí, lo suyo** | Puede usar la lista de deseos y (Fase 4) llevar sus lecturas | Hay que saber quién creó cada deseo y cada lectura |
+| Solo leer | Lo más simple | Sin deseos ni lecturas; tendría que pedírselo a un editor |
+| Deseos ahora, lecturas más adelante | Aplaza parte de la decisión | Deja la regla a medias |
+
+**Decisión:** el lector crea, edita y borra sus deseos y (Fase 4) sus lecturas; no toca el catálogo ni lo que apuntaron otros.
+
+**Consecuencias:** el servidor guarda quién creó cada fila (el usuario de la operación que la creó) y lo usa para los permisos; no hace falta un campo nuevo en `spec/`, porque el autor de cada operación ya lo conoce el servidor por el token del dispositivo. La app (D40) ofrece al lector solo esas acciones.
+
+## D45 · El editor solo borra lo que creó — `aceptada`
+
+**Contexto:** el editor crea y edita todo el catálogo. Un borrado no tiene vuelta atrás, porque el borrado gana (D32).
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Borra lo que creó él** | Corrige sus propios errores sin esperar a nadie | Para lo ajeno necesita una solicitud |
+| Nunca borra | Lo más seguro | Hasta para deshacer su propio error espera a un administrador |
+| Borra todo | Lo más cómodo | Cualquier editor borra libros ajenos sin vuelta atrás |
+
+**Decisión:** el editor borra solo las filas que creó él; para borrar lo ajeno manda una solicitud que aprueba un administrador (hito 3.4). El administrador borra todo.
+
+**Consecuencias:** usa el mismo registro de quién creó cada fila que D44. Un borrado que arrastra filas relacionadas (borrar un libro borra su edición y sus ejemplares) solo se permite si todas las filas afectadas son suyas; si no, se convierte en solicitud. La app (D40) muestra «Borrar» o «Pedir que se borre» según el caso.
+
+## D46 · Varias bibliotecas en la app, como entidad en una sola base de datos — `abierta`
+
+**Qué se busca:** que en la app se puedan tener varias bibliotecas a la vez; por ejemplo, la de la familia y una con amigos. Un usuario puede estar en varias, con un rol distinto en cada una (D38).
+
+**Ya decidido por el mantenedor:**
+- **Una sola base de datos** en el dispositivo, con una entidad **biblioteca**; nada de una base por biblioteca.
+- Al unirse a una biblioteca del servidor teniendo libros propios, la local se conserva (por ejemplo, con «(local)» detrás del nombre) y se puede **mover un ítem a otra biblioteca**.
+
+**Por resolver** (hay que darle una vuelta hasta que la arquitectura esté clara):
+- Cómo entra `library_id` en el modelo local: en todas las tablas del catálogo, como en el servidor (D41), o solo en las raíces (obra, deseo) y heredado por el resto.
+- Cómo encajan la sincronización por wifi (Fase 2) y la del servidor (D39) cuando cada biblioteca de la misma base puede ir por una vía distinta: vectores de versión, historial y copias de seguridad por biblioteca.
+- Qué significa mover: ids nuevos o los mismos, qué pasa con las lápidas (D32), el historial y los permisos (D45) al sacar algo de una biblioteca del servidor.
+- Cómo se migran los datos que ya existen a la primera biblioteca.
+- Qué cambia en la interfaz: selector de biblioteca, búsqueda en una o en todas, «¿Lo tengo?» en todas.
+
+## D47 · Cambio rechazado por el servidor: se corrige solo en ese dispositivo — `aceptada`
+
+**Contexto:** con D40 la app no genera cambios que su rol no permite, pero puede haberlos: por ejemplo, un editor sin conexión borra un libro suyo mientras un administrador le baja a lector. Al sincronizar, el servidor rechaza el borrado, pero en ese dispositivo el libro ya no está, y la lápida (D32) impediría que volviera por la vía normal.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Corrección del servidor** | Solo se deshace lo rechazado; nadie más ve nada | Un mecanismo nuevo en el cliente |
+| Descargar de cero la biblioteca | Muy simple | Se pierden también los cambios válidos aún no subidos |
+| Convertirlo en solicitud | Aprovecha el hito 3.4 | Lo más complejo; la corrección hace falta igualmente si se rechaza |
+
+**Decisión:** el servidor no aplica la operación rechazada y responde a ese dispositivo con el motivo y con el **estado válido de las filas afectadas** (sus campos y versiones). La app lo aplica encima, deshaciendo su cambio; si era un borrado, **quita la lápida local y restaura la fila**. La operación rechazada queda en el historial local marcada como rechazada y no se vuelve a enviar. La app avisa con el motivo (por ejemplo, «No se pudo borrar X: ya no tienes permiso»).
+
+**Consecuencias:**
+- Es la única forma en que una lápida puede levantarse, y solo por orden del servidor, en una biblioteca conectada a él (D39). La sincronización por wifi nunca lo hace.
+- Antes de programarlo se escriben casos de conformidad en `spec/` (rechazo de una creación, de una edición y de un borrado, y un rechazo seguido de cambios válidos).
+- Entrada nueva en `docs/design/errors.md` cuando se implemente (hito 3.3).
+
+## D48 · Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo — `aceptada`
+
+**Contexto:** hay que empaquetar el servidor para el VPS y para quien quiera alojar el suyo. En desarrollo ya se usa nginx + PHP-FPM + PostgreSQL, como en Riddle y rpgutilities.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| FrankenPHP (modelo de Koillection) | Una imagen con HTTPS automático; dos servicios para autoalojarlo | Distinto de desarrollo y de lo que el mantenedor ya opera |
+| **nginx + PHP-FPM** | Igual en desarrollo y en producción; lo conocido | Tres contenedores; el HTTPS lo pone un proxy delante |
+
+**Decisión:** nginx + PHP-FPM + PostgreSQL también en producción. El HTTPS lo termina un proxy delante (el que ya haya en el VPS, o Certbot).
+
+**Consecuencias:** sustituye a la idea de «una imagen Docker con FrankenPHP» del ROADMAP. En el hito 3.4 hacen falta imágenes de producción (sin Xdebug ni dependencias de desarrollo), un `docker-compose` de producción y una guía de instalación para quien se aloje el suyo, incluido cómo poner el proxy con HTTPS.
+
+## D49 · Verificación obligatoria del email, con el patrón de rpgutilities — `aceptada`
+
+**Contexto:** con registro abierto (D42) cualquiera puede crearse una cuenta.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Obligatoria** | Frena cuentas falsas; el email sirve después para recuperar la contraseña | Hay que configurar el envío de correo |
+| Sin bloquear | Más cómodo | Cualquiera se registra con un email ajeno |
+| No verificar | Lo más simple | Sin recuperación por email y más expuesto a abusos |
+
+**Decisión:** hasta confirmar el email, la cuenta no puede usarse. Se sigue **el patrón de rpgutilities**: formulario de registro con honeypot contra bots, correo con un enlace con token de confirmación, página de confirmación, y un `UserChecker` que no deja entrar a una cuenta sin confirmar.
+
+**Consecuencias:**
+- El servidor tiene, además de la API JSON, unas pocas páginas web de cuenta (registro, confirmación, recuperación de contraseña) con Twig y formularios de Symfony, como rpgutilities.
+- **Cómo se envía el correo está por decidir** (quizá con Cloudflare). `symfony/mailer` permite cambiar de proveedor sin tocar el código, con `MAILER_DSN` en `.env.local`.
+
+## D50 · Recuperar la contraseña con el patrón de rpgutilities; revoca los demás dispositivos — `aceptada`
+
+**Contexto:** la contraseña solo hace falta para dar de alta un dispositivo (D38); los que ya tienen token siguen funcionando.
+
+**Decisión:** **el patrón de rpgutilities**: se pide la recuperación, llega un correo con un enlace con token que caduca, y en esa página se pone una contraseña nueva. Al cambiarla se revocan los tokens de todos los demás dispositivos de la cuenta, por si el motivo era que alguien la conocía.
+
+**Consecuencias:** un dispositivo revocado pide iniciar sesión de nuevo. **No pierde nada**: sus cambios sin subir siguen en su base local y se envían en cuanto vuelve a entrar. La app lo tiene que explicar así (entrada nueva en `docs/design/errors.md`, hito 3.3). El envío del correo depende de lo que se decida en D49.
+
+## D51 · Superadministrador del servidor, con acceso a todo — `aceptada`
+
+**Contexto:** con registro abierto (D42) habrá cuentas y bibliotecas de gente que el operador no conoce. Alguien tiene que poder bloquear una cuenta que abusa o ayudar a quien perdió el acceso.
+
+**Decisión:** el patrón típico de Symfony, como en rpgutilities: `ROLE_SUPER_ADMIN` en la jerarquía de roles, por encima de `ROLE_ADMIN` y con `ROLE_ALLOWED_TO_SWITCH` para suplantar a un usuario al dar soporte. Puede gestionar cuentas y bibliotecas y ver y editar cualquier biblioteca. Se asigna por consola, nunca desde la API.
+
+**Consecuencias:**
+- `ROLE_SUPER_ADMIN` es un rol de Symfony sobre la cuenta; los roles de cada biblioteca (administrador, editor, lector) viven en la membresía (D38). Son dos niveles distintos.
+- Si el servidor se ofrece como servicio público, su política de privacidad debe decir que el operador tiene este acceso.
+- Dónde administra: D52.
+
+## D52 · Panel de administración web con EasyAdmin y KPI — `abierta`
+
+**Qué se busca:** un panel web para el superadministrador (D51) con la gestión típica de EasyAdmin (cuentas, bibliotecas, dispositivos, invitaciones) y además KPI, como el panel de rpgutilities.
+
+**Por resolver** (hay que darle una vuelta): qué KPI interesan, en qué hito entra (hasta entonces, comandos de consola en `src/Command/`) y cómo se registran los accesos del superadministrador a bibliotecas ajenas.

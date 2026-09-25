@@ -1,6 +1,6 @@
 # Plan detallado de la Fase 3: servidor y familia
 
-> **Borrador para revisar.** Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones que ya están tomadas se citan (D38, D39); las que propongo aquí están marcadas con **❓** y esperan tu visto bueno. Cuando se acepten, pasan a [DECISIONS.md](../DECISIONS.md).
+> **Revisado el 25/09/2026** (D41–D52). Quedan abiertas **D46** (varias bibliotecas en la app) y **D52** (panel de administración), que hay que pensar antes de los hitos que dependen de ellas. Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
 
 ## Estado
 
@@ -32,7 +32,7 @@ docs/
 
 1. **Casos de conformidad de la fusión** en `spec/conformance/merge.json`: cada caso es un estado inicial, una lista de operaciones que llegan en cierto orden y el estado final esperado (filas, campos y lápidas). Primero se escriben y se hacen pasar en **Rust**, contra el `sync::merge` actual, y después en PHP. Cubren: el último gana campo a campo por HLC, el borrado gana, una operación repetida no cambia nada, el orden de llegada no importa, y el cambio imposible (por ejemplo, una referencia a una fila borrada) se salta sin tumbar la operación entera.
 2. **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con `library_id` en todas (D38).
-   - ❓ **Clave primaria `(library_id, id)`** en vez de solo `id`. Los UUID v7 no deberían repetirse, pero así una biblioteca nunca puede pisar filas de otra, aunque un cliente mande un id ajeno. Recomendado.
+   - ✅ **Clave primaria `(library_id, id)`** (D41), también en las claves foráneas: una biblioteca nunca puede pisar ni referenciar filas de otra.
    - Tablas de soporte: `operations` (el registro, con el cuerpo en JSONB: es un registro, no el modelo de datos), `field_versions` y `tombstones`, igual que en el cliente.
 3. **Motor de aplicación con DBAL** en `server/src/Sync/`, sin ORM: SQL directo en transacción, con *savepoints*, como en Rust. El ORM se reserva para usuarios y bibliotecas (3.2).
 4. **Hecho cuando:** los casos de `merge.json` pasan en Rust y en PHP, en la CI.
@@ -51,15 +51,16 @@ docs/
   | `Device` | Usuario, nombre, hash del token, último acceso |
   | `Invitation` | Biblioteca, rol, hash del token, caducidad y uso único |
 
+- **Registro, verificación del email y recuperación de la contraseña (D49, D50):** el patrón de rpgutilities, con páginas web (Twig y formularios), enlace con token por correo y `UserChecker`. El proveedor de correo está por decidir (quizá Cloudflare).
 - **Autenticación (D38):** usuario y contraseña para dar de alta un dispositivo; a partir de ahí, el dispositivo usa su propio token (`Authorization: Bearer`). En la base de datos solo se guarda el hash del token, así que una copia de la base filtrada no sirve para entrar. Cada dispositivo se puede revocar por separado.
-- ❓ **Sin registro abierto.** El primer administrador se crea por consola (`make console C="app:user:create"`); los demás entran por invitación. Un servicio público vendría después, sin tocar el modelo. Recomendado.
-- **Invitación por QR:** contiene la URL del servidor y un token de un solo uso con caducidad (❓ 7 días). Al escanearlo, la app crea la cuenta (o inicia sesión) y se une a la biblioteca con el rol de la invitación.
+- ✅ **Registro abierto** (D42): cualquiera crea su cuenta y sus bibliotecas; para unirse a una ajena, invitación. Con límite de peticiones por IP en el alta y el inicio de sesión.
+- **Invitación por QR:** contiene la URL del servidor y un token de un solo uso que caduca en 24 horas (D43). Al escanearlo, la app crea la cuenta (o inicia sesión) y se une a la biblioteca con el rol de la invitación.
 - **Matriz de permisos** sobre los cambios, nunca sobre la etiqueta de intención (D25):
 
   | Rol | Puede |
   |---|---|
-  | Lector | Nada en el catálogo; solo leer. ❓ ¿Puede apuntar deseos y (Fase 4) sus lecturas? Propongo que sí: son suyos |
-  | Editor | Crear y editar todo; borrar solo lo que creó él. ❓ ¿O no borrar nunca y pedirlo con una solicitud? |
+  | Lector | Nada en el catálogo. Sí sus propios deseos y (Fase 4) sus lecturas (D44) |
+  | Editor | Crear y editar todo; borrar solo lo que creó él (D45). Lo ajeno, con una solicitud |
   | Administrador | Todo, más gestionar miembros, invitaciones y solicitudes |
 
 - **API:** JSON bajo `/v1/`, con los mismos nombres de ruta que la sincronización por wifi cuando la semántica coincide.
@@ -70,25 +71,29 @@ docs/
 **Objetivo:** «Conectar esta biblioteca a un servidor», y desde entonces sincronizar solo con él (D39).
 
 - **Mismo protocolo que por wifi** (vector de versiones, `pull` y `push`; ver [sync.md](../architecture/sync.md)), pero sobre HTTPS con un certificado real (sin huella fijada) y con el token del dispositivo. La app reutiliza casi todo el código de sincronización.
-- **Primera conexión:** la app sube todo su historial de operaciones; el servidor las valida, comprueba los permisos y las aplica. Si el usuario se une a una biblioteca que ya existe en el servidor, primero la descarga. ❓ ¿Qué pasa si se conecta una biblioteca local que ya tiene libros a una biblioteca del servidor que también tiene? Propongo no permitirlo en esta fase: o subes la tuya como biblioteca nueva o te unes a una existente empezando de cero en ese dispositivo.
+- **Primera conexión:** la app sube todo su historial de operaciones; el servidor las valida, comprueba los permisos y las aplica. Si el usuario se une a una biblioteca que ya existe en el servidor, primero la descarga. **Varias bibliotecas en la app (D46, abierta):** una entidad biblioteca en una sola base de datos, para estar a la vez en la de la familia y en otra con amigos; al unirse teniendo libros propios, la local se conserva y se pueden mover ítems. Hay que cerrar su arquitectura antes de este hito.
 - **Permisos en la app (D40):** el servidor dice el rol; la app oculta lo que ese rol no puede hacer.
-- ❓ **Operaciones rechazadas.** Con D40 no deberían darse, pero pueden aparecer si te bajan el rol mientras estás sin conexión. Propongo que el servidor responda con el estado actual de las filas afectadas como una **operación de corrección** con su propio HLC, que llega a todos por la vía normal y deshace el cambio local. El borrado es la excepción: un borrado rechazado deja la fila borrada en ese dispositivo hasta que la reciba de nuevo del servidor, así que el servidor tiene que poder «resucitarla» solo en ese dispositivo. Es el punto más delicado de la fase; lo concretaré con casos de conformidad antes de programarlo.
+- ✅ **Operaciones rechazadas (D47):** el servidor responde a ese dispositivo con el estado válido de las filas afectadas y la app lo aplica encima; si era un borrado, levanta la lápida local y restaura la fila. La operación queda marcada como rechazada y la app avisa del motivo. Antes de programarlo, casos de conformidad en `spec/`.
 - La sincronización por wifi se desactiva para una biblioteca conectada; los dispositivos emparejados se olvidan con un aviso.
 - **Hecho cuando:** una prueba de extremo a extremo con el servidor en Docker y dos instancias de la app converge, y un lector no puede modificar el catálogo.
 
 ## 3.4 Solicitudes y despliegue
 
 - **Solicitudes:** una operación que tu rol no permite se guarda como petición en el servidor (no se aplica ni se propaga). El administrador la ve, la aprueba (el servidor la aplica en su nombre, dejando constancia de quién la pidió) o la rechaza. En la app, «Pedir que se borre» sustituye a «Borrar» para quien no puede borrar.
-- **Despliegue:** una imagen para producción. ❓ **FrankenPHP** (el modelo de Koillection: un solo contenedor con Caddy, que saca el certificado HTTPS solo) más PostgreSQL, en vez de nginx y PHP-FPM, que es lo que usamos en desarrollo. Para el VPS necesitaré: el dominio o subdominio, si ya hay un proxy delante (otro Caddy o nginx con más servicios) y cómo quieres hacer las copias de seguridad de PostgreSQL.
+- **Despliegue (D48):** nginx + PHP-FPM + PostgreSQL, como en desarrollo, con imágenes de producción (sin Xdebug ni dependencias de desarrollo) y un proxy con HTTPS delante. Para el VPS necesitaré: el dominio o subdominio, si ya hay un proxy delante (nginx, Caddy…) con más servicios y cómo quieres hacer las copias de seguridad de PostgreSQL.
 - **Hecho cuando:** la familia usa el servidor del VPS desde el escritorio y el móvil.
 
-## Resumen de preguntas abiertas
+## Preguntas
 
-1. Clave primaria `(library_id, id)` en las tablas del catálogo (recomendado).
-2. Sin registro abierto: primer administrador por consola, el resto por invitación (recomendado).
-3. Caducidad de las invitaciones (propuesta: 7 días, un solo uso).
-4. Lector: ¿puede apuntar deseos y sus lecturas? (propuesta: sí).
-5. Editor: ¿borra lo que creó o nunca borra? (propuesta: borra lo suyo).
-6. Conectar una biblioteca con datos a otra del servidor que también tiene: no permitirlo por ahora (propuesta).
-7. Operaciones rechazadas: operaciones de corrección del servidor (propuesta, se detallará con casos de prueba).
-8. Producción con FrankenPHP; datos del VPS pendientes.
+1. ~~Clave primaria `(library_id, id)`~~ → aceptada (D41).
+2. ~~Registro~~ → abierto (D42). De ahí salen tres preguntas nuevas, al final de la lista.
+3. ~~Caducidad de las invitaciones~~ → 24 horas, un solo uso (D43).
+4. ~~Lector~~ → escribe solo sus deseos y lecturas (D44).
+5. ~~Editor~~ → borra solo lo que creó (D45).
+6. **Varias bibliotecas en la app** → entidad biblioteca en una sola base; arquitectura por cerrar (D46, abierta).
+7. ~~Operaciones rechazadas~~ → corrección del servidor solo en ese dispositivo (D47).
+8. ~~Producción~~ → nginx + PHP-FPM, como en desarrollo (D48). Datos del VPS: se piden al llegar al 3.4.
+9. ~~Verificar el email~~ → obligatorio, patrón de rpgutilities; proveedor de correo por decidir (D49).
+10. ~~Recuperar la contraseña~~ → patrón de rpgutilities; revoca los demás dispositivos (D50).
+11. ~~Administrador global~~ → `ROLE_SUPER_ADMIN`, con acceso a todo (D51).
+12. **Panel de administración** → EasyAdmin con la gestión típica y KPI; por diseñar (D52, abierta).

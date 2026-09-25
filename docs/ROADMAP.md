@@ -115,7 +115,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 
 ## Fase 3 — Servidor y familia
 
-- Servidor Symfony + PostgreSQL en una imagen Docker (el modelo de FrankenPHP de Koillection), desplegado en el VPS (D06, D07, D10).
+- Servidor Symfony + PostgreSQL en Docker (nginx + PHP-FPM, igual que en desarrollo, D48), desplegado en el VPS (D06, D07, D10).
 - Autenticación sencilla con token para sincronizar (D09). Roles: administrador, editor y lector.
 - Sincronización con el servidor usando el mismo formato de operaciones; el servidor reaplica cada operación con autoridad (D05).
 - **Solicitudes**: lo que un rol no puede hacer (tu hijo borrando) se convierte en una petición que aprueba un administrador.
