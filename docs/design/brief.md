@@ -65,19 +65,20 @@ No son técnicos: nada de jerga («operación», «sincronizar vectores», «fir
 
 ### Móvil
 
-**Barra superior:** el nombre de la biblioteca activa es el **selector**: al tocarlo se abre una hoja con tus bibliotecas y «Nueva biblioteca». A la izquierda, el botón del menú lateral; a la derecha, buscar.
+**Barra superior:** a la izquierda, el botón del menú lateral. En el centro, el nombre de la biblioteca activa, que es el **selector**: al tocarlo se abre una hoja con tus bibliotecas y «Nueva biblioteca». A la derecha, buscar y, **solo para administradores**, una **campanita con el contador de peticiones** pendientes, que abre la bandeja.
 
-**Barra inferior, cuatro destinos:**
+**Barra inferior, tres destinos**, simétrica:
 
-| Catálogo | **Escanear / ¿Lo tengo?** (acción central destacada) | Me falta | Peticiones |
-|---|---|---|---|
+| Catálogo | **Escanear / ¿Lo tengo?** (acción central destacada) | Me falta |
+|---|---|---|
 
 - **Catálogo:** lo que tienes en la biblioteca activa, con filtros por tipo, formato, persona, ubicación y serie. Botón flotante «Añadir».
 - **Escanear:** abre la cámara directamente; el resultado busca **en todas** tus bibliotecas.
 - **Me falta:** lo apuntado sin ejemplares, con la marca de deseo; un filtro «solo deseos» es la lista de regalos.
-- **Peticiones:** para el lector, las suyas y su estado; para el administrador, la bandeja pendiente, con un contador en la pestaña. (Validar si merece pestaña propia o va mejor en el menú lateral con un aviso.)
 
-**Menú lateral:** bibliotecas; compartir y dispositivos; personas y permisos; series; copias de seguridad; cuenta y nube; ajustes (idioma, proveedores de datos, clave de Google Books); **ayuda**; acerca de.
+**Peticiones:** el administrador las recibe por la campanita. Quien no administra no ve campanita: sus peticiones («Mis peticiones», con su estado) están en el menú lateral.
+
+**Menú lateral:** bibliotecas; mis peticiones; compartir y dispositivos; personas y permisos; series; copias de seguridad; cuenta y nube; ajustes (idioma, proveedores de datos, clave de Google Books); **ayuda**; acerca de.
 
 **Indicador de sincronización**, discreto y siempre visible: «Al día», «Sincronizando…», «Sin conexión con la nube», con acceso a la ayuda.
 
@@ -155,7 +156,7 @@ Casos nuevos a contemplar: un cambio tuyo que quedó como petición porque perdi
 
 ## 10. Qué pedimos
 
-1. **Navegación** en móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro: barra superior con selector de biblioteca, barra inferior, menú lateral, indicador de sincronización.
+1. **Navegación** en móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro: barra superior con selector de biblioteca y campanita de peticiones, barra inferior de tres destinos, menú lateral, indicador de sincronización.
 2. **Pantallas en móvil**, y en escritorio las marcadas con (E):
    - Catálogo (E): con elementos de varios tipos, vacío, filtrado sin resultados.
    - Selector de bibliotecas y «Nueva biblioteca».
@@ -166,10 +167,10 @@ Casos nuevos a contemplar: un cambio tuyo que quedó como petición porque perdi
    - Serie con huecos (E).
    - Compartir: mostrar QR, escanear, asignar persona y rol, error de emparejamiento con ayuda.
    - Personas y permisos, con el aviso de administrador único.
-   - Peticiones: del lector y bandeja del administrador.
+   - Peticiones: campanita con contador y bandeja del administrador; «Mis peticiones» del lector en el menú.
    - Cuenta y nube: registro con código, estado.
    - Copias de seguridad; Ajustes; Ayuda.
-3. **Componentes:** barra inferior, menú lateral, selector de biblioteca en hoja, indicador de sincronización, tarjeta de obra por tipo, marcador de portada por tipo, insignias de estado (lo tengo / me falta / deseo), panel de error con pasos, *toasts*, estados vacíos, hoja o pantalla completa para formularios.
+3. **Componentes:** barra inferior, menú lateral, campanita con contador, selector de biblioteca en hoja, indicador de sincronización, tarjeta de obra por tipo, marcador de portada por tipo, insignias de estado (lo tengo / me falta / deseo), panel de error con pasos, *toasts*, estados vacíos, hoja o pantalla completa para formularios.
 4. **Tokens:** colores (con éxito, aviso y error en claro y oscuro), radios, espaciado y tipografía, compatibles con las variables CSS de shadcn/ui.
 5. **Formato de entrega:** HTML y CSS con Tailwind o componentes de shadcn/ui, o especificaciones claras que se puedan trasladar a ellos.
 
