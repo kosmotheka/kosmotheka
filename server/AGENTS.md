@@ -6,11 +6,11 @@ The conventions come from the maintainer's other Symfony projects (Riddle, and r
 
 ## What the server is
 
-The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, several libraries per server, roles, and applying the operations clients push. The plan is Phase 7 ("La nube") in `docs/ROADMAP.md`; the earlier server plan in `docs/plans/fase-3.md` is historical and is being revised. Setup, ports and databases: `docs/development/server.md`.
+The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, several libraries per server, roles, and applying the operations clients push. The plan is Phase 7 ("La nube") in `docs/ROADMAP.md`; the earlier server plan in `docs/historico/` is historical. Setup, ports and databases: `docs/development/server.md`.
 
 ## Working rules
 
-- **Plan before code.** A milestone starts from a plan document in `docs/plans/`. Open questions go there, and once answered, into `docs/DECISIONS.md`.
+- **Plan before code.** A phase starts from a plan document in `docs/plans/`. Open questions go there, and once answered, into `docs/DECISIONS.md`. When the phase is done, the plan moves to `docs/historico/` and is no longer edited.
 - **Verify against the code, not against the docs.** Before claiming something works or exists, check it (`grep`, `make console C="debug:router"`, a query). Docs get rewritten and drift.
 - **When revising a closed decision, say so out loud** and mark it in `DECISIONS.md`. A silent change is how nobody knows, three months later, what was decided and why.
 - **The `Makefile` is the source of truth for commands** (`make help`). Everything runs in Docker; never run PHP or Composer on the host, and never hand-write `docker exec … sh -c 'cd …'`.

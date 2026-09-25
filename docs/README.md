@@ -4,26 +4,31 @@
 
 ## Índice
 
-| Documento | Qué contiene | Estado |
-|---|---|---|
-| [VISION.md](VISION.md) | Visión original del proyecto (ideación del 24/09/2026). Documento histórico: las decisiones actualizadas están en DECISIONS.md. | Cerrado |
-| [DECISIONS.md](DECISIONS.md) | Registro de decisiones de arquitectura: contexto, opciones, recomendación y estado de cada una. | Vivo |
-| [ROADMAP.md](ROADMAP.md) | Plan de ejecución por fases. | Borrador |
-| [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md) y [proveedores de datos por tipo](research/proveedores.md). | Vivo |
-| [development/setup.md](development/setup.md) | Cómo montar el entorno de desarrollo. | Vivo |
-| [development/server.md](development/server.md) | Servidor Symfony en Docker: arranque, puertos, bases de datos y comandos. | Vivo |
-| [plans/fase-3.md](plans/fase-3.md) | Plan del servidor anterior a la revisión; sustituido por el ROADMAP (Fase 7). | Histórico |
-| [plans/revision-alcance.md](plans/revision-alcance.md) | Revisión del alcance y modelo de bibliotecas: qué producto es, cómo se comparte, impacto en lo construido y prioridades. | En debate |
-| [architecture/data-model.md](architecture/data-model.md) | Esquema de la base de datos local. | Vivo |
-| [architecture/operations.md](architecture/operations.md) | Cómo se escribe: operaciones, HLC y validación. | Vivo |
-| [testing/hito-1.md](testing/hito-1.md) | Pruebas manuales del hito 1. | Vivo |
-| [testing/fase-2.md](testing/fase-2.md) | Pruebas manuales de la Fase 2. | Vivo |
-| [design/brief.md](design/brief.md) | Brief de diseño de interfaz (para Claude Design u otro diseñador). | Vivo |
-| [design/errors.md](design/errors.md) | Catálogo de errores y avisos: mensaje, causa y qué hacer; guía «El móvil no se empareja». | Vivo |
-| [architecture/sync.md](architecture/sync.md) | Sincronización entre dispositivos: reglas y protocolo. | Vivo |
+### Para trabajar
+
+| Documento | Qué contiene |
+|---|---|
+| [ROADMAP.md](ROADMAP.md) | El plan: fases, qué se construye y cuándo está hecho |
+| [DECISIONS.md](DECISIONS.md) | Registro de decisiones: contexto, opciones, decisión y estado |
+| [architecture/](architecture/) | Cómo está construido: [modelo de datos](architecture/data-model.md), [operaciones](architecture/operations.md), [sincronización](architecture/sync.md) |
+| [design/](design/) | [Brief de diseño](design/brief.md) y [catálogo de errores](design/errors.md) |
+| [development/](development/) | Entorno de desarrollo: [app](development/setup.md) y [servidor](development/server.md) |
+| [testing/](testing/) | Pruebas manuales: [hito 1](testing/hito-1.md) y [Fase 2](testing/fase-2.md) |
+| [research/](research/) | Investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md) y [proveedores de datos](research/proveedores.md) |
+
+### Histórico
+
+No se actualizan: explican de dónde viene lo que hay ahora.
+
+| Documento | Qué contiene |
+|---|---|
+| [VISION.md](VISION.md) | Visión original (ideación del 24/09/2026) |
+| [historico/revision-alcance.md](historico/revision-alcance.md) | Debate del 25/09/2026 que replanteó el alcance: bibliotecas, personas y roles, nube, catálogos |
+| [historico/plan-servidor-2026-09.md](historico/plan-servidor-2026-09.md) | Plan del servidor anterior a esa revisión |
 
 ## Convenciones de la documentación
 
 - **Cada decisión tiene un estado**: `abierta` (se está discutiendo), `propuesta` (hay una recomendación pendiente de aceptar), `aceptada`, o `reemplazada por Dxx`. No se borran decisiones antiguas: se marcan como reemplazadas, así queda el porqué.
+- **Trabajo e histórico, separados.** Un plan vive en `plans/` mientras se trabaja en él; cuando se termina o se sustituye, pasa a `historico/` y ya no se toca. Lo vigente está siempre en ROADMAP.md y DECISIONS.md.
 - **Documentar a medida que se construye**, no al final. Cada fase del roadmap incluye como entregable la documentación que genera.
 - Cuando llegue el momento de las guías (usuario, instalación, autoalojamiento, contribución), se organizarán siguiendo el esquema [Diátaxis](https://diataxis.fr/): tutoriales, guías prácticas, referencia y explicación. Lo que escribamos ahora en DECISIONS.md alimentará directamente la parte de «explicación».

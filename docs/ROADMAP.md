@@ -1,6 +1,6 @@
 # Roadmap
 
-> Plan rehecho el 25/09/2026 tras la [revisión del alcance](plans/revision-alcance.md). Se basa en [DECISIONS.md](DECISIONS.md); lo acordado en la revisión se registrará como decisiones cuando este plan se dé por bueno. Cada fase es útil por sí sola y entrega **código y documentación** (D12).
+> Plan rehecho el 25/09/2026 tras la [revisión del alcance](historico/revision-alcance.md) (decisiones D54–D63). Se basa en [DECISIONS.md](DECISIONS.md). Cada fase es útil por sí sola y entrega **código y documentación** (D12).
 
 ## Qué producto es, en una frase
 
@@ -89,7 +89,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
 - Límites de peticiones y cuentas sin confirmar que caducan.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
-- Se reutiliza del [plan anterior de la Fase 3](plans/fase-3.md) lo que siga valiendo tras la revisión (D41, D47, D48, D49, D50).
+- Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D47, D48, D49 y D50.
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación

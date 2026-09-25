@@ -1,6 +1,6 @@
 # Revisión del alcance y modelo de bibliotecas
 
-> **Estado:** acordado en conversación el 25/09/2026; todavía **no son decisiones**. El plan resultante está en el [ROADMAP](../ROADMAP.md). Con eso claro se rehará el plan y lo acordado pasará a [DECISIONS.md](../DECISIONS.md). Mientras tanto, el [plan de la Fase 3](fase-3.md) queda en pausa.
+> 🗄 **Histórico.** Registro del debate del 25/09/2026 que replanteó el alcance del proyecto. Lo acordado está en [DECISIONS.md](../DECISIONS.md) (D54–D63, y las revisiones de D05, D21, D36, D39, D40, D44, D46, D47 y D53) y el plan resultante en el [ROADMAP](../ROADMAP.md). Este documento no se actualiza; si algo cambia, se cambia allí.
 
 ## 1. Por qué esta revisión
 

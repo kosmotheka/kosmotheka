@@ -26,7 +26,7 @@
 | D18 | Servicios externos siempre opcionales | aceptada |
 | D19 | Carga masiva y reconocimiento de estanterías | aceptada |
 | D20 | IA de varios proveedores para reconocer imágenes | abierta (futuro) |
-| D21 | Proveedores de metadatos por tipo de catálogo | propuesta |
+| D21 | Proveedores de metadatos por tipo de catálogo | reemplazada por D62 |
 | D22 | Web pública y sitio de documentación | abierta (lejano) |
 | D23 | Entorno de desarrollo en Linux: Distrobox | aceptada |
 | D24 | Tres niveles: obra, edición y ejemplar | aceptada |
@@ -41,15 +41,15 @@
 | D33 | Duplicados entre dispositivos: se conservan y se fusionan a mano | propuesta |
 | D34 | Transporte local: HTTPS con certificado fijado por el QR | propuesta |
 | D35 | Escáner de códigos con el plugin oficial de Tauri (solo móvil) | propuesta |
-| D36 | Lista de deseos básica, sincronizada | propuesta |
+| D36 | Lista de deseos básica, sincronizada | reemplazada por D61 |
 | D37 | Reencontrar dispositivos buscando en la subred, no por mDNS | propuesta |
 | D38 | Un servidor aloja varias bibliotecas desde el principio | aceptada |
-| D39 | Biblioteca conectada a un servidor: sincroniza solo con él | aceptada |
-| D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | propuesta |
+| D39 | Biblioteca conectada a un servidor: sincroniza solo con él | abierta |
+| D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | reemplazada por D55 |
 | D41 | Filas del catálogo en el servidor: clave `(library_id, id)` | aceptada |
 | D42 | Registro abierto en el servidor | aceptada |
 | D43 | Invitaciones de un solo uso que caducan en 24 horas | aceptada |
-| D44 | El lector escribe solo lo suyo: deseos y lecturas | aceptada |
+| D44 | El lector escribe solo lo suyo: deseos y lecturas | reemplazada por D55 |
 | D45 | El editor solo borra lo que creó | aceptada |
 | D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | aceptada |
 | D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | aceptada |
@@ -59,6 +59,17 @@
 | D51 | Superadministrador del servidor, con acceso a todo | aceptada |
 | D52 | Panel de administración web con EasyAdmin y KPI | aceptada |
 | D53 | ¿Una app web además de las nativas? | abierta |
+| D54 | La biblioteca: la unidad que se comparte, se sincroniza y tiene permisos | aceptada |
+| D55 | Personas, roles y peticiones, también sin servidor | aceptada |
+| D56 | Cada dispositivo firma sus operaciones | aceptada |
+| D57 | Dos formas de usar la app; la nube es un dispositivo más | aceptada |
+| D58 | Copias sin claves y recuperación del control | aceptada |
+| D59 | Organizaciones: la puerta abierta, sin construirlas | aceptada |
+| D60 | Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar | aceptada |
+| D61 | Series y estados: lo tengo, me falta, lo deseo | aceptada |
+| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada |
+| D63 | Distribución: Google Play, sin iOS | aceptada |
+| D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 
 ---
 
@@ -86,6 +97,8 @@ Motivos:
 Opciones descartadas: publicar solo la app, con el servidor privado, y el modelo *open core*.
 
 ## D05 · Arquitectura local-first con servidor autoritativo y motor de sincronización propio — `aceptada`
+
+> Matizada el 25/09/2026 por D55 y D57: los permisos también se garantizan sin servidor, entre los propios dispositivos; la autoridad del servidor queda para las bibliotecas en la nube.
 
 - La app **siempre** lee y escribe en su base de datos local (SQLite). La interfaz nunca espera a la red.
 - **Modo local** (sin cuenta): la app funciona sola. Es un producto completo para quien quiere su catálogo privado.
@@ -258,7 +271,9 @@ La vía 4 de D19 es interesante: tú la usarías, y quien quiera puede poner su 
   2. **Compatible con OpenAI**: el formato de API de OpenAI es el estándar de facto. Con configurar una URL base y una clave, el mismo adaptador sirve para OpenAI, OpenRouter y **modelos locales** (Ollama, LM Studio, llama.cpp server), que exponen ese mismo formato.
 - Se decidirá cuando se llegue a la Fase 5, después de la prueba de concepto con OCR local.
 
-## D21 · Proveedores de metadatos por tipo de catálogo — `propuesta`
+## D21 · Proveedores de metadatos por tipo de catálogo — `reemplazada por D62`
+
+> Reemplazada el 25/09/2026 por D62, tras investigar las condiciones de cada proveedor.
 
 Cada catálogo tiene sus fuentes detrás de la interfaz de «proveedor de metadatos» (D18). Candidatas:
 
@@ -424,7 +439,9 @@ Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huel
 - Solo existe en Android e iOS, así que se añade únicamente al compilar para móvil. La interfaz pregunta a la app si está en un móvil y solo entonces muestra el botón de escanear. En el escritorio se sigue tecleando el ISBN o usando un lector USB (D19).
 - Alternativa descartada: leer la cámara desde la web (`getUserMedia` + una librería de JavaScript). Depende de permisos del WebView menos fiables en Android, y el plugin nativo es más rápido y preciso.
 
-## D36 · Lista de deseos básica, sincronizada — `propuesta`
+## D36 · Lista de deseos básica, sincronizada — `reemplazada por D61`
+
+> Reemplazada el 25/09/2026 por D61: el deseo pasa a ser una marca por persona sobre algo que falta.
 
 - Entidad `wish`: título, ISBN, autor, nota y portada (URL). Se sincroniza como el resto (operaciones), así que lo que apuntas en la tienda aparece en casa.
 - «¿Lo tengo ya?» consulta **solo la base de datos local**: funciona sin cobertura. Si no lo tienes, ofrece añadirlo al catálogo (con búsqueda online si hay red) o a la lista de deseos.
@@ -445,11 +462,15 @@ Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huel
 
 En el servidor, todo dato pertenece a una **biblioteca**, y cada usuario es miembro de una o varias con un rol (administrador, editor, lector). Cuesta poco ahora (una columna y un filtro en cada consulta) y deja preparados el servicio público, las ludotecas y las asociaciones sin migraciones dolorosas. Matiza D09: la autenticación sigue siendo simple (usuario y contraseña, un token por dispositivo), pero el modelo de datos ya no es de una sola familia.
 
-## D39 · Biblioteca conectada a un servidor: sincroniza solo con él — `aceptada`
+## D39 · Biblioteca conectada a un servidor: sincroniza solo con él — `abierta`
+
+> **Reabierta** el 25/09/2026 en la [revisión del alcance](historico/revision-alcance.md): su motivo era que sin servidor no había permisos, y con D55 los dispositivos también los comprueban. Falta decidir si una biblioteca en la nube puede seguir sincronizándose por wifi.
 
 Una biblioteca sin servidor se sincroniza por la wifi entre dispositivos, como en la Fase 2. En cuanto se conecta a un servidor, **el servidor pasa a ser la única vía de sincronización y el árbitro de los permisos**, y la sincronización por wifi de esa biblioteca se desactiva. Así ningún cambio no permitido puede pasar de un dispositivo a otro sin que el servidor lo compruebe. Alternativa descartada: mantener las dos vías (más flexible si el VPS se cae, pero los permisos solo se garantizarían a medias y la lógica se complica).
 
-## D40 · La app conoce y aplica los permisos; el servidor los vuelve a comprobar — `propuesta`
+## D40 · La app conoce y aplica los permisos; el servidor los vuelve a comprobar — `reemplazada por D55`
+
+> Reemplazada el 25/09/2026 por D55, que extiende la idea a todos los dispositivos, con servidor o sin él.
 
 La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor) y **no ofrece ni registra** lo que ese rol no puede hacer: un lector no ve «Borrar». El servidor comprueba de nuevo cada operación y rechaza las que no cumplan, por si una app estuviera manipulada.
 
@@ -466,7 +487,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** `(library_id, id)` en todas las tablas del catálogo y en sus tablas de soporte (`field_versions`, `tombstones`); las claves foráneas entre tablas del catálogo incluyen `library_id`, así que una fila tampoco puede apuntar a otra biblioteca. En el cliente (SQLite) no cambia nada: cada base local es una sola biblioteca.
 
-**Consecuencias:** el motor de aplicación del servidor (hito 3.1) filtra y escribe siempre con `library_id`; no hay consulta del catálogo sin él.
+**Consecuencias:** el motor de aplicación del servidor (Fase 7) filtra y escribe siempre con `library_id`; no hay consulta del catálogo sin él.
 
 ## D42 · Registro abierto en el servidor — `aceptada`
 
@@ -480,7 +501,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** registro abierto. Quien se registra crea su cuenta y puede crear sus bibliotecas, de las que es administrador; las invitaciones siguen siendo la forma de unirse a una biblioteca ajena.
 
-**Consecuencias:** entra en el hito 3.2 lo necesario para un registro público: límite de peticiones por IP en el alta y el inicio de sesión (`symfony/rate-limiter`, con `trusted_proxies` bien configurado, como en Riddle). Quedan por decidir, en el plan de la Fase 3: si se verifica el email (y con ello el envío de correo), cómo se recupera una contraseña olvidada y si el servidor tiene un administrador global además de los administradores de cada biblioteca.
+**Consecuencias:** entra en la Fase 7 lo necesario para un registro público: límite de peticiones por IP en el alta y el inicio de sesión (`symfony/rate-limiter`, con `trusted_proxies` bien configurado, como en Riddle). Quedaban por decidir (resuelto en D49–D51): si se verifica el email (y con ello el envío de correo), cómo se recupera una contraseña olvidada y si el servidor tiene un administrador global además de los administradores de cada biblioteca.
 
 ## D43 · Invitaciones de un solo uso que caducan en 24 horas — `aceptada`
 
@@ -494,9 +515,11 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** un solo uso y 24 horas. El administrador puede revocarla antes y generar otra en cualquier momento. En la base de datos solo se guarda el hash del token.
 
-**Consecuencias:** la app debe explicar, al escanear una invitación caducada o ya usada, que se pida otra al administrador (entrada nueva en `docs/design/errors.md` cuando se implemente, en el hito 3.2).
+**Consecuencias:** la app debe explicar, al escanear una invitación caducada o ya usada, que se pida otra al administrador (entrada nueva en `docs/design/errors.md` cuando se implemente, en la Fase 7).
 
-## D44 · El lector escribe solo lo suyo: deseos y lecturas — `aceptada`
+## D44 · El lector escribe solo lo suyo: deseos y lecturas — `reemplazada por D55`
+
+> Reemplazada el 25/09/2026 por D55 (roles y peticiones) y D61 (deseos y lecturas por persona).
 
 **Contexto:** el lector no modifica el catálogo (obras, ediciones, ejemplares…). Quedaba por decidir si puede apuntar cosas propias.
 
@@ -520,11 +543,13 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 | Nunca borra | Lo más seguro | Hasta para deshacer su propio error espera a un administrador |
 | Borra todo | Lo más cómodo | Cualquier editor borra libros ajenos sin vuelta atrás |
 
-**Decisión:** el editor borra solo las filas que creó él; para borrar lo ajeno manda una solicitud que aprueba un administrador (hito 3.4). El administrador borra todo.
+**Decisión:** el editor borra solo las filas que creó él; para borrar lo ajeno manda una solicitud que aprueba un administrador (D55). El administrador borra todo.
 
 **Consecuencias:** usa el mismo registro de quién creó cada fila que D44. Un borrado que arrastra filas relacionadas (borrar un libro borra su edición y sus ejemplares) solo se permite si todas las filas afectadas son suyas; si no, se convierte en solicitud. La app (D40) muestra «Borrar» o «Pedir que se borre» según el caso.
 
 ## D46 · Varias bibliotecas en la app, como entidad en una sola base de datos — `aceptada`
+
+> Ampliada el 25/09/2026 por D54: la biblioteca es además la unidad que se comparte, se sincroniza y tiene permisos, también sin cuenta.
 
 **Qué se busca:** que en la app se puedan tener varias bibliotecas a la vez; por ejemplo, la de la familia y una con amigos. Un usuario puede estar en varias, con un rol distinto en cada una (D38).
 
@@ -547,20 +572,22 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 ## D47 · Cambio rechazado por el servidor: se corrige solo en ese dispositivo — `aceptada`
 
+> Ampliada el 25/09/2026 por D55: lo rechazado no se descarta, pasa a petición; el dispositivo del autor lo deshace hasta que se apruebe. Vale igual entre dispositivos que con el servidor.
+
 **Contexto:** con D40 la app no genera cambios que su rol no permite, pero puede haberlos: por ejemplo, un editor sin conexión borra un libro suyo mientras un administrador le baja a lector. Al sincronizar, el servidor rechaza el borrado, pero en ese dispositivo el libro ya no está, y la lápida (D32) impediría que volviera por la vía normal.
 
 | Opción | A favor | En contra |
 |---|---|---|
 | **Corrección del servidor** | Solo se deshace lo rechazado; nadie más ve nada | Un mecanismo nuevo en el cliente |
 | Descargar de cero la biblioteca | Muy simple | Se pierden también los cambios válidos aún no subidos |
-| Convertirlo en solicitud | Aprovecha el hito 3.4 | Lo más complejo; la corrección hace falta igualmente si se rechaza |
+| Convertirlo en solicitud | Aprovecha las solicitudes | Lo más complejo; la corrección hace falta igualmente si se rechaza |
 
 **Decisión:** el servidor no aplica la operación rechazada y responde a ese dispositivo con el motivo y con el **estado válido de las filas afectadas** (sus campos y versiones). La app lo aplica encima, deshaciendo su cambio; si era un borrado, **quita la lápida local y restaura la fila**. La operación rechazada queda en el historial local marcada como rechazada y no se vuelve a enviar. La app avisa con el motivo (por ejemplo, «No se pudo borrar X: ya no tienes permiso»).
 
 **Consecuencias:**
 - Es la única forma en que una lápida puede levantarse, y solo por orden del servidor, en una biblioteca conectada a él (D39). La sincronización por wifi nunca lo hace.
 - Antes de programarlo se escriben casos de conformidad en `spec/` (rechazo de una creación, de una edición y de un borrado, y un rechazo seguido de cambios válidos).
-- Entrada nueva en `docs/design/errors.md` cuando se implemente (hito 3.3).
+- Entrada nueva en `docs/design/errors.md` cuando se implemente (Fase 7).
 
 ## D48 · Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo — `aceptada`
 
@@ -573,7 +600,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** nginx + PHP-FPM + PostgreSQL también en producción. El HTTPS lo termina un proxy delante (el que ya haya en el VPS, o Certbot).
 
-**Consecuencias:** sustituye a la idea de «una imagen Docker con FrankenPHP» del ROADMAP. En el hito 3.4 hacen falta imágenes de producción (sin Xdebug ni dependencias de desarrollo), un `docker-compose` de producción y una guía de instalación para quien se aloje el suyo, incluido cómo poner el proxy con HTTPS.
+**Consecuencias:** sustituye a la idea de «una imagen Docker con FrankenPHP» del ROADMAP. En la Fase 7 hacen falta imágenes de producción (sin Xdebug ni dependencias de desarrollo), un `docker-compose` de producción y una guía de instalación para quien se aloje el suyo, incluido cómo poner el proxy con HTTPS.
 
 ## D49 · Verificación obligatoria del email con un código en la app — `aceptada`
 
@@ -598,7 +625,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** el mismo mecanismo que D49: se pide la recuperación desde la app, llega un código por correo, se teclea en la app junto con la contraseña nueva. Al cambiarla se revocan los tokens de todos los demás dispositivos de la cuenta, por si el motivo era que alguien la conocía.
 
-**Consecuencias:** un dispositivo revocado pide iniciar sesión de nuevo. **No pierde nada**: sus cambios sin subir siguen en su base local y se envían en cuanto vuelve a entrar. La app lo tiene que explicar así (entrada nueva en `docs/design/errors.md`, hito 3.3). El envío del correo depende de lo que se decida en D49.
+**Consecuencias:** un dispositivo revocado pide iniciar sesión de nuevo. **No pierde nada**: sus cambios sin subir siguen en su base local y se envían en cuanto vuelve a entrar. La app lo tiene que explicar así (entrada nueva en `docs/design/errors.md`, Fase 7). El envío del correo depende de lo que se decida en D49.
 
 ## D51 · Superadministrador del servidor, con acceso a todo — `aceptada`
 
@@ -623,12 +650,132 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 Los de salud y abuso necesitan que el servidor **registre esos eventos** (rechazos, límites, correos) en una tabla propia; los demás salen de las tablas que ya habrá.
 
-**Cuándo:** en el hito 3.4, con el despliegue. Hasta entonces, comandos de consola en `src/Command/`. El registro de eventos para los KPI se va añadiendo desde el 3.2, con cada funcionalidad, para que el panel tenga datos desde el primer día.
+**Cuándo:** en la Fase 11 (revisado el 25/09/2026; antes estaba previsto con el despliegue). Hasta entonces, comandos de consola en `src/Command/`. El registro de eventos para los KPI se va añadiendo desde la Fase 7, con cada funcionalidad, para que el panel tenga datos desde el primer día.
 
 **Accesos del superadministrador:** cada entrada en una biblioteca de la que no es miembro queda registrada (quién, cuándo, qué biblioteca, si fue suplantando a alguien) y solo se ve en el panel. Sus cambios aparecen además en el historial con su nombre, como los de cualquiera.
 
 ## D53 · ¿Una app web además de las nativas? — `abierta`
 
+> Tras la revisión del alcance (25/09/2026), la web solo aparece en el escenario del servicio para ludotecas o colegios (Fase 11). Sin urgencia.
+
 **Planteamiento del mantenedor:** las aplicaciones suelen tener también una versión web, aunque existan apps para Windows, Linux y Android. ¿Se podría crear la web con el mismo código que la app de Tauri? El objetivo personal del proyecto es aprender a crear apps nativas, pero no hay que descuidar el futuro producto de código abierto con servidor.
 
-**Por debatir, al final y aparte**, cuando el resto de la Fase 3 esté discutido. Afecta a D46 (varias bibliotecas), al servidor (una web necesita el servidor, porque no tiene base de datos local) y a la administración (D52).
+**Por debatir, al final y aparte**, cuando el resto del plan esté discutido. Afecta a D46 (varias bibliotecas), al servidor (una web necesita el servidor, porque no tiene base de datos local) y a la administración (D52).
+
+## D54 · La biblioteca: la unidad que se comparte, se sincroniza y tiene permisos — `aceptada`
+
+**Contexto:** se dio por hecho que cada persona tendría varias bibliotecas (una personal de rol, una familiar, la de videojuegos del hijo) y no se reflejó en el diseño: la app trataba el dispositivo entero como una sola biblioteca. Detalle del debate en la [revisión del alcance](historico/revision-alcance.md).
+
+**Decisión:**
+- La biblioteca es **lo que se comparte**: qué se sincroniza, con quién y con qué permisos, con cuenta y sin ella. Amplía D46 (una sola base, `library_id` en todas las tablas, selector, mover con ids nuevos, copias completas y por biblioteca).
+- **Vive completa en cada sitio que la tiene.** Compartir es añadir un sitio más: emparejar un dispositivo, invitar a alguien o subirla a la nube son lo mismo.
+- **Cada operación pertenece a una biblioteca**, y el vector de versiones es por biblioteca.
+- **Tiene un propietario**, que hoy siempre es una persona (D59).
+- **Cómo viaja:** por la red local, como hasta ahora; fuera de casa, uno comparte datos (punto de acceso) y el otro se conecta; a distancia, solo con la nube. Bluetooth directo se descarta: Tauri no tiene plugin oficial y Quick Share no llega a Linux ni a Windows.
+
+**Consecuencias:** cambian el formato de operación en `spec/` y `crates/domain`, las tablas locales, el emparejamiento y la sincronización (Fase 4 del ROADMAP).
+
+## D55 · Personas, roles y peticiones, también sin servidor — `aceptada`
+
+**Decisión:**
+- **La persona es el miembro** de la biblioteca (el que ya era dueño de ejemplares). Al compartir con un dispositivo se dice de quién es; una persona puede tener varios.
+- **Los permisos, las lecturas, los deseos y los ejemplares son de la persona**, no del dispositivo.
+- **Roles:** administrador (todo, incluidos permisos y peticiones), editor (crea y edita; borra solo lo que creó, D45) y lector (ve, marca lo suyo y pide).
+- **Nadie da más de lo que tiene. Compartir es un permiso aparte**, que no se tiene por defecto: un lector puede enseñar la biblioteca en su pantalla, pero no compartirla. Puede haber **varios administradores**.
+- **Peticiones:** lo que un rol no puede hacer se pide («añadir este libro», «borrar este»), y los administradores aceptan o rechazan.
+- **Cada dispositivo comprueba lo que recibe** contra los roles, que se sincronizan con la biblioteca. Lo que no está permitido pasa a petición, también si alguien perdió el permiso mientras estaba sin conexión. Todos los dispositivos tienen que llegar al mismo resultado aunque les lleguen las cosas en distinto orden; se diseña con casos de conformidad compartidos en `spec/`.
+- Entre conocidos se confía en el reloj de cada cambio (HLC).
+- **Los mismos roles con cuenta y sin ella.** En la nube, el miembro se enlaza con una cuenta (D46).
+
+**Consecuencias:** sustituye a D40 y D44 y amplía D47. Es la Fase 5 del ROADMAP.
+
+## D56 · Cada dispositivo firma sus operaciones — `aceptada`
+
+Cada dispositivo tiene un par de claves Ed25519, firma sus operaciones y los demás las verifican con la clave pública que reciben al emparejar. Así se sabe quién hizo cada cambio aunque llegue a través de otro dispositivo, y D55 puede comprobar permisos sin servidor. Es lo que hacen SSH o Signal; nada de cadenas de bloques.
+
+## D57 · Dos formas de usar la app; la nube es un dispositivo más — `aceptada`
+
+**Decisión:**
+- **Sin cuenta:** gratis, sin registro y sin nube; sincroniza por la red local y hace copias donde el usuario quiera. Es la opción de la privacidad y existirá siempre.
+- **Con cuenta:** un botón de registro con el email (D49), y todo se guarda y sincroniza en la nube, también a distancia y sin cobertura.
+- **La nube es un dispositivo más**, siempre encendido, con los mismos roles (D55). Al registrarse se sube lo que ya hay, sin perder nada.
+- **La identidad es la cuenta**, no el dispositivo, que cambia al cambiar de móvil o reinstalar.
+- **Un servidor que entiende los datos**, no un relé cifrado: comprueba permisos y podrá servir una web (D53) a ludotecas o colegios. La privacidad total la da el modo sin cuenta.
+
+**Consecuencias:** matiza D05. El servidor Symfony, el panel (D51, D52) y la landing son de este mundo (Fases 7, 8 y 11 del ROADMAP).
+
+## D58 · Copias sin claves y recuperación del control — `aceptada`
+
+**Decisión:**
+- Exportar y guardar una copia (por ejemplo, en Google Drive) tiene que ser muy fácil y estar a la vista. Sincronizar no es hacer copia: un borrado por error también se sincroniza.
+- **La copia no lleva claves ni contraseña.** Si se pierde un dispositivo, el control se recupera así:
+
+| Caso | Cómo |
+|---|---|
+| Con cuenta en la nube | Con el email |
+| Hay otro administrador | Revoca el dispositivo perdido y da permisos al nuevo |
+| Biblioteca personal, de una sola persona | Al restaurar la copia pasa a ser suya con una clave nueva |
+| Compartida, con un único administrador que pierde su único dispositivo | **Abierto** |
+
+- Para el caso abierto hay tres salidas en estudio: un código de recuperación al crear la biblioteca, que la app sugiera un segundo administrador al compartir, o duplicarla como nueva.
+- La biometría no ayuda: sus claves no salen del chip del móvil.
+
+## D59 · Organizaciones: la puerta abierta, sin construirlas — `aceptada`
+
+Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas) **no aparecen en el uso normal**: compartir con la familia tiene que ser sencillo y sin nada que suene a corporativo. Se deja la puerta abierta con el propietario de la biblioteca (D54), que hoy es una persona y mañana podrá ser una organización, como en GitHub. Se construirían en la Fase 11, solo si llega ese escenario.
+
+## D60 · Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar — `aceptada`
+
+**Decisión:**
+- **Tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos. Lista cerrada: el usuario no crea tipos.
+- **«Otro»** para todo lo demás (sellos, monedas, Playmobil): los campos comunes a todo y sin proveedores. Es el mismo formulario sin la parte específica de cada tipo.
+- **Formatos por tipo**, físicos y digitales. PDF y ebook son formatos de un libro, no otro tipo. Lo digital no tiene estantería: su ubicación es «Steam» o «Kindle».
+- **El alta empieza por buscar o escanear, no por el ISBN**, y **siempre se puede hacer a mano**, sin buscar nada. El ISBN es un campo de los libros; el escáner lee cualquier código y la app decide qué es.
+- Los campos personalizados por el usuario quedan fuera, salvo que alguien los pida de verdad.
+
+**Consecuencias:** se apoya en D08 y D24. Es la Fase 6 del ROADMAP.
+
+## D61 · Series y estados: lo tengo, me falta, lo deseo — `aceptada`
+
+**Decisión:**
+- **Serie** agrupa obras, con orden (una saga) o sin él (una línea de producto, como Catán). Una obra puede estar en varias series, y una serie puede tener obras de varios autores. Relación **«necesita»** entre obras (expansiones, suplementos).
+- Editorial, autor o estudio son datos para filtrar, no para agrupar.
+- **Tres estados:** «lo tengo» (tiene ejemplares; es lo que se ve por defecto), «me falta» (está en el catálogo sin ejemplares; su propia vista, y huecos en cada serie) y «lo deseo» (marca para regalos sobre algo que falta).
+- **Leído y deseado son marcas por persona** (D55).
+
+**Consecuencias:** sustituye a la lista de deseos de D36; su migración se decide al construirlo (Fase 6).
+
+## D62 · Proveedores: todos los posibles, con las claves en el servidor — `aceptada`
+
+**Decisión:**
+- Los proveedores **ayudan y nunca son imprescindibles** (D18). Se integran todos los posibles; el catálogo de tipos es cerrado, así que cada uno se prueba a conciencia.
+- **Las claves van en el servidor.** Quien monte el suyo pone sus propias claves.
+- **Sin nube**, solo los proveedores sin clave (Open Library, Inventaire, Wikidata, GameUPC), más Google Books con clave propia opcional en Ajustes. La app avisa de lo que no está disponible y lo explica en una sección de ayuda.
+- **Con nube**, se activan todos, porque busca el servidor.
+- Tabla de proveedores y condiciones: [research/proveedores.md](research/proveedores.md).
+
+**Consecuencias:** varios proveedores prohíben el uso comercial (BoardGameGeek, TMDB, IGDB, Comic Vine): un servicio de pago necesitaría licencias. Sustituye a D21.
+
+## D63 · Distribución: Google Play, sin iOS — `aceptada`
+
+**Decisión:**
+- **Android:** APK durante las pruebas, distribuida a familia y amigos con la cuenta de público reducido de Google (hasta 20 dispositivos, sin pago ni documento de identidad); después, Google Play (25 $ una vez, prueba cerrada con 12 personas durante 14 días y verificación de identidad).
+- **F-Droid:** por estudiar, según cómo quede tras la verificación de desarrolladores de Google (desde el 30/09/2026, global en 2027).
+- **iOS, fuera:** exige un Mac y 99 $ al año.
+- Una **landing** pública explica el proyecto y enlaza a la tienda y al código.
+
+## D64 · La documentación de trabajo, fuera de la versión pública — `abierta`
+
+**Planteamiento del mantenedor (25/09/2026):** la documentación de trabajo (decisiones, planes, debates, investigación) no debería estar en la versión pública del repositorio: nadie tiene que ver sus notas mentales.
+
+**Lo que complica:** D03 contaba con que abrir el repo fuera «cambiar un interruptor». Pero el historial de git guarda todo lo que ha pasado por `docs/`: aunque se borre la carpeta antes de publicar, sigue en los commits antiguos.
+
+**Opciones a debatir:**
+
+| Opción | Cómo | A favor | En contra |
+|---|---|---|---|
+| Repositorio privado aparte para el trabajo | `docs/` de trabajo se mueve a otro repo privado (por ejemplo, junto a este); el público solo lleva código, `spec/` y documentación para usuarios | Separación limpia desde ya | Los agentes y el código dejan de tener las decisiones al lado; hay que enlazar dos repos |
+| Publicar con historial nuevo | Al abrirlo, el público empieza con un primer commit limpio; el repo privado actual sigue siendo el de trabajo | Nada que tocar hasta entonces | Dos repos que mantener sincronizados a partir de ese día |
+| Limpiar el historial antes de publicar | `git filter-repo` quita `docs/` de todos los commits | Un solo repo | Reescribe todo el historial; hay que hacerlo con cuidado y con copia |
+
+Relacionada con D03 y con la documentación pública futura (guías de usuario e instalación, D12, D22).

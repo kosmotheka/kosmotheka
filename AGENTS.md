@@ -15,6 +15,8 @@ The full rationale lives in `docs/` (in Spanish):
 - `docs/DECISIONS.md` — architecture decision log (D01, D02…), each with a status. **Read the relevant decisions before proposing or changing architecture.**
 - `docs/ROADMAP.md` — execution phases.
 - `docs/research/` — research notes.
+- `docs/plans/` — plans for the phase in progress, while they are active.
+- `docs/historico/` — superseded plans and debates. Never edited; they explain where the current decisions come from.
 
 ## Stack
 

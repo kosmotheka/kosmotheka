@@ -1,6 +1,6 @@
 # Proveedores de datos por tipo de catálogo
 
-> Investigación del 25/09/2026, para la [revisión del alcance](../plans/revision-alcance.md). Amplía D21. Las condiciones de uso cambian: **hay que volver a comprobarlas antes de integrar cada proveedor**.
+> Investigación del 25/09/2026, para la [revisión del alcance](../historico/revision-alcance.md). Lo acordado está en D62. Las condiciones de uso cambian: **hay que volver a comprobarlas antes de integrar cada proveedor**.
 
 ## Principios (D18, reafirmados)
 
