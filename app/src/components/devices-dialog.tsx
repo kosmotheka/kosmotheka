@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
-import { Copy, Link2, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, Link2, QrCode, RefreshCw, Trash2 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -19,6 +19,7 @@ import {
   type LanStatus,
   closePairing,
   forgetDevice,
+  isMobile,
   lanStatus,
   openPairing,
   pairWith,
@@ -26,6 +27,7 @@ import {
   syncErrorKey,
   syncWith,
 } from "@/lib/api";
+import { CameraDenied, scanQr } from "@/lib/scanner";
 
 interface Props {
   open: boolean;
@@ -42,6 +44,11 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
   const [codeInput, setCodeInput] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [canScan, setCanScan] = useState(false);
+
+  useEffect(() => {
+    void isMobile().then(setCanScan);
+  }, []);
 
   const refresh = useCallback(() => {
     lanStatus()
@@ -88,9 +95,9 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
       return null;
     });
 
-  const pair = () =>
+  const pair = (code: string) =>
     run("pair", async () => {
-      const paired = await pairWith(codeInput);
+      const paired = await pairWith(code);
       setCodeInput("");
       const report = await syncWith(paired.deviceId);
       onChanged();
@@ -182,6 +189,20 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
               <Link2 /> {t("devices.showCode")}
             </Button>
           )}
+          {canScan && (
+            <Button
+              disabled={busy !== null}
+              onClick={() =>
+                void scanQr()
+                  .then((code) => (code ? pair(code) : undefined))
+                  .catch((e: unknown) =>
+                    setMessage(e instanceof CameraDenied ? t("check.cameraDenied") : String(e)),
+                  )
+              }
+            >
+              <QrCode /> {t("devices.scanCode")}
+            </Button>
+          )}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{t("devices.enterCodeHelp")}</p>
             <div className="flex gap-2">
@@ -194,7 +215,7 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
               />
               <Button
                 disabled={busy !== null || !codeInput.trim()}
-                onClick={() => void pair()}
+                onClick={() => void pair(codeInput)}
               >
                 {t("devices.pair")}
               </Button>

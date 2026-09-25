@@ -50,7 +50,8 @@ Planned: `server/` (Symfony).
 
 - Clean, readable code. Comments are short and explain *why* when it is not obvious; never restate what the code does.
 - **Domain logic lives in Rust** (`crates/domain`), never in the React UI. The UI calls Tauri commands; it never runs SQL.
-- Every write is an **operation** (docs/architecture/operations.md): build a list of `Change`s and call `ops::record` inside a transaction. Never `INSERT`/`UPDATE`/`DELETE` catalog tables directly.
+- Every write is an **operation** (docs/architecture/operations.md): build a list of `Change`s and call `ops::record` inside a transaction. Never `INSERT`/`UPDATE`/`DELETE` catalog tables directly. The only exception is `sync::merge`, which applies operations received from other devices (docs/architecture/sync.md).
+- Sync must converge: any change to how operations apply needs a test in `sync.rs` that simulates devices and uses `assert_converged`.
 - Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
@@ -93,5 +94,6 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | UI build / typecheck / lint | `cd app && npm run build` · `npm run typecheck` · `npm run lint` |
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
 | Live tests against real services (network, not in CI) | `cargo test -p library-app -- --ignored live_` |
+| Second instance with its own data (debug builds), to test LAN sync | `LIBRARY_DATA_DIR=/tmp/library-b target/debug/library-app` (with `npm run tauri dev` running) |
 
 `app/dist` must exist before `cargo clippy` or `cargo test`, because Tauri embeds the built UI at compile time. Run `npm run build` first.

@@ -225,7 +225,8 @@
       "peer_error": "El otro dispositivo ha tenido un problema. Inténtalo de nuevo.",
       "unknown_device": "Este dispositivo no está emparejado.",
       "no_network": "Este dispositivo no está conectado a ninguna red."
-    }
+    },
+    "scanCode": "Escanear el código del otro dispositivo"
   },
   "tabs": {
     "catalog": "Catálogo",

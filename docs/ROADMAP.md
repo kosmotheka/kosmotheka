@@ -99,12 +99,13 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 | 2.0 Motor de sincronización | Operaciones replicables y operación inicial (D31); aplicar operaciones recibidas campo a campo, con lápidas (D32) y duplicados (D33); vector de versiones | Tests que simulan dos y tres dispositivos |
 | 2.1 Sincronización por la red local | Servidor HTTPS en el escritorio, certificado fijado, emparejamiento con código (D34) | Dos instancias de la app en el mismo equipo |
 | 2.2 Interfaz móvil y escáner | Pantallas adaptadas al móvil, escáner de ISBN con la cámara, «¿lo tengo ya?», lista de deseos básica | En el móvil |
-| 2.3 Móvil emparejado | Emparejar escaneando el QR del escritorio; descubrimiento por mDNS en la wifi de casa | En el móvil |
+| 2.3 Móvil emparejado | Emparejar escaneando el QR del escritorio; reencontrar al otro dispositivo en la wifi de casa (D37) | En el móvil |
 
 **Estado:**
 - [x] 2.0 Motor de sincronización. Operaciones replicables con versión de esquema; operación inicial `sync.baseline` por dispositivo; vector de versiones; aplicación de operaciones recibidas campo a campo, con lápidas y puntos de restauración (*savepoints*) para saltar cambios imposibles sin romper la sincronización; duplicados permitidos; filtros y sugerencias por nombre. 12 tests simulan dos y tres dispositivos y comprueban que acaban con el mismo estado.
 - [x] 2.1 Sincronización por la red local. Servidor HTTPS (axum, rustls con ring) que escucha solo cuando hace falta; certificado propio fijado por la huella del código; emparejamiento con secreto de un solo uso; sincronización en los dos sentidos; diálogo «Dispositivos» con código en texto y QR; sincronización automática al abrir la app. Los tests emparejan y sincronizan por TLS real.
 - [x] 2.2 Interfaz móvil y escáner. «¿Lo tengo ya?» consultando solo la base de datos local (funciona sin cobertura), con escáner de cámara en el móvil (D35) y búsqueda online opcional; lista de deseos sincronizada (D36) con «Comprado: añadir al catálogo»; vista en tarjetas y cabecera compacta en pantallas estrechas. Compila para Android con permiso de cámara; falta probarlo en el móvil.
+- [x] 2.3 Móvil emparejado. Emparejar escaneando el QR con la cámara; sincronización al abrir la app y al volver a ella; reencontrar al otro dispositivo en la subred si cambió de dirección (D37, en lugar de mDNS). **Fase 2 completa en código**; pendiente de probar en el móvil (`docs/testing/fase-2.md`).
 
 ## Fase 3 — Servidor y familia
 

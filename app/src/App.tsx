@@ -98,17 +98,30 @@ export default function App() {
   /** Reloads books, wishes and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
 
-  // On opening, quietly catch up with every paired device that is reachable.
+  // Quietly catch up with every reachable paired device when the app opens, and again
+  // when it comes back to the foreground (a phone arriving home), at most once a minute.
   useEffect(() => {
-    void (async () => {
+    let last = 0;
+    let running = false;
+    const syncAll = async () => {
+      if (running || Date.now() - last < 60_000) return;
+      running = true;
+      last = Date.now();
       const status = await lanStatus().catch(() => null);
       let changed = false;
       for (const device of status?.servers ?? []) {
         const report = await syncWith(device.deviceId).catch(() => null);
         changed ||= (report?.received.received ?? 0) > 0;
       }
+      running = false;
       if (changed) reload();
-    })();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncAll();
+    };
+    void syncAll();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [reload]);
 
   const books = state.status === "ready" ? state.books : [];

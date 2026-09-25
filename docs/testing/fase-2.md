@@ -48,3 +48,11 @@ La prueba más cómoda del 2.1 no necesita el móvil: dos copias de la app en tu
 - [ ] **En el escritorio.** «¿Lo tengo?» no muestra el botón de escanear; teclear el ISBN (o usar un lector USB) + Comprobar funciona igual.
 - [ ] **Los deseos se sincronizan.** Apunta un deseo en el móvil, sincroniza con el escritorio (hito 2.3 o pegando el código a mano) y comprueba que aparece allí.
 
+## 2.3 · Móvil emparejado por QR
+
+- [ ] **Emparejar escaneando.** Escritorio → Dispositivos → «Mostrar código». Móvil (misma wifi) → Dispositivos → «Escanear el código del otro dispositivo» → apunta al QR. *Esperado:* «Emparejado con … Recibidos N cambios…» y el móvil tiene el catálogo del escritorio.
+- [ ] **Al volver a casa.** Con el móvil emparejado, sal de la wifi (datos móviles o modo avión), apunta un deseo o añade un libro, vuelve a la wifi y abre la app (o vuelve a ella desde otra). *Esperado:* se sincroniza sola en unos segundos; el cambio aparece en el escritorio (refresca la vista allí, por ejemplo cambiando de pestaña).
+- [ ] **El escritorio cambia de IP.** Si puedes forzarlo (por ejemplo, reiniciando el router o cambiando la IP a mano), sincroniza desde el móvil. *Esperado:* tarda unos segundos más, pero lo encuentra y sincroniza. En «Dispositivos» del móvil se ve la última sincronización actualizada.
+- [ ] **Sin el escritorio encendido.** Abre la app en el móvil con el escritorio apagado. *Esperado:* no aparece ningún error; simplemente no sincroniza.
+- [ ] **Cortafuegos de Windows.** Si el escritorio es Windows: la primera vez que muestre el código, Windows pregunta por la red; permítelo en redes privadas, o el móvil no llegará.
+

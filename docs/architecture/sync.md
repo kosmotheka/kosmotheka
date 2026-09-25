@@ -75,7 +75,11 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Cuándo escucha el servidor.** Solo cuando hace falta: si hay dispositivos que se sincronizan con este, o mientras se muestra un código de emparejamiento. El puerto se guarda para que los emparejados lo encuentren en el mismo sitio; si está ocupado, se usa otro. En Windows, la primera vez el cortafuegos preguntará si se permite.
 
-**Cuándo se sincroniza.** Al abrir la app, con todos los dispositivos emparejados a los que se conecta (en silencio; si alguno no está, no pasa nada), y a mano con «Sincronizar ahora». Descubrirse solos en la wifi de casa (mDNS) llega en el hito 2.3.
+**Cuándo se sincroniza.** Al abrir la app y cada vez que vuelve a primer plano (como mucho una vez por minuto), con todos los dispositivos emparejados a los que se conecta, en silencio: si alguno no está, no pasa nada. También a mano, con «Sincronizar ahora».
+
+**Si el otro ha cambiado de dirección (D37).** Cuando ninguna dirección guardada responde, se recorre la subred propia (hasta 1022 direcciones, 64 a la vez) en los puertos que el otro usaba, pidiendo `GET /v1/hello` con el certificado fijado. Solo se acepta al que presenta ese certificado y el identificador de dispositivo esperado. Si aparece, se guarda la nueva dirección y se sincroniza. No se usa mDNS porque en Android exigiría código nativo para recibir multicast.
+
+**Emparejar desde el móvil.** El escritorio muestra el QR; el móvil lo escanea con la cámara (el mismo plugin que lee los ISBN, D35) y empareja sin teclear nada.
 
 **Probar con dos instancias en un mismo equipo.** En las compilaciones de desarrollo, la variable `LIBRARY_DATA_DIR` hace que una segunda instancia use otra carpeta de datos (ver `docs/testing/fase-2.md`).
 

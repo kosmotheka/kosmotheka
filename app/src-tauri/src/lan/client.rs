@@ -11,11 +11,14 @@ use rustls::{CertificateError, DigitallySignedStruct, SignatureScheme};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+use std::collections::BTreeSet;
+use std::net::Ipv4Addr;
+
 use super::identity::fingerprint;
 use super::pairing::PairingCode;
 use super::{
-    KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, SyncReport,
-    device_name, find_server, record_server_sync, save_server,
+    Hello, KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest,
+    SyncReport, device_name, find_server, record_server_sync, save_server,
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -85,6 +88,14 @@ impl ServerCertVerifier for PinnedCertificate {
 }
 
 fn pinned_client(fingerprint: &str) -> Result<reqwest::Client> {
+    pinned_client_with(fingerprint, Duration::from_secs(4), Duration::from_secs(60))
+}
+
+fn pinned_client_with(
+    fingerprint: &str,
+    connect: Duration,
+    total: Duration,
+) -> Result<reqwest::Client> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let tls = rustls::ClientConfig::builder_with_provider(provider.clone())
         .with_safe_default_protocol_versions()
@@ -98,8 +109,8 @@ fn pinned_client(fingerprint: &str) -> Result<reqwest::Client> {
     Ok(reqwest::Client::builder()
         .use_preconfigured_tls(tls)
         .no_proxy()
-        .connect_timeout(Duration::from_secs(4))
-        .timeout(Duration::from_secs(60))
+        .connect_timeout(connect)
+        .timeout(total)
         .build()?)
 }
 
@@ -194,7 +205,14 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
     let auth = Some((local_device.as_str(), server.secret.as_str()));
 
     let (pulled, address): (PullResponse, String) =
-        post(&client, &server.addresses, "/v1/sync/pull", auth, &pull).await?;
+        match post(&client, &server.addresses, "/v1/sync/pull", auth, &pull).await {
+            // The peer may have a new address: look for it on this network (D37).
+            Err(Error::Lan("unreachable")) => {
+                let found = rediscover(&server).await.ok_or(Error::Lan("unreachable"))?;
+                post(&client, &[found], "/v1/sync/pull", auth, &pull).await?
+            }
+            other => other?,
+        };
     let (received, to_send) = {
         let mut conn = database.lock()?;
         let received = sync::merge(&mut conn, pulled.operations)?;
@@ -217,6 +235,79 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
     }
     record_server_sync(&*database.lock()?, device_id, &address)?;
     Ok(SyncReport { received, sent })
+}
+
+/// Looks for a paired device that moved to another address on this device's own
+/// subnets, at the ports it used before (D37). Only a peer presenting the pinned
+/// certificate and the same device id counts as found.
+pub async fn rediscover(server: &KnownServer) -> Option<String> {
+    let ports: BTreeSet<u16> = server
+        .addresses
+        .iter()
+        .filter_map(|address| address.rsplit_once(':')?.1.parse().ok())
+        .collect();
+    let candidates: Vec<String> = if_addrs::get_if_addrs()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|interface| !interface.is_loopback())
+        .filter_map(|interface| match interface.addr {
+            if_addrs::IfAddr::V4(v4) => Some(hosts_in(v4.ip, v4.prefixlen)),
+            if_addrs::IfAddr::V6(_) => None,
+        })
+        .flatten()
+        .flat_map(|ip| ports.iter().map(move |port| format!("{ip}:{port}")))
+        .filter(|candidate| !server.addresses.contains(candidate))
+        .collect();
+    find_among(&server.fingerprint, &server.device_id, candidates).await
+}
+
+/// Other hosts of the subnet of `ip`. Wide networks are narrowed to the /22 around
+/// `ip` (at most 1022 hosts), which covers any home network.
+fn hosts_in(ip: Ipv4Addr, prefix: u8) -> Vec<Ipv4Addr> {
+    let prefix = prefix.clamp(22, 30);
+    let mask = u32::MAX << (32 - prefix);
+    let network = u32::from(ip) & mask;
+    let broadcast = network | !mask;
+    ((network + 1)..broadcast)
+        .map(Ipv4Addr::from)
+        .filter(|host| *host != ip)
+        .collect()
+}
+
+const PROBES_AT_ONCE: usize = 64;
+
+async fn find_among(fingerprint: &str, device_id: &str, candidates: Vec<String>) -> Option<String> {
+    let client = pinned_client_with(
+        fingerprint,
+        Duration::from_millis(700),
+        Duration::from_secs(2),
+    )
+    .ok()?;
+    for batch in candidates.chunks(PROBES_AT_ONCE) {
+        let mut probes = tokio::task::JoinSet::new();
+        for candidate in batch {
+            let (client, candidate) = (client.clone(), candidate.clone());
+            probes.spawn(async move {
+                let hello: Hello = client
+                    .get(format!("https://{candidate}/v1/hello"))
+                    .send()
+                    .await
+                    .ok()?
+                    .json()
+                    .await
+                    .ok()?;
+                Some((hello.device_id, candidate))
+            });
+        }
+        while let Some(probe) = probes.join_next().await {
+            if let Ok(Some((found_id, candidate))) = probe
+                && found_id == device_id
+            {
+                return Some(candidate);
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -373,5 +464,45 @@ mod tests {
         let result = pair(&Database::in_memory(), &code).await;
 
         assert!(matches!(result, Err(Error::Lan("unreachable"))));
+    }
+
+    #[test]
+    fn subnet_hosts_skip_network_broadcast_and_self() {
+        let hosts = hosts_in(Ipv4Addr::new(192, 168, 1, 149), 24);
+        assert_eq!(hosts.len(), 253);
+        assert_eq!(hosts.first(), Some(&Ipv4Addr::new(192, 168, 1, 1)));
+        assert_eq!(hosts.last(), Some(&Ipv4Addr::new(192, 168, 1, 254)));
+        assert!(!hosts.contains(&Ipv4Addr::new(192, 168, 1, 149)));
+        assert_eq!(
+            hosts_in(Ipv4Addr::new(10, 0, 3, 7), 8).len(),
+            1021,
+            "wide networks are capped"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_moved_device_is_found_only_with_its_certificate_and_id() {
+        let desk = serve().await;
+        let desk_id = ops::device_id(&desk.database.lock().unwrap()).unwrap();
+        let right = desk.server.address.to_string();
+        let candidates = vec!["127.0.0.1:1".to_owned(), right.clone()];
+
+        let found = find_among(desk.identity.fingerprint(), &desk_id, candidates.clone()).await;
+        assert_eq!(found, Some(right));
+
+        assert_eq!(
+            find_among(
+                desk.identity.fingerprint(),
+                "someone-else",
+                candidates.clone()
+            )
+            .await,
+            None
+        );
+        let impostor = Identity::generate().unwrap();
+        assert_eq!(
+            find_among(impostor.fingerprint(), &desk_id, candidates).await,
+            None
+        );
     }
 }

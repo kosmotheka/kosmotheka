@@ -1,6 +1,6 @@
 # Library
 
-> Working name. Early development: the desktop catalogue works; sync, family sharing and the mobile scanner are next.
+> Working name. Early development: the desktop catalogue and local-network sync with the phone work; the family server is next.
 
 A catalog for your household library — books first, then board games, comics, video games and films. Know what you own, where it is, who has read it and who borrowed it.
 
@@ -12,7 +12,7 @@ Desktop (Linux, Windows) and Android, built with [Tauri 2](https://tauri.app).
 
 ## Status
 
-Phase 1 (desktop catalogue, local mode) is feature-complete and under manual testing:
+Phases 1 (desktop catalogue) and 2 (phone and local sync) are feature-complete and under manual testing:
 
 - Add books by hand or by ISBN, with data and covers from Open Library and Google Books.
 - Quick add: type or scan ISBNs one after another (USB barcode readers work too).
@@ -20,6 +20,8 @@ Phase 1 (desktop catalogue, local mode) is feature-complete and under manual tes
 - Edit and delete; every change is recorded as an operation, with a per-book history.
 - Accent-insensitive full-text search and filters by format, owner and location.
 - Backups (zip with covers) and CSV import/export.
+- Sync between devices over the home network, with no server or account: pair by QR code, encrypted with a pinned certificate, conflict-free merging.
+- On the phone: scan a barcode to check whether you already own a book, even offline, and keep a wishlist.
 - English and Spanish.
 
 See the roadmap and the architecture decision log in [`docs/`](docs/) (currently in Spanish).

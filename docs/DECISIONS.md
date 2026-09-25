@@ -42,6 +42,7 @@
 | D34 | Transporte local: HTTPS con certificado fijado por el QR | propuesta |
 | D35 | Escáner de códigos con el plugin oficial de Tauri (solo móvil) | propuesta |
 | D36 | Lista de deseos básica, sincronizada | propuesta |
+| D37 | Reencontrar dispositivos buscando en la subred, no por mDNS | propuesta |
 
 ---
 
@@ -412,3 +413,14 @@ Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huel
 - Entidad `wish`: título, ISBN, autor, nota y portada (URL). Se sincroniza como el resto (operaciones), así que lo que apuntas en la tienda aparece en casa.
 - «¿Lo tengo ya?» consulta **solo la base de datos local**: funciona sin cobertura. Si no lo tienes, ofrece añadirlo al catálogo (con búsqueda online si hay red) o a la lista de deseos.
 - Queda para la Fase 4: listas por persona, reservar regalos sin que lo vea el destinatario y pasar un deseo al catálogo conservando su historia.
+
+## D37 · Reencontrar dispositivos buscando en la subred, no por mDNS — `propuesta`
+
+**Contexto.** Si el escritorio cambia de IP (el router se la reasigna), el móvil deja de encontrarlo en la dirección guardada. El plan (D13) era descubrirlo por mDNS. Pero en Android, recibir multicast exige un «multicast lock» del sistema, que solo se obtiene con código nativo (Kotlin): sin él, muchos móviles descartan las respuestas mDNS.
+
+**Propuesta.** Cuando ninguna dirección guardada responde, el dispositivo **recorre su propia subred** (como mucho 1024 direcciones, 64 a la vez, con tiempos de espera cortos) llamando al puerto conocido del otro. Solo acepta al que presenta **el certificado fijado** y **el identificador de dispositivo** guardados. Si lo encuentra, guarda la nueva dirección y sincroniza.
+- Ventajas: funciona en cualquier sistema sin código nativo ni permisos extra, se puede probar automáticamente, y la seguridad no cambia (la huella del certificado sigue siendo la que manda).
+- Inconvenientes: tarda unos segundos, y solo encuentra al otro si está en la misma subred y en el mismo puerto (el puerto se guarda y se mantiene entre ejecuciones).
+- mDNS queda como mejora posible si algún día hace falta; exigiría un pequeño plugin nativo para Android.
+
+**Además en el 2.3:** emparejar escaneando el QR con la cámara del móvil, y sincronizar al volver a la app (cuando pasa a primer plano), no solo al abrirla.

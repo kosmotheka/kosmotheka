@@ -225,7 +225,8 @@
       "peer_error": "The other device had a problem. Try again.",
       "unknown_device": "This device is not paired.",
       "no_network": "This device is not connected to any network."
-    }
+    },
+    "scanCode": "Scan the other device's code"
   },
   "tabs": {
     "catalog": "Catalog",
