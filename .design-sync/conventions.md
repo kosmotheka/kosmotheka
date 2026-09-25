@@ -10,7 +10,7 @@ Library is a free, local-first app to catalogue what a household owns (books, co
 
 ## Styling idiom: Tailwind utilities on design tokens
 
-Components take a `className` for layout tweaks. Your own layout glue uses Tailwind utility classes (the compiled set covers the usual layout, spacing, sizing, typography and border utilities). **Colour always comes from the tokens**, never raw hex:
+Components take a `className` for layout tweaks. Your own layout glue uses Tailwind utility classes (the compiled set covers the usual layout, spacing, sizing, typography and border utilities). Space children with `gap-*` on a flex or grid parent: `space-x-*`/`space-y-*`, `divide-*`, filters and `scale-*` are only compiled where the app itself uses them, so do not rely on them. **Colour always comes from the tokens**, never raw hex:
 
 | Purpose | Classes |
 |---|---|
