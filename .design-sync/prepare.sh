@@ -9,7 +9,10 @@ NM=.design-sync/.cache/view/node_modules
 # 1. Stylesheet: the app's Tailwind entry plus the utilities a design agent
 #    may use (see tailwind.css). It must live inside the package dir (app/).
 mkdir -p "$CACHE"
+[ -x .ds-sync/node_modules/.bin/tailwindcss ] && [ -d .ds-sync/node_modules/postcss ] \
+  || (cd .ds-sync && npm i --silent @tailwindcss/cli@4 postcss)
 .ds-sync/node_modules/.bin/tailwindcss -i .design-sync/tailwind.css -o "$CACHE/ds.css"
+node .design-sync/postprocess-css.mjs "$CACHE/ds.css"
 rm -rf "$CACHE/files"
 cp -r app/node_modules/@fontsource-variable/geist/files "$CACHE/files"
 
