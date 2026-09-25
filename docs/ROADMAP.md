@@ -123,7 +123,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - Pruebas de conformidad compartidas entre Rust y PHP en la CI.
 - **Hecho cuando:** la familia comparte biblioteca desde el escritorio y el móvil, cada uno con su rol, y los cambios sin conexión se sincronizan con el servidor.
 
-**Hitos** (decisiones D38–D40):
+**Hitos** (decisiones D38–D40; detalle y preguntas abiertas en [plans/fase-3.md](plans/fase-3.md)):
 
 | Hito | Qué se construye | Cómo se prueba |
 |---|---|---|
