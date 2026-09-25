@@ -256,5 +256,46 @@
     "bought": "Bought: add to catalog",
     "remove": "Remove from wishlist",
     "removeConfirm": "Remove “{{title}}” from the wishlist?"
+  },
+  "nav": {
+    "catalog": "Catalog",
+    "check": "Do I have it?",
+    "missing": "Missing",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "search": "Search",
+    "searchIn": "Search in {{library}}",
+    "changeLibrary": "Change library",
+    "libraries": "Your libraries",
+    "library": "Library",
+    "myLibrary": "My library",
+    "newLibrary": "New library",
+    "newLibraryHint": "Or join one with its QR code",
+    "requests": "My requests",
+    "share": "Sharing and devices",
+    "people": "People and permissions",
+    "series": "Series",
+    "backups": "Backups",
+    "settings": "Settings",
+    "help": "Help",
+    "about": "About",
+    "soon": "Soon",
+    "quickAdd": "Quick add",
+    "scan": "Scan",
+    "add": "Add",
+    "works_one": "{{count}} item",
+    "works_other": "{{count}} items",
+    "languages": "Language"
+  },
+  "sync": {
+    "local": "Only on this device",
+    "upToDate": "Up to date",
+    "lastSync": "Synced {{when}}",
+    "never": "Not synced yet",
+    "label": "Sync status: {{status}}. Open devices"
+  },
+  "help": {
+    "title": "Help",
+    "soon": "The help section is on its way. Meanwhile, every problem message in the app explains what happened and what to do."
   }
 }

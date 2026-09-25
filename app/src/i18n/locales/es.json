@@ -256,5 +256,46 @@
     "bought": "Comprado: añadir al catálogo",
     "remove": "Quitar de deseos",
     "removeConfirm": "¿Quitar «{{title}}» de la lista de deseos?"
+  },
+  "nav": {
+    "catalog": "Catálogo",
+    "check": "¿Lo tengo?",
+    "missing": "Me falta",
+    "menu": "Menú",
+    "openMenu": "Abrir menú",
+    "search": "Buscar",
+    "searchIn": "Buscar en {{library}}",
+    "changeLibrary": "Cambiar de biblioteca",
+    "libraries": "Tus bibliotecas",
+    "library": "Biblioteca",
+    "myLibrary": "Mi biblioteca",
+    "newLibrary": "Nueva biblioteca",
+    "newLibraryHint": "O únete a una con su QR",
+    "requests": "Mis peticiones",
+    "share": "Compartir y dispositivos",
+    "people": "Personas y permisos",
+    "series": "Series",
+    "backups": "Copias de seguridad",
+    "settings": "Ajustes",
+    "help": "Ayuda",
+    "about": "Acerca de",
+    "soon": "Pronto",
+    "quickAdd": "Alta rápida",
+    "scan": "Escanear",
+    "add": "Añadir",
+    "works_one": "{{count}} obra",
+    "works_other": "{{count}} obras",
+    "languages": "Idioma"
+  },
+  "sync": {
+    "local": "Solo en este dispositivo",
+    "upToDate": "Al día",
+    "lastSync": "Sincronizado {{when}}",
+    "never": "Aún sin sincronizar",
+    "label": "Estado de sincronización: {{status}}. Abrir dispositivos"
+  },
+  "help": {
+    "title": "Ayuda",
+    "soon": "La sección de ayuda está en camino. Mientras tanto, cada mensaje de problema de la app explica qué ha pasado y qué hacer."
   }
 }

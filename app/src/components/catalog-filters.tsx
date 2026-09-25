@@ -23,9 +23,12 @@ export function isFiltering(filter: BookFilter) {
 export function CatalogFilters({
   filter,
   onChange,
+  showSearch = true,
 }: {
   filter: BookFilter;
   onChange: (filter: BookFilter) => void;
+  /** On desktop the search box lives in the top bar. */
+  showSearch?: boolean;
 }) {
   const { t } = useTranslation();
   const options = useCatalogOptions();
@@ -34,9 +37,11 @@ export function CatalogFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {showSearch && (
       <div className="relative min-w-56 flex-1">
         <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id="catalog-search"
           type="search"
           aria-label={t("filters.search")}
           placeholder={t("filters.searchPlaceholder")}
@@ -45,6 +50,7 @@ export function CatalogFilters({
           onChange={(e) => set("query", e.target.value)}
         />
       </div>
+      )}
       <Select
         value={filter.format ?? ALL}
         onValueChange={(v) => set("format", v === ALL ? undefined : (v as Format))}

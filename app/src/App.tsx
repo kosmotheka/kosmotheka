@@ -1,32 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  BookPlus,
-  CircleCheck,
-  MonitorSmartphone,
-  ScanBarcode,
-  ScanSearch,
-  Settings,
-} from "lucide-react";
+import { CircleCheck } from "lucide-react";
 
-import { type AddBookPrefill, AddBookDialog } from "@/components/add-book-dialog";
-import { BookCards } from "@/components/book-cards";
+import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookDialog } from "@/components/book-dialog";
-import { BookTable } from "@/components/book-table";
 import { BurstDialog } from "@/components/burst-dialog";
-import { CatalogFilters, isFiltering } from "@/components/catalog-filters";
+import { isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
 import { CheckDialog } from "@/components/check-dialog";
 import { DevicesDialog } from "@/components/devices-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
-import { WishList } from "@/components/wish-list";
+import { AppBar } from "@/components/shell/app-bar";
+import { BottomNav } from "@/components/shell/bottom-nav";
+import { LibraryPicker } from "@/components/shell/library-picker";
+import { NavDrawer } from "@/components/shell/nav-drawer";
+import { Sidebar } from "@/components/shell/sidebar";
+import { useSyncStatus } from "@/components/shell/sync-status";
+import { TopBar } from "@/components/shell/top-bar";
+import { useDesktop } from "@/components/shell/use-desktop";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supportedLanguages } from "@/i18n";
 import {
   type BookFilter,
-  type BookSummary,
   type CatalogOptions,
   type CreatedBook,
   type Wish,
@@ -37,13 +31,10 @@ import {
   listWishes,
   syncWith,
 } from "@/lib/api";
-
-type LoadState =
-  | { status: "loading" }
-  | { status: "ready"; books: BookSummary[] }
-  | { status: "error"; message: string };
-
-type View = "catalog" | "wishes";
+import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
+import { type LoadState, CatalogPage } from "@/pages/catalog-page";
+import { HelpPage } from "@/pages/help-page";
+import { MissingPage } from "@/pages/missing-page";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -56,23 +47,19 @@ function useDebounced<T>(value: T, delay: number): T {
 }
 
 export default function App() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { section, overlay } = useLocation();
+  const desktop = useDesktop();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
-  const [view, setView] = useState<View>("catalog");
   const [notice, setNotice] = useState<string | null>(null);
-  const [openBookId, setOpenBookId] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [burstOpen, setBurstOpen] = useState(false);
-  const [devicesOpen, setDevicesOpen] = useState(false);
-  const [checkOpen, setCheckOpen] = useState(false);
   const [version, setVersion] = useState(0);
-  /** A new key remounts the add dialog so its prefill is read again. */
-  const [adding, setAdding] = useState<{ key: number; prefill?: AddBookPrefill; wishId?: string } | null>(
-    null,
-  );
+  const sync = useSyncStatus(version);
+
+  // Until several libraries exist (roadmap phase 4), there is only this one.
+  const library = t("nav.myLibrary");
 
   const activeFilter = useDebounced(filter, 200);
 
@@ -81,8 +68,7 @@ export default function App() {
     listBooks(activeFilter)
       .then((books) => !cancelled && setState({ status: "ready", books }))
       .catch(
-        (error: unknown) =>
-          !cancelled && setState({ status: "error", message: String(error) }),
+        (error: unknown) => !cancelled && setState({ status: "error", message: String(error) }),
       );
     catalogOptions()
       .then((loaded) => !cancelled && setOptions(loaded))
@@ -108,13 +94,12 @@ export default function App() {
       running = true;
       last = Date.now();
       const status = await lanStatus().catch(() => null);
-      let changed = false;
       for (const device of status?.servers ?? []) {
-        const report = await syncWith(device.deviceId).catch(() => null);
-        changed ||= (report?.received.received ?? 0) > 0;
+        await syncWith(device.deviceId).catch(() => null);
       }
       running = false;
-      if (changed) reload();
+      // Reload even without changes: the sync indicator shows the new time.
+      reload();
     };
     const onVisible = () => {
       if (document.visibilityState === "visible") void syncAll();
@@ -126,195 +111,118 @@ export default function App() {
 
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);
+  const counts = { catalog: filtering ? 0 : books.length, missing: wishes.length };
 
-  const startAdding = (prefill?: AddBookPrefill, wishId?: string) => {
-    setNotice(null);
-    setAdding((current) => ({ key: (current?.key ?? 0) + 1, prefill, wishId }));
-  };
-
-  const handleCreated = async (result: CreatedBook, title: string) => {
-    const message = t(
-      result.existingEdition ? "catalog.addedCopy" : "catalog.added",
-      { title },
-    );
-    setNotice(
-      result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message,
-    );
+  const handleCreated = async (result: CreatedBook, title: string, wishId?: string) => {
+    const message = t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", { title });
+    setNotice(result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message);
     // A wish that became a book is no longer wished for.
-    if (adding?.wishId) await deleteWish(adding.wishId).catch(() => {});
+    if (wishId) await deleteWish(wishId).catch(() => {});
     reload();
   };
 
-  const catalogIsEmpty = !filtering && books.length === 0;
-  const label = (text: string) => <span className="hidden sm:inline">{text}</span>;
+  const focusSearch = () => {
+    navigate("catalog");
+    setTimeout(() => document.getElementById("catalog-search")?.focus(), 50);
+  };
+
+  const page =
+    section === "missing" ? (
+      <MissingPage wishes={wishes} desktop={desktop} onChanged={reload} />
+    ) : section === "help" ? (
+      <HelpPage />
+    ) : (
+      <CatalogPage
+        state={state}
+        filter={filter}
+        onFilterChange={setFilter}
+        filtering={filtering}
+        desktop={desktop}
+      />
+    );
+
+  const content = (
+    <>
+      {notice && (
+        <Alert className="mb-4">
+          <CircleCheck />
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+      {page}
+    </>
+  );
 
   return (
     <CatalogOptionsContext.Provider value={options}>
-      <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
-            {state.status === "ready" && (
-              <p className="text-sm text-muted-foreground">
-                {t(filtering ? "filters.results" : "catalog.count", {
-                  count: books.length,
-                })}
-              </p>
-            )}
+      {desktop ? (
+        <div className="flex h-dvh">
+          <Sidebar section={section} library={library} counts={counts} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <TopBar
+              library={library}
+              query={filter.query ?? ""}
+              onQueryChange={(query) => setFilter({ ...filter, query })}
+              sync={sync}
+            />
+            <main className="flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {supportedLanguages.map((language) => (
-              <Button
-                key={language}
-                size="sm"
-                variant={i18n.resolvedLanguage === language ? "secondary" : "ghost"}
-                onClick={() => void i18n.changeLanguage(language)}
-              >
-                {language.toUpperCase()}
-              </Button>
-            ))}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t("devices.title")}
-              title={t("devices.title")}
-              onClick={() => setDevicesOpen(true)}
-            >
-              <MonitorSmartphone />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t("settings.title")}
-              title={t("settings.title")}
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings />
-            </Button>
-            <Button variant="outline" onClick={() => setCheckOpen(true)} title={t("check.title")}>
-              <ScanSearch /> {label(t("check.open"))}
-            </Button>
-            <Button variant="outline" onClick={() => setBurstOpen(true)} title={t("burst.open")}>
-              <ScanBarcode /> {label(t("burst.open"))}
-            </Button>
-            <Button onClick={() => startAdding()} title={t("catalog.add")}>
-              <BookPlus /> {label(t("catalog.add"))}
-            </Button>
-          </div>
-        </header>
-
-        {notice && (
-          <Alert>
-            <CircleCheck />
-            <AlertDescription>{notice}</AlertDescription>
-          </Alert>
-        )}
-
-        <Tabs value={view} onValueChange={(value) => setView(value as View)}>
-          <TabsList>
-            <TabsTrigger value="catalog">{t("tabs.catalog")}</TabsTrigger>
-            <TabsTrigger value="wishes">
-              {t("tabs.wishes", { count: wishes.length })}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {view === "wishes" && (
-          <WishList
-            wishes={wishes}
-            onRemove={(wish) => void deleteWish(wish.id).then(reload)}
-            onBought={(wish) =>
-              startAdding(
-                {
-                  isbn: wish.isbn13 ?? undefined,
-                  title: wish.title,
-                  author: wish.author ?? undefined,
-                },
-                wish.id,
-              )
-            }
+        </div>
+      ) : (
+        <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
+          <AppBar library={library} sync={sync} onSearch={focusSearch} />
+          <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
+          <BottomNav section={section} />
+          <NavDrawer
+            open={overlay?.name === "drawer"}
+            library={library}
+            count={counts.catalog}
+            sync={sync}
           />
-        )}
+        </div>
+      )}
 
-        {view === "catalog" && (
-          <>
-            {!catalogIsEmpty && <CatalogFilters filter={filter} onChange={setFilter} />}
-
-            {state.status === "loading" && (
-              <p className="text-muted-foreground">{t("catalog.loading")}</p>
-            )}
-            {state.status === "error" && (
-              <p className="text-destructive">
-                {t("errors.internal", { message: state.message })}
-              </p>
-            )}
-            {state.status === "ready" && catalogIsEmpty && (
-              <div className="rounded-lg border border-dashed p-12 text-center">
-                <p className="font-medium">{t("catalog.empty.title")}</p>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  {t("catalog.empty.body")}
-                </p>
-                <Button onClick={() => startAdding()}>
-                  <BookPlus /> {t("catalog.add")}
-                </Button>
-              </div>
-            )}
-            {state.status === "ready" && filtering && books.length === 0 && (
-              <div className="rounded-lg border border-dashed p-8 text-center">
-                <p className="mb-4 text-muted-foreground">{t("filters.noResults")}</p>
-                <Button variant="outline" onClick={() => setFilter({})}>
-                  {t("filters.clear")}
-                </Button>
-              </div>
-            )}
-            {state.status === "ready" && books.length > 0 && (
-              <>
-                <div className="hidden md:block">
-                  <BookTable books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
-                </div>
-                <div className="md:hidden">
-                  <BookCards books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {adding && (
-          <AddBookDialog
-            key={adding.key}
-            open
-            prefill={adding.prefill}
-            onOpenChange={(open) => !open && setAdding(null)}
-            onCreated={(result, title) => void handleCreated(result, title)}
-          />
-        )}
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          onChanged={reload}
+      <LibraryPicker
+        open={overlay?.name === "libraries"}
+        desktop={desktop}
+        library={library}
+        count={counts.catalog}
+      />
+      {overlay?.name === "add" && (
+        <AddBookDialog
+          open
+          prefill={overlay.prefill}
+          onOpenChange={(open) => !open && closeOverlay()}
+          onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
         />
-        <BurstDialog open={burstOpen} onOpenChange={setBurstOpen} onChanged={reload} />
-        <DevicesDialog open={devicesOpen} onOpenChange={setDevicesOpen} onChanged={reload} />
-        <CheckDialog
-          open={checkOpen}
-          onOpenChange={setCheckOpen}
-          onOpenBook={(editionId) => {
-            setCheckOpen(false);
-            setOpenBookId(editionId);
-          }}
-          onAddToCatalog={(prefill) => {
-            setCheckOpen(false);
-            startAdding(prefill);
-          }}
-          onChanged={reload}
-        />
-        <BookDialog
-          editionId={openBookId}
-          onClose={() => setOpenBookId(null)}
-          onChanged={reload}
-        />
-      </div>
+      )}
+      <SettingsDialog
+        open={overlay?.name === "settings"}
+        onOpenChange={(open) => !open && closeOverlay()}
+        onChanged={reload}
+      />
+      <BurstDialog
+        open={overlay?.name === "burst"}
+        onOpenChange={(open) => !open && closeOverlay()}
+        onChanged={reload}
+      />
+      <DevicesDialog
+        open={overlay?.name === "devices"}
+        onOpenChange={(open) => !open && closeOverlay()}
+        onChanged={reload}
+      />
+      <CheckDialog
+        open={overlay?.name === "check"}
+        onOpenChange={(open) => !open && closeOverlay()}
+        onOpenBook={(editionId) => openOverlay({ name: "book", editionId })}
+        onAddToCatalog={(prefill) => openOverlay({ name: "add", prefill })}
+        onChanged={reload}
+      />
+      <BookDialog
+        editionId={overlay?.name === "book" ? overlay.editionId : null}
+        onClose={closeOverlay}
+        onChanged={reload}
+      />
     </CatalogOptionsContext.Provider>
   );
 }

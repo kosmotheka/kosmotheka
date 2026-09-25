@@ -13,7 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { supportedLanguages } from "@/i18n";
 import { getSettings, saveSettings } from "@/lib/api";
+
+/** Each language in its own name, so it can be found whatever the current one. */
+const LANGUAGE_NAMES: Record<(typeof supportedLanguages)[number], string> = {
+  en: "English",
+  es: "Español",
+};
 
 export function SettingsDialog({
   open,
@@ -25,7 +32,7 @@ export function SettingsDialog({
   /** Called when a restore or an import changed the catalog. */
   onChanged: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +61,22 @@ export function SettingsDialog({
             <DialogTitle>{t("settings.title")}</DialogTitle>
             <DialogDescription>{t("settings.description")}</DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{t("nav.languages")}</p>
+            <div className="flex gap-2">
+              {supportedLanguages.map((language) => (
+                <Button
+                  key={language}
+                  type="button"
+                  size="sm"
+                  variant={i18n.resolvedLanguage === language ? "secondary" : "outline"}
+                  onClick={() => void i18n.changeLanguage(language)}
+                >
+                  {LANGUAGE_NAMES[language]}
+                </Button>
+              ))}
+            </div>
+          </div>
           <Field id="google-books-key" label={t("settings.googleBooksKey")}>
             <Input
               id="google-books-key"
