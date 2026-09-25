@@ -21,19 +21,28 @@ import {
 } from "@/components/ui/dialog";
 import { type CreatedBook, createBook } from "@/lib/api";
 
+export interface AddBookPrefill {
+  isbn?: string;
+  title?: string;
+  author?: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (result: CreatedBook, title: string) => void;
+  /** Read once when the dialog mounts; give it a new `key` to prefill again. */
+  prefill?: AddBookPrefill;
 }
 
-export function AddBookDialog({
-  open,
-  onOpenChange,
-  onCreated,
-}: Props) {
+export function AddBookDialog({ open, onOpenChange, onCreated, prefill }: Props) {
   const { t } = useTranslation();
-  const [edition, setEdition] = useState(emptyEditionForm);
+  const [edition, setEdition] = useState(() => ({
+    ...emptyEditionForm,
+    isbn: prefill?.isbn ?? "",
+    title: prefill?.title ?? "",
+    authors: prefill?.author ? [prefill.author] : emptyEditionForm.authors,
+  }));
   const [copy, setCopy] = useState(emptyCopyForm);
   const [saving, setSaving] = useState(false);
   const errors = useCommandErrors();

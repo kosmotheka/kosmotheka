@@ -67,7 +67,9 @@ pub fn affected_editions(conn: &Connection, change: &Change) -> Result<BTreeSet<
         Entity::Publisher if change.action == Action::Update => {
             query_ids(conn, "SELECT id FROM editions WHERE publisher_id = ?1", id)?
         }
-        Entity::Person | Entity::Publisher | Entity::Member | Entity::Copy => BTreeSet::new(),
+        Entity::Person | Entity::Publisher | Entity::Member | Entity::Copy | Entity::Wish => {
+            BTreeSet::new()
+        }
     };
     Ok(found)
 }

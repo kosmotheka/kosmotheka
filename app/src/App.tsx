@@ -1,26 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookPlus, CircleCheck, MonitorSmartphone, ScanBarcode, Settings } from "lucide-react";
+import {
+  BookPlus,
+  CircleCheck,
+  MonitorSmartphone,
+  ScanBarcode,
+  ScanSearch,
+  Settings,
+} from "lucide-react";
 
-import { AddBookDialog } from "@/components/add-book-dialog";
+import { type AddBookPrefill, AddBookDialog } from "@/components/add-book-dialog";
+import { BookCards } from "@/components/book-cards";
 import { BookDialog } from "@/components/book-dialog";
 import { BookTable } from "@/components/book-table";
 import { BurstDialog } from "@/components/burst-dialog";
 import { CatalogFilters, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
+import { CheckDialog } from "@/components/check-dialog";
 import { DevicesDialog } from "@/components/devices-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { WishList } from "@/components/wish-list";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supportedLanguages } from "@/i18n";
 import {
   type BookFilter,
   type BookSummary,
   type CatalogOptions,
   type CreatedBook,
+  type Wish,
   catalogOptions,
+  deleteWish,
   lanStatus,
   listBooks,
+  listWishes,
   syncWith,
 } from "@/lib/api";
 
@@ -28,6 +42,8 @@ type LoadState =
   | { status: "loading" }
   | { status: "ready"; books: BookSummary[] }
   | { status: "error"; message: string };
+
+type View = "catalog" | "wishes";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -42,15 +58,21 @@ function useDebounced<T>(value: T, delay: number): T {
 export default function App() {
   const { t, i18n } = useTranslation();
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [wishes, setWishes] = useState<Wish[]>([]);
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [view, setView] = useState<View>("catalog");
   const [notice, setNotice] = useState<string | null>(null);
   const [openBookId, setOpenBookId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [burstOpen, setBurstOpen] = useState(false);
   const [devicesOpen, setDevicesOpen] = useState(false);
+  const [checkOpen, setCheckOpen] = useState(false);
   const [version, setVersion] = useState(0);
+  /** A new key remounts the add dialog so its prefill is read again. */
+  const [adding, setAdding] = useState<{ key: number; prefill?: AddBookPrefill; wishId?: string } | null>(
+    null,
+  );
 
   const activeFilter = useDebounced(filter, 200);
 
@@ -65,12 +87,15 @@ export default function App() {
     catalogOptions()
       .then((loaded) => !cancelled && setOptions(loaded))
       .catch(() => {});
+    listWishes()
+      .then((loaded) => !cancelled && setWishes(loaded))
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [activeFilter, version]);
 
-  /** Reloads books and suggestions after any change. */
+  /** Reloads books, wishes and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
 
   // On opening, quietly catch up with every paired device that is reachable.
@@ -89,7 +114,12 @@ export default function App() {
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);
 
-  const handleCreated = (result: CreatedBook, title: string) => {
+  const startAdding = (prefill?: AddBookPrefill, wishId?: string) => {
+    setNotice(null);
+    setAdding((current) => ({ key: (current?.key ?? 0) + 1, prefill, wishId }));
+  };
+
+  const handleCreated = async (result: CreatedBook, title: string) => {
     const message = t(
       result.existingEdition ? "catalog.addedCopy" : "catalog.added",
       { title },
@@ -97,15 +127,13 @@ export default function App() {
     setNotice(
       result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message,
     );
+    // A wish that became a book is no longer wished for.
+    if (adding?.wishId) await deleteWish(adding.wishId).catch(() => {});
     reload();
   };
 
-  const openDialog = () => {
-    setNotice(null);
-    setDialogOpen(true);
-  };
-
   const catalogIsEmpty = !filtering && books.length === 0;
+  const label = (text: string) => <span className="hidden sm:inline">{text}</span>;
 
   return (
     <CatalogOptionsContext.Provider value={options}>
@@ -150,11 +178,14 @@ export default function App() {
             >
               <Settings />
             </Button>
-            <Button variant="outline" onClick={() => setBurstOpen(true)}>
-              <ScanBarcode /> {t("burst.open")}
+            <Button variant="outline" onClick={() => setCheckOpen(true)} title={t("check.title")}>
+              <ScanSearch /> {label(t("check.open"))}
             </Button>
-            <Button onClick={openDialog}>
-              <BookPlus /> {t("catalog.add")}
+            <Button variant="outline" onClick={() => setBurstOpen(true)} title={t("burst.open")}>
+              <ScanBarcode /> {label(t("burst.open"))}
+            </Button>
+            <Button onClick={() => startAdding()} title={t("catalog.add")}>
+              <BookPlus /> {label(t("catalog.add"))}
             </Button>
           </div>
         </header>
@@ -166,44 +197,85 @@ export default function App() {
           </Alert>
         )}
 
-        {!catalogIsEmpty && <CatalogFilters filter={filter} onChange={setFilter} />}
+        <Tabs value={view} onValueChange={(value) => setView(value as View)}>
+          <TabsList>
+            <TabsTrigger value="catalog">{t("tabs.catalog")}</TabsTrigger>
+            <TabsTrigger value="wishes">
+              {t("tabs.wishes", { count: wishes.length })}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        {state.status === "loading" && (
-          <p className="text-muted-foreground">{t("catalog.loading")}</p>
-        )}
-        {state.status === "error" && (
-          <p className="text-destructive">
-            {t("errors.internal", { message: state.message })}
-          </p>
-        )}
-        {state.status === "ready" && catalogIsEmpty && (
-          <div className="rounded-lg border border-dashed p-12 text-center">
-            <p className="font-medium">{t("catalog.empty.title")}</p>
-            <p className="mb-4 text-sm text-muted-foreground">
-              {t("catalog.empty.body")}
-            </p>
-            <Button onClick={openDialog}>
-              <BookPlus /> {t("catalog.add")}
-            </Button>
-          </div>
-        )}
-        {state.status === "ready" && filtering && books.length === 0 && (
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <p className="mb-4 text-muted-foreground">{t("filters.noResults")}</p>
-            <Button variant="outline" onClick={() => setFilter({})}>
-              {t("filters.clear")}
-            </Button>
-          </div>
-        )}
-        {state.status === "ready" && books.length > 0 && (
-          <BookTable books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
+        {view === "wishes" && (
+          <WishList
+            wishes={wishes}
+            onRemove={(wish) => void deleteWish(wish.id).then(reload)}
+            onBought={(wish) =>
+              startAdding(
+                {
+                  isbn: wish.isbn13 ?? undefined,
+                  title: wish.title,
+                  author: wish.author ?? undefined,
+                },
+                wish.id,
+              )
+            }
+          />
         )}
 
-        <AddBookDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onCreated={handleCreated}
-        />
+        {view === "catalog" && (
+          <>
+            {!catalogIsEmpty && <CatalogFilters filter={filter} onChange={setFilter} />}
+
+            {state.status === "loading" && (
+              <p className="text-muted-foreground">{t("catalog.loading")}</p>
+            )}
+            {state.status === "error" && (
+              <p className="text-destructive">
+                {t("errors.internal", { message: state.message })}
+              </p>
+            )}
+            {state.status === "ready" && catalogIsEmpty && (
+              <div className="rounded-lg border border-dashed p-12 text-center">
+                <p className="font-medium">{t("catalog.empty.title")}</p>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {t("catalog.empty.body")}
+                </p>
+                <Button onClick={() => startAdding()}>
+                  <BookPlus /> {t("catalog.add")}
+                </Button>
+              </div>
+            )}
+            {state.status === "ready" && filtering && books.length === 0 && (
+              <div className="rounded-lg border border-dashed p-8 text-center">
+                <p className="mb-4 text-muted-foreground">{t("filters.noResults")}</p>
+                <Button variant="outline" onClick={() => setFilter({})}>
+                  {t("filters.clear")}
+                </Button>
+              </div>
+            )}
+            {state.status === "ready" && books.length > 0 && (
+              <>
+                <div className="hidden md:block">
+                  <BookTable books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
+                </div>
+                <div className="md:hidden">
+                  <BookCards books={books} onOpen={(book) => setOpenBookId(book.editionId)} />
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {adding && (
+          <AddBookDialog
+            key={adding.key}
+            open
+            prefill={adding.prefill}
+            onOpenChange={(open) => !open && setAdding(null)}
+            onCreated={(result, title) => void handleCreated(result, title)}
+          />
+        )}
         <SettingsDialog
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
@@ -211,6 +283,19 @@ export default function App() {
         />
         <BurstDialog open={burstOpen} onOpenChange={setBurstOpen} onChanged={reload} />
         <DevicesDialog open={devicesOpen} onOpenChange={setDevicesOpen} onChanged={reload} />
+        <CheckDialog
+          open={checkOpen}
+          onOpenChange={setCheckOpen}
+          onOpenBook={(editionId) => {
+            setCheckOpen(false);
+            setOpenBookId(editionId);
+          }}
+          onAddToCatalog={(prefill) => {
+            setCheckOpen(false);
+            startAdding(prefill);
+          }}
+          onChanged={reload}
+        />
         <BookDialog
           editionId={openBookId}
           onClose={() => setOpenBookId(null)}

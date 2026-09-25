@@ -85,7 +85,9 @@
       "copy_remove": "Copy deleted",
       "book_remove": "Book deleted",
       "backup_restore": "Backup restored",
-      "sync_baseline": "Included in sync (initial state)"
+      "sync_baseline": "Included in sync (initial state)",
+      "wish_add": "Added to wishlist",
+      "wish_remove": "Removed from wishlist"
     }
   },
   "book": {
@@ -224,5 +226,34 @@
       "unknown_device": "This device is not paired.",
       "no_network": "This device is not connected to any network."
     }
+  },
+  "tabs": {
+    "catalog": "Catalog",
+    "wishes_one": "Wishlist ({{count}})",
+    "wishes_other": "Wishlist ({{count}})"
+  },
+  "check": {
+    "open": "Do I have it?",
+    "title": "Do I already have it?",
+    "description": "Scan or type an ISBN. The answer comes from the catalog on this device, so it works without coverage.",
+    "scan": "Scan barcode",
+    "check": "Check",
+    "youHaveIt": "Yes, you have it",
+    "notInCatalog": "Not in your catalog",
+    "lookingUp": "Looking it up online…",
+    "wishTitle": "Title, to add it to the wishlist",
+    "addWish": "Add to wishlist",
+    "alreadyWished": "It is on the wishlist.",
+    "addToCatalog": "I bought it: add to catalog",
+    "cameraDenied": "The app needs camera permission to scan. Allow it in the phone's settings."
+  },
+  "wishes": {
+    "empty": {
+      "title": "The wishlist is empty",
+      "body": "Use “Do I have it?” in a bookshop to note books you do not have yet."
+    },
+    "bought": "Bought: add to catalog",
+    "remove": "Remove from wishlist",
+    "removeConfirm": "Remove “{{title}}” from the wishlist?"
   }
 }

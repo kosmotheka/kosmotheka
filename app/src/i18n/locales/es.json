@@ -85,7 +85,9 @@
       "copy_remove": "Ejemplar borrado",
       "book_remove": "Libro borrado",
       "backup_restore": "Copia restaurada",
-      "sync_baseline": "Incluido en la sincronización (estado inicial)"
+      "sync_baseline": "Incluido en la sincronización (estado inicial)",
+      "wish_add": "Añadido a deseos",
+      "wish_remove": "Quitado de deseos"
     }
   },
   "book": {
@@ -224,5 +226,34 @@
       "unknown_device": "Este dispositivo no está emparejado.",
       "no_network": "Este dispositivo no está conectado a ninguna red."
     }
+  },
+  "tabs": {
+    "catalog": "Catálogo",
+    "wishes_one": "Deseos ({{count}})",
+    "wishes_other": "Deseos ({{count}})"
+  },
+  "check": {
+    "open": "¿Lo tengo?",
+    "title": "¿Lo tengo ya?",
+    "description": "Escanea o escribe un ISBN. La respuesta sale del catálogo de este dispositivo, así que funciona sin cobertura.",
+    "scan": "Escanear código de barras",
+    "check": "Comprobar",
+    "youHaveIt": "Sí, lo tenéis",
+    "notInCatalog": "No está en vuestro catálogo",
+    "lookingUp": "Buscándolo online…",
+    "wishTitle": "Título, para añadirlo a deseos",
+    "addWish": "Añadir a deseos",
+    "alreadyWished": "Ya está en la lista de deseos.",
+    "addToCatalog": "Lo he comprado: añadir al catálogo",
+    "cameraDenied": "La app necesita permiso de cámara para escanear. Actívalo en los ajustes del móvil."
+  },
+  "wishes": {
+    "empty": {
+      "title": "La lista de deseos está vacía",
+      "body": "Usa «¿Lo tengo?» en una librería para apuntar los libros que aún no tienes."
+    },
+    "bought": "Comprado: añadir al catálogo",
+    "remove": "Quitar de deseos",
+    "removeConfirm": "¿Quitar «{{title}}» de la lista de deseos?"
   }
 }

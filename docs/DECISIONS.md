@@ -40,6 +40,8 @@
 | D32 | Aplicar operaciones recibidas: campo a campo y el borrado gana | propuesta |
 | D33 | Duplicados entre dispositivos: se conservan y se fusionan a mano | propuesta |
 | D34 | Transporte local: HTTPS con certificado fijado por el QR | propuesta |
+| D35 | Escáner de códigos con el plugin oficial de Tauri (solo móvil) | propuesta |
+| D36 | Lista de deseos básica, sincronizada | propuesta |
 
 ---
 
@@ -398,3 +400,15 @@ Lo creado a la vez en dos dispositivos (un mismo autor, un mismo ISBN) queda dup
 ## D34 · Transporte local: HTTPS con certificado fijado por el QR — `propuesta`
 
 Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huella del certificado viaja en el QR (o en un código para pegar). El otro dispositivo solo acepta ese certificado. El emparejamiento intercambia secretos permanentes para las siguientes sincronizaciones. Implementado en el hito 2.1; protocolo completo en [architecture/sync.md](architecture/sync.md#transporte-d34-hito-21).
+
+## D35 · Escáner de códigos con el plugin oficial de Tauri (solo móvil) — `propuesta`
+
+- Se usa `tauri-plugin-barcode-scanner`, el oficial, que abre la cámara y lee EAN-13 (el código de barras de los libros es su ISBN). Pide el permiso de cámara la primera vez.
+- Solo existe en Android e iOS, así que se añade únicamente al compilar para móvil. La interfaz pregunta a la app si está en un móvil y solo entonces muestra el botón de escanear. En el escritorio se sigue tecleando el ISBN o usando un lector USB (D19).
+- Alternativa descartada: leer la cámara desde la web (`getUserMedia` + una librería de JavaScript). Depende de permisos del WebView menos fiables en Android, y el plugin nativo es más rápido y preciso.
+
+## D36 · Lista de deseos básica, sincronizada — `propuesta`
+
+- Entidad `wish`: título, ISBN, autor, nota y portada (URL). Se sincroniza como el resto (operaciones), así que lo que apuntas en la tienda aparece en casa.
+- «¿Lo tengo ya?» consulta **solo la base de datos local**: funciona sin cobertura. Si no lo tienes, ofrece añadirlo al catálogo (con búsqueda online si hay red) o a la lista de deseos.
+- Queda para la Fase 4: listas por persona, reservar regalos sin que lo vea el destinatario y pasar un deseo al catálogo conservando su historia.

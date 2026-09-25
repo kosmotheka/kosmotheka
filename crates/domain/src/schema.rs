@@ -14,6 +14,7 @@ pub enum Entity {
     Member,
     Copy,
     Publisher,
+    Wish,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +80,13 @@ const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
 ];
 const MEMBER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const WISH_FIELDS: &[FieldSpec] = &[
+    field("title", FieldType::Text, true),
+    field("author", FieldType::Text, false),
+    field("isbn13", FieldType::Text, false),
+    field("note", FieldType::Text, false),
+    field("cover_url", FieldType::Text, false),
+];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -99,6 +107,7 @@ impl Entity {
             Entity::Member => "members",
             Entity::Copy => "copies",
             Entity::Publisher => "publishers",
+            Entity::Wish => "wishes",
         }
     }
 
@@ -120,6 +129,7 @@ impl Entity {
             Entity::Member => MEMBER_FIELDS,
             Entity::Copy => COPY_FIELDS,
             Entity::Publisher => PUBLISHER_FIELDS,
+            Entity::Wish => WISH_FIELDS,
         }
     }
 

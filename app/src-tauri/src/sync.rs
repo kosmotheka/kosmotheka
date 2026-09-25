@@ -18,7 +18,7 @@ use crate::ops::{self, read_state, write_state};
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 8] = [
+pub const ORDER: [Entity; 9] = [
     Entity::Publisher,
     Entity::Person,
     Entity::Member,
@@ -27,6 +27,7 @@ pub const ORDER: [Entity; 8] = [
     Entity::Edition,
     Entity::BookDetails,
     Entity::Copy,
+    Entity::Wish,
 ];
 
 const BASELINE_KEY: &str = "sync_baseline";
@@ -624,5 +625,28 @@ mod tests {
             ..BookFilter::default()
         };
         assert_eq!(catalog::list_books(&b.0, &filter).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn wishes_noted_on_the_phone_reach_the_desktop() {
+        let mut desk = Device::new();
+        let mut phone = Device::new();
+        let wish = library_domain::WishInput {
+            title: "Tehanu".into(),
+            ..Default::default()
+        }
+        .validate()
+        .unwrap();
+        crate::wishes::add_wish(&mut phone.0, &wish).unwrap();
+
+        desk.sync_with(&mut phone);
+
+        let titles: Vec<String> = crate::wishes::list_wishes(&desk.0)
+            .unwrap()
+            .into_iter()
+            .map(|w| w.title)
+            .collect();
+        assert_eq!(titles, vec!["Tehanu"]);
+        assert_converged(&[&desk, &phone]);
     }
 }

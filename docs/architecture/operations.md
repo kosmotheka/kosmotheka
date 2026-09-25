@@ -48,6 +48,7 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `book.remove` | Borrado de un libro: ejemplares, detalles, edición y, si no quedan más ediciones, la obra y sus autorías |
 | `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
+| `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
 
 ## Reloj lógico híbrido (HLC)
 

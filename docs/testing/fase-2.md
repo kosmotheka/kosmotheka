@@ -32,3 +32,19 @@ La prueba más cómoda del 2.1 no necesita el móvil: dos copias de la app en tu
 - [ ] **Dispositivo apagado.** Cierra A y pulsa «Sincronizar ahora» en B. *Esperado:* «No se encuentra el otro dispositivo…», sin nada roto.
 - [ ] **Olvidar.** En A, olvida a B. Luego sincroniza desde B. *Esperado:* «El otro dispositivo lo ha rechazado…». Se puede volver a emparejar con un código nuevo.
 - [ ] **Entre dos ordenadores de verdad.** Si tienes otro equipo en casa con la app (por ejemplo, el `.exe` de Windows de la CI), repite el emparejamiento por la wifi.
+
+## 2.2 · Móvil, escáner y «¿lo tengo ya?»
+
+> Instalar en el móvil: con la depuración inalámbrica activada, dentro del contenedor, `cd app && npm run tauri android dev`. También vale el APK de `app/src-tauri/gen/android/app/build/outputs/apk/universal/debug/` (ver `docs/development/setup.md`).
+
+- [ ] **Vista de móvil.** La app en el móvil muestra el catálogo en tarjetas (portada, título, autores, formatos), no en tabla. La cabecera cabe, con iconos sin texto.
+- [ ] **Escanear.** «¿Lo tengo?» → «Escanear código de barras» → la primera vez pide permiso de cámara → apunta al código de barras de un libro. *Esperado:* se cierra la cámara y se ve la respuesta.
+- [ ] **Lo tienes.** Escanea un libro que esté en el catálogo. *Esperado:* recuadro verde «Sí, lo tenéis» con portada, formatos y propietarios; tocarlo abre su ficha.
+- [ ] **No lo tienes.** Escanea uno que no esté. *Esperado:* «No está en vuestro catálogo»; con conexión aparece debajo su título y portada, sin conexión no.
+- [ ] **Sin cobertura.** Modo avión → escanea un libro que tengas. *Esperado:* la respuesta llega igual, al instante.
+- [ ] **Apuntar un deseo.** Con un libro que no tienes → escribe o revisa el título → «Añadir a deseos». *Esperado:* «Ya está en la lista de deseos»; aparece en la pestaña «Deseos».
+- [ ] **Del deseo al catálogo.** En «Deseos» → «Comprado: añadir al catálogo». *Esperado:* se abre el alta con ISBN, título y autor rellenados; al guardar, el libro está en el catálogo y el deseo desaparece.
+- [ ] **Permiso denegado.** Deniega la cámara. *Esperado:* un mensaje que explica cómo activarla en los ajustes, sin cerrarse la app.
+- [ ] **En el escritorio.** «¿Lo tengo?» no muestra el botón de escanear; teclear el ISBN (o usar un lector USB) + Comprobar funciona igual.
+- [ ] **Los deseos se sincronizan.** Apunta un deseo en el móvil, sincroniza con el escritorio (hito 2.3 o pegando el código a mano) y comprueba que aparece allí.
+

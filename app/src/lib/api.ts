@@ -314,3 +314,51 @@ export function syncErrorKey(error: unknown): string {
   if (isCommandError(error) && error.kind === "sync") return `devices.errors.${error.reason}`;
   return "devices.errors.peer_error";
 }
+
+export interface Wish {
+  id: string;
+  title: string;
+  author: string | null;
+  isbn13: string | null;
+  note: string | null;
+  coverUrl: string | null;
+  createdAt: string;
+}
+
+export interface WishInput {
+  title: string;
+  author?: string | null;
+  isbn?: string | null;
+  note?: string | null;
+  coverUrl?: string | null;
+}
+
+export interface IsbnCheck {
+  isbn13: string;
+  books: BookSummary[];
+  wishes: Wish[];
+}
+
+export function addWish(wish: WishInput): Promise<string> {
+  return invoke<string>("add_wish", { wish });
+}
+
+export function listWishes(): Promise<Wish[]> {
+  return invoke<Wish[]>("list_wishes");
+}
+
+export function deleteWish(id: string): Promise<void> {
+  return invoke("delete_wish", { id });
+}
+
+/** Local only: works without coverage. */
+export function checkIsbn(isbn: string): Promise<IsbnCheck> {
+  return invoke<IsbnCheck>("check_isbn", { isbn });
+}
+
+let mobile: Promise<boolean> | null = null;
+
+export function isMobile(): Promise<boolean> {
+  mobile ??= invoke<boolean>("is_mobile").catch(() => false);
+  return mobile;
+}

@@ -30,10 +30,12 @@ works ──< work_contributors >── people
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
 | `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
+| `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
 | `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable` |
 | `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `entity`, `entity_id`, `field`, `hlc` |
 | `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)) | `entity`, `entity_id`, `hlc` |
 | `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `edition_id`, `content` |
+| `known_servers`, `known_clients` | Dispositivos emparejados para sincronizar por la red local; locales, no se sincronizan (D34) | ver [sync.md](sync.md) |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida y los ajustes (clave de Google Books) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `audiobook`, `other`. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.

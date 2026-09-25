@@ -11,6 +11,7 @@ mod ops;
 mod search;
 mod settings;
 mod sync;
+mod wishes;
 
 use tauri::Manager;
 
@@ -22,9 +23,12 @@ use crate::metadata::Lookup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_dialog::init());
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
+    builder
         .setup(|app| {
             let data_dir = data_dir(app.path().app_data_dir()?);
             std::fs::create_dir_all(&data_dir)?;
@@ -65,7 +69,12 @@ pub fn run() {
             commands::close_pairing,
             commands::pair_with,
             commands::sync_with,
-            commands::forget_device
+            commands::forget_device,
+            commands::add_wish,
+            commands::list_wishes,
+            commands::delete_wish,
+            commands::check_isbn,
+            commands::is_mobile
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

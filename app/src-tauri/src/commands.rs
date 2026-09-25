@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use library_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook};
+use library_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook, WishInput};
 use serde::Serialize;
 use tauri::State;
 use url::Url;
@@ -17,6 +17,7 @@ use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::metadata::{Lookup, LookupResult};
 use crate::settings::{self, Settings};
+use crate::wishes::{self, IsbnCheck, Wish};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -258,4 +259,35 @@ pub async fn sync_with(database: State<'_, Database>, device_id: String) -> Resu
 #[tauri::command]
 pub fn forget_device(database: State<'_, Database>, device_id: String) -> Result<()> {
     lan::forget_device(&*database.lock()?, &device_id)
+}
+
+// --- Wishlist and "do I have it?" ---------------------------------------------
+
+#[tauri::command]
+pub fn add_wish(database: State<'_, Database>, wish: WishInput) -> Result<String> {
+    let wish = wish.validate().map_err(Error::Validation)?;
+    let mut conn = database.lock()?;
+    wishes::add_wish(&mut conn, &wish)
+}
+
+#[tauri::command]
+pub fn list_wishes(database: State<'_, Database>) -> Result<Vec<Wish>> {
+    wishes::list_wishes(&*database.lock()?)
+}
+
+#[tauri::command]
+pub fn delete_wish(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    wishes::delete_wish(&mut conn, &id)
+}
+
+#[tauri::command]
+pub fn check_isbn(database: State<'_, Database>, isbn: String) -> Result<IsbnCheck> {
+    wishes::check_isbn(&*database.lock()?, &isbn)
+}
+
+/// The UI shows the camera scanner only where the plugin exists (D35).
+#[tauri::command]
+pub fn is_mobile() -> bool {
+    cfg!(mobile)
 }
