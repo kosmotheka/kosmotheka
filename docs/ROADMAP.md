@@ -107,6 +107,12 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] 2.2 Interfaz móvil y escáner. «¿Lo tengo ya?» consultando solo la base de datos local (funciona sin cobertura), con escáner de cámara en el móvil (D35) y búsqueda online opcional; lista de deseos sincronizada (D36) con «Comprado: añadir al catálogo»; vista en tarjetas y cabecera compacta en pantallas estrechas. Compila para Android con permiso de cámara; falta probarlo en el móvil.
 - [x] 2.3 Móvil emparejado. Emparejar escaneando el QR con la cámara; sincronización al abrir la app y al volver a ella; reencontrar al otro dispositivo en la subred si cambió de dirección (D37, en lugar de mDNS). **Fase 2 completa en código**; pendiente de probar en el móvil (`docs/testing/fase-2.md`).
 
+## Pendiente antes de seguir con el diseño de interfaz
+
+- **Validar el frontend en el dispositivo real, sobre todo en Android** (`docs/testing/hito-1.md` y `docs/testing/fase-2.md`), antes de diseñar más pantallas.
+- **Sincronizar con Claude Design** (`/design-sync`): requiere que el usuario autorice antes con `/design-login`. El brief y el catálogo de errores están en `docs/design/`. Importación completa y de alta fidelidad, ya decidida.
+- Mejorar los mensajes de error siguiendo `docs/design/errors.md`, cuando llegue el diseño.
+
 ## Fase 3 — Servidor y familia
 
 - Servidor Symfony + PostgreSQL en una imagen Docker (el modelo de FrankenPHP de Koillection), desplegado en el VPS (D06, D07, D10).
