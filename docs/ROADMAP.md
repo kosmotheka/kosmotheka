@@ -51,6 +51,15 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - **Rust que aprendes:** migraciones de datos, rediseño de un protocolo con tests que simulan dispositivos.
 - **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
 
+**Estado:**
+- [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 12 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Adelantado el 25/09/2026 mientras se diseña la interfaz; **pendiente de tu revisión**, porque fija el formato.
+- [ ] Casos de fusión por biblioteca (misma id en dos bibliotecas, lápidas que no cruzan de una a otra).
+- [ ] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos pasan de `draft/` a `conformance/`.
+- [ ] Tablas con `library_id`, migración y vector de versiones por biblioteca.
+- [ ] Compartir por biblioteca al emparejar.
+- [ ] Interfaz: selector, «en todas», mover un libro.
+- [ ] Copias completas y por biblioteca.
+
 ## Fase 5 — Personas, roles y peticiones
 
 Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios dispositivos.

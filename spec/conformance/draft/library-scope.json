@@ -1,0 +1,289 @@
+[
+  {
+    "name": "change inside the operation's library",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000101",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "library created by its first operation",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000102",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.create",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "create",
+          "fields": {
+            "name": "Family"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "library renamed",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000103",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.rename",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "name": "Home"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "same entity ids are valid in any library",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000104",
+      "library": "01997c7e-0000-7000-8000-00000000bbbb",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "library id is not a UUID",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000105",
+      "library": "family",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_library"
+    }
+  },
+  {
+    "name": "operation id is checked before the library",
+    "operation": {
+      "id": "not-a-uuid",
+      "library": "family",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_id"
+    }
+  },
+  {
+    "name": "library is checked before the intent",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000107",
+      "library": "family",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "Add Member",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_library"
+    }
+  },
+  {
+    "name": "change to another library entity",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000108",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.rename",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000bbbb",
+          "action": "update",
+          "fields": {
+            "name": "Friends"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "other_library",
+      "change": 0
+    }
+  },
+  {
+    "name": "library created without a name",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000109",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.create",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "create",
+          "fields": {}
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "name"
+    }
+  },
+  {
+    "name": "library name set to null",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000110",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.rename",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "name": null
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "null_required",
+      "change": 0,
+      "field": "name"
+    }
+  },
+  {
+    "name": "library cannot be chosen per change",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000111",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal",
+            "library_id": "01997c7e-0000-7000-8000-00000000bbbb"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "unknown_field",
+      "change": 0,
+      "field": "library_id"
+    }
+  },
+  {
+    "name": "other_library reported in a later change",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000112",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        },
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000bbbb",
+          "action": "update",
+          "fields": {
+            "name": "Friends"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "other_library",
+      "change": 1
+    }
+  }
+]

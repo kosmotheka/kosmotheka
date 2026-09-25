@@ -6,6 +6,7 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 |---|---|
 | `operation.schema.json` | JSON Schema of an operation: envelope, changes and the fields each entity accepts |
 | `conformance/operation-validation.json` | Operations with the expected validation result (`valid`, or `invalid` with an error code, change index and field) |
+| `conformance/draft/` | Cases for the next version of the format. Not loaded by the implementations yet; see below |
 
 ## Rules the schema cannot express
 
@@ -20,4 +21,14 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 
 ## Running the conformance cases
 
-Each implementation loads `conformance/*.json` in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs`.
+Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs`.
+
+## Draft: operations that belong to a library
+
+`conformance/draft/library-scope.json` describes the next version of the format, where every operation belongs to one library (the unit that is shared, synced and permissioned). It becomes part of the spec, together with the matching schema change, when the implementations support it.
+
+- The envelope gains **`library`**: the id (UUID) of the library the operation belongs to. Changes never name a library themselves; a `library_id` field in a change is an unknown field.
+- A new entity **`library`**, with one required text field, `name`. A change to a `library` entity must have the operation's own library as its id: an operation can create, rename or otherwise change only its own library.
+- Entity ids only need to be unique within a library: the same id in two libraries is two different rows.
+- New error codes: `invalid_library` (the library is not a UUID) and `other_library` (a change to a library that is not the operation's).
+- Error order: operation id, **library**, intent, empty changes, then each change in order (id, **other library**, action, fields in alphabetical order, missing required fields).
