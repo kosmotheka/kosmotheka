@@ -205,7 +205,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
             />
             <Suggestions
               id="burst-known-owners"
-              values={options.owners.map((o) => o.name)}
+              values={options.owners}
             />
           </Field>
           <Field id="burst-format" label={t("form.fields.format")}>

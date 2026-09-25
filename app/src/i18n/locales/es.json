@@ -84,7 +84,8 @@
       "copy_edit": "Ejemplar editado",
       "copy_remove": "Ejemplar borrado",
       "book_remove": "Libro borrado",
-      "backup_restore": "Copia restaurada"
+      "backup_restore": "Copia restaurada",
+      "sync_baseline": "Incluido en la sincronización (estado inicial)"
     }
   },
   "book": {

@@ -36,6 +36,10 @@
 | D28 | Alta rápida: guarda lo encontrado, no duplica lo que ya existe | propuesta |
 | D29 | Editoriales como catálogo y búsqueda con FTS5 | propuesta |
 | D30 | Copias de seguridad (ZIP) y CSV | propuesta |
+| D31 | Operaciones replicables, versión de esquema y operación inicial | propuesta |
+| D32 | Aplicar operaciones recibidas: campo a campo y el borrado gana | propuesta |
+| D33 | Duplicados entre dispositivos: se conservan y se fusionan a mano | propuesta |
+| D34 | Transporte local: HTTPS con certificado fijado por el QR | propuesta |
 
 ---
 
@@ -378,3 +382,19 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
 - **Importar añade**: cada fila válida es un alta, y si el ISBN ya existe, añade un ejemplar. Las filas con errores se informan con su número de línea y no detienen el resto. Sin formato, se usa `other`. Las portadas no viajan en el CSV.
 
 **Limitación en Android (para la Fase 2):** allí el diálogo de ficheros devuelve rutas `content://` del sistema de almacenamiento, no rutas de disco, y el código actual lee y escribe con rutas normales. Exportar e importar en el móvil habrá que adaptarlo cuando llegue la app de Android.
+
+## D31 · Operaciones replicables, versión de esquema y operación inicial — `propuesta`
+
+Cada operación guarda la versión del esquema de la base de datos. Solo se sincronizan dispositivos con la misma versión. Las operaciones anteriores a la sincronización quedan como historial no replicable, y cada dispositivo registra una vez una operación `sync.baseline` con todo lo que ya tiene. Así un dispositivo nuevo se pone al día solo con operaciones, sin una copia completa aparte. Detalle en [architecture/sync.md](architecture/sync.md).
+
+## D32 · Aplicar operaciones recibidas: campo a campo y el borrado gana — `propuesta`
+
+Cada campo guarda la marca HLC que lo escribió por última vez, y una operación recibida solo escribe un campo si su marca es posterior. Si un dispositivo borra y otro edita a la vez, **gana el borrado** (lápidas). Lo que no se puede aplicar (por ejemplo, un ejemplar de un libro ya borrado) se salta sin romper la sincronización. Alternativa descartada: que la edición «resucite» lo borrado. Es más difícil de explicar y de implementar bien. Detalle en [architecture/sync.md](architecture/sync.md).
+
+## D33 · Duplicados entre dispositivos: se conservan y se fusionan a mano — `propuesta`
+
+Lo creado a la vez en dos dispositivos (un mismo autor, un mismo ISBN) queda duplicado tras sincronizar. Los nombres y el ISBN dejan de ser únicos en la base de datos, aunque la app sigue reutilizando lo existente al teclear. Habrá una opción para fusionar duplicados. Alternativas descartadas: rechazar uno (pierde datos) y fusionar automáticamente (puede juntar cosas distintas).
+
+## D34 · Transporte local: HTTPS con certificado fijado por el QR — `propuesta`
+
+Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huella del certificado viaja en el QR (o en un código para pegar). El otro dispositivo solo acepta ese certificado. El emparejamiento intercambia secretos permanentes para las siguientes sincronizaciones. Se detalla en el hito 2.1.

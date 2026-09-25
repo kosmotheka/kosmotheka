@@ -26,11 +26,13 @@ works ──< work_contributors >── people
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`), `position` |
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27) |
-| `publishers` | Editoriales (D29) | `id`, `name` (único, sin distinguir mayúsculas) |
-| `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (único), `google_books_id`, `open_library_id` |
-| `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (único, sin distinguir mayúsculas) |
+| `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
+| `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
+| `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
-| `operations` | Registro de todas las escrituras ([operations.md](operations.md)) | `id`, `hlc`, `device_id`, `intent`, `changes` (JSON) |
+| `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable` |
+| `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `entity`, `entity_id`, `field`, `hlc` |
+| `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)) | `entity`, `entity_id`, `hlc` |
 | `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `edition_id`, `content` |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida y los ajustes (clave de Google Books) | `key`, `value` |
 

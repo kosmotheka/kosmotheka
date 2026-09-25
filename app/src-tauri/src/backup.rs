@@ -8,7 +8,6 @@ use std::path::Path;
 
 use library_domain::{Change, Entity};
 use rusqlite::Connection;
-use rusqlite::types::ValueRef;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use zip::write::SimpleFileOptions;
@@ -17,23 +16,12 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 use crate::covers::{Covers, MAX_COVER_BYTES};
 use crate::error::{Error, Result};
 use crate::ops;
+use crate::sync::{ORDER, entity_rows};
 
 const FORMAT: &str = "library-backup";
 const VERSION: u32 = 1;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
-
-/// Parents before children, so every reference exists when a row is created.
-const ORDER: [Entity; 8] = [
-    Entity::Publisher,
-    Entity::Person,
-    Entity::Member,
-    Entity::Work,
-    Entity::WorkContributor,
-    Entity::Edition,
-    Entity::BookDetails,
-    Entity::Copy,
-];
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,7 +48,7 @@ pub struct BackupSummary {
 pub fn export(conn: &Connection, covers: &Covers, path: &Path) -> Result<BackupSummary> {
     let mut entities = BTreeMap::new();
     for entity in ORDER {
-        entities.insert(entity.table().to_owned(), rows(conn, entity)?);
+        entities.insert(entity.table().to_owned(), entity_rows(conn, entity)?);
     }
     let backup = BackupFile {
         format: FORMAT.to_owned(),
@@ -191,27 +179,6 @@ fn cover_extension(name: &str) -> Option<&'static str> {
     valid_hash.then_some(extension)
 }
 
-fn rows(conn: &Connection, entity: Entity) -> Result<Vec<Map<String, Value>>> {
-    let fields: Vec<&str> = entity.fields().iter().map(|spec| spec.name).collect();
-    let sql = format!(
-        "SELECT {}, {} FROM {} ORDER BY {}",
-        entity.id_column(),
-        fields.join(", "),
-        entity.table(),
-        entity.id_column()
-    );
-    let mut statement = conn.prepare(&sql)?;
-    let rows = statement.query_map([], |row| {
-        let mut map = Map::new();
-        map.insert("id".into(), json!(row.get::<_, String>(0)?));
-        for (i, field) in fields.iter().enumerate() {
-            map.insert((*field).into(), to_json(row.get_ref(i + 1)?));
-        }
-        Ok(map)
-    })?;
-    Ok(rows.collect::<rusqlite::Result<_>>()?)
-}
-
 fn operations(conn: &Connection) -> Result<Vec<Value>> {
     let mut statement = conn.prepare(
         "SELECT id, hlc, device_id, intent, changes, recorded_at FROM operations ORDER BY hlc",
@@ -228,15 +195,6 @@ fn operations(conn: &Connection) -> Result<Vec<Value>> {
         }))
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
-}
-
-fn to_json(value: ValueRef<'_>) -> Value {
-    match value {
-        ValueRef::Null => Value::Null,
-        ValueRef::Integer(i) => json!(i),
-        ValueRef::Real(f) => json!(f),
-        ValueRef::Text(bytes) | ValueRef::Blob(bytes) => json!(String::from_utf8_lossy(bytes)),
-    }
 }
 
 fn schema_version(conn: &Connection) -> Result<i64> {

@@ -5,7 +5,7 @@ use rusqlite::Connection;
 use rusqlite_migration::{M, Migrations};
 
 use crate::error::{Error, Result};
-use crate::{ops, search};
+use crate::{ops, search, sync};
 
 const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0001_app_launches.sql")),
@@ -15,6 +15,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
         "../migrations/0004_covers_and_external_ids.sql"
     )),
     M::up(include_str!("../migrations/0005_publishers_and_search.sql")),
+    M::up(include_str!("../migrations/0006_sync.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -29,6 +30,7 @@ impl Database {
         migrate(&mut conn)?;
         ops::ensure_device_id(&conn)?;
         search::ensure_current(&conn)?;
+        sync::ensure_baseline(&mut conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -51,6 +53,7 @@ pub fn open_in_memory() -> Result<Connection> {
     migrate(&mut conn)?;
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
+    sync::ensure_baseline(&mut conn)?;
     Ok(conn)
 }
 
@@ -99,5 +102,39 @@ mod tests {
             .unwrap();
         assert_eq!(publishers, 1);
         assert_eq!(linked, 2);
+    }
+
+    #[test]
+    fn migration_6_keeps_data_and_archives_old_history() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        MIGRATIONS.to_version(&mut conn, 5).unwrap();
+        conn.execute_batch(
+            "INSERT INTO works (id, kind, title) VALUES ('w', 'book', 'T');
+             INSERT INTO editions (id, work_id, title) VALUES ('e', 'w', 'T');
+             INSERT INTO book_details (edition_id, isbn13, open_library_id) VALUES ('e', '9780306406157', 'OL1M');
+             INSERT INTO operations (id, hlc, device_id, intent, changes) VALUES ('o', 'h', 'd', 'book.add', '[]');",
+        )
+        .unwrap();
+
+        MIGRATIONS.to_latest(&mut conn).unwrap();
+
+        let (isbn, ol): (String, String) = conn
+            .query_row(
+                "SELECT isbn13, open_library_id FROM book_details",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((isbn.as_str(), ol.as_str()), ("9780306406157", "OL1M"));
+        let replicable: i64 = conn
+            .query_row("SELECT replicable FROM operations", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(replicable, 0, "history from before sync is not replicated");
+        // The ISBN is no longer unique: the same book may arrive from another device (D33).
+        conn.execute_batch(
+            "INSERT INTO editions (id, work_id, title) VALUES ('e2', 'w', 'T');
+             INSERT INTO book_details (edition_id, isbn13) VALUES ('e2', '9780306406157');",
+        )
+        .unwrap();
     }
 }

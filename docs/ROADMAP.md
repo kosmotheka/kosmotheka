@@ -92,6 +92,18 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - **Rust que aprendes:** red (TCP y TLS con una clave fijada por el QR), concurrencia, plugins de Tauri en móvil.
 - **Hecho cuando:** en una tienda sin cobertura, escaneo un libro y sé si ya lo tengo; al volver a casa, todo se sincroniza.
 
+**Hitos** (diseño en [architecture/sync.md](architecture/sync.md)):
+
+| Hito | Qué se construye | Quién lo prueba |
+|---|---|---|
+| 2.0 Motor de sincronización | Operaciones replicables y operación inicial (D31); aplicar operaciones recibidas campo a campo, con lápidas (D32) y duplicados (D33); vector de versiones | Tests que simulan dos y tres dispositivos |
+| 2.1 Sincronización por la red local | Servidor HTTPS en el escritorio, certificado fijado, emparejamiento con código (D34) | Dos instancias de la app en el mismo equipo |
+| 2.2 Interfaz móvil y escáner | Pantallas adaptadas al móvil, escáner de ISBN con la cámara, «¿lo tengo ya?», lista de deseos básica | En el móvil |
+| 2.3 Móvil emparejado | Emparejar escaneando el QR del escritorio; descubrimiento por mDNS en la wifi de casa | En el móvil |
+
+**Estado:**
+- [x] 2.0 Motor de sincronización. Operaciones replicables con versión de esquema; operación inicial `sync.baseline` por dispositivo; vector de versiones; aplicación de operaciones recibidas campo a campo, con lápidas y puntos de restauración (*savepoints*) para saltar cambios imposibles sin romper la sincronización; duplicados permitidos; filtros y sugerencias por nombre. 12 tests simulan dos y tres dispositivos y comprueban que acaban con el mismo estado.
+
 ## Fase 3 — Servidor y familia
 
 - Servidor Symfony + PostgreSQL en una imagen Docker (el modelo de FrankenPHP de Koillection), desplegado en el VPS (D06, D07, D10).

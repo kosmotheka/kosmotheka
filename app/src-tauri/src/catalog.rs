@@ -393,7 +393,9 @@ impl<'a> Plan<'a> {
         let existing: Option<String> = self
             .tx
             .query_row(
-                &format!("SELECT id FROM {table} WHERE name = ?1 COLLATE NOCASE"),
+                &format!(
+                    "SELECT id FROM {table} WHERE name = ?1 COLLATE NOCASE ORDER BY id LIMIT 1"
+                ),
                 [name],
                 |row| row.get(0),
             )
@@ -484,7 +486,7 @@ fn book_details_fields(edition: &ValidEdition) -> Value {
 pub fn edition_with_isbn(conn: &Connection, isbn13: &str) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT edition_id FROM book_details WHERE isbn13 = ?1",
+            "SELECT edition_id FROM book_details WHERE isbn13 = ?1 ORDER BY edition_id LIMIT 1",
             [isbn13],
             |row| row.get(0),
         )
@@ -533,7 +535,8 @@ fn ids(conn: &Connection, sql: &str, param: &str) -> Result<Vec<String>> {
 pub struct BookFilter {
     pub query: Option<String>,
     pub format: Option<Format>,
-    pub owner_id: Option<String>,
+    /// Owner name: duplicates of the same member created on other devices match too (D33).
+    pub owner: Option<String>,
     pub location: Option<String>,
 }
 
@@ -546,18 +549,18 @@ pub fn list_books(conn: &Connection, filter: &BookFilter) -> Result<Vec<BookSumm
         args.push(SqlValue::Text(query));
     }
     // One copy must match every copy filter at once.
-    if filter.format.is_some() || filter.owner_id.is_some() || filter.location.is_some() {
+    if filter.format.is_some() || filter.owner.is_some() || filter.location.is_some() {
         conditions.push(
             "EXISTS (SELECT 1 FROM copies c WHERE c.edition_id = e.id
                       AND (? IS NULL OR c.format = ?)
-                      AND (? IS NULL OR c.owner_id = ?)
+                      AND (? IS NULL OR c.owner_id IN (SELECT id FROM members WHERE name = ? COLLATE NOCASE))
                       AND (? IS NULL OR c.location = ?))",
         );
         let text =
             |value: Option<&str>| value.map_or(SqlValue::Null, |v| SqlValue::Text(v.to_owned()));
         for value in [
             text(filter.format.map(Format::as_str)),
-            text(filter.owner_id.as_deref()),
+            text(filter.owner.as_deref()),
             text(filter.location.as_deref()),
         ] {
             args.push(value.clone());
@@ -608,20 +611,13 @@ pub fn list_books(conn: &Connection, filter: &BookFilter) -> Result<Vec<BookSumm
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Named {
-    pub id: String,
-    pub name: String,
-}
-
 /// Values already in the catalog, for autocompletion and filters.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogOptions {
     pub authors: Vec<String>,
     pub publishers: Vec<String>,
-    pub owners: Vec<Named>,
+    pub owners: Vec<String>,
     pub locations: Vec<String>,
 }
 
@@ -632,19 +628,16 @@ pub fn catalog_options(conn: &Connection) -> Result<CatalogOptions> {
             .query_map([], |row| row.get(0))?
             .collect::<rusqlite::Result<_>>()?)
     };
-    let owners = conn
-        .prepare("SELECT id, name FROM members ORDER BY name COLLATE NOCASE")?
-        .query_map([], |row| {
-            Ok(Named {
-                id: row.get(0)?,
-                name: row.get(1)?,
-            })
-        })?
-        .collect::<rusqlite::Result<_>>()?;
+    // Each name once, even if devices created it separately (D33).
+    let unique = |table: &str| {
+        names(&format!(
+            "SELECT min(name) FROM {table} GROUP BY name COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
+        ))
+    };
     Ok(CatalogOptions {
-        authors: names("SELECT name FROM people ORDER BY name COLLATE NOCASE")?,
-        publishers: names("SELECT name FROM publishers ORDER BY name COLLATE NOCASE")?,
-        owners,
+        authors: unique("people")?,
+        publishers: unique("publishers")?,
+        owners: unique("members")?,
         locations: names(
             "SELECT DISTINCT location FROM copies WHERE location IS NOT NULL ORDER BY location COLLATE NOCASE",
         )?,
@@ -1249,14 +1242,7 @@ mod tests {
         create_book(&mut conn, &a, None).unwrap();
         let b = create_book(&mut conn, &new_book("B", None, "Ana", Format::Ebook), None).unwrap();
         add_copy(&mut conn, &b.edition_id, &copy("Bea", Format::Hardcover)).unwrap();
-        let options = catalog_options(&conn).unwrap();
-        let ana = options
-            .owners
-            .iter()
-            .find(|o| o.name == "Ana")
-            .unwrap()
-            .id
-            .clone();
+        let ana = "ana".to_owned();
 
         let titles = |filter: BookFilter| -> Vec<String> {
             list_books(&conn, &filter)
@@ -1274,7 +1260,7 @@ mod tests {
         );
         assert_eq!(
             titles(BookFilter {
-                owner_id: Some(ana.clone()),
+                owner: Some(ana.clone()),
                 ..Default::default()
             }),
             vec!["A", "B"]
@@ -1282,7 +1268,7 @@ mod tests {
         assert_eq!(
             titles(BookFilter {
                 format: Some(Format::Hardcover),
-                owner_id: Some(ana),
+                owner: Some(ana),
                 ..Default::default()
             }),
             vec!["A"],

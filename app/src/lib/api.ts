@@ -91,7 +91,8 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
 export interface BookFilter {
   query?: string;
   format?: Format;
-  ownerId?: string;
+  /** Owner name; matches duplicates created on other devices too. */
+  owner?: string;
   location?: string;
 }
 
@@ -102,7 +103,7 @@ export function listBooks(filter: BookFilter = {}): Promise<BookSummary[]> {
 export interface CatalogOptions {
   authors: string[];
   publishers: string[];
-  owners: { id: string; name: string }[];
+  owners: string[];
   locations: string[];
 }
 

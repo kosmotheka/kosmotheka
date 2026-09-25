@@ -3,7 +3,7 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use library_domain::{Action, Change, Hlc, HlcClock, Operation};
+use library_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
 use rusqlite::types::Value as SqlValue;
 use rusqlite::{Connection, OptionalExtension, Transaction, params, params_from_iter};
 use serde_json::Value;
@@ -29,12 +29,27 @@ pub fn ensure_device_id(conn: &Connection) -> Result<()> {
 }
 
 pub fn record(tx: &Transaction<'_>, intent: &str, changes: Vec<Change>) -> Result<Operation> {
-    let device_id = read_state(tx, DEVICE_ID_KEY)?.ok_or(Error::MissingDeviceId)?;
-    let last = read_state(tx, LAST_HLC_KEY)?
-        .map(|text| text.parse::<Hlc>())
-        .transpose()
-        .map_err(|_| Error::CorruptState(LAST_HLC_KEY))?;
-    let hlc = HlcClock::new(device_id.clone(), last.as_ref()).tick(now_millis());
+    record_operation(tx, intent, changes, true)
+}
+
+/// Logs changes that are already in the tables (the sync baseline, D31): versions
+/// and log are written, the rows themselves are left as they are.
+pub fn record_existing(
+    tx: &Transaction<'_>,
+    intent: &str,
+    changes: Vec<Change>,
+) -> Result<Operation> {
+    record_operation(tx, intent, changes, false)
+}
+
+fn record_operation(
+    tx: &Transaction<'_>,
+    intent: &str,
+    changes: Vec<Change>,
+    apply_changes: bool,
+) -> Result<Operation> {
+    let device_id = device_id(tx)?;
+    let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
 
     let operation = Operation {
         id: new_id(),
@@ -43,6 +58,7 @@ pub fn record(tx: &Transaction<'_>, intent: &str, changes: Vec<Change>) -> Resul
         changes,
     };
     operation.validate()?;
+    let hlc_text = operation.hlc.to_string();
 
     // Search text can change for rows that vanish (known before) or appear (known after).
     let mut affected = std::collections::BTreeSet::new();
@@ -50,76 +66,165 @@ pub fn record(tx: &Transaction<'_>, intent: &str, changes: Vec<Change>) -> Resul
         affected.extend(search::affected_editions(tx, change)?);
     }
     for change in &operation.changes {
-        apply(tx, change)?;
+        if apply_changes {
+            apply(tx, change)?;
+        }
+        write_versions(tx, change, &hlc_text)?;
     }
     for change in &operation.changes {
         affected.extend(search::affected_editions(tx, change)?);
     }
     search::reindex(tx, &affected)?;
-    tx.execute(
-        "INSERT INTO operations (id, hlc, device_id, intent, changes) VALUES (?1, ?2, ?3, ?4, ?5)",
+    log_operation(tx, &operation, schema_version(tx)?)?;
+    write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
+    Ok(operation)
+}
+
+pub fn device_id(conn: &Connection) -> Result<String> {
+    read_state(conn, DEVICE_ID_KEY)?.ok_or(Error::MissingDeviceId)
+}
+
+pub fn last_hlc(conn: &Connection) -> Result<Option<Hlc>> {
+    read_state(conn, LAST_HLC_KEY)?
+        .map(|text| text.parse::<Hlc>())
+        .transpose()
+        .map_err(|_| Error::CorruptState(LAST_HLC_KEY))
+}
+
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by sync merge from milestone 2.1")
+)]
+pub fn set_last_hlc(conn: &Connection, hlc: &Hlc) -> Result<()> {
+    write_state(conn, LAST_HLC_KEY, Some(&hlc.to_string()))
+}
+
+pub fn schema_version(conn: &Connection) -> Result<i64> {
+    Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
+}
+
+/// Appends to the log. The author device is the one inside the HLC.
+pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i64) -> Result<()> {
+    conn.execute(
+        "INSERT INTO operations (id, hlc, device_id, intent, changes, schema_version, replicable)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)",
         params![
             operation.id,
             operation.hlc.to_string(),
-            device_id,
+            operation.hlc.device,
             operation.intent,
             serde_json::to_string(&operation.changes)?,
+            schema_version,
         ],
     )?;
-    tx.execute(
-        "INSERT OR REPLACE INTO local_state (key, value) VALUES (?1, ?2)",
-        params![LAST_HLC_KEY, operation.hlc.to_string()],
-    )?;
-    Ok(operation)
+    Ok(())
+}
+
+/// Remembers which HLC last wrote each field, and leaves a tombstone for deletes (D32).
+pub fn write_versions(conn: &Connection, change: &Change, hlc: &str) -> Result<()> {
+    let entity = change.entity.table();
+    match change.action {
+        Action::Create | Action::Update => {
+            for field in change.fields.keys() {
+                conn.execute(
+                    "INSERT OR REPLACE INTO field_versions (entity, entity_id, field, hlc)
+                     VALUES (?1, ?2, ?3, ?4)",
+                    params![entity, change.id, field, hlc],
+                )?;
+            }
+        }
+        Action::Delete => {
+            conn.execute(
+                "DELETE FROM field_versions WHERE entity = ?1 AND entity_id = ?2",
+                params![entity, change.id],
+            )?;
+            conn.execute(
+                "INSERT OR REPLACE INTO tombstones (entity, entity_id, hlc) VALUES (?1, ?2, ?3)",
+                params![entity, change.id, hlc],
+            )?;
+        }
+    }
+    Ok(())
 }
 
 /// Table and column names come from the domain schema, never from the change
 /// itself: `validate` has already rejected any field the schema does not know.
 fn apply(tx: &Transaction<'_>, change: &Change) -> Result<()> {
-    let entity = change.entity;
-    let table = entity.table();
-    let id_column = entity.id_column();
-    let (columns, values): (Vec<&str>, Vec<SqlValue>) = change
-        .fields
-        .iter()
-        .filter_map(|(name, value)| entity.field(name).map(|spec| (spec.name, to_sql(value))))
-        .unzip();
-
     let affected = match change.action {
-        Action::Create => {
-            let placeholders = vec!["?"; columns.len() + 1].join(", ");
-            let sql = format!(
-                "INSERT INTO {table} ({id_column}{}{}) VALUES ({placeholders})",
-                if columns.is_empty() { "" } else { ", " },
-                columns.join(", "),
-            );
-            let args = std::iter::once(SqlValue::Text(change.id.clone())).chain(values);
-            tx.execute(&sql, params_from_iter(args))?
-        }
-        Action::Update => {
-            let assignments: Vec<String> = columns.iter().map(|c| format!("{c} = ?")).collect();
-            let sql = format!(
-                "UPDATE {table} SET {} WHERE {id_column} = ?",
-                assignments.join(", ")
-            );
-            let args = values
-                .into_iter()
-                .chain(std::iter::once(SqlValue::Text(change.id.clone())));
-            tx.execute(&sql, params_from_iter(args))?
-        }
-        Action::Delete => tx.execute(
-            &format!("DELETE FROM {table} WHERE {id_column} = ?1"),
-            [&change.id],
-        )?,
+        Action::Create => insert_row(tx, change.entity, &change.id, change.fields.iter())?,
+        Action::Update => update_row(tx, change.entity, &change.id, change.fields.iter())?,
+        Action::Delete => delete_row(tx, change.entity, &change.id)?,
     };
-
     if affected != 1 {
         return Err(Error::MissingRow {
-            entity: table,
+            entity: change.entity.table(),
             id: change.id.clone(),
         });
     }
     Ok(())
+}
+
+pub fn insert_row<'a>(
+    conn: &Connection,
+    entity: Entity,
+    id: &str,
+    fields: impl Iterator<Item = (&'a String, &'a Value)>,
+) -> Result<usize> {
+    let (columns, values) = known_columns(entity, fields);
+    let placeholders = vec!["?"; columns.len() + 1].join(", ");
+    let sql = format!(
+        "INSERT INTO {} ({}{}{}) VALUES ({placeholders})",
+        entity.table(),
+        entity.id_column(),
+        if columns.is_empty() { "" } else { ", " },
+        columns.join(", "),
+    );
+    let args = std::iter::once(SqlValue::Text(id.to_owned())).chain(values);
+    Ok(conn.execute(&sql, params_from_iter(args))?)
+}
+
+pub fn update_row<'a>(
+    conn: &Connection,
+    entity: Entity,
+    id: &str,
+    fields: impl Iterator<Item = (&'a String, &'a Value)>,
+) -> Result<usize> {
+    let (columns, values) = known_columns(entity, fields);
+    if columns.is_empty() {
+        return Ok(0);
+    }
+    let assignments: Vec<String> = columns.iter().map(|c| format!("{c} = ?")).collect();
+    let sql = format!(
+        "UPDATE {} SET {} WHERE {} = ?",
+        entity.table(),
+        assignments.join(", "),
+        entity.id_column()
+    );
+    let args = values
+        .into_iter()
+        .chain(std::iter::once(SqlValue::Text(id.to_owned())));
+    Ok(conn.execute(&sql, params_from_iter(args))?)
+}
+
+pub fn delete_row(conn: &Connection, entity: Entity, id: &str) -> Result<usize> {
+    Ok(conn.execute(
+        &format!(
+            "DELETE FROM {} WHERE {} = ?1",
+            entity.table(),
+            entity.id_column()
+        ),
+        [id],
+    )?)
+}
+
+/// Column names are taken from the schema, so unknown keys can never reach SQL.
+fn known_columns<'a>(
+    entity: Entity,
+    fields: impl Iterator<Item = (&'a String, &'a Value)>,
+) -> (Vec<&'static str>, Vec<SqlValue>) {
+    fields
+        .filter_map(|(name, value)| entity.field(name).map(|spec| (spec.name, to_sql(value))))
+        .unzip()
 }
 
 fn to_sql(value: &Value) -> SqlValue {

@@ -84,7 +84,8 @@
       "copy_edit": "Copy edited",
       "copy_remove": "Copy deleted",
       "book_remove": "Book deleted",
-      "backup_restore": "Backup restored"
+      "backup_restore": "Backup restored",
+      "sync_baseline": "Included in sync (initial state)"
     }
   },
   "book": {

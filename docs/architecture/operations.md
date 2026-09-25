@@ -47,6 +47,7 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `copy.remove` | Borrado de un ejemplar |
 | `book.remove` | Borrado de un libro: ejemplares, detalles, edición y, si no quedan más ediciones, la obra y sus autorías |
 | `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
+| `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
 
 ## Reloj lógico híbrido (HLC)
 
@@ -71,5 +72,5 @@ Si falla cualquiera de los dos, la transacción entera se deshace.
 - **Fusión campo a campo (Fase 2):** para decidir qué valor gana cuando dos dispositivos cambian el mismo campo, hará falta saber qué HLC escribió por última vez cada campo. Se añadirá con la sincronización; el registro de operaciones ya tiene todo lo necesario para reconstruirlo.
 - **Permisos (Fase 3):** reglas por entidad y acción («un lector no puede borrar ejemplares»).
 - Los libros dados de alta antes del hito 1.2 no tienen operaciones, y por tanto tampoco historial.
-- **Versionar el formato de las operaciones (antes de la Fase 2).** El esquema cambia con las migraciones: por ejemplo, desde el hito 1.5 la edición guarda `publisher_id` en vez de `publisher` (D29). Las operaciones antiguas del registro siguen con el formato viejo. No importa mientras no se vuelvan a aplicar; cuando se sincronice, habrá que marcar cada operación con la versión del esquema y saber convertir o rechazar las antiguas.
+- ~~Versionar el formato de las operaciones~~ Resuelto en D31: cada operación guarda su versión de esquema, las anteriores a la sincronización quedan como historial no replicable y cada dispositivo registra una operación inicial `sync.baseline`. Ver [sync.md](sync.md).
 - **Índice de búsqueda:** `ops::record` también reindexa las ediciones afectadas (D29), así que cualquier operación, venga de donde venga, deja la búsqueda al día.

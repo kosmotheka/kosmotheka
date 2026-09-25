@@ -392,7 +392,7 @@ export function CopyFields({
           />
           <Suggestions
             id={id("known-owners")}
-            values={options.owners.map((owner) => owner.name)}
+            values={options.owners}
           />
         </Field>
         <Field id={id("format")} label={t("form.fields.format")}>

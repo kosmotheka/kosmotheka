@@ -9,6 +9,7 @@ mod metadata;
 mod ops;
 mod search;
 mod settings;
+mod sync;
 
 use tauri::Manager;
 

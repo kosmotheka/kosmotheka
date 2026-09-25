@@ -17,7 +17,7 @@ import { type BookFilter, type Format, formats } from "@/lib/api";
 const ALL = "all";
 
 export function isFiltering(filter: BookFilter) {
-  return Boolean(filter.query?.trim() || filter.format || filter.ownerId || filter.location);
+  return Boolean(filter.query?.trim() || filter.format || filter.owner || filter.location);
 }
 
 export function CatalogFilters({
@@ -63,8 +63,8 @@ export function CatalogFilters({
       </Select>
       {options.owners.length > 0 && (
         <Select
-          value={filter.ownerId ?? ALL}
-          onValueChange={(v) => set("ownerId", v === ALL ? undefined : v)}
+          value={filter.owner ?? ALL}
+          onValueChange={(v) => set("owner", v === ALL ? undefined : v)}
         >
           <SelectTrigger aria-label={t("form.fields.owner")} className="w-auto min-w-40">
             <SelectValue />
@@ -72,8 +72,8 @@ export function CatalogFilters({
           <SelectContent>
             <SelectItem value={ALL}>{t("filters.allOwners")}</SelectItem>
             {options.owners.map((owner) => (
-              <SelectItem key={owner.id} value={owner.id}>
-                {owner.name}
+              <SelectItem key={owner} value={owner}>
+                {owner}
               </SelectItem>
             ))}
           </SelectContent>
