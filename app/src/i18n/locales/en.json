@@ -187,5 +187,42 @@
       "other_version": "This backup was made with a different version of the app.",
       "not_empty": "A backup can only be restored into an empty catalog. Delete the books first, or use a fresh install."
     }
+  },
+  "devices": {
+    "title": "Devices",
+    "description": "Sync this catalog with your other devices over your home network. No server and no account: the connection is encrypted and only works between paired devices.",
+    "thisDevice": "This device's name",
+    "addTitle": "Pair a device",
+    "showCode": "Show pairing code",
+    "showCodeHelp": "On the other device, scan this code or paste the text in “Devices”. It works once, for 10 minutes.",
+    "copy": "Copy code",
+    "stopPairing": "Stop pairing",
+    "enterCodeHelp": "Or paste here the code another device is showing:",
+    "code": "Pairing code",
+    "pair": "Pair",
+    "paired": "Paired devices",
+    "syncNow": "Sync now",
+    "syncsWithThis": "Syncs with this device",
+    "lastSync": "Last sync: {{date}}",
+    "neverSynced": "Never synced",
+    "pairedAndSynced": "Paired with {{name}}. Received {{received}} changes, sent {{sent}}.",
+    "synced": "Synced with {{name}}: received {{received}} changes, sent {{sent}}.",
+    "forget": "Forget device",
+    "forgotten": "{{name}} forgotten.",
+    "forgetConfirm": {
+      "title": "Forget {{name}}?",
+      "body": "You will have to pair again to sync with it. Nothing is deleted from the catalog."
+    },
+    "errors": {
+      "bad_code": "That is not a pairing code.",
+      "same_device": "That code belongs to this same device.",
+      "unreachable": "The other device cannot be reached. Is it on the same Wi-Fi, with the app open?",
+      "wrong_certificate": "The device that answered is not the one in the code. Pairing was stopped for safety.",
+      "rejected": "The other device refused: the code expired or was already used, or it forgot this device.",
+      "other_version": "The two devices run different versions of the app. Update both.",
+      "peer_error": "The other device had a problem. Try again.",
+      "unknown_device": "This device is not paired.",
+      "no_network": "This device is not connected to any network."
+    }
   }
 }

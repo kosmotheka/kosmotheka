@@ -187,5 +187,42 @@
       "other_version": "Esta copia se hizo con otra versión de la app.",
       "not_empty": "Una copia solo se puede restaurar sobre un catálogo vacío. Borra antes los libros o usa una instalación nueva."
     }
+  },
+  "devices": {
+    "title": "Dispositivos",
+    "description": "Sincroniza este catálogo con tus otros dispositivos por la red de casa. Sin servidor ni cuentas: la conexión va cifrada y solo funciona entre dispositivos emparejados.",
+    "thisDevice": "Nombre de este dispositivo",
+    "addTitle": "Emparejar un dispositivo",
+    "showCode": "Mostrar código de emparejamiento",
+    "showCodeHelp": "En el otro dispositivo, escanea este código o pega el texto en «Dispositivos». Vale una vez, durante 10 minutos.",
+    "copy": "Copiar código",
+    "stopPairing": "Dejar de emparejar",
+    "enterCodeHelp": "O pega aquí el código que muestra otro dispositivo:",
+    "code": "Código de emparejamiento",
+    "pair": "Emparejar",
+    "paired": "Dispositivos emparejados",
+    "syncNow": "Sincronizar ahora",
+    "syncsWithThis": "Se sincroniza con este",
+    "lastSync": "Última sincronización: {{date}}",
+    "neverSynced": "Nunca sincronizado",
+    "pairedAndSynced": "Emparejado con {{name}}. Recibidos {{received}} cambios, enviados {{sent}}.",
+    "synced": "Sincronizado con {{name}}: recibidos {{received}} cambios, enviados {{sent}}.",
+    "forget": "Olvidar dispositivo",
+    "forgotten": "{{name}} olvidado.",
+    "forgetConfirm": {
+      "title": "¿Olvidar {{name}}?",
+      "body": "Habrá que volver a emparejarlo para sincronizar. No se borra nada del catálogo."
+    },
+    "errors": {
+      "bad_code": "Eso no es un código de emparejamiento.",
+      "same_device": "Ese código es de este mismo dispositivo.",
+      "unreachable": "No se encuentra el otro dispositivo. ¿Está en la misma wifi y con la app abierta?",
+      "wrong_certificate": "El dispositivo que respondió no es el del código. Se ha detenido el emparejamiento por seguridad.",
+      "rejected": "El otro dispositivo lo ha rechazado: el código caducó o ya se usó, o ha olvidado este dispositivo.",
+      "other_version": "Los dos dispositivos tienen versiones distintas de la app. Actualiza ambos.",
+      "peer_error": "El otro dispositivo ha tenido un problema. Inténtalo de nuevo.",
+      "unknown_device": "Este dispositivo no está emparejado.",
+      "no_network": "Este dispositivo no está conectado a ninguna red."
+    }
   }
 }

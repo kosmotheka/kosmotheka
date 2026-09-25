@@ -170,7 +170,7 @@ export function useCommandErrors() {
         setMessage(String(error));
       } else if (error.kind === "validation") {
         setFieldErrors(error.errors);
-      } else if (error.kind === "backup") {
+      } else if (error.kind === "backup" || error.kind === "sync") {
         setMessage(error.reason);
       } else {
         setMessage(error.message);

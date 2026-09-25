@@ -13,6 +13,8 @@ use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
 use crate::db::Database;
 use crate::error::{Error, Result};
+use crate::lan::service::{LanService, LanStatus, PairingInfo};
+use crate::lan::{self, SyncReport};
 use crate::metadata::{Lookup, LookupResult};
 use crate::settings::{self, Settings};
 
@@ -208,4 +210,52 @@ pub fn export_csv(database: State<'_, Database>, path: String) -> Result<usize> 
 pub fn import_csv(database: State<'_, Database>, path: String) -> Result<CsvImportSummary> {
     let mut conn = database.lock()?;
     csv_io::import(&mut conn, Path::new(&path))
+}
+
+// --- LAN sync ---------------------------------------------------------------
+
+#[tauri::command]
+pub async fn lan_status(lan: State<'_, LanService>) -> Result<LanStatus> {
+    lan.status().await
+}
+
+#[tauri::command]
+pub fn set_device_name(database: State<'_, Database>, name: String) -> Result<()> {
+    lan::set_device_name(&*database.lock()?, &name)
+}
+
+#[tauri::command]
+pub async fn open_pairing(lan: State<'_, LanService>) -> Result<PairingInfo> {
+    lan.open_pairing().await
+}
+
+#[tauri::command]
+pub fn close_pairing(lan: State<'_, LanService>) -> Result<()> {
+    lan.close_pairing()
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Paired {
+    pub device_id: String,
+    pub name: String,
+}
+
+#[tauri::command]
+pub async fn pair_with(database: State<'_, Database>, code: String) -> Result<Paired> {
+    let server = lan::client::pair(&database, &code).await?;
+    Ok(Paired {
+        device_id: server.device_id,
+        name: server.name,
+    })
+}
+
+#[tauri::command]
+pub async fn sync_with(database: State<'_, Database>, device_id: String) -> Result<SyncReport> {
+    lan::client::sync(&database, &device_id).await
+}
+
+#[tauri::command]
+pub fn forget_device(database: State<'_, Database>, device_id: String) -> Result<()> {
+    lan::forget_device(&*database.lock()?, &device_id)
 }

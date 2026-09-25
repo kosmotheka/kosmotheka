@@ -91,10 +91,6 @@ pub fn last_hlc(conn: &Connection) -> Result<Option<Hlc>> {
         .map_err(|_| Error::CorruptState(LAST_HLC_KEY))
 }
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by sync merge from milestone 2.1")
-)]
 pub fn set_last_hlc(conn: &Connection, hlc: &Hlc) -> Result<()> {
     write_state(conn, LAST_HLC_KEY, Some(&hlc.to_string()))
 }

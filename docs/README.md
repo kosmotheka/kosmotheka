@@ -14,6 +14,8 @@
 | [architecture/data-model.md](architecture/data-model.md) | Esquema de la base de datos local. | Vivo |
 | [architecture/operations.md](architecture/operations.md) | Cómo se escribe: operaciones, HLC y validación. | Vivo |
 | [testing/hito-1.md](testing/hito-1.md) | Pruebas manuales del hito 1. | Vivo |
+| [testing/fase-2.md](testing/fase-2.md) | Pruebas manuales de la Fase 2. | Vivo |
+| [architecture/sync.md](architecture/sync.md) | Sincronización entre dispositivos: reglas y protocolo. | Vivo |
 
 ## Convenciones de la documentación
 

@@ -78,6 +78,7 @@ export interface FieldError {
 export type CommandError =
   | { kind: "validation"; errors: FieldError[] }
   | { kind: "backup"; reason: string }
+  | { kind: "sync"; reason: string }
   | { kind: "internal"; message: string };
 
 export function isCommandError(value: unknown): value is CommandError {
@@ -254,4 +255,62 @@ export interface CsvImportSummary {
 
 export function importCsv(path: string): Promise<CsvImportSummary> {
   return invoke<CsvImportSummary>("import_csv", { path });
+}
+
+export interface KnownDevice {
+  deviceId: string;
+  name: string;
+  pairedAt: string;
+  lastSyncAt: string | null;
+}
+
+export interface LanStatus {
+  deviceId: string;
+  deviceName: string;
+  servingPort: number | null;
+  addresses: string[];
+  pairingOpen: boolean;
+  /** Devices this one syncs with (it connects to them). */
+  servers: KnownDevice[];
+  /** Devices that sync with this one. */
+  clients: KnownDevice[];
+}
+
+export interface SyncReport {
+  received: { received: number; known: number; rejected: number; skippedChanges: number };
+  sent: number;
+}
+
+export function lanStatus(): Promise<LanStatus> {
+  return invoke<LanStatus>("lan_status");
+}
+
+export function setDeviceName(name: string): Promise<void> {
+  return invoke("set_device_name", { name });
+}
+
+export function openPairing(): Promise<{ code: string; expiresInSeconds: number }> {
+  return invoke("open_pairing");
+}
+
+export function closePairing(): Promise<void> {
+  return invoke("close_pairing");
+}
+
+export function pairWith(code: string): Promise<{ deviceId: string; name: string }> {
+  return invoke("pair_with", { code });
+}
+
+export function syncWith(deviceId: string): Promise<SyncReport> {
+  return invoke<SyncReport>("sync_with", { deviceId });
+}
+
+export function forgetDevice(deviceId: string): Promise<void> {
+  return invoke("forget_device", { deviceId });
+}
+
+/** Translation key for a failed sync command. */
+export function syncErrorKey(error: unknown): string {
+  if (isCommandError(error) && error.kind === "sync") return `devices.errors.${error.reason}`;
+  return "devices.errors.peer_error";
 }

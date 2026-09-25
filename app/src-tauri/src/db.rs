@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use rusqlite::Connection;
 use rusqlite_migration::{M, Migrations};
@@ -16,11 +16,15 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     )),
     M::up(include_str!("../migrations/0005_publishers_and_search.sql")),
     M::up(include_str!("../migrations/0006_sync.sql")),
+    M::up(include_str!("../migrations/0007_paired_devices.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
+/// Cheap to clone: every clone shares the same connection (the UI commands and the
+/// LAN sync server use it from different tasks).
+#[derive(Clone)]
 pub struct Database {
-    conn: Mutex<Connection>,
+    conn: Arc<Mutex<Connection>>,
 }
 
 impl Database {
@@ -31,9 +35,18 @@ impl Database {
         ops::ensure_device_id(&conn)?;
         search::ensure_current(&conn)?;
         sync::ensure_baseline(&mut conn)?;
-        Ok(Self {
-            conn: Mutex::new(conn),
-        })
+        Ok(Self::from_connection(conn))
+    }
+
+    fn from_connection(conn: Connection) -> Self {
+        Self {
+            conn: Arc::new(Mutex::new(conn)),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn in_memory() -> Self {
+        Self::from_connection(open_in_memory().unwrap())
     }
 
     pub fn lock(&self) -> Result<MutexGuard<'_, Connection>> {

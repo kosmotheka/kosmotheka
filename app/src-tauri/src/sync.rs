@@ -3,11 +3,6 @@
 //! Every device keeps every replicable operation. Syncing exchanges the ones the
 //! other side lacks, and `merge` applies them with rules that make all devices
 //! converge on the same state whatever order they arrive in.
-// The network layer that calls this module arrives in milestone 2.1.
-#![cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by the sync server from milestone 2.1")
-)]
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -47,7 +42,7 @@ pub struct SyncOperation {
     pub operation: Operation,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MergeReport {
     /// New operations stored.

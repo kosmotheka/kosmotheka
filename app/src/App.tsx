@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookPlus, CircleCheck, ScanBarcode, Settings } from "lucide-react";
+import { BookPlus, CircleCheck, MonitorSmartphone, ScanBarcode, Settings } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookDialog } from "@/components/book-dialog";
@@ -8,6 +8,7 @@ import { BookTable } from "@/components/book-table";
 import { BurstDialog } from "@/components/burst-dialog";
 import { CatalogFilters, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
+import { DevicesDialog } from "@/components/devices-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,9 @@ import {
   type CatalogOptions,
   type CreatedBook,
   catalogOptions,
+  lanStatus,
   listBooks,
+  syncWith,
 } from "@/lib/api";
 
 type LoadState =
@@ -46,6 +49,7 @@ export default function App() {
   const [openBookId, setOpenBookId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [burstOpen, setBurstOpen] = useState(false);
+  const [devicesOpen, setDevicesOpen] = useState(false);
   const [version, setVersion] = useState(0);
 
   const activeFilter = useDebounced(filter, 200);
@@ -68,6 +72,19 @@ export default function App() {
 
   /** Reloads books and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
+
+  // On opening, quietly catch up with every paired device that is reachable.
+  useEffect(() => {
+    void (async () => {
+      const status = await lanStatus().catch(() => null);
+      let changed = false;
+      for (const device of status?.servers ?? []) {
+        const report = await syncWith(device.deviceId).catch(() => null);
+        changed ||= (report?.received.received ?? 0) > 0;
+      }
+      if (changed) reload();
+    })();
+  }, [reload]);
 
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);
@@ -115,6 +132,15 @@ export default function App() {
                 {language.toUpperCase()}
               </Button>
             ))}
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t("devices.title")}
+              title={t("devices.title")}
+              onClick={() => setDevicesOpen(true)}
+            >
+              <MonitorSmartphone />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -184,6 +210,7 @@ export default function App() {
           onChanged={reload}
         />
         <BurstDialog open={burstOpen} onOpenChange={setBurstOpen} onChanged={reload} />
+        <DevicesDialog open={devicesOpen} onOpenChange={setDevicesOpen} onChanged={reload} />
         <BookDialog
           editionId={openBookId}
           onClose={() => setOpenBookId(null)}

@@ -397,4 +397,4 @@ Lo creado a la vez en dos dispositivos (un mismo autor, un mismo ISBN) queda dup
 
 ## D34 · Transporte local: HTTPS con certificado fijado por el QR — `propuesta`
 
-Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huella del certificado viaja en el QR (o en un código para pegar). El otro dispositivo solo acepta ese certificado. El emparejamiento intercambia secretos permanentes para las siguientes sincronizaciones. Se detalla en el hito 2.1.
+Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huella del certificado viaja en el QR (o en un código para pegar). El otro dispositivo solo acepta ese certificado. El emparejamiento intercambia secretos permanentes para las siguientes sincronizaciones. Implementado en el hito 2.1; protocolo completo en [architecture/sync.md](architecture/sync.md#transporte-d34-hito-21).

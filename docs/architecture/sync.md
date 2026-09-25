@@ -55,11 +55,29 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 ## Transporte (D34, hito 2.1)
 
-- **HTTPS por la red local.** El dispositivo que empareja (el escritorio) sirve; el otro se conecta.
-- **Certificado propio**, generado la primera vez, con su huella en el QR de emparejamiento. El cliente solo acepta ese certificado: la conexión va cifrada y autenticada sin autoridades de certificación.
-- **Emparejamiento:** el QR (o un código para pegar, entre dos escritorios) lleva la dirección, la huella y un secreto de un solo uso. Al emparejar, cada lado guarda al otro con un secreto permanente para las siguientes sincronizaciones.
+**Quién sirve y quién se conecta.** El dispositivo que muestra el código de emparejamiento **sirve**; el que lo introduce **se conecta**. Normalmente sirve el escritorio y se conecta el móvil, pero funciona en cualquier sentido (dos escritorios, por ejemplo).
 
-*(Se detallará en el hito 2.1.)*
+**Identidad.** Cada dispositivo genera la primera vez un certificado propio (ECDSA P-256) y lo guarda en su carpeta de datos (`sync-cert.der` y `sync-key.der`, esta última legible solo por el usuario). Su huella SHA-256 es lo que el otro dispositivo fija.
+
+**Código de emparejamiento** (`LIBRARY1:` + JSON en base64url, también como QR): identificador y nombre del dispositivo, sus direcciones `ip:puerto` en la red local, la huella del certificado y un **secreto de un solo uso** que caduca a los 10 minutos.
+
+**Emparejar** (`POST /v1/pair`):
+1. El que se conecta prueba las direcciones del código hasta que una responde. Solo acepta el certificado cuya huella viene en el código: cualquier otro se rechaza como impostor.
+2. Envía el secreto de un solo uso, su identificador y su nombre.
+3. El servidor, si el secreto es válido, lo invalida (no sirve para un segundo dispositivo) y devuelve un **secreto permanente**. De ese secreto solo guarda el hash.
+4. El cliente guarda al servidor: nombre, direcciones, huella y secreto.
+
+**Sincronizar** (autenticado con `X-Device-Id` y `Authorization: Bearer <secreto>`):
+1. `POST /v1/sync/pull` con la versión de esquema y el vector del cliente. El servidor responde con las operaciones que le faltan al cliente y con su propio vector. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
+2. El cliente las aplica (`merge`) y calcula las que le faltan al servidor.
+3. `POST /v1/sync/push` con esas operaciones. El servidor las aplica.
+4. El cliente coloca primero la dirección que ha funcionado, para la próxima vez.
+
+**Cuándo escucha el servidor.** Solo cuando hace falta: si hay dispositivos que se sincronizan con este, o mientras se muestra un código de emparejamiento. El puerto se guarda para que los emparejados lo encuentren en el mismo sitio; si está ocupado, se usa otro. En Windows, la primera vez el cortafuegos preguntará si se permite.
+
+**Cuándo se sincroniza.** Al abrir la app, con todos los dispositivos emparejados a los que se conecta (en silencio; si alguno no está, no pasa nada), y a mano con «Sincronizar ahora». Descubrirse solos en la wifi de casa (mDNS) llega en el hito 2.3.
+
+**Probar con dos instancias en un mismo equipo.** En las compilaciones de desarrollo, la variable `LIBRARY_DATA_DIR` hace que una segunda instancia use otra carpeta de datos (ver `docs/testing/fase-2.md`).
 
 ## Excepción a «toda escritura es una operación»
 
@@ -69,5 +87,6 @@ Aplicar operaciones recibidas **no genera operaciones nuevas**: se registran las
 
 - `app/src-tauri/src/sync.rs`: operación inicial, vector de versiones, `operations_since` (lo que le falta al otro) y `merge` (aplicar lo recibido). Sus tests simulan dispositivos con bases de datos en memoria y comprueban que todos acaban con el mismo estado (`assert_converged`).
 - `app/src-tauri/src/ops.rs`: las operaciones locales también registran las versiones de campo y las lápidas, así que local y remoto siguen las mismas reglas.
+- `app/src-tauri/src/lan/`: identidad y certificado (`identity.rs`), código de emparejamiento (`pairing.rs`), servidor HTTPS (`server.rs`), cliente con certificado fijado (`client.rs`) y el servicio que los une a la app (`service.rs`). Sus tests emparejan y sincronizan por TLS real, también por la IP de la red local.
 - Pendiente: casos de conformidad de la fusión en `spec/`, para que el servidor PHP (Fase 3) aplique exactamente las mismas reglas.
 

@@ -30,6 +30,12 @@ pub enum Error {
     BadBackup(&'static str),
     #[error(transparent)]
     Zip(#[from] zip::result::ZipError),
+    /// LAN sync failures, as codes the UI translates: bad_code, same_device, unreachable,
+    /// wrong_certificate, rejected, other_version, peer_error, unknown_device.
+    #[error("sync failed: {0}")]
+    Lan(&'static str),
+    #[error("TLS setup failed: {0}")]
+    Tls(&'static str),
     #[error(transparent)]
     Csv(#[from] csv::Error),
     #[error("database lock poisoned by a panicked thread")]
@@ -42,6 +48,7 @@ pub enum Error {
 enum ErrorPayload<'a> {
     Validation { errors: &'a [FieldError] },
     Backup { reason: &'static str },
+    Sync { reason: &'static str },
     Internal { message: String },
 }
 
@@ -51,6 +58,7 @@ impl Serialize for Error {
         let payload = match self {
             Error::Validation(errors) => ErrorPayload::Validation { errors },
             Error::BadBackup(reason) => ErrorPayload::Backup { reason },
+            Error::Lan(reason) => ErrorPayload::Sync { reason },
             other => ErrorPayload::Internal {
                 message: other.to_string(),
             },
