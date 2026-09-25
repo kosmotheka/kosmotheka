@@ -2,6 +2,8 @@
 
 > Plan en discusión. Se basa en [DECISIONS.md](DECISIONS.md). Cada fase es útil por sí sola y entrega **código y documentación** (D12).
 
+> ⏸ **En revisión (25/09/2026):** el alcance y el modelo de bibliotecas se están replanteando en [plans/revision-alcance.md](plans/revision-alcance.md). Las fases de aquí abajo se reordenarán cuando termine.
+
 ## Visión general
 
 | Fase | Nombre | Qué se puede hacer al terminarla |

@@ -2,6 +2,8 @@
 
 > **Revisado el 25/09/2026** (D41–D52). Queda abierta **D53** (¿app web además de las nativas?), para debatirla aparte. Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
 
+> ⏸ **En pausa** mientras se revisa el alcance del proyecto: ver [revision-alcance.md](revision-alcance.md).
+
 ## Estado
 
 | Hito | Estado |
