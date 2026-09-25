@@ -57,7 +57,7 @@
 | D49 | Verificación obligatoria del email con un código en la app | aceptada |
 | D50 | Recuperar la contraseña con un código en la app; revoca los demás dispositivos | aceptada |
 | D51 | Superadministrador del servidor, con acceso a todo | aceptada |
-| D52 | Panel de administración web con EasyAdmin y KPI | abierta |
+| D52 | Panel de administración web con EasyAdmin y KPI | aceptada |
 | D53 | ¿Una app web además de las nativas? | abierta |
 
 ---
@@ -611,11 +611,21 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - Si el servidor se ofrece como servicio público, su política de privacidad debe decir que el operador tiene este acceso.
 - Dónde administra: D52.
 
-## D52 · Panel de administración web con EasyAdmin y KPI — `abierta`
+## D52 · Panel de administración web con EasyAdmin y KPI — `aceptada`
 
-**Qué se busca:** un panel web para el superadministrador (D51) con la gestión típica de EasyAdmin (cuentas, bibliotecas, dispositivos, invitaciones) y además KPI, como el panel de rpgutilities.
+**Decisión:** un panel web para el superadministrador (D51) con la gestión típica de EasyAdmin (cuentas, bibliotecas, dispositivos, invitaciones) y además KPI, como el panel de rpgutilities.
 
-**Por resolver** (hay que darle una vuelta): qué KPI interesan, en qué hito entra (hasta entonces, comandos de consola en `src/Command/`) y cómo se registran los accesos del superadministrador a bibliotecas ajenas.
+**KPI elegidos:**
+- **Crecimiento:** cuentas registradas, confirmadas y sin confirmar; bibliotecas creadas; altas por semana o mes.
+- **Actividad:** usuarios y dispositivos activos (7 y 30 días), operaciones recibidas por día, última sincronización por biblioteca.
+- **Contenido:** libros, ejemplares y deseos en total y por biblioteca; bibliotecas más grandes; tamaño de la base de datos.
+- **Salud y abuso:** operaciones rechazadas (D47) y su motivo, peticiones cortadas por el límite, correos enviados y fallidos, cuentas bloqueadas.
+
+Los de salud y abuso necesitan que el servidor **registre esos eventos** (rechazos, límites, correos) en una tabla propia; los demás salen de las tablas que ya habrá.
+
+**Cuándo:** en el hito 3.4, con el despliegue. Hasta entonces, comandos de consola en `src/Command/`. El registro de eventos para los KPI se va añadiendo desde el 3.2, con cada funcionalidad, para que el panel tenga datos desde el primer día.
+
+**Accesos del superadministrador:** cada entrada en una biblioteca de la que no es miembro queda registrada (quién, cuándo, qué biblioteca, si fue suplantando a alguien) y solo se ve en el panel. Sus cambios aparecen además en el historial con su nombre, como los de cualquiera.
 
 ## D53 · ¿Una app web además de las nativas? — `abierta`
 

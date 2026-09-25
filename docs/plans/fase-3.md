@@ -1,6 +1,6 @@
 # Plan detallado de la Fase 3: servidor y familia
 
-> **Revisado el 25/09/2026** (D41–D52). Quedan abiertas **D52** (panel de administración) y **D53** (¿app web?). Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
+> **Revisado el 25/09/2026** (D41–D52). Queda abierta **D53** (¿app web además de las nativas?), para debatirla aparte. Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
 
 ## Estado
 
@@ -80,6 +80,7 @@ docs/
 ## 3.4 Solicitudes y despliegue
 
 - **Solicitudes:** una operación que tu rol no permite se guarda como petición en el servidor (no se aplica ni se propaga). El administrador la ve, la aprueba (el servidor la aplica en su nombre, dejando constancia de quién la pidió) o la rechaza. En la app, «Pedir que se borre» sustituye a «Borrar» para quien no puede borrar.
+- **Panel de administración (D52):** EasyAdmin para el superadministrador, con gestión de cuentas, bibliotecas, dispositivos e invitaciones, y KPI de crecimiento, actividad, contenido y salud. Registro de sus accesos a bibliotecas ajenas. Los eventos que alimentan los KPI se registran desde el 3.2.
 - **Despliegue (D48):** nginx + PHP-FPM + PostgreSQL, como en desarrollo, con imágenes de producción (sin Xdebug ni dependencias de desarrollo) y un proxy con HTTPS delante. Para el VPS necesitaré: el dominio o subdominio, si ya hay un proxy delante (nginx, Caddy…) con más servicios y cómo quieres hacer las copias de seguridad de PostgreSQL.
 - **Hecho cuando:** la familia usa el servidor del VPS desde el escritorio y el móvil.
 
@@ -96,5 +97,5 @@ docs/
 9. ~~Verificar el email~~ → obligatorio, con un código en la app; proveedor de correo por decidir (D49).
 10. ~~Recuperar la contraseña~~ → código en la app; revoca los demás dispositivos (D50).
 11. ~~Administrador global~~ → `ROLE_SUPER_ADMIN`, con acceso a todo (D51).
-12. **Panel de administración** → EasyAdmin con la gestión típica y KPI; por diseñar (D52, abierta).
+12. ~~Panel de administración~~ → EasyAdmin con gestión y KPI, en el hito 3.4 (D52).
 13. **¿App web además de las nativas?** Debate aparte, al final (D53, abierta).
