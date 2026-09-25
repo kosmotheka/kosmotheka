@@ -91,14 +91,19 @@
       "viewport": "640x420"
     },
     "Select": {
-      "cardMode": "column",
+      "cardMode": "single",
+      "primaryStory": "Open",
       "viewport": "480x360"
     },
     "SelectGroup": {
-      "cardMode": "column",
+      "cardMode": "single",
+      "primaryStory": "InOpenSelect",
       "viewport": "480x360"
     },
     "Table": {
+      "cardMode": "column"
+    },
+    "Alert": {
       "cardMode": "column"
     }
   },
