@@ -1,0 +1,4 @@
+/* Propuesta de tokens de estado (compatibles con las variables de shadcn/ui). */
+:root{--success:oklch(0.508 0.118 165.6);--success-soft:oklch(0.962 0.03 166);--warning:oklch(0.555 0.163 49);--warning-soft:oklch(0.973 0.04 95);--wish:oklch(0.55 0.19 2);--wish-soft:oklch(0.965 0.02 2);--scrim:oklch(0 0 0 / 40%)}
+.dark{--success:oklch(0.845 0.143 165);--success-soft:oklch(0.262 0.051 172.5);--warning:oklch(0.879 0.169 91.6);--warning-soft:oklch(0.279 0.077 45.6);--wish:oklch(0.81 0.11 2);--wish-soft:oklch(0.29 0.07 2);--scrim:oklch(0 0 0 / 60%)}
+body{margin:0}

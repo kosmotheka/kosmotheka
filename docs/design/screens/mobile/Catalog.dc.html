@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div class="{{ theme }}" style="width:390px;height:844px;position:relative;overflow:hidden;background:var(--background);color:var(--foreground);font-family:var(--font-sans)"><div style="height:100%;display:flex;flex-direction:column;position:relative"><dc-import name="StatusBar" hint-size="100%,32px"></dc-import><dc-import name="AppBar" role="{{ role }}" hint-size="100%,64px"></dc-import><div style="display:flex;gap:8px;padding:4px 16px 12px;overflow:hidden;flex-shrink:0"><button aria-label="Filtros" style="height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--foreground);display:flex;align-items:center;gap:6px;font:500 14px var(--font-sans);flex-shrink:0"><x-import component-from-global-scope="Library.SlidersHorizontalIcon" size="16" hint-size="16px,16px"></x-import>Filtros</button><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;font-size:14px;font-weight:500;flex-shrink:0">Todo</span><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;font-size:14px;flex-shrink:0">Libros</span><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;font-size:14px;flex-shrink:0">Juegos de mesa</span><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;font-size:14px;flex-shrink:0">Películas</span></div><div style="padding:0 16px 6px;font-size:12px;color:var(--muted-foreground);flex-shrink:0">248 obras · por título</div><div style="flex:1;overflow:hidden"><sc-for list="{{ items }}" as="it" hint-placeholder-count="6"><div style="display:flex;gap:14px;align-items:center;padding:10px 16px;min-height:64px"><div style="width:48px;display:flex;justify-content:center"><dc-import name="Cover" kind="{{ it.kind }}" size="{{ 64 }}" style="width:48px;height:64px" hint-size="48px,64px"></dc-import></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.title }}</span><span style="font-size:13px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.meta }}</span><span style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted-foreground)"><span style="padding:1px 7px;border-radius:6px;border:1px solid var(--border);color:var(--foreground)">{{ it.format }}</span>{{ it.where }}</span></div></div></sc-for></div><button style="position:absolute;right:16px;bottom:112px;height:56px;padding:0 20px 0 16px;border:0;border-radius:16px;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;gap:10px;font:600 15px var(--font-sans);box-shadow:0 8px 20px -6px oklch(0 0 0 / 35%)"><x-import component-from-global-scope="Library.PlusIcon" size="22" hint-size="22px,22px"></x-import>Añadir</button><dc-import name="BottomNav" active="catalog" hint-size="100%,95px"></dc-import></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;lector&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      role: this.props.role ?? 'admin',
+      items: [
+        { kind: 'comic', title: 'Astérix el galo', meta: 'Cómic · Goscinny, Uderzo · 1961', format: 'Tapa dura', where: 'Salón' },
+        { kind: 'film', title: 'Blade Runner 2049', meta: 'Película · Denis Villeneuve · 2017', format: 'Blu-ray', where: 'Salón' },
+        { kind: 'game', title: 'Catán', meta: 'Juego de mesa · 3–4 jugadores', format: 'Caja', where: 'Estudio' },
+        { kind: 'book', title: 'Dune', meta: 'Libro · Frank Herbert · 1965', format: 'Tapa blanda', where: 'Salón · +1' },
+        { kind: 'book', title: 'La mano izquierda de la oscuridad', meta: 'Libro · Ursula K. Le Guin · 1969', format: 'Kindle', where: 'Laura' },
+        { kind: 'videogame', title: 'Zelda: Tears of the Kingdom', meta: 'Videojuego · Switch · 2023', format: 'Cartucho', where: 'Hugo' },
+        { kind: 'other', title: 'Playmobil Barco pirata 5135', meta: 'Otro · 2006', format: 'Caja', where: 'Trastero' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@
 | [ROADMAP.md](ROADMAP.md) | El plan: fases, qué se construye y cuándo está hecho |
 | [DECISIONS.md](DECISIONS.md) | Registro de decisiones: contexto, opciones, decisión y estado |
 | [architecture/](architecture/) | Cómo está construido: [modelo de datos](architecture/data-model.md), [operaciones](architecture/operations.md), [sincronización](architecture/sync.md) |
-| [design/](design/) | [Brief de diseño](design/brief.md) y [catálogo de errores](design/errors.md) |
+| [design/](design/) | [Brief de diseño](design/brief.md), [catálogo de errores](design/errors.md) y [pantallas de Claude Design](design/screens/README.md) |
 | [development/](development/) | Entorno de desarrollo: [app](development/setup.md) y [servidor](development/server.md) |
 | [testing/](testing/) | Pruebas manuales: [hito 1](testing/hito-1.md) y [Fase 2](testing/fase-2.md) |
 | [research/](research/) | Investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md) y [proveedores de datos](research/proveedores.md) |

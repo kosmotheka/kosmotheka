@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;height:100%;container-type:size;display:flex;align-items:center;justify-content:center"><sc-if value="{{ tall }}" hint-placeholder-val="{{ true }}"><div style="width:min(100cqw,calc(100cqh * 2 / 3));aspect-ratio:2/3;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground);background:repeating-linear-gradient(135deg,var(--muted) 0 6px,color-mix(in oklch,var(--muted),var(--foreground) 6%) 6px 12px);box-shadow:inset 0 0 0 1px var(--border)"><x-import component-from-global-scope="Library.{{ icon }}" size="{{ iconSize }}" stroke-width="1.5" hint-size="18px,18px"></x-import></div></sc-if><sc-if value="{{ square }}" hint-placeholder-val="{{ false }}"><div style="width:min(100cqw,100cqh);aspect-ratio:1/1;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground);background:repeating-linear-gradient(135deg,var(--muted) 0 6px,color-mix(in oklch,var(--muted),var(--foreground) 6%) 6px 12px);box-shadow:inset 0 0 0 1px var(--border)"><x-import component-from-global-scope="Library.{{ icon }}" size="{{ iconSize }}" stroke-width="1.5" hint-size="18px,18px"></x-import></div></sc-if><sc-if value="{{ threeFour }}" hint-placeholder-val="{{ false }}"><div style="width:min(100cqw,calc(100cqh * 3 / 4));aspect-ratio:3/4;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground);background:repeating-linear-gradient(135deg,var(--muted) 0 6px,color-mix(in oklch,var(--muted),var(--foreground) 6%) 6px 12px);box-shadow:inset 0 0 0 1px var(--border)"><x-import component-from-global-scope="Library.{{ icon }}" size="{{ iconSize }}" stroke-width="1.5" hint-size="18px,18px"></x-import></div></sc-if></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;book&quot;,&quot;comic&quot;,&quot;game&quot;,&quot;film&quot;,&quot;videogame&quot;,&quot;other&quot;],&quot;default&quot;:&quot;book&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:64,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const shapes = { book: ['2:3', 'BookIcon'], comic: ['2:3', 'BookImageIcon'], game: ['1:1', 'Dice5Icon'], film: ['2:3', 'ClapperboardIcon'], videogame: ['3:4', 'Gamepad2Icon'], other: ['1:1', 'ShapesIcon'] };
+    const [r, icon] = shapes[this.props.kind] || shapes.other;
+    const box = this.props.size ?? 64;
+    return { tall: r === '2:3', square: r === '1:1', threeFour: r === '3:4', icon, iconSize: Math.max(14, Math.round(box / 3.2)) };
+  }
+}
+</script>
+</body>
+</html>
