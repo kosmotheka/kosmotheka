@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests;
+namespace App\Tests\Support;
 
 /**
  * The shared spec/ folder, at the root of the repository. In the container it
@@ -10,17 +10,13 @@ namespace App\Tests;
  */
 final class Spec
 {
-    public static function path(string $relative): string
-    {
-        return \dirname(__DIR__, 2).'/spec/'.$relative;
-    }
-
     /**
      * @return array<mixed>
      */
     public static function json(string $relative): array
     {
-        $contents = file_get_contents(self::path($relative));
+        $path = \dirname(__DIR__, 3).'/spec/'.$relative;
+        $contents = file_get_contents($path);
         if (false === $contents) {
             throw new \RuntimeException(\sprintf('Cannot read spec/%s', $relative));
         }

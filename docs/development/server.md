@@ -7,8 +7,8 @@
 | Ruta | Qué es |
 |---|---|
 | `docker/` | Docker Compose del servidor: PHP-FPM, nginx y PostgreSQL |
-| `src/Operation/` | Validación de operaciones en PHP: la misma que `crates/domain`, contra los mismos casos de `spec/` |
-| `tests/` | PHPUnit; `tests/Operation/` ejecuta los casos de conformidad |
+| `src/` | Código, en carpetas por rol (`Dto/`, `Enum/`, `Validator/`…); ver las convenciones en `server/AGENTS.md` |
+| `tests/` | PHPUnit, espejo de `src/`; `tests/Validator/` ejecuta los casos de conformidad de `spec/` |
 | `Makefile` | Todos los comandos (`make help`) |
 | `AGENTS.md` | Instrucciones para agentes específicas del servidor |
 
@@ -18,6 +18,9 @@
 cd server/docker
 cp .env.dist .env        # solo la primera vez; .env no se versiona
 cd ..
+cat > .env.local <<'ENV'  # solo la primera vez; tampoco se versiona
+DATABASE_URL="postgresql://library:library@db_library:5432/library?serverVersion=18&charset=utf8"
+ENV
 make build               # solo la primera vez o si cambia un Dockerfile
 make up
 make install             # composer install dentro del contenedor
@@ -44,12 +47,12 @@ Elegidos para no chocar con otros proyectos Docker de la máquina (Riddle, rpgut
 
 | Entorno | Base | Usuario | Dónde se configura |
 |---|---|---|---|
-| dev | `library` | `library` | `server/.env` y `docker/.env` |
+| dev | `library` | `library` | `server/.env.local` y `docker/.env` (ninguno se versiona) |
 | test | `library_test` | `test` | `server/.env.test` (Doctrine añade `_test` al nombre) |
 
 `library_test` y su usuario los crea `docker/postgres/init/01-test-database.sql` la **primera vez** que arranca el volumen. Si el volumen ya existía sin ella, bórralo (`docker volume rm library_db_library`, con los contenedores parados) o ejecuta ese SQL a mano.
 
-Las credenciales de desarrollo y test solo existen dentro del contenedor y no son secretas. Las de producción irán en `.env.local` en el VPS, nunca en el repo.
+Como en Riddle, `.env` no lleva credenciales: las de desarrollo van en `.env.local`. `.env.test` sí se versiona, porque Symfony no carga `.env.local` en test y sin él un clon recién hecho no pasaría la suite; su usuario `test` solo existe dentro del contenedor y solo tiene acceso a `library_test`. Las de producción irán en `.env.local` en el VPS, nunca en el repo.
 
 ## Comandos habituales
 

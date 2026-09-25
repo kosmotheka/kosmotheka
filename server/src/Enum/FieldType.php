@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Operation;
+namespace App\Enum;
 
 enum FieldType
 {

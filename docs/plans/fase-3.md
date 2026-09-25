@@ -34,7 +34,7 @@ docs/
 2. **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con `library_id` en todas (D38).
    - ❓ **Clave primaria `(library_id, id)`** en vez de solo `id`. Los UUID v7 no deberían repetirse, pero así una biblioteca nunca puede pisar filas de otra, aunque un cliente mande un id ajeno. Recomendado.
    - Tablas de soporte: `operations` (el registro, con el cuerpo en JSONB: es un registro, no el modelo de datos), `field_versions` y `tombstones`, igual que en el cliente.
-3. **Motor de aplicación con DBAL**, sin ORM: SQL directo en transacción, con *savepoints*, como en Rust. El ORM se reserva para usuarios y bibliotecas (3.2).
+3. **Motor de aplicación con DBAL** en `server/src/Sync/`, sin ORM: SQL directo en transacción, con *savepoints*, como en Rust. El ORM se reserva para usuarios y bibliotecas (3.2).
 4. **Hecho cuando:** los casos de `merge.json` pasan en Rust y en PHP, en la CI.
 
 ## 3.2 Cuentas, bibliotecas, roles e invitaciones

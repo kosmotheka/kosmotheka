@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Operation;
+namespace App\Enum;
 
-/** The error codes of spec/README.md. */
+/**
+ * The error codes of spec/README.md. They are the violation codes of
+ * App\Validator\ValidOperation, so clients get the same code from the server as
+ * from their own validation.
+ */
 enum OperationErrorCode: string
 {
     case InvalidId = 'invalid_id';

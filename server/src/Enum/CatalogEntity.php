@@ -2,14 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Operation;
+namespace App\Enum;
+
+use App\Dto\FieldSpec;
 
 /**
- * Which entities operations may change, and the fields each one accepts.
- * Mirrors spec/operation.schema.json and crates/domain/src/schema.rs; keep the
- * three in sync (the conformance cases catch most drifts).
+ * Which catalog entities operations may change, and the fields each one
+ * accepts. Mirrors spec/operation.schema.json and crates/domain/src/schema.rs;
+ * keep the three in sync (the conformance cases catch most drifts).
+ *
+ * "Catalog entity", not "entity": these are rows the operations touch, not
+ * Doctrine entities.
  */
-enum Entity: string
+enum CatalogEntity: string
 {
     case Work = 'work';
     case Person = 'person';

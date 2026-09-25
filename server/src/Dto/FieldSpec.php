@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Operation;
+namespace App\Dto;
+
+use App\Enum\FieldType;
 
 final readonly class FieldSpec
 {

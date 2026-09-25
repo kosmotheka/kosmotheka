@@ -55,12 +55,36 @@ Each part keeps its own tooling: the app and crates build in the `library-dev` D
 - Sync must converge: any change to how operations apply needs a test in `sync.rs` that simulates devices and uses `assert_converged`.
 - Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
-- Adding a field or entity also means updating `server/src/Operation/Entity.php`, the PHP mirror of `schema.rs`.
+- Adding a field or entity also means updating `server/src/Enum/CatalogEntity.php`, the PHP mirror of `schema.rs`.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
 - Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`.
 - **No user-facing string is hard-coded**: use i18n keys and add both `en` and `es` translations.
 - **Never commit secrets** (API keys, passwords, tokens). The repository will become public, so its history must be clean.
+
+## Glossary
+
+The docs are in Spanish and the code in English. **Check this table before naming anything in the domain**, in Rust, PHP or TypeScript: a term that becomes `copy` in one file and `item` in another never leaves the repository. If a term is missing, add it here before using it.
+
+| Spanish (docs) | Code | Notes |
+|---|---|---|
+| obra | `work` | The book in the abstract |
+| edición | `edition` | A published edition of a work |
+| ejemplar | `copy` | What is on the shelf: format, owner, location |
+| persona (autor) | `person` | Someone who contributed to a work |
+| editorial | `publisher` | |
+| miembro de la familia | `member` | A catalog row that owns copies; **not** an account |
+| deseo | `wish` | Wishlist entry |
+| operación · cambio · intención | `operation` · `change` · `intent` | D25 |
+| lápida | `tombstone` | Marks a deleted row so it cannot come back |
+| reloj lógico híbrido | `hlc` | |
+| dispositivo | `device` | |
+| biblioteca | `library` | On the server, the unit that owns data (D38) |
+| usuario (cuenta) | `user` | An account on the server |
+| membresía | `membership` | A user's role in a library. Keep it distinct from `member` |
+| rol: administrador · editor · lector | `admin` · `editor` · `reader` | |
+| invitación | `invitation` | |
+| solicitud | `change_request` / `ChangeRequest` | Not `request`, which collides with the HTTP request (milestone 3.4) |
 
 ## Documentation is part of the work
 
