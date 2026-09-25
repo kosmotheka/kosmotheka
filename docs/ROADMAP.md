@@ -123,6 +123,16 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - Pruebas de conformidad compartidas entre Rust y PHP en la CI.
 - **Hecho cuando:** la familia comparte biblioteca desde el escritorio y el móvil, cada uno con su rol, y los cambios sin conexión se sincronizan con el servidor.
 
+**Hitos** (decisiones D38–D40):
+
+| Hito | Qué se construye | Cómo se prueba |
+|---|---|---|
+| 3.0 Esqueleto del servidor | Symfony + PostgreSQL en Docker en `server/`; los casos de conformidad de `spec/` en PHPUnit y en la CI | Tests, CI |
+| 3.1 Aplicar operaciones en PHP | El mismo motor de fusión que en Rust; casos de conformidad **de fusión** compartidos por Rust y PHP | Casos compartidos |
+| 3.2 Cuentas, bibliotecas, roles e invitaciones | Usuarios, bibliotecas (D38), membresías con rol, token por dispositivo, invitación por QR | Tests de API |
+| 3.3 La app habla con el servidor | «Conectar a un servidor»; sincronización con él como única vía (D39); permisos en la app y en el servidor (D40) | Extremo a extremo con el servidor en Docker |
+| 3.4 Solicitudes y despliegue | Solicitudes que aprueba un administrador; imagen Docker para el VPS | En el VPS |
+
 ## Fase 4 — Vida de la biblioteca
 
 - Estado de lectura por usuario (pendiente, leyendo, leído, abandonado) con fechas, valoraciones y favoritos.

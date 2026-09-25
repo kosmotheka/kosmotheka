@@ -14,7 +14,7 @@
 | D06 | Servidor en Symfony | aceptada |
 | D07 | SQLite en el cliente, PostgreSQL en el servidor | aceptada |
 | D08 | Catálogos con herencia por tablas | aceptada |
-| D09 | Autenticación simple | aceptada |
+| D09 | Autenticación simple | aceptada (el alcance multibiblioteca lo amplía D38) |
 | D10 | Alojamiento en VPS | aceptada |
 | D11 | Licencia AGPL para todo; especificación con licencia permisiva | aceptada |
 | D12 | Documentación continua | aceptada |
@@ -43,6 +43,9 @@
 | D35 | Escáner de códigos con el plugin oficial de Tauri (solo móvil) | propuesta |
 | D36 | Lista de deseos básica, sincronizada | propuesta |
 | D37 | Reencontrar dispositivos buscando en la subred, no por mDNS | propuesta |
+| D38 | Un servidor aloja varias bibliotecas desde el principio | aceptada |
+| D39 | Biblioteca conectada a un servidor: sincroniza solo con él | aceptada |
+| D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | propuesta |
 
 ---
 
@@ -424,3 +427,17 @@ Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huel
 - mDNS queda como mejora posible si algún día hace falta; exigiría un pequeño plugin nativo para Android.
 
 **Además en el 2.3:** emparejar escaneando el QR con la cámara del móvil, y sincronizar al volver a la app (cuando pasa a primer plano), no solo al abrirla.
+
+## D38 · Un servidor aloja varias bibliotecas desde el principio — `aceptada`
+
+En el servidor, todo dato pertenece a una **biblioteca**, y cada usuario es miembro de una o varias con un rol (administrador, editor, lector). Cuesta poco ahora (una columna y un filtro en cada consulta) y deja preparados el servicio público, las ludotecas y las asociaciones sin migraciones dolorosas. Matiza D09: la autenticación sigue siendo simple (usuario y contraseña, un token por dispositivo), pero el modelo de datos ya no es de una sola familia.
+
+## D39 · Biblioteca conectada a un servidor: sincroniza solo con él — `aceptada`
+
+Una biblioteca sin servidor se sincroniza por la wifi entre dispositivos, como en la Fase 2. En cuanto se conecta a un servidor, **el servidor pasa a ser la única vía de sincronización y el árbitro de los permisos**, y la sincronización por wifi de esa biblioteca se desactiva. Así ningún cambio no permitido puede pasar de un dispositivo a otro sin que el servidor lo compruebe. Alternativa descartada: mantener las dos vías (más flexible si el VPS se cae, pero los permisos solo se garantizarían a medias y la lógica se complica).
+
+## D40 · La app conoce y aplica los permisos; el servidor los vuelve a comprobar — `propuesta`
+
+La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor) y **no ofrece ni registra** lo que ese rol no puede hacer: un lector no ve «Borrar». El servidor comprueba de nuevo cada operación y rechaza las que no cumplan, por si una app estuviera manipulada.
+
+**Por qué no «dejar hacer y deshacer después»** (lo que planteaba D05): con «el borrado gana» (D32), un borrado aplicado en local no se puede deshacer limpiamente, porque la lápida impediría recrear la fila. Si una app legítima nunca genera operaciones prohibidas, no hay nada que deshacer. Lo que un rol no puede hacer directamente se hace como **solicitud** (hito 3.4): por ejemplo, «pido borrar este libro», que es una operación permitida y que un administrador aprueba.
