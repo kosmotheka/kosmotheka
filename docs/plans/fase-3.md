@@ -2,7 +2,7 @@
 
 > **Revisado el 25/09/2026** (D41–D52). Queda abierta **D53** (¿app web además de las nativas?), para debatirla aparte. Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
 
-> ⏸ **En pausa** mientras se revisa el alcance del proyecto: ver [revision-alcance.md](revision-alcance.md).
+> 🗄 **Sustituido** por el nuevo [ROADMAP](../ROADMAP.md) (25/09/2026). El servidor pasa a ser la Fase 7 («La nube»); de aquí se reutiliza lo que siga valiendo tras la [revisión del alcance](revision-alcance.md).
 
 ## Estado
 

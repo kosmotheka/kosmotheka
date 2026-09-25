@@ -12,7 +12,7 @@
 | [research/](research/) | Notas de investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md) y [proveedores de datos por tipo](research/proveedores.md). | Vivo |
 | [development/setup.md](development/setup.md) | Cómo montar el entorno de desarrollo. | Vivo |
 | [development/server.md](development/server.md) | Servidor Symfony en Docker: arranque, puertos, bases de datos y comandos. | Vivo |
-| [plans/fase-3.md](plans/fase-3.md) | Plan detallado de la Fase 3 (servidor) y sus decisiones (D41–D53; D53 abierta). | Vivo |
+| [plans/fase-3.md](plans/fase-3.md) | Plan del servidor anterior a la revisión; sustituido por el ROADMAP (Fase 7). | Histórico |
 | [plans/revision-alcance.md](plans/revision-alcance.md) | Revisión del alcance y modelo de bibliotecas: qué producto es, cómo se comparte, impacto en lo construido y prioridades. | En debate |
 | [architecture/data-model.md](architecture/data-model.md) | Esquema de la base de datos local. | Vivo |
 | [architecture/operations.md](architecture/operations.md) | Cómo se escribe: operaciones, HLC y validación. | Vivo |

@@ -1,6 +1,6 @@
 # Sincronización
 
-> Cómo se ponen de acuerdo varios dispositivos sin servidor (Fase 2) y, más adelante, con él (Fase 3). Decisiones de fondo: D05, D13, D25 y D31–D34. Documento vivo: se completa hito a hito.
+> Cómo se ponen de acuerdo varios dispositivos sin servidor (Fase 2) y, más adelante, con él (Fase 7). Decisiones de fondo: D05, D13, D25 y D31–D34. Documento vivo: se completa hito a hito.
 
 ## Idea
 
@@ -92,5 +92,5 @@ Aplicar operaciones recibidas **no genera operaciones nuevas**: se registran las
 - `app/src-tauri/src/sync.rs`: operación inicial, vector de versiones, `operations_since` (lo que le falta al otro) y `merge` (aplicar lo recibido). Sus tests simulan dispositivos con bases de datos en memoria y comprueban que todos acaban con el mismo estado (`assert_converged`).
 - `app/src-tauri/src/ops.rs`: las operaciones locales también registran las versiones de campo y las lápidas, así que local y remoto siguen las mismas reglas.
 - `app/src-tauri/src/lan/`: identidad y certificado (`identity.rs`), código de emparejamiento (`pairing.rs`), servidor HTTPS (`server.rs`), cliente con certificado fijado (`client.rs`) y el servicio que los une a la app (`service.rs`). Sus tests emparejan y sincronizan por TLS real, también por la IP de la red local.
-- Pendiente: casos de conformidad de la fusión en `spec/`, para que el servidor PHP (Fase 3) aplique exactamente las mismas reglas.
+- Pendiente: casos de conformidad de la fusión en `spec/`, para que el servidor PHP (Fase 7) aplique exactamente las mismas reglas.
 

@@ -1,25 +1,145 @@
 # Roadmap
 
-> Plan en discusión. Se basa en [DECISIONS.md](DECISIONS.md). Cada fase es útil por sí sola y entrega **código y documentación** (D12).
+> Plan rehecho el 25/09/2026 tras la [revisión del alcance](plans/revision-alcance.md). Se basa en [DECISIONS.md](DECISIONS.md); lo acordado en la revisión se registrará como decisiones cuando este plan se dé por bueno. Cada fase es útil por sí sola y entrega **código y documentación** (D12).
 
-> ⏸ **En revisión (25/09/2026):** el alcance y el modelo de bibliotecas se están replanteando en [plans/revision-alcance.md](plans/revision-alcance.md). Las fases de aquí abajo se reordenarán cuando termine.
+## Qué producto es, en una frase
+
+Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
 
 ## Visión general
 
-| Fase | Nombre | Qué se puede hacer al terminarla |
-|---|---|---|
-| 0 | Esqueleto | Compilar una app vacía en Linux, Windows y Android, con CI |
-| 1 | Catálogo en el escritorio | Catalogar mis libros en el escritorio, sin servidor |
-| 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; carga inicial con el escáner en ráfaga |
-| 3 | Servidor y familia | La familia comparte biblioteca, con roles, desde cualquier lugar |
-| 4 | Vida de la biblioteca | Lecturas, préstamos, deseos y regalos, sagas, estadísticas |
-| 5 | Herramientas de estantería | Inventario y foto de balda |
-| 6 | Multicatálogo | Juegos de mesa, cómics y videojuegos |
-| 7 | Comunidad y versión pública | Red de préstamo entre amigos, ludotecas, repositorio público |
+| Fase | Nombre | Qué se puede hacer al terminarla | Estado |
+|---|---|---|---|
+| 0 | Esqueleto | Compilar en Linux, Windows y Android, con CI | ✅ |
+| 1 | Catálogo en el escritorio | Catalogar libros en el escritorio | ✅ |
+| 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; sincronizar por wifi | ✅ en código, falta probar |
+| 3 | Validar lo construido | Saber que la base funciona en el móvil real, y el diseño en marcha | Siguiente |
+| 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | |
+| 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | |
+| 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | |
+| 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | Hito 7.0 ✅ |
+| 8 | Publicación | La app en la tienda de Android y una landing | |
+| 9 | Vida de la biblioteca | Préstamos, regalos, estadísticas | |
+| 10 | Herramientas de estantería | Inventario, foto de balda, IA | |
+| 11 | Servicio | Organizaciones, panel, web para el personal | |
+
+**Transversal:** el diseño de la interfaz. El brief se rehace con el nuevo modelo antes de la Fase 4 y se trabaja con Claude Design fase a fase. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
 
 ---
 
-## Fase 0 — Esqueleto
+## Fase 3 — Validar lo construido
+
+Todo lo demás se apoya en esto, y hasta ahora solo lo han probado los tests.
+
+- Pruebas a mano de las fases 1 y 2, sobre todo en Android (`testing/hito-1.md`, `testing/fase-2.md`), y en Windows.
+- Corregir lo que salga.
+- **Rehacer el brief de diseño** con el nuevo modelo (bibliotecas, personas y roles, tipos de catálogo, series, estados «lo tengo / me falta / lo deseo», ayuda, patrones de Android) y subirlo a Claude Design.
+- **Hecho cuando:** la app funciona en el móvil real y hay un primer diseño del nuevo modelo.
+
+## Fase 4 — Bibliotecas
+
+La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza y tiene permisos.
+
+- Entidad **biblioteca** en la misma base de datos, con `library_id` en todas las tablas y clave `(library_id, id)`, como en el servidor.
+- Cada biblioteca tiene lo suyo (obras, ediciones, ejemplares, miembros), aunque el mismo libro esté en varias.
+- **Las operaciones pertenecen a una biblioteca**: cambia el formato en `spec/` y en `crates/domain`, con casos de conformidad nuevos.
+- **Vector de versiones por biblioteca.**
+- **Compartir biblioteca a biblioteca:** al emparejar, se elige qué bibliotecas van a cada dispositivo; nada sale sin decirlo.
+- **Interfaz:** una biblioteca a la vez con selector; el buscador y «¿Lo tengo?» miran en todas.
+- **Mover un libro** a otra biblioteca (ids nuevos, la app recuerda de dónde vino).
+- **Copias:** completas y por biblioteca; exportar a Google Drive muy fácil y a la vista.
+- **Migración sin continuidad:** cada dispositivo pasa sus datos a una biblioteca nueva; hay que volver a emparejar.
+- **Rust que aprendes:** migraciones de datos, rediseño de un protocolo con tests que simulan dispositivos.
+- **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
+
+## Fase 5 — Personas, roles y peticiones
+
+Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios dispositivos.
+
+- **El miembro es la persona:** los dispositivos se asocian a un miembro al compartir («el móvil de Hugo» es de Hugo).
+- **Roles:** administrador, editor y lector. Nadie da más de lo que tiene; **compartir es un permiso aparte**; puede haber varios administradores.
+- **Peticiones:** el lector pide añadir o borrar; los administradores aceptan o rechazan.
+- **Firmas:** cada dispositivo firma sus operaciones (Ed25519) y los demás las comprueban.
+- **Cada dispositivo comprueba lo que recibe:** lo que no está permitido pasa a petición, y todos llegan al mismo resultado aunque les lleguen las cosas en distinto orden. Casos de conformidad compartidos en `spec/`.
+- **Recuperación:** revocar un dispositivo perdido desde otro administrador; para el administrador único, una salida por decidir (código de recuperación u otra).
+- **Rust que aprendes:** criptografía con claves públicas, diseño de un motor que converge.
+- **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
+
+## Fase 6 — Catálogo general
+
+Deja de estar centrado en libros.
+
+- **Tipos:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos, y **«Otro»** para todo lo demás (sellos, monedas, Playmobil) con los campos comunes y sin proveedores. Orden propuesto: libros y «Otro» primero, después juegos de mesa, películas y series, videojuegos y cómics.
+- **Formatos por tipo**, físicos y digitales (DVD, Blu-ray, cartucho, Steam, Epic, Kindle…); lo digital no tiene estantería.
+- **El alta empieza por buscar o escanear, no por el ISBN.** Búsqueda por título en los proveedores; alta a mano siempre posible, sin buscar nada.
+- **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).
+- **Series:** agrupan obras con orden o sin él; una obra puede estar en varias; relación «necesita» (expansiones, suplementos).
+- **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
+- **Marcas por persona:** leído y deseado.
+- **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
+
+## Fase 7 — La nube
+
+La nube es un dispositivo más, siempre encendido, con los mismos roles.
+
+- **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
+- **Registro con email** y código en la app; recuperación con código.
+- Subir una biblioteca a la nube sin perder nada, historial incluido.
+- **Sincronizar a distancia** con los mismos roles y peticiones; el servidor comprueba y corrige.
+- **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
+- Límites de peticiones y cuentas sin confirmar que caducan.
+- **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
+- Se reutiliza del [plan anterior de la Fase 3](plans/fase-3.md) lo que siga valiendo tras la revisión (D41, D47, D48, D49, D50).
+- **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
+
+## Fase 8 — Publicación
+
+- **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
+- Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
+- **F-Droid:** estudiar cómo queda tras la verificación de desarrolladores de Google.
+- **Landing pública:** qué es, que es libre y sin registro, enlaces a la tienda y al código.
+- Sección de ayuda completa en la app; documentación para quien quiera montar su servidor.
+- **Hecho cuando:** cualquiera puede instalarla desde la tienda.
+
+## Fase 9 — Vida de la biblioteca
+
+- **Préstamos** salientes y entrantes, también entre amigos a distancia (enviados por correo), con historial y avisos.
+- **Lecturas sin ejemplar:** libros que te han prestado.
+- **Reserva de regalos**, oculta para quien los recibe.
+- Ejemplar firmado o dedicado, con foto.
+- **Estadísticas** de lectura por año y por persona.
+- ¿**Papelera** para deshacer borrados? (abierto; podría adelantarse a la Fase 5).
+
+## Fase 10 — Herramientas de estantería
+
+- **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
+- **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20).
+- **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla.
+- **Importar desde plataformas** digitales (Steam).
+
+## Fase 11 — Servicio
+
+Solo si llega el escenario de ludotecas, clubes o colegios.
+
+- **Organizaciones** por encima de las bibliotecas (la biblioteca ya tiene un propietario que lo permite).
+- **Panel del superadministrador** con EasyAdmin y KPI (D51, D52).
+- Inicio de sesión corporativo (Google, Microsoft).
+- **Web para el personal** (D53).
+- Licencias comerciales de los proveedores que las exigen; protección de datos con menores.
+
+## Queda abierto
+
+- Papelera para deshacer borrados.
+- Salida para el administrador único que pierde su único dispositivo.
+- Cuenta con contraseña o solo con código por email.
+- Si una biblioteca en la nube puede seguir sincronizándose por wifi (D39).
+- Campos personalizados por el usuario (solo si alguien los pide).
+
+---
+
+## Anexo: fases completadas
+
+### Fase 0 — Esqueleto
 
 El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver que la cadena de compilación funciona en las **tres** plataformas.
 
@@ -43,7 +163,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] Repo privado en GitHub y CI en verde: lint, tests y compilación en Linux y Windows.
 - [ ] Probar en Windows a mano.
 
-## Fase 1 — Catálogo en el escritorio (modo local)
+### Fase 1 — Catálogo en el escritorio (modo local)
 
 - *Crate* de dominio (`domain`), separado de Tauri: ediciones, ejemplares, ubicaciones, formatos (D08).
 - **Registro de operaciones desde el principio**: toda escritura es una operación con UUID v7, identificador de dispositivo y marca HLC (D05, D13). Todavía no se sincroniza, pero así el formato ya queda probado.
@@ -82,7 +202,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] Editoriales como catálogo propio, con autocompletado (1.5).
 - [x] Rellenar datos y autores consultando catálogos online (Google Books, Open Library) (1.3).
 
-## Fase 2 — Móvil y sincronización local
+### Fase 2 — Móvil y sincronización local
 
 - APK Android con escáner de ISBN.
 - **Escáner en ráfaga** para la carga inicial (D19, vía 1).
@@ -108,70 +228,3 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] 2.1 Sincronización por la red local. Servidor HTTPS (axum, rustls con ring) que escucha solo cuando hace falta; certificado propio fijado por la huella del código; emparejamiento con secreto de un solo uso; sincronización en los dos sentidos; diálogo «Dispositivos» con código en texto y QR; sincronización automática al abrir la app. Los tests emparejan y sincronizan por TLS real.
 - [x] 2.2 Interfaz móvil y escáner. «¿Lo tengo ya?» consultando solo la base de datos local (funciona sin cobertura), con escáner de cámara en el móvil (D35) y búsqueda online opcional; lista de deseos sincronizada (D36) con «Comprado: añadir al catálogo»; vista en tarjetas y cabecera compacta en pantallas estrechas. Compila para Android con permiso de cámara; falta probarlo en el móvil.
 - [x] 2.3 Móvil emparejado. Emparejar escaneando el QR con la cámara; sincronización al abrir la app y al volver a ella; reencontrar al otro dispositivo en la subred si cambió de dirección (D37, en lugar de mDNS). **Fase 2 completa en código**; pendiente de probar en el móvil (`docs/testing/fase-2.md`).
-
-## Pendiente antes de seguir con el diseño de interfaz
-
-- **Validar el frontend en el dispositivo real, sobre todo en Android** (`docs/testing/hito-1.md` y `docs/testing/fase-2.md`), antes de diseñar más pantallas.
-- **Sincronizar con Claude Design** (`/design-sync`): requiere que el usuario autorice antes con `/design-login`. El brief y el catálogo de errores están en `docs/design/`. Importación completa y de alta fidelidad, ya decidida.
-- Mejorar los mensajes de error siguiendo `docs/design/errors.md`, cuando llegue el diseño.
-
-## Fase 3 — Servidor y familia
-
-- Servidor Symfony + PostgreSQL en Docker (nginx + PHP-FPM, igual que en desarrollo, D48), desplegado en el VPS (D06, D07, D10).
-- Autenticación sencilla con token para sincronizar (D09). Roles: administrador, editor y lector.
-- Sincronización con el servidor usando el mismo formato de operaciones; el servidor reaplica cada operación con autoridad (D05).
-- **Solicitudes**: lo que un rol no puede hacer (tu hijo borrando) se convierte en una petición que aprueba un administrador.
-- **Invitar a familiares con un QR** (URL del servidor + token de invitación).
-- Pruebas de conformidad compartidas entre Rust y PHP en la CI.
-- **Hecho cuando:** la familia comparte biblioteca desde el escritorio y el móvil, cada uno con su rol, y los cambios sin conexión se sincronizan con el servidor.
-
-**Hitos** (decisiones D38–D40; detalle y preguntas abiertas en [plans/fase-3.md](plans/fase-3.md)):
-
-| Hito | Qué se construye | Cómo se prueba |
-|---|---|---|
-| 3.0 Esqueleto del servidor ✅ | Symfony + PostgreSQL en Docker en `server/`; los casos de conformidad de `spec/` en PHPUnit y en la CI ([guía](development/server.md)) | Tests, CI |
-| 3.1 Aplicar operaciones en PHP | El mismo motor de fusión que en Rust; casos de conformidad **de fusión** compartidos por Rust y PHP | Casos compartidos |
-| 3.2 Cuentas, bibliotecas, roles e invitaciones | Usuarios, bibliotecas (D38), membresías con rol, token por dispositivo, invitación por QR | Tests de API |
-| 3.3 La app habla con el servidor | «Conectar a un servidor»; sincronización con él como única vía (D39); permisos en la app y en el servidor (D40) | Extremo a extremo con el servidor en Docker |
-| 3.4 Solicitudes y despliegue | Solicitudes que aprueba un administrador; imagen Docker para el VPS | En el VPS |
-
-## Fase 4 — Vida de la biblioteca
-
-- Estado de lectura por usuario (pendiente, leyendo, leído, abandonado) con fechas, valoraciones y favoritos.
-- **Lecturas sin ejemplar**: libros que te han prestado a ti.
-- **Préstamos** salientes y entrantes, con historial y avisos pasadas X semanas.
-- **Lista de deseos familiar con reserva de regalos**, oculta para quien recibe el regalo.
-- **Ejemplar firmado o dedicado**, con foto.
-- **Relaciones entre ítems**: sagas en orden («qué toca y qué tomo falta»), dependencias entre libros de rol.
-- **Estadísticas** de lectura por año y por persona.
-- Exportación como lista imprimible y ZIP de portadas.
-
-## Fase 5 — Herramientas de estantería
-
-- **Modo inventario**: balda a balda, escaneando o con una foto de la balda y OCR local contra el propio catálogo (D19, vía 3). Detecta lo que falta y lo que está mal colocado.
-- **Foto de balda para la carga inicial**: primero la prueba de concepto con OCR local; si no basta, IA en la nube como opción (D19, vía 4).
-- *Aunque la fase sea la 5, la prueba de concepto del OCR puede hacerse antes como experimento, cuando apetezca: no bloquea nada.*
-
-## Fase 6 — Multicatálogo
-
-- Juegos de mesa (BoardGameGeek), cómics, videojuegos (con plataforma), **películas y series (TMDB)**: nuevas tablas `*_details` (D08) y nuevos proveedores de metadatos (D18, D21).
-- Campos personalizados por catálogo.
-- Fuentes de metadatos enchufables o scrapers configurables, para lo que no tiene ISBN.
-
-## Fase 7 — Comunidad y versión pública
-
-- Visibilidad por niveles (privado, familia, amigos, público).
-- Red de préstamo entre conocidos: ver qué tienen tus amigos y pedírselo.
-- Ludotecas y asociaciones: prestar su colección a sus socios.
-- Revisión de la autenticación para el público (D09).
-- **Landing y sitio de documentación** (D22), a partir del Markdown acumulado en el repositorio.
-- Publicación del repositorio y del servicio alojado. *Abrir el repositorio podría adelantarse, por ejemplo al terminar la Fase 2, cuando el modo local ya sea útil.*
-
-## Más adelante (sin fase)
-
-- **Dispositivo principal en modo local** (D13): árbitro y permisos para familias sin servidor.
-- «¿Qué leo ahora?»: recomendaciones entre lo que hay en casa sin leer (opcional, detrás de D18).
-- Estantería visual con lomos.
-- IA de varios proveedores (Anthropic y compatibles con OpenAI, incluidos modelos locales) para reconocer imágenes (D20).
-- Enlace con rpgutilities.
-- Versión web e iOS.

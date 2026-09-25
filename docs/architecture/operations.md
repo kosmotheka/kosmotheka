@@ -8,7 +8,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 
 ¿Para qué tanto rodeo, si hoy todo es local?
 - **Sincronizar** (Fase 2) es intercambiar operaciones: «dame las que no tengo».
-- **El servidor** (Fase 3) recibe operaciones, comprueba los permisos sobre sus cambios y las vuelve a aplicar.
+- **El servidor** (Fase 7, la nube) recibe operaciones, comprueba los permisos sobre sus cambios y las vuelve a aplicar.
 - **El historial** de un libro sale gratis del registro.
 
 ## Forma de una operación
@@ -71,7 +71,7 @@ Si falla cualquiera de los dos, la transacción entera se deshace.
 ## Pendiente
 
 - **Fusión campo a campo (Fase 2):** para decidir qué valor gana cuando dos dispositivos cambian el mismo campo, hará falta saber qué HLC escribió por última vez cada campo. Se añadirá con la sincronización; el registro de operaciones ya tiene todo lo necesario para reconstruirlo.
-- **Permisos (Fase 3):** reglas por entidad y acción («un lector no puede borrar ejemplares»).
+- **Permisos (Fase 5):** reglas por entidad y acción («un lector no puede borrar ejemplares»).
 - Los libros dados de alta antes del hito 1.2 no tienen operaciones, y por tanto tampoco historial.
 - ~~Versionar el formato de las operaciones~~ Resuelto en D31: cada operación guarda su versión de esquema, las anteriores a la sincronización quedan como historial no replicable y cada dispositivo registra una operación inicial `sync.baseline`. Ver [sync.md](sync.md).
 - **Índice de búsqueda:** `ops::record` también reindexa las ediciones afectadas (D29), así que cualquier operación, venga de donde venga, deja la búsqueda al día.

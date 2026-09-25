@@ -6,7 +6,7 @@ The conventions come from the maintainer's other Symfony projects (Riddle, and r
 
 ## What the server is
 
-The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, several libraries per server, roles, and applying the operations clients push. The plan is Phase 3 in `docs/ROADMAP.md`, detailed in `docs/plans/fase-3.md`. Setup, ports and databases: `docs/development/server.md`.
+The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, several libraries per server, roles, and applying the operations clients push. The plan is Phase 7 ("La nube") in `docs/ROADMAP.md`; the earlier server plan in `docs/plans/fase-3.md` is historical and is being revised. Setup, ports and databases: `docs/development/server.md`.
 
 ## Working rules
 
@@ -29,7 +29,7 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 | `Enum/` | Enums, even when a single class uses them |
 | `Dto/` | Transport objects and value objects: request payloads, responses, values passed between layers |
 | `Validator/` | Custom constraints and their validators (`ValidOperation`) |
-| `Security/` | Authenticators and voters (milestone 3.2) |
+| `Security/` | Authenticators and voters (Phase 7) |
 | `Command/` | Console commands |
 | `Sync/` | *Planned (3.1).* The engine that applies operations to the catalog tables: the port of `sync::merge` |
 
@@ -90,7 +90,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 - Autowiring and autoconfiguration; controllers extend `AbstractController`.
 - New capabilities come from `composer require` and the Flex recipe. Do not hand-edit `config/bundles.php` or hand-write a bundle's base config.
 - Before hand-writing infrastructure (locks, rate limiting, HTTP clients, password hashing, tokens), check whether a Symfony component covers it. It usually does.
-- **Persistence:** Doctrine ORM for accounts, libraries, memberships, devices and invitations. Plain DBAL for the catalog tables that operations write to, because the engine applies field-level changes with savepoints, as the Rust client does (milestone 3.1).
+- **Persistence:** Doctrine ORM for accounts, libraries, memberships, devices and invitations. Plain DBAL for the catalog tables that operations write to, because the engine applies field-level changes with savepoints, as the Rust client does (Phase 7).
 - **Schema changes always go through a migration** (`make migration`, then `make migrate`), never `doctrine:schema:update`. Remove the generated comments and fill in `getDescription()`. Name indexes explicitly.
 
 ## Environment files

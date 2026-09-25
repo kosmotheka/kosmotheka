@@ -1,6 +1,6 @@
 # Revisión del alcance y modelo de bibliotecas
 
-> **Estado:** acordado en conversación el 25/09/2026; todavía **no son decisiones**. Los catálogos están en revisión (sección 13 bis). Con eso claro se rehará el plan y lo acordado pasará a [DECISIONS.md](../DECISIONS.md). Mientras tanto, el [plan de la Fase 3](fase-3.md) queda en pausa.
+> **Estado:** acordado en conversación el 25/09/2026; todavía **no son decisiones**. El plan resultante está en el [ROADMAP](../ROADMAP.md). Con eso claro se rehará el plan y lo acordado pasará a [DECISIONS.md](../DECISIONS.md). Mientras tanto, el [plan de la Fase 3](fase-3.md) queda en pausa.
 
 ## 1. Por qué esta revisión
 

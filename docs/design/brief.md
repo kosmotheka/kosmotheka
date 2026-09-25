@@ -145,4 +145,4 @@ El texto completo de cada error, con causas y pasos, está en el [catálogo de e
 
 ## 9. Fuera de alcance (por ahora)
 
-Cuentas de usuario, servidor, roles y permisos (Fase 3); préstamos, estados de lectura y estadísticas (Fase 4); juegos, cómics y películas (Fase 6). El diseño no debe cerrar la puerta a que existan: por ejemplo, la navegación debe admitir más secciones.
+Este brief describe la app de las fases 1 y 2 y se rehará con el nuevo modelo en la Fase 3 del [ROADMAP](../ROADMAP.md): bibliotecas, personas y roles, tipos de catálogo, series, cuenta y nube, préstamos. El diseño no debe cerrar la puerta a que existan: por ejemplo, la navegación debe admitir más secciones.
