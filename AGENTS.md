@@ -73,7 +73,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | ejemplar | `copy` | What is on the shelf: format, owner, location |
 | persona (autor) | `person` | Someone who contributed to a work |
 | editorial | `publisher` | |
-| miembro de la familia | `member` | A catalog row that owns copies; **not** an account |
+| miembro de la familia | `member` | A catalog row that owns copies; **not** an account, though it may be linked to one (D46) |
 | deseo | `wish` | Wishlist entry |
 | operación · cambio · intención | `operation` · `change` · `intent` | D25 |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |

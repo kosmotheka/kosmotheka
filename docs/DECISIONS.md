@@ -51,13 +51,14 @@
 | D43 | Invitaciones de un solo uso que caducan en 24 horas | aceptada |
 | D44 | El lector escribe solo lo suyo: deseos y lecturas | aceptada |
 | D45 | El editor solo borra lo que creó | aceptada |
-| D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | abierta |
+| D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | aceptada |
 | D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | aceptada |
 | D48 | Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo | aceptada |
-| D49 | Verificación obligatoria del email, con el patrón de rpgutilities | aceptada |
-| D50 | Recuperar la contraseña con el patrón de rpgutilities; revoca los demás dispositivos | aceptada |
+| D49 | Verificación obligatoria del email con un código en la app | aceptada |
+| D50 | Recuperar la contraseña con un código en la app; revoca los demás dispositivos | aceptada |
 | D51 | Superadministrador del servidor, con acceso a todo | aceptada |
 | D52 | Panel de administración web con EasyAdmin y KPI | abierta |
+| D53 | ¿Una app web además de las nativas? | abierta |
 
 ---
 
@@ -523,20 +524,26 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Consecuencias:** usa el mismo registro de quién creó cada fila que D44. Un borrado que arrastra filas relacionadas (borrar un libro borra su edición y sus ejemplares) solo se permite si todas las filas afectadas son suyas; si no, se convierte en solicitud. La app (D40) muestra «Borrar» o «Pedir que se borre» según el caso.
 
-## D46 · Varias bibliotecas en la app, como entidad en una sola base de datos — `abierta`
+## D46 · Varias bibliotecas en la app, como entidad en una sola base de datos — `aceptada`
 
 **Qué se busca:** que en la app se puedan tener varias bibliotecas a la vez; por ejemplo, la de la familia y una con amigos. Un usuario puede estar en varias, con un rol distinto en cada una (D38).
 
-**Ya decidido por el mantenedor:**
+**Decisión:**
 - **Una sola base de datos** en el dispositivo, con una entidad **biblioteca**; nada de una base por biblioteca.
 - Al unirse a una biblioteca del servidor teniendo libros propios, la local se conserva (por ejemplo, con «(local)» detrás del nombre) y se puede **mover un ítem a otra biblioteca**.
+- **Cada biblioteca tiene lo suyo**: sus propias obras, ediciones y ejemplares, aunque el mismo libro esté en varias. Una corrección en una no cambia las demás, y cada fila pertenece a una sola biblioteca (encaja con D41). «¿Lo tengo?» y el buscador pueden mirar en todas las bibliotecas del usuario a la vez.
+- **`library_id` en todas las tablas** locales, con clave `(library_id, id)`, igual que en el servidor (D41): cada consulta filtra por biblioteca sin joins y cliente y servidor se parecen.
+- **Wifi: se elige por biblioteca.** El emparejamiento sigue siendo entre dispositivos, pero para cada dispositivo emparejado se elige qué bibliotecas locales se comparten con él. Al emparejar desde una biblioteca, esa queda marcada; las demás no se envían hasta marcarlas. Nada sale sin que el usuario lo diga.
+- **Mover un libro crea ids nuevos** en el destino, y la app guarda de dónde vino. Se puede mover de ida y vuelta, porque las lápidas del origen (D32) no afectan a ids nuevos. El historial anterior se queda en la biblioteca de origen.
+- **Migración sin continuidad:** como el proyecto está en pruebas, al actualizar cada dispositivo pasa sus datos a una biblioteca con un id nuevo, propio de ese dispositivo. Los emparejamientos anteriores no sobreviven: hay que volver a emparejar, o restaurar una copia en un dispositivo vacío, asumiendo que pueden salir duplicados.
+- **Interfaz: una biblioteca a la vez, con selector.** Catálogo, deseos y altas son de la biblioteca activa; el buscador tiene la opción «en todas» y «¿Lo tengo?» mira siempre en todas.
+- **Copias: las dos cosas.** Una copia completa del dispositivo, con todas las bibliotecas, y además exportar e importar una biblioteca suelta (copia o CSV), para compartirla o restaurarla sin tocar las demás. Una biblioteca suelta se puede restaurar si no existe ya en el dispositivo.
+- **Miembro y usuario, enlace opcional.** Un miembro (dueño de ejemplares) puede enlazarse con un usuario de esa biblioteca, o no (un niño sin cuenta). Sirve para «mis libros» y, en la Fase 4, para asociar las lecturas a la persona. En una biblioteca local no hay enlace. Los permisos sobre «lo suyo» siguen basándose en quién creó la fila (D44, D45).
 
-**Por resolver** (hay que darle una vuelta hasta que la arquitectura esté clara):
-- Cómo entra `library_id` en el modelo local: en todas las tablas del catálogo, como en el servidor (D41), o solo en las raíces (obra, deseo) y heredado por el resto.
-- Cómo encajan la sincronización por wifi (Fase 2) y la del servidor (D39) cuando cada biblioteca de la misma base puede ir por una vía distinta: vectores de versión, historial y copias de seguridad por biblioteca.
-- Qué significa mover: ids nuevos o los mismos, qué pasa con las lápidas (D32), el historial y los permisos (D45) al sacar algo de una biblioteca del servidor.
-- Cómo se migran los datos que ya existen a la primera biblioteca.
-- Qué cambia en la interfaz: selector de biblioteca, búsqueda en una o en todas, «¿Lo tengo?» en todas.
+**Consecuencias:**
+- Una biblioteca conectada a un servidor sincroniza solo con él (D39); las locales, por wifi con los dispositivos elegidos. Vectores de versión e historial son por biblioteca.
+- Sacar un libro de una biblioteca del servidor es un borrado allí, así que sigue D45.
+- Cambia el modelo de datos de la app (migración nueva) y el diseño (selector de biblioteca, «Mover a otra biblioteca»; ver `docs/design/brief.md`).
 
 ## D47 · Cambio rechazado por el servidor: se corrige solo en ese dispositivo — `aceptada`
 
@@ -568,9 +575,9 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Consecuencias:** sustituye a la idea de «una imagen Docker con FrankenPHP» del ROADMAP. En el hito 3.4 hacen falta imágenes de producción (sin Xdebug ni dependencias de desarrollo), un `docker-compose` de producción y una guía de instalación para quien se aloje el suyo, incluido cómo poner el proxy con HTTPS.
 
-## D49 · Verificación obligatoria del email, con el patrón de rpgutilities — `aceptada`
+## D49 · Verificación obligatoria del email con un código en la app — `aceptada`
 
-**Contexto:** con registro abierto (D42) cualquiera puede crearse una cuenta.
+**Contexto:** con registro abierto (D42) cualquiera puede crearse una cuenta. El registro se hace desde la app; el servidor no tiene páginas web de cuenta.
 
 | Opción | A favor | En contra |
 |---|---|---|
@@ -578,17 +585,18 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 | Sin bloquear | Más cómodo | Cualquiera se registra con un email ajeno |
 | No verificar | Lo más simple | Sin recuperación por email y más expuesto a abusos |
 
-**Decisión:** hasta confirmar el email, la cuenta no puede usarse. Se sigue **el patrón de rpgutilities**: formulario de registro con honeypot contra bots, correo con un enlace con token de confirmación, página de confirmación, y un `UserChecker` que no deja entrar a una cuenta sin confirmar.
+**Decisión:** hasta confirmar el email, la cuenta no puede usarse. Se confirma con un **código enviado por correo que se teclea en la app**, como los servicios que envían un código por SMS; así no hace falta una página de confirmación. Del patrón de rpgutilities se conserva el **`UserChecker`**, que no deja entrar a una cuenta sin confirmar (ni a una bloqueada, D51).
 
 **Consecuencias:**
-- El servidor tiene, además de la API JSON, unas pocas páginas web de cuenta (registro, confirmación, recuperación de contraseña) con Twig y formularios de Symfony, como rpgutilities.
+- El código caduca, admite pocos intentos y se puede pedir otro, con límite de peticiones (D42).
+- **Contra bots**, sin honeypot (en una app no sirve: los bots atacan la API directamente): límite de peticiones por IP (D42); las cuentas sin confirmar se borran solas al cabo de 24 horas; y límite de correos enviados por dirección, para que nadie use el servidor para inundar el correo de otro. Si hay abusos, se añadirá Cloudflare Turnstile.
 - **Cómo se envía el correo está por decidir** (quizá con Cloudflare). `symfony/mailer` permite cambiar de proveedor sin tocar el código, con `MAILER_DSN` en `.env.local`.
 
-## D50 · Recuperar la contraseña con el patrón de rpgutilities; revoca los demás dispositivos — `aceptada`
+## D50 · Recuperar la contraseña con un código en la app; revoca los demás dispositivos — `aceptada`
 
 **Contexto:** la contraseña solo hace falta para dar de alta un dispositivo (D38); los que ya tienen token siguen funcionando.
 
-**Decisión:** **el patrón de rpgutilities**: se pide la recuperación, llega un correo con un enlace con token que caduca, y en esa página se pone una contraseña nueva. Al cambiarla se revocan los tokens de todos los demás dispositivos de la cuenta, por si el motivo era que alguien la conocía.
+**Decisión:** el mismo mecanismo que D49: se pide la recuperación desde la app, llega un código por correo, se teclea en la app junto con la contraseña nueva. Al cambiarla se revocan los tokens de todos los demás dispositivos de la cuenta, por si el motivo era que alguien la conocía.
 
 **Consecuencias:** un dispositivo revocado pide iniciar sesión de nuevo. **No pierde nada**: sus cambios sin subir siguen en su base local y se envían en cuanto vuelve a entrar. La app lo tiene que explicar así (entrada nueva en `docs/design/errors.md`, hito 3.3). El envío del correo depende de lo que se decida en D49.
 
@@ -608,3 +616,9 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 **Qué se busca:** un panel web para el superadministrador (D51) con la gestión típica de EasyAdmin (cuentas, bibliotecas, dispositivos, invitaciones) y además KPI, como el panel de rpgutilities.
 
 **Por resolver** (hay que darle una vuelta): qué KPI interesan, en qué hito entra (hasta entonces, comandos de consola en `src/Command/`) y cómo se registran los accesos del superadministrador a bibliotecas ajenas.
+
+## D53 · ¿Una app web además de las nativas? — `abierta`
+
+**Planteamiento del mantenedor:** las aplicaciones suelen tener también una versión web, aunque existan apps para Windows, Linux y Android. ¿Se podría crear la web con el mismo código que la app de Tauri? El objetivo personal del proyecto es aprender a crear apps nativas, pero no hay que descuidar el futuro producto de código abierto con servidor.
+
+**Por debatir, al final y aparte**, cuando el resto de la Fase 3 esté discutido. Afecta a D46 (varias bibliotecas), al servidor (una web necesita el servidor, porque no tiene base de datos local) y a la administración (D52).

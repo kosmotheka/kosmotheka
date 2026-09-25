@@ -97,6 +97,10 @@ Discreto y siempre visible: «Sincronizado hace 2 min», «Sincronizando…», �
 
 Por pasos: 1) escanear o teclear el ISBN; 2) ver lo encontrado (portada, título, autor) y confirmar o corregir; 3) datos del ejemplar con valores recordados (último propietario, formato y ubicación). Lo demás, en «Más datos».
 
+### Varias bibliotecas (D46)
+
+Un usuario puede tener varias bibliotecas (por ejemplo, la de la familia y una con amigos). Se trabaja con **una a la vez**, elegida con un selector siempre accesible; catálogo, deseos y altas son de la activa. El buscador ofrece «en todas» y «¿Lo tengo?» mira siempre en todas, diciendo en cuál está cada resultado. Hace falta también «Mover a otra biblioteca» en la ficha.
+
 ## 7. Errores, avisos y ayuda (muy importante)
 
 **Patrón para todo mensaje de problema:**

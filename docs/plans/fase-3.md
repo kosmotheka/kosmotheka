@@ -1,6 +1,6 @@
 # Plan detallado de la Fase 3: servidor y familia
 
-> **Revisado el 25/09/2026** (D41–D52). Quedan abiertas **D46** (varias bibliotecas en la app) y **D52** (panel de administración), que hay que pensar antes de los hitos que dependen de ellas. Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
+> **Revisado el 25/09/2026** (D41–D52). Quedan abiertas **D52** (panel de administración) y **D53** (¿app web?). Desarrolla los hitos de la Fase 3 del [ROADMAP](../ROADMAP.md#fase-3--servidor-y-familia). Las decisiones están en [DECISIONS.md](../DECISIONS.md); D40 sigue en `propuesta`.
 
 ## Estado
 
@@ -51,7 +51,7 @@ docs/
   | `Device` | Usuario, nombre, hash del token, último acceso |
   | `Invitation` | Biblioteca, rol, hash del token, caducidad y uso único |
 
-- **Registro, verificación del email y recuperación de la contraseña (D49, D50):** el patrón de rpgutilities, con páginas web (Twig y formularios), enlace con token por correo y `UserChecker`. El proveedor de correo está por decidir (quizá Cloudflare).
+- **Registro, verificación del email y recuperación de la contraseña (D49, D50):** desde la app, con un código por correo que se teclea en ella; sin páginas web de cuenta. `UserChecker` como en rpgutilities. El proveedor de correo está por decidir (quizá Cloudflare).
 - **Autenticación (D38):** usuario y contraseña para dar de alta un dispositivo; a partir de ahí, el dispositivo usa su propio token (`Authorization: Bearer`). En la base de datos solo se guarda el hash del token, así que una copia de la base filtrada no sirve para entrar. Cada dispositivo se puede revocar por separado.
 - ✅ **Registro abierto** (D42): cualquiera crea su cuenta y sus bibliotecas; para unirse a una ajena, invitación. Con límite de peticiones por IP en el alta y el inicio de sesión.
 - **Invitación por QR:** contiene la URL del servidor y un token de un solo uso que caduca en 24 horas (D43). Al escanearlo, la app crea la cuenta (o inicia sesión) y se une a la biblioteca con el rol de la invitación.
@@ -71,7 +71,7 @@ docs/
 **Objetivo:** «Conectar esta biblioteca a un servidor», y desde entonces sincronizar solo con él (D39).
 
 - **Mismo protocolo que por wifi** (vector de versiones, `pull` y `push`; ver [sync.md](../architecture/sync.md)), pero sobre HTTPS con un certificado real (sin huella fijada) y con el token del dispositivo. La app reutiliza casi todo el código de sincronización.
-- **Primera conexión:** la app sube todo su historial de operaciones; el servidor las valida, comprueba los permisos y las aplica. Si el usuario se une a una biblioteca que ya existe en el servidor, primero la descarga. **Varias bibliotecas en la app (D46, abierta):** una entidad biblioteca en una sola base de datos, para estar a la vez en la de la familia y en otra con amigos; al unirse teniendo libros propios, la local se conserva y se pueden mover ítems. Hay que cerrar su arquitectura antes de este hito.
+- **Primera conexión:** la app sube todo su historial de operaciones; el servidor las valida, comprueba los permisos y las aplica. Si el usuario se une a una biblioteca que ya existe en el servidor, primero la descarga. **Varias bibliotecas en la app (D46):** entidad biblioteca en una sola base, con `library_id` en todas las tablas; cada biblioteca tiene sus propias fichas; una a la vez con selector; por wifi se elige qué bibliotecas se comparten con cada dispositivo; mover crea ids nuevos; copias completas y por biblioteca. Los datos actuales migran sin continuidad (hay que volver a emparejar).
 - **Permisos en la app (D40):** el servidor dice el rol; la app oculta lo que ese rol no puede hacer.
 - ✅ **Operaciones rechazadas (D47):** el servidor responde a ese dispositivo con el estado válido de las filas afectadas y la app lo aplica encima; si era un borrado, levanta la lápida local y restaura la fila. La operación queda marcada como rechazada y la app avisa del motivo. Antes de programarlo, casos de conformidad en `spec/`.
 - La sincronización por wifi se desactiva para una biblioteca conectada; los dispositivos emparejados se olvidan con un aviso.
@@ -90,10 +90,11 @@ docs/
 3. ~~Caducidad de las invitaciones~~ → 24 horas, un solo uso (D43).
 4. ~~Lector~~ → escribe solo sus deseos y lecturas (D44).
 5. ~~Editor~~ → borra solo lo que creó (D45).
-6. **Varias bibliotecas en la app** → entidad biblioteca en una sola base; arquitectura por cerrar (D46, abierta).
+6. ~~Varias bibliotecas en la app~~ → entidad biblioteca en una sola base (D46).
 7. ~~Operaciones rechazadas~~ → corrección del servidor solo en ese dispositivo (D47).
 8. ~~Producción~~ → nginx + PHP-FPM, como en desarrollo (D48). Datos del VPS: se piden al llegar al 3.4.
-9. ~~Verificar el email~~ → obligatorio, patrón de rpgutilities; proveedor de correo por decidir (D49).
-10. ~~Recuperar la contraseña~~ → patrón de rpgutilities; revoca los demás dispositivos (D50).
+9. ~~Verificar el email~~ → obligatorio, con un código en la app; proveedor de correo por decidir (D49).
+10. ~~Recuperar la contraseña~~ → código en la app; revoca los demás dispositivos (D50).
 11. ~~Administrador global~~ → `ROLE_SUPER_ADMIN`, con acceso a todo (D51).
 12. **Panel de administración** → EasyAdmin con la gestión típica y KPI; por diseñar (D52, abierta).
+13. **¿App web además de las nativas?** Debate aparte, al final (D53, abierta).
