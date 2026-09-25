@@ -13,7 +13,7 @@ Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, pel
 | 0 | Esqueleto | Compilar en Linux, Windows y Android, con CI | ✅ |
 | 1 | Catálogo en el escritorio | Catalogar libros en el escritorio | ✅ |
 | 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; sincronizar por wifi | ✅ en código, falta probar |
-| 3 | Validar lo construido | Saber que la base funciona en el móvil real, y el diseño en marcha | Siguiente |
+| 3 | Diseño del nuevo modelo | Saber cómo se ve y se usa todo lo decidido, antes de construirlo | En curso |
 | 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | |
 | 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | |
 | 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | |
@@ -23,18 +23,17 @@ Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, pel
 | 10 | Herramientas de estantería | Inventario, foto de balda, IA | |
 | 11 | Servicio | Organizaciones, panel, web para el personal | |
 
-**Transversal:** el diseño de la interfaz. El brief se rehace con el nuevo modelo antes de la Fase 4 y se trabaja con Claude Design fase a fase. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
+**Transversal:** el diseño de la interfaz. La Fase 3 fija la base, y después se trabaja con Claude Design fase a fase. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
 
 ---
 
-## Fase 3 — Validar lo construido
+## Fase 3 — Diseño del nuevo modelo
 
-Todo lo demás se apoya en esto, y hasta ahora solo lo han probado los tests.
+Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la app va a cambiar mucho en las fases 4 a 6 y probar ahora sería trabajo perdido. Se probará la app rehecha, en Android y en Windows (`testing/`).
 
-- Pruebas a mano de las fases 1 y 2, sobre todo en Android (`testing/hito-1.md`, `testing/fase-2.md`), y en Windows.
-- Corregir lo que salga.
-- **Rehacer el brief de diseño** con el nuevo modelo (bibliotecas, personas y roles, tipos de catálogo, series, estados «lo tengo / me falta / lo deseo», ayuda, patrones de Android) y subirlo a Claude Design.
-- **Hecho cuando:** la app funciona en el móvil real y hay un primer diseño del nuevo modelo.
+- **Rehacer el brief de diseño** con el nuevo modelo: bibliotecas, personas y roles, peticiones, tipos de catálogo, series, «lo tengo / me falta / lo deseo», cuenta y nube, ayuda, y los patrones de Android.
+- Trabajarlo con Claude Design: pantallas del móvil y del escritorio que guíen las fases 4 a 7.
+- **Hecho cuando:** hay un diseño aprobado de la navegación y de las pantallas principales del nuevo modelo.
 
 ## Fase 4 — Bibliotecas
 

@@ -1,148 +1,178 @@
 # Brief de diseño: Library (nombre provisional)
 
-> Para Claude Design (o cualquier diseñador). Describe la app tal como es hoy (fin de la Fase 2), lo que no funciona bien, sobre todo en el móvil, y lo que pedimos. Acompaña a este documento el [catálogo de errores](errors.md) y las capturas de `current/`.
+> Para Claude Design (o cualquier diseñador). Describe el producto tal como quedó decidido el 25/09/2026 (D54–D63 en [DECISIONS.md](../DECISIONS.md)) y pide el diseño de la navegación y las pantallas principales **antes de construirlas** (Fase 3 del [ROADMAP](../ROADMAP.md)). Lo acompañan el [catálogo de errores](errors.md) y una captura de la app actual en `current/`. El brief anterior está en el [histórico](../historico/brief-diseno-fases-1-2.md).
 
 ## 1. Qué es
 
-Un catálogo de la biblioteca de casa, compartido por la familia: qué libros tenemos, dónde están, de quién son y en qué formato. Funciona **sin conexión y sin cuentas**: los datos viven en cada dispositivo, y los dispositivos de la familia se sincronizan por la wifi de casa. Más adelante habrá juegos de mesa, cómics y películas, préstamos y un servidor opcional.
+Una app libre y gratuita para catalogar lo que tienes en casa (libros, cómics, juegos de mesa, películas y series, videojuegos y cualquier otra cosa) organizado en **bibliotecas** que compartes con quien quieres, con permisos.
 
-**Uso estrella:** en una librería, sin cobertura, escaneo el código de barras de un libro y sé al momento si ya lo tenemos, de quién es y en qué formato. Si no lo tenemos, lo apunto en la lista de deseos.
+Funciona **sin cuenta**: los datos viven en tus dispositivos y se comparten por la wifi de casa. **Con cuenta** (un email), todo se guarda también en la nube y se comparte a distancia.
+
+**Usos estrella:**
+- En una tienda, sin cobertura, escaneo algo y sé al momento si ya lo tengo, en qué biblioteca, de quién es y en qué formato.
+- Apunto lo que me falta de una saga o lo que quiero que me regalen, con una foto.
+- Mi hijo ve la biblioteca familiar, marca lo que ha leído y me pide añadir un libro; yo lo apruebo.
 
 ## 2. Quién la usa
 
 | Persona | Qué hace | Dónde |
 |---|---|---|
-| **El que organiza** (el autor: muchas novelas y libros de rol) | Carga inicial de cientos de libros, corrige datos, empareja dispositivos, hace copias | Escritorio, a ratos largos |
-| **La familia** (pareja, hijo) | Consulta si algo está, dónde está; apunta deseos | Sobre todo el móvil, en momentos cortos |
-| **Cualquiera, en una tienda** | «¿Lo tengo ya?» con una mano, a veces sin cobertura | Móvil, de pie, con prisa |
+| **El que organiza** (el autor: juegos de rol, novelas, juegos de mesa, películas) | Crea bibliotecas, carga cientos de cosas, comparte y da permisos, aprueba peticiones | Escritorio a ratos largos; móvil siempre encima |
+| **La familia** (pareja, hijo adolescente) | Consulta, marca lo leído, apunta deseos, pide añadir o quitar | Sobre todo el móvil, en momentos cortos |
+| **Amigos** | Reciben una biblioteca compartida; a veces la editan juntos | Móvil |
+| **Cualquiera, en una tienda** | «¿Lo tengo?» con una mano, a veces sin cobertura | Móvil, de pie, con prisa |
 
-No son técnicos: nada de jerga («operación», «HLC», «certificado», «vector»). Sí saben qué es un ISBN o un código de barras.
+No son técnicos: nada de jerga («operación», «sincronizar vectores», «firma», «certificado»). Sí saben qué es un código de barras o un ISBN.
 
 ## 3. Principios
 
-1. **Sencilla primero.** Cada pantalla, una tarea principal y obvia. Lo avanzado, escondido pero accesible.
-2. **Pensada para el móvil primero**, sin descuidar el escritorio, donde se hace la carga masiva.
-3. **Sin conexión no es un error.** La app funciona sin red; solo algunos extras (buscar datos online) la necesitan, y lo dice con calma.
-4. **Cada error explica qué pasó, por qué y qué hacer**, con un botón para hacerlo cuando sea posible. Ver la sección 7 y el [catálogo de errores](errors.md).
-5. **Nada se pierde por un toque.** Borrar pide confirmación; lo demás se puede editar después.
-6. **Bilingüe** (español e inglés): los textos en español son ~30 % más largos; el diseño debe aguantarlo.
-7. **Accesible:** contraste AA, objetivos táctiles de 44 px como mínimo, todo usable con teclado en el escritorio, lectores de pantalla (etiquetas en botones de icono).
-8. **Claro y oscuro**, siguiendo el sistema.
+1. **Sencilla primero.** Cada pantalla, una tarea principal y obvia. Lo avanzado, escondido pero accesible. Nada que suene a corporativo.
+2. **Una app de Android de verdad, no una web metida en una ventana.** Seguir los patrones de la plataforma todo lo posible: barra de navegación inferior, menú lateral (*navigation drawer*), barra superior, botón atrás del sistema, hojas inferiores, botón flotante, gestos y zonas seguras. En escritorio, los patrones de una app de escritorio.
+3. **Móvil primero**, sin descuidar el escritorio, donde se hace la carga masiva.
+4. **Sin conexión no es un error.** Todo funciona sin red; solo algunos extras (buscar datos online, la nube) la necesitan, y lo dicen con calma.
+5. **Sin cuenta es de primera**, no una versión recortada. La cuenta se ofrece, nunca se impone.
+6. **Cada problema explica qué pasó, por qué y qué hacer**, con un botón para hacerlo (sección 9 y [catálogo de errores](errors.md)).
+7. **Nada se pierde por un toque.** Borrar pide confirmación; lo que un rol no puede hacer se **pide**, no se prohíbe en seco.
+8. **Bilingüe** (español e inglés): los textos en español son ~30 % más largos.
+9. **Accesible:** contraste AA, objetivos táctiles de 44 px como mínimo, teclado en escritorio, etiquetas en botones de icono.
+10. **Claro y oscuro**, siguiendo el sistema.
 
 ## 4. Plataformas y restricciones técnicas
 
-- **App de escritorio (Linux, Windows) y Android**, construida con Tauri: la interfaz es web (React + TypeScript) dentro del navegador del sistema. No es una web pública.
-- **Sistema de componentes:** [shadcn/ui](https://ui.shadcn.com) (estilo `radix-nova`, color base neutro) sobre Tailwind CSS 4, iconos [Lucide](https://lucide.dev), tipografía **Geist** (empaquetada, sin fuentes externas). Los diseños deben poder construirse con estas piezas; si hacen falta componentes nuevos, que sigan su estética.
-- **Tamaños:** móvil en vertical de 360 a 430 px de ancho (con zonas seguras de Android arriba y abajo); escritorio desde 1024 px. Una tableta puede usar la versión de escritorio.
-- **Imágenes:** portadas de libro (proporción ~2:3), a veces ausentes: hace falta un marcador de posición digno.
-- **Cámara:** el escáner abre una vista nativa a pantalla completa; la app solo decide qué pasa antes y después.
-- **Idioma:** todos los textos van en ficheros de traducción; no puede haber texto dentro de imágenes.
+- **Android, Linux y Windows**, con Tauri: la interfaz es web (React + TypeScript) dentro del navegador del sistema. **iOS no**, y no es una web pública.
+- **Componentes:** [shadcn/ui](https://ui.shadcn.com) (estilo `radix-nova`, base neutra) sobre Tailwind CSS 4, iconos [Lucide](https://lucide.dev), tipografía **Geist** empaquetada. Los diseños deben poder construirse con estas piezas; lo que falte (barra inferior, menú lateral, hojas), con su misma estética.
+- **Tamaños:** móvil vertical de 360 a 430 px de ancho, con zonas seguras de Android; escritorio desde 1024 px.
+- **Imágenes:** portadas y cajas de proporciones distintas (libro ~2:3, caja de juego ~1:1, carátula de película ~2:3, videojuego ~3:4), a veces ausentes: hace falta un marcador digno por tipo.
+- **Cámara:** el escáner abre una vista nativa a pantalla completa; la app decide qué pasa antes y después.
+- **Textos:** todos en ficheros de traducción; ningún texto dentro de imágenes.
 
-## 5. La app hoy y sus problemas
+## 5. El modelo, en palabras del usuario
 
-Hoy todo vive en **una sola pantalla** (catálogo) con una cabecera llena de botones, y el resto son **diálogos modales**. En el escritorio funciona bien; en el móvil cojea.
-
-### Inventario actual
-
-| Pantalla o diálogo | Qué hace |
+| Concepto | Qué es para el usuario |
 |---|---|
-| **Catálogo** (principal) | Pestañas «Catálogo / Deseos». Buscador de texto (título, autor, editorial, ISBN; sin acentos), filtros por formato, propietario y ubicación. En escritorio, tabla (portada, título, autores, año, formatos, propietarios, ejemplares); en móvil, tarjetas |
-| **Cabecera** | Título y contador de libros; idioma EN/ES; Dispositivos; Ajustes; «¿Lo tengo?»; «Alta rápida»; «Añadir libro» |
-| **Añadir libro** | ISBN arriba con «Buscar» (rellena datos y portada desde Google Books y Open Library); título, subtítulo, autores (varios, con sugerencias), editorial (con sugerencias), año, idioma; sección «Tu ejemplar»: propietario, formato, unidades, fecha de compra, ubicación |
-| **Ficha del libro** | Pestañas: Ficha (portada, datos, editar, enlaces a Google Books y Open Library, borrar libro), Ejemplares (lista, añadir, editar y borrar ejemplar), Historial (quién cambió qué y cuándo) |
-| **Alta rápida** | Datos de ejemplar para la sesión (propietario, formato, ubicación) y un campo de ISBN que encadena: escaneas o tecleas, Intro, siguiente. Lista de resultados: añadido, ya estaba (con «añadir otro ejemplar igualmente»), no encontrado (con campo para el título), error |
-| **¿Lo tengo ya?** | Botón de escanear (solo móvil) y campo de ISBN. Resultado: «Sí, lo tenéis» (portada, formatos, propietarios) o «No está en vuestro catálogo» (con datos online si hay red), «Añadir a deseos», «Lo he comprado: añadir al catálogo» |
-| **Deseos** | Tarjetas con portada, título, autor, ISBN y nota; «Comprado: añadir al catálogo»; quitar |
-| **Dispositivos** | Nombre de este dispositivo; «Mostrar código de emparejamiento» (QR y texto copiable, vale 10 minutos y una vez); «Escanear el código del otro dispositivo» (móvil); pegar un código; lista de emparejados con «Sincronizar ahora», última sincronización, olvidar |
-| **Ajustes** | Clave de API de Google Books (opcional); sección «Tus datos»: guardar copia de seguridad (.zip), restaurar copia, exportar e importar CSV |
+| **Biblioteca** | Una caja que compartes: «Rol», «Familia», «Videojuegos de Hugo». Un dispositivo puede tener varias; se trabaja con **una a la vez** |
+| **Obra** | Lo que catalogas: un libro, un cómic, un juego de mesa, una película o serie, un videojuego, u **«Otro»** (sellos, monedas, Playmobil) |
+| **Ejemplar** | Lo que tienes de verdad: en qué formato (tapa dura, PDF, Blu-ray, Steam…), de quién es y dónde está. Lo digital no tiene estantería («Steam», «Kindle») |
+| **Serie** | Agrupa obras: una saga con orden (Dune 1–6) o una línea sin orden (todas las versiones de Catán). Una obra puede estar en varias |
+| **Estado** | **Lo tengo** (tiene ejemplares; se ve por defecto) · **Me falta** (está apuntada, sin ejemplares) · **Lo deseo** (una marca para que te la regalen) |
+| **Persona** | Quien usa una biblioteca: tú, tu pareja, Hugo. Tiene sus dispositivos, su rol, sus lecturas y sus deseos |
+| **Rol** | **Administrador** (todo, incluido dar permisos y aprobar), **editor** (crea y edita; borra solo lo suyo), **lector** (ve, marca lo suyo y pide) |
+| **Petición** | Lo que un rol no puede hacer se pide («añade este libro», «quita este»), y un administrador lo aprueba o lo rechaza |
+| **Compartir** | Llevar una biblioteca a otro dispositivo, diciendo de quién es y con qué rol. Un permiso aparte: quien no lo tiene puede **enseñar** su pantalla, no compartir |
+| **Nube** | Opcional: con un email, tus bibliotecas se guardan fuera y se comparten a distancia |
 
-La sincronización ocurre sola al abrir la app y al volver a ella; hoy **no se ve** en ningún sitio si está sincronizando, si falló o cuándo fue la última vez (salvo dentro de Dispositivos).
+## 6. Navegación (propuesta para validar o mejorar)
 
-### Problemas detectados
+### Móvil
 
-**En el móvil:**
-- La cabecera acumula siete controles: no caben con sentido, y lo más importante en el móvil («¿Lo tengo?») no destaca.
-- Los diálogos modales largos (Añadir libro, Ficha) son incómodos en pantalla pequeña; deberían ser pantallas completas u hojas (*sheets*) con botón atrás.
-- No hay navegación clara entre Catálogo, Deseos, Dispositivos y Ajustes.
-- El formulario de alta es largo para hacerlo con una mano.
-- Escanear está escondido dentro de un diálogo.
+**Barra superior:** el nombre de la biblioteca activa es el **selector**: al tocarlo se abre una hoja con tus bibliotecas y «Nueva biblioteca». A la izquierda, el botón del menú lateral; a la derecha, buscar.
 
-**En general:**
-- Los errores dicen qué pasó, pero casi nunca **qué hacer** (ejemplo: si el móvil no empareja, el usuario no sabe qué revisar). Algunos muestran texto técnico en inglés.
-- No hay indicador de sincronización ni de «sin conexión».
-- Idioma y Ajustes compiten en la cabecera con acciones principales.
-- Los estados vacíos existen, pero son pobres (texto y poco más).
-- Ajustes mezcla una clave técnica con las copias de seguridad.
+**Barra inferior, cuatro destinos:**
 
-## 6. Qué proponemos (para que el diseño lo valide o lo mejore)
-
-### Navegación
-
-**Móvil:** barra inferior con cuatro destinos, y la acción de escanear como protagonista:
-
-| Catálogo | **¿Lo tengo?** (botón central destacado, abre la cámara directamente) | Deseos | Más |
+| Catálogo | **Escanear / ¿Lo tengo?** (acción central destacada) | Me falta | Peticiones |
 |---|---|---|---|
 
-- **Más:** Añadir libro, Alta rápida, Dispositivos, Tus datos (copias y CSV), Ajustes (idioma, clave de Google, acerca de).
-- Formularios y fichas como **pantallas completas** con «atrás», no como modales.
-- «Añadir libro» como botón flotante en Catálogo.
+- **Catálogo:** lo que tienes en la biblioteca activa, con filtros por tipo, formato, persona, ubicación y serie. Botón flotante «Añadir».
+- **Escanear:** abre la cámara directamente; el resultado busca **en todas** tus bibliotecas.
+- **Me falta:** lo apuntado sin ejemplares, con la marca de deseo; un filtro «solo deseos» es la lista de regalos.
+- **Peticiones:** para el lector, las suyas y su estado; para el administrador, la bandeja pendiente, con un contador en la pestaña. (Validar si merece pestaña propia o va mejor en el menú lateral con un aviso.)
 
-**Escritorio:** barra lateral (Catálogo, Deseos, Dispositivos, Tus datos, Ajustes) o cabecera ordenada con acciones principales a la derecha («Añadir libro», «Alta rápida», «¿Lo tengo?»). Las fichas pueden seguir como paneles o diálogos anchos.
+**Menú lateral:** bibliotecas; compartir y dispositivos; personas y permisos; series; copias de seguridad; cuenta y nube; ajustes (idioma, proveedores de datos, clave de Google Books); **ayuda**; acerca de.
 
-### Indicador de sincronización
+**Indicador de sincronización**, discreto y siempre visible: «Al día», «Sincronizando…», «Sin conexión con la nube», con acceso a la ayuda.
 
-Discreto y siempre visible: «Sincronizado hace 2 min», «Sincronizando…», «Sin conexión con el portátil» (con acceso a la ayuda). Tocándolo se va a Dispositivos.
+### Escritorio
 
-### Alta de libro en el móvil
+Barra lateral con las mismas secciones y el selector de biblioteca arriba; acciones principales («Añadir», «Alta rápida», «Escanear» si hay cámara) en la barra superior. Las fichas pueden ser paneles o diálogos anchos.
 
-Por pasos: 1) escanear o teclear el ISBN; 2) ver lo encontrado (portada, título, autor) y confirmar o corregir; 3) datos del ejemplar con valores recordados (último propietario, formato y ubicación). Lo demás, en «Más datos».
+## 7. Flujos principales
 
-### Varias bibliotecas (D46)
+### Añadir algo
 
-Un usuario puede tener varias bibliotecas (por ejemplo, la de la familia y una con amigos). Se trabaja con **una a la vez**, elegida con un selector siempre accesible; catálogo, deseos y altas son de la activa. El buscador ofrece «en todas» y «¿Lo tengo?» mira siempre en todas, diciendo en cuál está cada resultado. Hace falta también «Mover a otra biblioteca» en la ficha.
+1. **Empieza por buscar o escanear**, no por un campo concreto: un campo de búsqueda (título, autor, código) y un botón de cámara.
+2. Si se sabe el **tipo** (el código de un libro lo dice), se elige solo; si no, el usuario lo elige (libro, cómic, juego de mesa, película o serie, videojuego, otro).
+3. **Resultados de los proveedores** con portada, título y datos clave; al elegir uno se rellena la ficha.
+4. **Siempre hay «Añadir a mano»**, visible y sin culpa, aunque no haya red ni resultados.
+5. **Datos del ejemplar** con valores recordados (último formato, persona y ubicación), o «No lo tengo: apuntar como me falta» (con la opción de marcarlo como deseo).
+6. Si la obra ya existe en esa biblioteca, se ofrece añadir un ejemplar en vez de duplicarla.
 
-### Que parezca una app de Android, no un pegote
+El formulario es **el mismo para todos los tipos**: una parte común (título, portada, año, series, notas) y una parte específica del tipo (ISBN y autores en libros; plataforma en videojuegos; jugadores en juegos de mesa…). «Otro» es solo la parte común.
 
-La app **no puede parecer una web metida en una ventana**. En Android tiene que seguir los patrones de la plataforma todo lo posible: barra de navegación inferior, menú lateral (*navigation drawer*) para lo secundario, botón atrás del sistema, hojas inferiores, botón flotante, gestos y zonas seguras. En escritorio, los patrones de una app de escritorio.
+**Proveedores:** sin cuenta solo hay algunos (libros, y juegos de mesa por código). Para películas, videojuegos o cómics sin cuenta, la búsqueda lo dice con calma («Para buscar películas necesitas la nube; puedes añadirla a mano») y enlaza a la ayuda.
 
-### Sección de ayuda
+### ¿Lo tengo?
 
-Una sección de ayuda propia, accesible desde el menú, que explique entre otras cosas qué se puede hacer sin cuenta y qué añade la nube. Por ejemplo, por qué algunos buscadores de datos (películas, videojuegos, juegos de mesa) **solo están disponibles con la nube**: necesitan una clave que no puede ir dentro de una app libre. Donde falte un buscador, la app lo avisa con calma y enlaza a esa ayuda.
+Escanear o teclear. Resultado: **«Lo tienes»** (en qué bibliotecas, en qué formato, de quién) · **«Te falta»** (apuntado, quizá como deseo) · **«No lo tienes»** (con datos online si hay red) con «Apuntar como me falta», «Marcar como deseo» o «Lo he comprado: añadir».
 
-## 7. Errores, avisos y ayuda (muy importante)
+### Series
+
+Vista de una serie con sus obras en orden y **los huecos** (lo que falta) bien visibles; añadir un hueco desde la propia serie. En la ficha de una obra, sus series. Relación «necesita» (una expansión necesita el básico) visible en la ficha.
+
+### Compartir una biblioteca
+
+Desde la biblioteca: «Compartir» → mostrar un QR (o escanear el del otro) → **decir de quién es ese dispositivo** (una persona existente o nueva) y **con qué rol**. Fuera de casa, la ayuda explica el truco del punto de acceso del móvil. Con cuenta, compartir por invitación a distancia.
+
+### Personas y permisos
+
+Lista de personas de la biblioteca con su rol y sus dispositivos; cambiar rol, dar o quitar «puede compartir», revocar un dispositivo perdido. Aviso cuando solo hay un administrador: «Si pierdes este móvil, nadie podrá gestionar la biblioteca. ¿Quieres que otra persona también administre?».
+
+### Peticiones
+
+El lector ve «Pedir que se añada» y «Pedir que se quite» donde otros ven «Añadir» y «Borrar». Las peticiones muestran quién, qué y cuándo; el administrador acepta o rechaza con un toque, y el lector ve el resultado.
+
+### Cuenta y nube
+
+Un botón «Guardar en la nube» (en el menú y en momentos oportunos, nunca insistente): email → código recibido por correo → listo, se sube lo que hay. Estado de la nube y qué bibliotecas están en ella.
+
+### Copias de seguridad
+
+**Muy fácil y a la vista:** «Guardar copia» de todo o de una biblioteca, al sitio que elija el usuario (Google Drive…). Restaurar, exportar e importar CSV.
+
+## 8. Ayuda
+
+Una sección propia en el menú, con textos cortos:
+- Qué se puede hacer sin cuenta y qué añade la nube.
+- Por qué algunos buscadores solo funcionan con la nube.
+- Cómo compartir en casa, fuera de casa (punto de acceso) y a distancia.
+- Roles y peticiones.
+- Qué hacer si pierdes el móvil.
+- «El móvil no se empareja» ([catálogo de errores](errors.md)).
+
+## 9. Errores, avisos y ayuda (muy importante)
 
 **Patrón para todo mensaje de problema:**
 1. **Qué ha pasado**, en una frase sin jerga.
 2. **Por qué suele pasar**, si hay una causa probable.
 3. **Qué hacer**: pasos concretos, numerados si son varios.
-4. **Un botón** para la acción más probable (reintentar, abrir ajustes del sistema, mostrar un código nuevo…).
+4. **Un botón** para la acción más probable.
 5. Opcional y plegado: **detalles técnicos** para copiar si hay que pedir ayuda.
 
-**Niveles visuales:**
-- **Información** (neutral): «Sin conexión: los datos online no están disponibles. Todo lo demás funciona.»
-- **Aviso** (ámbar): algo no salió del todo, pero no se ha perdido nada.
-- **Error** (rojo): la acción no se hizo; hace falta hacer algo.
-- **Éxito** (verde, breve): confirmación de lo hecho.
+**Niveles:** información (neutral) · aviso (ámbar, no se perdió nada) · error (rojo, la acción no se hizo) · éxito (verde, breve).
 
-**Dónde:** los errores de un campo, debajo del campo; los de una acción, junto a la acción o como panel en la propia pantalla; los avisos no bloqueantes, como notificación temporal (*toast*). Los problemas persistentes (emparejamiento, sincronización) tienen una **pantalla de ayuda** con comprobaciones paso a paso.
+**Dónde:** los de un campo, debajo del campo; los de una acción, junto a ella; los no bloqueantes, como *toast*; los persistentes (compartir, sincronizar), con una pantalla de ayuda paso a paso.
 
-El texto completo de cada error, con causas y pasos, está en el [catálogo de errores](errors.md), incluida la guía **«El móvil no se empareja»**.
+Casos nuevos a contemplar: un cambio tuyo que quedó como petición porque perdiste el permiso sin conexión; un dispositivo que dejó de estar autorizado; un proveedor que necesita la nube.
 
-## 8. Qué pedimos
+## 10. Qué pedimos
 
-1. **Pantallas en móvil (390 × 844) y escritorio (1280 × 800), en claro y oscuro:**
-   - Catálogo: con libros, vacío, buscando sin resultados.
-   - Ficha del libro: vista, editando, ejemplares, historial, confirmación de borrado.
-   - Añadir libro: con búsqueda por ISBN (encontrado, no encontrado, sin conexión).
-   - Alta rápida: sesión en marcha con los distintos resultados.
-   - ¿Lo tengo ya?: lo tienes, no lo tienes (con y sin conexión), ya en deseos, permiso de cámara denegado.
-   - Deseos: con elementos y vacía.
-   - Dispositivos: sin emparejar, mostrando código y QR, emparejado, error de emparejamiento con ayuda.
-   - Tus datos y Ajustes.
-2. **Componentes nuevos o revisados:** navegación (barra inferior y lateral), indicador de sincronización, panel de error con pasos, *toasts*, estados vacíos con ilustración o icono, marcador de portada, hoja o pantalla completa para formularios en móvil.
-3. **Tokens:** colores (incluidos los de éxito, aviso y error en claro y oscuro), radios, espaciado y tipografía, compatibles con las variables CSS de shadcn/ui.
-4. **Formato de entrega:** HTML y CSS con clases de Tailwind o componentes de shadcn/ui, o especificaciones claras que se puedan trasladar a ellos.
+1. **Navegación** en móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro: barra superior con selector de biblioteca, barra inferior, menú lateral, indicador de sincronización.
+2. **Pantallas en móvil**, y en escritorio las marcadas con (E):
+   - Catálogo (E): con elementos de varios tipos, vacío, filtrado sin resultados.
+   - Selector de bibliotecas y «Nueva biblioteca».
+   - Añadir: buscar, resultados, sin resultados, sin red, proveedor que necesita la nube, a mano, elegir tipo (E).
+   - Ficha de una obra de cada tipo (E): vista, editando, ejemplares, series, historial.
+   - ¿Lo tengo?: lo tienes (en varias bibliotecas), te falta, no lo tienes (con y sin red), permiso de cámara denegado.
+   - Me falta y deseos.
+   - Serie con huecos (E).
+   - Compartir: mostrar QR, escanear, asignar persona y rol, error de emparejamiento con ayuda.
+   - Personas y permisos, con el aviso de administrador único.
+   - Peticiones: del lector y bandeja del administrador.
+   - Cuenta y nube: registro con código, estado.
+   - Copias de seguridad; Ajustes; Ayuda.
+3. **Componentes:** barra inferior, menú lateral, selector de biblioteca en hoja, indicador de sincronización, tarjeta de obra por tipo, marcador de portada por tipo, insignias de estado (lo tengo / me falta / deseo), panel de error con pasos, *toasts*, estados vacíos, hoja o pantalla completa para formularios.
+4. **Tokens:** colores (con éxito, aviso y error en claro y oscuro), radios, espaciado y tipografía, compatibles con las variables CSS de shadcn/ui.
+5. **Formato de entrega:** HTML y CSS con Tailwind o componentes de shadcn/ui, o especificaciones claras que se puedan trasladar a ellos.
 
-## 9. Fuera de alcance (por ahora)
+## 11. Fuera de alcance (por ahora)
 
-Este brief describe la app de las fases 1 y 2 y se rehará con el nuevo modelo en la Fase 3 del [ROADMAP](../ROADMAP.md): bibliotecas, personas y roles, tipos de catálogo, series, cuenta y nube, préstamos. El diseño no debe cerrar la puerta a que existan: por ejemplo, la navegación debe admitir más secciones.
+Préstamos, reserva de regalos y estadísticas (Fase 9); inventario y foto de balda (Fase 10); organizaciones, panel de administración y web para el personal (Fase 11). La navegación no debe cerrarles la puerta: tiene que admitir más secciones.

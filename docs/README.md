@@ -25,6 +25,7 @@ No se actualizan: explican de dónde viene lo que hay ahora.
 | [VISION.md](VISION.md) | Visión original (ideación del 24/09/2026) |
 | [historico/revision-alcance.md](historico/revision-alcance.md) | Debate del 25/09/2026 que replanteó el alcance: bibliotecas, personas y roles, nube, catálogos |
 | [historico/plan-servidor-2026-09.md](historico/plan-servidor-2026-09.md) | Plan del servidor anterior a esa revisión |
+| [historico/brief-diseno-fases-1-2.md](historico/brief-diseno-fases-1-2.md) | Brief de diseño de la app de las fases 1 y 2 |
 
 ## Convenciones de la documentación
 

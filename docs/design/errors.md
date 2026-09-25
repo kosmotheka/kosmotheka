@@ -1,6 +1,6 @@
 # Catálogo de errores, avisos y ayuda
 
-> Cada problema que la app puede mostrar: qué ve el usuario, por qué pasa y qué debe hacer. Sirve al diseño (qué mensajes y ayudas hay que dibujar) y a la implementación (la columna **Código** es el identificador que envía la app). Patrón y niveles, en el [brief](brief.md#7-errores-avisos-y-ayuda-muy-importante).
+> Cada problema que la app puede mostrar: qué ve el usuario, por qué pasa y qué debe hacer. Sirve al diseño (qué mensajes y ayudas hay que dibujar) y a la implementación (la columna **Código** es el identificador que envía la app). Patrón y niveles, en el [brief](brief.md#9-errores-avisos-y-ayuda-muy-importante).
 >
 > Niveles: **info** (neutral) · **aviso** (ámbar, no se perdió nada) · **error** (rojo, la acción no se hizo).
 
