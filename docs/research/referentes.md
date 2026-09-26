@@ -100,3 +100,14 @@ Encaja con D57 (dos formas de usar la app: sin cuenta y con cuenta).
 - El ejemplo del compañero de trabajo funciona sin servidor si solo lo apunta quien presta: el compañero no necesita la app. El servidor hace falta cuando **los dos** ven el mismo préstamo, o cuando el otro puede pedirlo.
 - El enlace «lo tengo disponible» y el catálogo público de la sección 2 son la misma idea a dos escalas: un libro o toda una biblioteca.
 - Compartir una biblioteca es compartirla entera (D54). Para enseñarle a un amigo solo parte de lo que tienes hace falta otra pieza: enlaces, una biblioteca «para prestar» o algo que aún no hemos pensado.
+
+### 3.2 Lo que cada persona apunta sobre lo que lee (26/09/2026)
+
+- **Estados absolutos, sin progreso.** Nada de «voy por la página 120»: apuntarlo en cada capítulo es un peñazo, y un ebook ya lo cuenta solo. Sería un error.
+- **La valoración sí** («este me ha encantado»).
+
+### 3.3 Para el futuro: la dimensión social
+
+Con servidor y enlaces aparece una red social: comentarios, préstamos entre desconocidos, compartir opiniones en redes. Es pensar a lo grande, en una app que triunfa, y abordarlo ahora sería precipitarse (ya nos ha pasado). **No se aborda ahora, pero no hay que perderlo de vista.**
+
+Mientras tanto, el criterio para seguir el análisis: priorizar lo que obligue a **replantear algo ya hecho o en curso** y revisar el ROADMAP con eso.
