@@ -71,6 +71,25 @@ Otras apps con nombres parecidos: estante.app es de Estante Digital (Brasil); ha
 
 Límites: la búsqueda «Contiene» solo encuentra el texto literal, no marcas que se parezcan por sonido o forma. TMview no es un registro oficial.
 
+### Tercera ronda (26/09/2026): colección general y global
+
+Enfoque elegido: evocar **colección en general** (juegos, música, lo digital), sin muebles ni libros, y que funcione en inglés y en español. Dominios por RDAP (Verisign para .com, Google para .app); marcas en TMview con el script, fijándose solo en las marcas iguales al nombre.
+
+**Palabras reales: todas cogidas.** Vitrina, vitrine, arca, kist, omnia, collecta, arkive, musea y curiosa tienen .com y .app registrados y entre 13 y 54 marcas en las clases 9, 41 o 42.
+
+**Inventadas: el .com está cogido en todas** (29 probadas, de cinco a nueve letras). Un .com corto y pronunciable es prácticamente imposible; habrá que ir a .app o a una variante (`getX.com`, `Xapp.com`).
+
+| Nombre | Idea | .app | Marcas en TMview | GitHub | Valoración |
+|---|---|---|---|---|---|
+| **Musary** | *Museum* + «-ary» (como *library*, *aviary*): un museo personal | Libre | Ninguna igual ni parecida | Usuario vacío (0 repos) | El más limpio. El .com es de un holandés desde 2009, sin web |
+| **Colleo** | Evoca *collect* | Libre | COLLEO vigente solo en inmobiliaria (36, Alemania); las de la 42 están vencidas | Usuario vacío (0 repos) | Posible. El .com está a la venta |
+| Omnika | *Omni*: todo | Libre | «OMNIKA 5.7» registrada en Portugal en 41 y 42 | — | Dudoso |
+| Arkeep | El arca (uno de cada) + *keep* | Libre | ARKEEP registrada en la UE en la clase 9 | — | Descartado |
+
+**Descartados por cómo suenan** (con .app libre): Hoardia (*hoarder*, acumulador compulsivo), Cosario (suena a «corsario»), Arkadu, Colectio.
+
+**.app cogido:** kollo, arkeo, vitrino, omnio, tenko, kisto, curato, trovi, shelvo, kepto, arkio, amasso, pilo, stashi, havly, gathero, ownbox, vitrin, collectia, omnikeep, kollecta, arkivo.
+
 ### Descartados
 
 - **Marcas de software de bibliotecas:** Ex Libris y Aleph.
