@@ -31,7 +31,8 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 - **Cómo llega la clave pública a los demás:** una entidad nueva de la biblioteca, `device`, con su clave pública y su nombre. El dispositivo la crea él mismo la primera vez que escribe en una biblioteca, en la misma operación, firmada con esa clave: así demuestra que la tiene. Como viaja con la biblioteca, se puede comprobar una operación que llega a través de otro dispositivo.
 - **La primera clave de un dispositivo es la que vale.** Una operación firmada con otra clave para el mismo dispositivo se rechaza.
 - **Al recibir:** firma que no cuadra, o de un dispositivo sin clave conocida → la operación se rechaza y se cuenta, como las de otra versión. El orden por HLC garantiza que la clave de un dispositivo llega antes que sus operaciones firmadas.
-- **La clave privada** vive en la carpeta de datos (`signing-key`, solo legible por el usuario), como el certificado de la red local. No va en las copias (D58).
+- **La clave privada** vive en la base de datos del dispositivo (`local_state`, `signing_seed`), no en un fichero aparte como el certificado de la red local: así la tiene a mano cada escritura sin más plumbing, y viaja con la base de datos cuando se copia la carpeta de datos (D70). No va en las copias de seguridad (D58). *Cambiado al construirlo.*
+- **La clave pública de un dispositivo no cambia nunca:** una operación que intente poner otra en su fila `device` se rechaza. *Añadido al construirlo.*
 - **Operaciones sin firma** (las de antes de esta fase): se siguen aceptando mientras la biblioteca no tenga roles; ver la pregunta 1.
 
 ### 5.3 y 5.4 Roles y comprobación
@@ -57,7 +58,7 @@ Preguntas para el maintainer, en orden de urgencia:
 ## Estado
 
 - [x] Plan escrito (27/09/2026).
-- [ ] 5.1 Firmas.
+- [x] 5.1 Firmas (27/09/2026): especificación con casos de firma compartidos (`spec/conformance/signatures.json`), entidad `device`, regla `other_device`, firma y comprobación en Rust, comprobación en PHP con libsodium, migración 11. La app firma todo lo que escribe y rechaza lo que no cuadra; tests con tres dispositivos, manipulación en el camino, suplantación y cambio de clave.
 - [ ] 5.2 Personas y dispositivos.
 - [ ] 5.3 Roles.
 - [ ] 5.4 Comprobar lo que llega.

@@ -3,16 +3,21 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use kosmotheka_domain::{Action, Change, DeviceKey, Entity, Hlc, HlcClock, Operation};
+use rand::RngExt;
 use rusqlite::types::Value as SqlValue;
 use rusqlite::{Connection, OptionalExtension, Transaction, params, params_from_iter};
-use serde_json::Value;
+use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::error::{Error, Result};
 use crate::search;
 
 const DEVICE_ID_KEY: &str = "device_id";
+/// 32 random bytes, base64url: the seed of this device's signing key (D56).
+const SIGNING_SEED_KEY: &str = "signing_seed";
 
 /// The library that holds what existed before libraries did. The same id on every
 /// device, so devices that already synced merge without duplicates (D46).
@@ -62,8 +67,23 @@ fn record_operation(
 ) -> Result<Operation> {
     let device_id = device_id(tx)?;
     let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
+    let key = signing_key(tx)?;
 
-    let operation = Operation {
+    // The first time this device writes to a library, it registers the key it signs
+    // with, in the same operation, so the others can check it (D56).
+    let mut changes = changes;
+    if !is_registered(tx, library, &device_id)? {
+        changes.insert(
+            0,
+            Change::create(
+                Entity::Device,
+                &device_id,
+                json!({ "public_key": key.public_key(), "name": crate::lan::device_name(tx)? }),
+            ),
+        );
+    }
+
+    let mut operation = Operation {
         id: new_id(),
         library: library.to_owned(),
         hlc,
@@ -72,6 +92,7 @@ fn record_operation(
         signature: None,
     };
     operation.validate()?;
+    operation.signature = Some(key.sign(&operation));
     let hlc_text = operation.hlc.to_string();
 
     // Search text can change for rows that vanish (known before) or appear (known after).
@@ -80,7 +101,8 @@ fn record_operation(
         affected.extend(search::affected_editions(tx, library, change)?);
     }
     for change in &operation.changes {
-        if apply_changes {
+        // The device row is new even in a baseline, whose other rows already exist.
+        if apply_changes || change.entity == Entity::Device {
             apply(tx, library, change)?;
         }
         write_versions(tx, library, change, &hlc_text)?;
@@ -92,6 +114,32 @@ fn record_operation(
     log_operation(tx, &operation, schema_version(tx)?)?;
     write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
     Ok(operation)
+}
+
+/// This device's signing key (D56), made the first time it is needed. It stays in
+/// this database and never goes into a backup (D58).
+pub fn signing_key(conn: &Connection) -> Result<DeviceKey> {
+    let seed: [u8; 32] = match read_state(conn, SIGNING_SEED_KEY)? {
+        Some(text) => URL_SAFE_NO_PAD
+            .decode(text)
+            .ok()
+            .and_then(|bytes| bytes.try_into().ok())
+            .ok_or(Error::CorruptState(SIGNING_SEED_KEY))?,
+        None => {
+            let seed: [u8; 32] = rand::rng().random();
+            write_state(conn, SIGNING_SEED_KEY, Some(&URL_SAFE_NO_PAD.encode(seed)))?;
+            seed
+        }
+    };
+    Ok(DeviceKey::from_seed(seed))
+}
+
+fn is_registered(conn: &Connection, library: &str, device: &str) -> Result<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM devices WHERE library_id = ?1 AND id = ?2)",
+        [library, device],
+        |row| row.get(0),
+    )?)
 }
 
 pub fn device_id(conn: &Connection) -> Result<String> {
@@ -126,8 +174,8 @@ pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
 /// Appends to the log. The author device is the one inside the HLC.
 pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i64) -> Result<()> {
     conn.execute(
-        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1)",
+        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable, signature)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8)",
         params![
             operation.id,
             operation.library,
@@ -136,6 +184,7 @@ pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i
             operation.intent,
             serde_json::to_string(&operation.changes)?,
             schema_version,
+            operation.signature,
         ],
     )?;
     Ok(())
@@ -270,7 +319,7 @@ pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 10] = [
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 11] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::Edition,
@@ -281,6 +330,7 @@ const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 10] = [
     Entity::Member,
     Entity::Wish,
     Entity::Revocation,
+    Entity::Device,
 ];
 
 /// Column names are taken from the schema, so unknown keys can never reach SQL.

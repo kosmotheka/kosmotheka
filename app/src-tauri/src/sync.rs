@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
+use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation, verify};
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
@@ -19,8 +19,9 @@ use crate::ops::{self, read_state, write_state};
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 11] = [
+pub const ORDER: [Entity; 12] = [
     Entity::Library,
+    Entity::Device,
     Entity::Publisher,
     Entity::Person,
     Entity::Member,
@@ -157,7 +158,7 @@ pub fn version_vectors(conn: &Connection, libraries: &[String]) -> Result<Librar
 /// Replicable operations of the libraries in `vectors` that their owner lacks, oldest first.
 pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<Vec<SyncOperation>> {
     let mut statement = conn.prepare(
-        "SELECT id, library_id, hlc, intent, changes, schema_version FROM operations
+        "SELECT id, library_id, hlc, intent, changes, schema_version, signature FROM operations
           WHERE replicable = 1 AND library_id = ?1
             AND hlc > coalesce((SELECT value FROM json_each(?2) WHERE key = device_id), '')
           ORDER BY hlc",
@@ -173,10 +174,11 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                     row.get::<_, String>(3)?,
                     row.get::<_, String>(4)?,
                     row.get::<_, i64>(5)?,
+                    row.get::<_, Option<String>>(6)?,
                 ))
             })?;
         for row in rows {
-            let (id, library, hlc, intent, changes, schema_version) = row?;
+            let (id, library, hlc, intent, changes, schema_version, signature) = row?;
             operations.push(SyncOperation {
                 schema_version,
                 operation: Operation {
@@ -187,7 +189,7 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                         .map_err(|_| crate::error::Error::CorruptState("operations.hlc"))?,
                     intent,
                     changes: serde_json::from_str(&changes)?,
-                    signature: None,
+                    signature,
                 },
             });
         }
@@ -223,7 +225,10 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
             report.known += 1;
             continue;
         }
-        if schema_version != local_schema || operation.validate().is_err() {
+        if schema_version != local_schema
+            || operation.validate().is_err()
+            || !signature_holds(tx, &operation)?
+        {
             report.rejected += 1;
             continue;
         }
@@ -248,6 +253,53 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         ops::set_last_hlc(tx, &latest)?;
     }
     Ok(report)
+}
+
+/// Whether the operation's signature is its author's (D56). The author's key is the
+/// one registered in the library, or the one the operation itself registers. A
+/// device's key never changes: an operation that sets another one is refused.
+/// Operations from before signatures carry none and pass, until the library has
+/// roles (docs/plans/fase-5.md, question 1).
+fn signature_holds(tx: &Transaction<'_>, operation: &Operation) -> Result<bool> {
+    let library = operation.library.as_str();
+    for change in &operation.changes {
+        let offered = change.fields.get("public_key").and_then(Value::as_str);
+        if change.entity == Entity::Device
+            && let Some(offered) = offered
+            && registered_key(tx, library, &change.id)?.is_some_and(|key| key != offered)
+        {
+            return Ok(false);
+        }
+    }
+    if operation.signature.is_none() {
+        return Ok(true);
+    }
+    let author = operation.hlc.device.as_str();
+    let key = match registered_key(tx, library, author)? {
+        Some(key) => key,
+        None => match operation.changes.iter().find(|change| {
+            change.entity == Entity::Device
+                && change.action == Action::Create
+                && change.id == author
+        }) {
+            Some(change) => match change.fields.get("public_key").and_then(Value::as_str) {
+                Some(key) => key.to_owned(),
+                None => return Ok(false),
+            },
+            None => return Ok(false),
+        },
+    };
+    Ok(verify(operation, &key).is_ok())
+}
+
+fn registered_key(conn: &Connection, library: &str, device: &str) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT public_key FROM devices WHERE library_id = ?1 AND id = ?2",
+            [library, device],
+            |row| row.get(0),
+        )
+        .optional()?)
 }
 
 /// One change under the merge rules. Returns whether anything was written.
@@ -523,6 +575,150 @@ mod tests {
         for other in &devices[1..] {
             assert_eq!(other.state(), first, "devices diverged");
         }
+    }
+
+    /// Everything `device` has that an empty device would lack, ready to merge.
+    fn everything_from(device: &Device) -> Vec<SyncOperation> {
+        let libraries = known_libraries(&device.0);
+        let empty = version_vectors(&db::open_in_memory().unwrap(), &libraries).unwrap();
+        operations_since(&device.0, &empty).unwrap()
+    }
+
+    fn device_id_of(device: &Device) -> String {
+        ops::device_id(&device.0).unwrap()
+    }
+
+    fn registered_keys(device: &Device) -> Vec<(String, String)> {
+        device
+            .0
+            .prepare("SELECT id, public_key FROM devices WHERE library_id = ?1 ORDER BY id")
+            .unwrap()
+            .query_map([LIB], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn signed_operations_are_checked_even_through_a_third_device() {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        let mut tablet = Device::new();
+        laptop.add("A Wizard of Earthsea", None, "Ana");
+
+        phone.pull_from(&laptop);
+        // The tablet never talks to the laptop: it checks the laptop's signature with
+        // the key that came inside the library.
+        let report = tablet.pull_from(&phone);
+
+        assert_eq!((report.received, report.rejected), (1, 0));
+        assert_converged(&[&laptop, &phone, &tablet]);
+        let laptop_key = ops::signing_key(&laptop.0).unwrap().public_key();
+        assert_eq!(
+            registered_keys(&tablet),
+            vec![(device_id_of(&laptop), laptop_key)]
+        );
+        assert!(
+            everything_from(&tablet)
+                .iter()
+                .all(|op| op.operation.signature.is_some())
+        );
+    }
+
+    #[test]
+    fn an_operation_changed_on_the_way_is_refused() {
+        let mut laptop = Device::new();
+        laptop.add("A Wizard of Earthsea", None, "Ana");
+        let mut phone = Device::new();
+        let mut operations = everything_from(&laptop);
+        let fields = &mut operations[0].operation.changes.last_mut().unwrap().fields;
+        fields.insert("quantity".into(), json!(99));
+
+        let report = merge(&mut phone.0, operations).unwrap();
+
+        assert_eq!((report.received, report.rejected), (0, 1));
+        assert!(phone.titles().is_empty());
+    }
+
+    #[test]
+    fn nobody_can_sign_in_the_name_of_another_device() {
+        let mut laptop = Device::new();
+        laptop.add("A Wizard of Earthsea", None, "Ana");
+        let mut phone = Device::new();
+        phone.pull_from(&laptop);
+        // An impostor makes an operation that claims to be the laptop's.
+        let impostor = kosmotheka_domain::DeviceKey::from_seed([9; 32]);
+        let mut forged = everything_from(&laptop).remove(0);
+        forged.operation.id = ops::new_id();
+        forged.operation.hlc.millis += 1;
+        forged
+            .operation
+            .changes
+            .retain(|c| c.entity == Entity::Member);
+        forged.operation.changes[0]
+            .fields
+            .insert("name".into(), json!("Mallory"));
+        forged.operation.changes[0].action = Action::Update;
+        forged.operation.signature = Some(impostor.sign(&forged.operation));
+
+        let report = merge(&mut phone.0, vec![forged]).unwrap();
+
+        assert_eq!(report.rejected, 1);
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_device_key_cannot_be_replaced() {
+        let mut laptop = Device::new();
+        laptop.add("A Wizard of Earthsea", None, "Ana");
+        let mut phone = Device::new();
+        phone.pull_from(&laptop);
+        let laptop_id = device_id_of(&laptop);
+        // The phone, legitimately signing its own operation, tries to swap the laptop's key.
+        let swap = Change::update(
+            Entity::Device,
+            &laptop_id,
+            json!({ "public_key": ops::signing_key(&phone.0).unwrap().public_key() }),
+        );
+        let result = {
+            let tx = phone.0.transaction().unwrap();
+            let op = ops::record(&tx, LIB, "device.swap", vec![swap]).unwrap();
+            tx.rollback().unwrap();
+            op
+        };
+        let mut other = Device::new();
+        other.pull_from(&laptop);
+
+        let schema_version = ops::schema_version(&other.0).unwrap();
+
+        let report = merge(
+            &mut other.0,
+            vec![SyncOperation {
+                schema_version,
+                operation: result,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(report.rejected, 1);
+        assert_converged(&[&laptop, &other]);
+    }
+
+    #[test]
+    fn unsigned_operations_from_before_signatures_still_merge() {
+        let mut laptop = Device::new();
+        laptop.add("A Wizard of Earthsea", None, "Ana");
+        let mut phone = Device::new();
+        let mut operations = everything_from(&laptop);
+        for op in &mut operations {
+            op.operation.signature = None;
+            op.operation.changes.retain(|c| c.entity != Entity::Device);
+        }
+
+        let report = merge(&mut phone.0, operations).unwrap();
+
+        assert_eq!((report.received, report.rejected), (1, 0));
+        assert_eq!(phone.titles(), vec!["A Wizard of Earthsea"]);
     }
 
     #[test]

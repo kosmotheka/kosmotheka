@@ -35,6 +35,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 | `hlc` | Marca del reloj lógico híbrido (ver abajo). Incluye el identificador del dispositivo |
 | `intent` | Etiqueta de intención: palabras en minúscula separadas por puntos. **Solo informativa**: los permisos y la fusión miran los cambios, nunca la etiqueta |
 | `changes` | Cambios: entidad, id, acción (`create`, `update`, `delete`) y campos |
+| `signature` | Firma Ed25519 del dispositivo autor (D56). Las operaciones anteriores a la Fase 5 no la llevan. Ver «Firmas», más abajo |
 
 Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spec/operation.schema.json`, que deben coincidir.
 
@@ -51,7 +52,10 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
 | `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
-| `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65; llegan con el hito 4.5) |
+| `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65) |
+| `library.revoke` / `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
+
+Además, la primera operación de un dispositivo en cada biblioteca lleva al principio un cambio que crea su fila `device`, con su clave pública, sea cual sea la intención.
 
 ## Reloj lógico híbrido (HLC)
 
@@ -64,6 +68,16 @@ Al recibir operaciones de otro dispositivo (Fase 2), el reloj salta por delante 
 
 El texto tiene ceros a la izquierda para que ordenar como texto sea igual que ordenar en el tiempo: la base de datos ordena la columna `hlc` directamente.
 
+## Firmas (D56, hito 5.1)
+
+- **Cada dispositivo tiene su clave Ed25519**, creada la primera vez que hace falta y guardada en su base de datos (`local_state`, clave `signing_seed`). No va en las copias de seguridad (D58).
+- **Qué se firma:** la operación sin su firma, en JSON canónico (RFC 8785: claves ordenadas, sin espacios). Es lo que Rust (`crates/domain/src/signature.rs`) y PHP (`server/src/Sync/OperationSignature.php`) comprueban con los mismos casos, `spec/conformance/signatures.json`.
+- **La clave pública viaja con la biblioteca** en una fila `device` (su id es el del dispositivo). La crea el propio dispositivo en su primera operación de esa biblioteca, firmada con esa misma clave. Así una operación que llega a través de otro dispositivo se puede comprobar igual.
+- **Al recibir** (`sync::merge`), se rechaza y se cuenta como rechazada:
+  - una operación con firma que no cuadra con la clave de su autor, o de un autor sin clave conocida;
+  - una que intenta cambiar la clave de un dispositivo que ya tiene una: la primera es la que vale.
+- **Las operaciones sin firma** (anteriores a esta fase) se siguen aceptando mientras no haya roles. Qué hacer con ellas después está pendiente (pregunta 1 de `docs/plans/fase-5.md`).
+
 ## Validación, en dos niveles
 
 1. **Estructural** (`Operation::validate`, en el dominio): ids con formato UUID, etiqueta bien formada, campos que la entidad conoce, tipos correctos, obligatorios presentes al crear y nunca nulos. Cualquier implementación la replica, y los **casos de conformidad** (`spec/conformance/`) lo comprueban.
@@ -74,7 +88,7 @@ Si falla cualquiera de los dos, la transacción entera se deshace.
 ## Pendiente
 
 - **Fusión campo a campo (Fase 2):** para decidir qué valor gana cuando dos dispositivos cambian el mismo campo, hará falta saber qué HLC escribió por última vez cada campo. Se añadirá con la sincronización; el registro de operaciones ya tiene todo lo necesario para reconstruirlo.
-- **Permisos (Fase 5):** reglas por entidad y acción («un lector no puede borrar ejemplares»).
+- **Permisos (Fase 5):** reglas por entidad y acción («un lector no puede borrar ejemplares»). Las firmas (5.1) ya dicen quién hizo cada operación; los roles (5.3) dirán qué puede hacer.
 - Los libros dados de alta antes del hito 1.2 no tienen operaciones, y por tanto tampoco historial.
 - ~~Versionar el formato de las operaciones~~ Resuelto en D31: cada operación guarda su versión de esquema, las anteriores a la sincronización quedan como historial no replicable y cada dispositivo registra una operación inicial `sync.baseline`. Ver [sync.md](sync.md).
 - **Índice de búsqueda:** `ops::record` también reindexa las ediciones afectadas (D29), así que cualquier operación, venga de donde venga, deja la búsqueda al día.
