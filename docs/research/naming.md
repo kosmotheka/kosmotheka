@@ -16,6 +16,11 @@
 
 ## Candidatos
 
+**Favorito del maintainer (26/09/2026): ★ Pantheka.** Griego *pan* (todo) + *theca* (depósito), con k. Es el único nombre de todas las rondas con .com y .app libres, además de Google Play y marcas limpios (ver «Variantes con k»). No se compra por impulso, pero puede perderse: cualquiera puede registrar el .com.
+
+**Descartados el 26/09/2026, porque todos tienen alguna costura:** Musary («mus» en español; .com ajeno), Colleo (marcas parecidas; .com en venta), Pantheca (suena a panadería en español), Thesorium (.com registrado en 2025), Gatherium (.com con web viva y marca parecida en la clase 9) y Panteka (.com en venta y marca en la clase 28, juegos).
+
+
 ### Primera ronda (24/09/2026)
 
 | Nombre | Idea | Pega | Opinión del maintainer |
