@@ -8,7 +8,7 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 | `conformance/operation-validation.json` | Operations with the expected validation result (`valid`, or `invalid` with an error code, change index and field) |
 | `conformance/signatures.json` | Signed operations with the canonical bytes and the verification result every implementation must get |
 | `conformance/library-merge.json` | Operations from several libraries, delivered in different orders, with the rows every order must end in |
-| `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations |
+| `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations. Now: roles and permissions (phase 5), with the proposed rules in its README |
 
 ## Rules the schema cannot express
 
