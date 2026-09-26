@@ -11,7 +11,7 @@
 
 | Dónde | Hoy | Propuesta |
 |---|---|---|
-| Identificador Tauri (`tauri.conf.json`) | `com.tersoal.library` | `app.kosmotheka` (ver «Identificador») |
+| Identificador Tauri (`tauri.conf.json`) | `com.tersoal.library` | `app.kosmotheka` (decidido; ver «Identificador») |
 | Android: `applicationId` y `namespace` (`gen/android/app/build.gradle.kts`) | `com.tersoal.library` | el mismo que Tauri |
 | Android: paquete de `MainActivity.kt` | `com/tersoal/library/` | lo regenera `tauri android init`, o se mueve a mano |
 | Nombre visible (`productName`, título de la ventana) | `Library` | `Kosmotheka` |
@@ -36,7 +36,7 @@
 
 Google Play identifica una app por su `applicationId` para siempre: no se puede cambiar una vez publicada. Para reservarlo hay que subir una primera versión (AAB firmado) a una prueba interna de Play Console.
 
-**Propuesta: `app.kosmotheka`**, el dominio kosmotheka.app al revés, que es la convención. Alternativa: `com.kosmotheka.app`. Tauri desaconseja los identificadores acabados en `.app`, porque en macOS chocan con la extensión de las aplicaciones. No publicamos para macOS, pero así se evita el aviso. **Pendiente de que el maintainer lo confirme** antes de tocar nada.
+**Decidido (26/09/2026): `app.kosmotheka`**, el dominio kosmotheka.app al revés, que es la convención. Alternativa: `com.kosmotheka.app`. Tauri desaconseja los identificadores acabados en `.app`, porque en macOS chocan con la extensión de las aplicaciones. No publicamos para macOS, pero así se evita el aviso.
 
 ## Datos: que nada parezca desaparecer
 
@@ -80,5 +80,4 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
 
 ## Pendiente de decidir
 
-- El identificador: `app.kosmotheka` o `com.kosmotheka.app`.
 - Si se renombra también la carpeta local del repositorio.

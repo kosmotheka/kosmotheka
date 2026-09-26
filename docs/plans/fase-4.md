@@ -29,6 +29,7 @@ Detalles de construcción que no cambian lo decidido; se apuntan aquí y se revi
 - **Qué comparte cada dispositivo:** una tabla local `library_peers (library_id, device_id)`. Solo se envían y se aceptan operaciones de bibliotecas compartidas con ese dispositivo.
 - **Migración con continuidad** (D46, cambiado el 26/09/2026): la biblioteca migrada tiene el mismo id fijo en todos los dispositivos, así que los que ya se sincronizaban se funden sin duplicados al volver a emparejar.
 - **Al borrar una biblioteca se conserva su operación de borrado** en el registro local (D66).
+- **Sin nombres repetidos en un dispositivo** (propuesto por Design y aceptado el 26/09/2026): no se puede crear ni renombrar una biblioteca con el nombre de otra que ya está en este dispositivo; el aviso ofrece abrir la existente. Es una regla de la interfaz, no del formato: entre dispositivos no se puede garantizar, y dos bibliotecas con el mismo nombre que lleguen por sincronización se muestran tal cual.
 - **Copia automática antes de migrar.** La migración 4.3 toca todas las tablas: antes de aplicarla, la app guarda una copia del fichero de la base de datos junto a él (`library.db.antes-fase-4`). Si algo sale mal, basta con cerrar la app y poner esa copia en su sitio. Se documenta en la guía.
 
 ## Pendiente de decidir
