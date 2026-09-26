@@ -1,18 +1,18 @@
-# Library
+# Kosmotheka
 
-> Working name. Early development: the desktop catalogue and local-network sync with the phone work; the family server is next.
+> Early development: the desktop catalogue and local-network sync with the phone work; several libraries per device are under way.
 
-A catalog for your household library — books first, then board games, comics, video games and films. Know what you own, where it is, who has read it and who borrowed it.
+A free app to catalog what your household owns — books first, then comics, board games, films and series, video games, music and anything else. Know what you own, where it is, who has read it and who borrowed it. The name comes from Greek *kosmos* (an ordered world) and *theka* (a store): the cosmos of your things.
 
 - **Local-first**: the app works fully offline, with no account and no server.
-- **Family sharing**: pair devices with a QR code and sync over your home network, or connect to a server to share with the whole family, with roles and permissions.
+- **Libraries you share**: keep separate libraries (family, role-playing games, a child's video games) and choose which ones go to each device. Pair devices with a QR code and sync over your home network, or, later, through an optional server with roles and permissions.
 - **Scan to check**: in a bookshop, scan a barcode and find out whether you already own it.
 
 Desktop (Linux, Windows) and Android, built with [Tauri 2](https://tauri.app).
 
 ## Status
 
-Phases 1 (desktop catalogue) and 2 (phone and local sync) are feature-complete and under manual testing:
+Phases 1 (desktop catalogue) and 2 (phone and local sync) are feature-complete, and phase 3 (interface design) is done:
 
 - Add books by hand or by ISBN, with data and covers from Open Library and Google Books.
 - Quick add: type or scan ISBNs one after another (USB barcode readers work too).

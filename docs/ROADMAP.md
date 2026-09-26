@@ -4,7 +4,7 @@
 
 ## Qué producto es, en una frase
 
-Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos, música y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
+**Kosmotheka** (D70): una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos, música y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
 
 ## Visión general
 

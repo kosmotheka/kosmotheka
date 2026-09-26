@@ -100,5 +100,6 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
   - Tras cambiar el nombre de la biblioteca nativa, hay que borrar a mano `gen/android/app/src/main/jniLibs/**/liblibrary_app_lib.so` (ignorado por git) o la APK lleva las dos.
 - [x] **Etapa 4** (26/09/2026): proyecto Compose, contenedores (`db_kosmotheka`, `php_kosmotheka`, `nginx_kosmotheka`), volumen, bases (`kosmotheka`, `kosmotheka_test`), `kosmotheka.local`, Composer (`tersoal/kosmotheka-server`). Copia previa con `pg_dumpall` en `~/copias-kosmotheka/servidor-antes-del-renombrado-2026-09-26/` (la base de desarrollo aún no tenía tablas). El volumen antiguo `library_db_library` se conserva hasta que el maintainer lo borre. `make check` en verde.
 - [ ] Etapa 5: repositorio.
-- [ ] Etapa 6: documentación.
+- [x] **Etapa 6** (26/09/2026): README (nombre, descripción, estado), ROADMAP e índice de `docs/`; `AGENTS.md` ya se hizo en la etapa 3. Las decisiones (DECISIONS.md) y el histórico no se reescriben: cuentan lo que pasó con los nombres de entonces.
+  - **Se quedan como están, a propósito:** el contenedor de desarrollo `library-dev` (renombrarlo obliga a recrearlo y a tocar `~/.bashrc`; no se ve fuera) y la carpeta del repositorio `~/Proyectos/personales/library` (pendiente de decidir).
 

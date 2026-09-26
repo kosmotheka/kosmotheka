@@ -1,4 +1,4 @@
-# Documentación del proyecto
+# Documentación de Kosmotheka
 
 > Esta carpeta está en español mientras construimos. El resto del repositorio (código, comentarios, commits, README raíz) va en inglés. Más adelante se traducirá.
 
