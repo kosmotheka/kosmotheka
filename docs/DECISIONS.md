@@ -784,6 +784,8 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 | Publicar con historial nuevo | Al abrirlo, el público empieza con un primer commit limpio; el repo privado actual sigue siendo el de trabajo | Nada que tocar hasta entonces | Dos repos que mantener sincronizados a partir de ese día |
 | Limpiar el historial antes de publicar | `git filter-repo` quita `docs/` de todos los commits | Un solo repo | Reescribe todo el historial; hay que hacerlo con cuidado y con copia |
 
+**Argumento nuevo (26/09/2026):** además de la documentación de trabajo, el historial guardaría el renombrado desde «library» (D70). Refuerza la opción «Publicar con historial nuevo»: el público nacería con un primer commit limpio en `kosmotheka/kosmotheka`, que queda reservado para eso, y el privado actual seguiría siendo el de trabajo. Sigue abierta: se decidirá al debatirla con el maintainer.
+
 Relacionada con D03 y con la documentación pública futura (guías de usuario e instalación, D12, D22).
 
 ## D65 · Borrar una biblioteca y salir de ella — `aceptada`

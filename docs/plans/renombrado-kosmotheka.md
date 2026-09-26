@@ -23,12 +23,12 @@
 | Protocolo LAN: `APP_ID` del saludo | `library` | `kosmotheka` |
 | Formato de las copias (`backup.rs`) | `library-backup` | `kosmotheka-backup`, **aceptando también el antiguo** al restaurar |
 | Nombres de fichero de copias y CSV | `library-AAAA-MM-DD.zip` | `kosmotheka-…` |
-| User-Agent de los proveedores (`metadata/mod.rs`) | `…github.com/Tersoal/library` | la URL nueva |
-| `spec/operation.schema.json` (`$id`) | `github.com/Tersoal/library/…` | la URL nueva |
+| User-Agent de los proveedores (`metadata/mod.rs`) | `…github.com/Tersoal/library` | la URL pública futura: `github.com/kosmotheka/kosmotheka` o `kosmotheka.app`, nunca el repo privado |
+| `spec/operation.schema.json` (`$id`) | `github.com/Tersoal/library/…` | la URL pública futura (como el User-Agent) |
 | Servidor: Docker Compose | proyecto `library`; contenedores `db_library`, `php_library`, `nginx_library`; volumen `db_library`; base `library`; `library.local` | `kosmotheka`, `db_kosmotheka`…, base `kosmotheka`, `kosmotheka.local` |
 | Servidor: Composer | `tersoal/library-server` | `tersoal/kosmotheka-server` |
 | Servidor: correos (Fase 7) | — | remitente en `kosmotheka.app` |
-| Repositorio GitHub | `Tersoal/library` | `Tersoal/kosmotheka` (GitHub redirige las URL antiguas) |
+| Repositorio GitHub | `Tersoal/library` (privado) | **no se mueve por ahora**: el renombrado se hace dentro de él. `kosmotheka/kosmotheka` queda reservado para el futuro repositorio público (ver etapa 5) |
 | Carpeta local del repositorio | `~/Proyectos/personales/library` | opcional; si cambia, hay que actualizar Distrobox, rutas en la documentación y la memoria de las sesiones |
 | README, `AGENTS.md` («Working name: library»), `docs/` | «library», «biblioteca familiar» | Kosmotheka; `docs/historico/` no se toca |
 
@@ -75,7 +75,12 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
    - Cambiar el protocolo exige subir la versión del esquema, para que dos versiones distintas no intenten hablar entre sí.
    - Pasan `cargo test`, clippy, typecheck, lint y `check:spec`.
 4. **Servidor:** Docker Compose, contenedores, volumen, base, Composer y nginx, con `pg_dump` antes. `make check` en verde.
-5. **Repositorio:** renombrar `Tersoal/library` a `Tersoal/kosmotheka` en GitHub y cambiar el remoto (`git remote set-url`). **Lo hace el maintainer**, porque son acciones remotas. Actualizar las URL en `spec/`, User-Agent y README.
+5. **Repositorio** (ajustado el 26/09/2026, aprobado por el maintainer):
+   - El repositorio de trabajo **sigue privado y no se mueve**: continúa en `Tersoal/library`, y el renombrado se hace dentro de él.
+   - La organización `kosmotheka` ya existe. **`kosmotheka/kosmotheka` queda reservado para el futuro repositorio público.** No se crea ni se transfiere nada ahí por ahora: un repo vacío con ese nombre, además, bloquearía una transferencia futura.
+   - Dónde acaba viviendo el privado (en la cuenta del maintainer, o en la organización con otro nombre, por ejemplo `kosmotheka/workshop`) depende de cómo se cierre D64.
+   - Las URL de `spec/` y del User-Agent apuntan a la dirección pública futura, no al repo privado.
+   - Cualquier acción en GitHub la hace el maintainer.
 6. **Documentación:** README, `AGENTS.md`, `CLAUDE.md` y `docs/` vigentes. El histórico no se toca.
 
 ## Pendiente de decidir
