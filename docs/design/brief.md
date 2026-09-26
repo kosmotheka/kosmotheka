@@ -4,7 +4,7 @@
 
 ## 1. Qué es
 
-Una app libre y gratuita para catalogar lo que tienes en casa (libros, cómics, juegos de mesa, películas y series, videojuegos y cualquier otra cosa) organizado en **bibliotecas** que compartes con quien quieres, con permisos.
+Una app libre y gratuita para catalogar lo que tienes en casa (libros, cómics, juegos de mesa, películas y series, videojuegos, música y cualquier otra cosa) organizado en **bibliotecas** que compartes con quien quieres, con permisos.
 
 Funciona **sin cuenta**: los datos viven en tus dispositivos y se comparten por la wifi de casa. **Con cuenta** (un email), todo se guarda también en la nube y se comparte a distancia.
 
@@ -99,7 +99,7 @@ Barra lateral con las mismas secciones y el selector de biblioteca arriba; accio
 
 El formulario es **el mismo para todos los tipos**: una parte común (título, portada, año, series, notas) y una parte específica del tipo (ISBN y autores en libros; plataforma en videojuegos; jugadores en juegos de mesa…). «Otro» es solo la parte común.
 
-**Proveedores:** sin cuenta solo hay algunos (libros, y juegos de mesa por código). Para películas, videojuegos o cómics sin cuenta, la búsqueda lo dice con calma («Para buscar películas necesitas la nube; puedes añadirla a mano») y enlaza a la ayuda.
+**Proveedores:** sin cuenta solo hay algunos (libros, música, y juegos de mesa por código). Para películas, videojuegos o cómics sin cuenta, la búsqueda lo dice con calma («Para buscar películas necesitas la nube; puedes añadirla a mano») y enlaza a la ayuda.
 
 ### ¿Lo tengo?
 

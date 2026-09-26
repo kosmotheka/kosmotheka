@@ -4,7 +4,7 @@
 
 ## Qué producto es, en una frase
 
-Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
+Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos, música y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
 
 ## Visión general
 
@@ -86,7 +86,7 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 
 Deja de estar centrado en libros.
 
-- **Tipos:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos, y **«Otro»** para todo lo demás (sellos, monedas, Playmobil) con los campos comunes y sin proveedores. Orden propuesto: libros y «Otro» primero, después juegos de mesa, películas y series, videojuegos y cómics.
+- **Tipos:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos, música (vinilo, CD, casete y digital), y **«Otro»** para todo lo demás (sellos, monedas, Playmobil) con los campos comunes y sin proveedores. Orden propuesto: libros y «Otro» primero, después juegos de mesa y música (tienen proveedores sin clave que buscan por código de barras), películas y series, videojuegos y cómics.
 - **Formatos por tipo**, físicos y digitales (DVD, Blu-ray, cartucho, Steam, Epic, Kindle…); lo digital no tiene estantería.
 - **El alta empieza por buscar o escanear, no por el ISBN.** Búsqueda por título en los proveedores; alta a mano siempre posible, sin buscar nada.
 - **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).

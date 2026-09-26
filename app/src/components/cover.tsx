@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Book, BookImage, Clapperboard, Dice5, Gamepad2, Shapes } from "lucide-react";
+import { Book, BookImage, Clapperboard, Dice5, Disc3, Gamepad2, Shapes } from "lucide-react";
 
 import { coverSrc } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /** The kinds of work the catalog will hold (D60); each has its own placeholder icon. */
-export type CoverKind = "book" | "comic" | "game" | "film" | "videogame" | "other";
+export type CoverKind = "book" | "comic" | "game" | "film" | "videogame" | "music" | "other";
 
 const PLACEHOLDER_ICONS = {
   book: Book,
@@ -13,6 +13,7 @@ const PLACEHOLDER_ICONS = {
   game: Dice5,
   film: Clapperboard,
   videogame: Gamepad2,
+  music: Disc3,
   other: Shapes,
 } satisfies Record<CoverKind, unknown>;
 

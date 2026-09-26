@@ -728,7 +728,7 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 ## D60 · Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar — `aceptada`
 
 **Decisión:**
-- **Tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos. Lista cerrada: el usuario no crea tipos.
+- **Tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos y **música** (vinilo, CD, casete y digital; añadida el 26/09/2026, se nos había olvidado). Lista cerrada: el usuario no crea tipos.
 - **«Otro»** para todo lo demás (sellos, monedas, Playmobil): los campos comunes a todo y sin proveedores. Es el mismo formulario sin la parte específica de cada tipo.
 - **Formatos por tipo**, físicos y digitales. PDF y ebook son formatos de un libro, no otro tipo. Lo digital no tiene estantería: su ubicación es «Steam» o «Kindle».
 - **El alta empieza por buscar o escanear, no por el ISBN**, y **siempre se puede hacer a mano**, sin buscar nada. El ISBN es un campo de los libros; el escáner lee cualquier código y la app decide qué es.
@@ -787,6 +787,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Decisión:**
 - **Borrar una biblioteca** la quita, con todo lo que contiene, **en todos los dispositivos** que la tienen. Es una operación más (un `delete` de la entidad `library`) y solo puede hacerla quien tenga permiso para ello (D55).
+- **Antes de borrar, la app pide confirmación**, avisa de que **no se puede deshacer** (tampoco en los demás dispositivos) y **ofrece hacer una copia de seguridad** de esa biblioteca en ese mismo momento.
 - **Salir de una biblioteca** es otra cosa: la biblioteca sigue para los demás y este dispositivo (y su persona) deja de tenerla.
   - Quien **no es administrador** puede salir siempre.
   - Un **administrador** puede salir solo si **no es el último**; si lo es, antes tiene que nombrar a otro o borrar la biblioteca.

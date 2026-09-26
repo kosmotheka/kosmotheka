@@ -23,15 +23,18 @@
 | **Videojuegos** | [IGDB](https://api-docs.igdb.com/) (de Twitch) | Título, plataforma | Sí: credenciales de Twitch (id y secreto) | No comercial gratis; comercial con acuerdo | Muy completa; plataformas y ediciones |
 | | [RAWG](https://rawg.io/apidocs) | Título, plataforma | Sí (gratuita) | [Gratis con atribución y enlace](https://rawg.io/tos_api), también comercial hasta 20.000 peticiones al mes | Alternativa a IGDB |
 | **Cómics** | [Comic Vine](https://comicvine.gamespot.com/api/) | Título, serie, número | Sí (gratuita) | Estrictamente no comercial; 200 peticiones por recurso y hora; exige caché y enlace | Series y números: encaja con las «series» |
+| **Música** | [MusicBrainz](https://musicbrainz.org/doc/MusicBrainz_API) | Código de barras, título, artista | No; exige un User-Agent que identifique la app | Datos principales CC0; [1 petición por segundo por IP](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting) | La referencia abierta. Distingue la obra (el disco) de cada edición (vinilo, CD, reedición), como obra y edición en los libros |
+| | [Cover Art Archive](https://coverartarchive.org/) | Id de MusicBrainz | No | Portadas con sus licencias | Las portadas de MusicBrainz |
+| | [Discogs](https://www.discogs.com/developers) | Código de barras, título, artista, sello | Sí, token personal gratuito para buscar | 60 peticiones por minuto con token; [uso comercial permitido con límites](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use) (no cobrar por lo que ellos dan gratis) | La mejor para vinilos y ediciones concretas. Candidata para la nube |
 | **Todos** | [Wikidata](https://www.wikidata.org/wiki/Wikidata:Data_access) | Título, identificadores | No | CC0 | Cubre libros, películas, series, juegos de mesa, videojuegos y cómics, con menos detalle. **Respaldo universal sin clave** y enlaza con los ids de los demás (BGG, IGDB, TMDB) |
 
-Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás son EAN o UPC de producto. Fuera de los libros, solo los juegos de mesa tienen un servicio gratuito de código a ficha (GameUPC); para películas y videojuegos, los servicios de productos genéricos son de pago o limitados, así que se busca por título.
+Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás son EAN o UPC de producto. Fuera de los libros, los juegos de mesa (GameUPC) y la música (MusicBrainz, Discogs) tienen servicios gratuitos de código a ficha; para películas y videojuegos, los servicios de productos genéricos son de pago o limitados, así que se busca por título.
 
 ## Modelo acordado (en debate, 25/09/2026)
 
 - **Todos los proveedores que se pueda:** el proyecto es gratuito y de código abierto.
 - **Las claves van en el servidor.** Quien se descargue el código y monte su servidor pone allí sus propios tokens.
-- **App sin nube:** solo funcionan los proveedores sin clave (Open Library, Inventaire, Wikidata, GameUPC). La app **avisa** de que hay más disponibles con la nube, con una sección de ayuda que lo explica.
+- **App sin nube:** solo funcionan los proveedores sin clave (Open Library, Inventaire, Wikidata, GameUPC, MusicBrainz). La app **avisa** de que hay más disponibles con la nube, con una sección de ayuda que lo explica.
 - **App conectada a la nube:** se activan automáticamente los proveedores con clave, porque es el servidor quien resuelve la búsqueda.
 - **Google Books sin nube:** se mantiene la opción de poner una clave propia en Ajustes (D26), para quien quiera; sin ella, la app avisa de que ese servicio no está disponible.
 
@@ -40,7 +43,7 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 - **Claves en una app de código abierto.** Una clave no puede ir dentro de la app: el código es público y cualquiera la extraería (D03, D21). Tres salidas:
   1. **El usuario pone la suya** en Ajustes, como ya se hace con Google Books.
   2. **La nube hace de intermediario:** con cuenta, la app pregunta al servidor y el servidor usa la clave del proyecto. Es otra ventaja de registrarse.
-  3. **Proveedores sin clave** (Open Library, Inventaire, Wikidata, GameUPC) funcionan siempre, para todos.
+  3. **Proveedores sin clave** (Open Library, Inventaire, Wikidata, GameUPC, MusicBrainz) funcionan siempre, para todos.
 - **Uso comercial.** BoardGameGeek, TMDB, IGDB y Comic Vine son gratis solo para uso no comercial. La app libre y gratuita encaja; **un servicio de pago (escenario 8) necesitaría licencias** o limitarse a los proveedores abiertos. Hay que tenerlo presente antes de cobrar nada.
 - **Atribución.** TMDB y RAWG exigen mostrar su logo o un enlace allí donde se usan sus datos: la ficha tiene que tener sitio para ello.
 - **Caducidad.** TMDB no permite guardar sus datos más de seis meses. Lo que el usuario guarda en su ficha es suyo; lo que haya que vigilar es la copia en bruto de la respuesta (el campo `extra` de D08).
