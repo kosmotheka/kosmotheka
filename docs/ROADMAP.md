@@ -123,7 +123,8 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
 - **Préstamos** salientes y entrantes, también entre amigos a distancia (enviados por correo), con historial y avisos.
 - **Lecturas sin ejemplar:** libros que te han prestado.
-- **Reserva de regalos**, oculta para quien los recibe.
+- **Reserva de regalos**, oculta para quien los recibe. Ojo: sin servidor no se puede ocultar de verdad, porque cada dispositivo tiene la biblioteca entera (D54); hay que resolverlo antes de esta fase ([referentes §3.4](research/referentes.md)).
+- **Enlaces para compartir un ejemplar** con quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
 - Ejemplar firmado o dedicado, con foto.
 - **Estadísticas** de lectura por año y por persona.
 - ¿**Papelera** para deshacer borrados? (abierto; podría adelantarse a la Fase 5).
@@ -131,6 +132,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 ## Fase 10 — Herramientas de estantería
 
 - **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
+- **Etiquetas QR** para pegar en los ejemplares (D67): código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
 - **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20).
 - **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla.
 - **Importar desde plataformas** digitales (Steam).
