@@ -83,6 +83,9 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 - **Rust que aprendes:** criptografía con claves públicas, diseño de un motor que converge.
 - **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
 
+**Estado:**
+- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [plans/fase-5.md](plans/fase-5.md) (27/09/2026).
+
 ## Fase 6 — Catálogo general
 
 Deja de estar centrado en libros.
