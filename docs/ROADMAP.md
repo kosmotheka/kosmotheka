@@ -92,7 +92,9 @@ Deja de estar centrado en libros.
 - **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).
 - **Series:** agrupan obras con orden o sin él; una obra puede estar en varias; relación «necesita» (expansiones, suplementos).
 - **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
-- **Marcas por persona:** leído y deseado.
+- **Marcas por persona** (D68): estado (pendiente, en curso, terminado o abandonado, con fecha y sin progreso; «en curso» se llama leyendo, jugando o viendo según el tipo), valoración, favorito y deseado.
+- **Géneros, temáticas y etiquetas.**
+- **Precio de compra**, como mucho un campo opcional del ejemplar y solo si no complica la interfaz; sin estadísticas.
 - **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
 
 ## Fase 7 — La nube
@@ -102,6 +104,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
 - **Registro con email** y código en la app; recuperación con código.
 - Subir una biblioteca a la nube sin perder nada, historial incluido.
+- **Enlace para invitar a una biblioteca**, además del QR (D43, D67).
 - **Sincronizar a distancia** con los mismos roles y peticiones; el servidor comprueba y corrige.
 - **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
 - Límites de peticiones y cuentas sin confirmar que caducan.
@@ -121,10 +124,11 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
 ## Fase 9 — Vida de la biblioteca
 
-- **Préstamos** salientes y entrantes, también entre amigos a distancia (enviados por correo), con historial y avisos.
+- **Préstamos** salientes y entrantes, con historial y avisos. Basta con que lo apunte quien presta: el otro no necesita la app.
+- **Red de préstamo entre amigos:** los dos ven el mismo préstamo y el amigo puede pedir algo prestado. Sin nube, solo dentro del círculo de confianza; con amigos a distancia, a través de la nube ([referentes §3.1](research/referentes.md)).
 - **Lecturas sin ejemplar:** libros que te han prestado.
-- **Reserva de regalos**, oculta para quien los recibe. Ojo: sin servidor no se puede ocultar de verdad, porque cada dispositivo tiene la biblioteca entera (D54); hay que resolverlo antes de esta fase ([referentes §3.4](research/referentes.md)).
-- **Enlaces para compartir un ejemplar** con quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
+- **Reserva de regalos**, oculta para quien los recibe. **Oculta solo en pantalla** (D69): el deseo lo ve toda la familia; la reserva («lo compro yo»), todos menos quien recibe el regalo. Igual con nube y sin ella.
+- **Enlaces para compartir un ejemplar u ofrecerlo en préstamo** a quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
 - Ejemplar firmado o dedicado, con foto.
 - **Estadísticas** de lectura por año y por persona.
 - ¿**Papelera** para deshacer borrados? (abierto; podría adelantarse a la Fase 5).
@@ -132,7 +136,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 ## Fase 10 — Herramientas de estantería
 
 - **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
-- **Etiquetas QR** para pegar en los ejemplares (D67): código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
+- **Etiquetas QR imprimibles** para pegar en los ejemplares (D67), útiles en el modo inventario y en ludotecas: código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
 - **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20).
 - **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla.
 - **Importar desde plataformas** digitales (Steam).
@@ -154,6 +158,19 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 - Cuenta con contraseña o solo con código por email.
 - Si una biblioteca en la nube puede seguir sincronizándose por wifi (D39).
 - Campos personalizados por el usuario (solo si alguien los pide).
+
+## Ideas para el futuro
+
+No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §3](research/referentes.md)).
+
+- **La dimensión social:** comentarios, préstamo entre desconocidos, compartir en redes (§3.3).
+- **Bibliotecas públicas** que se descubren buscando y se navegan sin invitación.
+- **Reservar un ejemplar prestado.**
+- **Importar desde Calibre** (muy opcional).
+- **«¿Qué leo ahora?».**
+- **Estantería visual** con lomos.
+- **Base de datos colaborativa** (futuro lejano).
+- **Modelo de pago:** no se espera; la app es gratuita. Si llegara, sería un módulo aparte, fuera del repositorio público.
 
 ---
 

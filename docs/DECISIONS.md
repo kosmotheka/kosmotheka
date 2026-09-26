@@ -73,6 +73,8 @@
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
 | D66 | Registro de actividad para poder responder de lo que pasó | aceptada |
 | D67 | Enlaces para compartir y etiquetas QR: son de la biblioteca | aceptada |
+| D68 | Marcas por persona: estado, valoración y favorito | aceptada |
+| D69 | Reserva de regalos oculta solo en pantalla | aceptada |
 
 ---
 
@@ -744,7 +746,7 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 - **Serie** agrupa obras, con orden (una saga) o sin él (una línea de producto, como Catán). Una obra puede estar en varias series, y una serie puede tener obras de varios autores. Relación **«necesita»** entre obras (expansiones, suplementos).
 - Editorial, autor o estudio son datos para filtrar, no para agrupar.
 - **Tres estados:** «lo tengo» (tiene ejemplares; es lo que se ve por defecto), «me falta» (está en el catálogo sin ejemplares; su propia vista, y huecos en cada serie) y «lo deseo» (marca para regalos sobre algo que falta).
-- **Leído y deseado son marcas por persona** (D55).
+- **Leído y deseado son marcas por persona** (D55). Ampliado por D68: «leído» pasa a ser un estado.
 
 **Consecuencias:** sustituye a la lista de deseos de D36; su migración se decide al construirlo (Fase 6).
 
@@ -834,4 +836,24 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - Se mantiene D46: mover crea ids nuevos, porque las lápidas del origen (D32) impedirían que el mismo id volviera.
 
 **Consecuencias:** no cambia nada de la Fase 4: enlaces y etiquetas aún no existen. Cuando lleguen serán filas de la biblioteca que se borran con el ejemplar, sin lógica especial al mover. Relacionada con D43, D46 y D54.
+
+## D68 · Marcas por persona: estado, valoración y favorito — `aceptada`
+
+**Contexto:** al revisar otras apps de catálogo (acordado el 26/09/2026, [research/referentes.md §3.2 y §3.5](research/referentes.md)), «leído» a secas se quedaba corto, y apuntar el progreso resultaba un peñazo.
+
+**Decisión:** cada persona (D55) apunta sobre cada obra:
+- **Estado absoluto**, con fecha y **sin progreso** (nada de «voy por la página 120»): pendiente, en curso, terminado o abandonado. «En curso» es **un solo estado** que la interfaz nombra según el tipo: leyendo (libros y cómics), jugando (videojuegos), viendo (películas y series). En música tiene menos sentido, pero no estorba.
+- **Valoración** («este me ha encantado»).
+- **Favorito**, aparte de la valoración: sirve de filtro, y un favorito puede tener menos puntuación que otros.
+- **Deseado** se mantiene (D61).
+
+**Consecuencias:** sustituye a «leído» en las marcas por persona de D61. Entra en la Fase 6, junto con géneros, temáticas y etiquetas.
+
+## D69 · Reserva de regalos oculta solo en pantalla — `aceptada`
+
+**Contexto:** la reserva de regalos (Fase 9) tiene que ser una sorpresa. Pero en una biblioteca compartida cada dispositivo la tiene entera (D54), incluido el de quien recibe el regalo, así que sin servidor el dato no se puede ocultar de verdad ([research/referentes.md §3.4 y §3.6](research/referentes.md)).
+
+**Decisión** (acordada el 26/09/2026): se mantiene, **oculta solo en pantalla**. El deseo lo ve toda la familia; la reserva («lo compro yo») la ven todos menos quien recibe el regalo. En familia basta para una sorpresa. **Con la nube se hace igual**, para que las dos formas de usar la app (D57) se comporten del mismo modo.
+
+**Consecuencias:** no hace falta cifrar ni separar datos por persona. Fase 9.
 
