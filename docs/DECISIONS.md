@@ -72,6 +72,7 @@
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
 | D66 | Registro de actividad para poder responder de lo que pasó | aceptada |
+| D67 | Enlaces para compartir y etiquetas QR: son de la biblioteca | aceptada |
 
 ---
 
@@ -814,3 +815,23 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Por concretar al construirlo (Fase 7):** cuánto tiempo se guarda (propuesta: un año) y cómo se explica en la política de privacidad. La IP es un dato personal: se guarda por seguridad, con un plazo y diciéndolo.
 
 **Consecuencias:** amplía D52 (su tabla de eventos para los KPI puede ser la misma) y D65. La parte local entra en la Fase 4, con el borrado de bibliotecas; la de la nube, en la Fase 7.
+
+## D67 · Enlaces para compartir y etiquetas QR: son de la biblioteca — `aceptada`
+
+**Contexto:** al hablar de mover un libro entre bibliotecas (D46) salió qué pasa con un enlace para compartir un ejemplar, o con la etiqueta QR pegada en él, cuando el ejemplar se muda. Debate completo en [research/referentes.md §3.4](research/referentes.md).
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Un código del ejemplar que viaja con él al moverlo | El enlace y la etiqueta siguen valiendo | Mezcla la identidad del ejemplar con el permiso para verlo, y sería una identidad que cruza bibliotecas |
+| **El enlace y la etiqueta son filas de la biblioteca de origen** | Un permiso dado en una biblioteca nunca abre otra; sin excepciones al mover | Al mover hay que compartir otra vez e imprimir otra etiqueta; mover es raro |
+
+**Decisión** (acordada el 26/09/2026):
+- **Un enlace para compartir un ejemplar es un permiso**, dado desde una biblioteca concreta, no una dirección del libro. Es una fila de esa biblioteca y **muere con el ejemplar** al moverlo o borrarlo; quien lo abra ve «ya no está disponible». Si sobreviviera a la mudanza, un permiso dado en la biblioteca personal abriría una puerta en la familiar sin que la familia lo decidiera.
+- **El enlace lleva un token aleatorio** generado al compartir, independiente del id (ni el UUID ni un hash suyo): se puede revocar sin tocar el libro, puede haber varios por ejemplar con su propia caducidad y no revela la fecha que lleva un UUID v7. Mismo modelo que las invitaciones (D43).
+- **La etiqueta QR impresa también es de la biblioteca**: al mover el ejemplar deja de valer y se imprime otra. Lleva un **código corto aleatorio**, no el UUID: el QR sale más pequeño y no revela nada.
+- Se mantiene D46: mover crea ids nuevos, porque las lápidas del origen (D32) impedirían que el mismo id volviera.
+
+**Consecuencias:** no cambia nada de la Fase 4: enlaces y etiquetas aún no existen. Cuando lleguen serán filas de la biblioteca que se borran con el ejemplar, sin lógica especial al mover. Relacionada con D43, D46 y D54.
+
