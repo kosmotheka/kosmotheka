@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CircleCheck } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
+import { BackupsDialog } from "@/components/backups-dialog";
 import { BookDetailView } from "@/components/book-detail";
 import { BurstDialog } from "@/components/burst-dialog";
 import { FilterPanel, isFiltering } from "@/components/catalog-filters";
@@ -136,7 +137,7 @@ export default function App() {
     ) : section === "check" ? (
       <CheckPage library={library} desktop={desktop} onChanged={reload} />
     ) : section === "help" ? (
-      <HelpPage />
+      <HelpPage desktop={desktop} />
     ) : (
       <CatalogPage
         state={state}
@@ -229,6 +230,10 @@ export default function App() {
       )}
       <SettingsDialog
         open={overlay?.name === "settings"}
+        onOpenChange={(open) => !open && closeOverlay()}
+      />
+      <BackupsDialog
+        open={overlay?.name === "backups"}
         onOpenChange={(open) => !open && closeOverlay()}
         onChanged={reload}
       />

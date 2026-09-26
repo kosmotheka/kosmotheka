@@ -11,14 +11,8 @@ import {
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
+import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -188,85 +182,85 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{t("burst.title")}</DialogTitle>
-          <DialogDescription>{t("burst.description")}</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={t("burst.title")}
+      description={t("burst.description")}
+      className="sm:max-w-2xl"
+    >
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field id="burst-owner" label={t("form.fields.owner")}>
-            <Input
-              id="burst-owner"
-              list="burst-known-owners"
-              value={owner}
-              onChange={(e) => setOwner(e.target.value)}
-            />
-            <Suggestions
-              id="burst-known-owners"
-              values={options.owners}
-            />
-          </Field>
-          <Field id="burst-format" label={t("form.fields.format")}>
-            <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-              <SelectTrigger id="burst-format" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {formats.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {t(`formats.${f}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field id="burst-location" label={t("form.fields.location")}>
-            <Input
-              id="burst-location"
-              list="burst-known-locations"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <Suggestions id="burst-known-locations" values={options.locations} />
-          </Field>
-        </div>
-
-        <form onSubmit={enqueue} className="flex gap-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field id="burst-owner" label={t("form.fields.owner")}>
           <Input
-            autoFocus
-            inputMode="numeric"
-            aria-label={t("form.fields.isbn")}
-            placeholder={t("lookup.placeholder")}
-            value={isbn}
-            onChange={(e) => setIsbn(e.target.value)}
-            className="text-lg"
+            id="burst-owner"
+            list="burst-known-owners"
+            value={owner}
+            onChange={(e) => setOwner(e.target.value)}
           />
-          <Button type="submit">{t("burst.add")}</Button>
-        </form>
+          <Suggestions
+            id="burst-known-owners"
+            values={options.owners}
+          />
+        </Field>
+        <Field id="burst-format" label={t("form.fields.format")}>
+          <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
+            <SelectTrigger id="burst-format" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {formats.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {t(`formats.${f}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field id="burst-location" label={t("form.fields.location")}>
+          <Input
+            id="burst-location"
+            list="burst-known-locations"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+          <Suggestions id="burst-known-locations" values={options.locations} />
+        </Field>
+      </div>
 
-        {entries.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            {t("burst.summary", {
-              added: count("added", "copyAdded"),
-              exists: count("exists"),
-              pending: count("notFound", "invalid", "failed"),
-            })}
-          </p>
-        )}
+      <form onSubmit={enqueue} className="flex gap-2">
+        <Input
+          autoFocus
+          inputMode="numeric"
+          aria-label={t("form.fields.isbn")}
+          placeholder={t("lookup.placeholder")}
+          value={isbn}
+          onChange={(e) => setIsbn(e.target.value)}
+          className="text-lg"
+        />
+        <Button type="submit">{t("burst.add")}</Button>
+      </form>
 
-        <ul className="-mx-2 flex-1 space-y-2 overflow-y-auto px-2">
-          {entries.map((entry) => (
-            <EntryRow
-              key={entry.id}
-              entry={entry}
-              onSaveAnyway={(title) => void saveAnyway(entry, title)}
-            />
-          ))}
-        </ul>
-      </DialogContent>
-    </Dialog>
+      {entries.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t("burst.summary", {
+            added: count("added", "copyAdded"),
+            exists: count("exists"),
+            pending: count("notFound", "invalid", "failed"),
+          })}
+        </p>
+      )}
+
+      <ul className="-mx-2 flex-1 space-y-2 overflow-y-auto px-2">
+        {entries.map((entry) => (
+          <EntryRow
+            key={entry.id}
+            entry={entry}
+            onSaveAnyway={(title) => void saveAnyway(entry, title)}
+          />
+        ))}
+      </ul>
+    </ResponsiveDialog>
   );
 }
 

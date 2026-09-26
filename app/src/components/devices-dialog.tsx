@@ -5,14 +5,8 @@ import { Copy, Link2, QrCode, RefreshCw, Trash2 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
+import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   type KnownDevice,
@@ -131,145 +125,145 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
       : t("devices.neverSynced");
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{t("devices.title")}</DialogTitle>
-          <DialogDescription>{t("devices.description")}</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={t("devices.title")}
+      description={t("devices.description")}
+      className="sm:max-w-xl"
+    >
 
-        <section className="space-y-2">
-          <Field id="device-name" label={t("devices.thisDevice")}>
+      <section className="space-y-2">
+        <Field id="device-name" label={t("devices.thisDevice")}>
+          <div className="flex gap-2">
+            <Input id="device-name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Button
+              variant="outline"
+              disabled={!status || name.trim() === status.deviceName}
+              onClick={() => void run("name", async () => (await setDeviceName(name), null))}
+            >
+              {t("form.save")}
+            </Button>
+          </div>
+        </Field>
+      </section>
+
+      <section className="space-y-3 border-t pt-4">
+        <h3 className="text-sm font-medium">{t("devices.addTitle")}</h3>
+        {pairing ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t("devices.showCodeHelp")}</p>
+            <div
+              className="mx-auto w-48 rounded-md bg-white p-2"
+              // The SVG comes from the qrcode library, built from our own pairing code.
+              dangerouslySetInnerHTML={{ __html: pairing.qr }}
+            />
             <div className="flex gap-2">
-              <Input id="device-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input readOnly value={pairing.code} className="font-mono text-xs" />
               <Button
                 variant="outline"
-                disabled={!status || name.trim() === status.deviceName}
-                onClick={() => void run("name", async () => (await setDeviceName(name), null))}
+                size="icon"
+                aria-label={t("devices.copy")}
+                onClick={() => void navigator.clipboard.writeText(pairing.code)}
               >
-                {t("form.save")}
+                <Copy />
               </Button>
             </div>
-          </Field>
-        </section>
-
-        <section className="space-y-3 border-t pt-4">
-          <h3 className="text-sm font-medium">{t("devices.addTitle")}</h3>
-          {pairing ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{t("devices.showCodeHelp")}</p>
-              <div
-                className="mx-auto w-48 rounded-md bg-white p-2"
-                // The SVG comes from the qrcode library, built from our own pairing code.
-                dangerouslySetInnerHTML={{ __html: pairing.qr }}
-              />
-              <div className="flex gap-2">
-                <Input readOnly value={pairing.code} className="font-mono text-xs" />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={t("devices.copy")}
-                  onClick={() => void navigator.clipboard.writeText(pairing.code)}
-                >
-                  <Copy />
-                </Button>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  void closePairing();
-                  setPairing(null);
-                }}
-              >
-                {t("devices.stopPairing")}
-              </Button>
-            </div>
-          ) : (
-            <Button variant="outline" disabled={busy !== null} onClick={() => void showCode()}>
-              <Link2 /> {t("devices.showCode")}
-            </Button>
-          )}
-          {canScan && (
             <Button
-              disabled={busy !== null}
-              onClick={() =>
-                void scanQr()
-                  .then((code) => (code ? pair(code) : undefined))
-                  .catch((e: unknown) =>
-                    setMessage(e instanceof CameraDenied ? t("check.cameraDenied") : String(e)),
-                  )
-              }
+              variant="ghost"
+              onClick={() => {
+                void closePairing();
+                setPairing(null);
+              }}
             >
-              <QrCode /> {t("devices.scanCode")}
+              {t("devices.stopPairing")}
             </Button>
-          )}
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">{t("devices.enterCodeHelp")}</p>
-            <div className="flex gap-2">
-              <Input
-                aria-label={t("devices.code")}
-                placeholder="LIBRARY1:…"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
-                className="font-mono text-xs"
-              />
-              <Button
-                disabled={busy !== null || !codeInput.trim()}
-                onClick={() => void pair(codeInput)}
-              >
-                {t("devices.pair")}
-              </Button>
-            </div>
           </div>
-        </section>
-
-        {message && <p className="text-sm">{message}</p>}
-
-        {status && (status.servers.length > 0 || status.clients.length > 0) && (
-          <section className="space-y-2 border-t pt-4">
-            <h3 className="text-sm font-medium">{t("devices.paired")}</h3>
-            <ul className="space-y-2">
-              {status.servers.map((device) => (
-                <li
-                  key={`s-${device.deviceId}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border p-2"
-                >
-                  <div className="text-sm">
-                    <p className="font-medium">{device.name}</p>
-                    <p className="text-muted-foreground">{lastSync(device)}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      disabled={busy !== null}
-                      onClick={() => void syncNow(device)}
-                    >
-                      <RefreshCw className={busy === device.deviceId ? "animate-spin" : ""} />
-                      {t("devices.syncNow")}
-                    </Button>
-                    <ForgetButton device={device} onForget={() => void forget(device)} />
-                  </div>
-                </li>
-              ))}
-              {status.clients.map((device) => (
-                <li
-                  key={`c-${device.deviceId}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border p-2"
-                >
-                  <div className="text-sm">
-                    <p className="font-medium">{device.name}</p>
-                    <p className="text-muted-foreground">
-                      {t("devices.syncsWithThis")} · {lastSync(device)}
-                    </p>
-                  </div>
-                  <ForgetButton device={device} onForget={() => void forget(device)} />
-                </li>
-              ))}
-            </ul>
-          </section>
+        ) : (
+          <Button variant="outline" disabled={busy !== null} onClick={() => void showCode()}>
+            <Link2 /> {t("devices.showCode")}
+          </Button>
         )}
-      </DialogContent>
-    </Dialog>
+        {canScan && (
+          <Button
+            disabled={busy !== null}
+            onClick={() =>
+              void scanQr()
+                .then((code) => (code ? pair(code) : undefined))
+                .catch((e: unknown) =>
+                  setMessage(e instanceof CameraDenied ? t("check.cameraDenied") : String(e)),
+                )
+            }
+          >
+            <QrCode /> {t("devices.scanCode")}
+          </Button>
+        )}
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">{t("devices.enterCodeHelp")}</p>
+          <div className="flex gap-2">
+            <Input
+              aria-label={t("devices.code")}
+              placeholder="LIBRARY1:…"
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value)}
+              className="font-mono text-xs"
+            />
+            <Button
+              disabled={busy !== null || !codeInput.trim()}
+              onClick={() => void pair(codeInput)}
+            >
+              {t("devices.pair")}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {message && <p className="text-sm">{message}</p>}
+
+      {status && (status.servers.length > 0 || status.clients.length > 0) && (
+        <section className="space-y-2 border-t pt-4">
+          <h3 className="text-sm font-medium">{t("devices.paired")}</h3>
+          <ul className="space-y-2">
+            {status.servers.map((device) => (
+              <li
+                key={`s-${device.deviceId}`}
+                className="flex items-center justify-between gap-2 rounded-lg border p-2"
+              >
+                <div className="text-sm">
+                  <p className="font-medium">{device.name}</p>
+                  <p className="text-muted-foreground">{lastSync(device)}</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => void syncNow(device)}
+                  >
+                    <RefreshCw className={busy === device.deviceId ? "animate-spin" : ""} />
+                    {t("devices.syncNow")}
+                  </Button>
+                  <ForgetButton device={device} onForget={() => void forget(device)} />
+                </div>
+              </li>
+            ))}
+            {status.clients.map((device) => (
+              <li
+                key={`c-${device.deviceId}`}
+                className="flex items-center justify-between gap-2 rounded-lg border p-2"
+              >
+                <div className="text-sm">
+                  <p className="font-medium">{device.name}</p>
+                  <p className="text-muted-foreground">
+                    {t("devices.syncsWithThis")} · {lastSync(device)}
+                  </p>
+                </div>
+                <ForgetButton device={device} onForget={() => void forget(device)} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </ResponsiveDialog>
   );
 }
 

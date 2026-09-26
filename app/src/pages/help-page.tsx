@@ -1,15 +1,30 @@
 import { useTranslation } from "react-i18next";
-import { CircleHelp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
-export function HelpPage() {
+const TOPICS = ["share", "away", "pairing", "backups", "lost", "search"] as const;
+
+/** Short answers, one folded topic each. Cloud, roles and requests join as they are built. */
+export function HelpPage({ desktop }: { desktop: boolean }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center gap-3 py-16 text-center">
-      <span className="flex size-13 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <CircleHelp className="size-6" />
-      </span>
-      <h1 className="text-lg font-semibold">{t("help.title")}</h1>
-      <p className="max-w-md text-sm text-pretty text-muted-foreground">{t("help.soon")}</p>
+    <div className="flex max-w-2xl flex-col gap-3">
+      {desktop && <h1 className="text-[22px] font-semibold tracking-tight">{t("help.title")}</h1>}
+      <p className="text-sm text-muted-foreground">{t("help.intro")}</p>
+      <div className="-mx-4 flex flex-col md:mx-0">
+        {TOPICS.map((topic) => (
+          <details key={topic} className="group border-b last:border-b-0">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 text-[15px] font-medium md:px-1 [&::-webkit-details-marker]:hidden">
+              <span className="flex-1">{t(`help.topics.${topic}.title`)}</span>
+              <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <ol className="flex list-decimal flex-col gap-2 pr-4 pb-4 pl-9 text-sm md:pr-1 md:pl-6">
+              {(t(`help.topics.${topic}.steps`, { returnObjects: true }) as string[]).map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </details>
+        ))}
+      </div>
     </div>
   );
 }

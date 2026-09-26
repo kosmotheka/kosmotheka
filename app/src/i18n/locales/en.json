@@ -180,8 +180,8 @@
     "noResultsTitle": "Nothing matches these filters"
   },
   "data": {
-    "title": "Your data",
-    "description": "A backup is a .zip with every book, copy and cover, restorable on any device. CSV is one row per copy, for spreadsheets and other apps.",
+    "title": "Backups",
+    "description": "A .zip with the whole catalog and its covers. It restores on any device.",
     "backup": "Save backup",
     "restore": "Restore backup",
     "exportCsv": "Export CSV",
@@ -198,15 +198,17 @@
       "unreadable": "The backup is damaged and cannot be read.",
       "other_version": "This backup was made with a different version of the app.",
       "not_empty": "A backup can only be restored into an empty catalog. Delete the books first, or use a fresh install."
-    }
+    },
+    "csvTitle": "Spreadsheet",
+    "csvDescription": "One row per copy, for Excel or other apps."
   },
   "devices": {
-    "title": "Devices",
+    "title": "Sharing and devices",
     "description": "Sync this catalog with your other devices over your home network. No server and no account: the connection is encrypted and only works between paired devices.",
     "thisDevice": "This device's name",
     "addTitle": "Pair a device",
-    "showCode": "Show pairing code",
-    "showCodeHelp": "On the other device, scan this code or paste the text in “Devices”. It works once, for 10 minutes.",
+    "showCode": "Show code",
+    "showCodeHelp": "On the other device, scan this code or paste the text in “Sharing and devices”. It works once, for 10 minutes.",
     "copy": "Copy code",
     "stopPairing": "Stop pairing",
     "enterCodeHelp": "Or paste here the code another device is showing:",
@@ -313,7 +315,60 @@
   },
   "help": {
     "title": "Help",
-    "soon": "The help section is on its way. Meanwhile, every problem message in the app explains what happened and what to do."
+    "intro": "Short answers to the usual questions.",
+    "topics": {
+      "share": {
+        "title": "Share the catalog at home",
+        "steps": [
+          "On one device, open \"Sharing and devices\" and tap \"Show code\".",
+          "On the other, in the same place, scan the QR or paste the code.",
+          "Done: they sync on their own whenever they are on the same Wi-Fi."
+        ]
+      },
+      "away": {
+        "title": "Share away from home",
+        "steps": [
+          "Turn on the hotspot (\"internet sharing\") on a phone.",
+          "Connect the other device to that network.",
+          "Pair or sync as at home. It uses no data: everything goes between the two devices."
+        ]
+      },
+      "pairing": {
+        "title": "The phone will not pair",
+        "steps": [
+          "Both on the same Wi-Fi, not on mobile data. Avoid guest networks.",
+          "Keep the code on screen on the other device: it works once, for 10 minutes.",
+          "Turn off any VPN while pairing.",
+          "On Windows, allow the app on private networks when the firewall asks.",
+          "If the phone asks for \"local network\" or \"nearby devices\" permission, allow it.",
+          "If nothing works, restart the app on both and create a new code."
+        ]
+      },
+      "backups": {
+        "title": "Backups",
+        "steps": [
+          "In \"Backups\", \"Save backup\" creates a .zip with everything, covers included.",
+          "Keep it wherever you like: a folder, Google Drive, a USB stick.",
+          "To get it back, use \"Restore backup\" on an empty catalog."
+        ]
+      },
+      "lost": {
+        "title": "If you lose your phone",
+        "steps": [
+          "What you had is still on the devices it synced with, and in your backups.",
+          "On another device, open \"Sharing and devices\" and forget the lost one.",
+          "On the new phone, install the app and pair again."
+        ]
+      },
+      "search": {
+        "title": "Look up a book's details",
+        "steps": [
+          "When adding, type or scan the ISBN and tap \"Search\": details come from Open Library and Google Books.",
+          "Offline, you can add it by hand and complete it later.",
+          "Google Books works better with your own key, set in Settings."
+        ]
+      }
+    }
   },
   "types": {
     "book": "Book"

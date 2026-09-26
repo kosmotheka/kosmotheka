@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Download, FileSpreadsheet, FileUp, Upload } from "lucide-react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 
+import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import {
   type CsvImportSummary,
@@ -16,7 +17,16 @@ import {
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Backups and CSV files. Every action asks for a file first; cancelling does nothing. */
-export function DataSection({ onChanged }: { onChanged: () => void }) {
+export function BackupsDialog({
+  open: isOpen,
+  onOpenChange,
+  onChanged,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Called when a restore or an import changed the catalog. */
+  onChanged: () => void;
+}) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -83,24 +93,33 @@ export function DataSection({ onChanged }: { onChanged: () => void }) {
     });
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-medium">{t("data.title")}</h3>
-      <p className="text-sm text-muted-foreground">{t("data.description")}</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button variant="outline" disabled={busy} onClick={() => void backup()}>
+    <ResponsiveDialog
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      title={t("data.title")}
+      description={t("data.description")}
+    >
+      <div className="grid gap-2">
+        <Button className="h-12" disabled={busy} onClick={() => void backup()}>
           <Download /> {t("data.backup")}
         </Button>
-        <Button variant="outline" disabled={busy} onClick={() => void restore()}>
+        <Button variant="outline" className="h-12" disabled={busy} onClick={() => void restore()}>
           <Upload /> {t("data.restore")}
-        </Button>
-        <Button variant="outline" disabled={busy} onClick={() => void toCsv()}>
-          <FileSpreadsheet /> {t("data.exportCsv")}
-        </Button>
-        <Button variant="outline" disabled={busy} onClick={() => void fromCsv()}>
-          <FileUp /> {t("data.importCsv")}
         </Button>
       </div>
       {message && <p className="text-sm">{message}</p>}
+      <section className="mt-2 flex flex-col gap-2 border-t pt-5">
+        <h3 className="text-sm font-medium">{t("data.csvTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("data.csvDescription")}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" disabled={busy} onClick={() => void fromCsv()}>
+            <FileUp /> {t("data.importCsv")}
+          </Button>
+          <Button variant="outline" disabled={busy} onClick={() => void toCsv()}>
+            <FileSpreadsheet /> {t("data.exportCsv")}
+          </Button>
+        </div>
+      </section>
       {rejected.length > 0 && (
         <ul className="max-h-40 space-y-1 overflow-y-auto text-sm text-muted-foreground">
           {rejected.map((row) => (
@@ -113,6 +132,6 @@ export function DataSection({ onChanged }: { onChanged: () => void }) {
           ))}
         </ul>
       )}
-    </section>
+    </ResponsiveDialog>
   );
 }

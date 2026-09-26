@@ -39,7 +39,7 @@ export const libraryNav: NavItem[] = [
   { id: "share", icon: Share2, label: "nav.share", overlay: { name: "devices" } },
   { id: "people", icon: Users, label: "nav.people", soon: true },
   { id: "series", icon: ListOrdered, label: "nav.series", soon: true },
-  { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "settings" } },
+  { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "backups" } },
 ];
 
 /** App-wide entries, at the end of the menu. */

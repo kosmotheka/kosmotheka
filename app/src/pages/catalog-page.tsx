@@ -95,7 +95,7 @@ export function CatalogPage({
           title={t("catalog.empty.title", { library })}
           body={t("catalog.empty.body")}
         >
-          <Button variant="outline" onClick={() => openOverlay({ name: "settings" })}>
+          <Button variant="outline" onClick={() => openOverlay({ name: "backups" })}>
             {t("data.importCsv")}
           </Button>
           <Button onClick={() => openOverlay({ name: "add" })}>

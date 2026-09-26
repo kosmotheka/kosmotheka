@@ -18,6 +18,7 @@ export type Overlay =
   | { name: "libraries" }
   | { name: "devices" }
   | { name: "settings" }
+  | { name: "backups" }
   | { name: "filters" }
   | { name: "burst" }
   | { name: "add"; prefill?: { isbn?: string; title?: string; author?: string }; wishId?: string }

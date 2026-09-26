@@ -180,8 +180,8 @@
     "noResultsTitle": "Nada con estos filtros"
   },
   "data": {
-    "title": "Tus datos",
-    "description": "La copia de seguridad es un .zip con todos los libros, ejemplares y portadas, que se puede restaurar en cualquier dispositivo. El CSV tiene una fila por ejemplar, para hojas de cálculo y otras apps.",
+    "title": "Copias de seguridad",
+    "description": "Un .zip con todo el catálogo y las portadas. Se restaura en cualquier dispositivo.",
     "backup": "Guardar copia",
     "restore": "Restaurar copia",
     "exportCsv": "Exportar CSV",
@@ -198,15 +198,17 @@
       "unreadable": "La copia está dañada y no se puede leer.",
       "other_version": "Esta copia se hizo con otra versión de la app.",
       "not_empty": "Una copia solo se puede restaurar sobre un catálogo vacío. Borra antes los libros o usa una instalación nueva."
-    }
+    },
+    "csvTitle": "Hoja de cálculo",
+    "csvDescription": "Una fila por ejemplar, para Excel u otras apps."
   },
   "devices": {
-    "title": "Dispositivos",
+    "title": "Compartir y dispositivos",
     "description": "Sincroniza este catálogo con tus otros dispositivos por la red de casa. Sin servidor ni cuentas: la conexión va cifrada y solo funciona entre dispositivos emparejados.",
     "thisDevice": "Nombre de este dispositivo",
     "addTitle": "Emparejar un dispositivo",
-    "showCode": "Mostrar código de emparejamiento",
-    "showCodeHelp": "En el otro dispositivo, escanea este código o pega el texto en «Dispositivos». Vale una vez, durante 10 minutos.",
+    "showCode": "Mostrar código",
+    "showCodeHelp": "En el otro dispositivo, escanea este código o pega el texto en «Compartir y dispositivos». Vale una vez, durante 10 minutos.",
     "copy": "Copiar código",
     "stopPairing": "Dejar de emparejar",
     "enterCodeHelp": "O pega aquí el código que muestra otro dispositivo:",
@@ -313,7 +315,60 @@
   },
   "help": {
     "title": "Ayuda",
-    "soon": "La sección de ayuda está en camino. Mientras tanto, cada mensaje de problema de la app explica qué ha pasado y qué hacer."
+    "intro": "Respuestas cortas a lo que más se pregunta.",
+    "topics": {
+      "share": {
+        "title": "Compartir el catálogo en casa",
+        "steps": [
+          "En un dispositivo, abre «Compartir y dispositivos» y pulsa «Mostrar código».",
+          "En el otro, en el mismo sitio, escanea el QR o pega el código.",
+          "Listo: se sincronizan solos cada vez que coinciden en la misma wifi."
+        ]
+      },
+      "away": {
+        "title": "Compartir fuera de casa",
+        "steps": [
+          "Activa el punto de acceso («compartir internet») en un móvil.",
+          "Conecta el otro dispositivo a esa red.",
+          "Empareja o sincroniza como en casa. No gasta datos: todo va entre los dos aparatos."
+        ]
+      },
+      "pairing": {
+        "title": "El móvil no se empareja",
+        "steps": [
+          "Los dos en la misma wifi, no con datos móviles. Evita la red de invitados.",
+          "El código a la vista en el otro dispositivo: vale una vez y durante 10 minutos.",
+          "Desactiva la VPN mientras emparejas.",
+          "En Windows, permite la app en redes privadas cuando lo pregunte el cortafuegos.",
+          "Si el móvil pide permiso de «red local» o «dispositivos cercanos», acéptalo.",
+          "Si nada funciona, reinicia la app en los dos y genera un código nuevo."
+        ]
+      },
+      "backups": {
+        "title": "Copias de seguridad",
+        "steps": [
+          "En «Copias de seguridad», «Guardar copia» crea un .zip con todo, portadas incluidas.",
+          "Guárdalo donde quieras: una carpeta, Google Drive, un pendrive.",
+          "Para recuperarlo, «Restaurar copia» en un catálogo vacío."
+        ]
+      },
+      "lost": {
+        "title": "Si pierdes el móvil",
+        "steps": [
+          "Lo que tenías sigue en los dispositivos con los que sincronizaba y en tus copias.",
+          "En otro dispositivo, abre «Compartir y dispositivos» y olvida el perdido.",
+          "En el móvil nuevo, instala la app y empareja otra vez."
+        ]
+      },
+      "search": {
+        "title": "Buscar los datos de un libro",
+        "steps": [
+          "Al añadir, escribe o escanea el ISBN y pulsa «Buscar»: los datos llegan de Open Library y Google Books.",
+          "Sin conexión, puedes añadirlo a mano y completarlo después.",
+          "Google Books funciona mejor con una clave propia, que se pone en Ajustes."
+        ]
+      }
+    }
   },
   "types": {
     "book": "Libro"
