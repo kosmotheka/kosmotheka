@@ -89,7 +89,8 @@ pub fn affected_editions(
         | Entity::Publisher
         | Entity::Member
         | Entity::Copy
-        | Entity::Wish => BTreeSet::new(),
+        | Entity::Wish
+        | Entity::Revocation => BTreeSet::new(),
     };
     Ok(found)
 }

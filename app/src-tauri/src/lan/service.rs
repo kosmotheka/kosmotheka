@@ -90,11 +90,11 @@ impl LanService {
         Ok(port)
     }
 
-    pub async fn open_pairing(&self) -> Result<PairingInfo> {
+    pub async fn open_pairing(&self, libraries: Vec<String>) -> Result<PairingInfo> {
         let port = self.ensure_serving().await?;
         let token = random_secret();
         *self.pairing.lock().map_err(|_| Error::LockPoisoned)? =
-            Some(PairingWindow::open(token.clone()));
+            Some(PairingWindow::open(token.clone(), libraries));
         let conn = self.database.lock()?;
         let addresses = local_addresses(port);
         if addresses.is_empty() {
@@ -143,6 +143,7 @@ impl LanService {
 mod tests {
     use super::*;
     use crate::lan::client;
+    use crate::ops::DEFAULT_LIBRARY_ID;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn pairs_and_syncs_through_the_local_network_address() {
@@ -151,14 +152,19 @@ mod tests {
         let before = desk.status().await.unwrap();
         assert_eq!(before.serving_port, None, "no server until it is needed");
 
-        let pairing = desk.open_pairing().await.unwrap();
+        let pairing = desk
+            .open_pairing(vec![DEFAULT_LIBRARY_ID.to_owned()])
+            .await
+            .unwrap();
         let code = PairingCode::decode(&pairing.code).unwrap();
         assert!(
             code.addresses.iter().all(|a| !a.starts_with("127.")),
             "{:?}",
             code.addresses
         );
-        let server = client::pair(&phone, &pairing.code).await.unwrap();
+        let server = client::pair(&phone, &pairing.code, &[DEFAULT_LIBRARY_ID.to_owned()])
+            .await
+            .unwrap();
         client::sync(&phone, &server.device_id).await.unwrap();
 
         let after = desk.status().await.unwrap();

@@ -116,10 +116,13 @@ export default function App() {
       running = true;
       last = Date.now();
       const status = await lanStatus().catch(() => null);
+      let removed = 0;
       for (const device of status?.servers ?? []) {
-        await syncWith(device.deviceId).catch(() => null);
+        const report = await syncWith(device.deviceId).catch(() => null);
+        removed += report?.removed.length ?? 0;
       }
       running = false;
+      if (removed > 0) setNotice(t("sharing.removed", { count: removed }));
       // Reload even without changes: the sync indicator shows the new time.
       reload();
     };
@@ -129,7 +132,7 @@ export default function App() {
     void syncAll();
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [reload]);
+  }, [reload, t]);
 
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);

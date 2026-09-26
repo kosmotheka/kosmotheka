@@ -870,5 +870,53 @@
       "code": "other_library",
       "change": 1
     }
+  },
+  {
+    "name": "device access revoked",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000120",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.revoke",
+      "changes": [
+        {
+          "entity": "revocation",
+          "id": "01997c7e-0000-7000-8000-000000000220",
+          "action": "create",
+          "fields": {
+            "device_id": "01997c7e-0000-7000-8000-0000000000ee",
+            "device_name": "Móvil de Laura"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "revocation without the device",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000121",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.revoke",
+      "changes": [
+        {
+          "entity": "revocation",
+          "id": "01997c7e-0000-7000-8000-000000000221",
+          "action": "create",
+          "fields": {
+            "device_name": "Móvil de Laura"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "device_id"
+    }
   }
 ]

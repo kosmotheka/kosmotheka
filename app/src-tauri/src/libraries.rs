@@ -1,5 +1,6 @@
 //! The libraries on this device (D46, D54, D65): list them, create, rename and
-//! switch between them, delete one everywhere or leave it on this device only.
+//! switch between them, delete one everywhere or leave it on this device only, and
+//! withdraw or give back a device's access to one (D71).
 
 use kosmotheka_domain::{Change, Entity, ErrorCode, FieldError, Hlc, validate_library_name};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
@@ -172,12 +173,85 @@ pub fn leave_library(conn: &mut Connection, id: &str) -> Result<String> {
         return Err(Error::OnlyOnThisDevice);
     }
     let tx = conn.transaction()?;
-    ops::delete_library(&tx, id)?;
-    tx.execute("DELETE FROM operations WHERE library_id = ?1", [id])?;
-    tx.execute("DELETE FROM library_peers WHERE library_id = ?1", [id])?;
-    let active = fall_back_from(&tx, id)?;
+    let active = remove_here(&tx, id, None)?;
     tx.commit()?;
     Ok(active)
+}
+
+/// A peer withdrew this device's access (D71): the library goes from here, as if
+/// leaving it. Returns the library now active.
+pub fn remove_revoked(conn: &mut Connection, id: &str, by: &str) -> Result<String> {
+    let tx = conn.transaction()?;
+    let active = remove_here(&tx, id, Some(by))?;
+    tx.commit()?;
+    Ok(active)
+}
+
+/// Removes a library from this device only and tells its other peers, on the next
+/// sync, to stop offering it. `told` already knows.
+fn remove_here(tx: &Transaction<'_>, id: &str, told: Option<&str>) -> Result<String> {
+    tx.execute(
+        "INSERT OR IGNORE INTO leave_notices (library_id, device_id)
+         SELECT library_id, device_id FROM library_peers
+          WHERE library_id = ?1 AND device_id IS NOT ?2",
+        params![id, told],
+    )?;
+    ops::delete_library(tx, id)?;
+    tx.execute("DELETE FROM operations WHERE library_id = ?1", [id])?;
+    tx.execute("DELETE FROM library_peers WHERE library_id = ?1", [id])?;
+    fall_back_from(tx, id)
+}
+
+/// Withdraws a paired device's access to a library (D71). The revocation is an
+/// operation, so every device that has the library stops sharing it with that one,
+/// and the device itself removes it the next time it syncs with any of them.
+pub fn revoke_access(conn: &mut Connection, id: &str, device_id: &str) -> Result<()> {
+    ensure_exists(conn, id)?;
+    let name = lan::known_device_name(conn, device_id)?.unwrap_or_else(|| device_id.to_owned());
+    let tx = conn.transaction()?;
+    if lan::revocations_of(&tx, id, device_id)?.is_empty() {
+        ops::record(
+            &tx,
+            id,
+            "library.revoke",
+            vec![Change::create(
+                Entity::Revocation,
+                new_id(),
+                json!({ "device_id": device_id, "device_name": name }),
+            )],
+        )?;
+    }
+    tx.execute(
+        "DELETE FROM library_peers WHERE library_id = ?1 AND device_id = ?2",
+        [id, device_id],
+    )?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Shares a library with a paired device, lifting any earlier revocation.
+pub fn grant_access(conn: &mut Connection, id: &str, device_id: &str) -> Result<()> {
+    ensure_exists(conn, id)?;
+    let tx = conn.transaction()?;
+    let revocations = lan::revocations_of(&tx, id, device_id)?;
+    if !revocations.is_empty() {
+        ops::record(
+            &tx,
+            id,
+            "library.grant",
+            revocations
+                .iter()
+                .map(|revocation| Change::delete(Entity::Revocation, revocation))
+                .collect(),
+        )?;
+    }
+    lan::share_library(&tx, id, device_id)?;
+    tx.execute(
+        "DELETE FROM leave_notices WHERE library_id = ?1 AND device_id = ?2",
+        [id, device_id],
+    )?;
+    tx.commit()?;
+    Ok(())
 }
 
 /// After `gone` disappears, the active library is another one; with none left, a
@@ -202,7 +276,7 @@ fn fall_back_from(tx: &Transaction<'_>, gone: &str) -> Result<String> {
     Ok(next)
 }
 
-fn library_exists(conn: &Connection, id: &str) -> Result<bool> {
+pub fn library_exists(conn: &Connection, id: &str) -> Result<bool> {
     Ok(conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM libraries WHERE id = ?1)",
         [id],

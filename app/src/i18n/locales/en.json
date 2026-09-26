@@ -436,5 +436,24 @@
     "inThis": "In {{name}}",
     "inAll": "In all",
     "opensThere": "Opens in {{name}}"
+  },
+  "sharing": {
+    "whatGoes": "Which libraries are shared",
+    "whatGoesHint": "Only the ones you tick are sent. You can change it later.",
+    "willSend": "Will send: {{names}}. Nothing else leaves this device.",
+    "sendNothing": "No library will be sent: you will only receive what the other device shares.",
+    "receives": "Receives: {{names}}",
+    "receivesNothing": "Receives no library",
+    "change": "Change",
+    "targetsTitle": "What goes to {{device}}",
+    "targetsHint": "Tick the libraries you also want on {{device}}.",
+    "unticked_one": "You unticked {{names}}: it will disappear from {{device}} the next time they sync. Nothing changes on this device.",
+    "unticked_other": "You unticked {{names}}: they will disappear from {{device}} the next time they sync. Nothing changes on this device.",
+    "saved": "Saved. {{device}} will know on the next sync.",
+    "stop": "Stop sharing",
+    "stopTitle": "Stop sharing {{library}} with {{device}}?",
+    "stopBody": "{{library}} will disappear from {{device}} the next time they sync, and it will receive nothing else. You can share it again whenever you want.",
+    "removed_one": "You no longer have access to {{count}} shared library: it was removed from this device.",
+    "removed_other": "You no longer have access to {{count}} shared libraries: they were removed from this device."
   }
 }

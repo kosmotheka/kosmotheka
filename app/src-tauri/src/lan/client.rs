@@ -18,8 +18,8 @@ use super::identity::fingerprint;
 use super::pairing::PairingCode;
 use super::{
     Hello, KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest,
-    SyncReport, device_name, find_server, only_shared, only_shared_operations, record_server_sync,
-    save_server, share_library, shared_libraries,
+    SyncReport, device_name, find_server, notices_for, only_shared, only_shared_operations,
+    reconcile, record_server_sync, save_server, share_library, shared_libraries,
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -159,8 +159,13 @@ fn is_certificate_error(error: &reqwest::Error) -> bool {
     false
 }
 
-/// Pairs with the device that showed `code_text` and remembers it.
-pub async fn pair(database: &Database, code_text: &str) -> Result<KnownServer> {
+/// Pairs with the device that showed `code_text`, remembers it and shares `libraries`
+/// with it.
+pub async fn pair(
+    database: &Database,
+    code_text: &str,
+    libraries: &[String],
+) -> Result<KnownServer> {
     let code = PairingCode::decode(code_text).ok_or(Error::Lan("bad_code"))?;
     let request = {
         let conn = database.lock()?;
@@ -190,23 +195,37 @@ pub async fn pair(database: &Database, code_text: &str) -> Result<KnownServer> {
     {
         let conn = database.lock()?;
         save_server(&conn, &server)?;
-        // Pairing from a library shares that one; choosing others comes with milestone 4.4.
-        share_library(&conn, &ops::active_library(&conn)?, &server.device_id)?;
+        for library in libraries {
+            share_library(&conn, library, &server.device_id)?;
+        }
     }
     Ok(server)
 }
 
-/// Pulls what the peer has, then pushes what it lacks.
+/// Pulls what the peer has, then pushes what it lacks. A library the peer has just
+/// started sharing arrives in a second round, once this device has taken it up.
 pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
-    let (server, local_device, shared, pull) = {
+    let mut report = sync_once(database, device_id).await?;
+    if report.taken_up {
+        let again = sync_once(database, device_id).await?;
+        report.received.add(&again.received);
+        report.sent += again.sent;
+        report.removed.extend(again.removed);
+    }
+    Ok(report)
+}
+
+async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
+    let (server, local_device, pull) = {
         let conn = database.lock()?;
         let server = find_server(&conn, device_id)?.ok_or(Error::Lan("unknown_device"))?;
         let shared = shared_libraries(&conn, device_id)?;
         let pull = PullRequest {
             schema_version: ops::schema_version(&conn)?,
             vectors: sync::version_vectors(&conn, &shared)?,
+            notices: notices_for(&conn, device_id)?,
         };
-        (server, ops::device_id(&conn)?, shared, pull)
+        (server, ops::device_id(&conn)?, pull)
     };
     let client = pinned_client(&server.fingerprint)?;
     let auth = Some((local_device.as_str(), server.secret.as_str()));
@@ -220,14 +239,29 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
             }
             other => other?,
         };
-    let (received, to_send) = {
+    let (received, to_send, taken_up, removed) = {
         let mut conn = database.lock()?;
+        let before = shared_libraries(&conn, device_id)?;
+        let offered: Vec<String> = pulled.vectors.keys().cloned().collect();
+        let shared = reconcile(&mut conn, device_id, &offered, &pulled.notices)?;
+        let taken_up = shared.iter().any(|library| !before.contains(library));
+        let removed: Vec<String> = pulled
+            .notices
+            .revoked
+            .into_iter()
+            .filter(|library| before.contains(library))
+            .collect();
         let received = sync::merge(
             &mut conn,
             only_shared_operations(pulled.operations, &shared),
         )?;
         let theirs = only_shared(pulled.vectors, &shared);
-        (received, sync::operations_since(&conn, &theirs)?)
+        (
+            received,
+            sync::operations_since(&conn, &theirs)?,
+            taken_up,
+            removed,
+        )
     };
 
     let sent = to_send.len();
@@ -245,7 +279,12 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
         .await?;
     }
     record_server_sync(&*database.lock()?, device_id, &address)?;
-    Ok(SyncReport { received, sent })
+    Ok(SyncReport {
+        received,
+        sent,
+        taken_up,
+        removed,
+    })
 }
 
 /// Looks for a paired device that moved to another address on this device's own
@@ -334,7 +373,12 @@ mod tests {
     use crate::lan::pairing::PairingWindow;
     use crate::lan::server::{self, RunningServer, ServerState};
     use crate::lan::{list_devices, random_secret};
+    use crate::libraries;
     use crate::ops::DEFAULT_LIBRARY_ID;
+
+    fn default() -> Vec<String> {
+        vec![DEFAULT_LIBRARY_ID.to_owned()]
+    }
 
     fn add(database: &Database, title: &str) {
         let book = ValidBook {
@@ -403,7 +447,10 @@ mod tests {
     impl Serving {
         fn open_pairing(&self) -> String {
             let token = random_secret();
-            *self.state.pairing.lock().unwrap() = Some(PairingWindow::open(token.clone()));
+            *self.state.pairing.lock().unwrap() = Some(PairingWindow::open(
+                token.clone(),
+                vec![DEFAULT_LIBRARY_ID.to_owned()],
+            ));
             let conn = self.database.lock().unwrap();
             PairingCode {
                 device_id: ops::device_id(&conn).unwrap(),
@@ -423,7 +470,9 @@ mod tests {
         let phone = Database::in_memory();
         add(&phone, "On the phone");
 
-        let server = pair(&phone, &desk.open_pairing()).await.unwrap();
+        let server = pair(&phone, &desk.open_pairing(), &default())
+            .await
+            .unwrap();
         let report = sync(&phone, &server.device_id).await.unwrap();
 
         assert_eq!(report.received.received, 1);
@@ -439,13 +488,218 @@ mod tests {
         assert_eq!((again.received.received, again.sent), (0, 0));
     }
 
+    fn add_to(database: &Database, library: &str, title: &str) {
+        let book = ValidBook {
+            edition: EditionInput {
+                title: title.into(),
+                ..EditionInput::default()
+            }
+            .validate()
+            .unwrap(),
+            copy: CopyInput {
+                owner: None,
+                format: Format::Paperback,
+                quantity: 1,
+                location: None,
+                acquired_on: None,
+            }
+            .validate()
+            .unwrap(),
+        };
+        catalog::create_book(&mut database.lock().unwrap(), library, &book, None).unwrap();
+    }
+
+    fn titles_in(database: &Database, library: &str) -> Vec<String> {
+        catalog::list_books(&database.lock().unwrap(), library, &BookFilter::default())
+            .unwrap()
+            .into_iter()
+            .map(|b| b.title)
+            .collect()
+    }
+
+    fn has_library(database: &Database, library: &str) -> bool {
+        libraries::library_exists(&database.lock().unwrap(), library).unwrap()
+    }
+
+    fn id_of(database: &Database) -> String {
+        ops::device_id(&database.lock().unwrap()).unwrap()
+    }
+
+    /// A desk with its default library and a "Club" one, each with a book.
+    async fn desk_with_club() -> (Serving, String) {
+        let desk = serve().await;
+        add(&desk.database, "Desk's own");
+        let club = libraries::create_library(&mut desk.database.lock().unwrap(), "Club").unwrap();
+        add_to(&desk.database, &club, "Club book");
+        (desk, club)
+    }
+
+    fn open_pairing_for(desk: &Serving, libraries: Vec<String>) -> String {
+        let code = desk.open_pairing();
+        desk.state
+            .pairing
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .libraries = libraries;
+        code
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn only_the_chosen_libraries_travel() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        add(&phone, "Phone's own");
+
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(titles_in(&phone, &club), vec!["Club book"]);
+        assert_eq!(titles(&phone), vec!["Phone's own"]);
+        assert_eq!(titles(&desk.database), vec!["Desk's own"]);
+
+        // Changes to the shared library go both ways from then on.
+        add_to(&phone, &club, "Added on the phone");
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(
+            titles_in(&desk.database, &club),
+            vec!["Added on the phone", "Club book"]
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_library_both_have_travels_only_if_both_share_it() {
+        let desk = serve().await;
+        add(&desk.database, "On the desk");
+        let phone = Database::in_memory();
+        add(&phone, "On the phone");
+
+        // The desk offers its default library; the phone has one with the same id
+        // but did not choose to share it, so nothing moves either way.
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(titles(&phone), vec!["On the phone"]);
+        assert_eq!(titles(&desk.database), vec!["On the desk"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn revoking_access_removes_the_library_there_until_given_back() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        libraries::set_active_library(&phone.lock().unwrap(), &club).unwrap();
+        let phone_id = id_of(&phone);
+
+        libraries::revoke_access(&mut desk.database.lock().unwrap(), &club, &phone_id).unwrap();
+        let report = sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(report.removed, vec![club.clone()]);
+        assert!(!has_library(&phone, &club));
+        assert_ne!(ops::active_library(&phone.lock().unwrap()).unwrap(), club);
+        assert!(has_library(&desk.database, &club), "the desk keeps it");
+        // Nothing comes back on later syncs.
+        sync(&phone, &server.device_id).await.unwrap();
+        assert!(!has_library(&phone, &club));
+
+        libraries::grant_access(&mut desk.database.lock().unwrap(), &club, &phone_id).unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(titles_in(&phone, &club), vec!["Club book"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_revoked_device_is_refused_its_old_offer() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        libraries::revoke_access(&mut desk.database.lock().unwrap(), &club, &id_of(&phone))
+            .unwrap();
+        // The phone changes the library before it hears of the revocation.
+        add_to(&phone, &club, "Too late");
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(titles_in(&desk.database, &club), vec!["Club book"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_left_library_is_not_offered_again() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        libraries::leave_library(&mut phone.lock().unwrap(), &club).unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert!(!has_library(&phone, &club));
+        let desk_conn = desk.database.lock().unwrap();
+        assert!(
+            shared_libraries(&desk_conn, &id_of(&phone))
+                .unwrap()
+                .is_empty()
+        );
+        let notices: i64 = phone
+            .lock()
+            .unwrap()
+            .query_row("SELECT count(*) FROM leave_notices", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(notices, 0, "the notice goes once the desk stops offering");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_revocation_reaches_the_device_through_another_one() {
+        // The desk and the tablet both serve; the phone syncs with both, and the
+        // desk also syncs with the tablet.
+        let (desk, club) = desk_with_club().await;
+        let tablet = serve().await;
+        let phone = Database::in_memory();
+        let to_tablet = pair(
+            &desk.database,
+            &tablet.open_pairing(),
+            std::slice::from_ref(&club),
+        )
+        .await
+        .unwrap();
+        sync(&desk.database, &to_tablet.device_id).await.unwrap();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let phone_to_desk = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &phone_to_desk.device_id).await.unwrap();
+        let code = open_pairing_for(&tablet, vec![club.clone()]);
+        let phone_to_tablet = pair(&phone, &code, std::slice::from_ref(&club))
+            .await
+            .unwrap();
+        sync(&phone, &phone_to_tablet.device_id).await.unwrap();
+        assert_eq!(titles_in(&tablet.database, &club), vec!["Club book"]);
+
+        libraries::revoke_access(&mut desk.database.lock().unwrap(), &club, &id_of(&phone))
+            .unwrap();
+        sync(&desk.database, &to_tablet.device_id).await.unwrap();
+        // The tablet heard of it from the desk: it stops sharing and tells the phone.
+        add_to(&tablet.database, &club, "After the revocation");
+        let report = sync(&phone, &phone_to_tablet.device_id).await.unwrap();
+
+        assert_eq!(report.removed, vec![club.clone()]);
+        assert!(!has_library(&phone, &club));
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn a_pairing_code_works_only_once() {
         let desk = serve().await;
         let code = desk.open_pairing();
 
-        pair(&Database::in_memory(), &code).await.unwrap();
-        let second = pair(&Database::in_memory(), &code).await;
+        pair(&Database::in_memory(), &code, &default())
+            .await
+            .unwrap();
+        let second = pair(&Database::in_memory(), &code, &default()).await;
 
         assert!(matches!(second, Err(Error::Lan("rejected"))));
     }
@@ -456,7 +710,7 @@ mod tests {
         let mut code = PairingCode::decode(&desk.open_pairing()).unwrap();
         code.fingerprint = Identity::generate().unwrap().fingerprint().to_owned();
 
-        let result = pair(&Database::in_memory(), &code.encode()).await;
+        let result = pair(&Database::in_memory(), &code.encode(), &default()).await;
 
         assert!(
             matches!(result, Err(Error::Lan("wrong_certificate"))),
@@ -468,7 +722,9 @@ mod tests {
     async fn a_forgotten_device_can_no_longer_sync() {
         let desk = serve().await;
         let phone = Database::in_memory();
-        let server = pair(&phone, &desk.open_pairing()).await.unwrap();
+        let server = pair(&phone, &desk.open_pairing(), &default())
+            .await
+            .unwrap();
         let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
         crate::lan::forget_device(&desk.database.lock().unwrap(), &phone_id).unwrap();
 
@@ -483,7 +739,7 @@ mod tests {
         let code = desk.open_pairing();
         drop(desk);
 
-        let result = pair(&Database::in_memory(), &code).await;
+        let result = pair(&Database::in_memory(), &code, &default()).await;
 
         assert!(matches!(result, Err(Error::Lan("unreachable"))));
     }

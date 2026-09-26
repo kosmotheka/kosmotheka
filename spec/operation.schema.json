@@ -92,7 +92,8 @@
             "member",
             "copy",
             "publisher",
-            "wish"
+            "wish",
+            "revocation"
           ]
         },
         "id": {
@@ -378,6 +379,30 @@
                   },
                   "cover_url": {
                     "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "revocation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "device_id": {
+                    "type": "string"
+                  },
+                  "device_name": {
+                    "type": "string"
                   }
                 }
               }

@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::error::Result;
+use crate::libraries;
 use crate::ops::{read_state, write_state};
 use crate::sync::{LibraryVectors, MergeReport, SyncOperation};
 
@@ -51,16 +52,32 @@ pub struct PairResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PullRequest {
     pub schema_version: i64,
-    /// What the client holds of each library it shares with the server.
+    /// What the client holds of each library it shares with the server. The keys
+    /// are also its offer: the libraries it wants to share.
     pub vectors: LibraryVectors,
+    #[serde(default)]
+    pub notices: SharingNotices,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PullResponse {
     pub operations: Vec<SyncOperation>,
-    /// What the server holds of the libraries both share, so the client knows what to push.
+    /// What the server holds of each library it shares with the client, so the client
+    /// knows what to push. As in the request, the keys are the server's offer.
     pub vectors: LibraryVectors,
+    #[serde(default)]
+    pub notices: SharingNotices,
+}
+
+/// Changes in sharing that the other device must act on (D71).
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SharingNotices {
+    /// Libraries the receiver no longer has access to: it removes them.
+    pub revoked: Vec<String>,
+    /// Libraries the sender left: the receiver stops offering them.
+    pub left: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,6 +91,10 @@ pub struct PushRequest {
 pub struct SyncReport {
     pub received: MergeReport,
     pub sent: usize,
+    /// This device started sharing a library the peer offered.
+    pub taken_up: bool,
+    /// Libraries removed here because the peer withdrew this device's access (D71).
+    pub removed: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -268,9 +289,17 @@ pub fn list_devices(conn: &Connection, table: &str) -> Result<Vec<KnownDevice>> 
 
 // --- Which libraries go to each device (D46) -----------------------------------
 
+/// The libraries that go to `device_id`. A revocation received from another device
+/// wins over this device's own list (D71).
 pub fn shared_libraries(conn: &Connection, device_id: &str) -> Result<Vec<String>> {
     Ok(conn
-        .prepare("SELECT library_id FROM library_peers WHERE device_id = ?1 ORDER BY library_id")?
+        .prepare(
+            "SELECT library_id FROM library_peers p
+              WHERE device_id = ?1
+                AND NOT EXISTS (SELECT 1 FROM revocations r
+                                 WHERE r.library_id = p.library_id AND r.device_id = p.device_id)
+              ORDER BY library_id",
+        )?
         .query_map([device_id], |row| row.get(0))?
         .collect::<rusqlite::Result<_>>()?)
 }
@@ -291,6 +320,8 @@ pub fn devices_sharing(conn: &Connection, library: &str) -> Result<Vec<KnownDevi
                  UNION ALL
                  SELECT device_id, name, paired_at, last_sync_at FROM known_clients) d
            JOIN library_peers p ON p.device_id = d.device_id AND p.library_id = ?1
+          WHERE NOT EXISTS (SELECT 1 FROM revocations r
+                             WHERE r.library_id = p.library_id AND r.device_id = p.device_id)
           GROUP BY d.device_id
           ORDER BY d.name COLLATE NOCASE",
     )?;
@@ -303,6 +334,121 @@ pub fn devices_sharing(conn: &Connection, library: &str) -> Result<Vec<KnownDevi
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
+/// A paired device's name, whichever side of the pairing it is on.
+pub fn known_device_name(conn: &Connection, device_id: &str) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT name FROM known_servers WHERE device_id = ?1
+             UNION ALL SELECT name FROM known_clients WHERE device_id = ?1 LIMIT 1",
+            [device_id],
+            |row| row.get(0),
+        )
+        .optional()?)
+}
+
+/// Ids of the revocation rows that keep `device_id` out of `library`.
+pub fn revocations_of(conn: &Connection, library: &str, device_id: &str) -> Result<Vec<String>> {
+    Ok(conn
+        .prepare("SELECT id FROM revocations WHERE library_id = ?1 AND device_id = ?2 ORDER BY id")?
+        .query_map([library, device_id], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+/// What this device has to tell `peer`: where it lost access, and what this device left.
+pub fn notices_for(conn: &Connection, peer: &str) -> Result<SharingNotices> {
+    let list = |sql: &str| -> Result<Vec<String>> {
+        Ok(conn
+            .prepare(sql)?
+            .query_map([peer], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?)
+    };
+    Ok(SharingNotices {
+        revoked: list(
+            "SELECT DISTINCT library_id FROM revocations WHERE device_id = ?1 ORDER BY library_id",
+        )?,
+        left: list(
+            "SELECT library_id FROM leave_notices WHERE device_id = ?1 ORDER BY library_id",
+        )?,
+    })
+}
+
+/// Agrees with `peer` on which libraries both share, from what it offers and its
+/// notices, and returns them. A library travels only when both sides share it.
+/// An offer is taken up only for a library this device does not have: sharing one
+/// of its own is always this device's choice ("nothing leaves without saying").
+pub fn reconcile(
+    conn: &mut Connection,
+    peer: &str,
+    offered: &[String],
+    notices: &SharingNotices,
+) -> Result<Vec<String>> {
+    let shared = shared_libraries(conn, peer)?;
+    for library in &notices.revoked {
+        // Only the peers it was shared with can take a library away.
+        if shared.contains(library) {
+            libraries::remove_revoked(conn, library, peer)?;
+        }
+    }
+    for library in &notices.left {
+        conn.execute(
+            "DELETE FROM library_peers WHERE library_id = ?1 AND device_id = ?2",
+            [library, peer],
+        )?;
+    }
+    // A leave notice is done once the peer stops offering that library.
+    let pending: Vec<String> = conn
+        .prepare("SELECT library_id FROM leave_notices WHERE device_id = ?1")?
+        .query_map([peer], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    for library in pending.iter().filter(|library| !offered.contains(library)) {
+        conn.execute(
+            "DELETE FROM leave_notices WHERE library_id = ?1 AND device_id = ?2",
+            [library, peer],
+        )?;
+    }
+    let shared = shared_libraries(conn, peer)?;
+    for library in offered {
+        if shared.contains(library)
+            || pending.contains(library)
+            || notices.revoked.contains(library)
+            || libraries::library_exists(conn, library)?
+        {
+            continue;
+        }
+        share_library(conn, library, peer)?;
+    }
+    shared_libraries(conn, peer)
+}
+
+/// A paired device and the libraries that go to it.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceSharing {
+    #[serde(flatten)]
+    pub device: KnownDevice,
+    pub libraries: Vec<String>,
+}
+
+/// Every paired device, each with what it receives.
+pub fn sharing_overview(conn: &Connection) -> Result<Vec<DeviceSharing>> {
+    let mut devices = list_devices(conn, "known_servers")?;
+    for client in list_devices(conn, "known_clients")? {
+        if !devices.iter().any(|d| d.device_id == client.device_id) {
+            devices.push(client);
+        }
+    }
+    devices.sort_by_key(|d| d.name.to_lowercase());
+    devices
+        .into_iter()
+        .map(|device| {
+            Ok(DeviceSharing {
+                libraries: shared_libraries(conn, &device.device_id)?,
+                device,
+            })
+        })
+        .collect()
 }
 
 /// Keeps only the entries of `vectors` for libraries shared with that device.
@@ -327,6 +473,10 @@ pub fn only_shared_operations(
 pub fn forget_device(conn: &Connection, device_id: &str) -> Result<()> {
     conn.execute(
         "DELETE FROM library_peers WHERE device_id = ?1",
+        [device_id],
+    )?;
+    conn.execute(
+        "DELETE FROM leave_notices WHERE device_id = ?1",
         [device_id],
     )?;
     conn.execute(

@@ -5,12 +5,18 @@ import { Copy, Link2, QrCode, RefreshCw, Trash2 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
+import { LibraryChecklist, SendSummary } from "@/components/libraries/library-checklist";
+import { ShareTargetsDialog } from "@/components/libraries/share-targets-dialog";
+import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
+import { useDesktop } from "@/components/shell/use-desktop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  type DeviceSharing,
   type KnownDevice,
   type LanStatus,
+  type SyncReport,
   closePairing,
   forgetDevice,
   isMobile,
@@ -18,6 +24,7 @@ import {
   openPairing,
   pairWith,
   setDeviceName,
+  sharingOverview,
   syncErrorKey,
   syncWith,
 } from "@/lib/api";
@@ -39,6 +46,13 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [canScan, setCanScan] = useState(false);
+  const [sharing, setSharing] = useState<DeviceSharing[]>([]);
+  const [toShare, setToShare] = useState<string[]>([]);
+  const [editing, setEditing] = useState<DeviceSharing | null>(null);
+  const desktop = useDesktop();
+  const libraries = useLibraries();
+  const nameOf = useLibraryName();
+  const activeId = libraries.active?.id;
 
   useEffect(() => {
     void isMobile().then(setCanScan);
@@ -51,11 +65,45 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
         setName(loaded.deviceName);
       })
       .catch((e: unknown) => setMessage(String(e)));
+    sharingOverview()
+      .then(setSharing)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (open) refresh();
   }, [open, refresh]);
+
+  // Each time the dialog opens, pairing offers the active library, as Design asks.
+  const [seeded, setSeeded] = useState(false);
+  if (open && !seeded && activeId) {
+    setSeeded(true);
+    setToShare([activeId]);
+  }
+  if (!open && seeded) setSeeded(false);
+
+  const receives = (device: KnownDevice) => {
+    const ids = sharing.find((d) => d.deviceId === device.deviceId)?.libraries ?? [];
+    const names = libraries.all.filter((l) => ids.includes(l.id)).map((l) => nameOf(l));
+    return names.length > 0
+      ? t("sharing.receives", { names: names.join(", ") })
+      : t("sharing.receivesNothing");
+  };
+
+  const editSharing = (device: KnownDevice) =>
+    setEditing(
+      sharing.find((d) => d.deviceId === device.deviceId) ?? { ...device, libraries: [] },
+    );
+
+  /** A sync may have taken up a library or removed one: the message says so. */
+  const afterSync = (report: SyncReport, summary: string) => {
+    if (report.received.received > 0 || report.takenUp || report.removed.length > 0) {
+      onChanged();
+    }
+    return report.removed.length > 0
+      ? `${summary} ${t("sharing.removed", { count: report.removed.length })}`
+      : summary;
+  };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -83,7 +131,7 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
 
   const showCode = () =>
     run("pairing", async () => {
-      const info = await openPairing();
+      const info = await openPairing(toShare);
       const qr = await QRCode.toString(info.code, { type: "svg", margin: 1 });
       setPairing({ code: info.code, qr });
       return null;
@@ -91,26 +139,31 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
 
   const pair = (code: string) =>
     run("pair", async () => {
-      const paired = await pairWith(code);
+      const paired = await pairWith(code, toShare);
       setCodeInput("");
       const report = await syncWith(paired.deviceId);
       onChanged();
-      return t("devices.pairedAndSynced", {
-        name: paired.name,
-        received: report.received.received,
-        sent: report.sent,
-      });
+      return afterSync(
+        report,
+        t("devices.pairedAndSynced", {
+          name: paired.name,
+          received: report.received.received,
+          sent: report.sent,
+        }),
+      );
     });
 
   const syncNow = (device: KnownDevice) =>
     run(device.deviceId, async () => {
       const report = await syncWith(device.deviceId);
-      if (report.received.received > 0) onChanged();
-      return t("devices.synced", {
-        name: device.name,
-        received: report.received.received,
-        sent: report.sent,
-      });
+      return afterSync(
+        report,
+        t("devices.synced", {
+          name: device.name,
+          received: report.received.received,
+          sent: report.sent,
+        }),
+      );
     });
 
   const forget = (device: KnownDevice) =>
@@ -150,6 +203,16 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
 
       <section className="space-y-3 border-t pt-4">
         <h3 className="text-sm font-medium">{t("devices.addTitle")}</h3>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{t("sharing.whatGoes")}</p>
+          <p className="text-[13px] text-muted-foreground">{t("sharing.whatGoesHint")}</p>
+          <LibraryChecklist
+            selected={toShare}
+            onChange={setToShare}
+            disabled={pairing !== null || busy !== null}
+          />
+          <SendSummary selected={toShare} />
+        </div>
         {pairing ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t("devices.showCodeHelp")}</p>
@@ -232,6 +295,7 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
                 <div className="text-sm">
                   <p className="font-medium">{device.name}</p>
                   <p className="text-muted-foreground">{lastSync(device)}</p>
+                  <ReceivesLine text={receives(device)} onChange={() => editSharing(device)} />
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -256,6 +320,7 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
                   <p className="text-muted-foreground">
                     {t("devices.syncsWithThis")} · {lastSync(device)}
                   </p>
+                  <ReceivesLine text={receives(device)} onChange={() => editSharing(device)} />
                 </div>
                 <ForgetButton device={device} onForget={() => void forget(device)} />
               </li>
@@ -263,7 +328,28 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
           </ul>
         </section>
       )}
+      <ShareTargetsDialog
+        device={editing}
+        desktop={desktop}
+        onClose={() => setEditing(null)}
+        onSaved={(saved) => {
+          setMessage(saved);
+          refresh();
+        }}
+      />
     </ResponsiveDialog>
+  );
+}
+
+function ReceivesLine({ text, onChange }: { text: string; onChange: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <p className="text-muted-foreground">
+      {text} ·{" "}
+      <button type="button" className="font-medium text-foreground underline" onClick={onChange}>
+        {t("sharing.change")}
+      </button>
+    </p>
   );
 }
 

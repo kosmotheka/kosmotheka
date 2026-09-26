@@ -2,10 +2,17 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, History, LogOut, MonitorSmartphone, Plus, Trash2 } from "lucide-react";
 
+import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { type KnownDevice, isCommandError, libraryDevices, renameLibrary } from "@/lib/api";
+import {
+  type KnownDevice,
+  isCommandError,
+  libraryDevices,
+  renameLibrary,
+  setSharing,
+} from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
 
 /** Settings of the active library: name, who it is shared with, leave or delete it. */
@@ -19,6 +26,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [devices, setDevices] = useState<KnownDevice[]>([]);
+  const [devicesVersion, setDevicesVersion] = useState(0);
 
   // Another library became active: start from its name.
   if (library && shownId !== library.id) {
@@ -36,7 +44,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
     return () => {
       cancelled = true;
     };
-  }, [library]);
+  }, [library, devicesVersion]);
 
   if (!library) return null;
 
@@ -131,6 +139,24 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
                       : t("devices.neverSynced")}
                   </span>
                 </span>
+                <ConfirmButton
+                  trigger={
+                    <Button variant="ghost" size="sm" className="shrink-0">
+                      {t("sharing.stop")}
+                    </Button>
+                  }
+                  title={t("sharing.stopTitle", { library: nameOf(library), device: device.name })}
+                  description={t("sharing.stopBody", {
+                    library: nameOf(library),
+                    device: device.name,
+                  })}
+                  confirmLabel={t("sharing.stop")}
+                  onConfirm={() =>
+                    void setSharing(library.id, device.deviceId, false).then(() =>
+                      setDevicesVersion((v) => v + 1),
+                    )
+                  }
+                />
               </div>
             ))}
             <button

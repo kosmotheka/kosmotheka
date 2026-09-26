@@ -86,6 +86,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | membresía | `membership` | A user's role in a library. Keep it distinct from `member` |
 | rol: administrador · editor · lector | `admin` · `editor` · `reader` | |
 | invitación | `invitation` | |
+| retirada de acceso | `revocation` | A device that may no longer receive a library (D71). Synced with the library |
 | solicitud | `change_request` / `ChangeRequest` | Not `request`, which collides with the HTTP request (milestone 3.4) |
 
 ## Documentation is part of the work

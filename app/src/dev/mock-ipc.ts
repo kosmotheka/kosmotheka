@@ -74,6 +74,8 @@ mockIPC((cmd, args) => {
       return libraries;
     case "library_devices":
       return lan.servers;
+    case "sharing_overview":
+      return lan.servers.map((device) => ({ ...device, libraries: [HOME] }));
     case "list_wishes":
       return wishes;
     case "catalog_options":
@@ -81,7 +83,7 @@ mockIPC((cmd, args) => {
     case "lan_status":
       return lan;
     case "sync_with":
-      return { received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 }, sent: 0 };
+      return { received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 }, sent: 0, takenUp: false, removed: [] };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
     // Any ISBN starting with 97884 is "not owned"; lookups always fail, as if offline.

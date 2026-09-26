@@ -17,8 +17,30 @@ Cada dispositivo guarda todas las operaciones (las suyas y las recibidas). Sincr
 
 Todo lo que sigue ocurre **biblioteca a biblioteca** (D46, D54):
 - Cada operación pertenece a una biblioteca, y una fila se identifica por biblioteca, entidad e id. Versiones de campo y lápidas también son por biblioteca: nada de lo que pase en una toca otra.
-- **Qué va a cada dispositivo** lo dice la tabla local `library_peers`. Al emparejar se comparte la biblioteca activa (elegir otras llega con el hito 4.4). Solo se piden, se envían y se aceptan operaciones de bibliotecas compartidas con ese dispositivo; lo demás se descarta antes de fusionar.
+- **Qué va a cada dispositivo** lo dice la tabla local `library_peers`. Solo se piden, se envían y se aceptan operaciones de bibliotecas compartidas con ese dispositivo; lo demás se descarta antes de fusionar. Ver «Compartir y retirar el acceso», más abajo.
 - **Borrar una biblioteca** (D65) quita todas sus filas y deja una lápida de la biblioteca: cualquier cambio posterior en ella se ignora, tenga la marca que tenga. La operación de borrado se queda en el registro (D66) y sigue viajando a quien comparta esa biblioteca.
+
+## Compartir y retirar el acceso (hito 4.4, D71)
+
+**Cada dispositivo elige lo que envía.** Al emparejar, los dos marcan qué bibliotecas comparten con el otro, y se puede cambiar después en «Compartir y dispositivos». Nada sale sin marcarlo.
+
+**La oferta.** En cada sincronización, las claves de los vectores que manda cada lado son su oferta: las bibliotecas que comparte con el otro. Al recibirla, cada dispositivo concilia (`lan::reconcile`):
+- **Una biblioteca que no tiene** la acepta: la añade a `library_peers` y la recibe entera. Si la acepta el cliente, hace una segunda vuelta en la misma sincronización para traerla.
+- **Una biblioteca que ya tiene** no la acepta por su cuenta: compartir lo propio es siempre una decisión de ese dispositivo. Por eso «Mi biblioteca» (el mismo id en todos, D46) solo se une si **los dos** la marcan.
+- Una biblioteca viaja solo cuando **los dos lados** la comparten.
+
+**Retirar el acceso** (desmarcar en «Qué va a…» o «Dejar de compartir» en los ajustes de la biblioteca):
+- Se registra una operación `library.revoke` que crea una fila `revocation` (dispositivo y su nombre) en esa biblioteca. Viaja a todos los que la comparten, y **ninguno** vuelve a compartirla con ese dispositivo: la retirada gana sobre la lista local de cada uno.
+- Cada sincronización lleva unos **avisos** (`SharingNotices`): `revoked`, las bibliotecas a las que el otro ya no tiene acceso. Al recibirlo, el afectado **borra la biblioteca** (contenido y registro, como al salir) y lo cuenta en el informe (`removed`). Solo lo acepta de un dispositivo con el que compartía esa biblioteca.
+- Sus cambios que no llegaron antes de la retirada se descartan: ya no se comparte con él.
+- **Devolver el acceso** (`library.grant`) borra la fila de retirada y vuelve a compartir: la biblioteca llega entera otra vez.
+
+**Salir** de una biblioteca (D65) deja un aviso pendiente para cada dispositivo con el que se compartía (tabla local `leave_notices`): en la próxima sincronización se le dice `left` y deja de ofrecerla. El aviso se borra cuando ese dispositivo ya no la ofrece. Así no vuelve a aceptarse sola.
+
+**Límites** (dichos también en D71):
+- el afectado se entera cuando vuelve a conectar con cualquiera de los dispositivos que la tienen;
+- los dispositivos que la recibieron **a través** del afectado (otros suyos) no se conocen hasta que haya cuentas (Fase 5), y la conservan;
+- lo que ya se haya exportado no se puede borrar.
 
 ## Qué le falta a quién: el vector de versiones
 
@@ -70,13 +92,13 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Emparejar** (`POST /v1/pair`):
 1. El que se conecta prueba las direcciones del código hasta que una responde. Solo acepta el certificado cuya huella viene en el código: cualquier otro se rechaza como impostor.
-2. Envía el secreto de un solo uso, su identificador y su nombre.
+2. Envía el secreto de un solo uso, su identificador y su nombre. Cada lado guarda en `library_peers` las bibliotecas que marcó para el otro; las del servidor van en la ventana de emparejamiento abierta al mostrar el código.
 3. El servidor, si el secreto es válido, lo invalida (no sirve para un segundo dispositivo) y devuelve un **secreto permanente**. De ese secreto solo guarda el hash.
 4. El cliente guarda al servidor: nombre, direcciones, huella y secreto.
 
 **Sincronizar** (autenticado con `X-Device-Id` y `Authorization: Bearer <secreto>`):
-1. `POST /v1/sync/pull` con la versión de esquema y los vectores del cliente, uno por biblioteca compartida. El servidor responde con las operaciones que le faltan al cliente de las bibliotecas que ambos comparten, y con sus propios vectores de esas bibliotecas. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
-2. El cliente las aplica (`merge`) y calcula las que le faltan al servidor.
+1. `POST /v1/sync/pull` con la versión de esquema, los vectores del cliente (uno por biblioteca que comparte con el servidor) y sus avisos. El servidor concilia, responde con las operaciones que le faltan al cliente de las bibliotecas que ambos comparten, con sus propios vectores de las que él comparte y con sus avisos. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
+2. El cliente concilia con la oferta y los avisos del servidor, aplica las operaciones (`merge`) y calcula las que le faltan al servidor.
 3. `POST /v1/sync/push` con esas operaciones. El servidor las aplica.
 4. El cliente coloca primero la dirección que ha funcionado, para la próxima vez.
 

@@ -39,13 +39,16 @@ impl PairingCode {
 pub struct PairingWindow {
     pub token: String,
     pub expires: Instant,
+    /// What this device shares with whoever pairs through this window.
+    pub libraries: Vec<String>,
 }
 
 impl PairingWindow {
-    pub fn open(token: String) -> Self {
+    pub fn open(token: String, libraries: Vec<String>) -> Self {
         Self {
             token,
             expires: Instant::now() + PAIRING_WINDOW,
+            libraries,
         }
     }
 
@@ -77,7 +80,7 @@ mod tests {
 
     #[test]
     fn window_accepts_only_its_token_while_open() {
-        let window = PairingWindow::open("secret".into());
+        let window = PairingWindow::open("secret".into(), Vec::new());
         assert!(window.accepts("secret"));
         assert!(!window.accepts("other"));
         let expired = PairingWindow {

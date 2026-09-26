@@ -269,7 +269,7 @@ pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 9] = [
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 10] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::Edition,
@@ -279,6 +279,7 @@ const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 9] = [
     Entity::Publisher,
     Entity::Member,
     Entity::Wish,
+    Entity::Revocation,
 ];
 
 /// Column names are taken from the schema, so unknown keys can never reach SQL.

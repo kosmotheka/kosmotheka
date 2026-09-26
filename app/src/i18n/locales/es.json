@@ -436,5 +436,24 @@
     "inThis": "En {{name}}",
     "inAll": "En todas",
     "opensThere": "Se abre en {{name}}"
+  },
+  "sharing": {
+    "whatGoes": "Qué bibliotecas se comparten",
+    "whatGoesHint": "Solo se envían las que marques. Puedes cambiarlo después.",
+    "willSend": "Se enviará: {{names}}. Nada más sale de este dispositivo.",
+    "sendNothing": "No se enviará ninguna biblioteca: solo recibirás las que comparta el otro.",
+    "receives": "Recibe: {{names}}",
+    "receivesNothing": "No recibe ninguna biblioteca",
+    "change": "Cambiar",
+    "targetsTitle": "Qué va a {{device}}",
+    "targetsHint": "Marca las bibliotecas que quieres tener también en {{device}}.",
+    "unticked_one": "Has desmarcado {{names}}: desaparecerá de {{device}} la próxima vez que se sincronicen. En este dispositivo no cambia nada.",
+    "unticked_other": "Has desmarcado {{names}}: desaparecerán de {{device}} la próxima vez que se sincronicen. En este dispositivo no cambia nada.",
+    "saved": "Guardado. {{device}} lo sabrá en la próxima sincronización.",
+    "stop": "Dejar de compartir",
+    "stopTitle": "¿Dejar de compartir {{library}} con {{device}}?",
+    "stopBody": "{{library}} desaparecerá de {{device}} la próxima vez que se sincronicen, y no recibirá nada más. Podrás volver a compartirla cuando quieras.",
+    "removed_one": "Ya no tienes acceso a {{count}} biblioteca compartida: se ha quitado de este dispositivo.",
+    "removed_other": "Ya no tienes acceso a {{count}} bibliotecas compartidas: se han quitado de este dispositivo."
   }
 }

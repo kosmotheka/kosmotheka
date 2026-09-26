@@ -285,6 +285,15 @@ export interface LanStatus {
 export interface SyncReport {
   received: { received: number; known: number; rejected: number; skippedChanges: number };
   sent: number;
+  /** This device took up a library the other one started sharing. */
+  takenUp: boolean;
+  /** Libraries removed here because the other device withdrew access (D71). */
+  removed: string[];
+}
+
+/** A paired device and the libraries that go to it. */
+export interface DeviceSharing extends KnownDevice {
+  libraries: string[];
 }
 
 export function lanStatus(): Promise<LanStatus> {
@@ -295,16 +304,32 @@ export function setDeviceName(name: string): Promise<void> {
   return invoke("set_device_name", { name });
 }
 
-export function openPairing(): Promise<{ code: string; expiresInSeconds: number }> {
-  return invoke("open_pairing");
+/** Opens a pairing window; whoever pairs through it receives `libraries`. */
+export function openPairing(
+  libraries: string[],
+): Promise<{ code: string; expiresInSeconds: number }> {
+  return invoke("open_pairing", { libraries });
 }
 
 export function closePairing(): Promise<void> {
   return invoke("close_pairing");
 }
 
-export function pairWith(code: string): Promise<{ deviceId: string; name: string }> {
-  return invoke("pair_with", { code });
+/** Pairs with the device that showed `code` and shares `libraries` with it. */
+export function pairWith(
+  code: string,
+  libraries: string[],
+): Promise<{ deviceId: string; name: string }> {
+  return invoke("pair_with", { code, libraries });
+}
+
+export function sharingOverview(): Promise<DeviceSharing[]> {
+  return invoke<DeviceSharing[]>("sharing_overview");
+}
+
+/** Shares a library with a paired device, or withdraws its access (D71). */
+export function setSharing(library: string, deviceId: string, shared: boolean): Promise<void> {
+  return invoke("set_sharing", { library, deviceId, shared });
 }
 
 export function syncWith(deviceId: string): Promise<SyncReport> {

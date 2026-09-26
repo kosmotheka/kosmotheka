@@ -906,7 +906,14 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Sin servidor, el borrado ocurre cuando el otro vuelve a conectar.** Si no conecta nunca, conserva lo que tenía hasta entonces, aunque sin recibir nada nuevo. Con la nube (Fase 7) la retirada es inmediata para todo lo que pase por ella.
 - **No se puede borrar lo que ya haya sacado fuera:** una copia de seguridad o un CSV exportados antes, capturas de pantalla, o una app modificada que ignore la orden. Eso no lo evita ninguna aplicación; lo que sí se garantiza es que no recibe nada nuevo y no puede cambiar nada.
 
-**Consecuencias:** concreta el hito 4.4. Necesita casos en `spec/` (operación de retirar el acceso, rechazo de cambios posteriores) y un test de convergencia en `sync.rs` con tres dispositivos. Amplía D65 y D66; la parte con cuentas y roles se retoma en la Fase 5 (D55).
+**Cómo quedó al construirlo (hito 4.4):** detalle en [architecture/sync.md](architecture/sync.md#compartir-y-retirar-el-acceso-hito-44-d71).
+- La propuesta técnica se mantiene. La retirada es la entidad `revocation`; los avisos viajan en cada sincronización.
+- **Añadido:** cada dispositivo elige lo que envía, y una biblioteca que el otro ofrece se acepta sola **solo si no la tiene ya**. Una que los dos tienen (como «Mi biblioteca», con el mismo id en todos por D46) solo se une si los dos la marcan.
+- **Añadido:** salir de una biblioteca avisa a los demás para que dejen de ofrecerla.
+- **Límite más:** los dispositivos que la recibieron **a través** del retirado (otros suyos, que nunca se emparejaron con los tuyos) no se conocen y la conservan. Con cuentas (Fase 5) la retirada será por persona y los alcanzará.
+- **Sin roles todavía,** cualquier dispositivo que la tenga puede retirar el acceso a cualquier otro, también al que la creó (como con borrar, D65).
+
+**Consecuencias:** concreta el hito 4.4. Casos de validación de `revocation` en `spec/`; tests por TLS real en `lan/client.rs`, uno de ellos con tres dispositivos. Amplía D65 y D66; la parte con cuentas y roles se retoma en la Fase 5 (D55).
 
 ## D72 · La marca (nombre y logo), fuera de la AGPL y protegida — `propuesta`
 

@@ -24,4 +24,12 @@ La primera vez que abras esta versión, la app migra la base de datos (migració
 
 ## 4.4 · Compartir por biblioteca
 
-Pendiente: se añadirá cuando se construya.
+Con dos instancias (ver «Preparar dos instancias» en `fase-2.md`): **A** con «Casa» y «Club de rol», **B** vacía.
+
+- [ ] **Elegir al emparejar.** En A → Compartir y dispositivos → marca solo «Club de rol» → «Mostrar código». En B → desmarca todo → pega el código → «Emparejar». *Esperado:* B recibe «Club de rol» con sus libros; «Casa» no aparece en B, y los libros de «Mi biblioteca» de B no llegan a A.
+- [ ] **Los cambios van en los dos sentidos.** Añade un libro a «Club de rol» en B y sincroniza. *Esperado:* aparece en A.
+- [ ] **Compartir otra después.** En A → dispositivos → «Recibe: Club de rol · Cambiar» → marca «Casa» → «Guardar». Sincroniza desde B. *Esperado:* «Casa» aparece en B.
+- [ ] **Dejar de compartir.** En A → Ajustes de «Club de rol» → «Dejar de compartir» con B → confirma. Sincroniza desde B. *Esperado:* B avisa de que ya no tiene acceso a una biblioteca y «Club de rol» desaparece de B; A la conserva entera.
+- [ ] **Desmarcar avisa.** En A → «Cambiar» → desmarca una. *Esperado:* antes de guardar, aviso de que desaparecerá del otro dispositivo.
+- [ ] **Volver a dar acceso.** En A → vuelve a marcar «Club de rol» para B → sincroniza. *Esperado:* vuelve a B entera.
+- [ ] **Salir no la trae de vuelta.** En B → Ajustes de «Club de rol» → «Salir» → sincroniza dos veces. *Esperado:* no vuelve a aparecer en B; en A, B deja de figurar en «Compartida con».

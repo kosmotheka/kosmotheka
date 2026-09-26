@@ -17,6 +17,8 @@ pub enum Entity {
     Copy,
     Publisher,
     Wish,
+    /// A device whose access to the library was withdrawn (D71).
+    Revocation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,6 +92,10 @@ const WISH_FIELDS: &[FieldSpec] = &[
     field("note", FieldType::Text, false),
     field("cover_url", FieldType::Text, false),
 ];
+const REVOCATION_FIELDS: &[FieldSpec] = &[
+    field("device_id", FieldType::Text, true),
+    field("device_name", FieldType::Text, true),
+];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -112,6 +118,7 @@ impl Entity {
             Entity::Copy => "copies",
             Entity::Publisher => "publishers",
             Entity::Wish => "wishes",
+            Entity::Revocation => "revocations",
         }
     }
 
@@ -143,6 +150,7 @@ impl Entity {
             Entity::Copy => COPY_FIELDS,
             Entity::Publisher => PUBLISHER_FIELDS,
             Entity::Wish => WISH_FIELDS,
+            Entity::Revocation => REVOCATION_FIELDS,
         }
     }
 

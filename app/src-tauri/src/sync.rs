@@ -19,7 +19,7 @@ use crate::ops::{self, read_state, write_state};
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 10] = [
+pub const ORDER: [Entity; 11] = [
     Entity::Library,
     Entity::Publisher,
     Entity::Person,
@@ -30,6 +30,7 @@ pub const ORDER: [Entity; 10] = [
     Entity::BookDetails,
     Entity::Copy,
     Entity::Wish,
+    Entity::Revocation,
 ];
 
 const BASELINE_KEY: &str = "sync_baseline";
@@ -59,6 +60,15 @@ pub struct MergeReport {
     pub rejected: usize,
     /// Changes skipped by the rules (older than the stored field, deleted rows...).
     pub skipped_changes: usize,
+}
+
+impl MergeReport {
+    pub fn add(&mut self, other: &MergeReport) {
+        self.received += other.received;
+        self.known += other.known;
+        self.rejected += other.rejected;
+        self.skipped_changes += other.skipped_changes;
+    }
 }
 
 /// Rows of one entity in one library, with the field names operations use (`id` included).

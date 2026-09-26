@@ -251,8 +251,11 @@ pub fn set_device_name(database: State<'_, Database>, name: String) -> Result<()
 }
 
 #[tauri::command]
-pub async fn open_pairing(lan: State<'_, LanService>) -> Result<PairingInfo> {
-    lan.open_pairing().await
+pub async fn open_pairing(
+    lan: State<'_, LanService>,
+    libraries: Vec<String>,
+) -> Result<PairingInfo> {
+    lan.open_pairing(libraries).await
 }
 
 #[tauri::command]
@@ -268,8 +271,12 @@ pub struct Paired {
 }
 
 #[tauri::command]
-pub async fn pair_with(database: State<'_, Database>, code: String) -> Result<Paired> {
-    let server = lan::client::pair(&database, &code).await?;
+pub async fn pair_with(
+    database: State<'_, Database>,
+    code: String,
+    libraries: Vec<String>,
+) -> Result<Paired> {
+    let server = lan::client::pair(&database, &code, &libraries).await?;
     Ok(Paired {
         device_id: server.device_id,
         name: server.name,
@@ -345,6 +352,27 @@ pub fn delete_library(database: State<'_, Database>, id: String) -> Result<Strin
 #[tauri::command]
 pub fn leave_library(database: State<'_, Database>, id: String) -> Result<String> {
     libraries::leave_library(&mut *database.lock()?, &id)
+}
+
+#[tauri::command]
+pub fn sharing_overview(database: State<'_, Database>) -> Result<Vec<lan::DeviceSharing>> {
+    lan::sharing_overview(&*database.lock()?)
+}
+
+/// Shares a library with a paired device, or withdraws its access (D71).
+#[tauri::command]
+pub fn set_sharing(
+    database: State<'_, Database>,
+    library: String,
+    device_id: String,
+    shared: bool,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    if shared {
+        libraries::grant_access(&mut conn, &library, &device_id)
+    } else {
+        libraries::revoke_access(&mut conn, &library, &device_id)
+    }
 }
 
 #[tauri::command]

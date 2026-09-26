@@ -33,12 +33,14 @@ works ──< work_contributors >── people
 | `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
 | `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
+| `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |
 | `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable` |
 | `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `library_id`, `entity`, `entity_id`, `field`, `hlc` |
 | `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)). Borrar una biblioteca deja una lápida de la biblioteca entera | `library_id`, `entity`, `entity_id`, `hlc` |
 | `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `library_id`, `edition_id`, `content` |
 | `known_servers`, `known_clients` | Dispositivos emparejados para sincronizar por la red local; locales, no se sincronizan (D34) | ver [sync.md](sync.md) |
 | `library_peers` | Qué bibliotecas van a cada dispositivo emparejado; local (D46) | `library_id`, `device_id` |
+| `leave_notices` | Bibliotecas de las que este dispositivo salió, pendientes de decírselo a cada dispositivo que se las ofrecía; local (D71) | `library_id`, `device_id` |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida, la biblioteca activa y los ajustes (clave de Google Books) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `audiobook`, `other`. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.

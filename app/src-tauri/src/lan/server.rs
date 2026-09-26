@@ -19,8 +19,8 @@ use tokio_rustls::TlsAcceptor;
 use super::pairing::PairingWindow;
 use super::{
     Hello, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, client_is_authorized,
-    device_name, only_shared, only_shared_operations, random_secret, record_client_sync,
-    save_client, share_library, shared_libraries,
+    device_name, notices_for, only_shared, only_shared_operations, random_secret, reconcile,
+    record_client_sync, save_client, share_library, shared_libraries,
 };
 use crate::db::Database;
 use crate::error::Result;
@@ -134,20 +134,24 @@ async fn pair(
     State(state): State<ServerState>,
     Json(request): Json<PairRequest>,
 ) -> std::result::Result<Json<PairResponse>, ApiError> {
-    {
+    let libraries = {
         // One use only: a code seen by someone else cannot pair a second device.
         let mut window = state.pairing.lock().map_err(|_| ApiError::Internal)?;
-        if !window.as_ref().is_some_and(|w| w.accepts(&request.token)) {
-            return Err(ApiError::Unauthorized);
+        match window.take() {
+            Some(open) if open.accepts(&request.token) => open.libraries,
+            other => {
+                *window = other;
+                return Err(ApiError::Unauthorized);
+            }
         }
-        *window = None;
-    }
+    };
     blocking(move || {
         let conn = state.database.lock()?;
         let secret = random_secret();
         save_client(&conn, &request.device_id, &request.device_name, &secret)?;
-        // Pairing from a library shares that one; choosing others comes with milestone 4.4.
-        share_library(&conn, &ops::active_library(&conn)?, &request.device_id)?;
+        for library in &libraries {
+            share_library(&conn, library, &request.device_id)?;
+        }
         Ok(Json(PairResponse {
             device_id: ops::device_id(&conn)?,
             device_name: device_name(&conn)?,
@@ -163,17 +167,18 @@ async fn pull(
     Json(request): Json<PullRequest>,
 ) -> std::result::Result<Json<PullResponse>, ApiError> {
     blocking(move || {
-        let conn = state.database.lock()?;
+        let mut conn = state.database.lock()?;
         let client = authorized_client(&conn, &headers)?;
         if request.schema_version != ops::schema_version(&conn)? {
             return Err(ApiError::OtherVersion);
         }
-        let shared = shared_libraries(&conn, &client)?;
+        let offered: Vec<String> = request.vectors.keys().cloned().collect();
+        let shared = reconcile(&mut conn, &client, &offered, &request.notices)?;
         let theirs = only_shared(request.vectors, &shared);
-        let libraries: Vec<String> = theirs.keys().cloned().collect();
         let response = PullResponse {
             operations: sync::operations_since(&conn, &theirs)?,
-            vectors: sync::version_vectors(&conn, &libraries)?,
+            vectors: sync::version_vectors(&conn, &shared)?,
+            notices: notices_for(&conn, &client)?,
         };
         record_client_sync(&conn, &client)?;
         Ok(Json(response))

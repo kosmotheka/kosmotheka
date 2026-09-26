@@ -26,6 +26,7 @@ enum CatalogEntity: string
     case Copy = 'copy';
     case Publisher = 'publisher';
     case Wish = 'wish';
+    case Revocation = 'revocation';
 
     public const array FORMATS = ['hardcover', 'paperback', 'pocket', 'ebook', 'audiobook', 'other'];
 
@@ -77,6 +78,7 @@ enum CatalogEntity: string
                 'note' => $text(),
                 'cover_url' => $text(),
             ],
+            self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
         };
     }
 }
