@@ -144,3 +144,38 @@ Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **i
 - **Reservar un ejemplar prestado: idea para el futuro.**
 - **Bibliotecas públicas que se descubren buscando: idea para el futuro**, junto a la dimensión social (§3.3).
 - **Reserva de regalos oculta: se mantiene, oculta solo en pantalla.** El deseo lo ve toda la familia; la reserva («lo compro yo») la ven todos menos quien recibe el regalo. Sin servidor el dato está en el dispositivo de quien lo recibe y la app no se lo enseña; en familia basta para una sorpresa. Con la nube se hace igual, para que las dos formas de usar la app se comporten del mismo modo.
+
+### 3.7 Revisión de lo anotado: herramientas y extras (26/09/2026)
+
+- **Etiquetas QR imprimibles: añadir**, con la regla de D67.
+- **Precio de compra: no como funcionalidad.** No se puede automatizar, porque cada tienda tiene su precio. Meterlo a mano es un peñazo, y en la carga inicial con foto de la estantería no se sabe lo que costó cada libro, así que las estadísticas no servirían. Como mucho, un campo opcional en el ejemplar, y solo si no complica la interfaz.
+- **Importar desde Calibre: idea para el futuro, muy opcional.**
+- **«¿Qué leo ahora?»: idea para el futuro.**
+- **Estantería visual con lomos: idea para el futuro.**
+- **Base de datos colaborativa: idea para el futuro lejano.**
+- **Modelo de pago: no se espera; la app es gratuita.** Si algún día se diera la ocasión, se valoraría entonces. Sería un módulo aparte que evoluciona el proyecto open source, fuera del repositorio público. Puede que no llegue nunca.
+
+### Resumen para el ROADMAP
+
+**Añadir:**
+- Estados absolutos, con «en curso» nombrado según el tipo (§3.5).
+- Valoración.
+- Favoritos.
+- Géneros, temáticas y etiquetas.
+- Red de préstamo entre amigos (§3.1, §3.6).
+- Enlaces para invitar y para ofrecer en préstamo (D67).
+- Etiquetas QR (D67).
+
+**Reconsiderar:** la reserva de regalos se mantiene, pero oculta solo en pantalla (§3.6).
+
+**Ideas para el futuro:**
+- La dimensión social (§3.3).
+- Bibliotecas públicas.
+- Reservar un ejemplar prestado.
+- Calibre.
+- «¿Qué leo ahora?».
+- Estantería visual.
+- Base de datos colaborativa.
+- Modelo de pago.
+
+**Como mucho, un campo opcional:** precio de compra.
