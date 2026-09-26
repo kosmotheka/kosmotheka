@@ -16,7 +16,7 @@
 
 ## Candidatos
 
-**Elegido (26/09/2026): Kosmotheka.** Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka* (depósito): el cosmos de tus cosas. .com y .app libres el día de la elección, Google Play y marcas limpios (ver «Quinta ronda»). Los errores de escritura (Kosmoteka, Kosmotek) tienen el .com ajeno, pero hoy casi todo el mundo llega por un enlace, no tecleando. El maintainer registra kosmotheka.com y kosmotheka.app. En GitHub, `kosmotheka` estaba libre.
+**Elegido (26/09/2026): Kosmotheka** ([D70](../DECISIONS.md); plan en [plans/renombrado-kosmotheka.md](../plans/renombrado-kosmotheka.md)). Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka* (depósito): el cosmos de tus cosas. .com y .app libres el día de la elección, Google Play y marcas limpios (ver «Quinta ronda»). Los errores de escritura (Kosmoteka, Kosmotek) tienen el .com ajeno, pero hoy casi todo el mundo llega por un enlace, no tecleando. El maintainer registra kosmotheka.com y kosmotheka.app. En GitHub, `kosmotheka` estaba libre.
 
 Pantheka queda como segunda opción.
 
