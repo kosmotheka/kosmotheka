@@ -75,6 +75,7 @@
 | D67 | Enlaces para compartir y etiquetas QR: son de la biblioteca | aceptada |
 | D68 | Marcas por persona: estado, valoración y favorito | aceptada |
 | D69 | Reserva de regalos oculta solo en pantalla | aceptada |
+| D70 | Nombre del proyecto: Kosmotheka | aceptada |
 
 ---
 
@@ -856,4 +857,21 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 **Decisión** (acordada el 26/09/2026): se mantiene, **oculta solo en pantalla**. El deseo lo ve toda la familia; la reserva («lo compro yo») la ven todos menos quien recibe el regalo. En familia basta para una sorpresa. **Con la nube se hace igual**, para que las dos formas de usar la app (D57) se comporten del mismo modo.
 
 **Consecuencias:** no hace falta cifrar ni separar datos por persona. Fase 9.
+
+## D70 · Nombre del proyecto: Kosmotheka — `aceptada`
+
+**Contexto:** «library» era un nombre de trabajo. Hace falta uno propio antes de publicar en Google Play (Fase 8) y de abrir el repositorio. Toda la búsqueda está en [research/naming.md](research/naming.md).
+
+**Opciones finales:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Kosmotheka** | Griego *kosmos* (mundo ordenado) + *theka* (depósito): el cosmos de tus cosas. Sirve para cualquier colección, no solo libros. .com y .app libres, Google Play y marcas limpios, `kosmotheka` libre en GitHub | Sus errores de escritura más probables (Kosmoteka, Kosmotek) tienen el .com ajeno |
+| Pantheka | También con .com, .app, Google Play y marcas limpios | En español se pronuncia «panteka», cerca de marcas de panadería |
+
+**Decisión** (26/09/2026): **Kosmotheka**, con k y th. Pantheka queda como segunda opción. El maintainer registra kosmotheka.com y kosmotheka.app.
+
+**Consecuencias:**
+- Solo cambia el nombre del **producto**. En el código, `library` sigue siendo la entidad biblioteca (D38, D46, D54) y no se renombra.
+- El renombrado se hace por etapas según [plans/renombrado-kosmotheka.md](plans/renombrado-kosmotheka.md). Lo primero es el identificador de la app, porque hay que reservarlo en Google Play con una primera versión en prueba interna, y cambiarlo después sería otra app.
 
