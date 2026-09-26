@@ -62,7 +62,7 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 
 **Estado:**
 - [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 13 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Revisado el 26/09/2026: el campo `library` y la biblioteca con solo nombre, aceptados; borrar y abandonar en [D65](DECISIONS.md). Queda por valorar mostrar quién creó cada biblioteca.
-- [ ] Casos de fusión por biblioteca (misma id en dos bibliotecas, lápidas que no cruzan de una a otra).
+- [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/draft/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [plans/fase-4.md](plans/fase-4.md).
 - [ ] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos pasan de `draft/` a `conformance/`.
 - [ ] Tablas con `library_id`, migración y vector de versiones por biblioteca.
 - [ ] Compartir por biblioteca al emparejar.

@@ -33,3 +33,18 @@ Each implementation loads the files in `conformance/` (not `conformance/draft/`)
 - **Deleting the library** (a `delete` change on the `library` entity) removes the library and everything in it on every device that has it. Who may do it is a permission rule, defined with roles. Leaving a library is not an operation on it: the device simply stops having it (and, with roles, the person's membership ends).
 - New error codes: `invalid_library` (the library is not a UUID) and `other_library` (a change to a library that is not the operation's).
 - Error order: operation id, **library**, intent, empty changes, then each change in order (id, **other library**, action, fields in alphabetical order, missing required fields).
+
+### Draft: merging operations from several libraries
+
+`conformance/draft/library-merge.json` describes how a device applies operations received from other devices when they belong to different libraries. Each case has:
+
+- `operations`: full operations, with their library and HLC.
+- `deliveries`: orders in which to deliver them, as lists of indexes into `operations`. Each operation is delivered alone, in that order, as if it came in its own sync. **Every order must end in the same state.**
+- `expect.rows`: every catalog row that must exist afterwards, as `{ library, entity, id, fields }`. Rows not listed must not exist.
+
+Rules these cases pin down:
+
+- A row is identified by **library, entity and id** together. Field versions and tombstones are kept per library too, so nothing done in one library affects another.
+- Changes apply **even if the library row has not arrived yet**: the library is only the scope, not a parent row that must exist first.
+- **Deleting the library** leaves a tombstone for the whole library: its rows are removed, and any later change in that library is ignored, whatever its HLC. The delete wins, as it does for any row.
+
