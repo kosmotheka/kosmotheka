@@ -185,16 +185,25 @@ export function Field({
   id,
   label,
   error,
+  required,
   children,
 }: {
   id: string;
   label: string;
   error?: string | null;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>
+        {label}
+        {required && (
+          <span aria-hidden className="-ml-1 text-muted-foreground">
+            *
+          </span>
+        )}
+      </Label>
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
@@ -267,9 +276,10 @@ export function EditionFields({
           className="h-36 w-24"
         />
         <div className="flex-1">
-          <Field id="title" label={t("form.fields.title")} error={errorFor("title")}>
+          <Field id="title" label={t("form.fields.title")} error={errorFor("title")} required>
             <Input
               id="title"
+              aria-required
               value={value.title}
               onChange={(e) => set("title", e.target.value)}
             />

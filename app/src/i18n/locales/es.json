@@ -33,8 +33,7 @@
   },
   "form": {
     "title": "Añadir a {{library}}",
-    "description": "Solo el título es obligatorio. Si el ISBN ya está en el catálogo, se añade un ejemplar a esa edición.",
-    "editionSection": "Edición",
+    "description": "Si el ISBN ya está en el catálogo, se añade un ejemplar a esa edición.",
     "copySection": "Tu ejemplar",
     "fields": {
       "title": "Título",
@@ -125,7 +124,7 @@
     "more": "Opciones del ejemplar"
   },
   "lookup": {
-    "placeholder": "Escribe o escanea y pulsa Intro",
+    "placeholder": "978…",
     "search": "Buscar",
     "found": "Encontrado en {{sources}}. Revisa los datos antes de guardar.",
     "notFound": "No está en los catálogos online. Puedes rellenarlo a mano.",
@@ -245,7 +244,7 @@
     "wishes_other": "Deseos ({{count}})"
   },
   "check": {
-    "description": "Escanea o escribe un ISBN. La respuesta sale del catálogo de este dispositivo, así que funciona sin cobertura.",
+    "description": "Escribe o escanea el ISBN. Funciona sin conexión.",
     "scan": "Escanear código de barras",
     "check": "Comprobar",
     "youHaveIt": "Lo tienes",

@@ -80,12 +80,8 @@ export function AddBookDialog({ open, desktop, library, onOpenChange, onCreated,
 
   const fields = (
     <>
-      <p className="text-sm text-muted-foreground">{t("form.description")}</p>
-      <section className="space-y-4">
-        <h3 className="text-sm font-medium">{t("form.editionSection")}</h3>
-        <EditionFields value={edition} onChange={setEdition} errorFor={errors.errorFor} />
-      </section>
-      <section className="space-y-4">
+      <EditionFields value={edition} onChange={setEdition} errorFor={errors.errorFor} />
+      <section className="space-y-4 border-t pt-5">
         <h3 className="text-sm font-medium">{t("form.copySection")}</h3>
         <CopyFields
           value={copy}

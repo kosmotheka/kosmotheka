@@ -33,8 +33,7 @@
   },
   "form": {
     "title": "Add to {{library}}",
-    "description": "Only the title is required. If the ISBN is already in the catalog, a new copy is added to that edition.",
-    "editionSection": "Edition",
+    "description": "If the ISBN is already in the catalog, a copy is added to that edition.",
     "copySection": "Your copy",
     "fields": {
       "title": "Title",
@@ -125,7 +124,7 @@
     "more": "Copy options"
   },
   "lookup": {
-    "placeholder": "Type or scan and press Enter",
+    "placeholder": "978…",
     "search": "Search",
     "found": "Found in {{sources}}. Check the data before saving.",
     "notFound": "Not found in the online catalogues. You can fill it in by hand.",
@@ -245,7 +244,7 @@
     "wishes_other": "Wishlist ({{count}})"
   },
   "check": {
-    "description": "Scan or type an ISBN. The answer comes from the catalog on this device, so it works without coverage.",
+    "description": "Type or scan the ISBN. Works offline.",
     "scan": "Scan barcode",
     "check": "Check",
     "youHaveIt": "You have it",
