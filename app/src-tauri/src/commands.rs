@@ -16,6 +16,7 @@ use crate::error::{Error, Result};
 use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::metadata::{Lookup, LookupResult};
+use crate::ops;
 use crate::settings::{self, Settings};
 use crate::wishes::{self, IsbnCheck, Wish};
 
@@ -40,7 +41,8 @@ pub async fn create_book(
     let (cover, cover_failed) =
         download_cover(&covers, &lookup, book.edition.cover_url.as_ref()).await;
     let mut conn = database.lock()?;
-    let created = catalog::create_book(&mut conn, &book, cover.as_deref())?;
+    let library = ops::active_library(&conn)?;
+    let created = catalog::create_book(&mut conn, &library, &book, cover.as_deref())?;
     Ok(Saved {
         value: created,
         cover_failed,
@@ -58,7 +60,8 @@ pub async fn update_edition(
     let edition = edition.validate().map_err(Error::Validation)?;
     let (cover, cover_failed) = download_cover(&covers, &lookup, edition.cover_url.as_ref()).await;
     let mut conn = database.lock()?;
-    catalog::update_edition(&mut conn, &edition_id, &edition, cover.as_deref())?;
+    let library = ops::active_library(&conn)?;
+    catalog::update_edition(&mut conn, &library, &edition_id, &edition, cover.as_deref())?;
     Ok(Saved {
         value: (),
         cover_failed,
@@ -94,7 +97,7 @@ pub async fn lookup_isbn(
         let conn = database.lock()?;
         (
             settings::load(&conn)?.google_books_api_key,
-            catalog::edition_with_isbn(&conn, isbn.as_str())?,
+            catalog::edition_with_isbn(&conn, &ops::active_library(&conn)?, isbn.as_str())?,
         )
     };
     let mut result = lookup.run(&isbn, api_key.as_deref()).await;
@@ -108,25 +111,29 @@ pub fn list_books(
     filter: Option<BookFilter>,
 ) -> Result<Vec<BookSummary>> {
     let conn = database.lock()?;
-    catalog::list_books(&conn, &filter.unwrap_or_default())
+    let library = ops::active_library(&conn)?;
+    catalog::list_books(&conn, &library, &filter.unwrap_or_default())
 }
 
 #[tauri::command]
 pub fn catalog_options(database: State<'_, Database>) -> Result<CatalogOptions> {
     let conn = database.lock()?;
-    catalog::catalog_options(&conn)
+    let library = ops::active_library(&conn)?;
+    catalog::catalog_options(&conn, &library)
 }
 
 #[tauri::command]
 pub fn get_book(database: State<'_, Database>, edition_id: String) -> Result<BookDetail> {
     let conn = database.lock()?;
-    catalog::get_book(&conn, &edition_id)
+    let library = ops::active_library(&conn)?;
+    catalog::get_book(&conn, &library, &edition_id)
 }
 
 #[tauri::command]
 pub fn delete_book(database: State<'_, Database>, edition_id: String) -> Result<()> {
     let mut conn = database.lock()?;
-    catalog::delete_book(&mut conn, &edition_id)
+    let library = ops::active_library(&conn)?;
+    catalog::delete_book(&mut conn, &library, &edition_id)
 }
 
 #[tauri::command]
@@ -137,20 +144,23 @@ pub fn add_copy(
 ) -> Result<String> {
     let copy = copy.validate().map_err(Error::Validation)?;
     let mut conn = database.lock()?;
-    catalog::add_copy(&mut conn, &edition_id, &copy)
+    let library = ops::active_library(&conn)?;
+    catalog::add_copy(&mut conn, &library, &edition_id, &copy)
 }
 
 #[tauri::command]
 pub fn update_copy(database: State<'_, Database>, copy_id: String, copy: CopyInput) -> Result<()> {
     let copy = copy.validate().map_err(Error::Validation)?;
     let mut conn = database.lock()?;
-    catalog::update_copy(&mut conn, &copy_id, &copy)
+    let library = ops::active_library(&conn)?;
+    catalog::update_copy(&mut conn, &library, &copy_id, &copy)
 }
 
 #[tauri::command]
 pub fn delete_copy(database: State<'_, Database>, copy_id: String) -> Result<()> {
     let mut conn = database.lock()?;
-    catalog::delete_copy(&mut conn, &copy_id)
+    let library = ops::active_library(&conn)?;
+    catalog::delete_copy(&mut conn, &library, &copy_id)
 }
 
 #[tauri::command]
@@ -159,7 +169,8 @@ pub fn book_history(
     edition_id: String,
 ) -> Result<Vec<HistoryEntry>> {
     let conn = database.lock()?;
-    catalog::book_history(&conn, &edition_id)
+    let library = ops::active_library(&conn)?;
+    catalog::book_history(&conn, &library, &edition_id)
 }
 
 #[tauri::command]
@@ -188,7 +199,8 @@ pub fn export_backup(
     path: String,
 ) -> Result<BackupSummary> {
     let conn = database.lock()?;
-    backup::export(&conn, &covers, Path::new(&path))
+    let library = ops::active_library(&conn)?;
+    backup::export(&conn, &library, &covers, Path::new(&path))
 }
 
 #[tauri::command]
@@ -198,19 +210,22 @@ pub fn restore_backup(
     path: String,
 ) -> Result<BackupSummary> {
     let mut conn = database.lock()?;
-    backup::restore(&mut conn, &covers, Path::new(&path))
+    let library = ops::active_library(&conn)?;
+    backup::restore(&mut conn, &library, &covers, Path::new(&path))
 }
 
 #[tauri::command]
 pub fn export_csv(database: State<'_, Database>, path: String) -> Result<usize> {
     let conn = database.lock()?;
-    csv_io::export(&conn, Path::new(&path))
+    let library = ops::active_library(&conn)?;
+    csv_io::export(&conn, &library, Path::new(&path))
 }
 
 #[tauri::command]
 pub fn import_csv(database: State<'_, Database>, path: String) -> Result<CsvImportSummary> {
     let mut conn = database.lock()?;
-    csv_io::import(&mut conn, Path::new(&path))
+    let library = ops::active_library(&conn)?;
+    csv_io::import(&mut conn, &library, Path::new(&path))
 }
 
 // --- LAN sync ---------------------------------------------------------------
@@ -267,23 +282,27 @@ pub fn forget_device(database: State<'_, Database>, device_id: String) -> Result
 pub fn add_wish(database: State<'_, Database>, wish: WishInput) -> Result<String> {
     let wish = wish.validate().map_err(Error::Validation)?;
     let mut conn = database.lock()?;
-    wishes::add_wish(&mut conn, &wish)
+    let library = ops::active_library(&conn)?;
+    wishes::add_wish(&mut conn, &library, &wish)
 }
 
 #[tauri::command]
 pub fn list_wishes(database: State<'_, Database>) -> Result<Vec<Wish>> {
-    wishes::list_wishes(&*database.lock()?)
+    let conn = database.lock()?;
+    wishes::list_wishes(&conn, &ops::active_library(&conn)?)
 }
 
 #[tauri::command]
 pub fn delete_wish(database: State<'_, Database>, id: String) -> Result<()> {
     let mut conn = database.lock()?;
-    wishes::delete_wish(&mut conn, &id)
+    let library = ops::active_library(&conn)?;
+    wishes::delete_wish(&mut conn, &library, &id)
 }
 
 #[tauri::command]
 pub fn check_isbn(database: State<'_, Database>, isbn: String) -> Result<IsbnCheck> {
-    wishes::check_isbn(&*database.lock()?, &isbn)
+    let conn = database.lock()?;
+    wishes::check_isbn(&conn, &ops::active_library(&conn)?, &isbn)
 }
 
 /// The UI shows the camera scanner only where the plugin exists (D35).

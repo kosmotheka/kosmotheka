@@ -115,6 +115,14 @@ impl Entity {
         }
     }
 
+    /// The column that says which library a row belongs to. A library is its own.
+    pub fn library_column(self) -> &'static str {
+        match self {
+            Entity::Library => "id",
+            _ => "library_id",
+        }
+    }
+
     /// Book details share their edition's id.
     pub fn id_column(self) -> &'static str {
         match self {

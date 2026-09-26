@@ -18,6 +18,7 @@ const DEVICE_ID_KEY: &str = "device_id";
 /// device, so devices that already synced merge without duplicates (D46).
 pub const DEFAULT_LIBRARY_ID: &str = "00000000-0000-7000-8000-000000000001";
 const LAST_HLC_KEY: &str = "last_hlc";
+const ACTIVE_LIBRARY_KEY: &str = "active_library";
 
 pub fn new_id() -> String {
     Uuid::now_v7().to_string()
@@ -32,22 +33,29 @@ pub fn ensure_device_id(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-pub fn record(tx: &Transaction<'_>, intent: &str, changes: Vec<Change>) -> Result<Operation> {
-    record_operation(tx, intent, changes, true)
+pub fn record(
+    tx: &Transaction<'_>,
+    library: &str,
+    intent: &str,
+    changes: Vec<Change>,
+) -> Result<Operation> {
+    record_operation(tx, library, intent, changes, true)
 }
 
 /// Logs changes that are already in the tables (the sync baseline, D31): versions
 /// and log are written, the rows themselves are left as they are.
 pub fn record_existing(
     tx: &Transaction<'_>,
+    library: &str,
     intent: &str,
     changes: Vec<Change>,
 ) -> Result<Operation> {
-    record_operation(tx, intent, changes, false)
+    record_operation(tx, library, intent, changes, false)
 }
 
 fn record_operation(
     tx: &Transaction<'_>,
+    library: &str,
     intent: &str,
     changes: Vec<Change>,
     apply_changes: bool,
@@ -57,7 +65,7 @@ fn record_operation(
 
     let operation = Operation {
         id: new_id(),
-        library: DEFAULT_LIBRARY_ID.to_owned(),
+        library: library.to_owned(),
         hlc,
         intent: intent.to_owned(),
         changes,
@@ -68,18 +76,18 @@ fn record_operation(
     // Search text can change for rows that vanish (known before) or appear (known after).
     let mut affected = std::collections::BTreeSet::new();
     for change in &operation.changes {
-        affected.extend(search::affected_editions(tx, change)?);
+        affected.extend(search::affected_editions(tx, library, change)?);
     }
     for change in &operation.changes {
         if apply_changes {
-            apply(tx, change)?;
+            apply(tx, library, change)?;
         }
-        write_versions(tx, change, &hlc_text)?;
+        write_versions(tx, library, change, &hlc_text)?;
     }
     for change in &operation.changes {
-        affected.extend(search::affected_editions(tx, change)?);
+        affected.extend(search::affected_editions(tx, library, change)?);
     }
-    search::reindex(tx, &affected)?;
+    search::reindex(tx, library, &affected)?;
     log_operation(tx, &operation, schema_version(tx)?)?;
     write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
     Ok(operation)
@@ -104,13 +112,20 @@ pub fn schema_version(conn: &Connection) -> Result<i64> {
     Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
 }
 
+/// The library the user is working in. Until libraries can be created (milestone
+/// 4.5) it is always the one migrated from before libraries existed.
+pub fn active_library(conn: &Connection) -> Result<String> {
+    Ok(read_state(conn, ACTIVE_LIBRARY_KEY)?.unwrap_or_else(|| DEFAULT_LIBRARY_ID.to_owned()))
+}
+
 /// Appends to the log. The author device is the one inside the HLC.
 pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i64) -> Result<()> {
     conn.execute(
-        "INSERT INTO operations (id, hlc, device_id, intent, changes, schema_version, replicable)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)",
+        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1)",
         params![
             operation.id,
+            operation.library,
             operation.hlc.to_string(),
             operation.hlc.device,
             operation.intent,
@@ -122,26 +137,27 @@ pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i
 }
 
 /// Remembers which HLC last wrote each field, and leaves a tombstone for deletes (D32).
-pub fn write_versions(conn: &Connection, change: &Change, hlc: &str) -> Result<()> {
+pub fn write_versions(conn: &Connection, library: &str, change: &Change, hlc: &str) -> Result<()> {
     let entity = change.entity.table();
     match change.action {
         Action::Create | Action::Update => {
             for field in change.fields.keys() {
                 conn.execute(
-                    "INSERT OR REPLACE INTO field_versions (entity, entity_id, field, hlc)
-                     VALUES (?1, ?2, ?3, ?4)",
-                    params![entity, change.id, field, hlc],
+                    "INSERT OR REPLACE INTO field_versions (library_id, entity, entity_id, field, hlc)
+                     VALUES (?1, ?2, ?3, ?4, ?5)",
+                    params![library, entity, change.id, field, hlc],
                 )?;
             }
         }
         Action::Delete => {
             conn.execute(
-                "DELETE FROM field_versions WHERE entity = ?1 AND entity_id = ?2",
-                params![entity, change.id],
+                "DELETE FROM field_versions WHERE library_id = ?1 AND entity = ?2 AND entity_id = ?3",
+                params![library, entity, change.id],
             )?;
             conn.execute(
-                "INSERT OR REPLACE INTO tombstones (entity, entity_id, hlc) VALUES (?1, ?2, ?3)",
-                params![entity, change.id, hlc],
+                "INSERT OR REPLACE INTO tombstones (library_id, entity, entity_id, hlc)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![library, entity, change.id, hlc],
             )?;
         }
     }
@@ -150,11 +166,12 @@ pub fn write_versions(conn: &Connection, change: &Change, hlc: &str) -> Result<(
 
 /// Table and column names come from the domain schema, never from the change
 /// itself: `validate` has already rejected any field the schema does not know.
-fn apply(tx: &Transaction<'_>, change: &Change) -> Result<()> {
+fn apply(tx: &Transaction<'_>, library: &str, change: &Change) -> Result<()> {
     let affected = match change.action {
-        Action::Create => insert_row(tx, change.entity, &change.id, change.fields.iter())?,
-        Action::Update => update_row(tx, change.entity, &change.id, change.fields.iter())?,
-        Action::Delete => delete_row(tx, change.entity, &change.id)?,
+        Action::Create => insert_row(tx, change.entity, library, &change.id, change.fields.iter())?,
+        Action::Update => update_row(tx, change.entity, library, &change.id, change.fields.iter())?,
+        Action::Delete if change.entity == Entity::Library => delete_library(tx, library)?,
+        Action::Delete => delete_row(tx, change.entity, library, &change.id)?,
     };
     if affected != 1 {
         return Err(Error::MissingRow {
@@ -168,25 +185,32 @@ fn apply(tx: &Transaction<'_>, change: &Change) -> Result<()> {
 pub fn insert_row<'a>(
     conn: &Connection,
     entity: Entity,
+    library: &str,
     id: &str,
     fields: impl Iterator<Item = (&'a String, &'a Value)>,
 ) -> Result<usize> {
     let (columns, values) = known_columns(entity, fields);
-    let placeholders = vec!["?"; columns.len() + 1].join(", ");
+    // A library row is keyed by its own id; every other row also names its library.
+    let mut keys = vec![entity.id_column()];
+    let mut args = vec![SqlValue::Text(id.to_owned())];
+    if entity != Entity::Library {
+        keys.insert(0, entity.library_column());
+        args.insert(0, SqlValue::Text(library.to_owned()));
+    }
+    let all: Vec<&str> = keys.into_iter().chain(columns).collect();
     let sql = format!(
-        "INSERT INTO {} ({}{}{}) VALUES ({placeholders})",
+        "INSERT INTO {} ({}) VALUES ({})",
         entity.table(),
-        entity.id_column(),
-        if columns.is_empty() { "" } else { ", " },
-        columns.join(", "),
+        all.join(", "),
+        vec!["?"; all.len()].join(", "),
     );
-    let args = std::iter::once(SqlValue::Text(id.to_owned())).chain(values);
-    Ok(conn.execute(&sql, params_from_iter(args))?)
+    Ok(conn.execute(&sql, params_from_iter(args.into_iter().chain(values)))?)
 }
 
 pub fn update_row<'a>(
     conn: &Connection,
     entity: Entity,
+    library: &str,
     id: &str,
     fields: impl Iterator<Item = (&'a String, &'a Value)>,
 ) -> Result<usize> {
@@ -196,27 +220,62 @@ pub fn update_row<'a>(
     }
     let assignments: Vec<String> = columns.iter().map(|c| format!("{c} = ?")).collect();
     let sql = format!(
-        "UPDATE {} SET {} WHERE {} = ?",
+        "UPDATE {} SET {} WHERE {} = ? AND {} = ?",
         entity.table(),
         assignments.join(", "),
+        entity.library_column(),
         entity.id_column()
     );
-    let args = values
-        .into_iter()
-        .chain(std::iter::once(SqlValue::Text(id.to_owned())));
+    let args = values.into_iter().chain([
+        SqlValue::Text(library.to_owned()),
+        SqlValue::Text(id.to_owned()),
+    ]);
     Ok(conn.execute(&sql, params_from_iter(args))?)
 }
 
-pub fn delete_row(conn: &Connection, entity: Entity, id: &str) -> Result<usize> {
+pub fn delete_row(conn: &Connection, entity: Entity, library: &str, id: &str) -> Result<usize> {
     Ok(conn.execute(
         &format!(
-            "DELETE FROM {} WHERE {} = ?1",
+            "DELETE FROM {} WHERE {} = ?1 AND {} = ?2",
             entity.table(),
+            entity.library_column(),
             entity.id_column()
         ),
-        [id],
+        [library, id],
     )?)
 }
+
+/// Removes a library and everything in it (D65). Returns the library rows deleted,
+/// like `delete_row`. The operation log stays: it is the record of what happened (D66).
+pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
+    // Children before parents, so no foreign key is left dangling.
+    for entity in LIBRARY_CONTENTS_CHILDREN_FIRST {
+        conn.execute(
+            &format!("DELETE FROM {} WHERE library_id = ?1", entity.table()),
+            [library],
+        )?;
+    }
+    conn.execute(
+        "DELETE FROM field_versions WHERE library_id = ?1",
+        [library],
+    )?;
+    conn.execute("DELETE FROM tombstones WHERE library_id = ?1", [library])?;
+    conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
+    delete_row(conn, Entity::Library, library, library)
+}
+
+/// Every entity inside a library, children before parents.
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 9] = [
+    Entity::Copy,
+    Entity::BookDetails,
+    Entity::Edition,
+    Entity::WorkContributor,
+    Entity::Work,
+    Entity::Person,
+    Entity::Publisher,
+    Entity::Member,
+    Entity::Wish,
+];
 
 /// Column names are taken from the schema, so unknown keys can never reach SQL.
 fn known_columns<'a>(
@@ -289,6 +348,7 @@ mod tests {
 
         let op = record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -323,6 +383,7 @@ mod tests {
         let tx = conn.transaction().unwrap();
         let first = record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -333,6 +394,7 @@ mod tests {
         .unwrap();
         let second = record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -351,12 +413,14 @@ mod tests {
         let tx = conn.transaction().unwrap();
         record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.add",
             vec![Change::create(Entity::Member, &id, json!({ "name": "A" }))],
         )
         .unwrap();
         record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.rename",
             vec![Change::update(Entity::Member, &id, json!({ "name": "B" }))],
         )
@@ -366,6 +430,7 @@ mod tests {
             .unwrap();
         record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.remove",
             vec![Change::delete(Entity::Member, &id)],
         )
@@ -383,6 +448,7 @@ mod tests {
 
         let error = record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -405,6 +471,7 @@ mod tests {
         let tx = conn.transaction().unwrap();
         let error = record(
             &tx,
+            DEFAULT_LIBRARY_ID,
             "member.rename",
             vec![Change::update(
                 Entity::Member,

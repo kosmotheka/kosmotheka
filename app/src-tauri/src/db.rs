@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use rusqlite::Connection;
@@ -18,6 +18,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0006_sync.sql")),
     M::up(include_str!("../migrations/0007_paired_devices.sql")),
     M::up(include_str!("../migrations/0008_wishes.sql")),
+    M::up(include_str!("../migrations/0009_libraries.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -32,6 +33,7 @@ impl Database {
     pub fn open(path: PathBuf) -> Result<Self> {
         let mut conn = Connection::open(&path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
+        copy_before_migrating(&conn, &path)?;
         migrate(&mut conn)?;
         ops::ensure_device_id(&conn)?;
         search::ensure_current(&conn)?;
@@ -53,6 +55,23 @@ impl Database {
     pub fn lock(&self) -> Result<MutexGuard<'_, Connection>> {
         self.conn.lock().map_err(|_| Error::LockPoisoned)
     }
+}
+
+/// Before migrations touch an existing database, a copy of it is left next to it
+/// (`library.sqlite3.v8.bak`), so a failed update can be undone by putting it back.
+fn copy_before_migrating(conn: &Connection, path: &Path) -> Result<()> {
+    let current: i64 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if current == 0 || current >= MIGRATIONS_SLICE.len() as i64 {
+        return Ok(());
+    }
+    let mut copy = path.as_os_str().to_owned();
+    copy.push(format!(".v{current}.bak"));
+    let copy = PathBuf::from(copy);
+    if !copy.exists() {
+        // VACUUM INTO writes a consistent copy even in WAL mode, unlike copying the file.
+        conn.execute("VACUUM INTO ?1", [copy.to_string_lossy().as_ref()])?;
+    }
+    Ok(())
 }
 
 fn migrate(conn: &mut Connection) -> Result<()> {
@@ -130,7 +149,7 @@ mod tests {
         )
         .unwrap();
 
-        MIGRATIONS.to_latest(&mut conn).unwrap();
+        MIGRATIONS.to_version(&mut conn, 6).unwrap();
 
         let (isbn, ol): (String, String) = conn
             .query_row(
@@ -150,5 +169,94 @@ mod tests {
              INSERT INTO book_details (edition_id, isbn13) VALUES ('e2', '9780306406157');",
         )
         .unwrap();
+    }
+
+    #[test]
+    fn migration_9_moves_everything_into_the_default_library() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        MIGRATIONS.to_version(&mut conn, 8).unwrap();
+        conn.execute_batch(
+            "INSERT INTO works (id, kind, title) VALUES ('w', 'book', 'T');
+             INSERT INTO editions (id, work_id, title) VALUES ('e', 'w', 'T');
+             INSERT INTO members (id, name) VALUES ('m', 'Ana');
+             INSERT INTO copies (id, edition_id, owner_id, format) VALUES ('c', 'e', 'm', 'paperback');
+             INSERT INTO field_versions (entity, entity_id, field, hlc) VALUES ('works', 'w', 'title', 'h1');
+             INSERT INTO tombstones (entity, entity_id, hlc) VALUES ('copies', 'gone', 'h2');
+             INSERT INTO operations (id, hlc, device_id, intent, changes, replicable)
+             VALUES ('o', 'h1', 'd', 'book.add', '[]', 1);
+             INSERT INTO known_servers (device_id, name, addresses, fingerprint, secret)
+             VALUES ('phone', 'Phone', '[]', 'f', 's');",
+        )
+        .unwrap();
+
+        MIGRATIONS.to_latest(&mut conn).unwrap();
+
+        let library = crate::ops::DEFAULT_LIBRARY_ID;
+        let in_library = |table: &str| -> i64 {
+            conn.query_row(
+                &format!("SELECT count(*) FROM {table} WHERE library_id = ?1"),
+                [library],
+                |r| r.get(0),
+            )
+            .unwrap()
+        };
+        for table in [
+            "works",
+            "editions",
+            "members",
+            "copies",
+            "field_versions",
+            "tombstones",
+        ] {
+            assert_eq!(in_library(table), 1, "{table}");
+        }
+        let replicable: i64 = conn
+            .query_row("SELECT replicable FROM operations", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            replicable, 0,
+            "operations in the old format stay as history"
+        );
+        let shared: String = conn
+            .query_row(
+                "SELECT library_id FROM library_peers WHERE device_id = 'phone'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            shared, library,
+            "existing pairings keep sharing the migrated library"
+        );
+    }
+
+    #[test]
+    fn a_copy_is_kept_before_migrating_an_existing_database() {
+        let dir = std::env::temp_dir().join(format!("library-db-copy-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.sqlite3");
+        {
+            let mut conn = Connection::open(&path).unwrap();
+            MIGRATIONS.to_version(&mut conn, 8).unwrap();
+            conn.execute(
+                "INSERT INTO members (id, name) VALUES ('01997c7e-0000-7000-8000-000000000001', 'Ana')",
+                [],
+            )
+                .unwrap();
+        }
+
+        Database::open(path.clone()).unwrap();
+
+        let copy = Connection::open(dir.join("library.sqlite3.v8.bak")).unwrap();
+        let (version, members): (i64, i64) = copy
+            .query_row(
+                "SELECT (SELECT user_version FROM pragma_user_version), count(*) FROM members",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((version, members), (8, 1));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

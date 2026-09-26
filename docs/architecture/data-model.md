@@ -9,8 +9,9 @@
 - **Fechas** en texto ISO 8601: `2026-09-24` para días y `2026-09-24T21:30:00.000Z` para instantes.
 - **ISBN normalizado a ISBN-13** y sin guiones. Un ISBN-10 se convierte al darlo de alta; el ISBN-10 se puede recalcular cuando haga falta.
 - **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y `book_details` lo específico de los libros.
+- **Todo pertenece a una biblioteca** (D46, D54, migración 9): cada tabla del catálogo lleva `library_id` y su clave es `(library_id, id)`. El mismo id en dos bibliotecas son dos filas distintas, y las referencias entre tablas incluyen la biblioteca. No hay clave foránea hacia `libraries`: un cambio se aplica aunque la fila de la biblioteca no haya llegado todavía.
 
-## Esquema (hitos 1.1 y 1.2)
+## Esquema
 
 ```
 works ──< work_contributors >── people
@@ -22,6 +23,7 @@ works ──< work_contributors >── people
 
 | Tabla | Qué es | Columnas principales |
 |---|---|---|
+| `libraries` | Bibliotecas: lo que se comparte, se sincroniza y tiene permisos. Un nombre vacío es «sin nombre» y la app muestra el suyo, en el idioma del usuario | `id`, `name` |
 | `works` | Obra: el libro en abstracto | `id`, `kind` (de momento solo `book`), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`), `position` |
@@ -31,12 +33,13 @@ works ──< work_contributors >── people
 | `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
 | `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
-| `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable` |
-| `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `entity`, `entity_id`, `field`, `hlc` |
-| `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)) | `entity`, `entity_id`, `hlc` |
-| `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `edition_id`, `content` |
+| `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable` |
+| `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `library_id`, `entity`, `entity_id`, `field`, `hlc` |
+| `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)). Borrar una biblioteca deja una lápida de la biblioteca entera | `library_id`, `entity`, `entity_id`, `hlc` |
+| `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `library_id`, `edition_id`, `content` |
 | `known_servers`, `known_clients` | Dispositivos emparejados para sincronizar por la red local; locales, no se sincronizan (D34) | ver [sync.md](sync.md) |
-| `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida y los ajustes (clave de Google Books) | `key`, `value` |
+| `library_peers` | Qué bibliotecas van a cada dispositivo emparejado; local (D46) | `library_id`, `device_id` |
+| `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida, la biblioteca activa y los ajustes (clave de Google Books) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `audiobook`, `other`. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.
 
@@ -51,6 +54,12 @@ works ──< work_contributors >── people
 
 - Ubicaciones como jerarquía (salón → estantería → balda) en lugar de texto libre (1.5).
 - Saga y número, temáticas, etiquetas y campos de rol (sin hito asignado todavía).
+
+## Actualizar la app: copia automática
+
+Antes de aplicar una migración a una base de datos que ya tiene datos, la app deja una copia al lado con la versión de la que viene: por ejemplo `library.sqlite3.v8.bak` junto a `library.sqlite3`, en la carpeta de datos de la app. Si una actualización sale mal, basta con cerrar la app, borrar `library.sqlite3` y renombrar la copia a `library.sqlite3`; la app anterior la abrirá tal cual. La copia se hace una vez por versión y no se borra sola.
+
+**Migración 9 (bibliotecas):** todo lo que había pasa a una biblioteca con el mismo id en todos los dispositivos (`00000000-0000-7000-8000-000000000001`), así que dos dispositivos que ya se sincronizaban se funden sin duplicados (D46). Los emparejamientos siguen y comparten esa biblioteca. Las operaciones anteriores quedan como historial y cada dispositivo registra una nueva operación inicial con lo que tiene.
 
 ## Ficheros fuera de la base de datos
 

@@ -1,5 +1,6 @@
-//! Full backups: a zip with the catalogue as JSON, its covers, and the operation
-//! log as history (D30). Restoring rebuilds an empty catalogue as one operation.
+//! Backups of one library: a zip with its catalogue as JSON, its covers, and its
+//! operation log as history (D30). Restoring rebuilds an empty library as one
+//! operation. Whole-device backups come with milestone 4.6.
 
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -16,10 +17,25 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 use crate::covers::{Covers, MAX_COVER_BYTES};
 use crate::error::{Error, Result};
 use crate::ops;
-use crate::sync::{ORDER, entity_rows};
+use crate::sync::entity_rows;
+
+/// What a library holds; the library row itself is where it is restored to.
+/// Same order as `sync::ORDER`: parents before children.
+const CONTENTS: [Entity; 9] = [
+    Entity::Publisher,
+    Entity::Person,
+    Entity::Member,
+    Entity::Work,
+    Entity::WorkContributor,
+    Entity::Edition,
+    Entity::BookDetails,
+    Entity::Copy,
+    Entity::Wish,
+];
 
 const FORMAT: &str = "library-backup";
-const VERSION: u32 = 1;
+/// 2: one library per backup (D46).
+const VERSION: u32 = 2;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
 
@@ -45,10 +61,18 @@ pub struct BackupSummary {
     pub covers: usize,
 }
 
-pub fn export(conn: &Connection, covers: &Covers, path: &Path) -> Result<BackupSummary> {
+pub fn export(
+    conn: &Connection,
+    library: &str,
+    covers: &Covers,
+    path: &Path,
+) -> Result<BackupSummary> {
     let mut entities = BTreeMap::new();
-    for entity in ORDER {
-        entities.insert(entity.table().to_owned(), entity_rows(conn, entity)?);
+    for entity in CONTENTS {
+        entities.insert(
+            entity.table().to_owned(),
+            entity_rows(conn, library, entity)?,
+        );
     }
     let backup = BackupFile {
         format: FORMAT.to_owned(),
@@ -57,7 +81,7 @@ pub fn export(conn: &Connection, covers: &Covers, path: &Path) -> Result<BackupS
         exported_at: conn.query_row("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now')", [], |r| {
             r.get(0)
         })?,
-        operations: operations(conn)?,
+        operations: operations(conn, library)?,
         entities,
     };
 
@@ -88,8 +112,13 @@ pub fn export(conn: &Connection, covers: &Covers, path: &Path) -> Result<BackupS
     })
 }
 
-/// Restores into an empty catalogue only: merging two catalogues is what sync will do.
-pub fn restore(conn: &mut Connection, covers: &Covers, path: &Path) -> Result<BackupSummary> {
+/// Restores into an empty library only: merging two catalogues is what sync will do.
+pub fn restore(
+    conn: &mut Connection,
+    library: &str,
+    covers: &Covers,
+    path: &Path,
+) -> Result<BackupSummary> {
     let mut archive =
         ZipArchive::new(File::open(path)?).map_err(|_| Error::BadBackup("not_a_backup"))?;
     let backup: BackupFile = {
@@ -106,12 +135,12 @@ pub fn restore(conn: &mut Connection, covers: &Covers, path: &Path) -> Result<Ba
     if backup.schema_version != schema_version(conn)? {
         return Err(Error::BadBackup("other_version"));
     }
-    if !catalogue_is_empty(conn)? {
+    if !library_is_empty(conn, library)? {
         return Err(Error::BadBackup("not_empty"));
     }
 
     let mut changes = Vec::new();
-    for entity in ORDER {
+    for entity in CONTENTS {
         for row in backup.entities.get(entity.table()).into_iter().flatten() {
             let mut fields = row.clone();
             let id = match fields.remove("id") {
@@ -125,7 +154,7 @@ pub fn restore(conn: &mut Connection, covers: &Covers, path: &Path) -> Result<Ba
 
     let tx = conn.transaction()?;
     if !changes.is_empty() {
-        ops::record(&tx, "backup.restore", changes)?;
+        ops::record(&tx, library, "backup.restore", changes)?;
     }
     tx.commit()?;
 
@@ -139,8 +168,8 @@ pub fn restore(conn: &mut Connection, covers: &Covers, path: &Path) -> Result<Ba
     }
 
     Ok(BackupSummary {
-        books: count(conn, Entity::Edition)?,
-        copies: count(conn, Entity::Copy)?,
+        books: count(conn, library, Entity::Edition)?,
+        copies: count(conn, library, Entity::Copy)?,
         covers: stored,
     })
 }
@@ -179,11 +208,12 @@ fn cover_extension(name: &str) -> Option<&'static str> {
     valid_hash.then_some(extension)
 }
 
-fn operations(conn: &Connection) -> Result<Vec<Value>> {
+fn operations(conn: &Connection, library: &str) -> Result<Vec<Value>> {
     let mut statement = conn.prepare(
-        "SELECT id, hlc, device_id, intent, changes, recorded_at FROM operations ORDER BY hlc",
+        "SELECT id, hlc, device_id, intent, changes, recorded_at FROM operations
+          WHERE library_id = ?1 ORDER BY hlc",
     )?;
-    let rows = statement.query_map([], |row| {
+    let rows = statement.query_map([library], |row| {
         let changes: String = row.get(4)?;
         Ok(json!({
             "id": row.get::<_, String>(0)?,
@@ -201,18 +231,22 @@ fn schema_version(conn: &Connection) -> Result<i64> {
     Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
 }
 
-fn count(conn: &Connection, entity: Entity) -> Result<usize> {
+fn count(conn: &Connection, library: &str, entity: Entity) -> Result<usize> {
     let n: i64 = conn.query_row(
-        &format!("SELECT count(*) FROM {}", entity.table()),
-        [],
+        &format!(
+            "SELECT count(*) FROM {} WHERE {} = ?1",
+            entity.table(),
+            entity.library_column()
+        ),
+        [library],
         |r| r.get(0),
     )?;
     Ok(n as usize)
 }
 
-fn catalogue_is_empty(conn: &Connection) -> Result<bool> {
-    for entity in ORDER {
-        if count(conn, entity)? > 0 {
+fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {
+    for entity in CONTENTS {
+        if count(conn, library, entity)? > 0 {
             return Ok(false);
         }
     }
@@ -226,6 +260,7 @@ mod tests {
     use super::*;
     use crate::catalog::{self, BookFilter};
     use crate::db;
+    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn temp(name: &str) -> std::path::PathBuf {
         let dir =
@@ -266,18 +301,19 @@ mod tests {
         let mut source = db::open_in_memory().unwrap();
         catalog::create_book(
             &mut source,
+            LIB,
             &book("A Wizard of Earthsea", Some("9780306406157")),
             Some(&cover),
         )
         .unwrap();
-        catalog::create_book(&mut source, &book("The Dispossessed", None), None).unwrap();
+        catalog::create_book(&mut source, LIB, &book("The Dispossessed", None), None).unwrap();
         let file = dir.join("backup.zip");
 
-        let exported = export(&source, &source_covers, &file).unwrap();
+        let exported = export(&source, LIB, &source_covers, &file).unwrap();
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
-        let restored = restore(&mut target, &target_covers, &file).unwrap();
+        let restored = restore(&mut target, LIB, &target_covers, &file).unwrap();
 
         assert_eq!(
             exported,
@@ -288,7 +324,7 @@ mod tests {
             }
         );
         assert_eq!(restored, exported);
-        let books = catalog::list_books(&target, &BookFilter::default()).unwrap();
+        let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
         assert_eq!(books.len(), 2);
         assert_eq!(books[0].title, "A Wizard of Earthsea");
         assert_eq!(books[0].authors, vec!["Ursula K. Le Guin"]);
@@ -300,7 +336,7 @@ mod tests {
             query: Some("earthsea".into()),
             ..BookFilter::default()
         };
-        assert_eq!(catalog::list_books(&target, &filter).unwrap().len(), 1);
+        assert_eq!(catalog::list_books(&target, LIB, &filter).unwrap().len(), 1);
         let intent: String = target
             .query_row("SELECT intent FROM operations", [], |r| r.get(0))
             .unwrap();
@@ -312,11 +348,11 @@ mod tests {
         let dir = temp("nonempty");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut conn = db::open_in_memory().unwrap();
-        catalog::create_book(&mut conn, &book("A", None), None).unwrap();
+        catalog::create_book(&mut conn, LIB, &book("A", None), None).unwrap();
         let file = dir.join("backup.zip");
-        export(&conn, &covers, &file).unwrap();
+        export(&conn, LIB, &covers, &file).unwrap();
 
-        let error = restore(&mut conn, &covers, &file).unwrap_err();
+        let error = restore(&mut conn, LIB, &covers, &file).unwrap_err();
 
         assert!(matches!(error, Error::BadBackup("not_empty")));
     }
@@ -330,7 +366,7 @@ mod tests {
         let mut conn = db::open_in_memory().unwrap();
 
         assert!(matches!(
-            restore(&mut conn, &covers, &file),
+            restore(&mut conn, LIB, &covers, &file),
             Err(Error::BadBackup("not_a_backup"))
         ));
     }

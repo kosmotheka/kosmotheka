@@ -19,7 +19,8 @@ use tokio_rustls::TlsAcceptor;
 use super::pairing::PairingWindow;
 use super::{
     Hello, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, client_is_authorized,
-    device_name, random_secret, record_client_sync, save_client,
+    device_name, only_shared, only_shared_operations, random_secret, record_client_sync,
+    save_client, share_library, shared_libraries,
 };
 use crate::db::Database;
 use crate::error::Result;
@@ -145,6 +146,8 @@ async fn pair(
         let conn = state.database.lock()?;
         let secret = random_secret();
         save_client(&conn, &request.device_id, &request.device_name, &secret)?;
+        // Pairing from a library shares that one; choosing others comes with milestone 4.4.
+        share_library(&conn, &ops::active_library(&conn)?, &request.device_id)?;
         Ok(Json(PairResponse {
             device_id: ops::device_id(&conn)?,
             device_name: device_name(&conn)?,
@@ -165,9 +168,12 @@ async fn pull(
         if request.schema_version != ops::schema_version(&conn)? {
             return Err(ApiError::OtherVersion);
         }
+        let shared = shared_libraries(&conn, &client)?;
+        let theirs = only_shared(request.vectors, &shared);
+        let libraries: Vec<String> = theirs.keys().cloned().collect();
         let response = PullResponse {
-            operations: sync::operations_since(&conn, &request.vector)?,
-            vector: sync::version_vector(&conn)?,
+            operations: sync::operations_since(&conn, &theirs)?,
+            vectors: sync::version_vectors(&conn, &libraries)?,
         };
         record_client_sync(&conn, &client)?;
         Ok(Json(response))
@@ -182,8 +188,10 @@ async fn push(
 ) -> std::result::Result<Json<MergeReport>, ApiError> {
     blocking(move || {
         let mut conn = state.database.lock()?;
-        authorized_client(&conn, &headers)?;
-        Ok(Json(sync::merge(&mut conn, request.operations)?))
+        let client = authorized_client(&conn, &headers)?;
+        let shared = shared_libraries(&conn, &client)?;
+        let operations = only_shared_operations(request.operations, &shared);
+        Ok(Json(sync::merge(&mut conn, operations)?))
     })
     .await
 }

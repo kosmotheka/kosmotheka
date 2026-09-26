@@ -31,11 +31,12 @@ pub struct IsbnCheck {
     pub wishes: Vec<Wish>,
 }
 
-pub fn add_wish(conn: &mut Connection, wish: &ValidWish) -> Result<String> {
+pub fn add_wish(conn: &mut Connection, library: &str, wish: &ValidWish) -> Result<String> {
     let tx = conn.transaction()?;
     let id = new_id();
     ops::record(
         &tx,
+        library,
         "wish.add",
         vec![Change::create(
             Entity::Wish,
@@ -53,22 +54,28 @@ pub fn add_wish(conn: &mut Connection, wish: &ValidWish) -> Result<String> {
     Ok(id)
 }
 
-pub fn delete_wish(conn: &mut Connection, id: &str) -> Result<()> {
+pub fn delete_wish(conn: &mut Connection, library: &str, id: &str) -> Result<()> {
     let tx = conn.transaction()?;
-    ops::record(&tx, "wish.remove", vec![Change::delete(Entity::Wish, id)])?;
+    ops::record(
+        &tx,
+        library,
+        "wish.remove",
+        vec![Change::delete(Entity::Wish, id)],
+    )?;
     tx.commit()?;
     Ok(())
 }
 
-pub fn list_wishes(conn: &Connection) -> Result<Vec<Wish>> {
+pub fn list_wishes(conn: &Connection, library: &str) -> Result<Vec<Wish>> {
     query_wishes(
         conn,
-        "SELECT id, title, author, isbn13, note, cover_url, created_at FROM wishes ORDER BY created_at DESC, id",
-        [],
+        "SELECT id, title, author, isbn13, note, cover_url, created_at FROM wishes
+          WHERE library_id = ?1 ORDER BY created_at DESC, id",
+        [library],
     )
 }
 
-pub fn check_isbn(conn: &Connection, raw: &str) -> Result<IsbnCheck> {
+pub fn check_isbn(conn: &Connection, library: &str, raw: &str) -> Result<IsbnCheck> {
     let isbn = Isbn::parse(raw)
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
     let filter = BookFilter {
@@ -77,11 +84,12 @@ pub fn check_isbn(conn: &Connection, raw: &str) -> Result<IsbnCheck> {
     };
     Ok(IsbnCheck {
         isbn13: isbn.as_str().to_owned(),
-        books: catalog::list_books(conn, &filter)?,
+        books: catalog::list_books(conn, library, &filter)?,
         wishes: query_wishes(
             conn,
-            "SELECT id, title, author, isbn13, note, cover_url, created_at FROM wishes WHERE isbn13 = ?1 ORDER BY created_at",
-            [isbn.as_str()],
+            "SELECT id, title, author, isbn13, note, cover_url, created_at FROM wishes
+              WHERE library_id = ?1 AND isbn13 = ?2 ORDER BY created_at",
+            [library, isbn.as_str()],
         )?,
     })
 }
@@ -108,6 +116,7 @@ mod tests {
 
     use super::*;
     use crate::db;
+    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn wish(title: &str, isbn: Option<&str>) -> ValidWish {
         WishInput {
@@ -122,12 +131,12 @@ mod tests {
     #[test]
     fn wishes_are_added_listed_and_removed() {
         let mut conn = db::open_in_memory().unwrap();
-        let id = add_wish(&mut conn, &wish("Tehanu", None)).unwrap();
-        add_wish(&mut conn, &wish("The Other Wind", None)).unwrap();
+        let id = add_wish(&mut conn, LIB, &wish("Tehanu", None)).unwrap();
+        add_wish(&mut conn, LIB, &wish("The Other Wind", None)).unwrap();
 
-        assert_eq!(list_wishes(&conn).unwrap().len(), 2);
-        delete_wish(&mut conn, &id).unwrap();
-        let titles: Vec<String> = list_wishes(&conn)
+        assert_eq!(list_wishes(&conn, LIB).unwrap().len(), 2);
+        delete_wish(&mut conn, LIB, &id).unwrap();
+        let titles: Vec<String> = list_wishes(&conn, LIB)
             .unwrap()
             .into_iter()
             .map(|w| w.title)
@@ -156,17 +165,20 @@ mod tests {
             .validate()
             .unwrap(),
         };
-        catalog::create_book(&mut conn, &book, None).unwrap();
-        add_wish(&mut conn, &wish("Wanted", Some("9780140328721"))).unwrap();
+        catalog::create_book(&mut conn, LIB, &book, None).unwrap();
+        add_wish(&mut conn, LIB, &wish("Wanted", Some("9780140328721"))).unwrap();
 
-        let owned = check_isbn(&conn, "0-306-40615-2").unwrap();
+        let owned = check_isbn(&conn, LIB, "0-306-40615-2").unwrap();
         assert_eq!(owned.books.len(), 1);
         assert_eq!(owned.books[0].owners, vec!["Ana"]);
 
-        let wanted = check_isbn(&conn, "9780140328721").unwrap();
+        let wanted = check_isbn(&conn, LIB, "9780140328721").unwrap();
         assert!(wanted.books.is_empty());
         assert_eq!(wanted.wishes.len(), 1);
 
-        assert!(matches!(check_isbn(&conn, "12"), Err(Error::Validation(_))));
+        assert!(matches!(
+            check_isbn(&conn, LIB, "12"),
+            Err(Error::Validation(_))
+        ));
     }
 }

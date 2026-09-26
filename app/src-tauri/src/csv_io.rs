@@ -55,23 +55,26 @@ pub struct RejectedRow {
 
 /// Returns the number of data rows written. Editions without copies get one row
 /// with the copy columns empty.
-pub fn export(conn: &Connection, path: &Path) -> Result<usize> {
+pub fn export(conn: &Connection, library: &str, path: &Path) -> Result<usize> {
     let mut statement = conn.prepare(
         "SELECT e.title, coalesce(e.subtitle, ''),
                 coalesce((SELECT group_concat(p.name, '; ' ORDER BY wc.position)
-                            FROM work_contributors wc JOIN people p ON p.id = wc.person_id
-                           WHERE wc.work_id = e.work_id AND wc.role = 'author'), ''),
+                            FROM work_contributors wc
+                            JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
+                           WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id
+                             AND wc.role = 'author'), ''),
                 coalesce(pu.name, ''), coalesce(e.published_year, ''), coalesce(e.language, ''),
                 coalesce(bd.isbn13, ''), coalesce(c.format, ''), coalesce(m.name, ''),
                 coalesce(c.quantity, ''), coalesce(c.location, ''), coalesce(c.acquired_on, '')
            FROM editions e
-           LEFT JOIN publishers pu ON pu.id = e.publisher_id
-           LEFT JOIN book_details bd ON bd.edition_id = e.id
-           LEFT JOIN copies c ON c.edition_id = e.id
-           LEFT JOIN members m ON m.id = c.owner_id
+           LEFT JOIN publishers pu ON pu.library_id = e.library_id AND pu.id = e.publisher_id
+           LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
+           LEFT JOIN copies c ON c.library_id = e.library_id AND c.edition_id = e.id
+           LEFT JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
+          WHERE e.library_id = ?1
           ORDER BY e.title COLLATE NOCASE, e.id, c.created_at",
     )?;
-    let rows = statement.query_map([], |row| {
+    let rows = statement.query_map([library], |row| {
         let text = |i: usize| -> rusqlite::Result<String> {
             let value: rusqlite::types::Value = row.get(i)?;
             Ok(match value {
@@ -111,7 +114,7 @@ pub fn export(conn: &Connection, path: &Path) -> Result<usize> {
 
 /// Adds every valid row as a book (or as a copy, if its ISBN is already catalogued).
 /// Invalid rows are reported and skipped; the rest are still imported.
-pub fn import(conn: &mut Connection, path: &Path) -> Result<CsvImportSummary> {
+pub fn import(conn: &mut Connection, library: &str, path: &Path) -> Result<CsvImportSummary> {
     let content = std::fs::read_to_string(path)?;
     let content = content.strip_prefix('\u{feff}').unwrap_or(&content);
     let mut reader = csv::ReaderBuilder::new()
@@ -138,7 +141,7 @@ pub fn import(conn: &mut Connection, path: &Path) -> Result<CsvImportSummary> {
                 continue;
             }
         };
-        match catalog::create_book(conn, &book, None) {
+        match catalog::create_book(conn, library, &book, None) {
             Ok(created) if created.existing_edition => summary.copies_added += 1,
             Ok(_) => summary.books_created += 1,
             Err(Error::Validation(errors)) => summary.rejected.push(RejectedRow { line, errors }),
@@ -208,6 +211,7 @@ mod tests {
     use super::*;
     use crate::catalog::BookFilter;
     use crate::db;
+    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn temp_file(name: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!("library-csv-{name}-{}.csv", std::process::id()))
@@ -225,7 +229,7 @@ mod tests {
              Good Omens,Terry Pratchett; Neil Gaiman,,,,,,,\n",
         )
         .unwrap();
-        let imported = import(&mut source, &path).unwrap();
+        let imported = import(&mut source, LIB, &path).unwrap();
         assert_eq!(
             imported,
             CsvImportSummary {
@@ -235,16 +239,16 @@ mod tests {
             }
         );
 
-        export(&source, &path).unwrap();
+        export(&source, LIB, &path).unwrap();
         let exported = std::fs::read_to_string(&path).unwrap();
         assert!(exported.starts_with('\u{feff}'));
         assert!(exported.contains("\"Salón, balda 2\""));
         assert!(exported.contains("Terry Pratchett; Neil Gaiman"));
 
         let mut target = db::open_in_memory().unwrap();
-        let reimported = import(&mut target, &path).unwrap();
+        let reimported = import(&mut target, LIB, &path).unwrap();
         assert_eq!(reimported, imported);
-        let books = catalog::list_books(&target, &BookFilter::default()).unwrap();
+        let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
         assert_eq!(books[1].authors, vec!["Terry Pratchett", "Neil Gaiman"]);
         assert_eq!(books[0].copy_count, 2);
         assert_eq!(books[0].formats, vec![Format::Hardcover, Format::Ebook]);
@@ -264,7 +268,7 @@ mod tests {
         )
         .unwrap();
 
-        let summary = import(&mut conn, &path).unwrap();
+        let summary = import(&mut conn, LIB, &path).unwrap();
 
         assert_eq!(summary.books_created, 1);
         let lines: Vec<usize> = summary.rejected.iter().map(|r| r.line).collect();

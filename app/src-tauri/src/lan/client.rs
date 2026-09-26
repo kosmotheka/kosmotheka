@@ -18,7 +18,8 @@ use super::identity::fingerprint;
 use super::pairing::PairingCode;
 use super::{
     Hello, KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest,
-    SyncReport, device_name, find_server, record_server_sync, save_server,
+    SyncReport, device_name, find_server, only_shared, only_shared_operations, record_server_sync,
+    save_server, share_library, shared_libraries,
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -186,20 +187,26 @@ pub async fn pair(database: &Database, code_text: &str) -> Result<KnownServer> {
         fingerprint: code.fingerprint,
         secret: response.secret,
     };
-    save_server(&*database.lock()?, &server)?;
+    {
+        let conn = database.lock()?;
+        save_server(&conn, &server)?;
+        // Pairing from a library shares that one; choosing others comes with milestone 4.4.
+        share_library(&conn, &ops::active_library(&conn)?, &server.device_id)?;
+    }
     Ok(server)
 }
 
 /// Pulls what the peer has, then pushes what it lacks.
 pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
-    let (server, local_device, pull) = {
+    let (server, local_device, shared, pull) = {
         let conn = database.lock()?;
         let server = find_server(&conn, device_id)?.ok_or(Error::Lan("unknown_device"))?;
+        let shared = shared_libraries(&conn, device_id)?;
         let pull = PullRequest {
             schema_version: ops::schema_version(&conn)?,
-            vector: sync::version_vector(&conn)?,
+            vectors: sync::version_vectors(&conn, &shared)?,
         };
-        (server, ops::device_id(&conn)?, pull)
+        (server, ops::device_id(&conn)?, shared, pull)
     };
     let client = pinned_client(&server.fingerprint)?;
     let auth = Some((local_device.as_str(), server.secret.as_str()));
@@ -215,8 +222,12 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
         };
     let (received, to_send) = {
         let mut conn = database.lock()?;
-        let received = sync::merge(&mut conn, pulled.operations)?;
-        (received, sync::operations_since(&conn, &pulled.vector)?)
+        let received = sync::merge(
+            &mut conn,
+            only_shared_operations(pulled.operations, &shared),
+        )?;
+        let theirs = only_shared(pulled.vectors, &shared);
+        (received, sync::operations_since(&conn, &theirs)?)
     };
 
     let sent = to_send.len();
@@ -323,6 +334,7 @@ mod tests {
     use crate::lan::pairing::PairingWindow;
     use crate::lan::server::{self, RunningServer, ServerState};
     use crate::lan::{list_devices, random_secret};
+    use crate::ops::DEFAULT_LIBRARY_ID;
 
     fn add(database: &Database, title: &str) {
         let book = ValidBook {
@@ -342,15 +354,25 @@ mod tests {
             .validate()
             .unwrap(),
         };
-        catalog::create_book(&mut database.lock().unwrap(), &book, None).unwrap();
+        catalog::create_book(
+            &mut database.lock().unwrap(),
+            DEFAULT_LIBRARY_ID,
+            &book,
+            None,
+        )
+        .unwrap();
     }
 
     fn titles(database: &Database) -> Vec<String> {
-        catalog::list_books(&database.lock().unwrap(), &BookFilter::default())
-            .unwrap()
-            .into_iter()
-            .map(|b| b.title)
-            .collect()
+        catalog::list_books(
+            &database.lock().unwrap(),
+            DEFAULT_LIBRARY_ID,
+            &BookFilter::default(),
+        )
+        .unwrap()
+        .into_iter()
+        .map(|b| b.title)
+        .collect()
     }
 
     struct Serving {

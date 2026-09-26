@@ -6,7 +6,8 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 |---|---|
 | `operation.schema.json` | JSON Schema of an operation: envelope, changes and the fields each entity accepts |
 | `conformance/operation-validation.json` | Operations with the expected validation result (`valid`, or `invalid` with an error code, change index and field) |
-| `conformance/draft/` | Cases for the next version of the format. Not loaded by the implementations yet; see below |
+| `conformance/library-merge.json` | Operations from several libraries, delivered in different orders, with the rows every order must end in |
+| `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations |
 
 ## Rules the schema cannot express
 
@@ -25,14 +26,14 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 
 ## Running the conformance cases
 
-Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs`.
+Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs` (validation) and `app/src-tauri/src/sync.rs` (merging); the PHP server runs the validation cases in `server/tests/Validator/` and will run the merge cases when it applies operations.
 
-## Draft: merging operations from several libraries
+## Merging operations from several libraries
 
-`conformance/draft/library-merge.json` describes how a device applies operations received from other devices when they belong to different libraries. Each case has:
+`conformance/library-merge.json` describes how a device applies operations received from other devices when they belong to different libraries. Each case has:
 
 - `operations`: full operations, with their library and HLC.
-- `deliveries`: orders in which to deliver them, as lists of indexes into `operations`. Each operation is delivered alone, in that order, as if it came in its own sync. **Every order must end in the same state.**
+- `deliveries`: orders in which to deliver them, as lists of indexes into `operations`. Each operation is delivered alone, in that order, as if it came in its own sync. **Every order must end in the same state.** Orders respect causality, as the sync protocol guarantees: a change to a row never arrives before the operation that created that row (a device always sends everything the other lacks, oldest first).
 - `expect.rows`: every catalog row that must exist afterwards, as `{ library, entity, id, fields }`. Rows not listed must not exist.
 
 Rules these cases pin down:

@@ -13,9 +13,16 @@ Cada dispositivo guarda todas las operaciones (las suyas y las recibidas). Sincr
 - La primera vez que arranca una versión con sincronización, cada dispositivo registra una **operación inicial** (`sync.baseline`) que crea todo lo que ya tiene. Así viajan también los libros anteriores al registro de operaciones. En una instalación nueva, sin datos, esa operación no existe.
 - Consecuencia: **un dispositivo nuevo no necesita una copia completa aparte**. Recibe todas las operaciones replicables, empezando por las iniciales de cada dispositivo.
 
+## Por biblioteca (Fase 4)
+
+Todo lo que sigue ocurre **biblioteca a biblioteca** (D46, D54):
+- Cada operación pertenece a una biblioteca, y una fila se identifica por biblioteca, entidad e id. Versiones de campo y lápidas también son por biblioteca: nada de lo que pase en una toca otra.
+- **Qué va a cada dispositivo** lo dice la tabla local `library_peers`. Al emparejar se comparte la biblioteca activa (elegir otras llega con el hito 4.4). Solo se piden, se envían y se aceptan operaciones de bibliotecas compartidas con ese dispositivo; lo demás se descarta antes de fusionar.
+- **Borrar una biblioteca** (D65) quita todas sus filas y deja una lápida de la biblioteca: cualquier cambio posterior en ella se ignora, tenga la marca que tenga. La operación de borrado se queda en el registro (D66) y sigue viajando a quien comparta esa biblioteca.
+
 ## Qué le falta a quién: el vector de versiones
 
-Cada dispositivo sabe, para cada autor de operaciones, cuál es la última que tiene: `{dispositivo → última marca HLC}`. Se calcula del registro, sin tablas extra.
+Cada dispositivo sabe, para cada biblioteca y cada autor de operaciones, cuál es la última que tiene: `{biblioteca → {dispositivo → última marca HLC}}`. Se calcula del registro, sin tablas extra.
 
 Una sincronización entre A y B:
 1. A envía su vector a B.
@@ -68,7 +75,7 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 4. El cliente guarda al servidor: nombre, direcciones, huella y secreto.
 
 **Sincronizar** (autenticado con `X-Device-Id` y `Authorization: Bearer <secreto>`):
-1. `POST /v1/sync/pull` con la versión de esquema y el vector del cliente. El servidor responde con las operaciones que le faltan al cliente y con su propio vector. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
+1. `POST /v1/sync/pull` con la versión de esquema y los vectores del cliente, uno por biblioteca compartida. El servidor responde con las operaciones que le faltan al cliente de las bibliotecas que ambos comparten, y con sus propios vectores de esas bibliotecas. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
 2. El cliente las aplica (`merge`) y calcula las que le faltan al servidor.
 3. `POST /v1/sync/push` con esas operaciones. El servidor las aplica.
 4. El cliente coloca primero la dirección que ha funcionado, para la próxima vez.
@@ -92,5 +99,5 @@ Aplicar operaciones recibidas **no genera operaciones nuevas**: se registran las
 - `app/src-tauri/src/sync.rs`: operación inicial, vector de versiones, `operations_since` (lo que le falta al otro) y `merge` (aplicar lo recibido). Sus tests simulan dispositivos con bases de datos en memoria y comprueban que todos acaban con el mismo estado (`assert_converged`).
 - `app/src-tauri/src/ops.rs`: las operaciones locales también registran las versiones de campo y las lápidas, así que local y remoto siguen las mismas reglas.
 - `app/src-tauri/src/lan/`: identidad y certificado (`identity.rs`), código de emparejamiento (`pairing.rs`), servidor HTTPS (`server.rs`), cliente con certificado fijado (`client.rs`) y el servicio que los une a la app (`service.rs`). Sus tests emparejan y sincronizan por TLS real, también por la IP de la red local.
-- Pendiente: casos de conformidad de la fusión en `spec/`, para que el servidor PHP (Fase 7) aplique exactamente las mismas reglas.
+- Casos de conformidad de la fusión por biblioteca: `spec/conformance/library-merge.json`, que la app pasa en `sync::tests::merge_conformance_cases`. Pendiente: casos para el resto de reglas (campo a campo, el borrado gana, referencias rotas), para que el servidor PHP (Fase 7) aplique exactamente las mismas.
 

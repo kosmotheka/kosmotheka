@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 
 use crate::error::Result;
 use crate::ops::{read_state, write_state};
-use crate::sync::{MergeReport, SyncOperation, VersionVector};
+use crate::sync::{LibraryVectors, MergeReport, SyncOperation};
 
 const DEVICE_NAME_KEY: &str = "device_name";
 const PORT_KEY: &str = "sync_port";
@@ -51,15 +51,16 @@ pub struct PairResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PullRequest {
     pub schema_version: i64,
-    pub vector: VersionVector,
+    /// What the client holds of each library it shares with the server.
+    pub vectors: LibraryVectors,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PullResponse {
     pub operations: Vec<SyncOperation>,
-    /// What the server holds, so the client knows what to push.
-    pub vector: VersionVector,
+    /// What the server holds of the libraries both share, so the client knows what to push.
+    pub vectors: LibraryVectors,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -265,7 +266,47 @@ pub fn list_devices(conn: &Connection, table: &str) -> Result<Vec<KnownDevice>> 
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
+// --- Which libraries go to each device (D46) -----------------------------------
+
+pub fn shared_libraries(conn: &Connection, device_id: &str) -> Result<Vec<String>> {
+    Ok(conn
+        .prepare("SELECT library_id FROM library_peers WHERE device_id = ?1 ORDER BY library_id")?
+        .query_map([device_id], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+pub fn share_library(conn: &Connection, library: &str, device_id: &str) -> Result<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO library_peers (library_id, device_id) VALUES (?1, ?2)",
+        [library, device_id],
+    )?;
+    Ok(())
+}
+
+/// Keeps only the entries of `vectors` for libraries shared with that device.
+pub fn only_shared(vectors: LibraryVectors, shared: &[String]) -> LibraryVectors {
+    vectors
+        .into_iter()
+        .filter(|(library, _)| shared.contains(library))
+        .collect()
+}
+
+/// Keeps only operations of libraries shared with that device; the rest never merge.
+pub fn only_shared_operations(
+    operations: Vec<SyncOperation>,
+    shared: &[String],
+) -> Vec<SyncOperation> {
+    operations
+        .into_iter()
+        .filter(|op| shared.contains(&op.operation.library))
+        .collect()
+}
+
 pub fn forget_device(conn: &Connection, device_id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM library_peers WHERE device_id = ?1",
+        [device_id],
+    )?;
     conn.execute(
         "DELETE FROM known_servers WHERE device_id = ?1",
         [device_id],
@@ -275,4 +316,45 @@ pub fn forget_device(conn: &Connection, device_id: &str) -> Result<()> {
         [device_id],
     )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use library_domain::Operation;
+
+    use super::*;
+
+    fn operation_in(library: &str) -> SyncOperation {
+        SyncOperation {
+            schema_version: 9,
+            operation: Operation {
+                id: "01997c7e-0000-7000-8000-000000000001".into(),
+                library: library.into(),
+                hlc: "0001727222222222-00000000-dev".parse().unwrap(),
+                intent: "member.add".into(),
+                changes: Vec::new(),
+            },
+        }
+    }
+
+    #[test]
+    fn only_shared_libraries_travel() {
+        let shared = vec!["family".to_owned()];
+        let vectors = LibraryVectors::from([
+            ("family".to_owned(), Default::default()),
+            ("rpg".to_owned(), Default::default()),
+        ]);
+
+        let kept =
+            only_shared_operations(vec![operation_in("family"), operation_in("rpg")], &shared);
+
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].operation.library, "family");
+        assert_eq!(
+            only_shared(vectors, &shared)
+                .into_keys()
+                .collect::<Vec<_>>(),
+            shared
+        );
+    }
 }

@@ -38,9 +38,10 @@ Detalles de construcción que no cambian lo decidido; se apuntan aquí y se revi
 ## Estado
 
 - [x] 4.1 Casos de validación del formato: `spec/conformance/draft/library-scope.json` (13 casos, revisados).
-- [x] 4.1 Casos de fusión por biblioteca: `spec/conformance/draft/library-merge.json` (8 casos) y reglas en `spec/README.md`.
+- [x] 4.1 Casos de fusión por biblioteca: `spec/conformance/library-merge.json` (8 casos, con órdenes de entrega que respetan la causalidad) y reglas en `spec/README.md`.
 - [x] 4.2 Dominio en Rust y PHP: `library` en la operación, entidad `library`, códigos `invalid_library` y `other_library`; los 35 casos de validación pasan en los dos. La app usa por ahora una biblioteca fija (`DEFAULT_LIBRARY_ID`), la que tendrá la migrada.
-- [ ] 4.3 Base de datos y migración.
+- [x] 4.3 Base de datos y migración (migración 9): `library_id` y clave `(library_id, id)` en todas las tablas, versiones y lápidas por biblioteca, borrar una biblioteca, copia automática antes de migrar, protocolo con un vector por biblioteca y `library_peers`. Los casos de fusión pasan en Rust.
+- Pendiente de la 4.3, para más adelante: purgar del registro local el contenido de una biblioteca borrada (hoy se conserva entero; D66 solo exige la operación de borrado).
 - [ ] 4.4 Sincronización por biblioteca.
 - [ ] 4.5 Interfaz.
 - [ ] 4.6 Copias.
