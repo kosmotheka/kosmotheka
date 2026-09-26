@@ -59,7 +59,7 @@ Preguntas para el maintainer, en orden de urgencia:
 
 - [x] Plan escrito (27/09/2026).
 - [x] Borrador de casos de roles y permisos: `spec/conformance/draft/permissions.json` (10 casos) y sus reglas en `spec/conformance/draft/README.md`. **Para revisar** antes de construir 5.3 y 5.4.
-- [x] 5.1 Firmas (27/09/2026): especificación con casos de firma compartidos (`spec/conformance/signatures.json`), entidad `device`, regla `other_device`, firma y comprobación en Rust, comprobación en PHP con libsodium, migración 11. La app firma todo lo que escribe y rechaza lo que no cuadra; tests con tres dispositivos, manipulación en el camino, suplantación y cambio de clave.
+- [x] 5.1 Firmas (27/09/2026): especificación con casos de firma compartidos (`spec/conformance/signatures.json`), entidad `device`, regla `other_device`, firma y comprobación en Rust, comprobación en PHP con libsodium, migración 11. La app firma todo lo que escribe y rechaza lo que no cuadra; tests con tres dispositivos, manipulación en el camino, suplantación y cambio de clave. El APK compila. Pruebas en pantalla: [`docs/testing/fase-5.md`](../testing/fase-5.md).
 - [ ] 5.2 Personas y dispositivos.
 - [ ] 5.3 Roles.
 - [ ] 5.4 Comprobar lo que llega.
