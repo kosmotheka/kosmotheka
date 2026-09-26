@@ -77,6 +77,7 @@
 | D69 | Reserva de regalos oculta solo en pantalla | aceptada |
 | D70 | Nombre del proyecto: Kosmotheka | aceptada |
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
+| D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
 
 ---
 
@@ -906,3 +907,25 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **No se puede borrar lo que ya haya sacado fuera:** una copia de seguridad o un CSV exportados antes, capturas de pantalla, o una app modificada que ignore la orden. Eso no lo evita ninguna aplicación; lo que sí se garantiza es que no recibe nada nuevo y no puede cambiar nada.
 
 **Consecuencias:** concreta el hito 4.4. Necesita casos en `spec/` (operación de retirar el acceso, rechazo de cambios posteriores) y un test de convergencia en `sync.rs` con tres dispositivos. Amplía D65 y D66; la parte con cuentas y roles se retoma en la Fase 5 (D55).
+
+## D72 · La marca (nombre y logo), fuera de la AGPL y protegida — `propuesta`
+
+**Contexto:** hace falta un logo para Google Play y la web ([encargo](design/encargo-logo.md), ya pasado a Claude Design). El logo tiene que ser original y estar protegido. Propuesta preparada en la sesión del logo con el maintainer.
+
+**Propuesta:**
+1. **El nombre y el logo quedan fuera de la AGPL (D11).** El código es libre, pero la marca no. Una política de marca aparte dice:
+   - qué se puede hacer: hablar del proyecto, enlazarlo, usar el logo para referirse a él;
+   - qué no: usarlo en un servicio o una versión modificada que se haga pasar por la oficial.
+
+   Lo hacen Mozilla con Firefox y la Rust Foundation con Rust. Encaja con D04: el servicio alojado es el «oficial».
+2. **Comprobar que el logo está libre antes de elegir el definitivo:**
+   - búsqueda por imagen en [TMview](https://www.tmdn.org/tmview/) (UE y oficinas nacionales, incluida la OEPM, y otras) y en la [WIPO Global Brand Database](https://www.wipo.int/en/web/global-brand-database) (unos 38 millones de marcas, con búsqueda de conceptos por IA);
+   - búsqueda inversa (Google Lens, TinEye) para logos no registrados;
+   - lo que cuenta es el parecido en las clases de Niza 9 (software) y 42 (servicios en la nube). Guía de la EUIPO: [antes de solicitar](https://www.euipo.europa.eu/en/trade-marks/before-applying/availability).
+3. **Registrar el logo como marca figurativa**, no solo el nombre. Un logo hecho con IA (Claude Design) puede no tener derechos de autor: en EE. UU. no se protege lo que no tiene autoría humana, y en la UE se exige una creación intelectual humana. Retocarlo a mano ayuda, pero la protección fiable es el registro.
+4. **Por valorar:** un informe de búsqueda de un agente de la propiedad industrial antes de registrarlo.
+
+**Consecuencias:**
+- Antes de abrir el repositorio hay que añadir la exclusión en LICENSE y README, y un TRADEMARKS.md o similar. Relacionado con D64 y con el repositorio kosmotheka/kosmotheka.
+- En la Fase 8 del ROADMAP: la búsqueda de marcas y el registro del logo, junto al del nombre si lo hay.
+- Amplía D11 y D70.

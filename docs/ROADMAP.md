@@ -120,6 +120,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **F-Droid:** estudiar cómo queda tras la verificación de desarrolladores de Google.
 - **Landing pública:** qué es, que es libre y sin registro, enlaces a la tienda y al código.
 - Sección de ayuda completa en la app; documentación para quien quiera montar su servidor.
+- **Marca (D72, propuesta):** buscar que el logo esté libre (TMview, WIPO Global Brand Database, búsqueda inversa; clases de Niza 9 y 42) y registrarlo como marca figurativa, junto al nombre si se registra. Antes de abrir el repositorio: exclusión de la marca en LICENSE y README, y un TRADEMARKS.md.
 - **Hecho cuando:** cualquiera puede instalarla desde la tienda.
 
 ## Fase 9 — Vida de la biblioteca
