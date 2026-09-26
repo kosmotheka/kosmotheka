@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div class="{{ theme }}" style="width:100%;height:100%;position:relative;font-family:var(--font-sans)"><div role="dialog" aria-label="Tus bibliotecas" style="position:absolute;left:12px;top:62px;width:340px;padding:6px;border-radius:12px;background:var(--popover);color:var(--popover-foreground);box-shadow:0 0 0 1px var(--border),0 18px 48px -12px oklch(0 0 0 / 35%);box-sizing:border-box"><div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px 6px"><span style="font-size:12px;font-weight:500;color:var(--muted-foreground)">Tus bibliotecas</span><span style="font-size:12px;color:var(--muted-foreground)">4 en este equipo</span></div><sc-for list="{{ libs }}" as="l" hint-placeholder-count="4"><div role="menuitemradio" aria-checked="{{ l.active }}" style="position:relative;isolation:isolate;display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 4px 4px 10px;border-radius:8px"><sc-if value="{{ l.hl }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;z-index:-1;border-radius:8px;background:var(--accent)"></span></sc-if><span style="width:30px;height:30px;border-radius:8px;background:var(--secondary);color:var(--secondary-foreground);display:flex;align-items:center;justify-content:center;flex-shrink:0"><x-import component-from-global-scope="Library.LibraryBigIcon" size="16" hint-size="16px,16px"></x-import></span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:500">{{ l.name }}</span><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted-foreground)">{{ l.count }} obras<sc-if value="{{ l.ok }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:3px;background:var(--success);flex-shrink:0"></span></sc-if><sc-if value="{{ l.warn }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:3px;background:var(--warning);flex-shrink:0"></span></sc-if><sc-if value="{{ l.mute }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:3px;background:var(--muted-foreground);flex-shrink:0"></span></sc-if>{{ l.sync }}</span></span><sc-if value="{{ l.active }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="Library.CheckIcon" size="16" stroke-width="2.5" hint-size="16px,16px"></x-import></sc-if><button aria-label="Ajustes de {{ l.name }}" style="width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:var(--muted-foreground);display:flex;align-items:center;justify-content:center;flex-shrink:0"><x-import component-from-global-scope="Library.SettingsIcon" size="16" hint-size="16px,16px"></x-import></button></div></sc-for><div style="height:1px;background:var(--border);margin:6px 4px"></div><div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;font-size:14px"><x-import component-from-global-scope="Library.PlusIcon" size="16" hint-size="16px,16px"></x-import><span style="flex:1">Nueva biblioteca</span><kbd style="font:500 11px var(--font-mono);padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--muted);color:var(--muted-foreground)">Ctrl N</kbd></div><div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;font-size:14px"><x-import component-from-global-scope="Library.QrCodeIcon" size="16" hint-size="16px,16px"></x-import>Unirse a una con su código</div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const ok = 'var(--success)', warn = 'var(--warning)', mute = 'var(--muted-foreground)';
+    return { libs: [
+      { name: 'Familia', count: '248', sync: 'Al día', ok: true, warn: false, mute: false, err: false, active: true, hl: false },
+      { name: 'Rol', count: '412', sync: 'Sincronizando…', ok: false, warn: false, mute: true, err: false, active: false, hl: true },
+      { name: 'Videojuegos de Hugo', count: '37', sync: 'Sin sincronizar desde hace 3 días', ok: false, warn: true, mute: false, err: false, active: false, hl: false },
+      { name: 'Juegos de mesa', count: '64', sync: 'Solo en este equipo', ok: false, warn: false, mute: true, err: false, active: false, hl: false }
+    ] };
+  }
+}
+</script>
+</body>
+</html>
