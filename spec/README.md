@@ -30,5 +30,6 @@ Each implementation loads the files in `conformance/` (not `conformance/draft/`)
 - The envelope gains **`library`**: the id (UUID) of the library the operation belongs to. Changes never name a library themselves; a `library_id` field in a change is an unknown field.
 - A new entity **`library`**, with one required text field, `name`. A change to a `library` entity must have the operation's own library as its id: an operation can create, rename or otherwise change only its own library.
 - Entity ids only need to be unique within a library: the same id in two libraries is two different rows.
+- **Deleting the library** (a `delete` change on the `library` entity) removes the library and everything in it on every device that has it. Who may do it is a permission rule, defined with roles. Leaving a library is not an operation on it: the device simply stops having it (and, with roles, the person's membership ends).
 - New error codes: `invalid_library` (the library is not a UUID) and `other_library` (a change to a library that is not the operation's).
 - Error order: operation id, **library**, intent, empty changes, then each change in order (id, **other library**, action, fields in alphabetical order, missing required fields).

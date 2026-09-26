@@ -13,8 +13,8 @@ Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, pel
 | 0 | Esqueleto | Compilar en Linux, Windows y Android, con CI | ✅ |
 | 1 | Catálogo en el escritorio | Catalogar libros en el escritorio | ✅ |
 | 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; sincronizar por wifi | ✅ en código, falta probar |
-| 3 | Diseño del nuevo modelo | Saber cómo se ve y se usa todo lo decidido, antes de construirlo | En curso |
-| 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | |
+| 3 | Diseño del nuevo modelo | Saber cómo se ve y se usa todo lo decidido, antes de construirlo | ✅ |
+| 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | En curso |
 | 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | |
 | 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | |
 | 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | Hito 7.0 ✅ |
@@ -27,7 +27,10 @@ Una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, pel
 
 ---
 
-## Fase 3 — Diseño del nuevo modelo
+## Fase 3 — Diseño del nuevo modelo ✅
+
+Cerrada el 26/09/2026.
+
 
 Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la app va a cambiar mucho en las fases 4 a 6 y probar ahora sería trabajo perdido. Se probará la app rehecha, en Android y en Windows (`testing/`).
 
@@ -38,7 +41,8 @@ Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la 
 **Estado:**
 - [x] Brief nuevo y pantallas de Claude Design descargadas en `design/screens/` (25/09/2026).
 - [x] La app sigue el diseño con los datos de hoy (26/09/2026): tokens, navegación (barra inferior, menú lateral, selector de biblioteca, barra lateral y superior en escritorio, botón atrás de Android), catálogo, «¿Lo tengo?» como sección, «Me falta», ficha a pantalla completa en el móvil y en panel en escritorio, y alta a pantalla completa en el móvil. Se puede ver en el navegador con datos de ejemplo: `npm run dev` y abrir `http://localhost:1420/?mock` (añade `&mobile` para simular el móvil).
-- [ ] Lo que depende del modelo nuevo se hace en su fase: varias bibliotecas y la campanita de peticiones (fases 4 y 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6).
+- [x] Ajustes, Compartir, Alta rápida y Copias de seguridad con el mismo patrón; Copias con su propia entrada en el menú; sección de Ayuda con sus primeros temas.
+- Lo que depende del modelo nuevo se hace en su fase, y sus pantallas se piden a Claude Design al empezarla: varias bibliotecas (fase 4); compartir con persona y rol, personas y permisos, peticiones y la campanita (fase 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6); cuenta y nube (fase 7).
 
 ## Fase 4 — Bibliotecas
 
@@ -57,7 +61,7 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
 
 **Estado:**
-- [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 12 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Adelantado el 25/09/2026 mientras se diseña la interfaz; **pendiente de tu revisión**, porque fija el formato.
+- [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 13 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Revisado el 26/09/2026: el campo `library` y la biblioteca con solo nombre, aceptados; borrar y abandonar en [D65](DECISIONS.md). Queda por valorar mostrar quién creó cada biblioteca.
 - [ ] Casos de fusión por biblioteca (misma id en dos bibliotecas, lápidas que no cruzan de una a otra).
 - [ ] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos pasan de `draft/` a `conformance/`.
 - [ ] Tablas con `library_id`, migración y vector de versiones por biblioteca.

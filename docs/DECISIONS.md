@@ -70,6 +70,7 @@
 | D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada |
 | D63 | Distribución: Google Play, sin iOS | aceptada |
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
+| D65 | Borrar una biblioteca y salir de ella | aceptada |
 
 ---
 
@@ -779,3 +780,16 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 | Limpiar el historial antes de publicar | `git filter-repo` quita `docs/` de todos los commits | Un solo repo | Reescribe todo el historial; hay que hacerlo con cuidado y con copia |
 
 Relacionada con D03 y con la documentación pública futura (guías de usuario e instalación, D12, D22).
+
+## D65 · Borrar una biblioteca y salir de ella — `aceptada`
+
+**Contexto:** con varias bibliotecas (D54) hace falta decidir qué significa quitar una: borrarla para todos o solo dejar de tenerla. Salió al revisar el borrador de casos de conformidad de la Fase 4.
+
+**Decisión:**
+- **Borrar una biblioteca** la quita, con todo lo que contiene, **en todos los dispositivos** que la tienen. Es una operación más (un `delete` de la entidad `library`) y solo puede hacerla quien tenga permiso para ello (D55).
+- **Salir de una biblioteca** es otra cosa: la biblioteca sigue para los demás y este dispositivo (y su persona) deja de tenerla.
+  - Quien **no es administrador** puede salir siempre.
+  - Un **administrador** puede salir solo si **no es el último**; si lo es, antes tiene que nombrar a otro o borrar la biblioteca.
+- **Por valorar:** mostrar quién creó cada biblioteca, para saber de dónde viene. Se puede sacar de la operación que la creó (el dispositivo hoy, la persona con la Fase 5) sin añadir un campo.
+
+**Consecuencias:** el borrador de `spec/` recoge el borrado (caso «library deleted» y regla en `spec/README.md`). Los permisos para borrar y las reglas de salida se concretan con los roles en la Fase 5; hasta entonces, sin roles, cualquier dispositivo con la biblioteca puede borrarla, como pasa hoy con todo lo demás. Amplía D54 y D55.

@@ -66,6 +66,25 @@
     }
   },
   {
+    "name": "library deleted",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000113",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222230-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.delete",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "delete"
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
     "name": "same entity ids are valid in any library",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000104",
