@@ -56,7 +56,7 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - **Interfaz:** una biblioteca a la vez con selector; el buscador y «¿Lo tengo?» miran en todas.
 - **Mover un libro** a otra biblioteca (ids nuevos, la app recuerda de dónde vino).
 - **Copias:** completas y por biblioteca; exportar a Google Drive muy fácil y a la vista.
-- **Migración sin continuidad:** cada dispositivo pasa sus datos a una biblioteca nueva; hay que volver a emparejar.
+- **Migración con continuidad** (D46): los datos pasan a una biblioteca con el mismo id en todos los dispositivos, y los ya emparejados siguen sincronizando.
 - **Rust que aprendes:** migraciones de datos, rediseño de un protocolo con tests que simulan dispositivos.
 - **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
 
@@ -65,9 +65,10 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [plans/fase-4.md](plans/fase-4.md).
 - [x] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos de validación pasan de `draft/` a `conformance/` (26/09/2026). Los de fusión siguen en `draft/` hasta el hito 4.3.
 - [x] Tablas con `library_id`, migración y vector de versiones por biblioteca (26/09/2026). La migración deja antes una copia de la base de datos.
-- [ ] Compartir por biblioteca al emparejar.
-- [ ] Interfaz: selector, «en todas», mover un libro.
-- [ ] Copias completas y por biblioteca.
+- [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
+- [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
+- [x] Copias completas y por biblioteca (formato versión 3, D30).
+- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md), el diálogo de dispositivos con la tabla de Design y guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30).
 
 ## Fase 5 — Personas, roles y peticiones
 

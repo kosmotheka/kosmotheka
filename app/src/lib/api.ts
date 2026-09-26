@@ -235,8 +235,17 @@ export const externalLinks = {
 };
 
 export interface BackupSummary {
+  libraries: number;
   books: number;
   copies: number;
+  covers: number;
+}
+
+/** What a restore did, library by library. */
+export interface RestoreSummary {
+  restored: { id: string; name: string; books: number; copies: number }[];
+  /** Libraries this device already had with content; left as they were. */
+  skipped: string[];
   covers: number;
 }
 
@@ -245,8 +254,13 @@ export function exportBackup(path: string, library?: string): Promise<BackupSumm
   return invoke<BackupSummary>("export_backup", { path, library });
 }
 
-export function restoreBackup(path: string): Promise<BackupSummary> {
-  return invoke<BackupSummary>("restore_backup", { path });
+/** Backs up every library on this device in one file. */
+export function exportDeviceBackup(path: string): Promise<BackupSummary> {
+  return invoke<BackupSummary>("export_device_backup", { path });
+}
+
+export function restoreBackup(path: string): Promise<RestoreSummary> {
+  return invoke<RestoreSummary>("restore_backup", { path });
 }
 
 export function exportCsv(path: string): Promise<number> {

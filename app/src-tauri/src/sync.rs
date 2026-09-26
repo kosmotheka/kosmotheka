@@ -329,7 +329,7 @@ fn is_known(conn: &Connection, operation_id: &str) -> Result<bool> {
         .is_some())
 }
 
-fn is_tombstoned(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<bool> {
+pub fn is_tombstoned(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<bool> {
     Ok(conn
         .query_row(
             "SELECT 1 FROM tombstones WHERE library_id = ?1 AND entity = ?2 AND entity_id = ?3",

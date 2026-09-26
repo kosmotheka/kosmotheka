@@ -115,18 +115,57 @@ pub fn create_library(conn: &mut Connection, raw_name: &str) -> Result<String> {
 }
 
 fn create_in(tx: &Transaction<'_>, name: &str) -> Result<String> {
-    let id = new_id();
+    create_with_id(tx, &new_id(), name)
+}
+
+/// Creates a library with a known id: a restored one keeps the id it had (D46).
+pub fn create_with_id(tx: &Transaction<'_>, id: &str, name: &str) -> Result<String> {
     ops::record(
         tx,
-        &id,
+        id,
         "library.create",
-        vec![Change::create(
-            Entity::Library,
-            &id,
-            json!({ "name": name }),
-        )],
+        vec![Change::create(Entity::Library, id, json!({ "name": name }))],
     )?;
-    Ok(id)
+    Ok(id.to_owned())
+}
+
+/// Renames inside a transaction, recording nothing if the name is already that one.
+pub fn rename_in(tx: &Transaction<'_>, id: &str, name: &str) -> Result<()> {
+    let current: String =
+        tx.query_row("SELECT name FROM libraries WHERE id = ?1", [id], |row| {
+            row.get(0)
+        })?;
+    if current != name {
+        ops::record(
+            tx,
+            id,
+            "library.rename",
+            vec![Change::update(Entity::Library, id, json!({ "name": name }))],
+        )?;
+    }
+    Ok(())
+}
+
+/// `wanted`, or `wanted (2)`, `wanted (3)`… if another library here has that name.
+/// An unnamed library keeps no name: the app shows its default one.
+pub fn unused_name(conn: &Connection, wanted: &str, except: Option<&str>) -> Result<String> {
+    if wanted.is_empty() {
+        return Ok(String::new());
+    }
+    let taken = |name: &str| -> Result<bool> {
+        Ok(conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM libraries WHERE name = ?1 COLLATE NOCASE AND id <> ?2)",
+            params![name, except.unwrap_or("")],
+            |row| row.get(0),
+        )?)
+    };
+    let mut name = wanted.to_owned();
+    let mut n = 2;
+    while taken(&name)? {
+        name = format!("{wanted} ({n})");
+        n += 1;
+    }
+    Ok(name)
 }
 
 pub fn rename_library(conn: &mut Connection, id: &str, raw_name: &str) -> Result<()> {

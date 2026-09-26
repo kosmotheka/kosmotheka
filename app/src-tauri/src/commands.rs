@@ -5,7 +5,7 @@ use serde::Serialize;
 use tauri::State;
 use url::Url;
 
-use crate::backup::{self, BackupSummary};
+use crate::backup::{self, BackupSummary, RestoreSummary};
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
 };
@@ -210,7 +210,23 @@ pub fn export_backup(
         Some(library) => library,
         None => ops::active_library(&conn)?,
     };
-    backup::export(&conn, &library, &covers, Path::new(&path))
+    backup::export(&conn, &[library], &covers, Path::new(&path))
+}
+
+/// Every library on this device in one file (milestone 4.6).
+#[tauri::command]
+pub fn export_device_backup(
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    path: String,
+) -> Result<BackupSummary> {
+    let conn = database.lock()?;
+    backup::export(
+        &conn,
+        &backup::all_libraries(&conn)?,
+        &covers,
+        Path::new(&path),
+    )
 }
 
 #[tauri::command]
@@ -218,10 +234,10 @@ pub fn restore_backup(
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
-) -> Result<BackupSummary> {
+) -> Result<RestoreSummary> {
     let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    backup::restore(&mut conn, &library, &covers, Path::new(&path))
+    let active = ops::active_library(&conn)?;
+    backup::restore(&mut conn, &active, &covers, Path::new(&path))
 }
 
 #[tauri::command]

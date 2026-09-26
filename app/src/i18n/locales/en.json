@@ -181,14 +181,12 @@
   },
   "data": {
     "title": "Backups",
-    "description": "A .zip with the whole catalog and its covers. It restores on any device.",
-    "backup": "Save backup",
+    "description": "A .zip with the books and their covers. It restores on any device.",
     "restore": "Restore backup",
     "exportCsv": "Export CSV",
     "importCsv": "Import CSV",
     "backupFile": "Kosmotheka backup",
     "backupDone": "Backup saved: {{books}} books, {{copies}} copies, {{covers}} covers.",
-    "restoreDone": "Restored {{books}} books, {{copies}} copies and {{covers}} covers.",
     "csvExported_one": "Exported {{count}} row.",
     "csvExported_other": "Exported {{count}} rows.",
     "csvImported": "Imported: {{books}} new books, {{copies}} copies added to existing books, {{rejected}} rows rejected.",
@@ -197,10 +195,20 @@
       "not_a_backup": "This file is not a backup of this app.",
       "unreadable": "The backup is damaged and cannot be read.",
       "other_version": "This backup was made with a different version of the app.",
-      "not_empty": "A backup can only be restored into an empty catalog. Delete the books first, or use a fresh install."
+      "not_empty": "This backup comes from an earlier version and only restores into an empty library. Create a new library, open it and restore it there."
     },
-    "csvTitle": "Spreadsheet",
-    "csvDescription": "One row per copy, for Excel or other apps."
+    "csvTitle": "Spreadsheet of {{name}}",
+    "csvDescription": "One row per copy, for Excel or other apps.",
+    "backupOf": "Save a backup of {{name}}",
+    "backupDevice_one": "Back up the whole device ({{count}} library)",
+    "backupDevice_other": "Back up the whole device ({{count}} libraries)",
+    "deviceBackupDone": "Backup saved: {{libraries}} libraries, {{books}} books, {{copies}} copies, {{covers}} covers.",
+    "restoreHint": "Each library in the backup comes back with its name. The ones already here with books are left alone.",
+    "restoredLibrary": "{{name}}: restored {{books}} books and {{copies}} copies.",
+    "skippedLibrary": "{{name}}: already on this device, left as it was.",
+    "restoredCovers_one": "{{count}} cover restored.",
+    "restoredCovers_other": "{{count}} covers restored.",
+    "restoreNothing": "The backup had no library."
   },
   "devices": {
     "title": "Sharing and devices",

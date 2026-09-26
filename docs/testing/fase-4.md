@@ -33,3 +33,14 @@ Con dos instancias (ver «Preparar dos instancias» en `fase-2.md`): **A** con �
 - [ ] **Desmarcar avisa.** En A → «Cambiar» → desmarca una. *Esperado:* antes de guardar, aviso de que desaparecerá del otro dispositivo.
 - [ ] **Volver a dar acceso.** En A → vuelve a marcar «Club de rol» para B → sincroniza. *Esperado:* vuelve a B entera.
 - [ ] **Salir no la trae de vuelta.** En B → Ajustes de «Club de rol» → «Salir» → sincroniza dos veces. *Esperado:* no vuelve a aparecer en B; en A, B deja de figurar en «Compartida con».
+
+## 4.6 · Copias
+
+- [ ] **Copia de una biblioteca.** Copias de seguridad → «Guardar copia de Casa». *Esperado:* el nombre propuesto es `casa-AAAA-MM-DD.zip`; el aviso cuenta libros, ejemplares y portadas.
+- [ ] **Copia de todo el dispositivo.** Con dos bibliotecas o más → «Copia de todo el dispositivo». *Esperado:* el aviso dice cuántas bibliotecas lleva.
+- [ ] **Restaurar en un dispositivo nuevo.** Con una segunda instancia vacía (`KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-c`) → «Restaurar copia» → la del dispositivo. *Esperado:* aparecen todas las bibliotecas con sus nombres, libros y portadas, y el resumen las lista una a una.
+- [ ] **Restaurar lo que ya está.** En A, restaura la copia del dispositivo que acabas de hacer. *Esperado:* no se duplica nada; el resumen dice que cada biblioteca ya estaba.
+- [ ] **Recuperar una borrada.** Borra una biblioteca guardando antes su copia, y restaura esa copia. *Esperado:* vuelve con su nombre y sus libros.
+- [ ] **Nombre repetido.** Crea una biblioteca vacía llamada «Club» y restaura la copia de otra «Club». *Esperado:* la restaurada se llama «Club (2)».
+- [ ] **CSV de la activa.** El apartado de hoja de cálculo lleva el nombre de la biblioteca activa, y el CSV exportado solo tiene sus libros.
+

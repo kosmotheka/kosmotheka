@@ -181,14 +181,12 @@
   },
   "data": {
     "title": "Copias de seguridad",
-    "description": "Un .zip con todo el catálogo y las portadas. Se restaura en cualquier dispositivo.",
-    "backup": "Guardar copia",
+    "description": "Un .zip con los libros y las portadas. Se restaura en cualquier dispositivo.",
     "restore": "Restaurar copia",
     "exportCsv": "Exportar CSV",
     "importCsv": "Importar CSV",
     "backupFile": "Copia de la biblioteca",
     "backupDone": "Copia guardada: {{books}} libros, {{copies}} ejemplares, {{covers}} portadas.",
-    "restoreDone": "Restaurados {{books}} libros, {{copies}} ejemplares y {{covers}} portadas.",
     "csvExported_one": "Exportada {{count}} fila.",
     "csvExported_other": "Exportadas {{count}} filas.",
     "csvImported": "Importado: {{books}} libros nuevos, {{copies}} ejemplares añadidos a libros existentes, {{rejected}} filas rechazadas.",
@@ -197,10 +195,20 @@
       "not_a_backup": "Este fichero no es una copia de seguridad de esta app.",
       "unreadable": "La copia está dañada y no se puede leer.",
       "other_version": "Esta copia se hizo con otra versión de la app.",
-      "not_empty": "Una copia solo se puede restaurar sobre un catálogo vacío. Borra antes los libros o usa una instalación nueva."
+      "not_empty": "Esta copia es de una versión anterior y solo se restaura sobre una biblioteca vacía. Crea una biblioteca nueva, ábrela y restáurala ahí."
     },
-    "csvTitle": "Hoja de cálculo",
-    "csvDescription": "Una fila por ejemplar, para Excel u otras apps."
+    "csvTitle": "Hoja de cálculo de {{name}}",
+    "csvDescription": "Una fila por ejemplar, para Excel u otras apps.",
+    "backupOf": "Guardar copia de {{name}}",
+    "backupDevice_one": "Copia de todo el dispositivo ({{count}} biblioteca)",
+    "backupDevice_other": "Copia de todo el dispositivo ({{count}} bibliotecas)",
+    "deviceBackupDone": "Copia guardada: {{libraries}} bibliotecas, {{books}} libros, {{copies}} ejemplares, {{covers}} portadas.",
+    "restoreHint": "Cada biblioteca de la copia vuelve con su nombre. Las que ya tienes aquí con libros no se tocan.",
+    "restoredLibrary": "{{name}}: restaurados {{books}} libros y {{copies}} ejemplares.",
+    "skippedLibrary": "{{name}}: ya estaba en este dispositivo, no se ha tocado.",
+    "restoredCovers_one": "{{count}} portada restaurada.",
+    "restoredCovers_other": "{{count}} portadas restauradas.",
+    "restoreNothing": "La copia no tenía ninguna biblioteca."
   },
   "devices": {
     "title": "Compartir y dispositivos",

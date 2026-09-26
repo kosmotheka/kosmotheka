@@ -423,6 +423,17 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
 - UTF-8 con BOM, para que las hojas de cálculo reconozcan tildes y eñes.
 - **Importar añade**: cada fila válida es un alta, y si el ISBN ya existe, añade un ejemplar. Las filas con errores se informan con su número de línea y no detienen el resto. Sin formato, se usa `other`. Las portadas no viajan en el CSV.
 
+**Ampliación con varias bibliotecas (Fase 4, hitos 4.3 y 4.6), propuesta:**
+- **Formato versión 3:** la copia guarda una o varias bibliotecas, cada una con su id, su nombre, sus filas y su registro. La copia de una biblioteca y la **copia de todo el dispositivo** son el mismo formato: la segunda lleva todas.
+- **No lleva** los dispositivos emparejados, las retiradas de acceso (D71) ni la identidad del dispositivo: la copia es del catálogo (D58).
+- **Restaurar**, biblioteca a biblioteca:
+  - vuelve **con su mismo id**, para que al emparejar otra vez se una con las demás copias en lugar de duplicarse;
+  - si aquí se había **borrado**, vuelve con un id nuevo, porque el borrado sigue valiendo para el id antiguo;
+  - si aquí **ya existe con libros**, se salta y se dice: juntar dos catálogos es cosa de la sincronización;
+  - si su **nombre** ya lo usa otra biblioteca, se le añade un número: «Club (2)».
+- Las copias de **versión 2** (una biblioteca sin id ni nombre) se siguen restaurando, en la biblioteca activa si está vacía.
+- **Versiones del esquema:** se aceptan copias hechas desde la migración 9, porque las posteriores no cambian las tablas del catálogo. Si una migración futura las cambia, sube ese mínimo o convierte la copia.
+
 **Limitación en Android (para la Fase 2):** allí el diálogo de ficheros devuelve rutas `content://` del sistema de almacenamiento, no rutas de disco, y el código actual lee y escribe con rutas normales. Exportar e importar en el móvil habrá que adaptarlo cuando llegue la app de Android.
 
 ## D31 · Operaciones replicables, versión de esquema y operación inicial — `propuesta`

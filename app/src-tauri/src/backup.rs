@@ -1,6 +1,7 @@
-//! Backups of one library: a zip with its catalogue as JSON, its covers, and its
-//! operation log as history (D30). Restoring rebuilds an empty library as one
-//! operation. Whole-device backups come with milestone 4.6.
+//! Backups (D30): a zip with the catalogue of one or more libraries as JSON, their
+//! covers, and their operation logs as history. A whole-device backup is simply one
+//! with every library (milestone 4.6). Restoring rebuilds each library as one
+//! operation.
 
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -8,7 +9,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 
 use kosmotheka_domain::{Change, Entity};
-use rusqlite::Connection;
+use rusqlite::{Connection, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use zip::write::SimpleFileOptions;
@@ -16,11 +17,13 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use crate::covers::{Covers, MAX_COVER_BYTES};
 use crate::error::{Error, Result};
+use crate::libraries;
 use crate::ops;
-use crate::sync::entity_rows;
+use crate::sync::{entity_rows, is_tombstoned};
 
 /// What a library holds; the library row itself is where it is restored to.
-/// Same order as `sync::ORDER`: parents before children.
+/// Same order as `sync::ORDER`: parents before children. Revocations stay out:
+/// who may sync a library is not part of its catalogue.
 const CONTENTS: [Entity; 9] = [
     Entity::Publisher,
     Entity::Person,
@@ -36,21 +39,40 @@ const CONTENTS: [Entity; 9] = [
 const FORMAT: &str = "kosmotheka-backup";
 /// What backups were called before the app was named Kosmotheka (D70).
 const LEGACY_FORMAT: &str = "library-backup";
-/// 2: one library per backup (D46).
-const VERSION: u32 = 2;
+/// 3: one or more libraries, each with its id and name (milestone 4.6).
+const VERSION: u32 = 3;
+/// 2: a single library, without its id or name (D46).
+const SINGLE_LIBRARY_VERSION: u32 = 2;
+/// Migrations after this one did not change the catalogue tables, so backups made
+/// since still restore. Raise it when a migration changes a catalogue field.
+const OLDEST_RESTORABLE_SCHEMA: i64 = 9;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
+
+type Rows = BTreeMap<String, Vec<Map<String, Value>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BackupFile {
     format: String,
     version: u32,
-    /// Database migration level; a backup restores only into the same level.
+    /// Database migration level the backup was made with.
     schema_version: i64,
     exported_at: String,
+    #[serde(default)]
+    libraries: Vec<LibraryBackup>,
+    /// Version 2 only: the rows of its single library.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    entities: Option<Rows>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LibraryBackup {
+    id: String,
+    name: String,
     /// Rows per table, with the same field names operations use.
-    entities: BTreeMap<String, Vec<Map<String, Value>>>,
+    entities: Rows,
     /// The operation log, kept as history. It is not replayed on restore.
     operations: Vec<Value>,
 }
@@ -58,24 +80,66 @@ struct BackupFile {
 #[derive(Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupSummary {
+    pub libraries: usize,
     pub books: usize,
     pub copies: usize,
     pub covers: usize,
 }
 
+/// What a restore did, library by library.
+#[derive(Debug, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreSummary {
+    pub restored: Vec<RestoredLibrary>,
+    /// Names of libraries skipped because this device already has them with content.
+    pub skipped: Vec<String>,
+    pub covers: usize,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoredLibrary {
+    pub id: String,
+    pub name: String,
+    pub books: usize,
+    pub copies: usize,
+}
+
+/// Every library on this device, for a whole-device backup.
+pub fn all_libraries(conn: &Connection) -> Result<Vec<String>> {
+    Ok(conn
+        .prepare("SELECT id FROM libraries ORDER BY name COLLATE NOCASE, id")?
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
 pub fn export(
     conn: &Connection,
-    library: &str,
+    ids: &[String],
     covers: &Covers,
     path: &Path,
 ) -> Result<BackupSummary> {
-    let mut entities = BTreeMap::new();
-    for entity in CONTENTS {
-        entities.insert(
-            entity.table().to_owned(),
-            entity_rows(conn, library, entity)?,
-        );
+    let mut summary = BackupSummary::default();
+    let mut backed_up = Vec::new();
+    for id in ids {
+        let name: String =
+            conn.query_row("SELECT name FROM libraries WHERE id = ?1", [id], |row| {
+                row.get(0)
+            })?;
+        let mut entities = Rows::new();
+        for entity in CONTENTS {
+            entities.insert(entity.table().to_owned(), entity_rows(conn, id, entity)?);
+        }
+        summary.books += entities[Entity::Edition.table()].len();
+        summary.copies += entities[Entity::Copy.table()].len();
+        backed_up.push(LibraryBackup {
+            id: id.clone(),
+            name,
+            operations: operations(conn, id)?,
+            entities,
+        });
     }
+    summary.libraries = backed_up.len();
     let backup = BackupFile {
         format: FORMAT.to_owned(),
         version: VERSION,
@@ -83,8 +147,8 @@ pub fn export(
         exported_at: conn.query_row("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now')", [], |r| {
             r.get(0)
         })?,
-        operations: operations(conn, library)?,
-        entities,
+        libraries: backed_up,
+        entities: None,
     };
 
     let mut zip = ZipWriter::new(File::create(path)?);
@@ -92,35 +156,37 @@ pub fn export(
     zip.start_file(DATA_FILE, options)?;
     zip.write_all(&serde_json::to_vec_pretty(&backup)?)?;
 
-    let cover_names: Vec<String> = backup.entities[Entity::Edition.table()]
+    let mut cover_names: Vec<String> = backup
+        .libraries
         .iter()
+        .flat_map(|library| &library.entities[Entity::Edition.table()])
         .filter_map(|row| row.get("cover")?.as_str().map(str::to_owned))
         .collect();
-    let mut stored_covers = 0;
+    cover_names.sort();
+    cover_names.dedup();
     for name in cover_names {
         // A cover file that went missing on disk should not make the whole backup fail.
         if let Ok(bytes) = std::fs::read(covers.dir().join(&name)) {
             zip.start_file(format!("{COVERS_PREFIX}{name}"), options)?;
             zip.write_all(&bytes)?;
-            stored_covers += 1;
+            summary.covers += 1;
         }
     }
     zip.finish()?;
-
-    Ok(BackupSummary {
-        books: backup.entities[Entity::Edition.table()].len(),
-        copies: backup.entities[Entity::Copy.table()].len(),
-        covers: stored_covers,
-    })
+    Ok(summary)
 }
 
-/// Restores into an empty library only: merging two catalogues is what sync will do.
+/// Restores every library in the backup. Each one comes back with its own id, so a
+/// device that pairs again merges with the other copies instead of duplicating them.
+/// It gets a new id if it was deleted here, and is skipped if this device already has
+/// it with content: merging two catalogues is what sync does. A version 2 backup,
+/// which has no id, goes into `active` if that is empty.
 pub fn restore(
     conn: &mut Connection,
-    library: &str,
+    active: &str,
     covers: &Covers,
     path: &Path,
-) -> Result<BackupSummary> {
+) -> Result<RestoreSummary> {
     let mut archive =
         ZipArchive::new(File::open(path)?).map_err(|_| Error::BadBackup("not_a_backup"))?;
     let backup: BackupFile = {
@@ -131,19 +197,80 @@ pub fn restore(
             .read_to_string(&mut data)?;
         serde_json::from_str(&data).map_err(|_| Error::BadBackup("unreadable"))?
     };
-    if ![FORMAT, LEGACY_FORMAT].contains(&backup.format.as_str()) || backup.version != VERSION {
+    if ![FORMAT, LEGACY_FORMAT].contains(&backup.format.as_str())
+        || ![VERSION, SINGLE_LIBRARY_VERSION].contains(&backup.version)
+    {
         return Err(Error::BadBackup("not_a_backup"));
     }
-    if backup.schema_version != schema_version(conn)? {
+    if !(OLDEST_RESTORABLE_SCHEMA..=schema_version(conn)?).contains(&backup.schema_version) {
         return Err(Error::BadBackup("other_version"));
     }
-    if !library_is_empty(conn, library)? {
-        return Err(Error::BadBackup("not_empty"));
-    }
+    let covers_in_zip = read_covers(&mut archive)?;
 
+    let mut summary = RestoreSummary::default();
+    let tx = conn.transaction()?;
+    if backup.version == SINGLE_LIBRARY_VERSION {
+        if !library_is_empty(&tx, active)? {
+            return Err(Error::BadBackup("not_empty"));
+        }
+        let rows = backup.entities.unwrap_or_default();
+        record_rows(&tx, active, &rows)?;
+        let name = tx.query_row("SELECT name FROM libraries WHERE id = ?1", [active], |r| {
+            r.get(0)
+        })?;
+        summary.restored.push(restored(&tx, active, name)?);
+    } else {
+        for library in backup.libraries {
+            let target = if !libraries::library_exists(&tx, &library.id)? {
+                if is_tombstoned(&tx, &library.id, Entity::Library, &library.id)? {
+                    None
+                } else {
+                    Some(library.id.clone())
+                }
+            } else if library_is_empty(&tx, &library.id)? {
+                Some(library.id.clone())
+            } else {
+                summary.skipped.push(library.name);
+                continue;
+            };
+            let id = place_library(&tx, target.as_deref(), &library.name)?;
+            record_rows(&tx, &id, &library.entities)?;
+            let name = tx.query_row("SELECT name FROM libraries WHERE id = ?1", [&id], |r| {
+                r.get(0)
+            })?;
+            summary.restored.push(restored(&tx, &id, name)?);
+        }
+    }
+    tx.commit()?;
+
+    for (name, extension, bytes) in covers_in_zip {
+        // The stored name is recomputed from the bytes: a tampered file gets a different
+        // name and simply is not the one any edition points to.
+        if covers.store(&bytes, extension)? == name {
+            summary.covers += 1;
+        }
+    }
+    Ok(summary)
+}
+
+/// Makes sure the library a backup goes into exists, named as in the backup unless
+/// another library here already has that name. Returns its id.
+fn place_library(tx: &Transaction<'_>, id: Option<&str>, name: &str) -> Result<String> {
+    let name = libraries::unused_name(tx, name, id)?;
+    match id {
+        Some(id) if libraries::library_exists(tx, id)? => {
+            libraries::rename_in(tx, id, &name)?;
+            Ok(id.to_owned())
+        }
+        Some(id) => libraries::create_with_id(tx, id, &name),
+        None => libraries::create_with_id(tx, &ops::new_id(), &name),
+    }
+}
+
+fn record_rows(tx: &Transaction<'_>, library: &str, rows: &Rows) -> Result<()> {
     let mut changes = Vec::new();
     for entity in CONTENTS {
-        for row in backup.entities.get(entity.table()).into_iter().flatten() {
+        for row in rows.get(entity.table()).into_iter().flatten() {
             let mut fields = row.clone();
             let id = match fields.remove("id") {
                 Some(Value::String(id)) => id,
@@ -152,27 +279,18 @@ pub fn restore(
             changes.push(Change::create(entity, id, Value::Object(fields)));
         }
     }
-    let covers_in_zip = read_covers(&mut archive)?;
-
-    let tx = conn.transaction()?;
     if !changes.is_empty() {
-        ops::record(&tx, library, "backup.restore", changes)?;
+        ops::record(tx, library, "backup.restore", changes)?;
     }
-    tx.commit()?;
+    Ok(())
+}
 
-    let mut stored = 0;
-    for (name, extension, bytes) in covers_in_zip {
-        // The stored name is recomputed from the bytes: a tampered file gets a different
-        // name and simply is not the one any edition points to.
-        if covers.store(&bytes, extension)? == name {
-            stored += 1;
-        }
-    }
-
-    Ok(BackupSummary {
-        books: count(conn, library, Entity::Edition)?,
-        copies: count(conn, library, Entity::Copy)?,
-        covers: stored,
+fn restored(conn: &Connection, id: &str, name: String) -> Result<RestoredLibrary> {
+    Ok(RestoredLibrary {
+        id: id.to_owned(),
+        name,
+        books: count(conn, id, Entity::Edition)?,
+        copies: count(conn, id, Entity::Copy)?,
     })
 }
 
@@ -262,6 +380,7 @@ mod tests {
     use super::*;
     use crate::catalog::{self, BookFilter};
     use crate::db;
+    use crate::libraries;
     use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn temp(name: &str) -> std::path::PathBuf {
@@ -295,6 +414,21 @@ mod tests {
         }
     }
 
+    fn titles(conn: &Connection, library: &str) -> Vec<String> {
+        catalog::list_books(conn, library, &BookFilter::default())
+            .unwrap()
+            .into_iter()
+            .map(|b| b.title)
+            .collect()
+    }
+
+    fn name_of(conn: &Connection, library: &str) -> String {
+        conn.query_row("SELECT name FROM libraries WHERE id = ?1", [library], |r| {
+            r.get(0)
+        })
+        .unwrap()
+    }
+
     #[test]
     fn export_and_restore_round_trip() {
         let dir = temp("roundtrip");
@@ -311,7 +445,7 @@ mod tests {
         catalog::create_book(&mut source, LIB, &book("The Dispossessed", None), None).unwrap();
         let file = dir.join("backup.zip");
 
-        let exported = export(&source, LIB, &source_covers, &file).unwrap();
+        let exported = export(&source, &[LIB.to_owned()], &source_covers, &file).unwrap();
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
@@ -320,12 +454,22 @@ mod tests {
         assert_eq!(
             exported,
             BackupSummary {
+                libraries: 1,
                 books: 2,
                 copies: 2,
                 covers: 1
             }
         );
-        assert_eq!(restored, exported);
+        assert_eq!(restored.restored.len(), 1);
+        assert_eq!(
+            restored.restored[0].id, LIB,
+            "same id, so it merges on sync"
+        );
+        assert_eq!(
+            (restored.restored[0].books, restored.restored[0].copies),
+            (2, 2)
+        );
+        assert_eq!(restored.covers, 1);
         let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
         assert_eq!(books.len(), 2);
         assert_eq!(books[0].title, "A Wizard of Earthsea");
@@ -346,17 +490,114 @@ mod tests {
     }
 
     #[test]
-    fn restore_refuses_a_non_empty_catalogue() {
+    fn a_device_backup_brings_back_every_library_with_its_id_and_name() {
+        let dir = temp("device");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut source = db::open_in_memory().unwrap();
+        libraries::rename_library(&mut source, LIB, "Casa").unwrap();
+        catalog::create_book(&mut source, LIB, &book("Home book", None), None).unwrap();
+        let club = libraries::create_library(&mut source, "Club").unwrap();
+        catalog::create_book(&mut source, &club, &book("Club book", None), None).unwrap();
+        let file = dir.join("device.zip");
+
+        let exported = export(&source, &all_libraries(&source).unwrap(), &covers, &file).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let restored = restore(&mut target, LIB, &covers, &file).unwrap();
+
+        assert_eq!((exported.libraries, exported.books), (2, 2));
+        assert_eq!(restored.restored.len(), 2);
+        assert!(restored.skipped.is_empty());
+        assert_eq!(name_of(&target, LIB), "Casa");
+        assert_eq!(name_of(&target, &club), "Club");
+        assert_eq!(titles(&target, LIB), vec!["Home book"]);
+        assert_eq!(titles(&target, &club), vec!["Club book"]);
+    }
+
+    #[test]
+    fn a_library_already_here_with_content_is_skipped() {
         let dir = temp("nonempty");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut conn = db::open_in_memory().unwrap();
         catalog::create_book(&mut conn, LIB, &book("A", None), None).unwrap();
         let file = dir.join("backup.zip");
-        export(&conn, LIB, &covers, &file).unwrap();
+        export(&conn, &[LIB.to_owned()], &covers, &file).unwrap();
 
-        let error = restore(&mut conn, LIB, &covers, &file).unwrap_err();
+        let summary = restore(&mut conn, LIB, &covers, &file).unwrap();
 
-        assert!(matches!(error, Error::BadBackup("not_empty")));
+        assert!(summary.restored.is_empty());
+        assert_eq!(summary.skipped, vec![String::new()]);
+        assert_eq!(titles(&conn, LIB), vec!["A"], "nothing duplicated");
+    }
+
+    #[test]
+    fn a_library_deleted_here_comes_back_under_a_new_id() {
+        let dir = temp("deleted");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut conn = db::open_in_memory().unwrap();
+        let club = libraries::create_library(&mut conn, "Club").unwrap();
+        catalog::create_book(&mut conn, &club, &book("Club book", None), None).unwrap();
+        let file = dir.join("club.zip");
+        export(&conn, std::slice::from_ref(&club), &covers, &file).unwrap();
+        libraries::delete_library(&mut conn, &club).unwrap();
+
+        let summary = restore(&mut conn, LIB, &covers, &file).unwrap();
+
+        let back = &summary.restored[0];
+        assert_ne!(back.id, club, "the deletion still holds for the old id");
+        assert_eq!(back.name, "Club");
+        assert_eq!(titles(&conn, &back.id), vec!["Club book"]);
+    }
+
+    #[test]
+    fn a_name_in_use_gets_a_number() {
+        let dir = temp("name");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut source = db::open_in_memory().unwrap();
+        let club = libraries::create_library(&mut source, "Club").unwrap();
+        let file = dir.join("club.zip");
+        export(&source, &[club], &covers, &file).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        libraries::create_library(&mut target, "club").unwrap();
+
+        let summary = restore(&mut target, LIB, &covers, &file).unwrap();
+
+        assert_eq!(summary.restored[0].name, "Club (2)");
+    }
+
+    #[test]
+    fn a_version_2_backup_goes_into_the_active_library() {
+        let dir = temp("v2");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut source = db::open_in_memory().unwrap();
+        catalog::create_book(&mut source, LIB, &book("Old backup", None), None).unwrap();
+        let mut entities = Rows::new();
+        for entity in CONTENTS {
+            entities.insert(
+                entity.table().to_owned(),
+                entity_rows(&source, LIB, entity).unwrap(),
+            );
+        }
+        let old = json!({
+            "format": LEGACY_FORMAT,
+            "version": 2,
+            "schemaVersion": 9,
+            "exportedAt": "2026-09-26T10:00:00.000Z",
+            "entities": entities,
+            "operations": [],
+        });
+        let file = dir.join("old.zip");
+        let mut zip = ZipWriter::new(File::create(&file).unwrap());
+        zip.start_file(DATA_FILE, SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(old.to_string().as_bytes()).unwrap();
+        zip.finish().unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let other = libraries::create_library(&mut target, "Other").unwrap();
+
+        let summary = restore(&mut target, &other, &covers, &file).unwrap();
+
+        assert_eq!(summary.restored[0].id, other);
+        assert_eq!(titles(&target, &other), vec!["Old backup"]);
     }
 
     #[test]

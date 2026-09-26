@@ -62,6 +62,7 @@ pub fn run() {
             commands::covers_dir,
             commands::catalog_options,
             commands::export_backup,
+            commands::export_device_backup,
             commands::restore_backup,
             commands::export_csv,
             commands::import_csv,
