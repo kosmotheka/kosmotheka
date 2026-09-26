@@ -40,7 +40,7 @@ No son técnicos: nada de jerga («operación», «sincronizar vectores», «fir
 ## 4. Plataformas y restricciones técnicas
 
 - **Android, Linux y Windows**, con Tauri: la interfaz es web (React + TypeScript) dentro del navegador del sistema. **iOS no**, y no es una web pública.
-- **Componentes:** [shadcn/ui](https://ui.shadcn.com) (estilo `radix-nova`, base neutra) sobre Tailwind CSS 4, iconos [Lucide](https://lucide.dev), tipografía **Geist** empaquetada. Los diseños deben poder construirse con estas piezas; lo que falte (barra inferior, menú lateral, hojas), con su misma estética.
+- **Componentes:** [shadcn/ui](https://ui.shadcn.com) (estilo `radix-nova`, base neutra) sobre Tailwind CSS 4, iconos [Lucide](https://lucide.dev), tipografía **Figtree** (licencia SIL OFL 1.1), empaquetada con la app para que funcione sin red; sustituye a Geist desde el 27/09/2026. Los diseños deben poder construirse con estas piezas; lo que falte (barra inferior, menú lateral, hojas), con su misma estética.
 - **Tamaños:** móvil vertical de 360 a 430 px de ancho, con zonas seguras de Android; escritorio desde 1024 px.
 - **Imágenes:** portadas y cajas de proporciones distintas (libro ~2:3, caja de juego ~1:1, carátula de película ~2:3, videojuego ~3:4), a veces ausentes: hace falta un marcador digno por tipo.
 - **Cámara:** el escáner abre una vista nativa a pantalla completa; la app decide qué pasa antes y después.
