@@ -71,6 +71,7 @@
 | D63 | Distribución: Google Play, sin iOS | aceptada |
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
+| D66 | Registro de actividad para poder responder de lo que pasó | aceptada |
 
 ---
 
@@ -561,7 +562,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - **`library_id` en todas las tablas** locales, con clave `(library_id, id)`, igual que en el servidor (D41): cada consulta filtra por biblioteca sin joins y cliente y servidor se parecen.
 - **Wifi: se elige por biblioteca.** El emparejamiento sigue siendo entre dispositivos, pero para cada dispositivo emparejado se elige qué bibliotecas locales se comparten con él. Al emparejar desde una biblioteca, esa queda marcada; las demás no se envían hasta marcarlas. Nada sale sin que el usuario lo diga.
 - **Mover un libro crea ids nuevos** en el destino, y la app guarda de dónde vino. Se puede mover de ida y vuelta, porque las lápidas del origen (D32) no afectan a ids nuevos. El historial anterior se queda en la biblioteca de origen.
-- **Migración sin continuidad:** como el proyecto está en pruebas, al actualizar cada dispositivo pasa sus datos a una biblioteca con un id nuevo, propio de ese dispositivo. Los emparejamientos anteriores no sobreviven: hay que volver a emparejar, o restaurar una copia en un dispositivo vacío, asumiendo que pueden salir duplicados.
+- **Migración con continuidad** (cambiado el 26/09/2026; antes era «sin continuidad»): al actualizar, cada dispositivo pasa sus datos a una biblioteca con **el mismo id fijo en todos los dispositivos**. Los que ya se sincronizaban tienen las mismas filas con los mismos ids, así que al volver a emparejar se funden sin duplicados. Riesgo aceptado: dos instalaciones que nunca se sincronizaron juntarían sus catálogos si se emparejan y comparten esa biblioteca; hoy solo hay una en uso.
 - **Interfaz: una biblioteca a la vez, con selector.** Catálogo, deseos y altas son de la biblioteca activa; el buscador tiene la opción «en todas» y «¿Lo tengo?» mira siempre en todas.
 - **Copias: las dos cosas.** Una copia completa del dispositivo, con todas las bibliotecas, y además exportar e importar una biblioteca suelta (copia o CSV), para compartirla o restaurarla sin tocar las demás. Una biblioteca suelta se puede restaurar si no existe ya en el dispositivo.
 - **Miembro y usuario, enlace opcional.** Un miembro (dueño de ejemplares) puede enlazarse con un usuario de esa biblioteca, o no (un niño sin cuenta). Sirve para «mis libros» y, en la Fase 4, para asociar las lecturas a la persona. En una biblioteca local no hay enlace. Los permisos sobre «lo suyo» siguen basándose en quién creó la fila (D44, D45).
@@ -794,3 +795,22 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Por valorar:** mostrar quién creó cada biblioteca, para saber de dónde viene. Se puede sacar de la operación que la creó (el dispositivo hoy, la persona con la Fase 5) sin añadir un campo.
 
 **Consecuencias:** el borrador de `spec/` recoge el borrado (caso «library deleted» y regla en `spec/README.md`). Los permisos para borrar y las reglas de salida se concretan con los roles en la Fase 5; hasta entonces, sin roles, cualquier dispositivo con la biblioteca puede borrarla, como pasa hoy con todo lo demás. Amplía D54 y D55.
+
+## D66 · Registro de actividad para poder responder de lo que pasó — `aceptada`
+
+**Contexto:** si alguien borra una biblioteca, o echa a alguien de ella, hay que poder decir **quién fue, cuándo y desde dónde**, para responder ante una reclamación. Sobre todo en la nube, que es un servicio para terceros, aunque sea gratuito.
+
+**Qué ya tenemos:** el registro de operaciones (D25) guarda cada cambio con su dispositivo y su hora, y con D56 cada operación irá firmada por su dispositivo. Pero no basta: al borrar una biblioteca, su registro se va con ella, y la hora de una operación la pone el reloj del dispositivo, que puede estar mal.
+
+**Decisión:**
+- **En la nube, un registro de actividad aparte**, solo de añadir, que **sobrevive a lo que registra**: si se borra una biblioteca, su entrada sigue. Cada entrada guarda:
+  - **qué:** borrar o crear una biblioteca, salir o echar a alguien, cambiar un rol o el permiso de compartir, emparejar o revocar un dispositivo, iniciar sesión, cambiar el email o la contraseña, borrar una cuenta, y los accesos del superadministrador (D52);
+  - **quién:** la cuenta y el dispositivo;
+  - **cuándo:** la hora **del servidor**, no la del dispositivo;
+  - **desde dónde:** la dirección IP y el agente (app y versión);
+  - **sobre qué:** la biblioteca, con su nombre en ese momento, para que se entienda aunque ya no exista.
+- **Lo ve el superadministrador** en el panel (D52). Los administradores de una biblioteca verán lo de la suya en su historial (Fase 5).
+- **En local**, sin nube, cada dispositivo **conserva la operación de borrado** de una biblioteca (quién, cuándo, qué biblioteca) aunque borre todo su contenido. Sin servidor no hay IP ni hora de confianza: es lo que hay, y basta para uso doméstico.
+- **Por concretar al construirlo (Fase 7):** cuánto tiempo se guarda (propuesta: un año) y cómo se explica en la política de privacidad. La IP es un dato personal: se guarda por seguridad, con un plazo y diciéndolo.
+
+**Consecuencias:** amplía D52 (su tabla de eventos para los KPI puede ser la misma) y D65. La parte local entra en la Fase 4, con el borrado de bibliotecas; la de la nube, en la Fase 7.

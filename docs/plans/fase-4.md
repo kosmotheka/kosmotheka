@@ -27,11 +27,12 @@ Detalles de construcción que no cambian lo decidido; se apuntan aquí y se revi
 - **Borrar la biblioteca deja una lápida de biblioteca**: se borran sus filas y cualquier cambio posterior en ella se ignora.
 - **Operaciones con su biblioteca en el registro** (`operations.library_id`), para calcular el vector y lo que falta a cada dispositivo por biblioteca.
 - **Qué comparte cada dispositivo:** una tabla local `library_peers (library_id, device_id)`. Solo se envían y se aceptan operaciones de bibliotecas compartidas con ese dispositivo.
+- **Migración con continuidad** (D46, cambiado el 26/09/2026): la biblioteca migrada tiene el mismo id fijo en todos los dispositivos, así que los que ya se sincronizaban se funden sin duplicados al volver a emparejar.
+- **Al borrar una biblioteca se conserva su operación de borrado** en el registro local (D66).
 - **Copia automática antes de migrar.** La migración 4.3 toca todas las tablas: antes de aplicarla, la app guarda una copia del fichero de la base de datos junto a él (`library.db.antes-fase-4`). Si algo sale mal, basta con cerrar la app y poner esa copia en su sitio. Se documenta en la guía.
 
 ## Pendiente de decidir
 
-- **Continuidad al migrar.** D46 dice «migración sin continuidad»: cada dispositivo pasa sus datos a una biblioteca con un id propio, y hay que volver a emparejar asumiendo duplicados. Hay una alternativa: dar a la biblioteca migrada **el mismo id en todos los dispositivos**. Los que ya estaban sincronizados tienen las mismas filas con los mismos ids, así que al volver a emparejar se funden sin duplicados. El único riesgo: si dos casas que nunca se sincronizaron se emparejan y comparten esa biblioteca, sus catálogos se juntan en uno. Hoy solo la usas tú.
 - **Mostrar quién creó cada biblioteca** (D65): sacarlo de la operación que la creó.
 
 ## Estado

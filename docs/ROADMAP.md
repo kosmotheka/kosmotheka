@@ -105,6 +105,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Sincronizar a distancia** con los mismos roles y peticiones; el servidor comprueba y corrige.
 - **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
 - Límites de peticiones y cuentas sin confirmar que caducan.
+- **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D47, D48, D49 y D50.
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
