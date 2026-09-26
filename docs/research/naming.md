@@ -81,14 +81,30 @@ Enfoque elegido: evocar **colección en general** (juegos, música, lo digital),
 
 | Nombre | Idea | .app | Marcas en TMview | GitHub | Valoración |
 |---|---|---|---|---|---|
-| **Musary** | *Museum* + «-ary» (como *library*, *aviary*): un museo personal | Libre | Ninguna igual ni parecida | Usuario vacío (0 repos) | El más limpio. El .com es de un holandés desde 2009, sin web |
-| **Colleo** | Evoca *collect* | Libre | COLLEO vigente solo en inmobiliaria (36, Alemania); las de la 42 están vencidas | Usuario vacío (0 repos) | Posible. El .com está a la venta |
+| ★ **Musary** | *Museum* + «-ary» (como *library*, *aviary*): un museo personal | Libre | Ninguna igual ni parecida | Usuario vacío (0 repos) | **Candidato.** El más limpio; libre en Google Play. El .com es de un holandés desde 2009, sin web |
+| ★ **Colleo** | Evoca *collect* | Libre | COLLEO vigente solo en inmobiliaria (36, Alemania); las de la 42 están vencidas | Usuario vacío (0 repos) | **Candidato.** Libre en Google Play. El .com está a la venta |
 | Omnika | *Omni*: todo | Libre | «OMNIKA 5.7» registrada en Portugal en 41 y 42 | — | Dudoso |
 | Arkeep | El arca (uno de cada) + *keep* | Libre | ARKEEP registrada en la UE en la clase 9 | — | Descartado |
 
 **Descartados por cómo suenan** (con .app libre): Hoardia (*hoarder*, acumulador compulsivo), Cosario (suena a «corsario»), Arkadu, Colectio.
 
 **.app cogido:** kollo, arkeo, vitrino, omnio, tenko, kisto, curato, trovi, shelvo, kepto, arkio, amasso, pilo, stashi, havly, gathero, ownbox, vitrin, collectia, omnikeep, kollecta, arkivo.
+
+### Cuarta ronda (26/09/2026): nombres largos y potentes
+
+El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no es un negocio y no hay marketing que pelear. Se añade un criterio: **validar en Google Play**, no solo el dominio. Script: [`play-check.mjs`](play-check.mjs) (la búsqueda de Play es aproximada, así que se miran los títulos y los ids de las apps, no si hay resultados).
+
+| Nombre | Idea | .com | .app | Google Play | Marcas en TMview |
+|---|---|---|---|---|---|
+| **Pantheca** | Griego *pan* (todo) + *theca* (depósito, como *bibliotheca*): el depósito de todo | Cogido | Libre | Libre | Ninguna igual (solo «PantheCare», farmacia) |
+| **Omnitheca** | La misma idea con el latín *omni* | Cogido | Libre | Libre | Ninguna |
+| **Thesorium** | *Thesaurus* (tesoro, almacén) + «-orium»; en español evoca «tesoro» | Cogido | Libre | Libre | Ninguna |
+| **Vitrinum** | La vitrina, latinizada | Cogido | Libre | Libre | Ninguna |
+| **Keepsery** | *Keep* + «-ery», el sitio donde guardas | **Libre** | **Libre** | Libre | Ninguna |
+| **Collectary** | *Collect* + «-ary» | Cogido | Libre | Libre | Ninguna |
+| **Gatherium** | *Gather* + «-ium» | Cogido | Libre | Libre | Ninguna igual (solo «MEGATHERIUM», ropa) |
+
+**Descartados:** Hoardary (.com y .app libres, pero *hoard* suena a acumulador compulsivo). **.app cogido:** omniteca, armarium, keepery, musarium, curatory, collectum, musaeum, scrinium, collectry, omnarium.
 
 ### Descartados
 
