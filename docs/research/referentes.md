@@ -111,3 +111,15 @@ Encaja con D57 (dos formas de usar la app: sin cuenta y con cuenta).
 Con servidor y enlaces aparece una red social: comentarios, préstamos entre desconocidos, compartir opiniones en redes. Es pensar a lo grande, en una app que triunfa, y abordarlo ahora sería precipitarse (ya nos ha pasado). **No se aborda ahora, pero no hay que perderlo de vista.**
 
 Mientras tanto, el criterio para seguir el análisis: priorizar lo que obligue a **replantear algo ya hecho o en curso** y revisar el ROADMAP con eso.
+
+### 3.4 Ids al mover, y qué significa compartir (26/09/2026)
+
+**Por qué mover da ids nuevos (D46).** No es por miedo a colisiones. Mover es borrar en el origen y crear en el destino, y el borrado deja una lápida que impide que ese id vuelva (D32). Si el libro volviera a su biblioteca original con el mismo id, la lápida lo borraría. Con ids nuevos, la ida y vuelta funciona.
+
+**Qué rompe:** lo que apunte al ejemplar desde fuera (un enlace ya enviado, una etiqueta QR impresa, un préstamo en curso) deja de encontrarlo después de moverlo. **Arreglo barato, sin tocar la regla de mover:** un código propio del ejemplar para enlaces y etiquetas, que viaje con él al moverlo. Solo hará falta cuando haya enlaces o etiquetas, así que no bloquea la Fase 4.
+
+**Colisiones de UUID v7:** 48 bits de fecha en milisegundos y 74 aleatorios. Para que dos ids choquen tienen que nacer en el mismo milisegundo y coincidir en 74 bits al azar: con miles de millones de ids por milisegundo seguiría siendo improbable. Las colisiones reales vienen de generadores de aleatorios rotos o de copiar un id a propósito, no de las matemáticas. En el servidor la clave es `(library_id, id)` (D41), así que un id repetido, incluso uno malicioso, solo puede chocar dentro de su propia biblioteca.
+
+**Compartir una biblioteca entera es dar acceso**, de lectura o con otro rol. Es un acto consciente. Las **bibliotecas públicas** (descubrirlas con una búsqueda y navegarlas sin que te inviten) son otra dimensión: bonita para el futuro, pero otro jardín.
+
+**Lo que se escapaba:** dentro de una biblioteca compartida, cada dispositivo la tiene **entera** en su SQLite (D54), incluidas las lecturas, las valoraciones y los deseos de cada persona. Por eso la **reserva de regalos oculta** de la Fase 9 no se puede ocultar de verdad sin servidor: el dato está en el móvil de quien recibe el regalo, aunque la app no lo enseñe. Hay que resolverlo antes de la Fase 9, no en la 4.
