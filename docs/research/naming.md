@@ -4,7 +4,9 @@
 
 ## Criterios
 
+- **Global, no solo para hispanohablantes** (26/09/2026). La app sale en inglés y español; al ser open source, podrá conectarse a un servicio de traducción colaborativa para añadir idiomas. Los que se escriben de derecha a izquierda (árabe) se verán cuando lleguen.
 - Corto y fácil de pronunciar en español y en inglés.
+- Que funcione escrito en un enlace o un mensaje: se comparte con gente que no tiene la app.
 - **No limitado a los libros**: también habrá juegos, cómics, música y películas.
 - Libre: repo en GitHub, dominio, Play Store y marca registrada.
 
