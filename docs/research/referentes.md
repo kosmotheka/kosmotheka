@@ -76,3 +76,27 @@ Revisión del 26/09/2026: cada idea de las apps anteriores y de la [visión orig
 | Compartir un solo elemento | Kolekto | La unidad que se comparte es la biblioteca (D54). El catálogo público o un préstamo con enlace cubrirían la necesidad. |
 | Base de datos colaborativa que crece con los usuarios | Coleka | Choca con local-first y con las licencias de los proveedores (D62). Si llega, sería un servicio de la nube. |
 | Gratis para particulares, de pago para organizaciones | Libib | D04 dice que todo es open source; un servicio de pago necesitaría licencias de los proveedores (D62). Es una cuestión de modelo de negocio, no de código. |
+
+## 3. Debate con el maintainer
+
+Tema a tema, sin tomar decisiones todavía. Lo que salga se llevará después a DECISIONS y al ROADMAP.
+
+### 3.1 Red de préstamo entre amigos (26/09/2026)
+
+**Sigue siendo importante.** La imagen: una app de uso diario con la que un círculo de amigos se presta cosas. Ejemplo real: le he prestado tres libros a un compañero de trabajo; me ha devuelto dos y el tercero lo sigue leyendo.
+
+**Dos niveles de confianza:**
+- **Local-first, solo con gente de confianza**: la familia o un círculo cerrado de amigos. Que los datos no salgan de ahí es una garantía de seguridad.
+- **Con servidor**: los amigos a distancia, las ludotecas y el préstamo entre desconocidos que ofrecen otras apps. Todo esto necesita la seguridad de la nube.
+
+Encaja con D57 (dos formas de usar la app: sin cuenta y con cuenta).
+
+**Con servidor se abre algo que los referentes no explotan: los enlaces.**
+- Enlace para compartir en redes sociales.
+- Enlace para invitar a una biblioteca (hoy D43 prevé un QR de un solo uso que caduca en 24 horas).
+- Enlace para decirle a un amigo o a un desconocido que tienes un libro disponible para prestar, por correo o en persona.
+
+**Observaciones para seguir el debate:**
+- El ejemplo del compañero de trabajo funciona sin servidor si solo lo apunta quien presta: el compañero no necesita la app. El servidor hace falta cuando **los dos** ven el mismo préstamo, o cuando el otro puede pedirlo.
+- El enlace «lo tengo disponible» y el catálogo público de la sección 2 son la misma idea a dos escalas: un libro o toda una biblioteca.
+- Compartir una biblioteca es compartirla entera (D54). Para enseñarle a un amigo solo parte de lo que tienes hace falta otra pieza: enlaces, una biblioteca «para prestar» o algo que aún no hemos pensado.
