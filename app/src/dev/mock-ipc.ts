@@ -62,7 +62,10 @@ const lan: LanStatus = {
   servingPort: null,
   addresses: [],
   pairingOpen: false,
-  servers: [{ deviceId: "phone", name: "Móvil de Laura", pairedAt: "2026-09-24T10:00:00Z", lastSyncAt: new Date(Date.now() - 2 * 60000).toISOString() }],
+  servers: [
+    { deviceId: "phone", name: "Móvil de Laura", pairedAt: "2026-09-24T10:00:00Z", lastSyncAt: new Date(Date.now() - 2 * 60000).toISOString() },
+    { deviceId: "tablet", name: "Tablet Lenovo", pairedAt: "2026-09-24T10:00:00Z", lastSyncAt: null },
+  ],
   clients: [],
 };
 
@@ -75,7 +78,12 @@ mockIPC((cmd, args) => {
     case "library_devices":
       return lan.servers;
     case "sharing_overview":
-      return lan.servers.map((device) => ({ ...device, libraries: [HOME] }));
+      return lan.servers.map((device) => ({
+        ...device,
+        libraries: device.deviceId === "phone" ? [HOME, CLUB] : [HOME],
+      }));
+    case "open_pairing":
+      return { code: "KOSMOTHEKA1:eyJkZXZpY2VJZCI6ImRldiJ9", expiresInSeconds: 582 };
     case "list_wishes":
       return wishes;
     case "catalog_options":
@@ -83,6 +91,9 @@ mockIPC((cmd, args) => {
     case "lan_status":
       return lan;
     case "sync_with":
+      if ((args as { deviceId: string }).deviceId === "tablet") {
+        throw { kind: "sync", reason: "other_version" };
+      }
       return { received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 }, sent: 0, takenUp: false, removed: [] };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");

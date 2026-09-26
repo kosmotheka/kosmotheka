@@ -212,20 +212,10 @@
   },
   "devices": {
     "title": "Sharing and devices",
-    "description": "Sync this catalog with your other devices over your home network. No server and no account: the connection is encrypted and only works between paired devices.",
     "thisDevice": "This device's name",
-    "addTitle": "Pair a device",
-    "showCode": "Show code",
-    "showCodeHelp": "On the other device, scan this code or paste the text in “Sharing and devices”. It works once, for 10 minutes.",
-    "copy": "Copy code",
-    "stopPairing": "Stop pairing",
-    "enterCodeHelp": "Or paste here the code another device is showing:",
     "code": "Pairing code",
     "pair": "Pair",
-    "paired": "Paired devices",
     "syncNow": "Sync now",
-    "syncsWithThis": "Syncs with this device",
-    "lastSync": "Last sync: {{date}}",
     "neverSynced": "Never synced",
     "pairedAndSynced": "Paired with {{name}}. Received {{received}} changes, sent {{sent}}.",
     "synced": "Synced with {{name}}: received {{received}} changes, sent {{sent}}.",
@@ -246,7 +236,20 @@
       "unknown_device": "This device is not paired.",
       "no_network": "This device is not connected to any network."
     },
-    "scanCode": "Scan the other device's code"
+    "pageDescription": "Each library is shared separately with each device. Tick what goes to each one.",
+    "mobileDescription": "Paired with this device · which libraries go to each one",
+    "device": "Device",
+    "pairAnother": "Pair another device",
+    "none": "No device is paired yet. Pair one to share libraries over your home network, with no server or accounts.",
+    "footnote": "Only what is ticked is sent. If you untick one, it disappears from that device the next time they sync.",
+    "upToDate": "Up to date · {{when}}",
+    "cannotSync": "Cannot sync",
+    "errorHint": "Nothing was lost: they will sync on their own once it is solved.",
+    "technical": "Technical details",
+    "receivesLabel": "Receives",
+    "more": "More options for {{name}}",
+    "cell": "{{library}} on {{device}}",
+    "lastSync": "Last synced: {{date}}"
   },
   "tabs": {
     "catalog": "Catalog",
@@ -448,9 +451,8 @@
   "sharing": {
     "whatGoes": "Which libraries are shared",
     "whatGoesHint": "Only the ones you tick are sent. You can change it later.",
-    "willSend": "Will send: {{names}}. Nothing else leaves this device.",
+    "willSend": "Will send: <strong>{{names}}</strong>. Nothing else leaves this device.",
     "sendNothing": "No library will be sent: you will only receive what the other device shares.",
-    "receives": "Receives: {{names}}",
     "receivesNothing": "Receives no library",
     "change": "Change",
     "targetsTitle": "What goes to {{device}}",
@@ -462,6 +464,24 @@
     "stopTitle": "Stop sharing {{library}} with {{device}}?",
     "stopBody": "{{library}} will disappear from {{device}} the next time they sync, and it will receive nothing else. You can share it again whenever you want.",
     "removed_one": "You no longer have access to {{count}} shared library: it was removed from this device.",
-    "removed_other": "You no longer have access to {{count}} shared libraries: they were removed from this device."
+    "removed_other": "You no longer have access to {{count}} shared libraries: they were removed from this device.",
+    "activeHint": "The one you are using · {{works}}"
+  },
+  "pair": {
+    "title": "Pair a device",
+    "step1": "1 · Which libraries are shared",
+    "step2": "2 · Scan it from the other device",
+    "validFor": "Both on the same wifi. Valid once, for {{time}} more.",
+    "sameWifi": "Both on the same wifi.",
+    "copy": "Copy",
+    "newCode": "The code expired: make another",
+    "showMine": "Show my code",
+    "enterTheirs": "Scan theirs",
+    "pasteTheirs": "Paste their code",
+    "enterTitle": "2 · Their code",
+    "scan": "Scan with the camera",
+    "pasteHint": "Or paste the code the other device shows:",
+    "pairedWith": "Paired with {{name}}.",
+    "pasteOnly": "Paste the code the other device shows:"
   }
 }

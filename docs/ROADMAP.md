@@ -68,7 +68,7 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
 - [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
 - [x] Copias completas y por biblioteca (formato versión 3, D30).
-- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md), el diálogo de dispositivos con la tabla de Design y guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30).
+- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md) y guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30).
 
 ## Fase 5 — Personas, roles y peticiones
 

@@ -212,20 +212,10 @@
   },
   "devices": {
     "title": "Compartir y dispositivos",
-    "description": "Sincroniza este catálogo con tus otros dispositivos por la red de casa. Sin servidor ni cuentas: la conexión va cifrada y solo funciona entre dispositivos emparejados.",
     "thisDevice": "Nombre de este dispositivo",
-    "addTitle": "Emparejar un dispositivo",
-    "showCode": "Mostrar código",
-    "showCodeHelp": "En el otro dispositivo, escanea este código o pega el texto en «Compartir y dispositivos». Vale una vez, durante 10 minutos.",
-    "copy": "Copiar código",
-    "stopPairing": "Dejar de emparejar",
-    "enterCodeHelp": "O pega aquí el código que muestra otro dispositivo:",
     "code": "Código de emparejamiento",
     "pair": "Emparejar",
-    "paired": "Dispositivos emparejados",
     "syncNow": "Sincronizar ahora",
-    "syncsWithThis": "Se sincroniza con este",
-    "lastSync": "Última sincronización: {{date}}",
     "neverSynced": "Nunca sincronizado",
     "pairedAndSynced": "Emparejado con {{name}}. Recibidos {{received}} cambios, enviados {{sent}}.",
     "synced": "Sincronizado con {{name}}: recibidos {{received}} cambios, enviados {{sent}}.",
@@ -246,7 +236,20 @@
       "unknown_device": "Este dispositivo no está emparejado.",
       "no_network": "Este dispositivo no está conectado a ninguna red."
     },
-    "scanCode": "Escanear el código del otro dispositivo"
+    "pageDescription": "Cada biblioteca se comparte por separado con cada dispositivo. Marca qué va a cada uno.",
+    "mobileDescription": "Emparejados con este dispositivo · qué bibliotecas van a cada uno",
+    "device": "Dispositivo",
+    "pairAnother": "Emparejar otro dispositivo",
+    "none": "Aún no hay ningún dispositivo emparejado. Empareja uno para compartir bibliotecas por la red de casa, sin servidor ni cuentas.",
+    "footnote": "Solo se envía lo marcado. Si desmarcas una, desaparece de ese dispositivo la próxima vez que se sincronicen.",
+    "upToDate": "Al día · {{when}}",
+    "cannotSync": "No se puede sincronizar",
+    "errorHint": "No se ha perdido nada: se sincronizarán solos cuando se resuelva.",
+    "technical": "Detalles técnicos",
+    "receivesLabel": "Recibe",
+    "more": "Más opciones de {{name}}",
+    "cell": "{{library}} en {{device}}",
+    "lastSync": "Última sincronización: {{date}}"
   },
   "tabs": {
     "catalog": "Catálogo",
@@ -448,9 +451,8 @@
   "sharing": {
     "whatGoes": "Qué bibliotecas se comparten",
     "whatGoesHint": "Solo se envían las que marques. Puedes cambiarlo después.",
-    "willSend": "Se enviará: {{names}}. Nada más sale de este dispositivo.",
+    "willSend": "Se enviará: <strong>{{names}}</strong>. Nada más sale de este dispositivo.",
     "sendNothing": "No se enviará ninguna biblioteca: solo recibirás las que comparta el otro.",
-    "receives": "Recibe: {{names}}",
     "receivesNothing": "No recibe ninguna biblioteca",
     "change": "Cambiar",
     "targetsTitle": "Qué va a {{device}}",
@@ -462,6 +464,24 @@
     "stopTitle": "¿Dejar de compartir {{library}} con {{device}}?",
     "stopBody": "{{library}} desaparecerá de {{device}} la próxima vez que se sincronicen, y no recibirá nada más. Podrás volver a compartirla cuando quieras.",
     "removed_one": "Ya no tienes acceso a {{count}} biblioteca compartida: se ha quitado de este dispositivo.",
-    "removed_other": "Ya no tienes acceso a {{count}} bibliotecas compartidas: se han quitado de este dispositivo."
+    "removed_other": "Ya no tienes acceso a {{count}} bibliotecas compartidas: se han quitado de este dispositivo.",
+    "activeHint": "La que usas ahora · {{works}}"
+  },
+  "pair": {
+    "title": "Emparejar un dispositivo",
+    "step1": "1 · Qué bibliotecas se comparten",
+    "step2": "2 · Escanéalo desde el otro dispositivo",
+    "validFor": "Los dos, en la misma wifi. Vale una vez, durante {{time}} más.",
+    "sameWifi": "Los dos, en la misma wifi.",
+    "copy": "Copiar",
+    "newCode": "El código ha caducado: generar otro",
+    "showMine": "Mostrar mi código",
+    "enterTheirs": "Escanear el suyo",
+    "pasteTheirs": "Pegar su código",
+    "enterTitle": "2 · Su código",
+    "scan": "Escanear con la cámara",
+    "pasteHint": "O pega el código que muestra el otro dispositivo:",
+    "pairedWith": "Emparejado con {{name}}.",
+    "pasteOnly": "Pega el código que muestra el otro dispositivo:"
   }
 }

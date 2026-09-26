@@ -114,7 +114,7 @@ export function NewLibraryDialog({
       <button
         type="button"
         className="self-start text-[13px] text-muted-foreground underline underline-offset-2"
-        onClick={() => openOverlay({ name: "devices" })}
+        onClick={() => openOverlay({ name: "pair" })}
       >
         {t("libraries.joinInstead")}
       </button>

@@ -8,7 +8,6 @@ import { BookDetailView } from "@/components/book-detail";
 import { BurstDialog } from "@/components/burst-dialog";
 import { FilterPanel, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
-import { DevicesDialog } from "@/components/devices-dialog";
 import { MoveBookDialog } from "@/components/libraries/move-book-dialog";
 import { NewLibraryDialog } from "@/components/libraries/new-library-dialog";
 import {
@@ -16,6 +15,7 @@ import {
   LeaveLibraryDialog,
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
+import { PairDialog } from "@/components/pair-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { AppBar } from "@/components/shell/app-bar";
 import { BottomNav } from "@/components/shell/bottom-nav";
@@ -39,11 +39,12 @@ import {
   listLibraries,
   listWishes,
   setActiveLibrary,
-  syncWith,
 } from "@/lib/api";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
+import { syncDevice } from "@/lib/sync-errors";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
 import { CheckPage } from "@/pages/check-page";
+import { DevicesPage } from "@/pages/devices-page";
 import { HelpPage } from "@/pages/help-page";
 import { LibraryPage } from "@/pages/library-page";
 import { MissingPage } from "@/pages/missing-page";
@@ -118,7 +119,7 @@ export default function App() {
       const status = await lanStatus().catch(() => null);
       let removed = 0;
       for (const device of status?.servers ?? []) {
-        const report = await syncWith(device.deviceId).catch(() => null);
+        const report = await syncDevice(device.deviceId).catch(() => null);
         removed += report?.removed.length ?? 0;
       }
       running = false;
@@ -176,6 +177,8 @@ export default function App() {
       <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
     ) : section === "library" ? (
       <LibraryPage desktop={desktop} />
+    ) : section === "devices" ? (
+      <DevicesPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} />
     ) : (
@@ -239,7 +242,7 @@ export default function App() {
           </div>
         ) : (
           <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-            {section !== "check" && section !== "library" && (
+            {section !== "check" && section !== "library" && section !== "devices" && (
               <AppBar library={library} sync={sync} onSearch={focusSearch} />
             )}
             <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
@@ -313,10 +316,13 @@ export default function App() {
           onOpenChange={(open) => !open && closeOverlay()}
           onChanged={reload}
         />
-        <DevicesDialog
-          open={overlay?.name === "devices"}
-          onOpenChange={(open) => !open && closeOverlay()}
-          onChanged={reload}
+        <PairDialog
+          open={overlay?.name === "pair"}
+          desktop={desktop}
+          onPaired={(message) => {
+            setNotice(message);
+            reload();
+          }}
         />
         {!desktop && (
           <BookDetailView

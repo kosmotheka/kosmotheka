@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
+import { Check, ShieldCheck } from "lucide-react";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ export function LibraryChecklist({
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
   return (
-    <div className="-mx-2 flex flex-col">
+    <div className="flex flex-col divide-y overflow-hidden rounded-xl border">
       {libraries.all.map((library) => {
         const on = selected.includes(library.id);
         return (
@@ -31,27 +31,36 @@ export function LibraryChecklist({
             role="checkbox"
             aria-checked={on}
             disabled={disabled}
-            className="flex min-h-14 items-center gap-4 rounded-xl px-2 text-left hover:bg-muted disabled:opacity-60"
+            className="flex min-h-14 items-center gap-3.5 px-3.5 py-2 text-left hover:bg-muted disabled:opacity-60"
             onClick={() => toggle(library.id)}
           >
-            <span
-              className={cn(
-                "flex size-5 shrink-0 items-center justify-center rounded-md border-[1.5px]",
-                on ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground",
-              )}
-            >
-              {on && <Check className="size-3.5" strokeWidth={3} />}
-            </span>
+            <Tick on={on} />
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="truncate text-[15px] font-medium">{nameOf(library)}</span>
               <span className="text-[13px] text-muted-foreground">
-                {t("nav.works", { count: library.works })}
+                {library.active
+                  ? t("sharing.activeHint", { works: t("nav.works", { count: library.works }) })
+                  : t("nav.works", { count: library.works })}
               </span>
             </span>
           </button>
         );
       })}
     </div>
+  );
+}
+
+/** A square tick box, drawn to match Design's. */
+export function Tick({ on }: { on: boolean }) {
+  return (
+    <span
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center rounded-md border-[1.5px]",
+        on ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground",
+      )}
+    >
+      {on && <Check className="size-3.5" strokeWidth={3} />}
+    </span>
   );
 }
 
@@ -64,10 +73,19 @@ export function SendSummary({ selected }: { selected: string[] }) {
     .filter((library) => selected.includes(library.id))
     .map((library) => nameOf(library));
   return (
-    <p className="text-[13px] text-pretty text-muted-foreground">
-      {names.length > 0
-        ? t("sharing.willSend", { names: names.join(", ") })
-        : t("sharing.sendNothing")}
+    <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">
+      <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+      <span>
+        {names.length > 0 ? (
+          <Trans
+            i18nKey="sharing.willSend"
+            values={{ names: names.join(", ") }}
+            components={{ strong: <strong className="font-medium text-foreground" /> }}
+          />
+        ) : (
+          t("sharing.sendNothing")
+        )}
+      </span>
     </p>
   );
 }

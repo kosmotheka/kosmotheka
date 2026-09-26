@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { lanStatus } from "@/lib/api";
-import { openOverlay } from "@/lib/navigation";
+import { navigate } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 type Status =
@@ -95,7 +95,7 @@ export function SyncStatus({
       type="button"
       className={cn(classes, "h-8 rounded-md px-2.5 text-[13px] hover:bg-muted")}
       aria-label={t("sync.label", { status: label.text })}
-      onClick={() => openOverlay({ name: "devices" })}
+      onClick={() => navigate("devices")}
     >
       {content}
     </button>

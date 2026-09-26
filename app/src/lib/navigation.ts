@@ -5,18 +5,19 @@ import { useSyncExternalStore } from "react";
 // as users expect: back closes the open menu, sheet or dialog first, then
 // returns to the previous section.
 //
-// - The section is the URL hash: `#/`, `#/check`, `#/missing`, `#/library`, `#/help`.
+// - The section is the URL hash: `#/`, `#/check`, `#/missing`, `#/library`, `#/devices`,
+//   `#/help`.
 // - An overlay (drawer, sheet, dialog) is a history entry on top of its section,
 //   with its name and data in `history.state`. Opening pushes an entry; closing
 //   goes back one; navigating from inside an overlay replaces the entry, so the
 //   overlay closes without leaving a step behind.
 
-export type Section = "catalog" | "check" | "missing" | "library" | "help";
+export type Section = "catalog" | "check" | "missing" | "library" | "devices" | "help";
 
 export type Overlay =
   | { name: "drawer" }
   | { name: "libraries" }
-  | { name: "devices" }
+  | { name: "pair" }
   | { name: "settings" }
   | { name: "backups" }
   | { name: "filters" }
@@ -38,6 +39,7 @@ const SECTIONS: Record<string, Section> = {
   check: "check",
   missing: "missing",
   library: "library",
+  devices: "devices",
   help: "help",
 };
 const CHANGE = "kosmotheka:navigate";

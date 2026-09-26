@@ -162,7 +162,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
             <button
               type="button"
               className="flex min-h-14 items-center gap-3 px-3.5 text-left text-[15px] font-medium hover:bg-muted"
-              onClick={() => openOverlay({ name: "devices" })}
+              onClick={() => openOverlay({ name: "pair" })}
             >
               <Plus className="size-[19px]" /> {t("libraries.shareWithAnother")}
             </button>

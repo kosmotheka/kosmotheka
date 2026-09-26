@@ -45,7 +45,7 @@ export const libraryNav: NavItem[] = [
 
 /** App-wide entries, at the end of the menu. Sharing is per device, for every library. */
 export const appNav: NavItem[] = [
-  { id: "share", icon: Share2, label: "nav.share", overlay: { name: "devices" } },
+  { id: "devices", icon: Share2, label: "nav.share", section: "devices" },
   { id: "settings", icon: Settings, label: "nav.settings", overlay: { name: "settings" } },
   { id: "help", icon: CircleHelp, label: "nav.help", section: "help" },
   { id: "about", icon: Info, label: "nav.about", soon: true },
