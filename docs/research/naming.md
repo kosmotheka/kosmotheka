@@ -162,6 +162,27 @@ Con Pantheka como listón: imágenes y referencias de colección más allá de l
 
 **.app cogido:** picapica (nombre científico de la urraca), wunderly, mnemora, keepling, shelfling. Sin respuesta del registro: arkiva.
 
+### Sexta ronda (26/09/2026): variaciones de *kosmos*
+
+Al maintainer le gusta el enfoque de *kosmos*.
+
+| Nombre | Idea | .com | .app | Google Play | Marcas en TMview |
+|---|---|---|---|---|---|
+| **Kosmodex** | *Kosmos* + *index*, como Pokédex o Rolodex: el índice de tu cosmos | Libre | Libre | Libre | Ninguna |
+| **Kosmarium** | *Kosmos* + «-arium», como *planetarium* o *aquarium* | Libre | Libre | Libre | Ninguna igual (solo КОШМАРИУМ, «pesadilla», un juego de mesa ruso) |
+| **Kosmothek** | Con el sufijo alemán *-thek* (*Bibliothek*) | Libre | Libre | Libre | Ninguna |
+| **Kosmoteca** | Con el sufijo español e italiano «-teca» | Libre | Libre | Libre | Ninguna |
+| **Kosmotheke** | Con el griego *theke* tal cual | Libre | Libre | Libre | Ninguna |
+| **Kosmokeep** | *Kosmos* + *keep* | Libre | Libre | Libre | Ninguna |
+| Kosmoteka | Error de escritura probable de Kosmotheka | Cogido | Libre | Libre | Ninguna |
+| Kosmotek | Otro error probable | Cogido | Libre | Libre | Ninguna |
+| Kosmora | — | Cogido | Libre | Libre | **«Kena: Scars of Kosmora», videojuego registrado en las clases 9 y 41**; KOSMORAMA en Noruega, 9 y 41 |
+| Kosmion | — | Cogido | Libre | Libre | Joyería (Grecia) |
+
+**Para Kosmotheka:** sus errores de escritura más probables (Kosmoteka, Kosmotek) están limpios en marcas y en Google Play, pero sus .com son de otros. Quien lo escriba mal por oído acabará en otra web.
+
+**.app cogido:** mykosmos.
+
 ### Descartados
 
 - **Marcas de software de bibliotecas:** Ex Libris y Aleph.
