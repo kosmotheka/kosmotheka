@@ -17,7 +17,7 @@ Cada hito deja la app funcionando, con sus tests, y se prueba antes de seguir.
 | **4.5 Interfaz** | Selector de verdad, nueva biblioteca, renombrar, borrar (con confirmación y copia, D65), salir, mover un libro, buscar «en todas» y «¿Lo tengo?» en todas | `app/src` |
 | **4.6 Copias** | Copia completa del dispositivo y copia o CSV de una biblioteca suelta | `backup.rs`, `csv_io.rs` |
 
-Las pantallas nuevas del hito 4.5 (nueva biblioteca, elegir bibliotecas al emparejar, borrar, mover) se piden a Claude Design antes de construirlas.
+Las pantallas de los hitos 4.4 y 4.5 se piden a Claude Design antes de construirlas: [encargo](../design/encargo-fase-4.md), subido al proyecto de Design el 26/09/2026.
 
 ## Decisiones técnicas propuestas
 
