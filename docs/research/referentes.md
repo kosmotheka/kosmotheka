@@ -127,3 +127,12 @@ Mientras tanto, el criterio para seguir el análisis: priorizar lo que obligue a
 **Compartir una biblioteca entera es dar acceso**, de lectura o con otro rol. Es un acto consciente. Las **bibliotecas públicas** (descubrirlas con una búsqueda y navegarlas sin que te inviten) son otra dimensión: bonita para el futuro, pero otro jardín.
 
 **Lo que se escapaba:** dentro de una biblioteca compartida, cada dispositivo la tiene **entera** en su SQLite (D54), incluidas las lecturas, las valoraciones y los deseos de cada persona. Por eso la **reserva de regalos oculta** de la Fase 9 no se puede ocultar de verdad sin servidor: el dato está en el móvil de quien recibe el regalo, aunque la app no lo enseñe. Hay que resolverlo antes de la Fase 9, no en la 4.
+
+### 3.5 Revisión de lo anotado: marcas de cada persona (26/09/2026)
+
+Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **idea para el futuro**. En qué fase entra se verá al revisar el ROADMAP.
+
+- **Estados absolutos: añadir.** Pendiente, en curso, terminado o abandonado, con fecha y sin progreso. El estado «en curso» se llama según el tipo: **leyendo** (libros y cómics), **jugando** (videojuegos), **viendo** (series). En películas y música tiene menos sentido, pero se deja porque no estorba. Parece un solo estado con un nombre distinto en la interfaz para cada tipo de catálogo, no un estado por tipo.
+- **Valoración: añadir.** «Este me ha encantado».
+- **Favoritos: añadir, aparte de la valoración.** Un favorito sirve como filtro y puede tener una puntuación más baja que otros: lo que valoro y lo que tengo como favorito son cosas distintas.
+- **Géneros, temáticas y etiquetas: añadir** (sin comentarios en contra).
