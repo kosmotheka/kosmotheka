@@ -41,6 +41,9 @@ No son técnicos: nada de jerga («operación», «sincronizar vectores», «fir
 
 - **Android, Linux y Windows**, con Tauri: la interfaz es web (React + TypeScript) dentro del navegador del sistema. **iOS no**, y no es una web pública.
 - **Componentes:** [shadcn/ui](https://ui.shadcn.com) (estilo `radix-nova`, base neutra) sobre Tailwind CSS 4, iconos [Lucide](https://lucide.dev), tipografía **Figtree** (licencia SIL OFL 1.1), empaquetada con la app para que funcione sin red; sustituye a Geist desde el 27/09/2026. Los diseños deben poder construirse con estas piezas; lo que falte (barra inferior, menú lateral, hojas), con su misma estética.
+- **Marca** (desde el 27/09/2026; piezas y reglas de uso en [`brand/`](../../brand/README.md)):
+  - **Símbolo:** una estrella calada en un lienzo redondeado que se deshace en una escalera de píxeles hacia la esquina de abajo a la izquierda. Logotipo «Kosmotheka» en Figtree SemiBold. En la barra lateral de escritorio va la combinación horizontal.
+  - **Color de acento: añil.** En claro `#4b53c2` · `oklch(0.50 0.17 275)`, con 6,3:1 sobre blanco. En oscuro `#8d9df5` · `oklch(0.72 0.13 275)`, con 7,8:1 sobre `#0a0a0a`. Solo como acento (botón principal, enlaces, foco y selección) sobre la interfaz neutra, nunca de fondo de pantallas enteras. No se confunde con los colores de los estados (verde, ámbar, rojo, rosa).
 - **Tamaños:** móvil vertical de 360 a 430 px de ancho, con zonas seguras de Android; escritorio desde 1024 px.
 - **Imágenes:** portadas y cajas de proporciones distintas (libro ~2:3, caja de juego ~1:1, carátula de película ~2:3, videojuego ~3:4), a veces ausentes: hace falta un marcador digno por tipo.
 - **Cámara:** el escáner abre una vista nativa a pantalla completa; la app decide qué pasa antes y después.
