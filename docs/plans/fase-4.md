@@ -44,5 +44,6 @@ Detalles de construcción que no cambian lo decidido; se apuntan aquí y se revi
 - [x] 4.3 Base de datos y migración (migración 9): `library_id` y clave `(library_id, id)` en todas las tablas, versiones y lápidas por biblioteca, borrar una biblioteca, copia automática antes de migrar, protocolo con un vector por biblioteca y `library_peers`. Los casos de fusión pasan en Rust.
 - Pendiente de la 4.3, para más adelante: purgar del registro local el contenido de una biblioteca borrada (hoy se conserva entero; D66 solo exige la operación de borrado).
 - [ ] 4.4 Sincronización por biblioteca.
-- [ ] 4.5 Interfaz.
+- [x] 4.5 Interfaz, lo que no depende de otros dispositivos: selector con las bibliotecas reales (barra lateral y menú del móvil), nueva biblioteca (con la regla de nombre único), ajustes de la biblioteca (renombrar, con quién se comparte, quién la creó), borrar con aviso y copia previa, salir (si solo está en este dispositivo, lleva a borrar para no perderla), mover un libro, buscar «en esta» o «en todas» y «¿Lo tengo?» en todas. Pruebas en pantalla: [`docs/testing/fase-4.md`](../testing/fase-4.md).
+- [ ] 4.5 Pendiente, va con la 4.4: elegir bibliotecas al emparejar y «Dejar de compartir».
 - [ ] 4.6 Copias.

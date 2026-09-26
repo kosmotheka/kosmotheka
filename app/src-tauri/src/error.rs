@@ -40,6 +40,10 @@ pub enum Error {
     Csv(#[from] csv::Error),
     #[error("database lock poisoned by a panicked thread")]
     LockPoisoned,
+    /// Leaving a library no other device has would lose it: it has to be deleted,
+    /// which offers a backup first.
+    #[error("this library is only on this device")]
+    OnlyOnThisDevice,
 }
 
 /// Shape of an error as the UI receives it.

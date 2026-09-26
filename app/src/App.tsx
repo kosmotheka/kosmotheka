@@ -9,6 +9,13 @@ import { BurstDialog } from "@/components/burst-dialog";
 import { FilterPanel, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
 import { DevicesDialog } from "@/components/devices-dialog";
+import { MoveBookDialog } from "@/components/libraries/move-book-dialog";
+import { NewLibraryDialog } from "@/components/libraries/new-library-dialog";
+import {
+  DeleteLibraryDialog,
+  LeaveLibraryDialog,
+} from "@/components/libraries/remove-library-dialogs";
+import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { AppBar } from "@/components/shell/app-bar";
 import { BottomNav } from "@/components/shell/bottom-nav";
@@ -23,18 +30,22 @@ import {
   type BookFilter,
   type CatalogOptions,
   type CreatedBook,
+  type LibrarySummary,
   type Wish,
   catalogOptions,
   deleteWish,
   lanStatus,
   listBooks,
+  listLibraries,
   listWishes,
+  setActiveLibrary,
   syncWith,
 } from "@/lib/api";
-import { closeOverlay, navigate, useLocation } from "@/lib/navigation";
+import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
 import { CheckPage } from "@/pages/check-page";
 import { HelpPage } from "@/pages/help-page";
+import { LibraryPage } from "@/pages/library-page";
 import { MissingPage } from "@/pages/missing-page";
 
 /** Waits until typing pauses before searching. */
@@ -58,16 +69,25 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const [searching, setSearching] = useState(false);
+  const [everywhere, setEverywhere] = useState(false);
+  const [allLibraries, setAllLibraries] = useState<LibrarySummary[]>([]);
   const sync = useSyncStatus(version);
 
-  // Until several libraries exist (roadmap phase 4), there is only this one.
-  const library = t("nav.myLibrary");
+  const activeLibrary = allLibraries.find((l) => l.active) ?? null;
+  const library = activeLibrary?.name || t("nav.myLibrary");
+  const nameOfId = (id: string) =>
+    allLibraries.find((l) => l.id === id)?.name || t("nav.myLibrary");
 
   const activeFilter = useDebounced(filter, 200);
+  // "In every library" only means something while searching.
+  const searchEverywhere = everywhere && Boolean(activeFilter.query?.trim());
 
   useEffect(() => {
     let cancelled = false;
-    listBooks(activeFilter)
+    listLibraries()
+      .then((loaded) => !cancelled && setAllLibraries(loaded))
+      .catch(() => {});
+    listBooks(activeFilter, searchEverywhere)
       .then((books) => !cancelled && setState({ status: "ready", books }))
       .catch(
         (error: unknown) => !cancelled && setState({ status: "error", message: String(error) }),
@@ -81,7 +101,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [activeFilter, version]);
+  }, [activeFilter, searchEverywhere, version]);
 
   /** Reloads books, wishes and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
@@ -113,7 +133,10 @@ export default function App() {
 
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);
-  const counts = { catalog: filtering ? 0 : books.length, missing: wishes.length };
+  const counts = {
+    catalog: activeLibrary?.works ?? (filtering ? 0 : books.length),
+    missing: wishes.length,
+  };
 
   const handleCreated = async (result: CreatedBook, title: string, wishId?: string) => {
     const message = t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", { title });
@@ -125,6 +148,18 @@ export default function App() {
 
   const bookId = overlay?.name === "book" ? overlay.editionId : null;
 
+  const switchTo = async (id: string) => {
+    await setActiveLibrary(id);
+    reload();
+  };
+  const libraries: Libraries = { all: allLibraries, active: activeLibrary, switchTo, reload };
+
+  /** Books found in another library open there: the app switches to it first. */
+  const openBookIn = async (libraryId: string, editionId: string) => {
+    if (libraryId !== activeLibrary?.id) await switchTo(libraryId);
+    openOverlay({ name: "book", editionId });
+  };
+
   const focusSearch = () => {
     navigate("catalog");
     setSearching(true);
@@ -135,7 +170,9 @@ export default function App() {
     section === "missing" ? (
       <MissingPage wishes={wishes} desktop={desktop} onChanged={reload} />
     ) : section === "check" ? (
-      <CheckPage library={library} desktop={desktop} onChanged={reload} />
+      <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
+    ) : section === "library" ? (
+      <LibraryPage desktop={desktop} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} />
     ) : (
@@ -148,6 +185,10 @@ export default function App() {
         desktop={desktop}
         searching={searching}
         onSearchingChange={setSearching}
+        everywhere={searchEverywhere}
+        onEverywhereChange={setEverywhere}
+        nameOfLibrary={nameOfId}
+        onOpenBook={openBookIn}
         selectedId={desktop ? bookId : null}
       />
     );
@@ -165,96 +206,124 @@ export default function App() {
   );
 
   return (
-    <CatalogOptionsContext.Provider value={options}>
-      {desktop ? (
-        <div className="flex h-dvh">
-          <Sidebar section={section} library={library} counts={counts} />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <TopBar
-              library={library}
-              query={filter.query ?? ""}
-              onQueryChange={(query) => {
-                setFilter({ ...filter, query });
-                if (section !== "catalog") navigate("catalog");
-              }}
-              sync={sync}
-            />
-            <div className="flex min-h-0 flex-1">
-              <main className="min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
-              <BookDetailView
-                editionId={bookId}
-                desktop
-                onClose={closeOverlay}
-                onChanged={reload}
+    <LibrariesContext.Provider value={libraries}>
+      <CatalogOptionsContext.Provider value={options}>
+        {desktop ? (
+          <div className="flex h-dvh">
+            <Sidebar section={section} library={library} counts={counts} />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <TopBar
+                library={library}
+                query={filter.query ?? ""}
+                everywhere={everywhere}
+                onEverywhereChange={setEverywhere}
+                onQueryChange={(query) => {
+                  setFilter({ ...filter, query });
+                  if (section !== "catalog") navigate("catalog");
+                }}
+                sync={sync}
               />
+              <div className="flex min-h-0 flex-1">
+                <main className="min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
+                <BookDetailView
+                  editionId={bookId}
+                  desktop
+                  onClose={closeOverlay}
+                  onChanged={reload}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-          {section !== "check" && (
-            <AppBar library={library} sync={sync} onSearch={focusSearch} />
-          )}
-          <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
-          <BottomNav section={section} />
-          <NavDrawer
-            open={overlay?.name === "drawer"}
-            library={library}
-            count={counts.catalog}
-            sync={sync}
-          />
-        </div>
-      )}
+        ) : (
+          <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
+            {section !== "check" && section !== "library" && (
+              <AppBar library={library} sync={sync} onSearch={focusSearch} />
+            )}
+            <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
+            <BottomNav section={section} />
+            <NavDrawer
+              open={overlay?.name === "drawer"}
+              count={counts.catalog}
+              sync={sync}
+            />
+          </div>
+        )}
 
-      <LibraryPicker
-        open={overlay?.name === "libraries"}
-        desktop={desktop}
-        library={library}
-        count={counts.catalog}
-      />
-      <FilterPanel
-        open={overlay?.name === "filters"}
-        desktop={desktop}
-        filter={filter}
-        onChange={setFilter}
-      />
-      {overlay?.name === "add" && (
-        <AddBookDialog
-          open
+        <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
+        <NewLibraryDialog
+          open={overlay?.name === "newLibrary"}
           desktop={desktop}
-          library={library}
-          prefill={overlay.prefill}
-          onOpenChange={(open) => !open && closeOverlay()}
-          onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+          onCreated={(name) => setNotice(t("libraries.created", { name }))}
         />
-      )}
-      <SettingsDialog
-        open={overlay?.name === "settings"}
-        onOpenChange={(open) => !open && closeOverlay()}
-      />
-      <BackupsDialog
-        open={overlay?.name === "backups"}
-        onOpenChange={(open) => !open && closeOverlay()}
-        onChanged={reload}
-      />
-      <BurstDialog
-        open={overlay?.name === "burst"}
-        onOpenChange={(open) => !open && closeOverlay()}
-        onChanged={reload}
-      />
-      <DevicesDialog
-        open={overlay?.name === "devices"}
-        onOpenChange={(open) => !open && closeOverlay()}
-        onChanged={reload}
-      />
-      {!desktop && (
-        <BookDetailView
-          editionId={bookId}
-          desktop={false}
-          onClose={closeOverlay}
+        <DeleteLibraryDialog
+          open={overlay?.name === "deleteLibrary"}
+          desktop={desktop}
+          onDone={(deleted, active) =>
+            setNotice(t("libraries.deleted", { name: deleted, active: nameOfId(active) }))
+          }
+        />
+        <LeaveLibraryDialog
+          open={overlay?.name === "leaveLibrary"}
+          desktop={desktop}
+          onDone={(left, active) =>
+            setNotice(t("libraries.left", { name: left, active: nameOfId(active) }))
+          }
+        />
+        {overlay?.name === "move" && (
+          <MoveBookDialog
+            open
+            desktop={desktop}
+            editionId={overlay.editionId}
+            title={overlay.title}
+            onMoved={(to) =>
+              setNotice(t("libraries.moved", { title: overlay.title, name: nameOfId(to) }))
+            }
+          />
+        )}
+        <FilterPanel
+          open={overlay?.name === "filters"}
+          desktop={desktop}
+          filter={filter}
+          onChange={setFilter}
+        />
+        {overlay?.name === "add" && (
+          <AddBookDialog
+            open
+            desktop={desktop}
+            library={library}
+            prefill={overlay.prefill}
+            onOpenChange={(open) => !open && closeOverlay()}
+            onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+          />
+        )}
+        <SettingsDialog
+          open={overlay?.name === "settings"}
+          onOpenChange={(open) => !open && closeOverlay()}
+        />
+        <BackupsDialog
+          open={overlay?.name === "backups"}
+          onOpenChange={(open) => !open && closeOverlay()}
           onChanged={reload}
         />
-      )}
-    </CatalogOptionsContext.Provider>
+        <BurstDialog
+          open={overlay?.name === "burst"}
+          onOpenChange={(open) => !open && closeOverlay()}
+          onChanged={reload}
+        />
+        <DevicesDialog
+          open={overlay?.name === "devices"}
+          onOpenChange={(open) => !open && closeOverlay()}
+          onChanged={reload}
+        />
+        {!desktop && (
+          <BookDetailView
+            editionId={bookId}
+            desktop={false}
+            onClose={closeOverlay}
+            onChanged={reload}
+          />
+        )}
+      </CatalogOptionsContext.Provider>
+    </LibrariesContext.Provider>
   );
 }

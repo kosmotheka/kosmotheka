@@ -83,7 +83,8 @@ pub fn run() {
             commands::set_active_library,
             commands::delete_library,
             commands::leave_library,
-            commands::move_book
+            commands::move_book,
+            commands::library_devices
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

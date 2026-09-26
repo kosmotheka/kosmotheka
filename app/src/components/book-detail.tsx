@@ -7,6 +7,7 @@ import {
   Ellipsis,
   EllipsisVertical,
   ExternalLink,
+  FolderInput,
   Headphones,
   Pencil,
   Plus,
@@ -29,6 +30,7 @@ import {
   useCommandErrors,
 } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
+import { useLibraries } from "@/components/libraries-context";
 import { Cover } from "@/components/cover";
 import { HistoryList } from "@/components/history-list";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,7 @@ import {
   updateCopy,
   updateEdition,
 } from "@/lib/api";
+import { openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -72,6 +75,7 @@ type Tab = "copies" | "details" | "history";
  */
 export function BookDetailView({ editionId, desktop, onClose, onChanged }: Props) {
   const { t } = useTranslation();
+  const libraries = useLibraries();
   const [loaded, setLoaded] = useState<BookDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
@@ -162,6 +166,15 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged }: Props
           </DropdownMenuItem>
         ))}
         {links.length > 0 && <DropdownMenuSeparator />}
+        {book && libraries.all.length > 1 && (
+          <DropdownMenuItem
+            onSelect={() =>
+              openOverlay({ name: "move", editionId: book.editionId, title: book.title })
+            }
+          >
+            <FolderInput /> {t("libraries.moveToAnother")}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
           <Trash2 /> {t("common.delete")}
         </DropdownMenuItem>

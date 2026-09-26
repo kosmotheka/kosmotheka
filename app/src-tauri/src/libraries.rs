@@ -168,6 +168,9 @@ pub fn delete_library(conn: &mut Connection, id: &str) -> Result<String> {
 /// nothing changes for anyone else. Returns the library now active.
 pub fn leave_library(conn: &mut Connection, id: &str) -> Result<String> {
     ensure_exists(conn, id)?;
+    if lan::devices_sharing(conn, id)?.is_empty() {
+        return Err(Error::OnlyOnThisDevice);
+    }
     let tx = conn.transaction()?;
     ops::delete_library(&tx, id)?;
     tx.execute("DELETE FROM operations WHERE library_id = ?1", [id])?;
@@ -314,10 +317,22 @@ mod tests {
     }
 
     #[test]
+    fn a_library_only_on_this_device_cannot_be_left() {
+        let mut conn = db::open_in_memory().unwrap();
+        catalog::create_book(&mut conn, DEFAULT_LIBRARY_ID, &book("Tehanu"), None).unwrap();
+
+        let refused = leave_library(&mut conn, DEFAULT_LIBRARY_ID);
+
+        assert!(matches!(refused, Err(Error::OnlyOnThisDevice)));
+        assert_eq!(titles(&conn, DEFAULT_LIBRARY_ID), vec!["Tehanu"]);
+    }
+
+    #[test]
     fn leaving_the_last_library_leaves_an_empty_one_to_work_in() {
         let mut conn = db::open_in_memory().unwrap();
         catalog::create_book(&mut conn, DEFAULT_LIBRARY_ID, &book("Tehanu"), None).unwrap();
         lan::share_library(&conn, DEFAULT_LIBRARY_ID, "phone").unwrap();
+        crate::lan::save_client(&conn, "phone", "Phone", "secret").unwrap();
 
         let active = leave_library(&mut conn, DEFAULT_LIBRARY_ID).unwrap();
 

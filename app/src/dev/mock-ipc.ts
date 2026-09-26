@@ -3,7 +3,21 @@
 // in development (see main.tsx); never part of a build.
 import { mockIPC } from "@tauri-apps/api/mocks";
 
-import type { BookSummary, LanStatus, Wish } from "@/lib/api";
+import type { BookSummary, LanStatus, LibrarySummary, Wish } from "@/lib/api";
+
+const HOME = "00000000-0000-7000-8000-000000000001";
+const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
+
+const libraries: LibrarySummary[] = [
+  { id: HOME, name: "Casa", works: 7, active: true, created: null },
+  {
+    id: CLUB,
+    name: "Club de rol",
+    works: 3,
+    active: false,
+    created: { device: "Móvil de Laura", at: Date.parse("2026-09-25T18:00:00Z") },
+  },
+];
 
 const book = (
   n: number,
@@ -13,6 +27,7 @@ const book = (
   formats: BookSummary["formats"],
   owners: string[],
 ): BookSummary => ({
+  libraryId: HOME,
   editionId: `01997c7e-0000-7000-8000-${String(n).padStart(12, "0")}`,
   title,
   subtitle: null,
@@ -55,6 +70,10 @@ mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books":
       return books;
+    case "list_libraries":
+      return libraries;
+    case "library_devices":
+      return lan.servers;
     case "list_wishes":
       return wishes;
     case "catalog_options":

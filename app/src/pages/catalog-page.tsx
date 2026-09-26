@@ -5,6 +5,8 @@ import { LibraryBig, Plus, Search, SearchX, X } from "lucide-react";
 import { BookList } from "@/components/book-list";
 import { BookTable } from "@/components/book-table";
 import { FilterBar } from "@/components/catalog-filters";
+import { useLibraries } from "@/components/libraries-context";
+import { SearchScope } from "@/components/search-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type BookFilter, type BookSummary } from "@/lib/api";
@@ -25,6 +27,10 @@ export function CatalogPage({
   searching,
   onSearchingChange,
   selectedId,
+  everywhere,
+  onEverywhereChange,
+  nameOfLibrary,
+  onOpenBook,
 }: {
   state: LoadState;
   library: string;
@@ -36,11 +42,24 @@ export function CatalogPage({
   searching: boolean;
   onSearchingChange: (searching: boolean) => void;
   selectedId: string | null;
+  /** The search covers every library; results come grouped by library. */
+  everywhere: boolean;
+  onEverywhereChange: (everywhere: boolean) => void;
+  nameOfLibrary: (id: string) => string;
+  onOpenBook: (libraryId: string, editionId: string) => void;
 }) {
   const { t } = useTranslation();
+  const libraries = useLibraries();
   const books = state.status === "ready" ? state.books : [];
   const catalogIsEmpty = state.status === "ready" && !filtering && books.length === 0;
-  const openBook = (book: BookSummary) => openOverlay({ name: "book", editionId: book.editionId });
+  const openBook = (book: BookSummary) => onOpenBook(book.libraryId, book.editionId);
+  const groups = everywhere ? groupByLibrary(books) : [];
+  const list = (shown: BookSummary[]) =>
+    desktop ? (
+      <BookTable books={shown} onOpen={openBook} selectedId={selectedId} />
+    ) : (
+      <BookList books={shown} onOpen={openBook} />
+    );
   const count = t(filtering ? "filters.results" : "nav.works", { count: books.length });
 
   return (
@@ -80,6 +99,9 @@ export function CatalogPage({
           </Button>
         </div>
       )}
+      {!desktop && filter.query?.trim() && libraries.all.length > 1 && (
+        <SearchScope library={library} everywhere={everywhere} onChange={onEverywhereChange} />
+      )}
       {!catalogIsEmpty && <FilterBar filter={filter} onChange={onFilterChange} />}
       {!desktop && state.status === "ready" && !catalogIsEmpty && (
         <p className="text-xs text-muted-foreground">{count}</p>
@@ -117,16 +139,28 @@ export function CatalogPage({
           </Button>
         </EmptyState>
       )}
-      {state.status === "ready" &&
-        books.length > 0 &&
-        (desktop ? (
-          <BookTable books={books} onOpen={openBook} selectedId={selectedId} />
-        ) : (
-          // Room for the floating "Add" button over the last row.
-          <div className="pb-16">
-            <BookList books={books} onOpen={openBook} />
-          </div>
-        ))}
+      {state.status === "ready" && books.length > 0 && (
+        // On mobile, room for the floating "Add" button over the last row.
+        <div className={desktop ? undefined : "pb-16"}>
+          {everywhere
+            ? groups.map(([libraryId, shown]) => (
+                <section key={libraryId} className="mt-2 first:mt-0">
+                  <h2 className="flex items-center gap-2 border-b py-2.5 text-[13px] font-semibold">
+                    <LibraryBig className="size-[15px] text-muted-foreground" />
+                    {nameOfLibrary(libraryId)}
+                    <span className="font-normal text-muted-foreground">{shown.length}</span>
+                    {libraryId !== libraries.active?.id && (
+                      <span className="ml-auto text-xs font-normal text-muted-foreground">
+                        {t("libraries.opensThere", { name: nameOfLibrary(libraryId) })}
+                      </span>
+                    )}
+                  </h2>
+                  {list(shown)}
+                </section>
+              ))
+            : list(books)}
+        </div>
+      )}
 
       {!desktop && (
         <Button
@@ -138,6 +172,15 @@ export function CatalogPage({
       )}
     </div>
   );
+}
+
+/** Books by library, in the order they came (the backend lists library by library). */
+function groupByLibrary(books: BookSummary[]): [string, BookSummary[]][] {
+  const groups = new Map<string, BookSummary[]>();
+  for (const book of books) {
+    groups.set(book.libraryId, [...(groups.get(book.libraryId) ?? []), book]);
+  }
+  return [...groups];
 }
 
 function EmptyState({

@@ -347,6 +347,11 @@ pub fn leave_library(database: State<'_, Database>, id: String) -> Result<String
     libraries::leave_library(&mut *database.lock()?, &id)
 }
 
+#[tauri::command]
+pub fn library_devices(database: State<'_, Database>, id: String) -> Result<Vec<lan::KnownDevice>> {
+    lan::devices_sharing(&*database.lock()?, &id)
+}
+
 /// Moves a book from the active library to `to`. Returns its new edition id.
 #[tauri::command]
 pub fn move_book(database: State<'_, Database>, edition_id: String, to: String) -> Result<String> {

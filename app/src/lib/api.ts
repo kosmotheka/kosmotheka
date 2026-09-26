@@ -48,6 +48,8 @@ export interface CreatedBook {
 
 export interface BookSummary {
   editionId: string;
+  /** The library the book is in; searches across libraries mix them. */
+  libraryId: string;
   title: string;
   subtitle: string | null;
   authors: string[];
@@ -68,7 +70,9 @@ export type FieldErrorCode =
   | "isbn_character"
   | "isbn_checksum"
   | "isbn_in_use"
-  | "invalid_cover_url";
+  | "invalid_cover_url"
+  | "invalid_format"
+  | "name_in_use";
 
 export interface FieldError {
   field: string;
@@ -97,8 +101,9 @@ export interface BookFilter {
   location?: string;
 }
 
-export function listBooks(filter: BookFilter = {}): Promise<BookSummary[]> {
-  return invoke<BookSummary[]>("list_books", { filter });
+/** The active library's books, or every library's with `everywhere`. */
+export function listBooks(filter: BookFilter = {}, everywhere = false): Promise<BookSummary[]> {
+  return invoke<BookSummary[]>("list_books", { filter, everywhere });
 }
 
 export interface CatalogOptions {
@@ -235,8 +240,9 @@ export interface BackupSummary {
   covers: number;
 }
 
-export function exportBackup(path: string): Promise<BackupSummary> {
-  return invoke<BackupSummary>("export_backup", { path });
+/** Backs up the active library, or `library` if given. */
+export function exportBackup(path: string, library?: string): Promise<BackupSummary> {
+  return invoke<BackupSummary>("export_backup", { path, library });
 }
 
 export function restoreBackup(path: string): Promise<BackupSummary> {
@@ -361,4 +367,51 @@ let mobile: Promise<boolean> | null = null;
 export function isMobile(): Promise<boolean> {
   mobile ??= invoke<boolean>("is_mobile").catch(() => false);
   return mobile;
+}
+
+// --- Libraries -----------------------------------------------------------------
+
+export interface LibrarySummary {
+  id: string;
+  /** Empty for a library never named: show `nav.myLibrary` instead. */
+  name: string;
+  works: number;
+  active: boolean;
+  created: { device: string | null; at: number } | null;
+}
+
+export function listLibraries(): Promise<LibrarySummary[]> {
+  return invoke<LibrarySummary[]>("list_libraries");
+}
+
+/** Creates a library and makes it active. Returns its id. */
+export function createLibrary(name: string): Promise<string> {
+  return invoke<string>("create_library", { name });
+}
+
+export function renameLibrary(id: string, name: string): Promise<void> {
+  return invoke("rename_library", { id, name });
+}
+
+export function setActiveLibrary(id: string): Promise<void> {
+  return invoke("set_active_library", { id });
+}
+
+/** Deletes it on every device it is shared with. Returns the library now active. */
+export function deleteLibrary(id: string): Promise<string> {
+  return invoke<string>("delete_library", { id });
+}
+
+/** Removes it from this device only. Returns the library now active. */
+export function leaveLibrary(id: string): Promise<string> {
+  return invoke<string>("leave_library", { id });
+}
+
+export function libraryDevices(id: string): Promise<KnownDevice[]> {
+  return invoke<KnownDevice[]>("library_devices", { id });
+}
+
+/** Moves a book of the active library to `to`. Returns its new edition id. */
+export function moveBook(editionId: string, to: string): Promise<string> {
+  return invoke<string>("move_book", { editionId, to });
 }

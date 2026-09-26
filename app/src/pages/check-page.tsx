@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Cover } from "@/components/cover";
+import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,15 +29,21 @@ import { CameraDenied, scanIsbn } from "@/lib/scanner";
 
 /** "Do I have it?": answered from the local catalog, so it works offline. */
 export function CheckPage({
-  library,
   desktop,
   onChanged,
+  onOpenBook,
 }: {
-  library: string;
   desktop: boolean;
   onChanged: () => void;
+  /** Opens a book, switching to its library if it is in another one. */
+  onOpenBook: (libraryId: string, editionId: string) => void;
 }) {
   const { t } = useTranslation();
+  const libraries = useLibraries();
+  const nameOf = useLibraryName();
+  const library = nameOf(libraries.active);
+  const libraryName = (id: string) => nameOf(libraries.all.find((l) => l.id === id));
+  const several = libraries.all.length > 1;
   const [isbn, setIsbn] = useState("");
   const [check, setCheck] = useState<IsbnCheck | null>(null);
   const [online, setOnline] = useState<LookupResult | null>(null);
@@ -196,14 +203,21 @@ export function CheckPage({
             <Verdict
               tone="yes"
               title={t("check.youHaveIt")}
-              detail={t("check.inLibrary", { library })}
+              detail={
+                several
+                  ? t("check.inLibraries", {
+                      count: new Set(check.books.map((b) => b.libraryId)).size,
+                      total: libraries.all.length,
+                    })
+                  : t("check.inLibrary", { library })
+              }
             />
             {check.books.map((book) => (
               <div key={book.editionId} className="flex flex-col gap-3">
                 <button
                   type="button"
                   className="flex items-center gap-3.5 text-left"
-                  onClick={() => openOverlay({ name: "book", editionId: book.editionId })}
+                  onClick={() => onOpenBook(book.libraryId, book.editionId)}
                 >
                   <Cover file={book.cover} alt="" className="h-16 w-11 rounded-md" />
                   <span className="flex min-w-0 flex-col gap-[3px]">
@@ -219,7 +233,9 @@ export function CheckPage({
                 <div className="flex gap-3 rounded-2xl border p-3.5">
                   <LibraryBig className="size-5 shrink-0 text-muted-foreground" />
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[15px] font-semibold">{library}</span>
+                    <span className="text-[15px] font-semibold">
+                      {libraryName(book.libraryId)}
+                    </span>
                     <span className="text-[13px]">
                       {book.formats.map((format) => t(`formats.${format}`)).join(" · ")}
                     </span>
@@ -234,7 +250,7 @@ export function CheckPage({
               <Button
                 variant="outline"
                 className={big}
-                onClick={() => openOverlay({ name: "book", editionId: check.books[0].editionId })}
+                onClick={() => onOpenBook(check.books[0].libraryId, check.books[0].editionId)}
               >
                 {t("check.openBook")}
               </Button>
@@ -250,7 +266,7 @@ export function CheckPage({
             <Verdict
               tone="no"
               title={t("check.notInCatalog")}
-              detail={t("check.notInLibrary", { library })}
+              detail={several ? t("check.inNoLibrary") : t("check.notInLibrary", { library })}
             />
             {lookingUp && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">

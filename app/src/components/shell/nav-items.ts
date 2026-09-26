@@ -10,6 +10,7 @@ import {
   ScanBarcode,
   Settings,
   Share2,
+  SlidersHorizontal,
   Users,
 } from "lucide-react";
 
@@ -36,14 +37,15 @@ export const mainNav: NavItem[] = [
 /** What belongs to the current library. */
 export const libraryNav: NavItem[] = [
   { id: "requests", icon: Inbox, label: "nav.requests", soon: true },
-  { id: "share", icon: Share2, label: "nav.share", overlay: { name: "devices" } },
   { id: "people", icon: Users, label: "nav.people", soon: true },
   { id: "series", icon: ListOrdered, label: "nav.series", soon: true },
   { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "backups" } },
+  { id: "library", icon: SlidersHorizontal, label: "nav.librarySettings", section: "library" },
 ];
 
-/** App-wide entries, at the end of the menu. */
+/** App-wide entries, at the end of the menu. Sharing is per device, for every library. */
 export const appNav: NavItem[] = [
+  { id: "share", icon: Share2, label: "nav.share", overlay: { name: "devices" } },
   { id: "settings", icon: Settings, label: "nav.settings", overlay: { name: "settings" } },
   { id: "help", icon: CircleHelp, label: "nav.help", section: "help" },
   { id: "about", icon: Info, label: "nav.about", soon: true },

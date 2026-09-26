@@ -41,10 +41,10 @@ export function Sidebar({
       <div className="mt-4">
         <MenuList items={mainNav} activeId={section} counts={counts} />
       </div>
-      <div className="px-2.5 pt-4.5 pb-1.5 text-xs font-medium text-muted-foreground">
-        {t("nav.library")}
+      <div className="truncate px-2.5 pt-4.5 pb-1.5 text-xs font-medium text-muted-foreground">
+        {library}
       </div>
-      <MenuList items={libraryNav} />
+      <MenuList items={libraryNav} activeId={section} />
       <span className="flex-1" />
       <MenuList items={appNav} activeId={section} />
     </aside>

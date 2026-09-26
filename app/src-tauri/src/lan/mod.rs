@@ -283,6 +283,28 @@ pub fn share_library(conn: &Connection, library: &str, device_id: &str) -> Resul
     Ok(())
 }
 
+/// The paired devices a library goes to, by name.
+pub fn devices_sharing(conn: &Connection, library: &str) -> Result<Vec<KnownDevice>> {
+    let mut statement = conn.prepare(
+        "SELECT d.device_id, d.name, d.paired_at, d.last_sync_at
+           FROM (SELECT device_id, name, paired_at, last_sync_at FROM known_servers
+                 UNION ALL
+                 SELECT device_id, name, paired_at, last_sync_at FROM known_clients) d
+           JOIN library_peers p ON p.device_id = d.device_id AND p.library_id = ?1
+          GROUP BY d.device_id
+          ORDER BY d.name COLLATE NOCASE",
+    )?;
+    let rows = statement.query_map([library], |row| {
+        Ok(KnownDevice {
+            device_id: row.get(0)?,
+            name: row.get(1)?,
+            paired_at: row.get(2)?,
+            last_sync_at: row.get(3)?,
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
 /// Keeps only the entries of `vectors` for libraries shared with that device.
 pub fn only_shared(vectors: LibraryVectors, shared: &[String]) -> LibraryVectors {
     vectors
