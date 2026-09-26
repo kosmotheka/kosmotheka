@@ -141,6 +141,23 @@ Al maintainer le gusta la k. Validadas igual que los finalistas:
 
 **Pantheka es el único candidato de todas las rondas con .com y .app libres, además de Google Play y marcas limpios.** Con la k se aleja un poco de las marcas de panadería «PANTECA», aunque en español se sigue pronunciando «panteka». En alemán, *-thek* es el sufijo de *Bibliothek* y *Spielothek*, así que se lee con naturalidad.
 
+### Quinta ronda (26/09/2026): nombres más creativos
+
+Con Pantheka como listón: imágenes y referencias de colección más allá de la etimología.
+
+| Nombre | Idea | .com | .app | Google Play | Marcas en TMview |
+|---|---|---|---|---|---|
+| **Curioteka** | *Curio* + *-teka*: el gabinete de curiosidades | **Libre** | **Libre** | Libre | Ninguna |
+| **Kosmotheka** | Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka*: el cosmos de tus cosas | **Libre** | **Libre** | Libre | Ninguna |
+| Mytheka | «Mi *theka*», y evoca «mito» | Cogido | Libre | Libre | Ninguna |
+| Keimelia | Griego *κειμήλια*: tesoros y recuerdos de familia que se guardan | Cogido | Libre | Libre | Ninguna. Difícil de pronunciar |
+| Lendlore | *Lend* + *lore* | Cogido | Libre | Libre | Ninguna. Habla de prestar, no de coleccionar |
+| Urraka | La urraca, que colecciona cosas brillantes | Cogido | Libre | Libre | **URRAKA registrada en Argentina, clase 41** |
+| Kimelia | Variante de Keimelia | Cogido | Libre | Libre | **Kimélia registrada en Francia, clases 35 y 41** |
+| Kuriosa | Curiosidades | Cogido | Libre | Libre | 60 marcas; **LaKuriosa en España, clase 41** |
+
+**.app cogido:** picapica (nombre científico de la urraca), wunderly, mnemora, keepling, shelfling. Sin respuesta del registro: arkiva.
+
 ### Descartados
 
 - **Marcas de software de bibliotecas:** Ex Libris y Aleph.
