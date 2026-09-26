@@ -3,6 +3,7 @@ mod catalog;
 mod commands;
 mod covers;
 mod csv_io;
+mod data_folder;
 mod db;
 mod error;
 mod lan;
@@ -30,9 +31,9 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
     builder
         .setup(|app| {
-            let data_dir = data_dir(app.path().app_data_dir()?);
+            let data_dir = data_dir(app.path().app_data_dir()?)?;
             std::fs::create_dir_all(&data_dir)?;
-            let database = Database::open(data_dir.join("library.sqlite3"))?;
+            let database = Database::open(data_dir.join(data_folder::DATABASE_FILE))?;
             let lan = LanService::new(database.clone(), Identity::load_or_create(&data_dir)?);
             app.manage(database);
             app.manage(Covers::new(data_dir.join("covers"))?);
@@ -81,11 +82,15 @@ pub fn run() {
 }
 
 /// In debug builds `LIBRARY_DATA_DIR` points a second instance at its own data, so
-/// two copies of the app on one computer can sync with each other.
-fn data_dir(default: std::path::PathBuf) -> std::path::PathBuf {
+/// two copies of the app on one computer can sync with each other. Otherwise the
+/// app's own folder, carried over from the old identifier the first time (D70).
+fn data_dir(default: std::path::PathBuf) -> error::Result<std::path::PathBuf> {
     #[cfg(debug_assertions)]
     if let Some(dir) = std::env::var_os("LIBRARY_DATA_DIR") {
-        return dir.into();
+        return Ok(dir.into());
     }
-    default
+    if let Some(legacy) = data_folder::legacy_dir(&default) {
+        data_folder::copy_legacy_data(&default, &legacy)?;
+    }
+    Ok(default)
 }

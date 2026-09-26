@@ -86,3 +86,17 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
 ## Pendiente de decidir
 
 - Si se renombra también la carpeta local del repositorio.
+
+## Estado
+
+- [x] **Etapa 1** (26/09/2026): identificador `app.kosmotheka` en Tauri y Android, nombre visible «Kosmotheka» (ventana, Android, título de la interfaz) y copia automática de la carpeta de datos antigua (`data_folder.rs`, con tests).
+  - Copia de seguridad previa en `~/copias-kosmotheka/antes-del-renombrado-2026-09-26/`.
+  - Probado sobre una copia de la carpeta real: mismos libros, operaciones y dispositivo; certificado de sincronización idéntico y la clave con permisos 600; carpeta antigua sin tocar.
+  - Lección: la vista web crea su carpeta de datos antes de que arranque la app, así que la copia se decide por «¿hay base de datos?», no por «¿existe la carpeta?».
+  - El fichero de la base de datos sigue llamándose `library.sqlite3` (interno, no se ve); el tema de Android `Theme.library_app` sale del nombre del *crate* y cambia en la etapa 3.
+- [ ] Etapa 2: AAB firmado para Play Console.
+- [ ] Etapa 3: código.
+- [ ] Etapa 4: servidor.
+- [ ] Etapa 5: repositorio.
+- [ ] Etapa 6: documentación.
+

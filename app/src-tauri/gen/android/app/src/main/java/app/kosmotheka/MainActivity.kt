@@ -1,4 +1,4 @@
-package com.tersoal.library
+package app.kosmotheka
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

@@ -61,6 +61,8 @@ Antes de aplicar una migración a una base de datos que ya tiene datos, la app d
 
 **Migración 9 (bibliotecas):** todo lo que había pasa a una biblioteca con el mismo id en todos los dispositivos (`00000000-0000-7000-8000-000000000001`), así que dos dispositivos que ya se sincronizaban se funden sin duplicados (D46). Los emparejamientos siguen y comparten esa biblioteca. Las operaciones anteriores quedan como historial y cada dispositivo registra una nueva operación inicial con lo que tiene.
 
+**Cambio de identificador (D70):** la carpeta de datos se llama como el identificador de la app, que pasó de `com.tersoal.library` a `app.kosmotheka` (`~/.local/share/app.kosmotheka/` en Linux, `%APPDATA%\app.kosmotheka\` en Windows). Mientras la carpeta nueva no tenga base de datos, la app **copia** la antigua (base de datos con `VACUUM INTO`, portadas e identidad de sincronización, con sus permisos) y la deja intacta: volver a la versión anterior la encuentra como estaba. Los datos de la vista web (cachés, almacenamiento local) no se copian. En Android el identificador nuevo es otra app y no puede leer la antigua: los datos se recuperan sincronizando o con una copia de seguridad.
+
 ## Ficheros fuera de la base de datos
 
 - `covers/`: portadas, con nombre `<sha256>.<ext>` (D27). Una portada que ya no usa ningún libro se queda en disco; limpiarlas es una tarea pendiente.

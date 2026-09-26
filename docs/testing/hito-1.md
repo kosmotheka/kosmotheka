@@ -2,7 +2,7 @@
 
 > Lo que los tests automáticos no cubren: que la interfaz se vea y funcione. Cada prueba tiene pasos y el resultado esperado. Marca `[x]` al pasarla y anota debajo lo que falle.
 >
-> **Preparación:** `cd app && npm run tauri dev` (dentro del contenedor, ver `docs/development/setup.md`). Para empezar desde cero, cierra la app y borra `~/.local/share/com.tersoal.library/`.
+> **Preparación:** `cd app && npm run tauri dev` (dentro del contenedor, ver `docs/development/setup.md`). Para empezar desde cero, cierra la app y borra `~/.local/share/app.kosmotheka/`.
 >
 > **ISBN de prueba:**
 > - `978-0-306-40615-7` (y su ISBN-10 `0-306-40615-2`): ISBN válido que no corresponde a un libro real.
@@ -105,7 +105,7 @@
 
 - [ ] **Guardar copia.** «Guardar copia» → elige carpeta → Guardar. *Esperado:* «Copia guardada: N libros, M ejemplares, K portadas» y un `library-AAAA-MM-DD.zip`. Ábrelo con un gestor de ZIP: contiene `backup.json` y la carpeta `covers/`.
 - [ ] **Restaurar sobre un catálogo con libros.** «Restaurar copia» → elige ese ZIP. *Esperado:* «Una copia solo se puede restaurar sobre un catálogo vacío…» y no cambia nada.
-- [ ] **Restaurar de verdad.** Cierra la app, mueve la carpeta `~/.local/share/com.tersoal.library/` a otro sitio (para conservarla), abre la app (catálogo vacío) → Ajustes → «Restaurar copia» → el ZIP. *Esperado:* «Restaurados N libros…»; la tabla muestra todos los libros con sus portadas, autores, editoriales y ejemplares; la búsqueda los encuentra; el historial de cada uno dice «Copia restaurada». Después puedes volver a poner tu carpeta original.
+- [ ] **Restaurar de verdad.** Cierra la app, mueve la carpeta `~/.local/share/app.kosmotheka/` a otro sitio (para conservarla), abre la app (catálogo vacío) → Ajustes → «Restaurar copia» → el ZIP. *Esperado:* «Restaurados N libros…»; la tabla muestra todos los libros con sus portadas, autores, editoriales y ejemplares; la búsqueda los encuentra; el historial de cada uno dice «Copia restaurada». Después puedes volver a poner tu carpeta original.
 - [ ] **Fichero que no es una copia.** Restaurar eligiendo otro ZIP cualquiera. *Esperado:* «Este fichero no es una copia de seguridad de esta app.»
 - [ ] **Exportar CSV.** «Exportar CSV» → Guardar. *Esperado:* «Exportadas N filas». Ábrelo con LibreOffice o Excel: tildes y eñes bien, una fila por ejemplar, varios autores separados por `;`.
 - [ ] **Importar CSV.** Crea un CSV con cabecera `title,authors,isbn13,format,owner` y unas filas (incluye una sin título y otra con formato `scroll`) → «Importar CSV». *Esperado:* resumen con libros nuevos, ejemplares añadidos y filas rechazadas, y debajo la lista de líneas rechazadas con su motivo. Los válidos aparecen en la tabla.
