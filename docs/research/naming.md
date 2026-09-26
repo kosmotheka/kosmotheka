@@ -106,6 +106,23 @@ El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no 
 
 **Descartados:** Hoardary (.com y .app libres, pero *hoard* suena a acumulador compulsivo). **.app cogido:** omniteca, armarium, keepery, musarium, curatory, collectum, musaeum, scrinium, collectry, omnarium.
 
+### Finalistas (26/09/2026)
+
+El maintainer se queda con **Pantheca**, **Thesorium** y **Gatherium**. Omnitheca se descarta: «todo» suena prepotente y falso, porque el catálogo está acotado. Musary y Colleo siguen como candidatos.
+
+Validación: dominios por RDAP, Google Play con `play-check.mjs` y TMview con `tmview-check.mjs`. Se buscaron también variantes de escritura y pronunciación, porque una marca puede chocar por parecido.
+
+| | Pantheca | Thesorium | Gatherium |
+|---|---|---|---|
+| **.app** | Libre | Libre | Libre |
+| **.com** | Cogido desde 2016 (Joker.com), sin web | Cogido en junio de 2025 (hosting italiano), página por defecto | Cogido desde 2020: blog activo «Gather» sobre organizar eventos y encuentros |
+| **Google Play** (nombre y variantes) | Libre (panteca, pantheka) | Libre (tesorium, thesaurium) | Libre (gatherum) |
+| **Marcas iguales** | Ninguna | Ninguna | Ninguna |
+| **Marcas parecidas** | PANTECA: panaderías y alimentación en Latinoamérica (29, 30, 35, 43); la de la 42, en Uruguay, está vencida | Ninguna (tesorium, thesaurium) | «Gatherum Collectif», registrada en Nueva Zelanda en la clase 9 |
+| **Pega** | En español se pronuncia «panteca», que suena a **pan** (panadería), y así se llaman esas marcas | .com registrado hace poco: alguien puede tener planes | El .com es una web viva con un nombre casi igual |
+
+**Dato para Gatherium:** *omnium gatherum* es una expresión inglesa que significa «colección de todo tipo de cosas». Encaja con el sentido, y explica que existan marcas parecidas.
+
 ### Descartados
 
 - **Marcas de software de bibliotecas:** Ex Libris y Aleph.
