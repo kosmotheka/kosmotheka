@@ -96,7 +96,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 ## Environment files
 
 - `.env` is committed and **holds no credentials**, only defaults and placeholders. Development credentials go in `.env.local`, which is not versioned (see `docs/development/server.md`). Production secrets go in `.env.local` on the server.
-- `.env.test` **is** committed, and has to be: Symfony does not load `.env.local` when `APP_ENV=test`, so without it a fresh clone cannot run the suite. Its `test` role exists only inside the container and can only reach `library_test`.
+- `.env.test` **is** committed, and has to be: Symfony does not load `.env.local` when `APP_ENV=test`, so without it a fresh clone cannot run the suite. Its `test` role exists only inside the container and can only reach `kosmotheka_test`.
 - `.env.dev` is committed with a development-only `APP_SECRET`, as the Symfony skeleton does.
 - There is **no `compose.yaml` in `server/`**: `extra.symfony.docker` is `false` in `composer.json`, so recipes do not generate one. The Docker setup lives in `server/docker/`. If a `compose.yaml` ever appears, delete it.
 
@@ -104,7 +104,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 
 - **A new endpoint gets a functional test** (`WebTestCase`), and the rejection paths matter as much as the happy one. Services get `KernelTestCase` tests that go through the container, the way a caller would.
 - `#[DataProvider('name')]` as an attribute. The `@dataProvider` annotation is deprecated, and `phpunit.dist.xml` fails on deprecations.
-- The test database is `library_test` (Doctrine adds the `_test` suffix); `make db-test` migrates it.
+- The test database is `kosmotheka_test` (Doctrine adds the `_test` suffix); `make db-test` migrates it.
 - Operation rules are tested through the Serializer and the Validator, the same path a request takes, against the shared cases in `spec/conformance/`.
 
 ## Quality

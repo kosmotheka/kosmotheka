@@ -1,5 +1,5 @@
 {
-    "name": "tersoal/library-server",
+    "name": "tersoal/kosmotheka-server",
     "type": "project",
     "license": "AGPL-3.0-or-later",
     "minimum-stability": "stable",
@@ -78,7 +78,7 @@
             "docker": false
         }
     },
-    "description": "Sync server for the household library app",
+    "description": "Sync server for Kosmotheka",
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/extension-installer": "^1.4",

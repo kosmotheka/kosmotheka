@@ -98,7 +98,7 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
 - [x] **Etapa 3** (26/09/2026): *crates* `kosmotheka` (lib `kosmotheka_lib`) y `kosmotheka-domain`; paquete npm `kosmotheka` (también en `.design-sync`, cuyo proyecto de Design sigue exponiendo `window.Library`); `KOSMOTHEKA_DATA_DIR`; tema de Android `Theme.kosmotheka`; artefacto de CI; User-Agent y `$id` del spec con `kosmotheka.app`; código de emparejamiento `KOSMOTHEKA1:`, `APP_ID` y certificado nuevo `kosmotheka.local`; copias `kosmotheka-backup` (se siguen aceptando las `library-backup`); nombres de fichero de copias y CSV; comandos en `AGENTS.md`, README y guías.
   - **Sin subir la versión del esquema:** el formato de las operaciones no cambia, así que una versión anterior y la nueva siguen sincronizándose. Lo único que cambia es el código de emparejamiento: uno antiguo se rechaza como «no es un código de emparejamiento» y basta con generar otro.
   - Tras cambiar el nombre de la biblioteca nativa, hay que borrar a mano `gen/android/app/src/main/jniLibs/**/liblibrary_app_lib.so` (ignorado por git) o la APK lleva las dos.
-- [ ] Etapa 4: servidor.
+- [x] **Etapa 4** (26/09/2026): proyecto Compose, contenedores (`db_kosmotheka`, `php_kosmotheka`, `nginx_kosmotheka`), volumen, bases (`kosmotheka`, `kosmotheka_test`), `kosmotheka.local`, Composer (`tersoal/kosmotheka-server`). Copia previa con `pg_dumpall` en `~/copias-kosmotheka/servidor-antes-del-renombrado-2026-09-26/` (la base de desarrollo aún no tenía tablas). El volumen antiguo `library_db_library` se conserva hasta que el maintainer lo borre. `make check` en verde.
 - [ ] Etapa 5: repositorio.
 - [ ] Etapa 6: documentación.
 

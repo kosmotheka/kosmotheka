@@ -3,7 +3,7 @@
 # flags to remember. Run from server/ (the app and crates have their own tools).
 
 DOCKER_COMPOSE := docker compose -f docker/docker-compose.yaml
-PHP            := docker exec php_library sh -c 'cd /var/www/library.local &&
+PHP            := docker exec php_kosmotheka sh -c 'cd /var/www/kosmotheka.local &&
 END            := '
 CONSOLE        := $(PHP) bin/console
 
@@ -29,11 +29,11 @@ ps: ## Container status
 
 .PHONY: sh
 sh: ## Opens a shell in the PHP container
-	docker exec -it php_library bash
+	docker exec -it php_kosmotheka bash
 
 .PHONY: logs
 logs: ## Follows the nginx and php logs
-	$(DOCKER_COMPOSE) logs -f nginx_library php_library
+	$(DOCKER_COMPOSE) logs -f nginx_kosmotheka php_kosmotheka
 
 .PHONY: install
 install: ## Installs the Composer dependencies
@@ -61,7 +61,7 @@ migration: ## Generates a migration from the entity diff
 
 .PHONY: db-test
 db-test: ## Migrates the test database (idempotent)
-	@# library_test and its `test` role are created by docker/postgres/init the
+	@# kosmotheka_test and its `test` role are created by docker/postgres/init the
 	@# first time the volume starts, so this only has to migrate.
 	$(CONSOLE) doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration $(END)
 
