@@ -1,6 +1,6 @@
 # Nombre del proyecto
 
-> Abierto. «library» es provisional. No bloquea el desarrollo: carpetas, *crates* e identificadores se pueden renombrar. El identificador de Android solo importa de verdad al publicar en una tienda. Al cambiarlo, las APK de prueba se desinstalan y se vuelven a instalar (y los datos locales del móvil se recuperan sincronizando).
+> **Elegido: Kosmotheka (26/09/2026).** «library» sigue en el código hasta que se renombre. No bloquea el desarrollo: carpetas, *crates* e identificadores se pueden renombrar. El identificador de Android solo importa de verdad al publicar en una tienda. Al cambiarlo, las APK de prueba se desinstalan y se vuelven a instalar (y los datos locales del móvil se recuperan sincronizando).
 
 ## Criterios
 
@@ -16,11 +16,13 @@
 
 ## Candidatos
 
-**Candidatos firmes del maintainer (26/09/2026), por este orden:**
-1. **★ Kosmotheka.** Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka* (depósito): el cosmos de tus cosas. .com y .app libres, Google Play y marcas limpios (ver «Quinta ronda»). Le gusta el enfoque de *kosmos*.
-2. **★ Pantheka.** Griego *pan* (todo) + *theca* (depósito), con k. .com y .app libres, Google Play y marcas limpios (ver «Variantes con k»).
+**Elegido (26/09/2026): Kosmotheka.** Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka* (depósito): el cosmos de tus cosas. .com y .app libres el día de la elección, Google Play y marcas limpios (ver «Quinta ronda»). Los errores de escritura (Kosmoteka, Kosmotek) tienen el .com ajeno, pero hoy casi todo el mundo llega por un enlace, no tecleando. El maintainer registra kosmotheka.com y kosmotheka.app. En GitHub, `kosmotheka` estaba libre.
 
-No se compra por impulso, pero cualquiera puede registrar los .com. Curioteka también salió limpia (quinta ronda), pero no está entre los firmes.
+Pantheka queda como segunda opción.
+
+**Pendiente:**
+- En Google Play el título no es único; lo único que se reserva es el identificador del paquete, al subir la primera versión en la consola. Hoy es `com.tersoal.library`.
+- Solo una marca registrada protege el nombre.
 
 **Descartados el 26/09/2026, porque todos tienen alguna costura:** Musary («mus» en español; .com ajeno), Colleo (marcas parecidas; .com en venta), Pantheca (suena a panadería en español), Thesorium (.com registrado en 2025), Gatherium (.com con web viva y marca parecida en la clase 9) y Panteka (.com en venta y marca en la clase 28, juegos).
 
