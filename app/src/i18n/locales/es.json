@@ -98,7 +98,6 @@
     },
     "noAuthors": "Sin autores",
     "edit": "Editar",
-    "delete": "Borrar libro",
     "deleteConfirm": {
       "title": "¿Borrar «{{title}}»?",
       "body": "Se quitarán del catálogo la edición y todos sus ejemplares. Los autores y propietarios se conservan."
@@ -119,8 +118,6 @@
     "units_other": "{{count}} unidades",
     "acquired": "Comprado el {{date}}",
     "add": "Añadir ejemplar",
-    "edit": "Editar ejemplar",
-    "delete": "Borrar ejemplar",
     "deleteConfirm": {
       "title": "¿Borrar este ejemplar?",
       "body": "La edición seguirá en el catálogo."
@@ -323,6 +320,8 @@
     "book": "Libro"
   },
   "common": {
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "edit": "Editar",
+    "delete": "Borrar"
   }
 }

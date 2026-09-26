@@ -163,7 +163,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged }: Props
         ))}
         {links.length > 0 && <DropdownMenuSeparator />}
         <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
-          <Trash2 /> {t("book.delete")}
+          <Trash2 /> {t("common.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -213,7 +213,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged }: Props
         onOpenChange={setConfirmDelete}
         title={t("book.deleteConfirm.title", { title: book?.title ?? "" })}
         description={t("book.deleteConfirm.body")}
-        confirmLabel={t("book.delete")}
+        confirmLabel={t("common.delete")}
         onConfirm={() => void removeBook()}
       />
     </>
@@ -505,10 +505,10 @@ function CopiesSection({ book, onChanged }: { book: BookDetail; onChanged: () =>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
                 <DropdownMenuItem onSelect={() => start(copy.id, copyFormFrom(copy))}>
-                  <Pencil /> {t("copies.edit")}
+                  <Pencil /> {t("common.edit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => setRemoving(copy)}>
-                  <Trash2 /> {t("copies.delete")}
+                  <Trash2 /> {t("common.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -536,7 +536,7 @@ function CopiesSection({ book, onChanged }: { book: BookDetail; onChanged: () =>
         onOpenChange={(open) => !open && setRemoving(null)}
         title={t("copies.deleteConfirm.title")}
         description={t("copies.deleteConfirm.body")}
-        confirmLabel={t("copies.delete")}
+        confirmLabel={t("common.delete")}
         onConfirm={() => removing && void remove(removing)}
       />
     </div>

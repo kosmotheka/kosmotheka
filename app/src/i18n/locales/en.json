@@ -98,7 +98,6 @@
     },
     "noAuthors": "No authors",
     "edit": "Edit",
-    "delete": "Delete book",
     "deleteConfirm": {
       "title": "Delete “{{title}}”?",
       "body": "The edition and all its copies will be removed from the catalog. Authors and owners stay."
@@ -119,8 +118,6 @@
     "units_other": "{{count}} units",
     "acquired": "Bought on {{date}}",
     "add": "Add copy",
-    "edit": "Edit copy",
-    "delete": "Delete copy",
     "deleteConfirm": {
       "title": "Delete this copy?",
       "body": "The edition stays in the catalog."
@@ -323,6 +320,8 @@
     "book": "Book"
   },
   "common": {
-    "close": "Close"
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete"
   }
 }
