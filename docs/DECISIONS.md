@@ -76,6 +76,7 @@
 | D68 | Marcas por persona: estado, valoración y favorito | aceptada |
 | D69 | Reserva de regalos oculta solo en pantalla | aceptada |
 | D70 | Nombre del proyecto: Kosmotheka | aceptada |
+| D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
 
 ---
 
@@ -877,3 +878,31 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - Solo cambia el nombre del **producto**. En el código, `library` sigue siendo la entidad biblioteca (D38, D46, D54) y no se renombra.
 - El renombrado se hace por etapas según [plans/renombrado-kosmotheka.md](plans/renombrado-kosmotheka.md). Lo primero es el identificador de la app, porque hay que reservarlo en Google Play con una primera versión en prueba interna, y cambiarlo después sería otra app.
 
+## D71 · Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo — `aceptada`
+
+**Contexto:** en la Fase 4 cada biblioteca se comparte con dispositivos concretos (hito 4.4). Hay que decidir qué pasa cuando alguien deja de compartir una biblioteca con un dispositivo. El caso que manda: dos personas se enfadan y una no quiere que la otra vea nada de lo suyo, ni siquiera una copia, ni que pueda tocarlo.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. El otro deja de recibir cambios y conserva lo que tenía | No se pierde nada | El otro se queda con una copia completa: justo lo que no se quiere |
+| B. Se le quita el acceso y la biblioteca se borra en su dispositivo | Hace lo que se pide: retira el acceso de verdad | Borra datos en un dispositivo ajeno |
+
+**Decisión (B):**
+- **Dejar de compartir es retirar el acceso.** El otro dispositivo **borra esa biblioteca** (su contenido y su registro, como al salir, D65) y deja de recibirla.
+- **Nada de lo que haga después le llega a la biblioteca:** sus cambios posteriores se rechazan.
+- **Se puede volver a dar acceso** emparejando otra vez; entonces recibe la biblioteca entera de nuevo.
+- Lo hace quien tenga permiso para ello; sin roles (hasta la Fase 5), cualquier dispositivo que tenga la biblioteca, como con todo lo demás (D65).
+- Queda en el registro de actividad (D66): quién retiró el acceso, a qué dispositivo y cuándo.
+
+**Propuesta técnica (añadida por Claude, a revisar al construirla):**
+- **La lista de dispositivos revocados es de la biblioteca**, no de un dispositivo: se guarda como una operación más y viaja a todos los que la comparten. Así ninguno de mis otros dispositivos le sigue pasando datos por la puerta de atrás (el portátil deja de compartir, pero la tableta seguía emparejada con ese móvil).
+- **Cómo se entera el otro:** la próxima vez que conecte con cualquiera de mis dispositivos, recibe «acceso retirado a esta biblioteca» y la borra.
+- **Sus cambios:** se aceptan los anteriores a la retirada y se rechazan los que lleguen firmados por ese dispositivo después.
+
+**Límites, dichos claramente:**
+- **Sin servidor, el borrado ocurre cuando el otro vuelve a conectar.** Si no conecta nunca, conserva lo que tenía hasta entonces, aunque sin recibir nada nuevo. Con la nube (Fase 7) la retirada es inmediata para todo lo que pase por ella.
+- **No se puede borrar lo que ya haya sacado fuera:** una copia de seguridad o un CSV exportados antes, capturas de pantalla, o una app modificada que ignore la orden. Eso no lo evita ninguna aplicación; lo que sí se garantiza es que no recibe nada nuevo y no puede cambiar nada.
+
+**Consecuencias:** concreta el hito 4.4. Necesita casos en `spec/` (operación de retirar el acceso, rechazo de cambios posteriores) y un test de convergencia en `sync.rs` con tres dispositivos. Amplía D65 y D66; la parte con cuentas y roles se retoma en la Fase 5 (D55).

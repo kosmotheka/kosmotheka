@@ -46,4 +46,5 @@ Detalles de construcción que no cambian lo decidido; se apuntan aquí y se revi
 - [ ] 4.4 Sincronización por biblioteca.
 - [x] 4.5 Interfaz, lo que no depende de otros dispositivos: selector con las bibliotecas reales (barra lateral y menú del móvil), nueva biblioteca (con la regla de nombre único), ajustes de la biblioteca (renombrar, con quién se comparte, quién la creó), borrar con aviso y copia previa, salir (si solo está en este dispositivo, lleva a borrar para no perderla), mover un libro, buscar «en esta» o «en todas» y «¿Lo tengo?» en todas. Pruebas en pantalla: [`docs/testing/fase-4.md`](../testing/fase-4.md).
 - [ ] 4.5 Pendiente, va con la 4.4: elegir bibliotecas al emparejar y «Dejar de compartir».
+- Decidido para la 4.4 (D71): dejar de compartir retira el acceso y borra la biblioteca en el otro dispositivo cuando vuelve a conectar; la lista de revocados viaja como operación de la biblioteca.
 - [ ] 4.6 Copias.
