@@ -143,4 +143,4 @@ Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **i
 - **Enlaces para invitar y para ofrecer algo en préstamo: añadir.** La regla ya está decidida (D67).
 - **Reservar un ejemplar prestado: idea para el futuro.**
 - **Bibliotecas públicas que se descubren buscando: idea para el futuro**, junto a la dimensión social (§3.3).
-- **Reserva de regalos oculta: en debate.**
+- **Reserva de regalos oculta: se mantiene, oculta solo en pantalla.** El deseo lo ve toda la familia; la reserva («lo compro yo») la ven todos menos quien recibe el regalo. Sin servidor el dato está en el dispositivo de quien lo recibe y la app no se lo enseña; en familia basta para una sorpresa. Con la nube se hace igual, para que las dos formas de usar la app se comporten del mismo modo.
