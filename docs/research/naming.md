@@ -16,7 +16,11 @@
 
 ## Candidatos
 
-**Favorito del maintainer (26/09/2026): ★ Pantheka.** Griego *pan* (todo) + *theca* (depósito), con k. Es el único nombre de todas las rondas con .com y .app libres, además de Google Play y marcas limpios (ver «Variantes con k»). No se compra por impulso, pero puede perderse: cualquiera puede registrar el .com.
+**Candidatos firmes del maintainer (26/09/2026), por este orden:**
+1. **★ Kosmotheka.** Griego *kosmos* (mundo ordenado, lo contrario del caos) + *theka* (depósito): el cosmos de tus cosas. .com y .app libres, Google Play y marcas limpios (ver «Quinta ronda»). Le gusta el enfoque de *kosmos*.
+2. **★ Pantheka.** Griego *pan* (todo) + *theca* (depósito), con k. .com y .app libres, Google Play y marcas limpios (ver «Variantes con k»).
+
+No se compra por impulso, pero cualquiera puede registrar los .com. Curioteka también salió limpia (quinta ronda), pero no está entre los firmes.
 
 **Descartados el 26/09/2026, porque todos tienen alguna costura:** Musary («mus» en español; .com ajeno), Colleo (marcas parecidas; .com en venta), Pantheca (suena a panadería en español), Thesorium (.com registrado en 2025), Gatherium (.com con web viva y marca parecida en la clase 9) y Panteka (.com en venta y marca en la clase 28, juegos).
 
