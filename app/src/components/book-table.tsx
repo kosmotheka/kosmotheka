@@ -7,10 +7,14 @@ import type { BookSummary } from "@/lib/api";
 export function BookTable({
   books,
   onOpen,
+  selectedId,
 }: {
   books: BookSummary[];
   onOpen: (book: BookSummary) => void;
+  /** The book open in the side panel: highlighted, and the table drops two columns to make room. */
+  selectedId?: string | null;
 }) {
+  const wide = !selectedId;
   const { t } = useTranslation();
   const row = "flex items-center gap-4 px-3";
 
@@ -32,19 +36,24 @@ export function BookTable({
         <span role="columnheader" className="w-11 shrink-0">
           {t("catalog.columns.year")}
         </span>
-        <span role="columnheader" className="w-36 shrink-0">
-          {t("catalog.columns.formats")}
-        </span>
-        <span role="columnheader" className="min-w-0 flex-[1.4]">
-          {t("catalog.columns.owners")}
-        </span>
+        {wide && (
+          <>
+            <span role="columnheader" className="w-36 shrink-0">
+              {t("catalog.columns.formats")}
+            </span>
+            <span role="columnheader" className="min-w-0 flex-[1.4]">
+              {t("catalog.columns.owners")}
+            </span>
+          </>
+        )}
       </div>
       {books.map((book) => (
         <button
           key={book.editionId}
           type="button"
           role="row"
-          className={`${row} h-14 w-full border-b text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none`}
+          aria-current={book.editionId === selectedId || undefined}
+          className={`${row} h-14 w-full border-b text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none aria-[current]:bg-accent`}
           onClick={() => onOpen(book)}
         >
           <span className="flex w-10 shrink-0 justify-center">
@@ -60,13 +69,17 @@ export function BookTable({
           <span className="w-11 shrink-0 text-muted-foreground tabular-nums">
             {book.publishedYear}
           </span>
-          <span className="w-36 shrink-0 truncate">
-            {book.formats.map((format) => t(`formats.${format}`)).join(", ")}
-          </span>
-          <span className="min-w-0 flex-[1.4] truncate text-muted-foreground">
-            {book.owners.join(", ")}
-            {book.copyCount > 1 && ` · ${t("catalog.copies", { count: book.copyCount })}`}
-          </span>
+          {wide && (
+            <>
+              <span className="w-36 shrink-0 truncate">
+                {book.formats.map((format) => t(`formats.${format}`)).join(", ")}
+              </span>
+              <span className="min-w-0 flex-[1.4] truncate text-muted-foreground">
+                {book.owners.join(", ")}
+                {book.copyCount > 1 && ` · ${t("catalog.copies", { count: book.copyCount })}`}
+              </span>
+            </>
+          )}
         </button>
       ))}
     </div>

@@ -24,6 +24,7 @@ export function CatalogPage({
   desktop,
   searching,
   onSearchingChange,
+  selectedId,
 }: {
   state: LoadState;
   library: string;
@@ -34,6 +35,7 @@ export function CatalogPage({
   /** Mobile only: the search box shows after tapping the app bar's search button. */
   searching: boolean;
   onSearchingChange: (searching: boolean) => void;
+  selectedId: string | null;
 }) {
   const { t } = useTranslation();
   const books = state.status === "ready" ? state.books : [];
@@ -118,7 +120,7 @@ export function CatalogPage({
       {state.status === "ready" &&
         books.length > 0 &&
         (desktop ? (
-          <BookTable books={books} onOpen={openBook} />
+          <BookTable books={books} onOpen={openBook} selectedId={selectedId} />
         ) : (
           // Room for the floating "Add" button over the last row.
           <div className="pb-16">

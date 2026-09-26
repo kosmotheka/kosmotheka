@@ -35,6 +35,11 @@ Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la 
 - Trabajarlo con Claude Design: pantallas del móvil y del escritorio que guíen las fases 4 a 7.
 - **Hecho cuando:** hay un diseño aprobado de la navegación y de las pantallas principales del nuevo modelo.
 
+**Estado:**
+- [x] Brief nuevo y pantallas de Claude Design descargadas en `design/screens/` (25/09/2026).
+- [x] La app sigue el diseño con los datos de hoy (26/09/2026): tokens, navegación (barra inferior, menú lateral, selector de biblioteca, barra lateral y superior en escritorio, botón atrás de Android), catálogo, «¿Lo tengo?» como sección, «Me falta», ficha a pantalla completa en el móvil y en panel en escritorio, y alta a pantalla completa en el móvil. Se puede ver en el navegador con datos de ejemplo: `npm run dev` y abrir `http://localhost:1420/?mock` (añade `&mobile` para simular el móvil).
+- [ ] Lo que depende del modelo nuevo se hace en su fase: varias bibliotecas y la campanita de peticiones (fases 4 y 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6).
+
 ## Fase 4 — Bibliotecas
 
 La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza y tiene permisos.

@@ -32,7 +32,7 @@
     "other": "Other"
   },
   "form": {
-    "title": "Add a book",
+    "title": "Add to {{library}}",
     "description": "Only the title is required. If the ISBN is already in the catalog, a new copy is added to that edition.",
     "editionSection": "Edition",
     "copySection": "Your copy",
@@ -93,8 +93,8 @@
   "book": {
     "tabs": {
       "details": "Details",
-      "copies_one": "{{count}} copy",
-      "copies_other": "{{count}} copies"
+      "copies_one": "Copies · {{count}}",
+      "copies_other": "Copies · {{count}}"
     },
     "noAuthors": "No authors",
     "edit": "Edit",
@@ -103,7 +103,14 @@
       "title": "Delete “{{title}}”?",
       "body": "The edition and all its copies will be removed from the catalog. Authors and owners stay."
     },
-    "cover": "Cover"
+    "cover": "Cover",
+    "more": "More options",
+    "panelLabel": "Details: {{title}}",
+    "close": "Close details",
+    "back": "Back",
+    "owned_one": "You have it",
+    "owned_other": "You have it · {{count}}",
+    "noCopies": "No copies"
   },
   "copies": {
     "empty": "No copies: this edition is in the catalog but nobody owns it.",
@@ -117,7 +124,8 @@
     "deleteConfirm": {
       "title": "Delete this copy?",
       "body": "The edition stays in the catalog."
-    }
+    },
+    "more": "Copy options"
   },
   "lookup": {
     "placeholder": "Type or scan and press Enter",
@@ -262,12 +270,13 @@
   },
   "wishes": {
     "empty": {
-      "title": "The wishlist is empty",
-      "body": "Use “Do I have it?” in a bookshop to note books you do not have yet."
+      "title": "Nothing missing",
+      "body": "Use \"Do I have it?\" in a shop to note down what you do not have yet."
     },
-    "bought": "Bought: add to catalog",
-    "remove": "Remove from wishlist",
-    "removeConfirm": "Remove “{{title}}” from the wishlist?"
+    "bought": "I bought it",
+    "remove": "Remove from Missing",
+    "removeConfirm": "Remove \"{{title}}\" from Missing?",
+    "note": "Note down"
   },
   "nav": {
     "catalog": "Catalog",

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { BookPlus, Trash2 } from "lucide-react";
+import { Bookmark, ShoppingBag, Trash2 } from "lucide-react";
 
 import { ConfirmButton } from "@/components/confirm-button";
 import { Cover } from "@/components/cover";
@@ -20,40 +20,56 @@ export function WishList({
 
   if (wishes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <p className="font-medium">{t("wishes.empty.title")}</p>
-        <p className="text-sm text-muted-foreground">{t("wishes.empty.body")}</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-2.5 pt-10 pb-20 text-center">
+        <div className="flex size-13 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Bookmark className="size-6" />
+        </div>
+        <p className="mt-1 text-[17px] font-semibold">{t("wishes.empty.title")}</p>
+        <p className="max-w-[420px] text-sm text-pretty text-muted-foreground">
+          {t("wishes.empty.body")}
+        </p>
       </div>
     );
   }
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="-mx-4 md:mx-0">
       {wishes.map((wish) => (
-        <li key={wish.id} className="flex gap-3 rounded-lg border p-3">
-          <Cover url={wish.coverUrl} alt="" className="h-20 w-14" />
-          <div className="min-w-0 flex-1 space-y-1 text-sm">
-            <p className="font-medium">{wish.title}</p>
-            {wish.author && <p className="text-muted-foreground">{wish.author}</p>}
-            {wish.isbn13 && <p className="font-mono text-xs text-muted-foreground">{wish.isbn13}</p>}
-            {wish.note && <p>{wish.note}</p>}
-            <div className="flex gap-1 pt-1">
-              <Button size="sm" variant="outline" onClick={() => onBought(wish)}>
-                <BookPlus /> {t("wishes.bought")}
-              </Button>
-              <ConfirmButton
-                trigger={
-                  <Button size="icon" variant="ghost" aria-label={t("wishes.remove")}>
-                    <Trash2 />
-                  </Button>
-                }
-                title={t("wishes.removeConfirm", { title: wish.title })}
-                description=""
-                confirmLabel={t("wishes.remove")}
-                onConfirm={() => onRemove(wish)}
-              />
-            </div>
+        <li key={wish.id} className="flex min-h-16 items-center gap-3.5 px-4 py-2">
+          <Cover url={wish.coverUrl} alt="" className="h-14 w-10 rounded-md opacity-75" />
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+            <span className="truncate text-[15px] font-medium">{wish.title}</span>
+            <span className="truncate text-[13px] text-muted-foreground">
+              {[wish.author, wish.note].filter(Boolean).join(" · ") || wish.isbn13}
+            </span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            className="rounded-full"
+            aria-label={t("wishes.bought")}
+            title={t("wishes.bought")}
+            onClick={() => onBought(wish)}
+          >
+            <ShoppingBag />
+          </Button>
+          <ConfirmButton
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon-lg"
+                className="rounded-full text-muted-foreground"
+                aria-label={t("wishes.remove")}
+                title={t("wishes.remove")}
+              >
+                <Trash2 />
+              </Button>
+            }
+            title={t("wishes.removeConfirm", { title: wish.title })}
+            description=""
+            confirmLabel={t("wishes.remove")}
+            onConfirm={() => onRemove(wish)}
+          />
         </li>
       ))}
     </ul>

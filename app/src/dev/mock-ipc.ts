@@ -74,6 +74,27 @@ mockIPC((cmd, args) => {
     }
     case "lookup_isbn":
       throw new Error("offline");
+    case "get_book": {
+      const id = (args as { editionId: string }).editionId;
+      const found = books.find((b) => b.editionId === id) ?? books[0];
+      return {
+        ...found,
+        workId: "work",
+        language: "es",
+        googleBooksId: "abc",
+        openLibraryId: null,
+        copies: found.formats.map((format, i) => ({
+          id: `copy-${i}`,
+          owner: found.owners[i] ?? found.owners[0] ?? null,
+          format,
+          quantity: 1,
+          location: format === "ebook" ? null : "Salón, balda 3",
+          acquiredOn: null,
+        })),
+      };
+    }
+    case "book_history":
+      return [];
     case "get_settings":
       return { googleBooksApiKey: null };
     default:

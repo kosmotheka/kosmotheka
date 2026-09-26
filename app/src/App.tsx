@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CircleCheck } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
-import { BookDialog } from "@/components/book-dialog";
+import { BookDetailView } from "@/components/book-detail";
 import { BurstDialog } from "@/components/burst-dialog";
 import { FilterPanel, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
@@ -122,6 +122,8 @@ export default function App() {
     reload();
   };
 
+  const bookId = overlay?.name === "book" ? overlay.editionId : null;
+
   const focusSearch = () => {
     navigate("catalog");
     setSearching(true);
@@ -145,6 +147,7 @@ export default function App() {
         desktop={desktop}
         searching={searching}
         onSearchingChange={setSearching}
+        selectedId={desktop ? bookId : null}
       />
     );
 
@@ -175,7 +178,15 @@ export default function App() {
               }}
               sync={sync}
             />
-            <main className="flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
+            <div className="flex min-h-0 flex-1">
+              <main className="min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
+              <BookDetailView
+                editionId={bookId}
+                desktop
+                onClose={closeOverlay}
+                onChanged={reload}
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -209,6 +220,8 @@ export default function App() {
       {overlay?.name === "add" && (
         <AddBookDialog
           open
+          desktop={desktop}
+          library={library}
           prefill={overlay.prefill}
           onOpenChange={(open) => !open && closeOverlay()}
           onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
@@ -229,11 +242,14 @@ export default function App() {
         onOpenChange={(open) => !open && closeOverlay()}
         onChanged={reload}
       />
-      <BookDialog
-        editionId={overlay?.name === "book" ? overlay.editionId : null}
-        onClose={closeOverlay}
-        onChanged={reload}
-      />
+      {!desktop && (
+        <BookDetailView
+          editionId={bookId}
+          desktop={false}
+          onClose={closeOverlay}
+          onChanged={reload}
+        />
+      )}
     </CatalogOptionsContext.Provider>
   );
 }
