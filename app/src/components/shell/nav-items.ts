@@ -29,7 +29,7 @@ export interface NavItem {
 /** The three main destinations: bottom bar on mobile, top of the sidebar on desktop. */
 export const mainNav: NavItem[] = [
   { id: "catalog", icon: LibraryBig, label: "nav.catalog", section: "catalog" },
-  { id: "check", icon: ScanBarcode, label: "nav.check", overlay: { name: "check" } },
+  { id: "check", icon: ScanBarcode, label: "nav.check", section: "check" },
   { id: "missing", icon: Bookmark, label: "nav.missing", section: "missing" },
 ];
 

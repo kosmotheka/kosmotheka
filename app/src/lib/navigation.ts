@@ -5,20 +5,20 @@ import { useSyncExternalStore } from "react";
 // as users expect: back closes the open menu, sheet or dialog first, then
 // returns to the previous section.
 //
-// - The section is the URL hash: `#/`, `#/missing`, `#/help`.
+// - The section is the URL hash: `#/`, `#/check`, `#/missing`, `#/help`.
 // - An overlay (drawer, sheet, dialog) is a history entry on top of its section,
 //   with its name and data in `history.state`. Opening pushes an entry; closing
 //   goes back one; navigating from inside an overlay replaces the entry, so the
 //   overlay closes without leaving a step behind.
 
-export type Section = "catalog" | "missing" | "help";
+export type Section = "catalog" | "check" | "missing" | "help";
 
 export type Overlay =
   | { name: "drawer" }
   | { name: "libraries" }
   | { name: "devices" }
   | { name: "settings" }
-  | { name: "check" }
+  | { name: "filters" }
   | { name: "burst" }
   | { name: "add"; prefill?: { isbn?: string; title?: string; author?: string }; wishId?: string }
   | { name: "book"; editionId: string };
@@ -28,7 +28,12 @@ export interface Location {
   overlay: Overlay | null;
 }
 
-const SECTIONS: Record<string, Section> = { "": "catalog", missing: "missing", help: "help" };
+const SECTIONS: Record<string, Section> = {
+  "": "catalog",
+  check: "check",
+  missing: "missing",
+  help: "help",
+};
 const CHANGE = "library:navigate";
 
 function read(): Location {
@@ -75,6 +80,12 @@ export function openOverlay(overlay: Overlay) {
   if (snapshot.overlay) window.history.replaceState({ overlay }, "", url);
   else window.history.pushState({ overlay }, "", url);
   refresh();
+}
+
+/** Leaves a section the way the back button would, or goes home if there is nowhere to go back to. */
+export function leaveSection() {
+  if (window.history.length > 1) window.history.back();
+  else navigate("catalog");
 }
 
 /** Closes the open overlay, as the back button would. */

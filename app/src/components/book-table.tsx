@@ -1,17 +1,9 @@
 import { useTranslation } from "react-i18next";
 
 import { Cover } from "@/components/cover";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { BookSummary } from "@/lib/api";
 
+/** The catalog on desktop. Rows are buttons, so the keyboard can open them too. */
 export function BookTable({
   books,
   onOpen,
@@ -20,77 +12,63 @@ export function BookTable({
   onOpen: (book: BookSummary) => void;
 }) {
   const { t } = useTranslation();
+  const row = "flex items-center gap-4 px-3";
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-12">
-            <span className="sr-only">{t("book.cover")}</span>
-          </TableHead>
-          <TableHead>{t("catalog.columns.title")}</TableHead>
-          <TableHead>{t("catalog.columns.authors")}</TableHead>
-          <TableHead className="hidden md:table-cell">
-            {t("catalog.columns.year")}
-          </TableHead>
-          <TableHead>{t("catalog.columns.formats")}</TableHead>
-          <TableHead className="hidden md:table-cell">
-            {t("catalog.columns.owners")}
-          </TableHead>
-          <TableHead className="text-right">
-            {t("catalog.columns.copies")}
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {books.map((book) => (
-          <TableRow
-            key={book.editionId}
-            className="cursor-pointer"
-            onClick={() => onOpen(book)}
-          >
-            <TableCell>
-              <Cover file={book.cover} alt="" className="h-12 w-8" />
-            </TableCell>
-            <TableCell className="whitespace-normal">
-              <button
-                type="button"
-                className="text-left font-medium hover:underline"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpen(book);
-                }}
-              >
-                {book.title}
-              </button>
-              {book.subtitle && (
-                <div className="text-sm text-muted-foreground">
-                  {book.subtitle}
-                </div>
-              )}
-            </TableCell>
-            <TableCell className="whitespace-normal">
+    <div role="table" className="text-[13px]">
+      <div
+        role="row"
+        className={`${row} h-9 border-b text-xs font-medium text-muted-foreground`}
+      >
+        <span className="w-10 shrink-0" role="columnheader">
+          <span className="sr-only">{t("book.cover")}</span>
+        </span>
+        <span role="columnheader" className="min-w-0 flex-[2.4]">
+          {t("catalog.columns.title")}
+        </span>
+        <span role="columnheader" className="w-24 shrink-0">
+          {t("catalog.columns.type")}
+        </span>
+        <span role="columnheader" className="w-11 shrink-0">
+          {t("catalog.columns.year")}
+        </span>
+        <span role="columnheader" className="w-36 shrink-0">
+          {t("catalog.columns.formats")}
+        </span>
+        <span role="columnheader" className="min-w-0 flex-[1.4]">
+          {t("catalog.columns.owners")}
+        </span>
+      </div>
+      {books.map((book) => (
+        <button
+          key={book.editionId}
+          type="button"
+          role="row"
+          className={`${row} h-14 w-full border-b text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none`}
+          onClick={() => onOpen(book)}
+        >
+          <span className="flex w-10 shrink-0 justify-center">
+            <Cover file={book.cover} alt="" className="h-11 w-[30px]" />
+          </span>
+          <span className="flex min-w-0 flex-[2.4] flex-col gap-0.5">
+            <span className="truncate text-sm font-medium">{book.title}</span>
+            <span className="truncate text-xs text-muted-foreground">
               {book.authors.join(", ")}
-            </TableCell>
-            <TableCell className="hidden md:table-cell">
-              {book.publishedYear}
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-wrap gap-1">
-                {book.formats.map((format) => (
-                  <Badge key={format} variant="secondary">
-                    {t(`formats.${format}`)}
-                  </Badge>
-                ))}
-              </div>
-            </TableCell>
-            <TableCell className="hidden whitespace-normal md:table-cell">
-              {book.owners.join(", ")}
-            </TableCell>
-            <TableCell className="text-right">{book.copyCount}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </span>
+          </span>
+          <span className="w-24 shrink-0 text-muted-foreground">{t("types.book")}</span>
+          <span className="w-11 shrink-0 text-muted-foreground tabular-nums">
+            {book.publishedYear}
+          </span>
+          <span className="w-36 shrink-0 truncate">
+            {book.formats.map((format) => t(`formats.${format}`)).join(", ")}
+          </span>
+          <span className="min-w-0 flex-[1.4] truncate text-muted-foreground">
+            {book.owners.join(", ")}
+            {book.copyCount > 1 && ` · ${t("catalog.copies", { count: book.copyCount })}`}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }

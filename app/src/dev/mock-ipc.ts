@@ -51,7 +51,7 @@ const lan: LanStatus = {
   clients: [],
 };
 
-mockIPC((cmd) => {
+mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books":
       return books;
@@ -65,6 +65,15 @@ mockIPC((cmd) => {
       return { received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 }, sent: 0 };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
+    // Any ISBN starting with 97884 is "not owned"; lookups always fail, as if offline.
+    case "check_isbn": {
+      const isbn = String((args as { isbn: string }).isbn).replace(/\D/g, "");
+      return isbn.startsWith("97884")
+        ? { isbn13: isbn, books: [], wishes: [] }
+        : { isbn13: isbn, books: [books[0]], wishes: [] };
+    }
+    case "lookup_isbn":
+      throw new Error("offline");
     case "get_settings":
       return { googleBooksApiKey: null };
     default:

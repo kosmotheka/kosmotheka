@@ -4,7 +4,7 @@ import { Plus, ScanBarcode, Search, Zap } from "lucide-react";
 import { type useSyncStatus, SyncStatus } from "@/components/shell/sync-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { openOverlay } from "@/lib/navigation";
+import { navigate, openOverlay } from "@/lib/navigation";
 
 /** Desktop top bar: search, sync state and the main actions. */
 export function TopBar({
@@ -36,7 +36,7 @@ export function TopBar({
       <span className="flex-1" />
       <SyncStatus status={sync} asButton />
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "check" })}>
+      <Button variant="outline" size="lg" onClick={() => navigate("check")}>
         <ScanBarcode /> {t("nav.scan")}
       </Button>
       <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>

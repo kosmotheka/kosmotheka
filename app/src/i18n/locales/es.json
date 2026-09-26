@@ -3,25 +3,25 @@
     "title": "Biblioteca"
   },
   "catalog": {
-    "count_one": "{{count}} libro",
-    "count_other": "{{count}} libros",
     "loading": "Cargando el catálogo…",
     "add": "Añadir libro",
     "added": "«{{title}}» se ha añadido al catálogo.",
     "addedCopy": "Ya teníais esta edición de «{{title}}»: se le ha añadido un ejemplar más.",
     "empty": {
-      "title": "El catálogo está vacío",
-      "body": "Añade tu primer libro para empezar."
+      "title": "{{library}} está vacía",
+      "body": "Busca por título o código, escanea con la cámara o importa una hoja de cálculo que ya tengas.",
+      "add": "Añadir lo primero"
     },
     "columns": {
       "title": "Título",
-      "authors": "Autores",
       "year": "Año",
       "formats": "Formatos",
-      "owners": "Propietarios",
-      "copies": "Ejemplares"
+      "owners": "Dónde · de quién",
+      "type": "Tipo"
     },
-    "coverFailed": "No se pudo descargar la portada."
+    "coverFailed": "No se pudo descargar la portada.",
+    "copies_one": "{{count}} ejemplar",
+    "copies_other": "{{count}} ejemplares"
   },
   "formats": {
     "hardcover": "Tapa dura",
@@ -167,7 +167,13 @@
     "clear": "Quitar filtros",
     "results_one": "{{count}} resultado",
     "results_other": "{{count}} resultados",
-    "noResults": "Ningún libro coincide con la búsqueda."
+    "noResults": "Prueba a quitar algún filtro o a buscar otra cosa.",
+    "open": "Filtros",
+    "description": "Filtra el catálogo por formato, propietario y ubicación.",
+    "done": "Hecho",
+    "remove": "Quitar el filtro {{filter}}",
+    "closeSearch": "Cerrar la búsqueda",
+    "noResultsTitle": "Nada con estos filtros"
   },
   "data": {
     "title": "Tus datos",
@@ -234,19 +240,25 @@
     "wishes_other": "Deseos ({{count}})"
   },
   "check": {
-    "open": "¿Lo tengo?",
-    "title": "¿Lo tengo ya?",
     "description": "Escanea o escribe un ISBN. La respuesta sale del catálogo de este dispositivo, así que funciona sin cobertura.",
     "scan": "Escanear código de barras",
     "check": "Comprobar",
-    "youHaveIt": "Sí, lo tenéis",
-    "notInCatalog": "No está en vuestro catálogo",
+    "youHaveIt": "Lo tienes",
+    "notInCatalog": "No lo tienes",
     "lookingUp": "Buscándolo online…",
-    "wishTitle": "Título, para añadirlo a deseos",
-    "addWish": "Añadir a deseos",
-    "alreadyWished": "Ya está en la lista de deseos.",
-    "addToCatalog": "Lo he comprado: añadir al catálogo",
-    "cameraDenied": "La app necesita permiso de cámara para escanear. Actívalo en los ajustes del móvil."
+    "wishTitle": "Título para acordarte",
+    "addWish": "Apuntar como me falta",
+    "alreadyWished": "Ya está en Me falta.",
+    "addToCatalog": "Lo he comprado",
+    "cameraDenied": "La app necesita permiso de cámara para escanear. Actívalo en los ajustes del móvil.",
+    "inLibrary": "En {{library}}",
+    "notInLibrary": "No está en {{library}}",
+    "openBook": "Ver ficha",
+    "scanAnother": "Escanear otro",
+    "checkAnother": "Comprobar otro",
+    "offline": "Sin conexión no se pueden ver sus datos.",
+    "offlineHint": "Apúntalo con un título; ya lo completarás cuando vuelva la red.",
+    "savedIn": "Se apunta en {{library}}"
   },
   "wishes": {
     "empty": {
@@ -297,5 +309,11 @@
   "help": {
     "title": "Ayuda",
     "soon": "La sección de ayuda está en camino. Mientras tanto, cada mensaje de problema de la app explica qué ha pasado y qué hacer."
+  },
+  "types": {
+    "book": "Libro"
+  },
+  "common": {
+    "close": "Cerrar"
   }
 }

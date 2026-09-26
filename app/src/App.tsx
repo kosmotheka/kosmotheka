@@ -5,9 +5,8 @@ import { CircleCheck } from "lucide-react";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { BookDialog } from "@/components/book-dialog";
 import { BurstDialog } from "@/components/burst-dialog";
-import { isFiltering } from "@/components/catalog-filters";
+import { FilterPanel, isFiltering } from "@/components/catalog-filters";
 import { CatalogOptionsContext, emptyOptions } from "@/components/catalog-options";
-import { CheckDialog } from "@/components/check-dialog";
 import { DevicesDialog } from "@/components/devices-dialog";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { AppBar } from "@/components/shell/app-bar";
@@ -31,8 +30,9 @@ import {
   listWishes,
   syncWith,
 } from "@/lib/api";
-import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
+import { closeOverlay, navigate, useLocation } from "@/lib/navigation";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
+import { CheckPage } from "@/pages/check-page";
 import { HelpPage } from "@/pages/help-page";
 import { MissingPage } from "@/pages/missing-page";
 
@@ -56,6 +56,7 @@ export default function App() {
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const [searching, setSearching] = useState(false);
   const sync = useSyncStatus(version);
 
   // Until several libraries exist (roadmap phase 4), there is only this one.
@@ -123,21 +124,27 @@ export default function App() {
 
   const focusSearch = () => {
     navigate("catalog");
+    setSearching(true);
     setTimeout(() => document.getElementById("catalog-search")?.focus(), 50);
   };
 
   const page =
     section === "missing" ? (
       <MissingPage wishes={wishes} desktop={desktop} onChanged={reload} />
+    ) : section === "check" ? (
+      <CheckPage library={library} desktop={desktop} onChanged={reload} />
     ) : section === "help" ? (
       <HelpPage />
     ) : (
       <CatalogPage
         state={state}
+        library={library}
         filter={filter}
         onFilterChange={setFilter}
         filtering={filtering}
         desktop={desktop}
+        searching={searching}
+        onSearchingChange={setSearching}
       />
     );
 
@@ -162,7 +169,10 @@ export default function App() {
             <TopBar
               library={library}
               query={filter.query ?? ""}
-              onQueryChange={(query) => setFilter({ ...filter, query })}
+              onQueryChange={(query) => {
+                setFilter({ ...filter, query });
+                if (section !== "catalog") navigate("catalog");
+              }}
               sync={sync}
             />
             <main className="flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
@@ -170,7 +180,9 @@ export default function App() {
         </div>
       ) : (
         <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-          <AppBar library={library} sync={sync} onSearch={focusSearch} />
+          {section !== "check" && (
+            <AppBar library={library} sync={sync} onSearch={focusSearch} />
+          )}
           <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
           <BottomNav section={section} />
           <NavDrawer
@@ -187,6 +199,12 @@ export default function App() {
         desktop={desktop}
         library={library}
         count={counts.catalog}
+      />
+      <FilterPanel
+        open={overlay?.name === "filters"}
+        desktop={desktop}
+        filter={filter}
+        onChange={setFilter}
       />
       {overlay?.name === "add" && (
         <AddBookDialog
@@ -209,13 +227,6 @@ export default function App() {
       <DevicesDialog
         open={overlay?.name === "devices"}
         onOpenChange={(open) => !open && closeOverlay()}
-        onChanged={reload}
-      />
-      <CheckDialog
-        open={overlay?.name === "check"}
-        onOpenChange={(open) => !open && closeOverlay()}
-        onOpenBook={(editionId) => openOverlay({ name: "book", editionId })}
-        onAddToCatalog={(prefill) => openOverlay({ name: "add", prefill })}
         onChanged={reload}
       />
       <BookDialog

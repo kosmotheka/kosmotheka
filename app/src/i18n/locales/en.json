@@ -3,25 +3,25 @@
     "title": "Library"
   },
   "catalog": {
-    "count_one": "{{count}} book",
-    "count_other": "{{count}} books",
     "loading": "Loading the catalog…",
     "add": "Add book",
     "added": "“{{title}}” was added to the catalog.",
     "addedCopy": "You already had this edition of “{{title}}”: a new copy was added to it.",
     "empty": {
-      "title": "The catalog is empty",
-      "body": "Add your first book to get started."
+      "title": "{{library}} is empty",
+      "body": "Search by title or code, scan with the camera or import a spreadsheet you already have.",
+      "add": "Add the first one"
     },
     "columns": {
       "title": "Title",
-      "authors": "Authors",
       "year": "Year",
       "formats": "Formats",
-      "owners": "Owners",
-      "copies": "Copies"
+      "owners": "Where · whose",
+      "type": "Type"
     },
-    "coverFailed": "The cover could not be downloaded."
+    "coverFailed": "The cover could not be downloaded.",
+    "copies_one": "{{count}} copy",
+    "copies_other": "{{count}} copies"
   },
   "formats": {
     "hardcover": "Hardcover",
@@ -167,7 +167,13 @@
     "clear": "Clear filters",
     "results_one": "{{count}} result",
     "results_other": "{{count}} results",
-    "noResults": "No book matches this search."
+    "noResults": "Try removing a filter or searching for something else.",
+    "open": "Filters",
+    "description": "Filter the catalog by format, owner and location.",
+    "done": "Done",
+    "remove": "Remove the {{filter}} filter",
+    "closeSearch": "Close search",
+    "noResultsTitle": "Nothing matches these filters"
   },
   "data": {
     "title": "Your data",
@@ -234,19 +240,25 @@
     "wishes_other": "Wishlist ({{count}})"
   },
   "check": {
-    "open": "Do I have it?",
-    "title": "Do I already have it?",
     "description": "Scan or type an ISBN. The answer comes from the catalog on this device, so it works without coverage.",
     "scan": "Scan barcode",
     "check": "Check",
-    "youHaveIt": "Yes, you have it",
-    "notInCatalog": "Not in your catalog",
+    "youHaveIt": "You have it",
+    "notInCatalog": "You don't have it",
     "lookingUp": "Looking it up online…",
-    "wishTitle": "Title, to add it to the wishlist",
-    "addWish": "Add to wishlist",
-    "alreadyWished": "It is on the wishlist.",
-    "addToCatalog": "I bought it: add to catalog",
-    "cameraDenied": "The app needs camera permission to scan. Allow it in the phone's settings."
+    "wishTitle": "A title to remember it by",
+    "addWish": "Mark as missing",
+    "alreadyWished": "Already in Missing.",
+    "addToCatalog": "I bought it",
+    "cameraDenied": "The app needs camera permission to scan. Allow it in the phone's settings.",
+    "inLibrary": "In {{library}}",
+    "notInLibrary": "Not in {{library}}",
+    "openBook": "Open",
+    "scanAnother": "Scan another",
+    "checkAnother": "Check another",
+    "offline": "Offline, its details cannot be looked up.",
+    "offlineHint": "Note it down with a title; you can complete it when you are back online.",
+    "savedIn": "Saved in {{library}}"
   },
   "wishes": {
     "empty": {
@@ -297,5 +309,11 @@
   "help": {
     "title": "Help",
     "soon": "The help section is on its way. Meanwhile, every problem message in the app explains what happened and what to do."
+  },
+  "types": {
+    "book": "Book"
+  },
+  "common": {
+    "close": "Close"
   }
 }

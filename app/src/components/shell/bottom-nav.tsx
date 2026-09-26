@@ -4,10 +4,7 @@ import { go, mainNav } from "@/components/shell/nav-items";
 import { type Section } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-/**
- * Mobile bottom bar with three destinations. "Do I have it?" sits in the middle
- * as the raised main action: it opens the camera flow, not a section.
- */
+/** Mobile bottom bar with three destinations; "Do I have it?" is the raised one in the middle. */
 export function BottomNav({ section }: { section: Section }) {
   const { t } = useTranslation();
   const [catalog, check, missing] = mainNav;
@@ -52,6 +49,7 @@ export function BottomNav({ section }: { section: Section }) {
         {tab(catalog)}
         <button
           type="button"
+          aria-current={section === "check" ? "page" : undefined}
           className="-mt-[18px] flex flex-col items-center gap-1"
           onClick={() => go(check)}
         >
