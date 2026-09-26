@@ -157,7 +157,7 @@ Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **i
 
 ### Resumen para el ROADMAP
 
-**Añadir:**
+**Añadir** (llevado al ROADMAP el 26/09/2026, commit 29c1bf4; marcas por persona en [D68](../DECISIONS.md)):
 - Estados absolutos, con «en curso» nombrado según el tipo (§3.5).
 - Valoración.
 - Favoritos.
@@ -166,7 +166,7 @@ Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **i
 - Enlaces para invitar y para ofrecer en préstamo (D67).
 - Etiquetas QR (D67).
 
-**Reconsiderar:** la reserva de regalos se mantiene, pero oculta solo en pantalla (§3.6).
+**Reconsiderar:** la reserva de regalos se mantiene, pero oculta solo en pantalla (§3.6, [D69](../DECISIONS.md)).
 
 **Ideas para el futuro:**
 - La dimensión social (§3.3).
