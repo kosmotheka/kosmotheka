@@ -108,7 +108,7 @@ El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no 
 
 ### Finalistas (26/09/2026)
 
-El maintainer se queda con **Pantheca**, **Thesorium** y **Gatherium**. Omnitheca se descarta: «todo» suena prepotente y falso, porque el catálogo está acotado. Musary y Colleo siguen como candidatos.
+Candidatos: **Pantheca**, **Thesorium** y **Gatherium**. Omnitheca se descarta: «todo» suena prepotente y falso, porque el catálogo está acotado. Musary y Colleo siguen como candidatos.
 
 Validación: dominios por RDAP, Google Play con `play-check.mjs` y TMview con `tmview-check.mjs`. Se buscaron también variantes de escritura y pronunciación, porque una marca puede chocar por parecido.
 
@@ -122,6 +122,19 @@ Validación: dominios por RDAP, Google Play con `play-check.mjs` y TMview con `t
 | **Pega** | En español se pronuncia «panteca», que suena a **pan** (panadería), y así se llaman esas marcas | .com registrado hace poco: alguien puede tener planes | El .com es una web viva con un nombre casi igual |
 
 **Dato para Gatherium:** *omnium gatherum* es una expresión inglesa que significa «colección de todo tipo de cosas». Encaja con el sentido, y explica que existan marcas parecidas.
+
+### Variantes con k (26/09/2026)
+
+Al maintainer le gusta la k. Validadas igual que los finalistas:
+
+| | Pantheka | Panteka |
+|---|---|---|
+| **.com** | **Libre** | En venta como dominio «premium» (DomainMarket, registrado en 2015) |
+| **.app** | **Libre** | Libre |
+| **Google Play** | Libre | Libre |
+| **Marcas** | Ninguna igual ni parecida | «Panteka», registrada en Francia (Swifteo SASU) en la **clase 28: juegos y juguetes**. No es una clase de conflicto, pero toca de cerca los juegos de mesa. Las demás son de alimentación y cosmética |
+
+**Pantheka es el único candidato de todas las rondas con .com y .app libres, además de Google Play y marcas limpios.** Con la k se aleja un poco de las marcas de panadería «PANTECA», aunque en español se sigue pronunciando «panteka». En alemán, *-thek* es el sufijo de *Bibliothek* y *Spielothek*, así que se lee con naturalidad.
 
 ### Descartados
 
