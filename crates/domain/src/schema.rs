@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Entity {
+    /// The unit that is shared, synced and permissioned (D54). Its id is the library id.
+    Library,
     Work,
     Person,
     WorkContributor,
@@ -57,6 +59,7 @@ const WORK_FIELDS: &[FieldSpec] = &[
     field("kind", FieldType::OneOf(&["book"]), true),
     field("title", FieldType::Text, true),
 ];
+const LIBRARY_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),
@@ -99,6 +102,7 @@ const COPY_FIELDS: &[FieldSpec] = &[
 impl Entity {
     pub fn table(self) -> &'static str {
         match self {
+            Entity::Library => "libraries",
             Entity::Work => "works",
             Entity::Person => "people",
             Entity::WorkContributor => "work_contributors",
@@ -121,6 +125,7 @@ impl Entity {
 
     pub fn fields(self) -> &'static [FieldSpec] {
         match self {
+            Entity::Library => LIBRARY_FIELDS,
             Entity::Work => WORK_FIELDS,
             Entity::Person => PERSON_FIELDS,
             Entity::WorkContributor => WORK_CONTRIBUTOR_FIELDS,

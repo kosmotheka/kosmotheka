@@ -12,8 +12,10 @@ namespace App\Enum;
 enum OperationErrorCode: string
 {
     case InvalidId = 'invalid_id';
+    case InvalidLibrary = 'invalid_library';
     case InvalidIntent = 'invalid_intent';
     case NoChanges = 'no_changes';
+    case OtherLibrary = 'other_library';
     case UnknownField = 'unknown_field';
     case MissingField = 'missing_field';
     case NullRequired = 'null_required';

@@ -13,6 +13,10 @@ use crate::error::{Error, Result};
 use crate::search;
 
 const DEVICE_ID_KEY: &str = "device_id";
+
+/// The library that holds what existed before libraries did. The same id on every
+/// device, so devices that already synced merge without duplicates (D46).
+pub const DEFAULT_LIBRARY_ID: &str = "00000000-0000-7000-8000-000000000001";
 const LAST_HLC_KEY: &str = "last_hlc";
 
 pub fn new_id() -> String {
@@ -53,6 +57,7 @@ fn record_operation(
 
     let operation = Operation {
         id: new_id(),
+        library: DEFAULT_LIBRARY_ID.to_owned(),
         hlc,
         intent: intent.to_owned(),
         changes,

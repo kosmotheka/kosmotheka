@@ -135,6 +135,7 @@ pub fn operations_since(conn: &Connection, vector: &VersionVector) -> Result<Vec
             schema_version,
             operation: Operation {
                 id,
+                library: ops::DEFAULT_LIBRARY_ID.to_owned(),
                 hlc: hlc
                     .parse()
                     .map_err(|_| crate::error::Error::CorruptState("operations.hlc"))?,

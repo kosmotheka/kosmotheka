@@ -16,6 +16,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 ```json
 {
   "id": "0199a1b2-…",
+  "library": "0199a0aa-…",
   "hlc": "0001727222222222-00000000-0199a0ff-…",
   "intent": "book.add",
   "changes": [
@@ -30,6 +31,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 | Campo | Qué es |
 |---|---|
 | `id` | UUID v7 de la operación |
+| `library` | La biblioteca a la que pertenecen todos sus cambios (D54). Un cambio no puede elegir otra; solo puede tocar la entidad `library` si es la suya |
 | `hlc` | Marca del reloj lógico híbrido (ver abajo). Incluye el identificador del dispositivo |
 | `intent` | Etiqueta de intención: palabras en minúscula separadas por puntos. **Solo informativa**: los permisos y la fusión miran los cambios, nunca la etiqueta |
 | `changes` | Cambios: entidad, id, acción (`create`, `update`, `delete`) y campos |
@@ -49,6 +51,7 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
 | `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
+| `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65; llegan con el hito 4.5) |
 
 ## Reloj lógico híbrido (HLC)
 

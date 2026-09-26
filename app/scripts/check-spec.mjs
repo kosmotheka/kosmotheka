@@ -12,7 +12,7 @@ const cases = JSON.parse(
 const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 
 const beyondSchema = (expect, name) =>
-  ["missing_field", "null_required"].includes(expect.code) ||
+  ["missing_field", "null_required", "other_library"].includes(expect.code) ||
   (expect.code === "wrong_type" && name.includes("date"));
 
 let mismatches = 0;

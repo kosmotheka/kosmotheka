@@ -7,12 +7,17 @@
   "additionalProperties": false,
   "required": [
     "id",
+    "library",
     "hlc",
     "intent",
     "changes"
   ],
   "properties": {
     "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "library": {
+      "description": "Id of the library the operation belongs to: the unit that is shared, synced and permissioned. Changes never name a library themselves.",
       "$ref": "#/$defs/uuid"
     },
     "hlc": {
@@ -78,6 +83,7 @@
       "properties": {
         "entity": {
           "enum": [
+            "library",
             "work",
             "person",
             "work_contributor",
@@ -178,6 +184,7 @@
             "properties": {
               "entity": {
                 "enum": [
+                  "library",
                   "person",
                   "member",
                   "publisher"

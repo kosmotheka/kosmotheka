@@ -16,6 +16,7 @@ use App\Dto\FieldSpec;
  */
 enum CatalogEntity: string
 {
+    case Library = 'library';
     case Work = 'work';
     case Person = 'person';
     case WorkContributor = 'work_contributor';
@@ -40,7 +41,7 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf('book'), 'title' => $text(true)],
-            self::Person, self::Member, self::Publisher => ['name' => $text(true)],
+            self::Library, self::Person, self::Member, self::Publisher => ['name' => $text(true)],
             self::WorkContributor => [
                 'work_id' => $ref(true),
                 'person_id' => $ref(true),

@@ -13,6 +13,8 @@ use crate::schema::{Entity, FieldSpec, FieldType};
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Operation {
     pub id: String,
+    /// The library every change belongs to (D54).
+    pub library: String,
     pub hlc: Hlc,
     /// What the user meant, e.g. `book.add`. Informative only: permissions and
     /// merging look at the changes, never at the label.
@@ -42,8 +44,10 @@ pub enum Action {
 #[serde(rename_all = "snake_case")]
 pub enum OperationErrorCode {
     InvalidId,
+    InvalidLibrary,
     InvalidIntent,
     NoChanges,
+    OtherLibrary,
     UnknownField,
     MissingField,
     NullRequired,
@@ -103,7 +107,8 @@ impl Change {
         }
     }
 
-    fn validate(&self) -> Result<(), OperationError> {
+    /// `library` is the operation's own: the only library a change may touch.
+    fn validate(&self, library: &str) -> Result<(), OperationError> {
         use OperationErrorCode::*;
         let fail = |code, field: Option<&str>| OperationError {
             code,
@@ -113,6 +118,9 @@ impl Change {
 
         if Uuid::parse_str(&self.id).is_err() {
             return Err(fail(InvalidId, None));
+        }
+        if self.entity == Entity::Library && self.id != library {
+            return Err(fail(OtherLibrary, None));
         }
 
         match self.action {
@@ -167,6 +175,9 @@ impl Operation {
         if Uuid::parse_str(&self.id).is_err() {
             return Err(OperationError::new(OperationErrorCode::InvalidId));
         }
+        if Uuid::parse_str(&self.library).is_err() {
+            return Err(OperationError::new(OperationErrorCode::InvalidLibrary));
+        }
         if !is_valid_intent(&self.intent) {
             return Err(OperationError::new(OperationErrorCode::InvalidIntent));
         }
@@ -174,10 +185,12 @@ impl Operation {
             return Err(OperationError::new(OperationErrorCode::NoChanges));
         }
         for (index, change) in self.changes.iter().enumerate() {
-            change.validate().map_err(|error| OperationError {
-                change: Some(index),
-                ..error
-            })?;
+            change
+                .validate(&self.library)
+                .map_err(|error| OperationError {
+                    change: Some(index),
+                    ..error
+                })?;
         }
         Ok(())
     }
@@ -266,6 +279,7 @@ mod tests {
     fn serializes_to_the_documented_shape() {
         let op = Operation {
             id: "01997c7e-0000-7000-8000-000000000001".into(),
+            library: "01997c7e-0000-7000-8000-00000000aaaa".into(),
             hlc: "0001727222222222-00000000-dev".parse().unwrap(),
             intent: "member.add".into(),
             changes: vec![Change::create(
@@ -279,6 +293,7 @@ mod tests {
             serde_json::to_value(&op).unwrap(),
             json!({
                 "id": "01997c7e-0000-7000-8000-000000000001",
+                "library": "01997c7e-0000-7000-8000-00000000aaaa",
                 "hlc": "0001727222222222-00000000-dev",
                 "intent": "member.add",
                 "changes": [{

@@ -7,6 +7,7 @@ namespace App\Validator;
 use App\Dto\ChangePayload;
 use App\Dto\FieldSpec;
 use App\Dto\OperationPayload;
+use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\FieldType;
 use App\Enum\OperationErrorCode;
@@ -38,6 +39,11 @@ final class ValidOperationValidator extends ConstraintValidator
 
             return;
         }
+        if (!$this->isUuid($value->library)) {
+            $this->report(OperationErrorCode::InvalidLibrary, 'library');
+
+            return;
+        }
         if (1 !== preg_match(self::INTENT, $value->intent)) {
             $this->report(OperationErrorCode::InvalidIntent, 'intent');
 
@@ -49,19 +55,24 @@ final class ValidOperationValidator extends ConstraintValidator
             return;
         }
         foreach ($value->changes as $index => $change) {
-            if ($this->validateChange($change, "changes[$index]")) {
+            if ($this->validateChange($change, $value->library, "changes[$index]")) {
                 return;
             }
         }
     }
 
     /**
+     * @param string $library the operation's own, the only library a change may touch
+     *
      * @return bool whether a violation was reported
      */
-    private function validateChange(ChangePayload $change, string $path): bool
+    private function validateChange(ChangePayload $change, string $library, string $path): bool
     {
         if (!$this->isUuid($change->id)) {
             return $this->report(OperationErrorCode::InvalidId, "$path.id");
+        }
+        if (CatalogEntity::Library === $change->entity && $change->id !== $library) {
+            return $this->report(OperationErrorCode::OtherLibrary, "$path.id");
         }
         if (ChangeAction::Delete === $change->action && [] !== $change->fields) {
             return $this->report(OperationErrorCode::FieldsOnDelete, "$path.fields");

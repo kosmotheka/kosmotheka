@@ -30,6 +30,7 @@ final readonly class OperationPayload
      */
     public function __construct(
         public string $id,
+        public string $library,
         #[Assert\Regex('/^[0-9]{16}-[0-9a-f]{8}-.+$/', message: 'Not a hybrid logical clock timestamp.')]
         public string $hlc,
         public string $intent,
