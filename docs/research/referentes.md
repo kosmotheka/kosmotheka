@@ -136,3 +136,11 @@ Cada idea se clasifica como **añadir**, **reconsiderar** algo ya previsto o **i
 - **Valoración: añadir.** «Este me ha encantado».
 - **Favoritos: añadir, aparte de la valoración.** Un favorito sirve como filtro y puede tener una puntuación más baja que otros: lo que valoro y lo que tengo como favorito son cosas distintas.
 - **Géneros, temáticas y etiquetas: añadir** (sin comentarios en contra).
+
+### 3.6 Revisión de lo anotado: préstamos y compartir (26/09/2026)
+
+- **Red de préstamo entre amigos: añadir.** Los dos ven el préstamo y el amigo puede pedirlo. Hoy la Fase 9 solo apunta los préstamos de un lado.
+- **Enlaces para invitar y para ofrecer algo en préstamo: añadir.** La regla ya está decidida (D67).
+- **Reservar un ejemplar prestado: idea para el futuro.**
+- **Bibliotecas públicas que se descubren buscando: idea para el futuro**, junto a la dimensión social (§3.3).
+- **Reserva de regalos oculta: en debate.**
