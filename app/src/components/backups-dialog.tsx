@@ -57,7 +57,7 @@ export function BackupsDialog({
 
   const backup = () =>
     run(async () => {
-      const path = await save({ defaultPath: `library-${today()}.zip`, filters: zip });
+      const path = await save({ defaultPath: `kosmotheka-${today()}.zip`, filters: zip });
       if (!path) return null;
       return t("data.backupDone", { ...(await exportBackup(path)) });
     });
@@ -73,7 +73,7 @@ export function BackupsDialog({
 
   const toCsv = () =>
     run(async () => {
-      const path = await save({ defaultPath: `library-${today()}.csv`, filters: csv });
+      const path = await save({ defaultPath: `kosmotheka-${today()}.csv`, filters: csv });
       if (!path) return null;
       return t("data.csvExported", { count: await exportCsv(path) });
     });

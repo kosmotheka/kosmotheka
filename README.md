@@ -56,7 +56,7 @@ cargo test
 cd app && npm run typecheck && npm run lint && npm run check:spec
 ```
 
-Tests against the real online services are opt-in: `cargo test -p library-app -- --ignored live_`.
+Tests against the real online services are opt-in: `cargo test -p kosmotheka -- --ignored live_`.
 
 The server runs in Docker; no PHP is needed on the host. See [`docs/development/server.md`](docs/development/server.md):
 

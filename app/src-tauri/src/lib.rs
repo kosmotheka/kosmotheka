@@ -81,12 +81,12 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-/// In debug builds `LIBRARY_DATA_DIR` points a second instance at its own data, so
+/// In debug builds `KOSMOTHEKA_DATA_DIR` points a second instance at its own data, so
 /// two copies of the app on one computer can sync with each other. Otherwise the
 /// app's own folder, carried over from the old identifier the first time (D70).
 fn data_dir(default: std::path::PathBuf) -> error::Result<std::path::PathBuf> {
     #[cfg(debug_assertions)]
-    if let Some(dir) = std::env::var_os("LIBRARY_DATA_DIR") {
+    if let Some(dir) = std::env::var_os("KOSMOTHEKA_DATA_DIR") {
         return Ok(dir.into());
     }
     if let Some(legacy) = data_folder::legacy_dir(&default) {

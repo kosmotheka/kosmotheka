@@ -325,7 +325,7 @@ async fn find_among(fingerprint: &str, device_id: &str, candidates: Vec<String>)
 mod tests {
     use std::sync::Mutex;
 
-    use library_domain::{CopyInput, EditionInput, Format, ValidBook};
+    use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook};
     use tokio::net::TcpListener;
 
     use super::*;

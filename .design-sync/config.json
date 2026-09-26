@@ -1,7 +1,7 @@
 {
   "projectId": "4f788ac3-0772-4890-aae9-8f805bf471fb",
   "shape": "package",
-  "pkg": "library-app",
+  "pkg": "kosmotheka",
   "globalName": "Library",
   "buildCmd": "sh .design-sync/prepare.sh",
   "srcDir": "src/components/ui",

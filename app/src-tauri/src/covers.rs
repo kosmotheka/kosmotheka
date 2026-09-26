@@ -25,7 +25,7 @@ impl Covers {
         &self.dir
     }
 
-    /// Downloads an already validated URL (see `library_domain::parse_cover_url`)
+    /// Downloads an already validated URL (see `kosmotheka_domain::parse_cover_url`)
     /// and returns the stored file name.
     pub async fn download(&self, client: &reqwest::Client, url: &Url) -> Result<String> {
         let response = client.get(url.clone()).send().await?.error_for_status()?;

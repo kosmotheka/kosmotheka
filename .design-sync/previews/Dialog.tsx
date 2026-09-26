@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label } from 'library-app';
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label } from 'kosmotheka';
 
 export const EditLocation = () => (
   <Dialog open>

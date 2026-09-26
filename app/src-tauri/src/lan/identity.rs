@@ -35,7 +35,7 @@ impl Identity {
 
     pub fn generate() -> Result<Self> {
         let key = rcgen::KeyPair::generate().map_err(|_| Error::Tls("key generation"))?;
-        let params = rcgen::CertificateParams::new(vec!["library.local".to_owned()])
+        let params = rcgen::CertificateParams::new(vec!["kosmotheka.local".to_owned()])
             .map_err(|_| Error::Tls("certificate parameters"))?;
         let cert = params
             .self_signed(&key)

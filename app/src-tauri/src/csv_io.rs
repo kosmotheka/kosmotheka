@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use library_domain::{CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook};
+use kosmotheka_domain::{CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 

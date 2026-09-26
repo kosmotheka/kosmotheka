@@ -1,4 +1,4 @@
-import { Alert, AlertAction, AlertDescription, AlertTitle, Button } from 'library-app';
+import { Alert, AlertAction, AlertDescription, AlertTitle, Button } from 'kosmotheka';
 import { InfoIcon, WifiOffIcon, TriangleAlertIcon } from 'lucide-react';
 
 export const Information = () => (

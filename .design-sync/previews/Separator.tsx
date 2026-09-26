@@ -1,4 +1,4 @@
-import { Separator } from 'library-app';
+import { Separator } from 'kosmotheka';
 
 export const Horizontal = () => (
   <div className="w-72 text-sm">

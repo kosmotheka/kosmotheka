@@ -16,11 +16,11 @@ node .design-sync/postprocess-css.mjs "$CACHE/ds.css"
 rm -rf "$CACHE/files"
 cp -r app/node_modules/@fontsource-variable/geist/files "$CACHE/files"
 
-# 2. A node_modules view where the app itself is the "library-app" package,
+# 2. A node_modules view where the app itself is the "kosmotheka" package,
 #    so the converter resolves it (and its dependencies) by name.
 rm -rf "$NM"
 mkdir -p "$NM"
 for entry in app/node_modules/* app/node_modules/.bin; do
   ln -s "$(realpath "$entry")" "$NM/$(basename "$entry")"
 done
-ln -s "$(realpath app)" "$NM/library-app"
+ln -s "$(realpath app)" "$NM/kosmotheka"

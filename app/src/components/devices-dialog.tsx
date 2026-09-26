@@ -203,7 +203,7 @@ export function DevicesDialog({ open, onOpenChange, onChanged }: Props) {
           <div className="flex gap-2">
             <Input
               aria-label={t("devices.code")}
-              placeholder="LIBRARY1:…"
+              placeholder="KOSMOTHEKA1:…"
               value={codeInput}
               onChange={(e) => setCodeInput(e.target.value)}
               className="font-mono text-xs"

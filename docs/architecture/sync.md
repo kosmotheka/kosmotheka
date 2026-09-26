@@ -66,7 +66,7 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Identidad.** Cada dispositivo genera la primera vez un certificado propio (ECDSA P-256) y lo guarda en su carpeta de datos (`sync-cert.der` y `sync-key.der`, esta última legible solo por el usuario). Su huella SHA-256 es lo que el otro dispositivo fija.
 
-**Código de emparejamiento** (`LIBRARY1:` + JSON en base64url, también como QR): identificador y nombre del dispositivo, sus direcciones `ip:puerto` en la red local, la huella del certificado y un **secreto de un solo uso** que caduca a los 10 minutos.
+**Código de emparejamiento** (`KOSMOTHEKA1:` + JSON en base64url, también como QR): identificador y nombre del dispositivo, sus direcciones `ip:puerto` en la red local, la huella del certificado y un **secreto de un solo uso** que caduca a los 10 minutos.
 
 **Emparejar** (`POST /v1/pair`):
 1. El que se conecta prueba las direcciones del código hasta que una responde. Solo acepta el certificado cuya huella viene en el código: cualquier otro se rechaza como impostor.
@@ -88,7 +88,7 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Emparejar desde el móvil.** El escritorio muestra el QR; el móvil lo escanea con la cámara (el mismo plugin que lee los ISBN, D35) y empareja sin teclear nada.
 
-**Probar con dos instancias en un mismo equipo.** En las compilaciones de desarrollo, la variable `LIBRARY_DATA_DIR` hace que una segunda instancia use otra carpeta de datos (ver `docs/testing/fase-2.md`).
+**Probar con dos instancias en un mismo equipo.** En las compilaciones de desarrollo, la variable `KOSMOTHEKA_DATA_DIR` hace que una segunda instancia use otra carpeta de datos (ver `docs/testing/fase-2.md`).
 
 ## Excepción a «toda escritura es una operación»
 

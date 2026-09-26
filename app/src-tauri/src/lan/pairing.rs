@@ -6,7 +6,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde::{Deserialize, Serialize};
 
-const PREFIX: &str = "LIBRARY1:";
+const PREFIX: &str = "KOSMOTHEKA1:";
 pub const PAIRING_WINDOW: Duration = Duration::from_secs(10 * 60);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -71,7 +71,7 @@ mod tests {
 
         assert!(text.starts_with(PREFIX));
         assert_eq!(PairingCode::decode(&format!("  {text}\n")), Some(code));
-        assert_eq!(PairingCode::decode("LIBRARY1:not-base64!"), None);
+        assert_eq!(PairingCode::decode("KOSMOTHEKA1:not-base64!"), None);
         assert_eq!(PairingCode::decode("hello"), None);
     }
 

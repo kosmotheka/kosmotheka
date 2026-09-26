@@ -61,7 +61,7 @@ Son **avisos**, nunca errores: el alta sigue siendo posible a mano.
 
 | Código | Nivel | Mensaje | Qué hacer |
 |---|---|---|---|
-| `bad_code` | error | Eso no es un código de emparejamiento. | Copia el código completo (empieza por `LIBRARY1:`), o mejor, escanea el QR. |
+| `bad_code` | error | Eso no es un código de emparejamiento. | Copia el código completo (empieza por `KOSMOTHEKA1:`), o mejor, escanea el QR. |
 | `same_device` | error | Ese código es de este mismo dispositivo. | El código se muestra en un dispositivo y se escanea o pega en **otro**. |
 | `unreachable` (al emparejar) | error | No se encuentra el otro dispositivo. | Ver la guía **«El móvil no se empareja»** (abajo). **Botón:** «Ver qué revisar». |
 | `unreachable` (al sincronizar) | aviso | No se pudo sincronizar con {nombre}: no está en la red. | Normal si estás fuera de casa o el otro está apagado; se sincronizará solo cuando coincidáis. Si estáis en la misma wifi, ver la guía. |

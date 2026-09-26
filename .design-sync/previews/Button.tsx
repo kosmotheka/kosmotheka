@@ -1,4 +1,4 @@
-import { Button } from 'library-app';
+import { Button } from 'kosmotheka';
 import { PlusIcon, ScanLineIcon, Trash2Icon, SettingsIcon } from 'lucide-react';
 
 export const Variants = () => (

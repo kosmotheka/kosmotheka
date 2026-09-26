@@ -1,6 +1,6 @@
 //! The wishlist (D36) and the offline "do I already have it?" check.
 
-use library_domain::{Change, Entity, FieldError, Isbn, ValidWish};
+use kosmotheka_domain::{Change, Entity, FieldError, Isbn, ValidWish};
 use rusqlite::Connection;
 use serde::Serialize;
 use serde_json::json;
@@ -112,7 +112,7 @@ fn query_wishes<P: rusqlite::Params>(conn: &Connection, sql: &str, params: P) ->
 
 #[cfg(test)]
 mod tests {
-    use library_domain::{CopyInput, EditionInput, Format, ValidBook, WishInput};
+    use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook, WishInput};
 
     use super::*;
     use crate::db;

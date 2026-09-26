@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Tersoal/library/spec/operation.schema.json",
+  "$id": "https://kosmotheka.app/spec/operation.schema.json",
   "title": "Operation",
   "description": "An atomic batch of entity changes with an intent label. Every write to the catalog is one operation.",
   "type": "object",

@@ -1,4 +1,4 @@
-import { Badge } from 'library-app';
+import { Badge } from 'kosmotheka';
 
 export const Variants = () => (
   <div className="flex flex-wrap items-center gap-2">

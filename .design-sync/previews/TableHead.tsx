@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from 'library-app';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from 'kosmotheka';
 
 export const InTable = () => (
   <Table className="w-96">

@@ -186,7 +186,7 @@
     "restore": "Restore backup",
     "exportCsv": "Export CSV",
     "importCsv": "Import CSV",
-    "backupFile": "Library backup",
+    "backupFile": "Kosmotheka backup",
     "backupDone": "Backup saved: {{books}} books, {{copies}} copies, {{covers}} covers.",
     "restoreDone": "Restored {{books}} books, {{copies}} copies and {{covers}} covers.",
     "csvExported_one": "Exported {{count}} row.",

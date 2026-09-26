@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use library_domain::{Action, Change, Entity, Isbn};
+use kosmotheka_domain::{Action, Change, Entity, Isbn};
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::error::Result;

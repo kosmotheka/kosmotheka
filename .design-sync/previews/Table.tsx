@@ -1,4 +1,4 @@
-import { Badge, Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from 'library-app';
+import { Badge, Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from 'kosmotheka';
 
 const rows = [
   { title: 'The Name of the Wind', author: 'Patrick Rothfuss', year: 2007, formats: ['Hardcover', 'Ebook'], owner: 'Tersoal' },

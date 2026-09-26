@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from 'library-app';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'kosmotheka';
 
 export const ItemDetails = () => (
   <Tabs defaultValue="details" className="w-80">

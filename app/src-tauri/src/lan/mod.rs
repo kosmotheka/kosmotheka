@@ -320,7 +320,7 @@ pub fn forget_device(conn: &Connection, device_id: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use library_domain::Operation;
+    use kosmotheka_domain::Operation;
 
     use super::*;
 

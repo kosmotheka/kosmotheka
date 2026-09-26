@@ -1,7 +1,7 @@
 //! Google Books volumes API. Works without a key, but anonymous requests share a
 //! global quota and often get 429; an optional per-user key fixes that (D26).
 
-use library_domain::Isbn;
+use kosmotheka_domain::Isbn;
 use reqwest::StatusCode;
 use serde_json::Value;
 

@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 
-use library_domain::{Change, Entity};
+use kosmotheka_domain::{Change, Entity};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
@@ -33,7 +33,9 @@ const CONTENTS: [Entity; 9] = [
     Entity::Wish,
 ];
 
-const FORMAT: &str = "library-backup";
+const FORMAT: &str = "kosmotheka-backup";
+/// What backups were called before the app was named Kosmotheka (D70).
+const LEGACY_FORMAT: &str = "library-backup";
 /// 2: one library per backup (D46).
 const VERSION: u32 = 2;
 const DATA_FILE: &str = "backup.json";
@@ -129,7 +131,7 @@ pub fn restore(
             .read_to_string(&mut data)?;
         serde_json::from_str(&data).map_err(|_| Error::BadBackup("unreadable"))?
     };
-    if backup.format != FORMAT || backup.version != VERSION {
+    if ![FORMAT, LEGACY_FORMAT].contains(&backup.format.as_str()) || backup.version != VERSION {
         return Err(Error::BadBackup("not_a_backup"));
     }
     if backup.schema_version != schema_version(conn)? {
@@ -255,7 +257,7 @@ fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use library_domain::{CopyInput, EditionInput, Format, ValidBook};
+    use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook};
 
     use super::*;
     use crate::catalog::{self, BookFilter};
@@ -264,7 +266,7 @@ mod tests {
 
     fn temp(name: &str) -> std::path::PathBuf {
         let dir =
-            std::env::temp_dir().join(format!("library-backup-{name}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("kosmotheka-backup-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir

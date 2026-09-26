@@ -1,4 +1,4 @@
-import { Input, Label } from 'library-app';
+import { Input, Label } from 'kosmotheka';
 
 export const WithLabel = () => (
   <div className="grid w-72 gap-2">

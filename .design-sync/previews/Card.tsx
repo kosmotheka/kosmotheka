@@ -1,4 +1,4 @@
-import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from 'library-app';
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from 'kosmotheka';
 import { RefreshCwIcon } from 'lucide-react';
 
 export const BookCard = () => (

@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from 'library-app';
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from 'kosmotheka';
 
 export const Actions = () => (
   <Dialog open>

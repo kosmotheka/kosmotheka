@@ -1,4 +1,4 @@
-use library_domain::{FieldError, OperationError};
+use kosmotheka_domain::{FieldError, OperationError};
 use serde::{Serialize, Serializer};
 
 #[derive(Debug, thiserror::Error)]

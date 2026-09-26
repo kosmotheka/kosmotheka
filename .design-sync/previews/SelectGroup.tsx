@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from 'library-app';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from 'kosmotheka';
 
 export const InOpenSelect = () => (
   <Select open defaultValue="switch">

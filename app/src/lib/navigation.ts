@@ -35,7 +35,7 @@ const SECTIONS: Record<string, Section> = {
   missing: "missing",
   help: "help",
 };
-const CHANGE = "library:navigate";
+const CHANGE = "kosmotheka:navigate";
 
 function read(): Location {
   const path = window.location.hash.replace(/^#\/?/, "");

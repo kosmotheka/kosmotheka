@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use library_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
+use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
@@ -380,7 +380,7 @@ fn now_millis() -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use library_domain::{CopyInput, EditionInput, Format, ValidBook, ValidEdition};
+    use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook, ValidEdition};
 
     use super::*;
     use crate::catalog::{self, BookFilter};
@@ -731,7 +731,7 @@ mod tests {
     fn wishes_noted_on_the_phone_reach_the_desktop() {
         let mut desk = Device::new();
         let mut phone = Device::new();
-        let wish = library_domain::WishInput {
+        let wish = kosmotheka_domain::WishInput {
             title: "Tehanu".into(),
             ..Default::default()
         }

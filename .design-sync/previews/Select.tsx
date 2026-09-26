@@ -1,4 +1,4 @@
-import { Label, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from 'library-app';
+import { Label, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from 'kosmotheka';
 
 export const Closed = () => (
   <div className="grid w-60 gap-2">

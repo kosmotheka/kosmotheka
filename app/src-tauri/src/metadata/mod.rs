@@ -6,7 +6,7 @@ pub mod openlibrary;
 
 use std::time::Duration;
 
-use library_domain::Isbn;
+use kosmotheka_domain::Isbn;
 use serde::Serialize;
 
 /// What one provider knows about an edition.
@@ -107,9 +107,9 @@ impl Lookup {
 pub fn http_client() -> reqwest::Result<reqwest::Client> {
     reqwest::Client::builder()
         .user_agent(concat!(
-            "LibraryApp/",
+            "Kosmotheka/",
             env!("CARGO_PKG_VERSION"),
-            " (+https://github.com/Tersoal/library)"
+            " (+https://kosmotheka.app)"
         ))
         .timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
@@ -274,7 +274,7 @@ mod tests {
 }
 
 /// Hit the real services. Not run by default (CI must not depend on the network):
-/// `cargo test -p library-app -- --ignored --nocapture live_`
+/// `cargo test -p kosmotheka -- --ignored --nocapture live_`
 #[cfg(test)]
 mod live {
     use super::*;
@@ -298,9 +298,10 @@ mod live {
     async fn live_cover_download() {
         let dir = std::env::temp_dir().join(format!("library-live-covers-{}", std::process::id()));
         let covers = crate::covers::Covers::new(dir).unwrap();
-        let url =
-            library_domain::parse_cover_url("https://covers.openlibrary.org/b/id/15152634-L.jpg")
-                .unwrap();
+        let url = kosmotheka_domain::parse_cover_url(
+            "https://covers.openlibrary.org/b/id/15152634-L.jpg",
+        )
+        .unwrap();
 
         let name = covers
             .download(&http_client().unwrap(), &url)

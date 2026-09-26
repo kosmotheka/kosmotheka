@@ -1,7 +1,7 @@
 //! Open Library. The edition comes from `/isbn/{isbn}.json` (the old `/api/books`
 //! endpoint is gone); author names need one request per author.
 
-use library_domain::Isbn;
+use kosmotheka_domain::Isbn;
 use reqwest::StatusCode;
 use serde_json::Value;
 

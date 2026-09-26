@@ -3,7 +3,7 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use library_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
+use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation};
 use rusqlite::types::Value as SqlValue;
 use rusqlite::{Connection, OptionalExtension, Transaction, params, params_from_iter};
 use serde_json::Value;
@@ -327,7 +327,7 @@ fn now_millis() -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use library_domain::{Entity, OperationErrorCode};
+    use kosmotheka_domain::{Entity, OperationErrorCode};
     use serde_json::json;
 
     use super::*;

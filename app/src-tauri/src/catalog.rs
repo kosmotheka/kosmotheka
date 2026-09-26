@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use library_domain::{
+use kosmotheka_domain::{
     Change, Entity, ErrorCode, FieldError, Format, Hlc, ValidBook, ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
@@ -766,7 +766,7 @@ fn split_list(joined: Option<String>) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use library_domain::{CopyInput, EditionInput, NewBook};
+    use kosmotheka_domain::{CopyInput, EditionInput, NewBook};
 
     use super::*;
     use crate::db;

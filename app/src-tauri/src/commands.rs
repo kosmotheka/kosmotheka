@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use library_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook, WishInput};
+use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook, WishInput};
 use serde::Serialize;
 use tauri::State;
 use url::Url;

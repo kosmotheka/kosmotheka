@@ -8,10 +8,10 @@ La prueba más cómoda del 2.1 no necesita el móvil: dos copias de la app en tu
 
 1. En una terminal del contenedor: `cd app && npm run tauri dev` (instancia **A**, con tus datos de siempre).
 2. En otra terminal del contenedor, con la primera abierta:
-   `LIBRARY_DATA_DIR=/tmp/library-b ~/Proyectos/personales/library/target/debug/library-app` (instancia **B**, vacía).
+   `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b ~/Proyectos/personales/library/target/debug/kosmotheka` (instancia **B**, vacía).
 3. Las dos ventanas se llaman «Library». Para distinguirlas, pon nombres distintos en «Dispositivos» → nombre de este dispositivo.
 
-> En la instancia B no se ven las portadas: el permiso para mostrarlas apunta a la carpeta de datos normal. Solo ocurre con `LIBRARY_DATA_DIR`, que existe únicamente en las compilaciones de desarrollo.
+> En la instancia B no se ven las portadas: el permiso para mostrarlas apunta a la carpeta de datos normal. Solo ocurre con `KOSMOTHEKA_DATA_DIR`, que existe únicamente en las compilaciones de desarrollo.
 > Para empezar B desde cero: ciérrala y borra `/tmp/library-b`.
 
 ## 2.0 · Motor de sincronización
@@ -20,7 +20,7 @@ La prueba más cómoda del 2.1 no necesita el móvil: dos copias de la app en tu
 
 ## 2.1 · Sincronización por la red local
 
-- [ ] **Mostrar el código.** En A → icono de dispositivos (pantalla y móvil) → «Mostrar código de emparejamiento». *Esperado:* un QR y un texto que empieza por `LIBRARY1:`, con botón para copiarlo. En Windows, el cortafuegos puede preguntar: permítelo en redes privadas.
+- [ ] **Mostrar el código.** En A → icono de dispositivos (pantalla y móvil) → «Mostrar código de emparejamiento». *Esperado:* un QR y un texto que empieza por `KOSMOTHEKA1:`, con botón para copiarlo. En Windows, el cortafuegos puede preguntar: permítelo en redes privadas.
 - [ ] **Emparejar.** Copia el texto → en B → Dispositivos → pégalo → «Emparejar». *Esperado:* «Emparejado con … Recibidos N cambios, enviados 0», y la tabla de B muestra los libros de A.
 - [ ] **El código solo vale una vez.** Intenta emparejar otra vez con el mismo texto (por ejemplo, desde una tercera instancia con otra carpeta). *Esperado:* «El otro dispositivo lo ha rechazado…».
 - [ ] **Cambios en los dos sentidos.** Añade un libro en B → Dispositivos → «Sincronizar ahora». *Esperado:* «recibidos 0, enviados 1»; en A aparece el libro (quizá tengas que cerrar y abrir Dispositivos o cambiar el filtro para refrescar la tabla).

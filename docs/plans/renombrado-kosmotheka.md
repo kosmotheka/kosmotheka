@@ -95,7 +95,9 @@ Cada etapa deja todo funcionando y es un commit aparte (o varios).
   - Lección: la vista web crea su carpeta de datos antes de que arranque la app, así que la copia se decide por «¿hay base de datos?», no por «¿existe la carpeta?».
   - El fichero de la base de datos sigue llamándose `library.sqlite3` (interno, no se ve); el tema de Android `Theme.library_app` sale del nombre del *crate* y cambia en la etapa 3.
 - [ ] Etapa 2: AAB firmado para Play Console.
-- [ ] Etapa 3: código.
+- [x] **Etapa 3** (26/09/2026): *crates* `kosmotheka` (lib `kosmotheka_lib`) y `kosmotheka-domain`; paquete npm `kosmotheka` (también en `.design-sync`, cuyo proyecto de Design sigue exponiendo `window.Library`); `KOSMOTHEKA_DATA_DIR`; tema de Android `Theme.kosmotheka`; artefacto de CI; User-Agent y `$id` del spec con `kosmotheka.app`; código de emparejamiento `KOSMOTHEKA1:`, `APP_ID` y certificado nuevo `kosmotheka.local`; copias `kosmotheka-backup` (se siguen aceptando las `library-backup`); nombres de fichero de copias y CSV; comandos en `AGENTS.md`, README y guías.
+  - **Sin subir la versión del esquema:** el formato de las operaciones no cambia, así que una versión anterior y la nueva siguen sincronizándose. Lo único que cambia es el código de emparejamiento: uno antiguo se rechaza como «no es un código de emparejamiento» y basta con generar otro.
+  - Tras cambiar el nombre de la biblioteca nativa, hay que borrar a mano `gen/android/app/src/main/jniLibs/**/liblibrary_app_lib.so` (ignorado por git) o la APK lleva las dos.
 - [ ] Etapa 4: servidor.
 - [ ] Etapa 5: repositorio.
 - [ ] Etapa 6: documentación.

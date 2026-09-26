@@ -100,7 +100,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: library-windows-x64
+          name: kosmotheka-windows-x64
           path: target/release/*.exe
           if-no-files-found: error
           retention-days: 14

@@ -1,6 +1,6 @@
 [package]
-name = "library-domain"
-description = "Domain model and validation for the household library"
+name = "kosmotheka-domain"
+description = "Domain model and validation for Kosmotheka"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

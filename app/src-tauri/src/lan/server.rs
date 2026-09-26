@@ -27,7 +27,7 @@ use crate::error::Result;
 use crate::ops;
 use crate::sync::{self, MergeReport};
 
-pub const APP_ID: &str = "library";
+pub const APP_ID: &str = "kosmotheka";
 
 #[derive(Clone)]
 pub struct ServerState {
