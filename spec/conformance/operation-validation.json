@@ -918,5 +918,53 @@
       "change": 0,
       "field": "device_id"
     }
+  },
+  {
+    "name": "device registers its own key",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000122",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.register",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ff",
+          "action": "create",
+          "fields": {
+            "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+            "name": "Portátil"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "device registers another device",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000123",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.register",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ee",
+          "action": "create",
+          "fields": {
+            "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+            "name": "Portátil"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "other_device",
+      "change": 0
+    }
   }
 ]

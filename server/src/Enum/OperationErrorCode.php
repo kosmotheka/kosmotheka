@@ -16,6 +16,7 @@ enum OperationErrorCode: string
     case InvalidIntent = 'invalid_intent';
     case NoChanges = 'no_changes';
     case OtherLibrary = 'other_library';
+    case OtherDevice = 'other_device';
     case UnknownField = 'unknown_field';
     case MissingField = 'missing_field';
     case NullRequired = 'null_required';

@@ -20,6 +20,10 @@ pub struct Operation {
     /// merging look at the changes, never at the label.
     pub intent: String,
     pub changes: Vec<Change>,
+    /// Ed25519 signature of the author device over the rest of the operation
+    /// (D56, see `signature`). Operations from before phase 5 have none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signature: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -48,6 +52,7 @@ pub enum OperationErrorCode {
     InvalidIntent,
     NoChanges,
     OtherLibrary,
+    OtherDevice,
     UnknownField,
     MissingField,
     NullRequired,
@@ -108,7 +113,8 @@ impl Change {
     }
 
     /// `library` is the operation's own: the only library a change may touch.
-    fn validate(&self, library: &str) -> Result<(), OperationError> {
+    /// `device` is its author, the only device that may register itself.
+    fn validate(&self, library: &str, device: &str) -> Result<(), OperationError> {
         use OperationErrorCode::*;
         let fail = |code, field: Option<&str>| OperationError {
             code,
@@ -121,6 +127,10 @@ impl Change {
         }
         if self.entity == Entity::Library && self.id != library {
             return Err(fail(OtherLibrary, None));
+        }
+        // A device registers its own key, signing with it: that proves it holds it.
+        if self.entity == Entity::Device && self.action == Action::Create && self.id != device {
+            return Err(fail(OtherDevice, None));
         }
 
         match self.action {
@@ -186,7 +196,7 @@ impl Operation {
         }
         for (index, change) in self.changes.iter().enumerate() {
             change
-                .validate(&self.library)
+                .validate(&self.library, &self.hlc.device)
                 .map_err(|error| OperationError {
                     change: Some(index),
                     ..error
@@ -287,6 +297,7 @@ mod tests {
                 "01997c7e-0000-7000-8000-000000000002",
                 json!({ "name": "Tersoal" }),
             )],
+            signature: None,
         };
 
         assert_eq!(

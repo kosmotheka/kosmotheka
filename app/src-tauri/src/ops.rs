@@ -69,6 +69,7 @@ fn record_operation(
         hlc,
         intent: intent.to_owned(),
         changes,
+        signature: None,
     };
     operation.validate()?;
     let hlc_text = operation.hlc.to_string();

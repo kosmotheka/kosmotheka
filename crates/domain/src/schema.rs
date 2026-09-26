@@ -19,6 +19,9 @@ pub enum Entity {
     Wish,
     /// A device whose access to the library was withdrawn (D71).
     Revocation,
+    /// A device that writes to the library, with the public key its operations
+    /// are signed with (D56). Its id is the device id.
+    Device,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,6 +99,10 @@ const REVOCATION_FIELDS: &[FieldSpec] = &[
     field("device_id", FieldType::Text, true),
     field("device_name", FieldType::Text, true),
 ];
+const DEVICE_FIELDS: &[FieldSpec] = &[
+    field("public_key", FieldType::Text, true),
+    field("name", FieldType::Text, true),
+];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -119,6 +126,7 @@ impl Entity {
             Entity::Publisher => "publishers",
             Entity::Wish => "wishes",
             Entity::Revocation => "revocations",
+            Entity::Device => "devices",
         }
     }
 
@@ -151,6 +159,7 @@ impl Entity {
             Entity::Publisher => PUBLISHER_FIELDS,
             Entity::Wish => WISH_FIELDS,
             Entity::Revocation => REVOCATION_FIELDS,
+            Entity::Device => DEVICE_FIELDS,
         }
     }
 

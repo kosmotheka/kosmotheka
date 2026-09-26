@@ -187,6 +187,7 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                         .map_err(|_| crate::error::Error::CorruptState("operations.hlc"))?,
                     intent,
                     changes: serde_json::from_str(&changes)?,
+                    signature: None,
                 },
             });
         }

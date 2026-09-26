@@ -31,7 +31,7 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 | `Validator/` | Custom constraints and their validators (`ValidOperation`) |
 | `Security/` | Authenticators and voters (Phase 7) |
 | `Command/` | Console commands |
-| `Sync/` | *Planned (3.1).* The engine that applies operations to the catalog tables: the port of `sync::merge` |
+| `Sync/` | Everything about applying operations from clients. Today: `OperationSignature` (checks the author's Ed25519 signature, port of `crates/domain/src/signature.rs`) and its exception. *Planned (Phase 7):* the engine that applies operations to the catalog tables, the port of `sync::merge` |
 
 `Enum/`, `Dto/`, `Repository/` and `Validator/` are standard Symfony convention and are used without asking. If something fits no folder and is not a plain utility, **ask before inventing a category**. An engine folder like `Sync/` is legitimate (Riddle has `Generator/`), but it gets documented here and in `docs/architecture/` when it is created.
 
@@ -46,7 +46,8 @@ Operations are the contract with every client, so their rules are defined in `sp
 | Shape of an operation | `Dto/OperationPayload.php`, `Dto/ChangePayload.php` |
 | Entities and their fields (mirror of `schema.rs`) | `Enum/CatalogEntity.php` |
 | Spec rules and error codes | `Validator/ValidOperation.php` and its validator; codes in `Enum/OperationErrorCode.php` |
-| Conformance cases | `tests/Validator/ValidOperationValidatorTest.php` |
+| Signatures (D56) | `Sync/OperationSignature.php`; codes in `Enum/SignatureErrorCode.php` |
+| Conformance cases | `tests/Validator/ValidOperationValidatorTest.php` and `tests/Sync/OperationSignatureTest.php` |
 
 It is split in two layers, as in the Rust client. The **Serializer** rejects anything without the shape of an operation (missing or unknown keys, wrong JSON types, unknown entity or action). The **`ValidOperation` constraint** applies the spec rules.
 

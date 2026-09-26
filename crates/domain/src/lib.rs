@@ -7,6 +7,7 @@ pub mod isbn;
 pub mod library;
 pub mod operation;
 pub mod schema;
+pub mod signature;
 pub mod wish;
 
 pub use book::{
@@ -18,4 +19,5 @@ pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;
 pub use operation::{Action, Change, Operation, OperationError, OperationErrorCode};
 pub use schema::{Entity, FieldSpec, FieldType};
+pub use signature::{DeviceKey, SignatureError, canonical_bytes, verify};
 pub use wish::{ValidWish, WishInput};

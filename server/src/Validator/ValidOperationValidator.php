@@ -55,7 +55,7 @@ final class ValidOperationValidator extends ConstraintValidator
             return;
         }
         foreach ($value->changes as $index => $change) {
-            if ($this->validateChange($change, $value->library, "changes[$index]")) {
+            if ($this->validateChange($change, $value->library, $this->author($value->hlc), "changes[$index]")) {
                 return;
             }
         }
@@ -63,16 +63,20 @@ final class ValidOperationValidator extends ConstraintValidator
 
     /**
      * @param string $library the operation's own, the only library a change may touch
+     * @param string $device  the operation's author, the only device that may register itself
      *
      * @return bool whether a violation was reported
      */
-    private function validateChange(ChangePayload $change, string $library, string $path): bool
+    private function validateChange(ChangePayload $change, string $library, string $device, string $path): bool
     {
         if (!$this->isUuid($change->id)) {
             return $this->report(OperationErrorCode::InvalidId, "$path.id");
         }
         if (CatalogEntity::Library === $change->entity && $change->id !== $library) {
             return $this->report(OperationErrorCode::OtherLibrary, "$path.id");
+        }
+        if (CatalogEntity::Device === $change->entity && ChangeAction::Create === $change->action && $change->id !== $device) {
+            return $this->report(OperationErrorCode::OtherDevice, "$path.id");
         }
         if (ChangeAction::Delete === $change->action && [] !== $change->fields) {
             return $this->report(OperationErrorCode::FieldsOnDelete, "$path.fields");
@@ -117,6 +121,14 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::OneOf => \in_array($value, $spec->allowed, true),
             FieldType::Ref => \is_string($value) && $this->isUuid($value),
         };
+    }
+
+    /**
+     * The device in a hybrid logical clock timestamp: what follows the time and the counter.
+     */
+    private function author(string $hlc): string
+    {
+        return explode('-', $hlc, 3)[2] ?? '';
     }
 
     private function isUuid(string $value): bool

@@ -35,6 +35,9 @@ final readonly class OperationPayload
         public string $hlc,
         public string $intent,
         public array $changes,
+        /** Ed25519 signature of the author device (D56); none on operations from before phase 5. */
+        #[Assert\Regex('/^[A-Za-z0-9_-]{86}$/', message: 'Not an Ed25519 signature in base64url.')]
+        public ?string $signature = null,
     ) {
     }
 }

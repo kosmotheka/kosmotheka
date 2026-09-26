@@ -36,6 +36,11 @@
       "items": {
         "$ref": "#/$defs/change"
       }
+    },
+    "signature": {
+      "description": "Ed25519 signature by the device in the hlc over the operation without this field, in canonical JSON (RFC 8785); base64url without padding. Operations from before signatures existed have none.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
     }
   },
   "$defs": {
@@ -93,7 +98,8 @@
             "copy",
             "publisher",
             "wish",
-            "revocation"
+            "revocation",
+            "device"
           ]
         },
         "id": {
@@ -402,6 +408,30 @@
                     "type": "string"
                   },
                   "device_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "device"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "public_key": {
+                    "type": "string"
+                  },
+                  "name": {
                     "type": "string"
                   }
                 }
