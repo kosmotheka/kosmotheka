@@ -7,6 +7,7 @@ mod data_folder;
 mod db;
 mod error;
 mod lan;
+mod libraries;
 mod metadata;
 mod ops;
 mod search;
@@ -75,7 +76,14 @@ pub fn run() {
             commands::list_wishes,
             commands::delete_wish,
             commands::check_isbn,
-            commands::is_mobile
+            commands::is_mobile,
+            commands::list_libraries,
+            commands::create_library,
+            commands::rename_library,
+            commands::set_active_library,
+            commands::delete_library,
+            commands::leave_library,
+            commands::move_book
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

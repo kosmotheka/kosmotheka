@@ -150,6 +150,8 @@ pub enum ErrorCode {
     InvalidCoverUrl,
     /// Not one of the known copy formats (only possible when importing files).
     InvalidFormat,
+    /// Another library on this device already has this name.
+    NameInUse,
 }
 
 impl From<IsbnError> for ErrorCode {

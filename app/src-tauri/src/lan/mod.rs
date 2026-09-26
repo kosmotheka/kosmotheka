@@ -107,7 +107,7 @@ pub fn device_name(conn: &Connection) -> Result<String> {
         .trim()
         .to_owned();
     Ok(if host.is_empty() || host == "localhost" {
-        "Library".to_owned()
+        "Kosmotheka".to_owned()
     } else {
         host
     })

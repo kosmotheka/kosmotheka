@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use kosmotheka_domain::{
-    Change, Entity, ErrorCode, FieldError, Format, Hlc, ValidBook, ValidCopy, ValidEdition,
+    Change, CopyInput, EditionInput, Entity, ErrorCode, FieldError, Format, Hlc, ValidBook,
+    ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -28,6 +29,8 @@ pub struct CreatedBook {
 #[serde(rename_all = "camelCase")]
 pub struct BookSummary {
     pub edition_id: String,
+    /// The library the book is in: searches across libraries mix them.
+    pub library_id: String,
     pub title: String,
     pub subtitle: Option<String>,
     pub authors: Vec<String>,
@@ -219,11 +222,77 @@ pub fn delete_copy(conn: &mut Connection, library: &str, copy_id: &str) -> Resul
 /// People and members stay: they are catalogues of their own.
 pub fn delete_book(conn: &mut Connection, library: &str, edition_id: &str) -> Result<()> {
     let tx = conn.transaction()?;
-    let work_id = work_of(&tx, library, edition_id)?;
+    delete_book_in(&tx, library, edition_id, "book.remove")?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Moves a book to another library (D46): it is created there with new ids, since
+/// the tombstones left in the origin must not stop it from coming back one day,
+/// and removed from the origin, where its history stays. An edition with the same
+/// ISBN in the destination gets the copies instead. Returns the new edition id.
+pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) -> Result<String> {
+    let book = get_book(conn, from, edition_id)?;
+    let edition = EditionInput {
+        title: book.title,
+        subtitle: book.subtitle,
+        authors: book.authors,
+        publisher: book.publisher,
+        published_year: book.published_year,
+        language: book.language,
+        isbn: book.isbn13,
+        cover_url: None,
+        google_books_id: book.google_books_id,
+        open_library_id: book.open_library_id,
+    }
+    .validate()
+    .map_err(Error::Validation)?;
+    let copies = book
+        .copies
+        .into_iter()
+        .map(|copy| {
+            CopyInput {
+                owner: copy.owner,
+                format: copy.format,
+                quantity: copy.quantity as u32,
+                location: copy.location,
+                acquired_on: copy.acquired_on,
+            }
+            .validate()
+            .map_err(Error::Validation)
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let tx = conn.transaction()?;
+    let mut plan = Plan::new(&tx, to);
+    let new_edition = match &edition.isbn {
+        Some(isbn) => edition_with_isbn(&tx, to, isbn.as_str())?,
+        None => None,
+    };
+    let new_edition = match new_edition {
+        Some(id) => id,
+        None => plan.add_edition(&edition, book.cover.as_deref())?,
+    };
+    for copy in &copies {
+        plan.add_copy(&new_edition, copy)?;
+    }
+    plan.record("book.move_in")?;
+    delete_book_in(&tx, from, edition_id, "book.move_out")?;
+    tx.commit()?;
+    Ok(new_edition)
+}
+
+fn delete_book_in(
+    tx: &Transaction<'_>,
+    library: &str,
+    edition_id: &str,
+    intent: &str,
+) -> Result<()> {
+    let work_id = work_of(tx, library, edition_id)?;
 
     // Children before parents, so every change finds its row.
     let mut changes: Vec<Change> = ids(
-        &tx,
+        tx,
         "SELECT id FROM copies WHERE library_id = ?1 AND edition_id = ?2",
         library,
         edition_id,
@@ -231,7 +300,7 @@ pub fn delete_book(conn: &mut Connection, library: &str, edition_id: &str) -> Re
     .into_iter()
     .map(|id| Change::delete(Entity::Copy, id))
     .collect();
-    if exists(&tx, library, Entity::BookDetails, edition_id)? {
+    if exists(tx, library, Entity::BookDetails, edition_id)? {
         changes.push(Change::delete(Entity::BookDetails, edition_id));
     }
     changes.push(Change::delete(Entity::Edition, edition_id));
@@ -244,7 +313,7 @@ pub fn delete_book(conn: &mut Connection, library: &str, edition_id: &str) -> Re
     if other_editions == 0 {
         changes.extend(
             ids(
-                &tx,
+                tx,
                 "SELECT id FROM work_contributors WHERE library_id = ?1 AND work_id = ?2",
                 library,
                 &work_id,
@@ -255,8 +324,7 @@ pub fn delete_book(conn: &mut Connection, library: &str, edition_id: &str) -> Re
         changes.push(Change::delete(Entity::Work, &work_id));
     }
 
-    ops::record(&tx, library, "book.remove", changes)?;
-    tx.commit()?;
+    ops::record(tx, library, intent, changes)?;
     Ok(())
 }
 
@@ -596,7 +664,7 @@ pub fn list_books(
     let where_clause = format!("WHERE {}", conditions.join(" AND "));
 
     let mut statement = conn.prepare(&format!(
-        "SELECT e.id, e.title, e.subtitle, pu.name, e.published_year, bd.isbn13, e.cover,
+        "SELECT e.id, e.library_id, e.title, e.subtitle, pu.name, e.published_year, bd.isbn13, e.cover,
             (SELECT group_concat(p.name, char(31) ORDER BY wc.position)
                FROM work_contributors wc
                JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
@@ -619,22 +687,36 @@ pub fn list_books(
     let rows = statement.query_map(params_from_iter(args), |row| {
         Ok(BookSummary {
             edition_id: row.get(0)?,
-            title: row.get(1)?,
-            subtitle: row.get(2)?,
-            publisher: row.get(3)?,
-            published_year: row.get(4)?,
-            isbn13: row.get(5)?,
-            cover: row.get(6)?,
-            authors: split_list(row.get(7)?),
-            copy_count: row.get(8)?,
-            formats: split_list(row.get(9)?)
+            library_id: row.get(1)?,
+            title: row.get(2)?,
+            subtitle: row.get(3)?,
+            publisher: row.get(4)?,
+            published_year: row.get(5)?,
+            isbn13: row.get(6)?,
+            cover: row.get(7)?,
+            authors: split_list(row.get(8)?),
+            copy_count: row.get(9)?,
+            formats: split_list(row.get(10)?)
                 .iter()
                 .filter_map(|format| format.parse().ok())
                 .collect(),
-            owners: split_list(row.get(10)?),
+            owners: split_list(row.get(11)?),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
+/// Books of every library on the device, library by library.
+pub fn list_books_everywhere(conn: &Connection, filter: &BookFilter) -> Result<Vec<BookSummary>> {
+    let libraries: Vec<String> = conn
+        .prepare("SELECT id FROM libraries ORDER BY name COLLATE NOCASE, id")?
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut books = Vec::new();
+    for library in libraries {
+        books.extend(list_books(conn, &library, filter)?);
+    }
+    Ok(books)
 }
 
 /// Values already in the catalog, for autocompletion and filters.

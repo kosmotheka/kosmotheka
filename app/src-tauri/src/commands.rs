@@ -15,6 +15,7 @@ use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
+use crate::libraries::{self, LibrarySummary};
 use crate::metadata::{Lookup, LookupResult};
 use crate::ops;
 use crate::settings::{self, Settings};
@@ -109,10 +110,15 @@ pub async fn lookup_isbn(
 pub fn list_books(
     database: State<'_, Database>,
     filter: Option<BookFilter>,
+    everywhere: Option<bool>,
 ) -> Result<Vec<BookSummary>> {
     let conn = database.lock()?;
+    let filter = filter.unwrap_or_default();
+    if everywhere.unwrap_or(false) {
+        return catalog::list_books_everywhere(&conn, &filter);
+    }
     let library = ops::active_library(&conn)?;
-    catalog::list_books(&conn, &library, &filter.unwrap_or_default())
+    catalog::list_books(&conn, &library, &filter)
 }
 
 #[tauri::command]
@@ -197,9 +203,13 @@ pub fn export_backup(
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
+    library: Option<String>,
 ) -> Result<BackupSummary> {
     let conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
+    let library = match library {
+        Some(library) => library,
+        None => ops::active_library(&conn)?,
+    };
     backup::export(&conn, &library, &covers, Path::new(&path))
 }
 
@@ -302,7 +312,47 @@ pub fn delete_wish(database: State<'_, Database>, id: String) -> Result<()> {
 #[tauri::command]
 pub fn check_isbn(database: State<'_, Database>, isbn: String) -> Result<IsbnCheck> {
     let conn = database.lock()?;
-    wishes::check_isbn(&conn, &ops::active_library(&conn)?, &isbn)
+    wishes::check_isbn(&conn, &isbn)
+}
+
+// --- Libraries ------------------------------------------------------------------
+
+#[tauri::command]
+pub fn list_libraries(database: State<'_, Database>) -> Result<Vec<LibrarySummary>> {
+    libraries::list_libraries(&*database.lock()?)
+}
+
+#[tauri::command]
+pub fn create_library(database: State<'_, Database>, name: String) -> Result<String> {
+    libraries::create_library(&mut *database.lock()?, &name)
+}
+
+#[tauri::command]
+pub fn rename_library(database: State<'_, Database>, id: String, name: String) -> Result<()> {
+    libraries::rename_library(&mut *database.lock()?, &id, &name)
+}
+
+#[tauri::command]
+pub fn set_active_library(database: State<'_, Database>, id: String) -> Result<()> {
+    libraries::set_active_library(&*database.lock()?, &id)
+}
+
+#[tauri::command]
+pub fn delete_library(database: State<'_, Database>, id: String) -> Result<String> {
+    libraries::delete_library(&mut *database.lock()?, &id)
+}
+
+#[tauri::command]
+pub fn leave_library(database: State<'_, Database>, id: String) -> Result<String> {
+    libraries::leave_library(&mut *database.lock()?, &id)
+}
+
+/// Moves a book from the active library to `to`. Returns its new edition id.
+#[tauri::command]
+pub fn move_book(database: State<'_, Database>, edition_id: String, to: String) -> Result<String> {
+    let mut conn = database.lock()?;
+    let from = ops::active_library(&conn)?;
+    catalog::move_book(&mut conn, &from, &edition_id, &to)
 }
 
 /// The UI shows the camera scanner only where the plugin exists (D35).

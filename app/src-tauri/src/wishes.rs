@@ -75,7 +75,8 @@ pub fn list_wishes(conn: &Connection, library: &str) -> Result<Vec<Wish>> {
     )
 }
 
-pub fn check_isbn(conn: &Connection, library: &str, raw: &str) -> Result<IsbnCheck> {
+/// Looks in every library on the device: "do I have it?" is about the household, not one list.
+pub fn check_isbn(conn: &Connection, raw: &str) -> Result<IsbnCheck> {
     let isbn = Isbn::parse(raw)
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
     let filter = BookFilter {
@@ -84,12 +85,12 @@ pub fn check_isbn(conn: &Connection, library: &str, raw: &str) -> Result<IsbnChe
     };
     Ok(IsbnCheck {
         isbn13: isbn.as_str().to_owned(),
-        books: catalog::list_books(conn, library, &filter)?,
+        books: catalog::list_books_everywhere(conn, &filter)?,
         wishes: query_wishes(
             conn,
             "SELECT id, title, author, isbn13, note, cover_url, created_at FROM wishes
-              WHERE library_id = ?1 AND isbn13 = ?2 ORDER BY created_at",
-            [library, isbn.as_str()],
+              WHERE isbn13 = ?1 ORDER BY created_at",
+            [isbn.as_str()],
         )?,
     })
 }
@@ -168,17 +169,14 @@ mod tests {
         catalog::create_book(&mut conn, LIB, &book, None).unwrap();
         add_wish(&mut conn, LIB, &wish("Wanted", Some("9780140328721"))).unwrap();
 
-        let owned = check_isbn(&conn, LIB, "0-306-40615-2").unwrap();
+        let owned = check_isbn(&conn, "0-306-40615-2").unwrap();
         assert_eq!(owned.books.len(), 1);
         assert_eq!(owned.books[0].owners, vec!["Ana"]);
 
-        let wanted = check_isbn(&conn, LIB, "9780140328721").unwrap();
+        let wanted = check_isbn(&conn, "9780140328721").unwrap();
         assert!(wanted.books.is_empty());
         assert_eq!(wanted.wishes.len(), 1);
 
-        assert!(matches!(
-            check_isbn(&conn, LIB, "12"),
-            Err(Error::Validation(_))
-        ));
+        assert!(matches!(check_isbn(&conn, "12"), Err(Error::Validation(_))));
     }
 }

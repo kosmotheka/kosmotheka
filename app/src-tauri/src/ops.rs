@@ -118,6 +118,10 @@ pub fn active_library(conn: &Connection) -> Result<String> {
     Ok(read_state(conn, ACTIVE_LIBRARY_KEY)?.unwrap_or_else(|| DEFAULT_LIBRARY_ID.to_owned()))
 }
 
+pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
+    write_state(conn, ACTIVE_LIBRARY_KEY, Some(library))
+}
+
 /// Appends to the log. The author device is the one inside the HLC.
 pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i64) -> Result<()> {
     conn.execute(

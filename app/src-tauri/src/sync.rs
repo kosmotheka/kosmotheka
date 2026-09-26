@@ -782,6 +782,27 @@ mod tests {
         assert_eq!(kept, "library.delete", "the delete stays on record (D66)");
     }
 
+    #[test]
+    fn a_new_library_and_its_books_reach_the_other_device() {
+        let mut a = Device::new();
+        let mut b = Device::new();
+        let rol = crate::libraries::create_library(&mut a.0, "Rol").unwrap();
+        catalog::create_book(&mut a.0, &rol, &book("Earthsea", None, "Ana"), None).unwrap();
+        a.sync_with(&mut b);
+
+        crate::libraries::rename_library(&mut b.0, &rol, "Rol de los jueves").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        a.sync_with(&mut b);
+
+        let name: String =
+            a.0.query_row("SELECT name FROM libraries WHERE id = ?1", [&rol], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(name, "Rol de los jueves");
+        assert_converged(&[&a, &b]);
+    }
+
     /// Merge cases shared with every other implementation of the spec (the PHP
     /// server included): every delivery order must end in the same rows.
     const MERGE_CASES: &str = include_str!("../../../spec/conformance/library-merge.json");
