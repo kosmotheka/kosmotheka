@@ -62,4 +62,21 @@ Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](
 - [x] 5.4 Comprobar lo que llega (27/09/2026): reglas en `crates/domain/src/permission.rs`; la app juzga lo que recibe y lo que escribe, guarda lo no permitido como petición y recalcula la biblioteca desde su registro cuando llega tarde algo con roles. Los 10 casos pasan de borrador a `spec/conformance/permissions.json`. **Corrección de los casos:** sus órdenes de llegada «al revés» desordenaban las operaciones de un mismo dispositivo, algo que la sincronización nunca hace (y con firmas, una operación llegaría antes que la clave de su autor). Se cambiaron por órdenes que respetan el de cada dispositivo; las reglas y los resultados esperados no cambian. También se corrigió un id que no era UUID.
 - [x] 5.5 Peticiones, sin interfaz (27/09/2026): modo petición para escribir lo que el rol no permite (`ops::as_request`), entidad `change_request` (migración 13), listar, aceptar y rechazar (`requests.rs` y sus comandos). Tests de extremo a extremo: un lector pide un libro en su móvil y el administrador lo acepta desde el portátil; y el caso de conformidad «solo un administrador resuelve una petición». Pendiente para después: que quien pidió pueda retirar su petición.
 - [x] 5.6 Dispositivo perdido, sin interfaz (27/09/2026): `people.rs` con listar personas (y el aviso de administrador único con un solo dispositivo), activar los roles, cambiar roles (el último administrador no puede dejar de serlo), vincular dispositivos y quitar un dispositivo perdido de todas sus bibliotecas; `backup::duplicate` para duplicar una biblioteca como nueva. Restaurar y duplicar no copian los roles.
-- [ ] 5.7 Interfaz.
+- [ ] 5.7 Interfaz. Por partes, un commit cada una, para poder dejarlo a medias sin romper nada. Pantallas: `docs/design/screens/{desktop,mobile}-people/`.
+  - [ ] **a. Peticiones, lo que falta del motor:** nota de quien pide, retirar una petición propia, quién la resolvió y cuándo, y aviso de «un cambio tuyo ha pasado a petición».
+  - [ ] **b. Personas, lo que falta del motor:** aviso con una sola persona administradora (D58), activar los roles diciendo de quién es cada dispositivo (editor por defecto), la misma persona en todas las bibliotecas y el rol al emparejar (se elige, nunca se hereda).
+  - [ ] **c. Personas y permisos (pantalla):** tabla o lista, menú de rol, ficha de la persona en móvil, activar los roles en dos pasos, quitar un dispositivo.
+  - [ ] **d. Peticiones (pantallas):** bandeja de quien administra (aceptar, rechazar, editar y aceptar), «Mis peticiones», campanita y contadores.
+  - [ ] **e. Pedir en lugar de hacer:** «Pedir que se añada» (con nota), «Pedir que se borre», aviso al sincronizar.
+  - [ ] **f. Dispositivos y emparejar:** columna «De quién es», solo lectura sin permiso, emparejar eligiendo persona y, si falta, el rol (en móvil, en dos pasos).
+  - [ ] **g. Documentación:** lista de pruebas en pantalla en `docs/testing/fase-5.md` y cierre del hito.
+
+### 5.7 Decisiones técnicas propuestas
+
+Detalles de construcción de lo aceptado en D73. **Propuestas** hasta que el maintainer las revise.
+
+- **La nota de una petición viaja dentro de ella:** al pedir, la operación lleva además una fila `change_request` con su propio id y el campo `note`. Esa fila solo puede crearla quien administra, así que la operación sigue siendo una petición y nada se aplica; la nota queda en el registro con lo pedido. Al aceptar, se repiten los cambios pedidos salvo esa fila. `status` pasa a ser opcional y admite `withdrawn`.
+- **Retirar:** quien pidió (o otro dispositivo de su misma persona) crea la fila `change_request` con `status: withdrawn`. Es la única excepción a «las peticiones las resuelve quien administra», con su caso de conformidad.
+- **Quién resolvió y cuándo:** sale del reloj (HLC) con que se escribió el estado de la petición, que dice el dispositivo y la hora. No hace falta guardarlo aparte.
+- **«Un cambio tuyo ha pasado a petición»:** cuando al recalcular una biblioteca una operación de este dispositivo pasa de aplicada a petición, se apunta en una tabla local para avisar una vez.
+- **«Editar y aceptar»:** para peticiones de añadir un libro, abre el formulario con lo pedido y acepta con lo corregido en una sola operación. Para las demás peticiones (borrar, cambiar), solo aceptar o rechazar.
