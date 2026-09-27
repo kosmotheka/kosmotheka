@@ -93,9 +93,9 @@ fn record_inner(
     // The first time this device writes to a library, it registers the key it signs
     // with (D56), in an operation of its own: every device may register itself, so it
     // never turns the operation it comes with into a request (D73).
-    let registers_itself = changes
-        .iter()
-        .any(|change| change.entity == Entity::Device && change.id == device_id);
+    let registers_itself = changes.iter().any(|change| {
+        change.entity == Entity::Device && change.action == Action::Create && change.id == device_id
+    });
     if !registers_itself && !is_registered(tx, library, &device_id)? {
         let registration = Change::create(
             Entity::Device,

@@ -433,6 +433,7 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
   - si aquí **ya existe con libros**, se salta y se dice: juntar dos catálogos es cosa de la sincronización;
   - si su **nombre** ya lo usa otra biblioteca, se le añade un número: «Club (2)».
 - Las copias de **versión 2** (una biblioteca sin id ni nombre) se siguen restaurando, en la biblioteca activa si está vacía.
+- **Restaurar no trae los roles** (añadido el 27/09/2026 con D73 y D58): los miembros vuelven sin `role` ni `can_share`, porque apuntarían a dispositivos que no están, y quien restaura se quedaría como lector de su propia biblioteca. Quien restaura puede activar los roles de nuevo. Si la copia se une a una biblioteca compartida que ya tenía roles, esos roles no cambian.
 - **Versiones del esquema:** se aceptan copias hechas desde la migración 9, porque las posteriores no cambian las tablas del catálogo. Si una migración futura las cambia, sube ese mínimo o convierte la copia.
 
 **Limitación en Android (para la Fase 2):** allí el diálogo de ficheros devuelve rutas `content://` del sistema de almacenamiento, no rutas de disco, y el código actual lee y escribe con rutas normales. Exportar e importar en el móvil habrá que adaptarlo cuando llegue la app de Android.

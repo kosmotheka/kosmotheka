@@ -51,6 +51,9 @@ pub enum Error {
     /// Another administrator, maybe on another device, got there first.
     #[error("this request was already accepted or rejected")]
     RequestResolved,
+    /// The library would be left without anyone who can manage it (D65).
+    #[error("this is the library's only administrator")]
+    LastAdmin,
 }
 
 /// Shape of an error as the UI receives it.

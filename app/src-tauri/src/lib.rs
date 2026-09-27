@@ -10,6 +10,7 @@ mod lan;
 mod libraries;
 mod metadata;
 mod ops;
+mod people;
 mod permissions;
 mod requests;
 mod search;
@@ -92,7 +93,13 @@ pub fn run() {
             commands::set_sharing,
             commands::list_requests,
             commands::accept_request,
-            commands::reject_request
+            commands::reject_request,
+            commands::list_people,
+            commands::start_roles,
+            commands::set_role,
+            commands::assign_device,
+            commands::remove_device,
+            commands::duplicate_library
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

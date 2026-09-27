@@ -55,7 +55,10 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65) |
 | `library.revoke` / `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
 | `device.register` | La primera escritura de un dispositivo en una biblioteca: su fila `device` con la clave pública (D56) |
-| `member.roles` y parecidas | Asignar roles o decir de quién es un dispositivo (D73) |
+| `member.roles` | Activar los roles: la persona de este dispositivo pasa a ser administradora y el dispositivo queda vinculado a ella, en una sola operación (D73) |
+| `member.role` / `device.assign` | Cambiar el rol o el permiso de compartir de alguien; decir de quién es un dispositivo |
+| `device.remove` | Dispositivo perdido: deja de ser de su persona y se le retira el acceso, en cada biblioteca donde escribe (D58) |
+| `library.duplicate` | Copiar el catálogo de una biblioteca en otra nueva, sin roles: el último recurso de D58 |
 | `request.accept` / `request.reject` | Resolver una petición: crea su fila `change_request` y, al aceptar, repite los cambios pedidos (D73) |
 
 

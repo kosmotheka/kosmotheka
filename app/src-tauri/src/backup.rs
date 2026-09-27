@@ -268,6 +268,13 @@ fn place_library(tx: &Transaction<'_>, id: Option<&str>, name: &str) -> Result<S
 }
 
 fn record_rows(tx: &Transaction<'_>, library: &str, rows: &Rows) -> Result<()> {
+    record_rows_as(tx, library, rows, "backup.restore")
+}
+
+/// Records every row as created, in one operation. Roles stay behind: whoever
+/// restores or duplicates a library starts it without roles and can take them on;
+/// restored roles would point at devices that are not there (D58).
+fn record_rows_as(tx: &Transaction<'_>, library: &str, rows: &Rows, intent: &str) -> Result<()> {
     let mut changes = Vec::new();
     for entity in CONTENTS {
         for row in rows.get(entity.table()).into_iter().flatten() {
@@ -276,13 +283,33 @@ fn record_rows(tx: &Transaction<'_>, library: &str, rows: &Rows) -> Result<()> {
                 Some(Value::String(id)) => id,
                 _ => return Err(Error::BadBackup("unreadable")),
             };
+            if entity == Entity::Member {
+                fields.remove("role");
+                fields.remove("can_share");
+            }
             changes.push(Change::create(entity, id, Value::Object(fields)));
         }
     }
     if !changes.is_empty() {
-        ops::record(tx, library, "backup.restore", changes)?;
+        ops::record(tx, library, intent, changes)?;
     }
     Ok(())
+}
+
+/// Copies a library's catalogue into a new one, without its roles, its devices or
+/// its history: the last resort when its only administrator lost their only device
+/// (D58). Returns the new library's id.
+pub fn duplicate(conn: &mut Connection, from: &str, name: &str) -> Result<String> {
+    let mut rows = Rows::new();
+    for entity in CONTENTS {
+        rows.insert(entity.table().to_owned(), entity_rows(conn, from, entity)?);
+    }
+    let tx = conn.transaction()?;
+    let to = place_library(&tx, None, name)?;
+    record_rows_as(&tx, &to, &rows, "library.duplicate")?;
+    ops::set_active_library(&tx, &to)?;
+    tx.commit()?;
+    Ok(to)
 }
 
 fn restored(conn: &Connection, id: &str, name: String) -> Result<RestoredLibrary> {

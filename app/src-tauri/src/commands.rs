@@ -18,6 +18,7 @@ use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::metadata::{Lookup, LookupResult};
 use crate::ops;
+use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::settings::{self, Settings};
 use crate::wishes::{self, IsbnCheck, Wish};
@@ -390,6 +391,59 @@ pub fn set_sharing(
     } else {
         libraries::revoke_access(&mut conn, &library, &device_id)
     }
+}
+
+// --- People and roles (D55, D73, D58) --------------------------------------------
+
+#[tauri::command]
+pub fn list_people(database: State<'_, Database>) -> Result<People> {
+    let conn = database.lock()?;
+    people::list_people(&conn, &ops::active_library(&conn)?)
+}
+
+#[tauri::command]
+pub fn start_roles(database: State<'_, Database>, name: String) -> Result<String> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::start_roles(&mut conn, &library, &name)
+}
+
+#[tauri::command]
+pub fn set_role(
+    database: State<'_, Database>,
+    member: String,
+    role: Option<String>,
+    can_share: bool,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::set_role(&mut conn, &library, &member, role.as_deref(), can_share)
+}
+
+#[tauri::command]
+pub fn assign_device(
+    database: State<'_, Database>,
+    device: String,
+    member: Option<String>,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::assign_device(&mut conn, &library, &device, member.as_deref())
+}
+
+/// A lost device: out of every library, wherever it is (D58).
+#[tauri::command]
+pub fn remove_device(database: State<'_, Database>, device: String) -> Result<usize> {
+    people::remove_device(&mut *database.lock()?, &device)
+}
+
+#[tauri::command]
+pub fn duplicate_library(
+    database: State<'_, Database>,
+    id: String,
+    name: String,
+) -> Result<String> {
+    backup::duplicate(&mut *database.lock()?, &id, &name)
 }
 
 // --- Requests (D73) -------------------------------------------------------------
