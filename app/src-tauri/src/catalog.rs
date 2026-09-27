@@ -60,6 +60,8 @@ pub struct BookDetail {
     pub google_books_id: Option<String>,
     pub open_library_id: Option<String>,
     pub copies: Vec<CopyDetail>,
+    /// This device may delete the whole book; otherwise it can only ask (D73).
+    pub can_delete: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,6 +73,8 @@ pub struct CopyDetail {
     pub quantity: i64,
     pub location: Option<String>,
     pub acquired_on: Option<String>,
+    /// This device may delete the copy; otherwise it can only ask (D73).
+    pub can_delete: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -310,11 +314,19 @@ fn delete_book_in(
     edition_id: &str,
     intent: &str,
 ) -> Result<()> {
-    let work_id = work_of(tx, library, edition_id)?;
+    let changes = book_removal(tx, library, edition_id)?;
+    ops::record(tx, library, intent, changes)?;
+    Ok(())
+}
+
+/// The changes that remove an edition with its copies, and its work if no other
+/// edition remains.
+fn book_removal(conn: &Connection, library: &str, edition_id: &str) -> Result<Vec<Change>> {
+    let work_id = work_of(conn, library, edition_id)?;
 
     // Children before parents, so every change finds its row.
     let mut changes: Vec<Change> = ids(
-        tx,
+        conn,
         "SELECT id FROM copies WHERE library_id = ?1 AND edition_id = ?2",
         library,
         edition_id,
@@ -322,12 +334,12 @@ fn delete_book_in(
     .into_iter()
     .map(|id| Change::delete(Entity::Copy, id))
     .collect();
-    if exists(tx, library, Entity::BookDetails, edition_id)? {
+    if exists(conn, library, Entity::BookDetails, edition_id)? {
         changes.push(Change::delete(Entity::BookDetails, edition_id));
     }
     changes.push(Change::delete(Entity::Edition, edition_id));
 
-    let other_editions: i64 = tx.query_row(
+    let other_editions: i64 = conn.query_row(
         "SELECT count(*) FROM editions WHERE library_id = ?1 AND work_id = ?2 AND id <> ?3",
         [library, &work_id, edition_id],
         |row| row.get(0),
@@ -335,7 +347,7 @@ fn delete_book_in(
     if other_editions == 0 {
         changes.extend(
             ids(
-                tx,
+                conn,
                 "SELECT id FROM work_contributors WHERE library_id = ?1 AND work_id = ?2",
                 library,
                 &work_id,
@@ -345,9 +357,7 @@ fn delete_book_in(
         );
         changes.push(Change::delete(Entity::Work, &work_id));
     }
-
-    ops::record(tx, library, intent, changes)?;
-    Ok(())
+    Ok(changes)
 }
 
 /// Collects the changes of one operation, reusing rows that already exist.
@@ -806,6 +816,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     open_library_id: row.get(10)?,
                     authors: split_list(row.get(11)?),
                     copies: Vec::new(),
+                    can_delete: false,
                 })
             },
         )
@@ -827,9 +838,15 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
             quantity: row.get(3)?,
             location: row.get(4)?,
             acquired_on: row.get(5)?,
+            can_delete: false,
         })
     })?;
     book.copies = rows.collect::<rusqlite::Result<_>>()?;
+    for copy in &mut book.copies {
+        copy.can_delete =
+            ops::would_allow(conn, library, vec![Change::delete(Entity::Copy, &copy.id)])?;
+    }
+    book.can_delete = ops::would_allow(conn, library, book_removal(conn, library, edition_id)?)?;
     Ok(book)
 }
 

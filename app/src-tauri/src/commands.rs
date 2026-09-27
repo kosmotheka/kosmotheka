@@ -52,6 +52,61 @@ pub async fn create_book(
     })
 }
 
+/// What a write done in request mode became: applied, or kept for the
+/// administrators to decide (D73).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Asked {
+    pub requested: bool,
+}
+
+/// «Ask to add»: a reader asks for a book, with a note for whoever decides. The cover
+/// is not downloaded: it would stay on this device, and whoever accepts can find it.
+#[tauri::command]
+pub fn request_book(
+    database: State<'_, Database>,
+    book: NewBook,
+    note: Option<String>,
+) -> Result<Asked> {
+    let book = book.validate().map_err(Error::Validation)?;
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let (_, requested) = ops::as_request(note.as_deref(), || {
+        catalog::create_book(&mut conn, &library, &book, None)
+    })?;
+    Ok(Asked { requested })
+}
+
+/// «Ask to delete» a copy that someone else added.
+#[tauri::command]
+pub fn request_delete_copy(
+    database: State<'_, Database>,
+    copy_id: String,
+    note: Option<String>,
+) -> Result<Asked> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let (_, requested) = ops::as_request(note.as_deref(), || {
+        catalog::delete_copy(&mut conn, &library, &copy_id)
+    })?;
+    Ok(Asked { requested })
+}
+
+/// «Ask to delete» a whole book with rows that someone else added.
+#[tauri::command]
+pub fn request_delete_book(
+    database: State<'_, Database>,
+    edition_id: String,
+    note: Option<String>,
+) -> Result<Asked> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let (_, requested) = ops::as_request(note.as_deref(), || {
+        catalog::delete_book(&mut conn, &library, &edition_id)
+    })?;
+    Ok(Asked { requested })
+}
+
 #[tauri::command]
 pub async fn update_edition(
     database: State<'_, Database>,

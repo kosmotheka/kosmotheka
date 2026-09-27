@@ -127,6 +127,7 @@ fn record_inner(
             operation.validate()?;
             operation.signature = Some(key.sign(&operation));
         }
+        REQUESTED.set(true);
         log_operation(tx, &operation, schema_version(tx)?, Status::Request)?;
         write_state(tx, LAST_HLC_KEY, Some(&operation.hlc.to_string()))?;
         return Ok(operation);
@@ -231,28 +232,40 @@ pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
 
 thread_local! {
     static AS_REQUEST: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static REQUESTED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static REQUEST_NOTE: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
 }
 
 /// Runs `write` so that an operation its author may not make is kept as a request
 /// for the administrators instead of refused (D73): the «Ask to add» of a reader,
 /// with an optional note for whoever decides. Operations the author may make are
-/// applied as usual, without the note.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the «Ask to add» buttons use it in part e of milestone 5.7"
-    )
-)]
-pub fn as_request<T>(note: Option<&str>, write: impl FnOnce() -> Result<T>) -> Result<T> {
+/// applied as usual, without the note. Also says whether anything became a request.
+pub fn as_request<T>(note: Option<&str>, write: impl FnOnce() -> Result<T>) -> Result<(T, bool)> {
     let note = note.map(str::trim).filter(|note| !note.is_empty());
     AS_REQUEST.set(true);
+    REQUESTED.set(false);
     REQUEST_NOTE.set(note.map(str::to_owned));
     let result = write();
     AS_REQUEST.set(false);
     REQUEST_NOTE.set(None);
-    result
+    Ok((result?, REQUESTED.take()))
+}
+
+/// Whether this device may make `changes` in `library` now, without writing
+/// anything: the screens offer «Ask to delete» instead of «Delete» when it may not.
+pub fn would_allow(conn: &Connection, library: &str, changes: Vec<Change>) -> Result<bool> {
+    let hlc = HlcClock::new(device_id(conn)?, last_hlc(conn)?.as_ref()).tick(now_millis());
+    let mut operation = Operation {
+        id: new_id(),
+        library: library.to_owned(),
+        hlc,
+        intent: "check".to_owned(),
+        changes,
+        signature: None,
+    };
+    // Unsigned operations count as a reader's.
+    operation.signature = Some(signing_key(conn)?.sign(&operation));
+    Ok(crate::permissions::allowed(conn, &operation))
 }
 
 /// What became of an operation: applied, or kept as a request because its author

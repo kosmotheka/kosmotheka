@@ -1339,6 +1339,41 @@ mod tests {
     }
 
     #[test]
+    fn the_book_says_what_each_device_may_delete_and_asking_says_what_happened() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let dune = |device: &Device| {
+            let edition = catalog::list_books(&device.0, LIB, &BookFilter::default())
+                .unwrap()
+                .into_iter()
+                .find(|b| b.title == "Dune")
+                .unwrap()
+                .edition_id;
+            catalog::get_book(&device.0, LIB, &edition).unwrap()
+        };
+
+        let on_phone = dune(&phone);
+        assert!(!on_phone.can_delete);
+        assert!(!on_phone.copies[0].can_delete);
+        let on_laptop = dune(&laptop);
+        assert!(on_laptop.can_delete);
+        assert!(on_laptop.copies[0].can_delete);
+
+        let (_, requested) = ops::as_request(None, || {
+            catalog::delete_copy(&mut phone.0, LIB, &on_phone.copies[0].id)
+        })
+        .unwrap();
+        assert!(requested, "a reader's delete becomes a request");
+        assert!(phone.titles().contains(&"Dune".to_owned()));
+        let (_, requested) = ops::as_request(None, || {
+            catalog::create_book(&mut laptop.0, LIB, &book("Solaris", None, "Tersoal"), None)
+        })
+        .unwrap();
+        assert!(!requested, "what the administrator may do is just done");
+        laptop.sync_with(&mut phone);
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
     fn a_request_on_a_deleted_book_no_longer_applies() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
         let dune = |device: &Device| {
