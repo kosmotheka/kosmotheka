@@ -5,6 +5,7 @@ import {
   ChevronDown,
   CircleAlert,
   EllipsisVertical,
+  Info,
   MonitorSmartphone,
   QrCode,
   RefreshCw,
@@ -17,6 +18,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { ShareTargetsDialog } from "@/components/libraries/share-targets-dialog";
 import { Tick } from "@/components/libraries/library-checklist";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { Avatar } from "@/components/people/role-parts";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,7 +29,11 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   type DeviceSharing,
+  type People,
+  type Person,
+  assignDevice,
   forgetDevice,
+  listPeople,
   lanStatus,
   setDeviceName,
   setSharing,
@@ -72,13 +78,15 @@ export function DevicesPage({
   const [forgetting, setForgetting] = useState<Device | null>(null);
   const [reloads, setReloads] = useState(0);
   const [loadedAt, setLoadedAt] = useState(0);
+  const [people, setPeople] = useState<People | null>(null);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([lanStatus(), sharingOverview()])
-      .then(([status, sharing]) => {
+    Promise.all([lanStatus(), sharingOverview(), listPeople().catch(() => null)])
+      .then(([status, sharing, who]) => {
         if (cancelled) return;
+        setPeople(who);
         const servers = new Set(status.servers.map((s) => s.deviceId));
         setDevices(sharing.map((d) => ({ ...d, canSync: servers.has(d.deviceId) })));
         setLoadedAt(Date.now());
@@ -137,6 +145,22 @@ export function DevicesPage({
     });
 
   const libraryName = (id: string) => nameOf(libraries.all.find((l) => l.id === id));
+
+  // Whose each device is, in the active library, once it has roles (D73).
+  const owners = people?.hasRoles ? people : null;
+  const owner = (device: Device) => (
+    <OwnerCell
+      people={owners!}
+      deviceId={device.deviceId}
+      compact={!desktop}
+      onAssign={(person) =>
+        void act(`owner-${device.deviceId}`, async () => {
+          await assignDevice(device.deviceId, person.id);
+          return t("devices.ownerChanged", { device: device.name, person: person.name });
+        })
+      }
+    />
+  );
 
   const header = desktop ? (
     <div className="flex items-start justify-between gap-4">
@@ -200,6 +224,9 @@ export function DevicesPage({
           <thead className="bg-muted/60 text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-normal">{t("devices.device")}</th>
+              {owners && (
+                <th className="w-52 px-2 py-3 text-left font-normal">{t("devices.owner")}</th>
+              )}
               {libraries.all.map((library) => (
                 <th key={library.id} className="w-28 px-2 py-3 text-center font-normal">
                   {nameOf(library)}
@@ -216,6 +243,7 @@ export function DevicesPage({
                   <td className="px-4 py-3">
                     <DeviceTitle device={device} error={error} now={loadedAt} />
                   </td>
+                  {owners && <td className="px-2">{owner(device)}</td>}
                   {libraries.all.map((library) => {
                     const on = device.libraries.includes(library.id);
                     return (
@@ -245,7 +273,10 @@ export function DevicesPage({
                 </tr>,
                 error && (
                   <tr key={`${device.deviceId}-error`} className="bg-destructive/5">
-                    <td colSpan={libraries.all.length + 2} className="px-4 pb-4 pl-16">
+                    <td
+                      colSpan={libraries.all.length + (owners ? 3 : 2)}
+                      className="px-4 pb-4 pl-16"
+                    >
                       <ErrorCard reason={error} />
                     </td>
                   </tr>
@@ -273,6 +304,14 @@ export function DevicesPage({
                 </div>
                 {menu(device)}
               </div>
+              {owners && (
+                <div className="flex items-center gap-3 border-t pt-3">
+                  <span className="w-12 shrink-0 text-xs text-muted-foreground">
+                    {t("devices.ownerShort")}
+                  </span>
+                  <div className="min-w-0 flex-1">{owner(device)}</div>
+                </div>
+              )}
               {error ? (
                 <ErrorCard reason={error} />
               ) : (
@@ -318,6 +357,14 @@ export function DevicesPage({
           <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" />
             {t("devices.footnote")}
+          </p>
+        )}
+        {owners && devices && devices.length > 0 && (
+          <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">
+            <Info className="mt-0.5 size-4 shrink-0" />
+            {owners.myRole === "admin"
+              ? t("devices.ownerFootnote")
+              : t("devices.ownerReadOnly", { library: nameOf(libraries.active) })}
           </p>
         )}
         {!desktop && devices && devices.length > 0 && (
@@ -448,6 +495,64 @@ function ErrorCard({ reason }: { reason: string }) {
         <ChevronDown className={cn("size-3.5", details && "rotate-180")} />
       </button>
       {details && <code className="text-xs text-muted-foreground">sync: {reason}</code>}
+    </div>
+  );
+}
+
+/** Whose a device is; administrators change it from here. */
+function OwnerCell({
+  people,
+  deviceId,
+  compact,
+  onAssign,
+}: {
+  people: People;
+  deviceId: string;
+  compact: boolean;
+  onAssign: (person: Person) => void;
+}) {
+  const { t } = useTranslation();
+  const person = people.people.find((p) => p.devices.some((d) => d.id === deviceId));
+  const me = person?.devices.find((d) => d.id === deviceId)?.thisDevice;
+  const others = people.people.filter((p) => p.id !== person?.id);
+  const admin = people.myRole === "admin";
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {person ? (
+        <>
+          <Avatar name={person.name} size={24} />
+          <span className="truncate text-sm font-medium">
+            {person.name}
+            {me && <span className="font-normal text-muted-foreground"> · {t("people.you")}</span>}
+          </span>
+        </>
+      ) : (
+        <span className="flex min-w-0 flex-col">
+          <span className="text-sm text-muted-foreground">{t("devices.nobody")}</span>
+          <span className="text-xs text-muted-foreground">{t("people.countsAsReader")}</span>
+        </span>
+      )}
+      {admin && others.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={person ? "ghost" : "outline"}
+              size="sm"
+              className={cn(compact && "ml-auto")}
+              aria-label={t("devices.changeOwner")}
+            >
+              {person ? t("sharing.change") : t("people.assign")}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {others.map((other) => (
+              <DropdownMenuItem key={other.id} onSelect={() => onAssign(other)}>
+                <Avatar name={other.name} size={20} /> {other.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }

@@ -249,7 +249,14 @@
     "receivesLabel": "Receives",
     "more": "More options for {{name}}",
     "cell": "{{library}} on {{device}}",
-    "lastSync": "Last synced: {{date}}"
+    "lastSync": "Last synced: {{date}}",
+    "owner": "Whose it is",
+    "ownerShort": "Owner",
+    "nobody": "Nobody",
+    "changeOwner": "Change whose it is",
+    "ownerChanged": "{{device}} now belongs to {{person}}.",
+    "ownerFootnote": "Changing whose a device is also changes its permissions: it gets those of its new person.",
+    "ownerReadOnly": "Whose each device is is up to the administrators of {{library}}."
   },
   "tabs": {
     "catalog": "Catalog",

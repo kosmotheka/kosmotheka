@@ -249,7 +249,14 @@
     "receivesLabel": "Recibe",
     "more": "Más opciones de {{name}}",
     "cell": "{{library}} en {{device}}",
-    "lastSync": "Última sincronización: {{date}}"
+    "lastSync": "Última sincronización: {{date}}",
+    "owner": "De quién es",
+    "ownerShort": "Es de",
+    "nobody": "Sin persona",
+    "changeOwner": "Cambiar de quién es",
+    "ownerChanged": "{{device}} ahora es de {{person}}.",
+    "ownerFootnote": "Cambiar de quién es un dispositivo cambia también sus permisos: pasa a tener los de su nueva persona.",
+    "ownerReadOnly": "De quién es cada dispositivo lo decide quien administra {{library}}."
   },
   "tabs": {
     "catalog": "Catálogo",
