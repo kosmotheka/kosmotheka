@@ -18,6 +18,7 @@ use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::metadata::{Lookup, LookupResult};
 use crate::ops;
+use crate::requests::{self, Request};
 use crate::settings::{self, Settings};
 use crate::wishes::{self, IsbnCheck, Wish};
 
@@ -389,6 +390,28 @@ pub fn set_sharing(
     } else {
         libraries::revoke_access(&mut conn, &library, &device_id)
     }
+}
+
+// --- Requests (D73) -------------------------------------------------------------
+
+#[tauri::command]
+pub fn list_requests(database: State<'_, Database>) -> Result<Vec<Request>> {
+    let conn = database.lock()?;
+    requests::list_requests(&conn, &ops::active_library(&conn)?)
+}
+
+#[tauri::command]
+pub fn accept_request(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    requests::accept(&mut conn, &library, &id)
+}
+
+#[tauri::command]
+pub fn reject_request(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    requests::reject(&mut conn, &library, &id)
 }
 
 #[tauri::command]

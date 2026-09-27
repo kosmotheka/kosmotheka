@@ -22,6 +22,9 @@ pub enum Entity {
     /// A device that writes to the library, with the public key its operations
     /// are signed with (D56). Its id is the device id.
     Device,
+    /// How an administrator resolved a request (D73). Its id is the id of the
+    /// operation that was requested.
+    ChangeRequest,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,6 +115,11 @@ const DEVICE_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("member_id", FieldType::Ref(Entity::Member), false),
 ];
+const CHANGE_REQUEST_FIELDS: &[FieldSpec] = &[field(
+    "status",
+    FieldType::OneOf(&["accepted", "rejected"]),
+    true,
+)];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -136,6 +144,7 @@ impl Entity {
             Entity::Wish => "wishes",
             Entity::Revocation => "revocations",
             Entity::Device => "devices",
+            Entity::ChangeRequest => "change_requests",
         }
     }
 
@@ -169,6 +178,7 @@ impl Entity {
             Entity::Wish => WISH_FIELDS,
             Entity::Revocation => REVOCATION_FIELDS,
             Entity::Device => DEVICE_FIELDS,
+            Entity::ChangeRequest => CHANGE_REQUEST_FIELDS,
         }
     }
 

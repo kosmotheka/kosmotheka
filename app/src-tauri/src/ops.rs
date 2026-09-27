@@ -118,7 +118,13 @@ fn record_inner(
     operation.signature = Some(key.sign(&operation));
     // Judged like any operation received from another device, so all of them agree.
     if !crate::permissions::allowed(tx, &operation) {
-        return Err(Error::NotAllowed);
+        if !AS_REQUEST.get() {
+            return Err(Error::NotAllowed);
+        }
+        // Asked for instead of done: kept, and travels, but changes nothing (D73).
+        log_operation(tx, &operation, schema_version(tx)?, Status::Request)?;
+        write_state(tx, LAST_HLC_KEY, Some(&operation.hlc.to_string()))?;
+        return Ok(operation);
     }
     let hlc_text = operation.hlc.to_string();
 
@@ -198,7 +204,27 @@ pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
     write_state(conn, ACTIVE_LIBRARY_KEY, Some(library))
 }
 
-/// Appends to the log. The author device is the one inside the HLC.
+thread_local! {
+    static AS_REQUEST: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Runs `write` so that an operation its author may not make is kept as a request
+/// for the administrators instead of refused (D73): the «Ask to add» of a reader.
+/// Operations the author may make are applied as usual.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the «Ask to add» buttons use it with milestone 5.7"
+    )
+)]
+pub fn as_request<T>(write: impl FnOnce() -> Result<T>) -> Result<T> {
+    AS_REQUEST.set(true);
+    let result = write();
+    AS_REQUEST.set(false);
+    result
+}
+
 /// What became of an operation: applied, or kept as a request because its author
 /// was not allowed to make it (D73).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -224,6 +250,7 @@ pub fn set_status(conn: &Connection, operation_id: &str, status: Status) -> Resu
     Ok(())
 }
 
+/// Appends to the log. The author device is the one inside the HLC.
 pub fn log_operation(
     conn: &Connection,
     operation: &Operation,
@@ -384,7 +411,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 11] = [
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 12] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::Edition,
@@ -396,6 +423,7 @@ const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 11] = [
     Entity::Wish,
     Entity::Revocation,
     Entity::Device,
+    Entity::ChangeRequest,
 ];
 
 /// Column names are taken from the schema, so unknown keys can never reach SQL.

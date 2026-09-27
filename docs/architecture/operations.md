@@ -54,8 +54,10 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
 | `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65) |
 | `library.revoke` / `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
+| `device.register` | La primera escritura de un dispositivo en una biblioteca: su fila `device` con la clave pública (D56) |
+| `member.roles` y parecidas | Asignar roles o decir de quién es un dispositivo (D73) |
+| `request.accept` / `request.reject` | Resolver una petición: crea su fila `change_request` y, al aceptar, repite los cambios pedidos (D73) |
 
-Además, la primera operación de un dispositivo en cada biblioteca lleva al principio un cambio que crea su fila `device`, con su clave pública, sea cual sea la intención.
 
 ## Reloj lógico híbrido (HLC)
 
@@ -88,7 +90,8 @@ Las reglas están en `spec/README.md` («Roles and permissions») y en D73. Resu
 Dónde está:
 - **Las reglas**, como función pura, en `crates/domain/src/permission.rs` (`is_allowed`), para que el servidor pueda usar las mismas.
 - **Las preguntas** que necesitan («¿tiene roles la biblioteca?», «¿qué rol tiene este dispositivo?», «¿creó esta fila su misma persona?»), en `app/src-tauri/src/permissions.rs`, leyendo la base de datos.
-- **Escrituras propias:** `ops::record` juzga la operación igual que si llegara de fuera. Si no está permitida, devuelve `NotAllowed` y no escribe nada. Convertirla en petición llega con el hito 5.5, junto con su interfaz.
+- **Escrituras propias:** `ops::record` juzga la operación igual que si llegara de fuera. Si no está permitida, devuelve `NotAllowed` y no escribe nada, salvo en **modo petición** (`ops::as_request`): entonces la guarda como petición, sin aplicarla. Es lo que usará el botón «Pedir que se añada».
+- **Peticiones** (`app/src-tauri/src/requests.rs`, hito 5.5): `list_requests` las lista con su autor, persona, fecha, cambios y estado (pendiente, aceptada o rechazada). `accept` graba una operación del administrador que crea la fila `change_request` y repite los cambios pedidos; si ya no se pueden aplicar (una fila que editaban se borró), falla sin cambiar nada. `reject` solo crea la fila. Resolver una ya resuelta da `RequestResolved`.
 - **El registro del dispositivo** (su fila `device` con la clave) va en una operación propia, `device.register`, antes de la primera escritura en cada biblioteca. Así «todo o nada» nunca se lo lleva por delante.
 
 ## Validación, en dos niveles

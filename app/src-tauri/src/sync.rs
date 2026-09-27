@@ -20,7 +20,7 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 12] = [
+pub const ORDER: [Entity; 13] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
@@ -33,6 +33,7 @@ pub const ORDER: [Entity; 12] = [
     Entity::Copy,
     Entity::Wish,
     Entity::Revocation,
+    Entity::ChangeRequest,
 ];
 
 const BASELINE_KEY: &str = "sync_baseline";
@@ -1182,6 +1183,94 @@ mod tests {
         assert!(!phone.titles().contains(&"Wingspan".to_owned()));
         laptop.add("The Dispossessed", None, "Tersoal");
         assert!(laptop.titles().contains(&"The Dispossessed".to_owned()));
+    }
+
+    /// A library where the laptop is Tersoal's (admin) and the phone Hugo's (reader).
+    fn laptop_admin_phone_reader() -> (Device, Device) {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        laptop.add("Dune", None, "Tersoal");
+        phone.add("Tehanu", None, "Hugo");
+        laptop.sync_with(&mut phone);
+        let (laptop_id, phone_id) = (device_id_of(&laptop), device_id_of(&phone));
+        let (admin, reader) = (ops::new_id(), ops::new_id());
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "member.roles",
+            vec![
+                Change::create(
+                    Entity::Member,
+                    &admin,
+                    json!({ "name": "Tersoal", "role": "admin" }),
+                ),
+                Change::create(
+                    Entity::Member,
+                    &reader,
+                    json!({ "name": "Hugo", "role": "reader" }),
+                ),
+                Change::update(Entity::Device, &laptop_id, json!({ "member_id": admin })),
+                Change::update(Entity::Device, &phone_id, json!({ "member_id": reader })),
+            ],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        phone.pull_from(&laptop);
+        (laptop, phone)
+    }
+
+    #[test]
+    fn a_reader_asks_and_an_administrator_accepts_on_another_device() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+
+        ops::as_request(|| {
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+        })
+        .unwrap();
+        assert!(
+            !phone.titles().contains(&"Wingspan".to_owned()),
+            "asked, not added"
+        );
+        laptop.pull_from(&phone);
+        let pending = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].status, crate::requests::RequestStatus::Pending);
+        assert_eq!(pending[0].person.as_deref(), Some("Hugo"));
+
+        crate::requests::accept(&mut laptop.0, LIB, &pending[0].id).unwrap();
+        phone.sync_with(&mut laptop);
+
+        assert!(laptop.titles().contains(&"Wingspan".to_owned()));
+        assert!(phone.titles().contains(&"Wingspan".to_owned()));
+        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
+        assert!(matches!(
+            crate::requests::reject(&mut laptop.0, LIB, &pending[0].id),
+            Err(crate::error::Error::RequestResolved)
+        ));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_rejected_request_changes_nothing() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        ops::as_request(|| {
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+        })
+        .unwrap();
+        laptop.pull_from(&phone);
+        let id = crate::requests::list_requests(&laptop.0, LIB).unwrap()[0]
+            .id
+            .clone();
+
+        crate::requests::reject(&mut laptop.0, LIB, &id).unwrap();
+        phone.sync_with(&mut laptop);
+
+        assert!(!laptop.titles().contains(&"Wingspan".to_owned()));
+        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        assert_eq!(seen[0].status, crate::requests::RequestStatus::Rejected);
+        assert_converged(&[&laptop, &phone]);
     }
 
     const PERMISSION_CASES: &str = include_str!("../../../spec/conformance/permissions.json");

@@ -63,7 +63,7 @@ fn change_allowed(change: &Change, author: &str, role: Role, view: &impl Library
         Entity::Device if change.id == author => {
             change.action != Action::Delete && !touches("member_id")
         }
-        Entity::Device | Entity::Library | Entity::Revocation => false,
+        Entity::Device | Entity::Library | Entity::Revocation | Entity::ChangeRequest => false,
         // Nobody gives more than they have.
         Entity::Member if touches("role") || touches("can_share") => false,
         _ => match (role, change.action) {

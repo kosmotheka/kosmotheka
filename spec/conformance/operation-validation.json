@@ -1061,5 +1061,50 @@
     "expect": {
       "result": "valid"
     }
+  },
+  {
+    "name": "request rejected",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000128",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "request.reject",
+      "changes": [
+        {
+          "entity": "change_request",
+          "id": "01997c7e-0000-7000-8000-000000000006",
+          "action": "create",
+          "fields": {
+            "status": "rejected"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "request resolved without a status",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000129",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "request.reject",
+      "changes": [
+        {
+          "entity": "change_request",
+          "id": "01997c7e-0000-7000-8000-000000000006",
+          "action": "create",
+          "fields": {}
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "status"
+    }
   }
 ]

@@ -48,6 +48,9 @@ pub enum Error {
     /// comes with requests (milestone 5.5).
     #[error("your role in this library does not allow this")]
     NotAllowed,
+    /// Another administrator, maybe on another device, got there first.
+    #[error("this request was already accepted or rejected")]
+    RequestResolved,
 }
 
 /// Shape of an error as the UI receives it.

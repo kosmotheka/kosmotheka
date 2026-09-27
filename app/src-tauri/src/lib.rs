@@ -11,6 +11,7 @@ mod libraries;
 mod metadata;
 mod ops;
 mod permissions;
+mod requests;
 mod search;
 mod settings;
 mod sync;
@@ -88,7 +89,10 @@ pub fn run() {
             commands::move_book,
             commands::library_devices,
             commands::sharing_overview,
-            commands::set_sharing
+            commands::set_sharing,
+            commands::list_requests,
+            commands::accept_request,
+            commands::reject_request
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

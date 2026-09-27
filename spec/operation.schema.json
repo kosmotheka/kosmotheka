@@ -99,7 +99,8 @@
             "publisher",
             "wish",
             "revocation",
-            "device"
+            "device",
+            "change_request"
           ]
         },
         "id": {
@@ -470,6 +471,31 @@
                   "member_id": {
                     "description": "The member this device belongs to (D55). Only administrators set it.",
                     "$ref": "#/$defs/ref"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "change_request"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "status": {
+                    "description": "How an administrator resolved the request. Accepting repeats the requested changes in the same operation.",
+                    "enum": [
+                      "accepted",
+                      "rejected"
+                    ]
                   }
                 }
               }
