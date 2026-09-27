@@ -29,11 +29,15 @@ enum CatalogEntity: string
     case Revocation = 'revocation';
     case Device = 'device';
     case ChangeRequest = 'change_request';
+    case Mark = 'mark';
 
     public const array FORMATS = ['hardcover', 'paperback', 'pocket', 'ebook', 'audiobook', 'other'];
 
     /** Roles a member can have in a library (D55, D73). */
     public const array ROLES = ['admin', 'editor', 'reader'];
+
+    /** Where a person is with a work (D68). */
+    public const array MARK_STATUSES = ['pending', 'in_progress', 'finished', 'abandoned'];
 
     /**
      * @return array<string, FieldSpec>
@@ -93,6 +97,14 @@ enum CatalogEntity: string
             self::ChangeRequest => [
                 'status' => new FieldSpec(FieldType::OneOf, false, ['accepted', 'rejected', 'withdrawn']),
                 'note' => $text(),
+            ],
+            self::Mark => [
+                'member_id' => $ref(true),
+                'work_id' => $ref(true),
+                'status' => new FieldSpec(FieldType::OneOf, false, self::MARK_STATUSES),
+                'status_on' => new FieldSpec(FieldType::Date, false),
+                'rating' => new FieldSpec(FieldType::Rating, false),
+                'favorite' => new FieldSpec(FieldType::Boolean, false),
             ],
         };
     }

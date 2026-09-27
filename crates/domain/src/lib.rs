@@ -5,6 +5,7 @@ pub mod book;
 pub mod hlc;
 pub mod isbn;
 pub mod library;
+pub mod mark;
 pub mod operation;
 pub mod permission;
 pub mod schema;
@@ -18,6 +19,7 @@ pub use book::{
 pub use hlc::{Hlc, HlcClock};
 pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;
+pub use mark::mark_id;
 pub use operation::{Action, Change, Operation, OperationError, OperationErrorCode};
 pub use permission::{LibraryView, Role, is_allowed};
 pub use schema::{Entity, FieldSpec, FieldType};

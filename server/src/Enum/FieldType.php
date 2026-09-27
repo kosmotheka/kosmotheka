@@ -16,4 +16,6 @@ enum FieldType
     case Ref;
     /** `true` or `false`. */
     case Boolean;
+    /** A whole number from 1 to 5. */
+    case Rating;
 }

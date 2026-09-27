@@ -23,4 +23,5 @@ enum OperationErrorCode: string
     case WrongType = 'wrong_type';
     case EmptyUpdate = 'empty_update';
     case FieldsOnDelete = 'fields_on_delete';
+    case WrongId = 'wrong_id';
 }

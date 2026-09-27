@@ -18,6 +18,8 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 - Entity ids only need to be unique **within a library**: the same id in two libraries is two different rows.
 - **Deleting the library** (a `delete` change on the `library` entity) removes the library and everything in it on every device that has it. Who may do it is a permission rule, defined with roles. Leaving a library is not an operation on it: the device simply stops having it (and, with roles, the person's membership ends).
 - A **`device`** row can only be created by that device itself: its id must be the device in the operation's `hlc` (`other_device` otherwise). The row carries the public key the device signs with, and the operation that creates it is signed with that key, which proves the device holds it.
+- A **`mark`** (what one person notes about one work, D68) has an id derived from its person and work: the UUID v5, in the namespace `7b2f0c1e-4d8a-4f3e-9c61-2a5d8e0b4f17`, of the text `<member_id>:<work_id>` in lowercase. A mark change that sets `member_id` or `work_id` must set both, and its id must be the derived one (`wrong_id` otherwise). So the same person marking the same work on two devices writes the same row. Example: member `01997c7e-0000-7000-8000-000000000013` and work `01997c7e-0000-7000-8000-0000000000d1` give `9ae21929-1e26-5646-8c48-52cf10f8e911`.
+- A **rating** is a whole number from 1 to 5 (`wrong_type` otherwise).
 - **Create** must include every required field of the entity.
 - **Required fields** can never be set to `null`.
 - **Dates** must exist on the calendar (`2026-02-30` is invalid).
@@ -25,7 +27,7 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 
 ## Error codes
 
-`invalid_id`, `invalid_library`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`.
+`invalid_id`, `invalid_library`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`, `wrong_id`.
 
 ## Signatures
 
@@ -49,6 +51,7 @@ Every device checks each operation it receives, and each one it makes, against t
    - **admin** may do everything, including roles, who owns each device, access (`revocation`), the `library` row and deleting the library.
    - **editor** creates and edits the catalog. It deletes only rows its person created: a row whose first create change came from a device of the same person.
    - **reader** changes nothing in the catalog: what it tries becomes a request. The exception is the wishlist: a reader may create `wish` rows, and edit or delete those its person created. Only a reader with a person: a device linked to no member, or an unsigned operation, may not.
+   - **Everyone keeps their own marks** (D68), whatever their role: a device with a person creates, changes and deletes the `mark` rows of that person (a create names it in `member_id`), and only administrators touch other people's. A device linked to no member, or an unsigned operation, may not.
    - **Nobody gives more than they have:** changing `role`, `can_share` or a device's `member_id` is for administrators.
 4. **Every device registers and renames itself**, whatever its role: its own `device` row, without `member_id`.
 5. **All or nothing:** if any change in an operation is not allowed, none is applied and the whole operation becomes a **request**.

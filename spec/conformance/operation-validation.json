@@ -1152,5 +1152,179 @@
       "change": 0,
       "field": "status"
     }
+  },
+  {
+    "name": "a person's mark on a work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000140",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "create",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000013",
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+            "status": "finished",
+            "status_on": "2026-03-14",
+            "rating": 4,
+            "favorite": true
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a mark whose id is not derived from its person and work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000141",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "df9d0120-710b-5f26-944b-306973643509",
+          "action": "create",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000013",
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_id",
+      "change": 0
+    }
+  },
+  {
+    "name": "a mark that names its person but not its work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000142",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_id",
+      "change": 0
+    }
+  },
+  {
+    "name": "updating a mark without naming its person or work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000143",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "rating": 5,
+            "favorite": false
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a rating above 5",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000144",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "rating": 6
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "rating"
+    }
+  },
+  {
+    "name": "a rating of 0",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000145",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "rating": 0
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "rating"
+    }
+  },
+  {
+    "name": "a mark with an unknown status",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000146",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "status": "reading"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "status"
+    }
   }
 ]

@@ -87,6 +87,22 @@ impl LibraryView for SqlView<'_> {
             .flatten();
         asker.is_some_and(|asker| self.same_person(&asker, device))
     }
+
+    fn member_of_device(&self, device: &str) -> Option<String> {
+        self.member_of(device)
+    }
+
+    fn mark_member(&self, id: &str) -> Option<String> {
+        self.conn
+            .query_row(
+                "SELECT member_id FROM marks WHERE library_id = ?1 AND id = ?2",
+                [self.library, id],
+                |row| row.get(0),
+            )
+            .optional()
+            .ok()
+            .flatten()
+    }
 }
 
 impl SqlView<'_> {

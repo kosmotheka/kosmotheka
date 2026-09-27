@@ -35,6 +35,10 @@ pub trait LibraryView {
     /// Whether the operation `request` was written by a device of the same person
     /// as `device`: who asked may withdraw what they asked for.
     fn requested_by_same_person(&self, request: &str, device: &str) -> bool;
+    /// The person (member id) `device` belongs to, if any.
+    fn member_of_device(&self, device: &str) -> Option<String>;
+    /// Whose the mark `id` is, if it exists (D68).
+    fn mark_member(&self, id: &str) -> Option<String>;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -84,6 +88,21 @@ fn change_allowed(
         Entity::Device | Entity::Library | Entity::Revocation => false,
         // Nobody gives more than they have.
         Entity::Member if touches("role") || touches("can_share") => false,
+        // Each person keeps their own marks, whatever their role (D68).
+        Entity::Mark => {
+            let Some(me) = view.member_of_device(author).filter(|_| someone) else {
+                return false;
+            };
+            let owner = match change.action {
+                Action::Create => change
+                    .fields
+                    .get("member_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                Action::Update | Action::Delete => view.mark_member(&change.id),
+            };
+            owner.is_some_and(|owner| owner.eq_ignore_ascii_case(&me))
+        }
         // Wishes change nothing on the shelves: a reader with a person keeps a
         // wishlist, and deletes or edits only what their person added.
         Entity::Wish if role == Role::Reader => {
@@ -124,6 +143,43 @@ mod tests {
         fn requested_by_same_person(&self, _: &str, _: &str) -> bool {
             self.same_person
         }
+        fn member_of_device(&self, _: &str) -> Option<String> {
+            self.role.map(|_| MY_MEMBER.to_owned())
+        }
+        fn mark_member(&self, _: &str) -> Option<String> {
+            Some(if self.same_person { MY_MEMBER } else { OTHER_MEMBER }.to_owned())
+        }
+    }
+
+    const MY_MEMBER: &str = "01997c7e-0000-7000-8000-000000000013";
+    const OTHER_MEMBER: &str = "01997c7e-0000-7000-8000-000000000012";
+
+    #[test]
+    fn everyone_with_a_person_keeps_their_own_marks_and_only_theirs() {
+        const WORK: &str = "01997c7e-0000-7000-8000-0000000000d1";
+        let mark = |member: &str| {
+            op(vec![Change::create(
+                Entity::Mark,
+                crate::mark::mark_id(member, WORK),
+                json!({ "member_id": member, "work_id": WORK, "status": "finished" }),
+            )])
+        };
+        let update = op(vec![Change::update(
+            Entity::Mark,
+            crate::mark::mark_id(MY_MEMBER, WORK),
+            json!({ "rating": 5 }),
+        )]);
+        let reader = view(Some(Role::Reader));
+        let mine = View {
+            same_person: true,
+            ..view(Some(Role::Reader))
+        };
+        assert!(is_allowed(&mark(MY_MEMBER), &reader));
+        assert!(!is_allowed(&mark(OTHER_MEMBER), &view(Some(Role::Editor))));
+        assert!(is_allowed(&mark(OTHER_MEMBER), &view(Some(Role::Admin))));
+        assert!(is_allowed(&update, &mine));
+        assert!(!is_allowed(&update, &reader), "someone else's mark");
+        assert!(!is_allowed(&mark(MY_MEMBER), &view(None)), "a device of nobody");
     }
 
     const ME: &str = "01997c7e-0000-7000-8000-0000000000fb";

@@ -59,6 +59,7 @@ pub enum OperationErrorCode {
     WrongType,
     EmptyUpdate,
     FieldsOnDelete,
+    WrongId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
@@ -162,6 +163,21 @@ impl Change {
         {
             return Err(fail(MissingField, Some(missing.name)));
         }
+
+        // A person's mark on a work has one id, derived from both (D68), so the same
+        // person marking the same work on two devices writes the same row.
+        if self.entity == Entity::Mark {
+            let member = self.fields.get("member_id").and_then(Value::as_str);
+            let work = self.fields.get("work_id").and_then(Value::as_str);
+            if member.is_some() || work.is_some() {
+                let derived = member
+                    .zip(work)
+                    .map(|(member, work)| crate::mark::mark_id(member, work));
+                if derived != Some(self.id.to_lowercase()) {
+                    return Err(fail(WrongId, None));
+                }
+            }
+        }
         Ok(())
     }
 }
@@ -175,6 +191,7 @@ fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
             .is_some_and(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok()),
         FieldType::OneOf(allowed) => value.as_str().is_some_and(|s| allowed.contains(&s)),
         FieldType::Boolean => value.is_boolean(),
+        FieldType::Rating => value.as_i64().is_some_and(|n| (1..=5).contains(&n)),
         FieldType::Ref(_) => value.as_str().is_some_and(|s| Uuid::parse_str(s).is_ok()),
     }
 }

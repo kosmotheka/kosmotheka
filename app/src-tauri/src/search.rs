@@ -92,7 +92,8 @@ pub fn affected_editions(
         | Entity::Wish
         | Entity::Revocation
         | Entity::Device
-        | Entity::ChangeRequest => BTreeSet::new(),
+        | Entity::ChangeRequest
+        | Entity::Mark => BTreeSet::new(),
     };
     Ok(found)
 }

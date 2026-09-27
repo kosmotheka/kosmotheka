@@ -100,7 +100,8 @@
             "wish",
             "revocation",
             "device",
-            "change_request"
+            "change_request",
+            "mark"
           ]
         },
         "id": {
@@ -502,6 +503,57 @@
                   "note": {
                     "description": "What the asker wants to tell whoever decides. Travels inside the request itself, as a row only an administrator could create, so the operation stays a request.",
                     "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "mark"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "member_id": {
+                    "description": "The person whose mark it is (D68).",
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "status": {
+                    "description": "Where the person is with the work. Null or absent: not set.",
+                    "enum": [
+                      "pending",
+                      "in_progress",
+                      "finished",
+                      "abandoned",
+                      null
+                    ]
+                  },
+                  "status_on": {
+                    "description": "When the status was set.",
+                    "$ref": "#/$defs/date"
+                  },
+                  "rating": {
+                    "description": "From 1 to 5.",
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "favorite": {
+                    "$ref": "#/$defs/boolean"
                   }
                 }
               }

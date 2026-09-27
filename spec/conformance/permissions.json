@@ -2683,5 +2683,309 @@
         "01997c7e-0000-7000-8000-000000000007"
       ]
     }
+  },
+  {
+    "name": "each person keeps their own marks, whatever their role, and only theirs",
+    "note": "A reader marks what he read and an editor what she is reading without asking. Changing someone else's mark is for administrators; a device of nobody marks nothing.",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200013-00000000-01997c7e-0000-7000-8000-0000000000fd",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fd",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "stranger"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "book.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000f1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "0b581f1b-ddc0-5a8c-aeda-4a56e51e7ca7",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "finished",
+              "rating": 5
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000008",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200032-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "deeaf432-b381-5ea1-8d8b-3afc0b63257e",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "in_progress"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000009",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200033-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "0b581f1b-ddc0-5a8c-aeda-4a56e51e7ca7",
+            "action": "update",
+            "fields": {
+              "rating": 1
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000010",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200034-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "0b581f1b-ddc0-5a8c-aeda-4a56e51e7ca7",
+            "action": "update",
+            "fields": {
+              "favorite": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000011",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200035-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "0b581f1b-ddc0-5a8c-aeda-4a56e51e7ca7",
+            "action": "update",
+            "fields": {
+              "status_on": "2026-03-14"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000012",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200036-00000000-01997c7e-0000-7000-8000-0000000000fd",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "43957dd8-2a9f-59e1-9171-311642213d96",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "pending"
+            }
+          }
+        ]
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      [
+        3,
+        2,
+        1,
+        0,
+        4,
+        11,
+        7,
+        6,
+        5,
+        9,
+        8,
+        10
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007",
+        "01997c7e-0000-7000-8000-000000000008",
+        "01997c7e-0000-7000-8000-000000000010",
+        "01997c7e-0000-7000-8000-000000000011"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000009",
+        "01997c7e-0000-7000-8000-000000000012"
+      ]
+    }
   }
 ]

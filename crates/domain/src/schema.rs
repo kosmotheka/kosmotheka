@@ -25,6 +25,9 @@ pub enum Entity {
     /// How an administrator resolved a request (D73). Its id is the id of the
     /// operation that was requested.
     ChangeRequest,
+    /// What one person notes about one work (D68). Its id is derived from both
+    /// (`mark::mark_id`).
+    Mark,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +39,8 @@ pub enum FieldType {
     OneOf(&'static [&'static str]),
     /// `true` or `false`.
     Boolean,
+    /// A whole number from 1 to 5.
+    Rating,
     /// Id of another entity; the database enforces that it exists.
     Ref(Entity),
 }
@@ -122,6 +127,16 @@ const CHANGE_REQUEST_FIELDS: &[FieldSpec] = &[
     field("status", FieldType::OneOf(REQUEST_STATUSES), false),
     field("note", FieldType::Text, false),
 ];
+/// Where a person is with a work (D68). «In progress» is named per kind in the UI.
+pub const MARK_STATUSES: &[&str] = &["pending", "in_progress", "finished", "abandoned"];
+const MARK_FIELDS: &[FieldSpec] = &[
+    field("member_id", FieldType::Ref(Entity::Member), true),
+    field("work_id", FieldType::Ref(Entity::Work), true),
+    field("status", FieldType::OneOf(MARK_STATUSES), false),
+    field("status_on", FieldType::Date, false),
+    field("rating", FieldType::Rating, false),
+    field("favorite", FieldType::Boolean, false),
+];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
@@ -147,6 +162,7 @@ impl Entity {
             Entity::Revocation => "revocations",
             Entity::Device => "devices",
             Entity::ChangeRequest => "change_requests",
+            Entity::Mark => "marks",
         }
     }
 
@@ -181,6 +197,7 @@ impl Entity {
             Entity::Revocation => REVOCATION_FIELDS,
             Entity::Device => DEVICE_FIELDS,
             Entity::ChangeRequest => CHANGE_REQUEST_FIELDS,
+            Entity::Mark => MARK_FIELDS,
         }
     }
 
