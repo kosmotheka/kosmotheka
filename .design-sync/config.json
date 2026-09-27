@@ -41,6 +41,20 @@
     "DialogPortal": "../../../../docs/groups/overlays.md",
     "DialogTitle": "../../../../docs/groups/overlays.md",
     "DialogTrigger": "../../../../docs/groups/overlays.md",
+    "DropdownMenuCheckboxItem": "../../../../docs/groups/overlays.md",
+    "DropdownMenuContent": "../../../../docs/groups/overlays.md",
+    "DropdownMenuGroup": "../../../../docs/groups/overlays.md",
+    "DropdownMenuItem": "../../../../docs/groups/overlays.md",
+    "DropdownMenuLabel": "../../../../docs/groups/overlays.md",
+    "DropdownMenuPortal": "../../../../docs/groups/overlays.md",
+    "DropdownMenuRadioGroup": "../../../../docs/groups/overlays.md",
+    "DropdownMenuRadioItem": "../../../../docs/groups/overlays.md",
+    "DropdownMenuSeparator": "../../../../docs/groups/overlays.md",
+    "DropdownMenuShortcut": "../../../../docs/groups/overlays.md",
+    "DropdownMenuSub": "../../../../docs/groups/overlays.md",
+    "DropdownMenuSubContent": "../../../../docs/groups/overlays.md",
+    "DropdownMenuSubTrigger": "../../../../docs/groups/overlays.md",
+    "DropdownMenuTrigger": "../../../../docs/groups/overlays.md",
     "SelectContent": "../../../../docs/groups/forms.md",
     "SelectGroup": "../../../../docs/groups/forms.md",
     "SelectItem": "../../../../docs/groups/forms.md",
@@ -50,6 +64,13 @@
     "SelectSeparator": "../../../../docs/groups/forms.md",
     "SelectTrigger": "../../../../docs/groups/forms.md",
     "SelectValue": "../../../../docs/groups/forms.md",
+    "SheetClose": "../../../../docs/groups/overlays.md",
+    "SheetContent": "../../../../docs/groups/overlays.md",
+    "SheetDescription": "../../../../docs/groups/overlays.md",
+    "SheetFooter": "../../../../docs/groups/overlays.md",
+    "SheetHeader": "../../../../docs/groups/overlays.md",
+    "SheetTitle": "../../../../docs/groups/overlays.md",
+    "SheetTrigger": "../../../../docs/groups/overlays.md",
     "TableBody": "../../../../docs/groups/data.md",
     "TableCaption": "../../../../docs/groups/data.md",
     "TableCell": "../../../../docs/groups/data.md",
@@ -105,6 +126,18 @@
     },
     "Alert": {
       "cardMode": "column"
+    },
+    "SheetHeader": {
+      "cardMode": "single",
+      "viewport": "390x420"
+    },
+    "SheetFooter": {
+      "cardMode": "single",
+      "viewport": "390x420"
+    },
+    "DropdownMenuLabel": {
+      "cardMode": "single",
+      "viewport": "480x320"
     }
   },
   "readmeHeader": ".design-sync/conventions.md"
