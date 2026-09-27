@@ -733,11 +733,17 @@ Cada dispositivo tiene un par de claves Ed25519, firma sus operaciones y los dem
 | Caso | Cómo |
 |---|---|
 | Con cuenta en la nube | Con el email |
-| Hay otro administrador | Revoca el dispositivo perdido y da permisos al nuevo |
+| Hay otro administrador, u otro dispositivo del mismo administrador | Desde él, quita el dispositivo perdido y vincula el nuevo (el rol es de la persona, no del dispositivo, D73) |
 | Biblioteca personal, de una sola persona | Al restaurar la copia pasa a ser suya con una clave nueva |
-| Compartida, con un único administrador que pierde su único dispositivo | **Abierto** |
+| Compartida, con un único administrador que pierde su único dispositivo | Duplicarla como nueva (ver abajo) |
 
-- Para el caso abierto hay tres salidas en estudio: un código de recuperación al crear la biblioteca, que la app sugiera un segundo administrador al compartir, o duplicarla como nueva.
+- **Caso del administrador único, cerrado el 27/09/2026:**
+  - **Prevenir:** la app avisa cuando la biblioteca tiene un solo administrador con un solo dispositivo, y sugiere vincular otro dispositivo suyo o nombrar un segundo administrador.
+  - **Último recurso:** quien tenga la biblioteca la duplica como una nueva, de la que es administrador, y los demás vuelven a unirse. Se pierden el historial y los vínculos, pero no los datos.
+  - **Con cuenta en la nube** (Fase 7), el control se recupera con el email.
+  - **Descartado el código de recuperación:** es un secreto más que se pierde o se deja a la vista, y quien lo encuentre se queda con la biblioteca.
+- **Restaurar una copia no devuelve el control** de una biblioteca compartida: el dispositivo nuevo tiene otra clave, y vincularlo a una persona es cosa de un administrador. Si bastara la copia, cualquiera con el fichero podría hacerse administrador.
+- **Perder los datos** (un dispositivo que era la única copia y sin copia de seguridad) no tiene arreglo: lo evitan las copias y compartir con otro dispositivo, que ya es una copia completa. La **copia automática periódica**, como la de WhatsApp, queda como mejora para cuando el proyecto sea público; no entra en el roadmap de desarrollo.
 - La biometría no ayuda: sus claves no salen del chip del móvil.
 
 ## D59 · Organizaciones: la puerta abierta, sin construirlas — `aceptada`

@@ -15,7 +15,7 @@ Cada hito deja la app funcionando, con sus tests, y se prueba antes de seguir.
 | **5.3 Roles** | Administrador, editor y lector, y el permiso de compartir aparte. Nadie da más de lo que tiene; puede haber varios administradores | `spec/`, `crates/domain` |
 | **5.4 Comprobar lo que llega** | Cada dispositivo comprueba cada operación contra los roles que tenía su autor en ese momento. Todos llegan al mismo resultado aunque las cosas lleguen en otro orden | `sync.rs`, casos compartidos en `spec/` |
 | **5.5 Peticiones** | Lo que un rol no puede hacer se convierte en petición; los administradores aceptan o rechazan | `spec/`, `app/` |
-| **5.6 Dispositivo perdido** | Un administrador revoca un dispositivo perdido desde otro y da permisos al nuevo (D58). El caso del administrador único sigue abierto | `libraries.rs`, `lan/` |
+| **5.6 Dispositivo perdido** | Un administrador quita un dispositivo perdido desde otro y vincula el nuevo (D58). Aviso cuando hay un solo administrador con un solo dispositivo. Último recurso: duplicar la biblioteca como nueva | `libraries.rs`, `lan/` |
 | **5.7 Interfaz** | Personas y permisos, peticiones, «Pedir que se borre» y a quién pertenece cada dispositivo | `app/src`, encargo a Claude Design |
 
 Las pantallas de 5.2, 5.5 y 5.7 se piden a Claude Design antes de construirlas. Encargo revisado el 27/09/2026: [design/encargo-fase-5.md](../design/encargo-fase-5.md).
@@ -50,8 +50,7 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 
 Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](../DECISIONS.md). Quedan:
 
-1. **El administrador único que pierde su único dispositivo** (abierto en D58): código de recuperación, sugerir un segundo administrador al compartir, o duplicar la biblioteca.
-2. **Las marcas por persona (D68: leído, valoración, favorito):** ¿entran en esta fase, ya que el lector «marca lo suyo», o van en la 9?
+1. **Las marcas por persona (D68: leído, valoración, favorito):** ¿entran en esta fase, ya que el lector «marca lo suyo», o van en la 9?
 
 ## Estado
 
