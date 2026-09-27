@@ -57,7 +57,7 @@ Pon nombre a cada instancia en Compartir y dispositivos → «Nombre de este dis
 - [ ] **Retirar.** En C, pide algo y retíralo antes de sincronizar. Sincroniza. *Esperado:* en A no aparece como pendiente; sale como «Retirada».
 - [ ] **Ya no se puede aplicar.** Desde B pide borrar un libro de Ana; antes de aceptarlo, Ana borra ese libro en A. *Esperado:* la petición avisa de que ya no se puede aplicar y «Aceptar» está desactivado.
 - [ ] **Resuelta por otra persona.** Con dos administradores en dos dispositivos, deja la misma petición abierta en los dos, acepta en uno, sincroniza y acepta en el otro. *Esperado:* «Laura ya la aceptó», con «Entendido».
-- [ ] **Un cambio tuyo ha pasado a petición.** En B, sin sincronizar, cambia la ubicación de un libro. En A, baja a Laura a lectora. Sincroniza B. *Esperado:* B avisa de que un cambio suyo ha pasado a petición, con «Ver mi petición».
+- [ ] **Un cambio tuyo ha pasado a petición.** En A, baja a Laura a lectora, sin sincronizar todavía. Después, en B, cambia la ubicación de un libro (B aún se cree editora y lo hace). Sincroniza B con A. Cuenta el orden en que se hicieron, no el de llegada: el cambio de B fue posterior a la bajada. *Esperado:* B avisa de que un cambio suyo ha pasado a petición, con «Ver mi petición».
 
 ### Dispositivos y emparejar
 
