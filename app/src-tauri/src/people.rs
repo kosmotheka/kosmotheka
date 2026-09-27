@@ -324,6 +324,70 @@ pub fn assign_device(
     Ok(())
 }
 
+/// Who a newly paired device may belong to: the people of the libraries it
+/// receives where this device may say whose it is (roles on, and administrator).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairingOwners {
+    /// Library ids, in the order the screens list them.
+    pub libraries: Vec<String>,
+    pub people: Vec<Candidate>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Candidate {
+    pub id: String,
+    pub name: String,
+    /// The person this device belongs to.
+    pub me: bool,
+    /// Their role in each of those libraries where they have one.
+    pub roles: std::collections::BTreeMap<String, String>,
+    pub devices: usize,
+}
+
+pub fn pairing_owners(conn: &Connection, device: &str) -> Result<PairingOwners> {
+    let shared: Vec<String> = conn
+        .prepare(
+            "SELECT p.library_id FROM library_peers p JOIN libraries l ON l.id = p.library_id
+              WHERE p.device_id = ?1 ORDER BY l.name COLLATE NOCASE, l.id",
+        )?
+        .query_map([device], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut libraries = Vec::new();
+    let mut people: Vec<Candidate> = Vec::new();
+    for library in shared {
+        let listed = list_people(conn, &library)?;
+        if !listed.has_roles || listed.my_role.as_deref() != Some("admin") {
+            continue;
+        }
+        for person in listed.people {
+            let index = match people.iter().position(|c| c.id == person.id) {
+                Some(index) => index,
+                None => {
+                    people.push(Candidate {
+                        id: person.id.clone(),
+                        name: person.name.clone(),
+                        me: false,
+                        roles: Default::default(),
+                        devices: 0,
+                    });
+                    people.len() - 1
+                }
+            };
+            let candidate = &mut people[index];
+            candidate.me |= person.devices.iter().any(|d| d.this_device);
+            candidate.devices = candidate.devices.max(person.devices.len());
+            if let Some(role) = person.role {
+                candidate.roles.insert(library.clone(), role);
+            }
+        }
+        libraries.push(library);
+    }
+    people.sort_by_key(|c| (!c.me, c.name.to_lowercase()));
+    Ok(PairingOwners { libraries, people })
+}
+
 /// Says whose a newly paired device is (D73): `person` joins each of `libraries`
 /// with the role given for it where they have none yet (a role is never inherited),
 /// and the device becomes theirs in each one. The device may not have registered
@@ -343,6 +407,11 @@ pub fn give_access(
     let mut member_id = person.id.clone();
     let tx = conn.transaction()?;
     for library in &libraries {
+        // Only where roles are on and this device may say whose a device is.
+        let listed = list_people(&tx, library)?;
+        if !listed.has_roles || listed.my_role.as_deref() != Some("admin") {
+            continue;
+        }
         let pick = PersonPick {
             id: member_id.clone(),
             name: person.name.clone(),
@@ -665,6 +734,34 @@ mod tests {
         let joined =
             member_changes(&conn, &games, &again, Some("editor"), None, &mut changes).unwrap();
         assert_eq!(joined, id);
+    }
+
+    #[test]
+    fn pairing_offers_only_libraries_with_roles_that_this_device_administers() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let phone = db::open_in_memory().unwrap();
+        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
+        let games = crate::libraries::create_library(&mut laptop, "Juegos").unwrap();
+        let phone_id = ops::device_id(&phone).unwrap();
+        lan::share_library(&laptop, LIB, &phone_id).unwrap();
+        lan::share_library(&laptop, &games, &phone_id).unwrap();
+
+        let owners = pairing_owners(&laptop, &phone_id).unwrap();
+        assert_eq!(owners.libraries, vec![LIB.to_owned()]);
+        assert_eq!(owners.people.len(), 1);
+        assert!(owners.people[0].me);
+        assert_eq!(owners.people[0].roles[LIB], "admin");
+
+        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "reader".to_owned())]);
+        let hugo = PersonPick {
+            id: None,
+            name: "Hugo".into(),
+        };
+        give_access(&mut laptop, &phone_id, &hugo, &roles, false).unwrap();
+        assert!(
+            !list_people(&laptop, &games).unwrap().has_roles,
+            "a library without roles keeps working without them"
+        );
     }
 
     #[test]

@@ -105,6 +105,7 @@ pub fn run() {
             commands::list_people,
             commands::start_roles,
             commands::known_people,
+            commands::pairing_owners,
             commands::give_access,
             commands::set_role,
             commands::assign_device,

@@ -479,6 +479,15 @@ pub fn known_people(database: State<'_, Database>) -> Result<Vec<people::KnownPe
 /// Whose a newly paired device is, with the role its person gets in each library
 /// where they have none yet (a role is chosen, never inherited).
 #[tauri::command]
+pub fn pairing_owners(
+    database: State<'_, Database>,
+    device: String,
+) -> Result<people::PairingOwners> {
+    let conn = database.lock()?;
+    people::pairing_owners(&conn, &device)
+}
+
+#[tauri::command]
 pub fn give_access(
     database: State<'_, Database>,
     device: String,
