@@ -14,4 +14,6 @@ enum FieldType
     case OneOf;
     /** Id of another entity; the database enforces that it exists. */
     case Ref;
+    /** `true` or `false`. */
+    case Boolean;
 }

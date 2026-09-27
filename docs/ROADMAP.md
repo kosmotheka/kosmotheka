@@ -86,6 +86,7 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 **Estado:**
 - [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [plans/fase-5.md](plans/fase-5.md) (27/09/2026).
 - [x] 5.1 Firmas: cada dispositivo firma sus operaciones y los demás las comprueban, también a través de otro dispositivo (27/09/2026).
+- [x] 5.2 a 5.4, sin interfaz: roles y de quién es cada dispositivo; cada dispositivo comprueba lo que recibe y lo que escribe, y lo no permitido queda como petición (D73, 27/09/2026).
 
 ## Fase 6 — Catálogo general
 

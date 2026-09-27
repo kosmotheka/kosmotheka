@@ -30,12 +30,13 @@ works ──< work_contributors >── people
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
-| `members` | Miembros de la casa (propietarios). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente) |
+| `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
 | `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
 | `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |
-| `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name` |
-| `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable`, `signature` |
+| `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name`, `member_id` (de quién es, D73) |
+| `row_authors` | Qué dispositivo creó cada fila, para que un editor borre lo que creó su persona (D45); local, se recalcula desde el registro | `library_id`, `entity`, `entity_id`, `device_id` |
+| `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable`, `signature`, `status` (`applied` o `request`, D73) |
 | `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `library_id`, `entity`, `entity_id`, `field`, `hlc` |
 | `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)). Borrar una biblioteca deja una lápida de la biblioteca entera | `library_id`, `entity`, `entity_id`, `hlc` |
 | `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `library_id`, `edition_id`, `content` |

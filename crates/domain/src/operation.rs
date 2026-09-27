@@ -174,6 +174,7 @@ fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
             .as_str()
             .is_some_and(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok()),
         FieldType::OneOf(allowed) => value.as_str().is_some_and(|s| allowed.contains(&s)),
+        FieldType::Boolean => value.is_boolean(),
         FieldType::Ref(_) => value.as_str().is_some_and(|s| Uuid::parse_str(s).is_ok()),
     }
 }

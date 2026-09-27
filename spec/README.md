@@ -8,7 +8,8 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 | `conformance/operation-validation.json` | Operations with the expected validation result (`valid`, or `invalid` with an error code, change index and field) |
 | `conformance/signatures.json` | Signed operations with the canonical bytes and the verification result every implementation must get |
 | `conformance/library-merge.json` | Operations from several libraries, delivered in different orders, with the rows every order must end in |
-| `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations. Now: roles and permissions (phase 5), with the proposed rules in its README |
+| `conformance/permissions.json` | Operations from devices with different roles, delivered in different orders, with which ones are applied and which become requests |
+| `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations |
 
 ## Rules the schema cannot express
 
@@ -38,6 +39,24 @@ The public key of each device travels with the library as a **`device`** row (32
 
 `conformance/signatures.json` has, for each case, the operation, the public key, the exact canonical text and the result: `valid`, or `invalid` with `missing`, `bad_key`, `malformed` or `mismatch`. The keys in it come from fixed test bytes and must never be used for anything else.
 
+## Roles and permissions
+
+Every device checks each operation it receives, and each one it makes, against the roles of the library (D55, D73 in `docs/DECISIONS.md`). All devices reach the same verdict, whatever the order operations arrive in.
+
+1. **A library without roles works as before:** until some member has a role, every device may do everything. The first role is assigned under that same rule; from then on the library has roles.
+2. **Who wrote an operation** is the device in its `hlc` (signed). Its **person** is the member its `device` row points to (`member_id`), and its **role** is that member's `role` at the moment of the operation. A device linked to no member, or an operation without a signature, counts as a **reader**.
+3. **Roles** (`member.role`: `admin`, `editor` or `reader`; `member.can_share`: true or false):
+   - **admin** may do everything, including roles, who owns each device, access (`revocation`), the `library` row and deleting the library.
+   - **editor** creates and edits the catalog. It deletes only rows its person created: a row whose first create change came from a device of the same person.
+   - **reader** changes nothing: what it tries becomes a request.
+   - **Nobody gives more than they have:** changing `role`, `can_share` or a device's `member_id` is for administrators.
+4. **Every device registers and renames itself**, whatever its role: its own `device` row, without `member_id`.
+5. **All or nothing:** if any change in an operation is not allowed, none is applied and the whole operation becomes a **request**.
+6. **Roles as they were at that moment:** each operation is judged against the roles in force at its HLC, following the log in HLC order. When an operation arrives older than what a device has already applied, in a library with roles, the device re-evaluates that library from its log.
+7. **Nothing is lost:** an operation that becomes a request stays in the log and travels on to other devices like any other.
+
+`conformance/permissions.json` has cases in the shape of the merge cases (`operations`, `deliveries`), with `expect` listing the ids of the operations that end **applied** and those that end as **requests**; every delivery order must give the same lists. Deliveries keep each device's own operations in order, as the sync protocol does, so a device's key registration always comes before its signed operations. Every operation is signed with the test key of `conformance/signatures.json`, except those marked `"unsigned": true` (a field of the case, not of the operation).
+
 ## Running the conformance cases
 
 Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs` (validation) and `app/src-tauri/src/sync.rs` (merging); the PHP server runs the validation cases in `server/tests/Validator/` and will run the merge cases when it applies operations.
@@ -48,7 +67,7 @@ Each implementation loads the files in `conformance/` (not `conformance/draft/`)
 
 - `operations`: full operations, with their library and HLC.
 - `deliveries`: orders in which to deliver them, as lists of indexes into `operations`. Each operation is delivered alone, in that order, as if it came in its own sync. **Every order must end in the same state.** Orders respect causality, as the sync protocol guarantees: a change to a row never arrives before the operation that created that row (a device always sends everything the other lacks, oldest first).
-- `expect.rows`: every catalog row that must exist afterwards, as `{ library, entity, id, fields }`. Rows not listed must not exist.
+- `expect.rows`: every catalog row that must exist afterwards, as `{ library, entity, id, fields }`. Rows not listed must not exist. Fields not listed must be null: an optional field nobody set, such as a member's `role`, is left out.
 
 Rules these cases pin down:
 

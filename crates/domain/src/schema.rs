@@ -31,6 +31,8 @@ pub enum FieldType {
     /// `YYYY-MM-DD`.
     Date,
     OneOf(&'static [&'static str]),
+    /// `true` or `false`.
+    Boolean,
     /// Id of another entity; the database enforces that it exists.
     Ref(Entity),
 }
@@ -86,7 +88,13 @@ const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
     field("google_books_id", FieldType::Text, false),
     field("open_library_id", FieldType::Text, false),
 ];
-const MEMBER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+/// Roles a member can have in a library (D55, D73).
+pub const ROLES: &[&str] = &["admin", "editor", "reader"];
+const MEMBER_FIELDS: &[FieldSpec] = &[
+    field("name", FieldType::Text, true),
+    field("role", FieldType::OneOf(ROLES), false),
+    field("can_share", FieldType::Boolean, false),
+];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WISH_FIELDS: &[FieldSpec] = &[
     field("title", FieldType::Text, true),
@@ -102,6 +110,7 @@ const REVOCATION_FIELDS: &[FieldSpec] = &[
 const DEVICE_FIELDS: &[FieldSpec] = &[
     field("public_key", FieldType::Text, true),
     field("name", FieldType::Text, true),
+    field("member_id", FieldType::Ref(Entity::Member), false),
 ];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),

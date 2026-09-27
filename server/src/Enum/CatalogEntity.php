@@ -31,6 +31,9 @@ enum CatalogEntity: string
 
     public const array FORMATS = ['hardcover', 'paperback', 'pocket', 'ebook', 'audiobook', 'other'];
 
+    /** Roles a member can have in a library (D55, D73). */
+    public const array ROLES = ['admin', 'editor', 'reader'];
+
     /**
      * @return array<string, FieldSpec>
      */
@@ -43,7 +46,12 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf('book'), 'title' => $text(true)],
-            self::Library, self::Person, self::Member, self::Publisher => ['name' => $text(true)],
+            self::Library, self::Person, self::Publisher => ['name' => $text(true)],
+            self::Member => [
+                'name' => $text(true),
+                'role' => new FieldSpec(FieldType::OneOf, false, self::ROLES),
+                'can_share' => new FieldSpec(FieldType::Boolean, false),
+            ],
             self::WorkContributor => [
                 'work_id' => $ref(true),
                 'person_id' => $ref(true),
@@ -80,7 +88,7 @@ enum CatalogEntity: string
                 'cover_url' => $text(),
             ],
             self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
-            self::Device => ['public_key' => $text(true), 'name' => $text(true)],
+            self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref()],
         };
     }
 }

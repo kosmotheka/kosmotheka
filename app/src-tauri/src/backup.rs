@@ -484,7 +484,11 @@ mod tests {
         };
         assert_eq!(catalog::list_books(&target, LIB, &filter).unwrap().len(), 1);
         let intent: String = target
-            .query_row("SELECT intent FROM operations", [], |r| r.get(0))
+            .query_row(
+                "SELECT intent FROM operations WHERE intent <> 'device.register'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(intent, "backup.restore");
     }

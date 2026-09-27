@@ -475,8 +475,9 @@ mod tests {
             .unwrap();
         let report = sync(&phone, &server.device_id).await.unwrap();
 
-        assert_eq!(report.received.received, 1);
-        assert_eq!(report.sent, 1);
+        // Each side gets the other's book and the other device's key registration.
+        assert_eq!(report.received.received, 2);
+        assert_eq!(report.sent, 2);
         assert_eq!(titles(&phone), vec!["On the desk", "On the phone"]);
         assert_eq!(titles(&desk.database), vec!["On the desk", "On the phone"]);
         let clients = list_devices(&desk.database.lock().unwrap(), "known_clients").unwrap();

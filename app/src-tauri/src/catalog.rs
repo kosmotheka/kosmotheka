@@ -889,7 +889,8 @@ mod tests {
     fn intents(conn: &Connection) -> Vec<String> {
         ids(
             conn,
-            "SELECT intent FROM operations WHERE library_id = ?1 AND ?2 = ?2 ORDER BY hlc",
+            "SELECT intent FROM operations
+              WHERE library_id = ?1 AND ?2 = ?2 AND intent <> 'device.register' ORDER BY hlc",
             LIB,
             "",
         )

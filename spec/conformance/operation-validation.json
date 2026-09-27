@@ -966,5 +966,100 @@
       "code": "other_device",
       "change": 0
     }
+  },
+  {
+    "name": "member with a role",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000124",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.role",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "role": "editor",
+            "can_share": false
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "role that does not exist",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000125",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.role",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "role": "owner"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "role"
+    }
+  },
+  {
+    "name": "can_share that is not true or false",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000126",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.role",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "can_share": 1
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "can_share"
+    }
+  },
+  {
+    "name": "device assigned to a member",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000127",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.assign",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ee",
+          "action": "update",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000012"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
   }
 ]

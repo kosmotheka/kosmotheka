@@ -58,9 +58,9 @@ Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](
 - [x] Plan escrito (27/09/2026).
 - [x] Borrador de casos de roles y permisos: `spec/conformance/draft/permissions.json` (10 casos) y sus reglas en `spec/conformance/draft/README.md`. **Para revisar** antes de construir 5.3 y 5.4.
 - [x] 5.1 Firmas (27/09/2026): especificación con casos de firma compartidos (`spec/conformance/signatures.json`), entidad `device`, regla `other_device`, firma y comprobación en Rust, comprobación en PHP con libsodium, migración 11. La app firma todo lo que escribe y rechaza lo que no cuadra; tests con tres dispositivos, manipulación en el camino, suplantación y cambio de clave. El APK compila. Pruebas en pantalla: [`docs/testing/fase-5.md`](../testing/fase-5.md).
-- [ ] 5.2 Personas y dispositivos.
-- [ ] 5.3 Roles.
-- [ ] 5.4 Comprobar lo que llega.
+- [x] 5.2 Personas y dispositivos, los datos (27/09/2026): `member_id` en la fila `device`. Decir de quién es cada dispositivo al emparejar llega con la interfaz (5.7).
+- [x] 5.3 Roles, los datos (27/09/2026): `role` y `can_share` en el miembro, con un tipo de campo booleano nuevo en la especificación, Rust y PHP. Migración 12.
+- [x] 5.4 Comprobar lo que llega (27/09/2026): reglas en `crates/domain/src/permission.rs`; la app juzga lo que recibe y lo que escribe, guarda lo no permitido como petición y recalcula la biblioteca desde su registro cuando llega tarde algo con roles. Los 10 casos pasan de borrador a `spec/conformance/permissions.json`. **Corrección de los casos:** sus órdenes de llegada «al revés» desordenaban las operaciones de un mismo dispositivo, algo que la sincronización nunca hace (y con firmas, una operación llegaría antes que la clave de su autor). Se cambiaron por órdenes que respetan el de cada dispositivo; las reglas y los resultados esperados no cambian. También se corrigió un id que no era UUID.
 - [ ] 5.5 Peticiones.
 - [ ] 5.6 Dispositivo perdido.
 - [ ] 5.7 Interfaz.

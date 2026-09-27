@@ -58,6 +58,8 @@ pub fn record_existing(
     record_operation(tx, library, intent, changes, false)
 }
 
+/// All or nothing, even inside the caller's transaction: the registration this may
+/// record first goes away if the operation itself fails.
 fn record_operation(
     tx: &Transaction<'_>,
     library: &str,
@@ -65,23 +67,44 @@ fn record_operation(
     changes: Vec<Change>,
     apply_changes: bool,
 ) -> Result<Operation> {
+    tx.execute_batch("SAVEPOINT record")?;
+    match record_inner(tx, library, intent, changes, apply_changes) {
+        Ok(operation) => {
+            tx.execute_batch("RELEASE record")?;
+            Ok(operation)
+        }
+        Err(error) => {
+            tx.execute_batch("ROLLBACK TO record; RELEASE record")?;
+            Err(error)
+        }
+    }
+}
+
+fn record_inner(
+    tx: &Transaction<'_>,
+    library: &str,
+    intent: &str,
+    changes: Vec<Change>,
+    apply_changes: bool,
+) -> Result<Operation> {
     let device_id = device_id(tx)?;
-    let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
     let key = signing_key(tx)?;
 
     // The first time this device writes to a library, it registers the key it signs
-    // with, in the same operation, so the others can check it (D56).
-    let mut changes = changes;
-    if !is_registered(tx, library, &device_id)? {
-        changes.insert(
-            0,
-            Change::create(
-                Entity::Device,
-                &device_id,
-                json!({ "public_key": key.public_key(), "name": crate::lan::device_name(tx)? }),
-            ),
+    // with (D56), in an operation of its own: every device may register itself, so it
+    // never turns the operation it comes with into a request (D73).
+    let registers_itself = changes
+        .iter()
+        .any(|change| change.entity == Entity::Device && change.id == device_id);
+    if !registers_itself && !is_registered(tx, library, &device_id)? {
+        let registration = Change::create(
+            Entity::Device,
+            &device_id,
+            json!({ "public_key": key.public_key(), "name": crate::lan::device_name(tx)? }),
         );
+        record_operation(tx, library, "device.register", vec![registration], true)?;
     }
+    let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
 
     let mut operation = Operation {
         id: new_id(),
@@ -93,6 +116,10 @@ fn record_operation(
     };
     operation.validate()?;
     operation.signature = Some(key.sign(&operation));
+    // Judged like any operation received from another device, so all of them agree.
+    if !crate::permissions::allowed(tx, &operation) {
+        return Err(Error::NotAllowed);
+    }
     let hlc_text = operation.hlc.to_string();
 
     // Search text can change for rows that vanish (known before) or appear (known after).
@@ -101,17 +128,17 @@ fn record_operation(
         affected.extend(search::affected_editions(tx, library, change)?);
     }
     for change in &operation.changes {
-        // The device row is new even in a baseline, whose other rows already exist.
-        if apply_changes || change.entity == Entity::Device {
+        if apply_changes {
             apply(tx, library, change)?;
         }
+        crate::permissions::note_author(tx, library, change, &device_id)?;
         write_versions(tx, library, change, &hlc_text)?;
     }
     for change in &operation.changes {
         affected.extend(search::affected_editions(tx, library, change)?);
     }
     search::reindex(tx, library, &affected)?;
-    log_operation(tx, &operation, schema_version(tx)?)?;
+    log_operation(tx, &operation, schema_version(tx)?, Status::Applied)?;
     write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
     Ok(operation)
 }
@@ -172,10 +199,40 @@ pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
 }
 
 /// Appends to the log. The author device is the one inside the HLC.
-pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i64) -> Result<()> {
+/// What became of an operation: applied, or kept as a request because its author
+/// was not allowed to make it (D73).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    Applied,
+    Request,
+}
+
+impl Status {
+    fn as_str(self) -> &'static str {
+        match self {
+            Status::Applied => "applied",
+            Status::Request => "request",
+        }
+    }
+}
+
+pub fn set_status(conn: &Connection, operation_id: &str, status: Status) -> Result<()> {
     conn.execute(
-        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable, signature)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8)",
+        "UPDATE operations SET status = ?2 WHERE id = ?1",
+        [operation_id, status.as_str()],
+    )?;
+    Ok(())
+}
+
+pub fn log_operation(
+    conn: &Connection,
+    operation: &Operation,
+    schema_version: i64,
+    status: Status,
+) -> Result<()> {
+    conn.execute(
+        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable, signature, status)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9)",
         params![
             operation.id,
             operation.library,
@@ -185,6 +242,7 @@ pub fn log_operation(conn: &Connection, operation: &Operation, schema_version: i
             serde_json::to_string(&operation.changes)?,
             schema_version,
             operation.signature,
+            status.as_str(),
         ],
     )?;
     Ok(())
@@ -302,6 +360,12 @@ pub fn delete_row(conn: &Connection, entity: Entity, library: &str, id: &str) ->
 /// Removes a library and everything in it (D65). Returns the library rows deleted,
 /// like `delete_row`. The operation log stays: it is the record of what happened (D66).
 pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
+    clear_library(conn, library)?;
+    delete_row(conn, Entity::Library, library, library)
+}
+
+/// Removes everything a library holds but the library row itself.
+pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
     // Children before parents, so no foreign key is left dangling.
     for entity in LIBRARY_CONTENTS_CHILDREN_FIRST {
         conn.execute(
@@ -315,7 +379,8 @@ pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
     )?;
     conn.execute("DELETE FROM tombstones WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
-    delete_row(conn, Entity::Library, library, library)
+    conn.execute("DELETE FROM row_authors WHERE library_id = ?1", [library])?;
+    Ok(())
 }
 
 /// Every entity inside a library, children before parents.
@@ -494,7 +559,8 @@ mod tests {
 
         assert_eq!(renamed, "B");
         assert_eq!(count(&tx, "members"), 0);
-        assert_eq!(count(&tx, "operations"), 3);
+        // Three, plus the one where this device registered its key.
+        assert_eq!(count(&tx, "operations"), 4);
     }
 
     #[test]

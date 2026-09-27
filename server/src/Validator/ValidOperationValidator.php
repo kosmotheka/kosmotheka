@@ -120,6 +120,7 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::Date => \is_string($value) && $this->isDate($value),
             FieldType::OneOf => \in_array($value, $spec->allowed, true),
             FieldType::Ref => \is_string($value) && $this->isUuid($value),
+            FieldType::Boolean => \is_bool($value),
         };
     }
 

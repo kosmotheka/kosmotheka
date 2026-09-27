@@ -10,6 +10,7 @@ mod lan;
 mod libraries;
 mod metadata;
 mod ops;
+mod permissions;
 mod search;
 mod settings;
 mod sync;

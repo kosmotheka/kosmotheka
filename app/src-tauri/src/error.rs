@@ -44,6 +44,10 @@ pub enum Error {
     /// which offers a backup first.
     #[error("this library is only on this device")]
     OnlyOnThisDevice,
+    /// The author's role does not allow this operation (D73). Asking for it instead
+    /// comes with requests (milestone 5.5).
+    #[error("your role in this library does not allow this")]
+    NotAllowed,
 }
 
 /// Shape of an error as the UI receives it.

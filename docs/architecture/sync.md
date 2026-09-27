@@ -42,6 +42,18 @@ Todo lo que sigue ocurre **biblioteca a biblioteca** (D46, D54):
 - los dispositivos que la recibieron **a través** del afectado (otros suyos) no se conocen hasta que haya cuentas (Fase 5), y la conservan;
 - lo que ya se haya exportado no se puede borrar.
 
+## Permisos al fusionar y recalcular (D73)
+
+- **Cada operación recibida se juzga** con los roles vigentes (`permissions::allowed`). Si está permitida, se aplica como siempre; si no, se guarda como petición.
+- **Si llega tarde algo en una biblioteca con roles** (una operación con HLC anterior a la más reciente que ya había), el dispositivo **recalcula la biblioteca desde su registro** (`permissions::rebuild`):
+  1. vacía su contenido, pero conserva la fila de la biblioteca, porque la migrada no tiene operación de creación;
+  2. vuelve a aplicar todas sus operaciones replicables en orden de HLC, juzgando cada una;
+  3. rehace el índice de búsqueda.
+
+  Así, si a Laura le quitaron el rol mientras su móvil estaba sin conexión, lo que hizo después pasa a petición en todos los dispositivos, llegue en el orden que llegue.
+- **Sin roles no se recalcula nunca:** se sigue fusionando campo a campo, como hasta ahora.
+- **Red de seguridad:** todos los tests de convergencia comprueban además que recalcular desde el registro deja cada biblioteca exactamente igual (`assert_rebuild_changes_nothing`). Los casos de `spec/conformance/permissions.json` se ejecutan en `sync::tests::permission_conformance_cases`.
+
 ## Qué le falta a quién: el vector de versiones
 
 Cada dispositivo sabe, para cada biblioteca y cada autor de operaciones, cuál es la última que tiene: `{biblioteca → {dispositivo → última marca HLC}}`. Se calcula del registro, sin tablas extra.

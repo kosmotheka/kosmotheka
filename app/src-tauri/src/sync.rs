@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use kosmotheka_domain::{Action, Change, Entity, Hlc, HlcClock, Operation, verify};
+use kosmotheka_domain::{Action, Change, Entity, FieldType, Hlc, HlcClock, Operation, verify};
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use serde_json::{Map, Value, json};
 
 use crate::error::Result;
 use crate::ops::{self, read_state, write_state};
+use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
@@ -61,6 +62,8 @@ pub struct MergeReport {
     pub rejected: usize,
     /// Changes skipped by the rules (older than the stored field, deleted rows...).
     pub skipped_changes: usize,
+    /// Operations received that their author's role did not allow: kept as requests (D73).
+    pub requests: usize,
 }
 
 impl MergeReport {
@@ -69,6 +72,7 @@ impl MergeReport {
         self.known += other.known;
         self.rejected += other.rejected;
         self.skipped_changes += other.skipped_changes;
+        self.requests += other.requests;
     }
 }
 
@@ -91,8 +95,15 @@ pub fn entity_rows(
     let rows = statement.query_map([library], |row| {
         let mut map = Map::new();
         map.insert("id".into(), json!(row.get::<_, String>(0)?));
-        for (i, field) in fields.iter().enumerate() {
-            map.insert((*field).into(), to_json(row.get_ref(i + 1)?));
+        for (i, field) in entity.fields().iter().enumerate() {
+            let mut value = to_json(row.get_ref(i + 1)?);
+            // SQLite keeps booleans as 0 and 1; operations carry true and false.
+            if field.field_type == FieldType::Boolean
+                && let Some(n) = value.as_i64()
+            {
+                value = json!(n != 0);
+            }
+            map.insert(field.name.into(), value);
         }
         Ok(map)
     })?;
@@ -216,6 +227,11 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
 
     // HLC order respects causality: a row's creation comes before its edits.
     incoming.sort_by(|a, b| a.operation.hlc.cmp(&b.operation.hlc));
+    // The newest operation each library had before this batch: one older than
+    // that may change what later ones were allowed to do (D73).
+    let mut newest_before: BTreeMap<String, Option<String>> = BTreeMap::new();
+    let mut arrived_late = BTreeSet::new();
+    let mut received = Vec::new();
     for SyncOperation {
         schema_version,
         operation,
@@ -236,23 +252,73 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
 
         let library = operation.library.as_str();
         let hlc = operation.hlc.to_string();
-        let mut affected = BTreeSet::new();
-        for change in &operation.changes {
-            affected.extend(search::affected_editions(tx, library, change)?);
-            if !apply_remote(tx, library, change, &hlc)? {
-                report.skipped_changes += 1;
-            }
-            affected.extend(search::affected_editions(tx, library, change)?);
+        if !newest_before.contains_key(library) {
+            newest_before.insert(library.to_owned(), newest_hlc(tx, library)?);
         }
-        search::reindex(tx, library, &affected)?;
-        ops::log_operation(tx, &operation, schema_version)?;
+        if newest_before[library]
+            .as_ref()
+            .is_some_and(|newest| hlc < *newest)
+        {
+            arrived_late.insert(library.to_owned());
+        }
+        let status = if permissions::allowed(tx, &operation) {
+            let mut affected = BTreeSet::new();
+            for change in &operation.changes {
+                affected.extend(search::affected_editions(tx, library, change)?);
+                if apply_change(tx, library, change, &hlc)? {
+                    permissions::note_author(tx, library, change, &operation.hlc.device)?;
+                } else {
+                    report.skipped_changes += 1;
+                }
+                affected.extend(search::affected_editions(tx, library, change)?);
+            }
+            search::reindex(tx, library, &affected)?;
+            ops::Status::Applied
+        } else {
+            ops::Status::Request
+        };
+        ops::log_operation(tx, &operation, schema_version, status)?;
+        received.push(operation.id.clone());
         report.received += 1;
+    }
+
+    // Something older arrived where roles decide: judge the whole library again.
+    for library in &arrived_late {
+        if permissions::has_roles(tx, library)? {
+            permissions::rebuild(tx, library)?;
+        }
+    }
+    for id in &received {
+        let status: String =
+            tx.query_row("SELECT status FROM operations WHERE id = ?1", [id], |row| {
+                row.get(0)
+            })?;
+        if status == "request" {
+            report.requests += 1;
+        }
     }
 
     if let Some(latest) = latest {
         ops::set_last_hlc(tx, &latest)?;
     }
     Ok(report)
+}
+
+fn newest_hlc(conn: &Connection, library: &str) -> Result<Option<String>> {
+    Ok(conn.query_row(
+        "SELECT max(hlc) FROM operations WHERE library_id = ?1 AND replicable = 1",
+        [library],
+        |row| row.get(0),
+    )?)
+}
+
+/// The library's replicable log in HLC order, as operations, for a rebuild.
+pub fn library_log(conn: &Connection, library: &str) -> Result<Vec<Operation>> {
+    let vectors = LibraryVectors::from([(library.to_owned(), VersionVector::new())]);
+    Ok(operations_since(conn, &vectors)?
+        .into_iter()
+        .map(|synced| synced.operation)
+        .collect())
 }
 
 /// Whether the operation's signature is its author's (D56). The author's key is the
@@ -303,7 +369,12 @@ fn registered_key(conn: &Connection, library: &str, device: &str) -> Result<Opti
 }
 
 /// One change under the merge rules. Returns whether anything was written.
-fn apply_remote(tx: &Transaction<'_>, library: &str, change: &Change, hlc: &str) -> Result<bool> {
+pub fn apply_change(
+    tx: &Transaction<'_>,
+    library: &str,
+    change: &Change,
+    hlc: &str,
+) -> Result<bool> {
     let entity = change.entity;
     // A deleted library ignores everything that comes after, whatever its HLC (D65).
     if is_tombstoned(tx, library, Entity::Library, library)?
@@ -575,6 +646,26 @@ mod tests {
         for other in &devices[1..] {
             assert_eq!(other.state(), first, "devices diverged");
         }
+        for device in devices {
+            assert_rebuild_changes_nothing(device);
+        }
+    }
+
+    /// Rebuilding a library from its log must give back exactly what incremental
+    /// merging produced: it is what a device does when roles change late (D73).
+    /// Checked inside a transaction that is rolled back, so nothing changes.
+    fn assert_rebuild_changes_nothing(device: &Device) {
+        let before = device.state();
+        let tx = device.0.unchecked_transaction().unwrap();
+        for library in known_libraries(&tx) {
+            permissions::rebuild(&tx, &library).unwrap();
+        }
+        assert_eq!(
+            state(&tx),
+            before,
+            "rebuilding from the log changed the library"
+        );
+        tx.rollback().unwrap();
     }
 
     /// Everything `device` has that an empty device would lack, ready to merge.
@@ -611,7 +702,8 @@ mod tests {
         // the key that came inside the library.
         let report = tablet.pull_from(&phone);
 
-        assert_eq!((report.received, report.rejected), (1, 0));
+        // The laptop's key registration and its book.
+        assert_eq!((report.received, report.rejected), (2, 0));
         assert_converged(&[&laptop, &phone, &tablet]);
         let laptop_key = ops::signing_key(&laptop.0).unwrap().public_key();
         assert_eq!(
@@ -631,12 +723,17 @@ mod tests {
         laptop.add("A Wizard of Earthsea", None, "Ana");
         let mut phone = Device::new();
         let mut operations = everything_from(&laptop);
-        let fields = &mut operations[0].operation.changes.last_mut().unwrap().fields;
+        let book = operations
+            .iter_mut()
+            .find(|op| op.operation.intent == "book.add")
+            .unwrap();
+        let fields = &mut book.operation.changes.last_mut().unwrap().fields;
         fields.insert("quantity".into(), json!(99));
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        assert_eq!((report.received, report.rejected), (0, 1));
+        // The laptop's registration arrives; its book, changed, does not.
+        assert_eq!((report.received, report.rejected), (1, 1));
         assert!(phone.titles().is_empty());
     }
 
@@ -648,7 +745,10 @@ mod tests {
         phone.pull_from(&laptop);
         // An impostor makes an operation that claims to be the laptop's.
         let impostor = kosmotheka_domain::DeviceKey::from_seed([9; 32]);
-        let mut forged = everything_from(&laptop).remove(0);
+        let mut forged = everything_from(&laptop)
+            .into_iter()
+            .find(|op| op.operation.intent == "book.add")
+            .unwrap();
         forged.operation.id = ops::new_id();
         forged.operation.hlc.millis += 1;
         forged
@@ -712,8 +812,8 @@ mod tests {
         let mut operations = everything_from(&laptop);
         for op in &mut operations {
             op.operation.signature = None;
-            op.operation.changes.retain(|c| c.entity != Entity::Device);
         }
+        operations.retain(|op| op.operation.intent != "device.register");
 
         let report = merge(&mut phone.0, operations).unwrap();
 
@@ -861,7 +961,7 @@ mod tests {
         assert_eq!(b.titles(), vec!["Old"]);
         let intent: String =
             a.0.query_row(
-                "SELECT intent FROM operations WHERE replicable = 1",
+                "SELECT intent FROM operations WHERE replicable = 1 AND intent <> 'device.register'",
                 [],
                 |r| r.get(0),
             )
@@ -890,11 +990,14 @@ mod tests {
         a.add("A", None, "Ana");
         let mut b = Device::new();
         let mut incoming = operations_since(&a.0, &everything()).unwrap();
-        incoming[0].schema_version -= 1;
+        for op in &mut incoming {
+            op.schema_version -= 1;
+        }
+        let sent = incoming.len();
 
         let report = merge(&mut b.0, incoming).unwrap();
 
-        assert_eq!(report.rejected, 1);
+        assert_eq!(report.rejected, sent);
         assert!(b.titles().is_empty());
     }
 
@@ -1036,6 +1139,130 @@ mod tests {
     }
 
     #[test]
+    fn a_reader_cannot_write_on_their_own_device_either() {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        // Both register their keys by writing something before roles exist.
+        laptop.add("Dune", None, "Tersoal");
+        phone.add("Tehanu", None, "Hugo");
+        laptop.sync_with(&mut phone);
+        let (laptop_id, phone_id) = (device_id_of(&laptop), device_id_of(&phone));
+        let (admin, reader) = (ops::new_id(), ops::new_id());
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "member.roles",
+            vec![
+                Change::create(
+                    Entity::Member,
+                    &admin,
+                    json!({ "name": "Tersoal", "role": "admin" }),
+                ),
+                Change::create(
+                    Entity::Member,
+                    &reader,
+                    json!({ "name": "Hugo", "role": "reader" }),
+                ),
+                Change::update(Entity::Device, &laptop_id, json!({ "member_id": admin })),
+                Change::update(Entity::Device, &phone_id, json!({ "member_id": reader })),
+            ],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        phone.pull_from(&laptop);
+
+        let refused =
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None);
+
+        assert!(
+            matches!(refused, Err(crate::error::Error::NotAllowed)),
+            "{refused:?}"
+        );
+        assert!(!phone.titles().contains(&"Wingspan".to_owned()));
+        laptop.add("The Dispossessed", None, "Tersoal");
+        assert!(laptop.titles().contains(&"The Dispossessed".to_owned()));
+    }
+
+    const PERMISSION_CASES: &str = include_str!("../../../spec/conformance/permissions.json");
+
+    #[derive(serde::Deserialize)]
+    struct PermissionCase {
+        name: String,
+        operations: Vec<Map<String, Value>>,
+        deliveries: Vec<Vec<usize>>,
+        expect: PermissionExpect,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct PermissionExpect {
+        applied: Vec<String>,
+        requests: Vec<String>,
+    }
+
+    #[test]
+    fn permission_conformance_cases() {
+        let cases: Vec<PermissionCase> = serde_json::from_str(PERMISSION_CASES).unwrap();
+        assert!(!cases.is_empty());
+        // The test key every device in the cases registers (spec/conformance/signatures.json).
+        let key = kosmotheka_domain::DeviceKey::from_seed([1; 32]);
+
+        for case in &cases {
+            for order in &case.deliveries {
+                let mut device = Device::new();
+                let schema_version = ops::schema_version(&device.0).unwrap();
+                for &index in order {
+                    let mut fields = case.operations[index].clone();
+                    let unsigned = fields.remove("unsigned").is_some();
+                    let mut operation: Operation =
+                        serde_json::from_value(Value::Object(fields)).unwrap();
+                    if !unsigned {
+                        operation.signature = Some(key.sign(&operation));
+                    }
+                    let report = merge(
+                        &mut device.0,
+                        vec![SyncOperation {
+                            schema_version,
+                            operation,
+                        }],
+                    )
+                    .unwrap();
+                    assert_eq!(
+                        report.rejected, 0,
+                        "case '{}': op {index} rejected",
+                        case.name
+                    );
+                }
+
+                let status_of = |status: &str| -> BTreeSet<String> {
+                    device
+                        .0
+                        .prepare("SELECT id FROM operations WHERE status = ?1")
+                        .unwrap()
+                        .query_map([status], |row| row.get(0))
+                        .unwrap()
+                        .collect::<rusqlite::Result<_>>()
+                        .unwrap()
+                };
+                let expected = |ids: &[String]| ids.iter().cloned().collect::<BTreeSet<_>>();
+                assert_eq!(
+                    status_of("applied"),
+                    expected(&case.expect.applied),
+                    "case '{}', delivery {order:?}: applied",
+                    case.name
+                );
+                assert_eq!(
+                    status_of("request"),
+                    expected(&case.expect.requests),
+                    "case '{}', delivery {order:?}: requests",
+                    case.name
+                );
+                assert_rebuild_changes_nothing(&device);
+            }
+        }
+    }
+
+    #[test]
     fn merge_conformance_cases() {
         let cases: Vec<MergeCase> = serde_json::from_str(MERGE_CASES).unwrap();
         assert!(!cases.is_empty());
@@ -1077,13 +1304,30 @@ mod tests {
                                 .unwrap()
                                 .to_owned(),
                             id,
-                            fields: row.into_iter().collect(),
+                            // An optional field nobody set is null: cases list only the rest.
+                            fields: row.into_iter().filter(|(_, v)| !v.is_null()).collect(),
                         });
                     }
                 }
                 let key =
                     |row: &&ExpectedRow| (row.library.clone(), row.entity.clone(), row.id.clone());
-                let mut expected = case.expect.rows.iter().collect::<Vec<_>>();
+                let expected_rows: Vec<ExpectedRow> = case
+                    .expect
+                    .rows
+                    .iter()
+                    .map(|row| ExpectedRow {
+                        fields: row
+                            .fields
+                            .iter()
+                            .filter(|(_, v)| !v.is_null())
+                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .collect(),
+                        library: row.library.clone(),
+                        entity: row.entity.clone(),
+                        id: row.id.clone(),
+                    })
+                    .collect();
+                let mut expected = expected_rows.iter().collect::<Vec<_>>();
                 expected.sort_by_key(key);
                 rows.sort_by_key(|row| key(&row));
                 assert_eq!(

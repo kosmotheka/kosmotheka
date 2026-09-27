@@ -193,7 +193,6 @@
                 "enum": [
                   "library",
                   "person",
-                  "member",
                   "publisher"
                 ]
               }
@@ -206,6 +205,40 @@
                 "properties": {
                   "name": {
                     "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "member"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "description": "The member's role in the library (D73). Null or absent: no role.",
+                    "enum": [
+                      "admin",
+                      "editor",
+                      "reader",
+                      null
+                    ]
+                  },
+                  "can_share": {
+                    "description": "Whether the member may share the library with other devices or people (D55).",
+                    "$ref": "#/$defs/boolean"
                   }
                 }
               }
@@ -433,12 +466,22 @@
                   },
                   "name": {
                     "type": "string"
+                  },
+                  "member_id": {
+                    "description": "The member this device belongs to (D55). Only administrators set it.",
+                    "$ref": "#/$defs/ref"
                   }
                 }
               }
             }
           }
         }
+      ]
+    },
+    "boolean": {
+      "type": [
+        "boolean",
+        "null"
       ]
     }
   }

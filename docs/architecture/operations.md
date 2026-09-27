@@ -78,6 +78,19 @@ El texto tiene ceros a la izquierda para que ordenar como texto sea igual que or
   - una que intenta cambiar la clave de un dispositivo que ya tiene una: la primera es la que vale.
 - **Las operaciones sin firma** (anteriores a esta fase) se siguen aceptando mientras no haya roles. Qué hacer con ellas después está pendiente (pregunta 1 de `docs/plans/fase-5.md`).
 
+## Permisos (D73, hitos 5.2 a 5.4)
+
+Las reglas están en `spec/README.md` («Roles and permissions») y en D73. Resumen:
+- **Sin roles, como siempre:** hasta que algún miembro tiene rol, todos pueden todo.
+- Con roles, cada operación se juzga con el rol de su autor en ese momento: el autor es el dispositivo del `hlc`, su persona es el `member_id` de su fila `device`, y un dispositivo que no es de nadie, o una operación sin firma, cuenta como lector.
+- **Todo o nada:** si un cambio no está permitido, la operación entera queda como **petición** (`operations.status = 'request'`): se guarda en el registro y viaja, pero no se aplica.
+
+Dónde está:
+- **Las reglas**, como función pura, en `crates/domain/src/permission.rs` (`is_allowed`), para que el servidor pueda usar las mismas.
+- **Las preguntas** que necesitan («¿tiene roles la biblioteca?», «¿qué rol tiene este dispositivo?», «¿creó esta fila su misma persona?»), en `app/src-tauri/src/permissions.rs`, leyendo la base de datos.
+- **Escrituras propias:** `ops::record` juzga la operación igual que si llegara de fuera. Si no está permitida, devuelve `NotAllowed` y no escribe nada. Convertirla en petición llega con el hito 5.5, junto con su interfaz.
+- **El registro del dispositivo** (su fila `device` con la clave) va en una operación propia, `device.register`, antes de la primera escritura en cada biblioteca. Así «todo o nada» nunca se lo lleva por delante.
+
 ## Validación, en dos niveles
 
 1. **Estructural** (`Operation::validate`, en el dominio): ids con formato UUID, etiqueta bien formada, campos que la entidad conoce, tipos correctos, obligatorios presentes al crear y nunca nulos. Cualquier implementación la replica, y los **casos de conformidad** (`spec/conformance/`) lo comprueban.
