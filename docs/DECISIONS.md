@@ -880,6 +880,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Las marcas no se borran con un cambio** (`undeletable`): una lápida en su id derivado impediría a esa persona volver a marcar la obra nunca. Vaciar una marca deja sus campos a `null`; la marca solo se va, en cascada, con su obra o con su persona.
 - **Cada persona marca lo suyo, sea cual sea su rol;** quien administra, las de todos. Un dispositivo sin persona no marca. En una biblioteca sin roles, el dispositivo dice antes quién es («¿Quién eres?»).
 - **Valoración de 1 a 5**, sin medias estrellas.
+- **Todas las personas ven las marcas de las demás** («Lo de los demás» en la ficha), haya roles o no: en casa se ve quién ha leído qué, como el antiguo «Lo han leído». Ver no es un permiso: cada dispositivo tiene la biblioteca entera. Lo que sí es un permiso es cambiarlas (cada persona las suyas; quien administra, todas).
 
 ## D69 · Reserva de regalos oculta solo en pantalla — `aceptada`
 

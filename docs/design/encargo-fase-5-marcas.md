@@ -9,7 +9,7 @@ Cada persona de la biblioteca apunta **lo suyo** sobre cada obra, sin pedir perm
 - **Valoración** de 1 a 5 estrellas, sin medias.
 - **Favorito**, aparte de la valoración: sirve para filtrar, y un favorito puede tener menos estrellas que otros.
 
-Las marcas son de cada persona: lo que marca Hugo no cambia lo de Laura. Quien administra puede ver las de todos.
+Las marcas son de cada persona: lo que marca Hugo no cambia lo de Laura. Todas las personas ven lo que han marcado las demás, haya roles o no.
 
 Por ahora solo hay libros; en la Fase 6, con los demás tipos, «leyendo» pasará a «jugando» o «viendo». El diseño debe dejar sitio para eso, sin mostrarlo aún.
 

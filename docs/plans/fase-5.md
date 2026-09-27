@@ -58,6 +58,7 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 - **Las marcas no se borran con un cambio** (regla de la especificación, `undeletable`), ni siquiera quien administra. *Añadido al construirlo; aceptado con la excepción al v7 en D68.*
 - **Una marca vaciada no se borra:** se queda con los campos vacíos. Borrarla dejaría una lápida en su id derivado y esa persona no podría volver a marcar la obra nunca. Al crearla solo viajan los campos con valor, para no pisar lo que otro dispositivo de la misma persona puso a la vez. *Añadido al construirlo.*
 - **¿Quién eres?** En una biblioteca sin roles los dispositivos no son de nadie. La primera vez que se marca algo, la app pregunta quién eres (una persona que ya esté o una nueva, sin rol) y liga este dispositivo a ella. Sin roles lo puede hacer cualquiera; con roles, sigue siendo cosa de quien administra.
+- **Todas las personas ven las marcas de las demás** (D68, 27/09/2026): ver no es un permiso; cambiarlas sí.
 - **Interfaz:** en la ficha, «Lo mío» con estado, fecha, estrellas y favorito; en el catálogo, un filtro por mi estado y por favoritos. Pantallas a Claude Design antes de construirla.
 
 ## Pendiente de decidir
