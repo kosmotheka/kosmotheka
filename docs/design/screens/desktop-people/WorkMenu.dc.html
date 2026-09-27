@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div class="{{ theme }}" style="width:100%;height:100%;position:relative;font-family:var(--font-sans);pointer-events:none"><div role="menu" style="position:absolute;top:100px;right:48px;width:300px;background:var(--popover);color:var(--popover-foreground);border-radius:10px;box-shadow:0 0 0 1px var(--border),0 16px 40px -12px oklch(0 0 0 / 35%);padding:4px;display:flex;flex-direction:column"><div role="menuitem" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:7px;font-size:14px"><x-import component-from-global-scope="Library.PencilIcon" size="16" hint-size="16px,16px"></x-import>Editar la ficha</div><div role="menuitem" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:7px;font-size:14px"><x-import component-from-global-scope="Library.PlusIcon" size="16" hint-size="16px,16px"></x-import>Añadir ejemplar</div><div role="menuitem" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:7px;font-size:14px"><x-import component-from-global-scope="Library.FolderInputIcon" size="16" hint-size="16px,16px"></x-import>Mover a otra biblioteca</div><div style="height:1px;background:var(--border);margin:4px -4px"></div><div role="menuitem" style="display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:7px;background:var(--accent)"><x-import component-from-global-scope="Library.Trash2Icon" size="16" style="margin-top:2px" hint-size="16px,16px"></x-import><span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:500">Pedir que se borre</span><span style="font-size:12.5px;line-height:1.35;color:var(--muted-foreground);text-wrap:pretty">Dune lo añadió Ana: lo decide quien administra.</span></span></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
