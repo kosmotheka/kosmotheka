@@ -36,7 +36,7 @@ export const mainNav: NavItem[] = [
 
 /** What belongs to the current library. */
 export const libraryNav: NavItem[] = [
-  { id: "requests", icon: Inbox, label: "nav.requests", soon: true },
+  { id: "requests", icon: Inbox, label: "nav.requests", section: "requests" },
   { id: "people", icon: Users, label: "nav.people", section: "people" },
   { id: "series", icon: ListOrdered, label: "nav.series", soon: true },
   { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "backups" } },

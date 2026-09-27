@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 
 import {
+  type CopyForm,
+  type EditionForm,
   CopyFields,
   EditionFields,
   emptyCopyForm,
@@ -21,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type CreatedBook, createBook } from "@/lib/api";
+import { type CreatedBook, type NewBook, createBook } from "@/lib/api";
 
 export interface AddBookPrefill {
   isbn?: string;
@@ -37,17 +39,36 @@ interface Props {
   onCreated: (result: CreatedBook, title: string) => void;
   /** Read once when the dialog mounts; give it a new `key` to prefill again. */
   prefill?: AddBookPrefill;
+  /** A whole book to start from, such as a request to correct before accepting it. */
+  initial?: NewBook;
+  /** Saves the book another way than creating it; the title changes with it. */
+  submit?: (book: NewBook) => Promise<CreatedBook>;
+  title?: string;
 }
 
-export function AddBookDialog({ open, desktop, library, onOpenChange, onCreated, prefill }: Props) {
+export function AddBookDialog({
+  open,
+  desktop,
+  library,
+  onOpenChange,
+  onCreated,
+  prefill,
+  initial,
+  submit: save = createBook,
+  title: customTitle,
+}: Props) {
   const { t } = useTranslation();
-  const [edition, setEdition] = useState(() => ({
-    ...emptyEditionForm,
-    isbn: prefill?.isbn ?? "",
-    title: prefill?.title ?? "",
-    authors: prefill?.author ? [prefill.author] : emptyEditionForm.authors,
-  }));
-  const [copy, setCopy] = useState(emptyCopyForm);
+  const [edition, setEdition] = useState(() =>
+    initial
+      ? editionFormFromInput(initial)
+      : {
+          ...emptyEditionForm,
+          isbn: prefill?.isbn ?? "",
+          title: prefill?.title ?? "",
+          authors: prefill?.author ? [prefill.author] : emptyEditionForm.authors,
+        },
+  );
+  const [copy, setCopy] = useState(() => (initial ? copyFormFromInput(initial) : emptyCopyForm));
   const [saving, setSaving] = useState(false);
   const errors = useCommandErrors();
 
@@ -65,7 +86,7 @@ export function AddBookDialog({ open, desktop, library, onOpenChange, onCreated,
     setSaving(true);
     errors.clear();
     try {
-      const result = await createBook({
+      const result = await save({
         ...toEditionInput(edition),
         copy: toCopyInput(copy),
       });
@@ -96,7 +117,7 @@ export function AddBookDialog({ open, desktop, library, onOpenChange, onCreated,
       )}
     </>
   );
-  const title = t("form.title", { library });
+  const title = customTitle ?? t("form.title", { library });
 
   if (!desktop) {
     return (
@@ -148,4 +169,30 @@ export function AddBookDialog({ open, desktop, library, onOpenChange, onCreated,
       </DialogContent>
     </Dialog>
   );
+}
+
+function editionFormFromInput(book: NewBook): EditionForm {
+  return {
+    title: book.title,
+    subtitle: book.subtitle ?? "",
+    authors: book.authors.length > 0 ? book.authors : [""],
+    publisher: book.publisher ?? "",
+    publishedYear: book.publishedYear?.toString() ?? "",
+    language: book.language ?? "",
+    isbn: book.isbn ?? "",
+    coverUrl: book.coverUrl ?? "",
+    cover: null,
+    googleBooksId: book.googleBooksId,
+    openLibraryId: book.openLibraryId,
+  };
+}
+
+function copyFormFromInput(book: NewBook): CopyForm {
+  return {
+    owner: book.copy.owner ?? "",
+    format: book.copy.format,
+    quantity: book.copy.quantity.toString(),
+    location: book.copy.location ?? "",
+    acquiredOn: book.copy.acquiredOn ?? "",
+  };
 }

@@ -305,6 +305,7 @@
     "newLibrary": "New library",
     "newLibraryHint": "Or join one with its QR code",
     "requests": "My requests",
+    "requestsAdmin": "Requests",
     "share": "Sharing and devices",
     "people": "People and permissions",
     "series": "Series",
@@ -584,6 +585,86 @@
       "not_allowed": "You are not allowed to do this in this library.",
       "last_admin": "You are the only administrator of this library: name someone else first.",
       "request_resolved": "This request was already resolved."
+    }
+  },
+  "requests": {
+    "title": "Requests",
+    "mine": "My requests",
+    "subtitle": "{{library}} · what others ask for and only administrators can do.",
+    "mineSubtitle": "{{library}} · what you asked for, still for the administrators to decide ({{admins}}).",
+    "mineSubtitleShort": "What you asked for in {{library}}. Its administrators decide: {{admins}}.",
+    "bell_one": "{{count}} pending request",
+    "bell_other": "{{count}} pending requests",
+    "pendingTab": "Pending · {{count}}",
+    "resolvedTab": "Resolved",
+    "nonePending": "No pending requests.",
+    "noneResolved": "No request has been resolved yet.",
+    "noneMine": "You haven't asked for anything yet. When something needs permission, you can ask for it and it will show up here.",
+    "nothingSelected": "Pick a request to see it.",
+    "wants": "{{person}} wants to {{what}}",
+    "someone": "Someone",
+    "aBook": "a book",
+    "from": "from {{device}}",
+    "roleIn": "{{role}} in {{library}}",
+    "wouldChange": "What changes if you accept",
+    "asked": "What was asked",
+    "noteFrom": "Note from {{person}}",
+    "accept": "Accept",
+    "reject": "Reject",
+    "editAccept": "Edit and accept",
+    "withdraw": "Withdraw",
+    "showResolved": "See in Resolved",
+    "understood": "Got it",
+    "editTitle": "Correct and accept",
+    "accepted": "Accepted: {{what}}.",
+    "rejected": "Rejected: {{what}}.",
+    "withdrawn": "Withdrawn: {{what}}.",
+    "acceptedEdited": "Accepted with your changes: {{title}}.",
+    "stale": "This request can no longer be applied:",
+    "staleReject": "something it changed no longer exists. You can reject it.",
+    "staleEditable": "something it used no longer exists. You can reject it or edit it before accepting.",
+    "elsewhere": {
+      "accepted": "{{person}} already accepted it.",
+      "rejected": "{{person}} already rejected it.",
+      "withdrawn": "{{person}} already withdrew it.",
+      "nothingToDo": "There is nothing for you to do."
+    },
+    "whatYouAsked": "What you asked for",
+    "statusLabel": "Status",
+    "when": "When",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "describe": {
+      "add_book": "add {{title}}",
+      "add_copy": "add a copy of {{title}}",
+      "delete_copy": "delete a copy of {{title}}",
+      "delete_book": "delete {{title}}",
+      "edit": "change {{title}}",
+      "add_wish": "add {{title}} to Missing",
+      "other": "make a change"
+    },
+    "actions": {
+      "add_book": "New work in {{library}}",
+      "add_copy": "New copy",
+      "delete_copy": "Would be deleted",
+      "delete_book": "The work would be deleted",
+      "edit": "Changes",
+      "add_wish": "Would be added to Missing",
+      "other": "Change"
+    },
+    "kinds": {
+      "book": "Book"
+    },
+    "fields": {
+      "title": "Title",
+      "authors": "Authors",
+      "year": "Year",
+      "copy": "Copy",
+      "where": "Where"
     }
   }
 }

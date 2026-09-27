@@ -3,6 +3,7 @@ import { Plus, ScanBarcode, Search, Zap } from "lucide-react";
 
 import { useLibraries } from "@/components/libraries-context";
 import { SearchScope } from "@/components/search-scope";
+import { RequestsBell } from "@/components/shell/requests-bell";
 import { type useSyncStatus, SyncStatus } from "@/components/shell/sync-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ export function TopBar({
       </div>
       <span className="flex-1" />
       <SyncStatus status={sync} asButton />
+      <RequestsBell />
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <Button variant="outline" size="lg" onClick={() => navigate("check")}>
         <ScanBarcode /> {t("nav.scan")}

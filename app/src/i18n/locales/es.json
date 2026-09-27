@@ -305,6 +305,7 @@
     "newLibrary": "Nueva biblioteca",
     "newLibraryHint": "O únete a una con su QR",
     "requests": "Mis peticiones",
+    "requestsAdmin": "Peticiones",
     "share": "Compartir y dispositivos",
     "people": "Personas y permisos",
     "series": "Series",
@@ -584,6 +585,86 @@
       "not_allowed": "No tienes permiso para hacer esto en esta biblioteca.",
       "last_admin": "Eres la única persona que administra esta biblioteca: nombra antes a otra.",
       "request_resolved": "Esta petición ya estaba resuelta."
+    }
+  },
+  "requests": {
+    "title": "Peticiones",
+    "mine": "Mis peticiones",
+    "subtitle": "{{library}} · lo que otros piden y solo quien administra puede hacer.",
+    "mineSubtitle": "{{library}} · lo que has pedido y todavía decide quien administra ({{admins}}).",
+    "mineSubtitleShort": "Lo que has pedido en {{library}}. Decide quien la administra: {{admins}}.",
+    "bell_one": "Peticiones pendientes: {{count}}",
+    "bell_other": "Peticiones pendientes: {{count}}",
+    "pendingTab": "Pendientes · {{count}}",
+    "resolvedTab": "Resueltas",
+    "nonePending": "No hay peticiones pendientes.",
+    "noneResolved": "Todavía no se ha resuelto ninguna petición.",
+    "noneMine": "No has pedido nada todavía. Cuando algo necesite permiso, podrás pedirlo y aparecerá aquí.",
+    "nothingSelected": "Elige una petición para verla.",
+    "wants": "{{person}} quiere {{what}}",
+    "someone": "Alguien",
+    "aBook": "un libro",
+    "from": "desde {{device}}",
+    "roleIn": "{{role}} en {{library}}",
+    "wouldChange": "Qué cambiaría si aceptas",
+    "asked": "Lo que pedía",
+    "noteFrom": "Nota de {{person}}",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "editAccept": "Editar y aceptar",
+    "withdraw": "Retirar",
+    "showResolved": "Ver en Resueltas",
+    "understood": "Entendido",
+    "editTitle": "Corregir y aceptar",
+    "accepted": "Aceptada: {{what}}.",
+    "rejected": "Rechazada: {{what}}.",
+    "withdrawn": "Retirada: {{what}}.",
+    "acceptedEdited": "Aceptada con tus cambios: {{title}}.",
+    "stale": "Esta petición ya no se puede aplicar:",
+    "staleReject": "algo de lo que cambiaba ya no existe. Puedes rechazarla.",
+    "staleEditable": "algo de lo que usaba ya no existe. Puedes rechazarla o editarla antes de aceptar.",
+    "elsewhere": {
+      "accepted": "{{person}} ya la aceptó.",
+      "rejected": "{{person}} ya la rechazó.",
+      "withdrawn": "{{person}} ya la retiró.",
+      "nothingToDo": "No tienes que hacer nada."
+    },
+    "whatYouAsked": "Qué pediste",
+    "statusLabel": "Estado",
+    "when": "Cuándo",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "rejected": "Rechazada",
+      "withdrawn": "Retirada"
+    },
+    "describe": {
+      "add_book": "añadir {{title}}",
+      "add_copy": "añadir un ejemplar de {{title}}",
+      "delete_copy": "borrar un ejemplar de {{title}}",
+      "delete_book": "borrar {{title}}",
+      "edit": "cambiar {{title}}",
+      "add_wish": "apuntar {{title}} en Me falta",
+      "other": "hacer un cambio"
+    },
+    "actions": {
+      "add_book": "Obra nueva en {{library}}",
+      "add_copy": "Ejemplar nuevo",
+      "delete_copy": "Se borraría",
+      "delete_book": "Se borraría la obra",
+      "edit": "Cambios",
+      "add_wish": "Se apuntaría en Me falta",
+      "other": "Cambio"
+    },
+    "kinds": {
+      "book": "Libro"
+    },
+    "fields": {
+      "title": "Título",
+      "authors": "Autoría",
+      "year": "Año",
+      "copy": "Ejemplar",
+      "where": "Dónde"
     }
   }
 }

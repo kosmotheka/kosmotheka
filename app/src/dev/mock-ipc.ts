@@ -3,7 +3,15 @@
 // in development (see main.tsx); never part of a build.
 import { mockIPC } from "@tauri-apps/api/mocks";
 
-import type { BookSummary, LanStatus, LibrarySummary, People, Wish } from "@/lib/api";
+import type {
+  BookSummary,
+  ChangeRequest,
+  LanStatus,
+  LibrarySummary,
+  People,
+  RequestSummary,
+  Wish,
+} from "@/lib/api";
 
 const HOME = "00000000-0000-7000-8000-000000000001";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
@@ -88,6 +96,113 @@ if (params.has("noroles")) {
   people.unassigned = [dev("dev", "Portátil", true), dev("phone", "Móvil de Laura"), dev("tablet", "Tablet Lenovo")];
 }
 
+// `?stale` makes Hugo's request no longer applicable; `?elsewhere` has Laura
+// has already accepted it when Ana tries to.
+const minutesAgo = (m: number) => Date.now() - m * 60000;
+const summary = (
+  action: RequestSummary["action"],
+  title: string,
+  extra: Partial<RequestSummary> = {},
+) => ({
+  action,
+  title,
+  authors: [],
+  year: null,
+  publisher: null,
+  format: null,
+  location: null,
+  ...extra,
+});
+const request = (
+  id: string,
+  person: string,
+  deviceId: string,
+  deviceName: string,
+  at: number,
+  s: RequestSummary,
+  extra: Partial<ChangeRequest> = {},
+): ChangeRequest => ({
+  id,
+  intent: "book.create",
+  deviceId,
+  deviceName,
+  person,
+  mine: params.has("reader") && person === "Hugo",
+  at,
+  note: null,
+  status: "pending",
+  resolvedBy: null,
+  resolvedAt: null,
+  summary: s,
+  applies: true,
+  editable: s.action === "add_book",
+  ...extra,
+});
+const requests: ChangeRequest[] = [
+  request(
+    "r1",
+    "Hugo",
+    "hugo-phone",
+    "Móvil de Hugo",
+    minutesAgo(20),
+    summary("add_book", "Tehanu", {
+      authors: ["Ursula K. Le Guin"],
+      year: 1990,
+      publisher: "Minotauro",
+      format: "paperback",
+      location: "Cuarto de Hugo",
+    }),
+    {
+      note: "Me lo regaló la abuela, ya lo tengo en la estantería.",
+      applies: !params.has("stale"),
+    },
+  ),
+  request(
+    "r2",
+    "Laura",
+    "phone",
+    "Móvil de Laura",
+    minutesAgo(60 * 20),
+    summary("delete_copy", "Dune", { format: "ebook" }),
+  ),
+  request(
+    "r3",
+    "Hugo",
+    "hugo-phone",
+    "Móvil de Hugo",
+    minutesAgo(60 * 50),
+    summary("add_book", "Cien años de soledad", {
+      authors: ["Gabriel García Márquez"],
+    }),
+  ),
+  request(
+    "r4",
+    "Hugo",
+    "tablet",
+    "Tablet Lenovo",
+    minutesAgo(60 * 24 * 4),
+    summary("delete_book", "Monopoly"),
+    {
+      status: "accepted",
+      resolvedBy: "Ana",
+      resolvedAt: minutesAgo(60 * 24 * 3),
+    },
+  ),
+  request(
+    "r5",
+    "Laura",
+    "phone",
+    "Móvil de Laura",
+    minutesAgo(60 * 24 * 16),
+    summary("delete_copy", "El viaje de Chihiro"),
+    {
+      status: "rejected",
+      resolvedBy: "Ana",
+      resolvedAt: minutesAgo(60 * 24 * 15),
+    },
+  ),
+];
+
 mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books":
@@ -148,6 +263,49 @@ mockIPC((cmd, args) => {
       return [];
     case "list_people":
       return people;
+    case "list_requests":
+      return requests.map((r) => ({ ...r, summary: { ...r.summary } }));
+    case "accept_request":
+    case "reject_request":
+    case "withdraw_request": {
+      const found = requests.find((r) => r.id === (args as { id: string }).id);
+      if (found?.id === "r1" && params.has("elsewhere")) {
+        Object.assign(found, { status: "accepted", resolvedBy: "Laura", resolvedAt: Date.now() });
+        throw { kind: "permission", reason: "request_resolved" };
+      }
+      if (found)
+        Object.assign(found, {
+          status:
+            cmd === "accept_request"
+              ? "accepted"
+              : cmd === "reject_request"
+                ? "rejected"
+                : "withdrawn",
+          resolvedBy: "Ana",
+          resolvedAt: Date.now(),
+        });
+      return null;
+    }
+    case "requested_book":
+      return {
+        title: "Tehanu",
+        subtitle: null,
+        authors: ["Ursula K. Le Guin"],
+        publisher: "Minotauro",
+        publishedYear: 1990,
+        language: "es",
+        isbn: null,
+        coverUrl: null,
+        googleBooksId: null,
+        openLibraryId: null,
+        copy: {
+          owner: null,
+          format: "paperback",
+          quantity: 1,
+          location: "Cuarto de Hugo",
+          acquiredOn: null,
+        },
+      };
     case "known_people":
       return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":

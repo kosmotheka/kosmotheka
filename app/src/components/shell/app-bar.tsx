@@ -1,9 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Menu, Search } from "lucide-react";
 
+import { useRequests } from "@/components/requests-context";
+import { RequestsBell } from "@/components/shell/requests-bell";
 import { type useSyncStatus, SyncStatus } from "@/components/shell/sync-status";
 import { Button } from "@/components/ui/button";
 import { openOverlay } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 
 /** Mobile top bar: menu, library selector with the sync state, and search. */
 export function AppBar({
@@ -16,8 +19,14 @@ export function AppBar({
   onSearch: () => void;
 }) {
   const { t } = useTranslation();
+  const bell = useRequests().myRole === "admin";
   return (
-    <header className="grid h-16 shrink-0 grid-cols-[48px_1fr_48px] items-center px-1">
+    <header
+      className={cn(
+        "grid h-16 shrink-0 items-center px-1",
+        bell ? "grid-cols-[92px_1fr_92px]" : "grid-cols-[48px_1fr_48px]",
+      )}
+    >
       <Button
         variant="ghost"
         size="icon-lg"
@@ -39,15 +48,18 @@ export function AppBar({
         </span>
         <SyncStatus status={sync} className="text-[11px]" />
       </button>
-      <Button
-        variant="ghost"
-        size="icon-lg"
-        className="size-12 rounded-full"
-        aria-label={t("nav.search")}
-        onClick={onSearch}
-      >
-        <Search className="size-[21px]" />
-      </Button>
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          className="size-12 rounded-full"
+          aria-label={t("nav.search")}
+          onClick={onSearch}
+        >
+          <Search className="size-[21px]" />
+        </Button>
+        <RequestsBell mobile />
+      </div>
     </header>
   );
 }

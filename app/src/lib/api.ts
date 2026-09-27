@@ -548,3 +548,72 @@ export function permissionErrorKey(error: unknown): string | null {
     ? `people.errors.${error.reason}`
     : null;
 }
+
+// --- Requests (D73), mirrors src-tauri/src/requests.rs --------------------------
+
+export type RequestStatus = "pending" | "accepted" | "rejected" | "withdrawn";
+
+export interface RequestSummary {
+  action: "add_book" | "add_copy" | "delete_copy" | "delete_book" | "edit" | "add_wish" | "other";
+  title: string | null;
+  authors: string[];
+  year: number | null;
+  publisher: string | null;
+  format: Format | null;
+  location: string | null;
+}
+
+export interface ChangeRequest {
+  id: string;
+  intent: string;
+  deviceId: string;
+  deviceName: string | null;
+  person: string | null;
+  /** Asked from this device or another device of the same person. */
+  mine: boolean;
+  /** Milliseconds since the Unix epoch. */
+  at: number;
+  note: string | null;
+  status: RequestStatus;
+  resolvedBy: string | null;
+  resolvedAt: number | null;
+  summary: RequestSummary;
+  /** Accepting would still work. */
+  applies: boolean;
+  /** A new book: it can be corrected before accepting. */
+  editable: boolean;
+}
+
+export function listRequests(): Promise<ChangeRequest[]> {
+  return invoke<ChangeRequest[]>("list_requests");
+}
+
+export function acceptRequest(id: string): Promise<void> {
+  return invoke("accept_request", { id });
+}
+
+export function rejectRequest(id: string): Promise<void> {
+  return invoke("reject_request", { id });
+}
+
+export function withdrawRequest(id: string): Promise<void> {
+  return invoke("withdraw_request", { id });
+}
+
+/** A book request as the add form fills it in, for «Edit and accept». */
+export function requestedBook(id: string): Promise<NewBook> {
+  return invoke<NewBook>("requested_book", { id });
+}
+
+export function acceptRequestEdited(id: string, book: NewBook): Promise<CreatedBook> {
+  return invoke<CreatedBook>("accept_request_edited", { id, book });
+}
+
+/** This device's changes that became requests on recalculating the library. */
+export function requestNotices(): Promise<ChangeRequest[]> {
+  return invoke<ChangeRequest[]>("request_notices");
+}
+
+export function dismissRequestNotices(): Promise<void> {
+  return invoke("dismiss_request_notices");
+}
