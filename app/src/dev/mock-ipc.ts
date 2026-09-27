@@ -256,9 +256,22 @@ mockIPC((cmd, args) => {
           quantity: 1,
           location: format === "ebook" ? null : "Salón, balda 3",
           acquiredOn: null,
+          canDelete: !params.has("reader"),
         })),
+        canDelete: !params.has("reader"),
       };
     }
+    case "request_book":
+    case "request_delete_copy":
+    case "request_delete_book":
+      return { requested: true };
+    // `?notice` shows a change of this device that became a request on syncing.
+    case "request_notices":
+      return params.has("notice")
+        ? [{ ...requests[1], mine: true, summary: summary("edit", "Dune") }]
+        : [];
+    case "dismiss_request_notices":
+      return null;
     case "book_history":
       return [];
     case "list_people":

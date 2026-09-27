@@ -6,6 +6,7 @@ import {
   LibraryBig,
   Loader2,
   ScanBarcode,
+  Send,
   ShoppingBag,
   WifiOff,
   X,
@@ -13,6 +14,7 @@ import {
 
 import { Cover } from "@/components/cover";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { useRequests } from "@/components/requests-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -136,6 +138,8 @@ export function CheckPage({
     onChanged();
   };
 
+  // Readers ask for it instead of adding it (D73).
+  const reader = useRequests().myRole === "reader";
   const bought = () =>
     check &&
     openOverlay({
@@ -314,7 +318,8 @@ export function CheckPage({
               )}
               <div className="grid grid-cols-2 gap-2.5">
                 <Button variant="outline" className={big} onClick={bought}>
-                  <ShoppingBag /> {t("check.addToCatalog")}
+                  {reader ? <Send /> : <ShoppingBag />}{" "}
+                  {t(reader ? "ask.add" : "check.addToCatalog")}
                 </Button>
                 <Button variant="outline" className={big} onClick={again}>
                   <ScanBarcode /> {t(canScan ? "check.scanAnother" : "check.checkAnother")}

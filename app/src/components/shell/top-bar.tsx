@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Plus, ScanBarcode, Search, Zap } from "lucide-react";
+import { Plus, ScanBarcode, Search, Send, Zap } from "lucide-react";
 
 import { useLibraries } from "@/components/libraries-context";
+import { useRequests } from "@/components/requests-context";
 import { SearchScope } from "@/components/search-scope";
 import { RequestsBell } from "@/components/shell/requests-bell";
 import { type useSyncStatus, SyncStatus } from "@/components/shell/sync-status";
@@ -26,6 +27,8 @@ export function TopBar({
   sync: ReturnType<typeof useSyncStatus>;
 }) {
   const libraries = useLibraries();
+  // Readers ask for books instead of adding them (D73).
+  const reader = useRequests().myRole === "reader";
   const { t } = useTranslation();
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background pr-4 pl-5">
@@ -58,12 +61,20 @@ export function TopBar({
       <Button variant="outline" size="lg" onClick={() => navigate("check")}>
         <ScanBarcode /> {t("nav.scan")}
       </Button>
-      <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>
-        <Zap /> {t("nav.quickAdd")}
-      </Button>
-      <Button size="lg" onClick={() => openOverlay({ name: "add" })}>
-        <Plus /> {t("nav.add")}
-      </Button>
+      {reader ? (
+        <Button size="lg" onClick={() => openOverlay({ name: "add" })}>
+          <Send /> {t("ask.add")}
+        </Button>
+      ) : (
+        <>
+          <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>
+            <Zap /> {t("nav.quickAdd")}
+          </Button>
+          <Button size="lg" onClick={() => openOverlay({ name: "add" })}>
+            <Plus /> {t("nav.add")}
+          </Button>
+        </>
+      )}
     </header>
   );
 }

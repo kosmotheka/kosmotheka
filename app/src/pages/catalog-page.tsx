@@ -6,6 +6,7 @@ import { BookList } from "@/components/book-list";
 import { BookTable } from "@/components/book-table";
 import { FilterBar } from "@/components/catalog-filters";
 import { useLibraries } from "@/components/libraries-context";
+import { useRequests } from "@/components/requests-context";
 import { SearchScope } from "@/components/search-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ export function CatalogPage({
   onOpenBook: (libraryId: string, editionId: string) => void;
 }) {
   const { t } = useTranslation();
+  const reader = useRequests().myRole === "reader";
   const libraries = useLibraries();
   const books = state.status === "ready" ? state.books : [];
   const catalogIsEmpty = state.status === "ready" && !filtering && books.length === 0;
@@ -121,7 +123,7 @@ export function CatalogPage({
             {t("data.importCsv")}
           </Button>
           <Button onClick={() => openOverlay({ name: "add" })}>
-            <Plus /> {t("catalog.empty.add")}
+            <Plus /> {t(reader ? "ask.add" : "catalog.empty.add")}
           </Button>
         </EmptyState>
       )}
@@ -135,7 +137,7 @@ export function CatalogPage({
             {t("filters.clear")}
           </Button>
           <Button onClick={() => openOverlay({ name: "add", prefill: { title: filter.query } })}>
-            <Plus /> {t("catalog.add")}
+            <Plus /> {t(reader ? "ask.add" : "catalog.add")}
           </Button>
         </EmptyState>
       )}
@@ -167,7 +169,7 @@ export function CatalogPage({
           className="fixed right-4 bottom-[calc(112px+env(safe-area-inset-bottom))] h-14 gap-2.5 rounded-2xl pr-5 pl-4 text-[15px] font-semibold shadow-[0_8px_20px_-6px_oklch(0_0_0/35%)]"
           onClick={() => openOverlay({ name: "add" })}
         >
-          <Plus className="size-[22px]" /> {t("nav.add")}
+          <Plus className="size-[22px]" /> {t(reader ? "ask.add" : "nav.add")}
         </Button>
       )}
     </div>

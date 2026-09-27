@@ -16,6 +16,7 @@ import {
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { PairDialog } from "@/components/pair-dialog";
+import { RequestNotices } from "@/components/request-notices";
 import { RequestsContext, useRequestsState } from "@/components/requests-context";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { AppBar } from "@/components/shell/app-bar";
@@ -250,6 +251,7 @@ export default function App() {
                     desktop
                     onClose={closeOverlay}
                     onChanged={reload}
+                    onNotice={setNotice}
                   />
                 </div>
               </div>
@@ -265,7 +267,8 @@ export default function App() {
             </div>
           )}
 
-          <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
+          <RequestNotices version={version} desktop={desktop} />
+        <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
           <NewLibraryDialog
             open={overlay?.name === "newLibrary"}
             desktop={desktop}
@@ -320,6 +323,10 @@ export default function App() {
               prefill={overlay.prefill}
               onOpenChange={(open) => !open && closeOverlay()}
               onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+            onRequested={(requested) => {
+              setNotice(t(requested ? "ask.sent" : "ask.done"));
+              reload();
+            }}
             />
           )}
           <SettingsDialog
@@ -350,6 +357,7 @@ export default function App() {
               desktop={false}
               onClose={closeOverlay}
               onChanged={reload}
+              onNotice={setNotice}
             />
           )}
         </CatalogOptionsContext.Provider>

@@ -793,7 +793,7 @@ const isBook = (r: ChangeRequest) =>
   r.summary.action === "add_book" || r.summary.action === "delete_book";
 
 /** What the request does, as "add Tehanu"; the sentence and the list both use it. */
-function describe(t: TFunction, r: ChangeRequest) {
+export function describe(t: TFunction, r: ChangeRequest) {
   const title = r.summary.title ?? t("requests.aBook");
   return t(`requests.describe.${r.summary.action}`, { title });
 }
@@ -815,4 +815,4 @@ function facts(t: TFunction, r: ChangeRequest): [string, string][] {
   return rows.filter((row): row is [string, string] => Boolean(row[1]));
 }
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+export const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

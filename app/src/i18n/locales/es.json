@@ -666,5 +666,32 @@
       "copy": "Ejemplar",
       "where": "Dónde"
     }
+  },
+  "ask": {
+    "add": "Pedir que se añada",
+    "addTitle": "Pedir que se añada a {{library}}",
+    "whyAdd": "Eres lector en {{library}}: se añade cuando quien administra lo acepte.",
+    "delete": "Pedir que se borre",
+    "deleteTitle": "Pedir que se borre {{title}}",
+    "deleteCopyTitle": "Pedir que se borre un ejemplar",
+    "deleteBook": "Borrar {{title}} con todos sus ejemplares",
+    "deleteCopy": "Borrar el ejemplar de {{title}} ({{format}})",
+    "whyDelete": "Lo añadió otra persona: lo decide quien administra {{library}}.",
+    "note": "Nota para quien lo decide",
+    "optional": "(opcional)",
+    "notePlaceholder": "Por ejemplo: me lo regaló la abuela",
+    "send": "Enviar petición",
+    "sent": "Petición enviada a quien administra. La puedes seguir en Mis peticiones.",
+    "done": "Hecho: ahora puedes hacerlo sin pedirlo.",
+    "whyDeleteReader": "Eres lector en {{library}}: lo decide quien administra.",
+    "deletePlaceholder": "Por ejemplo: está repetido"
+  },
+  "notices": {
+    "title_one": "Un cambio tuyo ha pasado a petición",
+    "title_other": "{{count}} cambios tuyos han pasado a petición",
+    "why": "Mientras tanto cambiaron los permisos en {{library}}, y lo que hiciste ahora necesita que quien administra lo acepte.",
+    "notLost": "No se ha perdido: quien administra lo verá entre sus peticiones y decidirá. Lo puedes seguir en Mis peticiones.",
+    "see_one": "Ver mi petición",
+    "see_other": "Ver mis peticiones"
   }
 }

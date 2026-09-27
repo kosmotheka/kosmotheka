@@ -666,5 +666,32 @@
       "copy": "Copy",
       "where": "Where"
     }
+  },
+  "ask": {
+    "add": "Ask to add",
+    "addTitle": "Ask to add to {{library}}",
+    "whyAdd": "You are a reader in {{library}}: it is added when an administrator accepts it.",
+    "delete": "Ask to delete",
+    "deleteTitle": "Ask to delete {{title}}",
+    "deleteCopyTitle": "Ask to delete a copy",
+    "deleteBook": "Delete {{title}} with all its copies",
+    "deleteCopy": "Delete the copy of {{title}} ({{format}})",
+    "whyDelete": "Someone else added it: the administrators of {{library}} decide.",
+    "note": "Note for whoever decides",
+    "optional": "(optional)",
+    "notePlaceholder": "For example: a present from grandma",
+    "send": "Send request",
+    "sent": "Request sent to the administrators. You can follow it in My requests.",
+    "done": "Done: you may now do this without asking.",
+    "whyDeleteReader": "You are a reader in {{library}}: the administrators decide.",
+    "deletePlaceholder": "For example: it is a duplicate"
+  },
+  "notices": {
+    "title_one": "A change of yours became a request",
+    "title_other": "{{count}} changes of yours became requests",
+    "why": "Meanwhile the permissions in {{library}} changed, and what you did now needs an administrator to accept it.",
+    "notLost": "Nothing is lost: the administrators will see it among their requests and decide. You can follow it in My requests.",
+    "see_one": "See my request",
+    "see_other": "See my requests"
   }
 }

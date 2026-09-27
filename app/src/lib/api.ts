@@ -136,6 +136,8 @@ export interface CopyDetail {
   quantity: number;
   location: string | null;
   acquiredOn: string | null;
+  /** This device may delete it; otherwise it can only ask (D73). */
+  canDelete: boolean;
 }
 
 export interface BookDetail {
@@ -152,6 +154,8 @@ export interface BookDetail {
   googleBooksId: string | null;
   openLibraryId: string | null;
   copies: CopyDetail[];
+  /** This device may delete the whole book; otherwise it can only ask. */
+  canDelete: boolean;
 }
 
 export function getBook(editionId: string): Promise<BookDetail> {
@@ -179,6 +183,23 @@ export function updateCopy(copyId: string, copy: CopyInput): Promise<void> {
 
 export function deleteCopy(copyId: string): Promise<void> {
   return invoke("delete_copy", { copyId });
+}
+
+/** What asking became: kept for the administrators, or simply done (D73). */
+export interface Asked {
+  requested: boolean;
+}
+
+export function requestBook(book: NewBook, note: string | null): Promise<Asked> {
+  return invoke<Asked>("request_book", { book, note });
+}
+
+export function requestDeleteCopy(copyId: string, note: string | null): Promise<Asked> {
+  return invoke<Asked>("request_delete_copy", { copyId, note });
+}
+
+export function requestDeleteBook(editionId: string, note: string | null): Promise<Asked> {
+  return invoke<Asked>("request_delete_book", { editionId, note });
 }
 
 export type Source = "google_books" | "open_library";

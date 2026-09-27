@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 
+import { NoteField } from "@/components/ask-dialog";
 import {
   type CopyForm,
   type EditionForm,
@@ -13,6 +14,7 @@ import {
   toEditionInput,
   useCommandErrors,
 } from "@/components/book-form";
+import { useRequests } from "@/components/requests-context";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type CreatedBook, type NewBook, createBook } from "@/lib/api";
+import { type CreatedBook, type NewBook, createBook, requestBook } from "@/lib/api";
 
 export interface AddBookPrefill {
   isbn?: string;
@@ -44,6 +46,8 @@ interface Props {
   /** Saves the book another way than creating it; the title changes with it. */
   submit?: (book: NewBook) => Promise<CreatedBook>;
   title?: string;
+  /** A reader's book went to the administrators, or was simply added if allowed now. */
+  onRequested?: (requested: boolean) => void;
 }
 
 export function AddBookDialog({
@@ -54,10 +58,14 @@ export function AddBookDialog({
   onCreated,
   prefill,
   initial,
-  submit: save = createBook,
+  submit: customSubmit,
   title: customTitle,
+  onRequested,
 }: Props) {
   const { t } = useTranslation();
+  // Readers ask for the book instead of adding it (D73).
+  const asking = useRequests().myRole === "reader" && !customSubmit;
+  const [note, setNote] = useState("");
   const [edition, setEdition] = useState(() =>
     initial
       ? editionFormFromInput(initial)
@@ -76,6 +84,7 @@ export function AddBookDialog({
     if (!next) {
       setEdition(emptyEditionForm);
       setCopy(emptyCopyForm);
+      setNote("");
       errors.clear();
     }
     onOpenChange(next);
@@ -86,11 +95,14 @@ export function AddBookDialog({
     setSaving(true);
     errors.clear();
     try {
-      const result = await save({
-        ...toEditionInput(edition),
-        copy: toCopyInput(copy),
-      });
-      onCreated(result, edition.title.trim());
+      const book = { ...toEditionInput(edition), copy: toCopyInput(copy) };
+      if (asking) {
+        const { requested } = await requestBook(book, note.trim() || null);
+        onRequested?.(requested);
+      } else {
+        const result = await (customSubmit ?? createBook)(book);
+        onCreated(result, edition.title.trim());
+      }
       handleOpenChange(false);
     } catch (error) {
       errors.handle(error);
@@ -110,6 +122,14 @@ export function AddBookDialog({
           errorFor={(field) => errors.errorFor(`copy.${field}`)}
         />
       </section>
+      {asking && (
+        <section className="space-y-3 border-t pt-5">
+          <NoteField value={note} onChange={setNote} />
+          <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
+            {t("ask.whyAdd", { library })}
+          </p>
+        </section>
+      )}
       {errors.message && (
         <p className="text-sm text-destructive">
           {t("errors.internal", { message: errors.message })}
@@ -117,7 +137,9 @@ export function AddBookDialog({
       )}
     </>
   );
-  const title = customTitle ?? t("form.title", { library });
+  const title =
+    customTitle ?? (asking ? t("ask.addTitle", { library }) : t("form.title", { library }));
+  const submitLabel = saving ? t("form.saving") : asking ? t("ask.send") : t("form.save");
 
   if (!desktop) {
     return (
@@ -137,7 +159,7 @@ export function AddBookDialog({
               </Button>
               <DialogTitle className="flex-1 text-lg font-semibold">{title}</DialogTitle>
               <Button type="submit" className="mr-3 rounded-full px-4" disabled={saving}>
-                {saving ? t("form.saving") : t("form.save")}
+                {submitLabel}
               </Button>
             </header>
             <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
@@ -162,7 +184,7 @@ export function AddBookDialog({
               {t("form.cancel")}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? t("form.saving") : t("form.save")}
+              {submitLabel}
             </Button>
           </DialogFooter>
         </form>
