@@ -18,7 +18,7 @@ Cada hito deja la app funcionando, con sus tests, y se prueba antes de seguir.
 | **5.6 Dispositivo perdido** | Un administrador revoca un dispositivo perdido desde otro y da permisos al nuevo (D58). El caso del administrador único sigue abierto | `libraries.rs`, `lan/` |
 | **5.7 Interfaz** | Personas y permisos, peticiones, «Pedir que se borre» y a quién pertenece cada dispositivo | `app/src`, encargo a Claude Design |
 
-Las pantallas de 5.2, 5.5 y 5.7 se piden a Claude Design antes de construirlas. Borrador del encargo, **sin enviar**: [design/encargo-fase-5.md](../design/encargo-fase-5.md).
+Las pantallas de 5.2, 5.5 y 5.7 se piden a Claude Design antes de construirlas. Encargo revisado el 27/09/2026: [design/encargo-fase-5.md](../design/encargo-fase-5.md).
 
 ## Decisiones técnicas propuestas
 

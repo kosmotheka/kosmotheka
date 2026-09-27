@@ -1,6 +1,6 @@
 # Encargo de diseño: personas, roles y peticiones (Fase 5)
 
-> **Borrador, sin enviar.** Preparado el 27/09/2026 para que el maintainer lo revise antes de pasarlo a Claude Design. Depende de las respuestas a las preguntas de [plans/fase-5.md](../plans/fase-5.md) y de los casos en borrador de `spec/conformance/draft/`. Lo decidido está en D45, D55, D56 y D58 ([DECISIONS.md](../DECISIONS.md)). Todo en español, móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro.
+> Tercer encargo para Claude Design, revisado por el maintainer el 27/09/2026. Las reglas de permisos están en D73 y los casos en `spec/conformance/draft/`. Lo decidido está en D45, D55, D56, D58 y D73 ([DECISIONS.md](../DECISIONS.md)). Todo en español, móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro.
 
 ## Contexto
 
