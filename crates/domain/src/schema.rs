@@ -115,11 +115,13 @@ const DEVICE_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("member_id", FieldType::Ref(Entity::Member), false),
 ];
-const CHANGE_REQUEST_FIELDS: &[FieldSpec] = &[field(
-    "status",
-    FieldType::OneOf(&["accepted", "rejected"]),
-    true,
-)];
+/// How a request ended: accepted or rejected by an administrator, or withdrawn by
+/// whoever asked. The row without a status carries the asker's note (D73).
+pub const REQUEST_STATUSES: &[&str] = &["accepted", "rejected", "withdrawn"];
+const CHANGE_REQUEST_FIELDS: &[FieldSpec] = &[
+    field("status", FieldType::OneOf(REQUEST_STATUSES), false),
+    field("note", FieldType::Text, false),
+];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),

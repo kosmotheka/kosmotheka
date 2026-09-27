@@ -122,6 +122,16 @@ fn record_inner(
             return Err(Error::NotAllowed);
         }
         // Asked for instead of done: kept, and travels, but changes nothing (D73).
+        // The asker's note rides along as a row only an administrator could create.
+        if let Some(note) = REQUEST_NOTE.with_borrow(Clone::clone) {
+            operation.changes.push(Change::create(
+                Entity::ChangeRequest,
+                &operation.id,
+                json!({ "note": note }),
+            ));
+            operation.validate()?;
+            operation.signature = Some(key.sign(&operation));
+        }
         log_operation(tx, &operation, schema_version(tx)?, Status::Request)?;
         write_state(tx, LAST_HLC_KEY, Some(&operation.hlc.to_string()))?;
         return Ok(operation);
@@ -206,22 +216,27 @@ pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
 
 thread_local! {
     static AS_REQUEST: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static REQUEST_NOTE: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
 }
 
 /// Runs `write` so that an operation its author may not make is kept as a request
-/// for the administrators instead of refused (D73): the «Ask to add» of a reader.
-/// Operations the author may make are applied as usual.
+/// for the administrators instead of refused (D73): the «Ask to add» of a reader,
+/// with an optional note for whoever decides. Operations the author may make are
+/// applied as usual, without the note.
 #[cfg_attr(
     not(test),
     expect(
         dead_code,
-        reason = "the «Ask to add» buttons use it with milestone 5.7"
+        reason = "the «Ask to add» buttons use it in part e of milestone 5.7"
     )
 )]
-pub fn as_request<T>(write: impl FnOnce() -> Result<T>) -> Result<T> {
+pub fn as_request<T>(note: Option<&str>, write: impl FnOnce() -> Result<T>) -> Result<T> {
+    let note = note.map(str::trim).filter(|note| !note.is_empty());
     AS_REQUEST.set(true);
+    REQUEST_NOTE.set(note.map(str::to_owned));
     let result = write();
     AS_REQUEST.set(false);
+    REQUEST_NOTE.set(None);
     result
 }
 

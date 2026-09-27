@@ -491,11 +491,17 @@
                 "additionalProperties": false,
                 "properties": {
                   "status": {
-                    "description": "How an administrator resolved the request. Accepting repeats the requested changes in the same operation.",
+                    "description": "How the request ended. An administrator accepts or rejects it (accepting repeats the requested changes in the same operation); whoever asked may withdraw it.",
                     "enum": [
                       "accepted",
-                      "rejected"
+                      "rejected",
+                      "withdrawn",
+                      null
                     ]
+                  },
+                  "note": {
+                    "description": "What the asker wants to tell whoever decides. Travels inside the request itself, as a row only an administrator could create, so the operation stays a request.",
+                    "$ref": "#/$defs/text"
                   }
                 }
               }

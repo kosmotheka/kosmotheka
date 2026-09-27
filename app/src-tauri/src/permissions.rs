@@ -71,14 +71,29 @@ impl LibraryView for SqlView<'_> {
             .optional()
             .ok()
             .flatten();
-        match creator {
-            Some(creator) if creator == device => true,
-            Some(creator) => {
-                self.member_of(&creator).is_some()
-                    && self.member_of(&creator) == self.member_of(device)
-            }
-            None => false,
-        }
+        creator.is_some_and(|creator| self.same_person(&creator, device))
+    }
+
+    fn requested_by_same_person(&self, request: &str, device: &str) -> bool {
+        let asker: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT device_id FROM operations WHERE library_id = ?1 AND id = ?2",
+                [self.library, request],
+                |row| row.get(0),
+            )
+            .optional()
+            .ok()
+            .flatten();
+        asker.is_some_and(|asker| self.same_person(&asker, device))
+    }
+}
+
+impl SqlView<'_> {
+    /// The same device, or two devices of the same person.
+    fn same_person(&self, one: &str, other: &str) -> bool {
+        one == other
+            || (self.member_of(one).is_some() && self.member_of(one) == self.member_of(other))
     }
 }
 
@@ -112,6 +127,14 @@ pub fn allowed(conn: &Connection, operation: &Operation) -> bool {
 /// changes roles arrives after later ones were already judged. The library row
 /// itself stays: the library migrated from before libraries has no create operation.
 pub fn rebuild(tx: &Transaction<'_>, library: &str) -> Result<()> {
+    let me = ops::device_id(tx)?;
+    let was_applied: BTreeSet<String> = tx
+        .prepare(
+            "SELECT id FROM operations
+              WHERE library_id = ?1 AND device_id = ?2 AND status = 'applied'",
+        )?
+        .query_map([library, &me], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
     ops::clear_library(tx, library)?;
     let log = sync::library_log(tx, library)?;
     let mut editions = BTreeSet::new();
@@ -128,6 +151,14 @@ pub fn rebuild(tx: &Transaction<'_>, library: &str) -> Result<()> {
             }
             ops::Status::Applied
         } else {
+            // Made here, applied here, and now a request: tell whoever made it, once.
+            if was_applied.contains(&operation.id) {
+                tx.execute(
+                    "INSERT OR IGNORE INTO request_notices (library_id, operation_id)
+                     VALUES (?1, ?2)",
+                    [library, &operation.id],
+                )?;
+            }
             ops::Status::Request
         };
         ops::set_status(tx, &operation.id, status)?;

@@ -32,6 +32,9 @@ pub trait LibraryView {
     fn role_of_device(&self, device: &str) -> Option<Role>;
     /// Whether the row was created by a device of the same person as `device` (D45).
     fn created_by_same_person(&self, entity: Entity, id: &str, device: &str) -> bool;
+    /// Whether the operation `request` was written by a device of the same person
+    /// as `device`: who asked may withdraw what they asked for.
+    fn requested_by_same_person(&self, request: &str, device: &str) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -63,7 +66,14 @@ fn change_allowed(change: &Change, author: &str, role: Role, view: &impl Library
         Entity::Device if change.id == author => {
             change.action != Action::Delete && !touches("member_id")
         }
-        Entity::Device | Entity::Library | Entity::Revocation | Entity::ChangeRequest => false,
+        // Withdrawing is the one resolution that is not an administrator's.
+        Entity::ChangeRequest => {
+            change.action == Action::Create
+                && change.fields.len() == 1
+                && change.fields.get("status").and_then(|v| v.as_str()) == Some("withdrawn")
+                && view.requested_by_same_person(&change.id, author)
+        }
+        Entity::Device | Entity::Library | Entity::Revocation => false,
         // Nobody gives more than they have.
         Entity::Member if touches("role") || touches("can_share") => false,
         _ => match (role, change.action) {
@@ -94,6 +104,9 @@ mod tests {
             self.role
         }
         fn created_by_same_person(&self, _: Entity, _: &str, _: &str) -> bool {
+            self.same_person
+        }
+        fn requested_by_same_person(&self, _: &str, _: &str) -> bool {
             self.same_person
         }
     }
@@ -171,5 +184,27 @@ mod tests {
         assert!(is_allowed(&add, &view(Some(Role::Editor))));
         add.signature = None;
         assert!(!is_allowed(&add, &view(Some(Role::Editor))));
+    }
+
+    #[test]
+    fn whoever_asked_withdraws_and_nothing_more() {
+        const REQUEST: &str = "01997c7e-0000-7000-8000-000000000077";
+        let withdraw = op(vec![Change::create(
+            Entity::ChangeRequest,
+            REQUEST,
+            json!({ "status": "withdrawn" }),
+        )]);
+        let accept = op(vec![Change::create(
+            Entity::ChangeRequest,
+            REQUEST,
+            json!({ "status": "accepted" }),
+        )]);
+        let asker = View {
+            same_person: true,
+            ..view(Some(Role::Reader))
+        };
+        assert!(is_allowed(&withdraw, &asker));
+        assert!(!is_allowed(&accept, &asker));
+        assert!(!is_allowed(&withdraw, &view(Some(Role::Editor))));
     }
 }

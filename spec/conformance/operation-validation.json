@@ -1085,9 +1085,53 @@
     }
   },
   {
-    "name": "request resolved without a status",
+    "name": "request note, carried inside the request",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000129",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "change_request",
+          "id": "01997c7e-0000-7000-8000-000000000006",
+          "action": "create",
+          "fields": {
+            "note": "Me lo regaló la abuela"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "request withdrawn by whoever asked",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000012a",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "request.withdraw",
+      "changes": [
+        {
+          "entity": "change_request",
+          "id": "01997c7e-0000-7000-8000-000000000006",
+          "action": "create",
+          "fields": {
+            "status": "withdrawn"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "request with an unknown status",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000012b",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "request.reject",
@@ -1096,13 +1140,15 @@
           "entity": "change_request",
           "id": "01997c7e-0000-7000-8000-000000000006",
           "action": "create",
-          "fields": {}
+          "fields": {
+            "status": "forgotten"
+          }
         }
       ]
     },
     "expect": {
       "result": "invalid",
-      "code": "missing_field",
+      "code": "wrong_type",
       "change": 0,
       "field": "status"
     }

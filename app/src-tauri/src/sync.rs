@@ -1224,7 +1224,7 @@ mod tests {
     fn a_reader_asks_and_an_administrator_accepts_on_another_device() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
 
-        ops::as_request(|| {
+        ops::as_request(None, || {
             catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
@@ -1255,7 +1255,7 @@ mod tests {
     #[test]
     fn a_rejected_request_changes_nothing() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
-        ops::as_request(|| {
+        ops::as_request(None, || {
             catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
@@ -1271,6 +1271,122 @@ mod tests {
         let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Rejected);
         assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_request_carries_its_note_and_says_who_resolved_it() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        ops::as_request(Some("  Me lo regaló la abuela "), || {
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+        })
+        .unwrap();
+        laptop.pull_from(&phone);
+        let pending = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        assert_eq!(pending[0].note.as_deref(), Some("Me lo regaló la abuela"));
+        assert!(
+            pending[0]
+                .changes
+                .iter()
+                .all(|change| change.entity != Entity::ChangeRequest),
+            "the note row is not part of what was asked"
+        );
+        assert!(!pending[0].mine);
+
+        crate::requests::accept(&mut laptop.0, LIB, &pending[0].id).unwrap();
+        phone.sync_with(&mut laptop);
+
+        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        assert!(seen[0].mine);
+        assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
+        assert_eq!(seen[0].resolved_by.as_deref(), Some("Tersoal"));
+        assert!(seen[0].resolved_at.is_some());
+        assert!(phone.titles().contains(&"Wingspan".to_owned()));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn whoever_asked_withdraws_and_it_can_no_longer_be_accepted() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        ops::as_request(None, || {
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+        })
+        .unwrap();
+        let id = crate::requests::list_requests(&phone.0, LIB).unwrap()[0]
+            .id
+            .clone();
+
+        crate::requests::withdraw(&mut phone.0, LIB, &id).unwrap();
+        laptop.pull_from(&phone);
+
+        let seen = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        assert_eq!(seen[0].status, crate::requests::RequestStatus::Withdrawn);
+        assert!(matches!(
+            crate::requests::accept(&mut laptop.0, LIB, &id),
+            Err(crate::error::Error::RequestResolved)
+        ));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn nobody_withdraws_someone_else_s_request() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        laptop.add("Solaris", None, "Tersoal");
+        phone.pull_from(&laptop);
+        let tersoal_s = ops::as_request(None, || {
+            let edition = catalog::list_books(&phone.0, LIB, &BookFilter::default())
+                .unwrap()
+                .into_iter()
+                .find(|b| b.title == "Solaris")
+                .unwrap()
+                .edition_id;
+            catalog::delete_book(&mut phone.0, LIB, &edition)
+        });
+        assert!(tersoal_s.is_ok(), "the phone asks to delete it");
+        let mut tablet = Device::new();
+        tablet.pull_from(&laptop);
+        tablet.pull_from(&phone);
+        let id = crate::requests::list_requests(&tablet.0, LIB).unwrap()[0]
+            .id
+            .clone();
+
+        let result = crate::requests::withdraw(&mut tablet.0, LIB, &id);
+
+        assert!(
+            matches!(result, Err(crate::error::Error::NotAllowed)),
+            "{result:?}"
+        );
+    }
+
+    #[test]
+    fn my_offline_change_that_becomes_a_request_is_noticed_once() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let hugo = phone_person(&laptop, &phone);
+        // Hugo becomes an editor, and the phone learns it.
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        // Offline, the laptop takes it back first; the phone keeps editing.
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+        phone.add("Wingspan", None, "Hugo");
+        assert!(phone.titles().contains(&"Wingspan".to_owned()));
+
+        phone.pull_from(&laptop);
+
+        assert!(!phone.titles().contains(&"Wingspan".to_owned()));
+        let notices = crate::requests::notices(&phone.0, LIB).unwrap();
+        assert_eq!(notices.len(), 1);
+        crate::requests::dismiss_notices(&phone.0, LIB).unwrap();
+        assert!(crate::requests::notices(&phone.0, LIB).unwrap().is_empty());
+    }
+
+    fn phone_person(laptop: &Device, phone: &Device) -> String {
+        laptop
+            .0
+            .query_row(
+                "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+                [LIB, &device_id_of(phone)],
+                |row| row.get(0),
+            )
+            .unwrap()
     }
 
     const PERMISSION_CASES: &str = include_str!("../../../spec/conformance/permissions.json");

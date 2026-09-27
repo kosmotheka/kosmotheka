@@ -469,6 +469,26 @@ pub fn reject_request(database: State<'_, Database>, id: String) -> Result<()> {
 }
 
 #[tauri::command]
+pub fn withdraw_request(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    requests::withdraw(&mut conn, &library, &id)
+}
+
+/// This device's changes that became requests on recalculating the active library.
+#[tauri::command]
+pub fn request_notices(database: State<'_, Database>) -> Result<Vec<Request>> {
+    let conn = database.lock()?;
+    requests::notices(&conn, &ops::active_library(&conn)?)
+}
+
+#[tauri::command]
+pub fn dismiss_request_notices(database: State<'_, Database>) -> Result<()> {
+    let conn = database.lock()?;
+    requests::dismiss_notices(&conn, &ops::active_library(&conn)?)
+}
+
+#[tauri::command]
 pub fn library_devices(database: State<'_, Database>, id: String) -> Result<Vec<lan::KnownDevice>> {
     lan::devices_sharing(&*database.lock()?, &id)
 }

@@ -90,7 +90,10 @@ enum CatalogEntity: string
             ],
             self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
             self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref()],
-            self::ChangeRequest => ['status' => $oneOf('accepted', 'rejected')],
+            self::ChangeRequest => [
+                'status' => new FieldSpec(FieldType::OneOf, false, ['accepted', 'rejected', 'withdrawn']),
+                'note' => $text(),
+            ],
         };
     }
 }
