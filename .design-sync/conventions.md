@@ -4,7 +4,7 @@ Library is a free, local-first app to catalogue what a household owns (books, co
 
 ## Setup
 
-- **No provider is needed.** Every component is on `window.Library` and renders styled as long as `styles.css` is loaded (it imports the component CSS, the design tokens and the Geist font).
+- **No provider is needed.** Every component is on `window.Library` and renders styled as long as `styles.css` is loaded (it imports the component CSS, the design tokens and the Figtree font).
 - **Dark mode:** put the class `dark` on an ancestor (usually `<html>`). All tokens switch automatically; never hard-code light colours.
 - Give the page root `bg-background text-foreground font-sans`, like the app's `body`.
 
@@ -21,7 +21,7 @@ Components take a `className` for layout tweaks. Your own layout glue uses Tailw
 | Lines | `border-border`, `border-input`, `ring-ring` |
 | Warning / success (no token yet) | `bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300`, `bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300` |
 
-Radius tokens: `rounded-md`, `rounded-lg` (buttons, inputs), `rounded-xl` (cards, dialogs). Type is Geist: `text-sm` body, `text-base font-medium` titles, `text-xs text-muted-foreground` metadata.
+Radius tokens: `rounded-md`, `rounded-lg` (buttons, inputs), `rounded-xl` (cards, dialogs). Type is Figtree: `text-sm` body, `text-base font-medium` titles, `text-xs text-muted-foreground` metadata.
 
 ## Components and icons
 

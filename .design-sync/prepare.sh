@@ -14,7 +14,7 @@ mkdir -p "$CACHE"
 .ds-sync/node_modules/.bin/tailwindcss -i .design-sync/tailwind.css -o "$CACHE/ds.css"
 node .design-sync/postprocess-css.mjs "$CACHE/ds.css"
 rm -rf "$CACHE/files"
-cp -r app/node_modules/@fontsource-variable/geist/files "$CACHE/files"
+cp -r app/node_modules/@fontsource-variable/figtree/files "$CACHE/files"
 
 # 2. A node_modules view where the app itself is the "kosmotheka" package,
 #    so the converter resolves it (and its dependencies) by name.
