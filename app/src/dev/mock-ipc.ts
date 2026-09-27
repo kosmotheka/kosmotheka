@@ -3,7 +3,7 @@
 // in development (see main.tsx); never part of a build.
 import { mockIPC } from "@tauri-apps/api/mocks";
 
-import type { BookSummary, LanStatus, LibrarySummary, Wish } from "@/lib/api";
+import type { BookSummary, LanStatus, LibrarySummary, People, Wish } from "@/lib/api";
 
 const HOME = "00000000-0000-7000-8000-000000000001";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
@@ -69,6 +69,25 @@ const lan: LanStatus = {
   clients: [],
 };
 
+// `?noroles` shows a library without roles yet; `?reader` sees it as Hugo.
+const params = new URLSearchParams(window.location.search);
+const dev = (id: string, name: string, thisDevice = false) => ({ id, name, thisDevice });
+const people: People = {
+  hasRoles: !params.has("noroles"),
+  myRole: params.has("reader") ? "reader" : "admin",
+  loneAdmin: true,
+  people: [
+    { id: "ana", name: "Ana", role: "admin", canShare: true, devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")], elsewhere: ["Club de rol"] },
+    { id: "laura", name: "Laura", role: "editor", canShare: true, devices: [dev("phone", "Móvil de Laura")], elsewhere: [] },
+    { id: "hugo", name: "Hugo", role: "reader", canShare: false, devices: [dev("hugo-phone", "Móvil de Hugo", params.has("reader")), dev("tablet", "Tablet Lenovo")], elsewhere: ["Club de rol"] },
+  ],
+  unassigned: [dev("kitchen", "Tablet de la cocina")],
+};
+if (params.has("noroles")) {
+  people.people = people.people.map((p) => ({ ...p, role: null, devices: [] }));
+  people.unassigned = [dev("dev", "Portátil", true), dev("phone", "Móvil de Laura"), dev("tablet", "Tablet Lenovo")];
+}
+
 mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books":
@@ -127,6 +146,10 @@ mockIPC((cmd, args) => {
     }
     case "book_history":
       return [];
+    case "list_people":
+      return people;
+    case "known_people":
+      return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":
       return { googleBooksApiKey: null };
     default:

@@ -391,7 +391,9 @@
   "common": {
     "close": "Cerrar",
     "edit": "Editar",
-    "delete": "Borrar"
+    "delete": "Borrar",
+    "back": "Atrás",
+    "cancel": "Cancelar"
   },
   "libraries": {
     "settingsOf": "Ajustes de {{name}}",
@@ -483,5 +485,105 @@
     "pasteHint": "O pega el código que muestra el otro dispositivo:",
     "pairedWith": "Emparejado con {{name}}.",
     "pasteOnly": "Pega el código que muestra el otro dispositivo:"
+  },
+  "people": {
+    "title": "Personas y permisos",
+    "subtitle": "{{library}} · quién la usa, con qué rol y desde qué dispositivos.",
+    "count_one": "{{library}} · {{count}} persona",
+    "count_other": "{{library}} · {{count}} personas",
+    "giveAccess": "Dar acceso a un dispositivo",
+    "giveAccessAnother": "Dar acceso a otro dispositivo",
+    "person": "Persona",
+    "devices": "Dispositivos",
+    "roleIn": "Rol en {{library}}",
+    "canShare": "Puede compartir",
+    "canShareShort": "puede compartir",
+    "canShareOf": "{{person}} puede compartir",
+    "canShareHint": "Llevar {{library}} a otros dispositivos",
+    "yes": "Sí",
+    "no": "No",
+    "you": "tú",
+    "thisDevice": "este dispositivo",
+    "noRole": "Sin rol",
+    "name": "Nombre",
+    "and": " y ",
+    "roles": {
+      "admin": "Administrador",
+      "editor": "Editor",
+      "reader": "Lector"
+    },
+    "roleHints": {
+      "admin": "Todo, incluidos los permisos y las peticiones",
+      "editor": "Crea y edita; borra solo lo que añadió su persona",
+      "reader": "Ve la biblioteca y pide lo que quiera cambiar"
+    },
+    "roleLegend": {
+      "admin": "todo, incluidos los permisos y las peticiones",
+      "editor": "crea y edita; borra solo lo que añadió su persona",
+      "reader": "ve la biblioteca y pide lo que quiera cambiar"
+    },
+    "legendShort": "Administrador: todo · Editor: crea y edita · Lector: ve y pide",
+    "lastAdmin": "Nadie más administra esta biblioteca.",
+    "lastAdminAction": "Nombra antes a otra persona administradora.",
+    "lone": {
+      "title": "Solo tú administras {{library}}.",
+      "body_one": "Si pierdes {{devices}}, tu único dispositivo, nadie podrá cambiar los permisos ni atender las peticiones. Conviene nombrar a otra persona.",
+      "body_other": "Si pierdes {{devices}}, nadie podrá cambiar los permisos ni atender las peticiones. Conviene nombrar a otra persona.",
+      "action": "Nombrar a otra persona"
+    },
+    "yourRole": "Tu rol en {{library}}: {{role}}.",
+    "yourRoleNone": "Este dispositivo no es de ninguna persona en {{library}}: cuenta como lector.",
+    "adminDecides": "Los permisos los cambia {{admin}}, que la administra.",
+    "more": "Más opciones de {{person}}",
+    "deviceOptions": "Opciones de {{device}}",
+    "unassigned": "Dispositivos sin persona",
+    "countsAsReader": "cuenta como lector",
+    "countsAsReaderLong": "Sin persona · cuenta como lector",
+    "assign": "Asignar",
+    "assignTo": "Asignar a una persona",
+    "alsoIn": "También en {{libraries}}",
+    "alreadyIn": "ya está en {{libraries}}",
+    "theirDevices": "Sus dispositivos",
+    "sheetDescription": "Rol, permiso para compartir y dispositivos de {{person}}",
+    "activated": "Permisos activados en {{library}}.",
+    "empty": {
+      "title": "En {{library}}, todos pueden con todo",
+      "today": "Hoy cualquier dispositivo con {{library}} añade, edita y borra. Si activas los permisos:",
+      "devices": "Cada dispositivo pasa a ser de una persona: «el móvil de Hugo» es de Hugo.",
+      "roles": "Cada persona tiene un rol: administrador, editor o lector.",
+      "requests": "Lo que alguien no pueda hacer se convierte en una petición. No se pierde nada.",
+      "you": "Tú pasas a administrar {{library}}. Después eliges de quién es cada dispositivo; un dispositivo sin persona cuenta como lector.",
+      "continue": "Continuar"
+    },
+    "activate": {
+      "title": "¿De quién es cada dispositivo?",
+      "description": "Estos dispositivos ya comparten la biblioteca. Elige a qué persona pertenece cada uno y con qué rol. Editor viene marcado para que nadie pierda lo que podía hacer.",
+      "step": "Activar permisos en {{library}} · paso 2 de 2",
+      "yourName": "Tu nombre",
+      "owner": "De quién es {{device}}",
+      "role": "Rol de {{device}}",
+      "nobody": "Sin persona",
+      "newPerson": "Persona nueva…",
+      "samePeople": "Las personas son las mismas en todas tus bibliotecas; el rol es solo para {{library}}.",
+      "nobodyIsReader": "Un dispositivo sin persona cuenta como lector: podrá ver y pedir, pero no cambiar nada.",
+      "confirm": "Activar permisos"
+    },
+    "revoke": {
+      "menu": "Quitar un dispositivo",
+      "title": "Quitar un dispositivo de {{person}}",
+      "titleOne": "¿Quitar {{device}}?",
+      "why": "Para cuando se pierde o te lo roban.",
+      "loses": "Dejará de recibir todas las bibliotecas que compartía: {{libraries}}.",
+      "losesAll": "Dejará de recibir todas las bibliotecas que compartía.",
+      "after": "No recibirá más cambios y lo que envíe no contará. Si vuelve a conectarse, se borrarán de él estas bibliotecas.",
+      "stays": "{{person}} sigue con su {{device}}.",
+      "confirm": "Quitar {{device}}",
+      "done": "{{device}} quitado."
+    },
+    "errors": {
+      "not_allowed": "No tienes permiso para hacer esto en esta biblioteca.",
+      "last_admin": "Eres la única persona que administra esta biblioteca: nombra antes a otra.",
+      "request_resolved": "Esta petición ya estaba resuelta."
+    }
   }
 }

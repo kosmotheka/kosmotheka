@@ -60,10 +60,22 @@ pub enum Error {
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum ErrorPayload<'a> {
-    Validation { errors: &'a [FieldError] },
-    Backup { reason: &'static str },
-    Sync { reason: &'static str },
-    Internal { message: String },
+    Validation {
+        errors: &'a [FieldError],
+    },
+    Backup {
+        reason: &'static str,
+    },
+    Sync {
+        reason: &'static str,
+    },
+    /// Roles said no (D73): the UI explains it instead of showing an internal error.
+    Permission {
+        reason: &'static str,
+    },
+    Internal {
+        message: String,
+    },
 }
 
 // Tauri sends command errors to the UI as JSON, so they must be serializable.
@@ -73,6 +85,15 @@ impl Serialize for Error {
             Error::Validation(errors) => ErrorPayload::Validation { errors },
             Error::BadBackup(reason) => ErrorPayload::Backup { reason },
             Error::Lan(reason) => ErrorPayload::Sync { reason },
+            Error::NotAllowed => ErrorPayload::Permission {
+                reason: "not_allowed",
+            },
+            Error::LastAdmin => ErrorPayload::Permission {
+                reason: "last_admin",
+            },
+            Error::RequestResolved => ErrorPayload::Permission {
+                reason: "request_resolved",
+            },
             other => ErrorPayload::Internal {
                 message: other.to_string(),
             },

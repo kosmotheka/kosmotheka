@@ -83,6 +83,7 @@ export type CommandError =
   | { kind: "validation"; errors: FieldError[] }
   | { kind: "backup"; reason: string }
   | { kind: "sync"; reason: string }
+  | { kind: "permission"; reason: "not_allowed" | "last_admin" | "request_resolved" }
   | { kind: "internal"; message: string };
 
 export function isCommandError(value: unknown): value is CommandError {
@@ -453,4 +454,97 @@ export function libraryDevices(id: string): Promise<KnownDevice[]> {
 /** Moves a book of the active library to `to`. Returns its new edition id. */
 export function moveBook(editionId: string, to: string): Promise<string> {
   return invoke<string>("move_book", { editionId, to });
+}
+
+// --- People and roles (D55, D73), mirrors src-tauri/src/people.rs --------------
+
+export type Role = "admin" | "editor" | "reader";
+export const roles: Role[] = ["admin", "editor", "reader"];
+
+export interface PersonDevice {
+  id: string;
+  name: string;
+  /** The device this app runs on. */
+  thisDevice: boolean;
+}
+
+export interface Person {
+  id: string;
+  name: string;
+  role: Role | null;
+  canShare: boolean;
+  devices: PersonDevice[];
+  /** Other libraries on this device where the same person is. */
+  elsewhere: string[];
+}
+
+export interface People {
+  hasRoles: boolean;
+  myRole: Role | null;
+  people: Person[];
+  /** Devices that belong to nobody: they count as readers. */
+  unassigned: PersonDevice[];
+  /** Only one person administers the library (D58). */
+  loneAdmin: boolean;
+}
+
+/** Someone in other libraries of this device but not in the active one. */
+export interface KnownPerson {
+  id: string;
+  name: string;
+  libraries: string[];
+}
+
+/** A person picked on screen: an existing one (`id`) or somebody new (`name`). */
+export interface PersonPick {
+  id: string | null;
+  name: string;
+}
+
+export interface DeviceOwner {
+  deviceId: string;
+  /** `null`: nobody's, so it counts as a reader. */
+  person: PersonPick | null;
+  role: Role | null;
+}
+
+export function listPeople(): Promise<People> {
+  return invoke<People>("list_people");
+}
+
+export function knownPeople(): Promise<KnownPerson[]> {
+  return invoke<KnownPerson[]>("known_people");
+}
+
+export function startRoles(name: string, owners: DeviceOwner[]): Promise<string> {
+  return invoke<string>("start_roles", { name, owners });
+}
+
+export function setRole(member: string, role: Role | null, canShare: boolean): Promise<void> {
+  return invoke("set_role", { member, role, canShare });
+}
+
+export function assignDevice(device: string, member: string | null): Promise<void> {
+  return invoke("assign_device", { device, member });
+}
+
+/** A lost device: out of every library, wherever it is. Returns how many. */
+export function removeDevice(device: string): Promise<number> {
+  return invoke<number>("remove_device", { device });
+}
+
+export function giveAccess(
+  device: string,
+  person: PersonPick,
+  roles: Record<string, Role>,
+  canShare: boolean,
+): Promise<void> {
+  return invoke("give_access", { device, person, roles, canShare });
+}
+
+/** The i18n key that explains a refusal by the roles, or null for other errors. */
+export function permissionErrorKey(error: unknown): string | null {
+  return isCommandError(error) && error.kind === "permission"
+    ? `people.errors.${error.reason}`
+    : null;
 }

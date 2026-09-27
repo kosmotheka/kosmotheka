@@ -48,6 +48,7 @@ import { DevicesPage } from "@/pages/devices-page";
 import { HelpPage } from "@/pages/help-page";
 import { LibraryPage } from "@/pages/library-page";
 import { MissingPage } from "@/pages/missing-page";
+import { PeoplePage } from "@/pages/people-page";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -179,6 +180,8 @@ export default function App() {
       <LibraryPage desktop={desktop} />
     ) : section === "devices" ? (
       <DevicesPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
+    ) : section === "people" ? (
+      <PeoplePage desktop={desktop} version={version} onNotice={setNotice} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} />
     ) : (

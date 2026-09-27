@@ -172,6 +172,8 @@ export function useCommandErrors() {
         setFieldErrors(error.errors);
       } else if (error.kind === "backup" || error.kind === "sync") {
         setMessage(error.reason);
+      } else if (error.kind === "permission") {
+        setMessage(t(`people.errors.${error.reason}`));
       } else {
         setMessage(error.message);
       }

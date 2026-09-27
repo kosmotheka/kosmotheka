@@ -391,7 +391,9 @@
   "common": {
     "close": "Close",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "back": "Back",
+    "cancel": "Cancel"
   },
   "libraries": {
     "settingsOf": "{{name}} settings",
@@ -483,5 +485,105 @@
     "pasteHint": "Or paste the code the other device shows:",
     "pairedWith": "Paired with {{name}}.",
     "pasteOnly": "Paste the code the other device shows:"
+  },
+  "people": {
+    "title": "People and permissions",
+    "subtitle": "{{library}} · who uses it, with which role and from which devices.",
+    "count_one": "{{library}} · {{count}} person",
+    "count_other": "{{library}} · {{count}} people",
+    "giveAccess": "Give a device access",
+    "giveAccessAnother": "Give another device access",
+    "person": "Person",
+    "devices": "Devices",
+    "roleIn": "Role in {{library}}",
+    "canShare": "Can share",
+    "canShareShort": "can share",
+    "canShareOf": "{{person}} can share",
+    "canShareHint": "Take {{library}} to other devices",
+    "yes": "Yes",
+    "no": "No",
+    "you": "you",
+    "thisDevice": "this device",
+    "noRole": "No role",
+    "name": "Name",
+    "and": " and ",
+    "roles": {
+      "admin": "Administrator",
+      "editor": "Editor",
+      "reader": "Reader"
+    },
+    "roleHints": {
+      "admin": "Everything, including permissions and requests",
+      "editor": "Adds and edits; deletes only what their person added",
+      "reader": "Sees the library and asks for what they want changed"
+    },
+    "roleLegend": {
+      "admin": "everything, including permissions and requests",
+      "editor": "adds and edits; deletes only what their person added",
+      "reader": "sees the library and asks for what they want changed"
+    },
+    "legendShort": "Administrator: everything · Editor: adds and edits · Reader: sees and asks",
+    "lastAdmin": "Nobody else administers this library.",
+    "lastAdminAction": "Make someone else an administrator first.",
+    "lone": {
+      "title": "You are the only administrator of {{library}}.",
+      "body_one": "If you lose {{devices}}, your only device, nobody will be able to change permissions or answer requests. Name someone else.",
+      "body_other": "If you lose {{devices}}, nobody will be able to change permissions or answer requests. Name someone else.",
+      "action": "Name someone else"
+    },
+    "yourRole": "Your role in {{library}}: {{role}}.",
+    "yourRoleNone": "This device belongs to nobody in {{library}}: it counts as a reader.",
+    "adminDecides": "{{admin}}, who administers it, changes permissions.",
+    "more": "More options for {{person}}",
+    "deviceOptions": "Options for {{device}}",
+    "unassigned": "Devices without a person",
+    "countsAsReader": "counts as a reader",
+    "countsAsReaderLong": "No person · counts as a reader",
+    "assign": "Assign",
+    "assignTo": "Assign to a person",
+    "alsoIn": "Also in {{libraries}}",
+    "alreadyIn": "already in {{libraries}}",
+    "theirDevices": "Their devices",
+    "sheetDescription": "Role, sharing permission and devices of {{person}}",
+    "activated": "Permissions turned on in {{library}}.",
+    "empty": {
+      "title": "In {{library}}, everyone can do everything",
+      "today": "Today any device with {{library}} adds, edits and deletes. If you turn permissions on:",
+      "devices": "Each device belongs to a person: “Hugo's phone” is Hugo's.",
+      "roles": "Each person has a role: administrator, editor or reader.",
+      "requests": "What someone cannot do becomes a request. Nothing is lost.",
+      "you": "You become the administrator of {{library}}. Then you choose whose each device is; a device without a person counts as a reader.",
+      "continue": "Continue"
+    },
+    "activate": {
+      "title": "Whose is each device?",
+      "description": "These devices already share the library. Choose which person each one belongs to and with which role. Editor comes selected so nobody loses what they could do.",
+      "step": "Turn permissions on in {{library}} · step 2 of 2",
+      "yourName": "Your name",
+      "owner": "Whose {{device}} is",
+      "role": "Role of {{device}}",
+      "nobody": "No person",
+      "newPerson": "New person…",
+      "samePeople": "People are the same in all your libraries; the role is only for {{library}}.",
+      "nobodyIsReader": "A device without a person counts as a reader: it can see and ask, but change nothing.",
+      "confirm": "Turn permissions on"
+    },
+    "revoke": {
+      "menu": "Remove a device",
+      "title": "Remove a device of {{person}}",
+      "titleOne": "Remove {{device}}?",
+      "why": "For when it is lost or stolen.",
+      "loses": "It will stop receiving every library it shared: {{libraries}}.",
+      "losesAll": "It will stop receiving every library it shared.",
+      "after": "It will get no more changes and what it sends will not count. If it connects again, these libraries will be erased from it.",
+      "stays": "{{person}} keeps their {{device}}.",
+      "confirm": "Remove {{device}}",
+      "done": "{{device}} removed."
+    },
+    "errors": {
+      "not_allowed": "You are not allowed to do this in this library.",
+      "last_admin": "You are the only administrator of this library: name someone else first.",
+      "request_resolved": "This request was already resolved."
+    }
   }
 }
