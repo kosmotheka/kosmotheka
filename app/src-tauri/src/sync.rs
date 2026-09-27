@@ -216,6 +216,8 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
 pub fn merge(conn: &mut Connection, incoming: Vec<SyncOperation>) -> Result<MergeReport> {
     let tx = conn.transaction()?;
     let report = merge_in(&tx, incoming)?;
+    // Assignments that were waiting for a device's registration (milestone 5.7).
+    crate::people::apply_pending_owners(&tx)?;
     tx.commit()?;
     Ok(report)
 }

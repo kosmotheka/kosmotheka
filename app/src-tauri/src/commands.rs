@@ -401,11 +401,37 @@ pub fn list_people(database: State<'_, Database>) -> Result<People> {
     people::list_people(&conn, &ops::active_library(&conn)?)
 }
 
+/// Turns roles on, saying in the same step whose each device already sharing the
+/// library is (D73).
 #[tauri::command]
-pub fn start_roles(database: State<'_, Database>, name: String) -> Result<String> {
+pub fn start_roles(
+    database: State<'_, Database>,
+    name: String,
+    owners: Vec<people::DeviceOwner>,
+) -> Result<String> {
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
-    people::start_roles(&mut conn, &library, &name)
+    people::start_roles(&mut conn, &library, &name, &owners)
+}
+
+/// People known in other libraries of this device, to reuse in the active one.
+#[tauri::command]
+pub fn known_people(database: State<'_, Database>) -> Result<Vec<people::KnownPerson>> {
+    let conn = database.lock()?;
+    people::known_elsewhere(&conn, &ops::active_library(&conn)?)
+}
+
+/// Whose a newly paired device is, with the role its person gets in each library
+/// where they have none yet (a role is chosen, never inherited).
+#[tauri::command]
+pub fn give_access(
+    database: State<'_, Database>,
+    device: String,
+    person: people::PersonPick,
+    roles: std::collections::BTreeMap<String, String>,
+    can_share: bool,
+) -> Result<()> {
+    people::give_access(&mut *database.lock()?, &device, &person, &roles, can_share)
 }
 
 #[tauri::command]

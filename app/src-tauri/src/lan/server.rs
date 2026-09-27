@@ -20,7 +20,7 @@ use super::pairing::PairingWindow;
 use super::{
     Hello, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, client_is_authorized,
     device_name, notices_for, only_shared, only_shared_operations, random_secret, reconcile,
-    record_client_sync, save_client, share_library, shared_libraries,
+    record_client_sync, register_in_shared, save_client, share_library, shared_libraries,
 };
 use crate::db::Database;
 use crate::error::Result;
@@ -196,7 +196,9 @@ async fn push(
         let client = authorized_client(&conn, &headers)?;
         let shared = shared_libraries(&conn, &client)?;
         let operations = only_shared_operations(request.operations, &shared);
-        Ok(Json(sync::merge(&mut conn, operations)?))
+        let report = sync::merge(&mut conn, operations)?;
+        register_in_shared(&mut conn, &client)?;
+        Ok(Json(report))
     })
     .await
 }

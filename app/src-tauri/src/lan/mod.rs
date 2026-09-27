@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 
 use crate::error::Result;
 use crate::libraries;
-use crate::ops::{read_state, write_state};
+use crate::ops::{self, read_state, write_state};
 use crate::sync::{LibraryVectors, MergeReport, SyncOperation};
 
 const DEVICE_NAME_KEY: &str = "device_name";
@@ -420,6 +420,21 @@ pub fn reconcile(
         share_library(conn, library, peer)?;
     }
     shared_libraries(conn, peer)
+}
+
+/// Registers this device in the libraries shared with `peer` that it already has
+/// but has not written to: an administrator can then say whose it is, as soon as
+/// the registration reaches them (milestone 5.7). Called after merging what the
+/// peer sent, when a shared library has just arrived.
+pub fn register_in_shared(conn: &mut Connection, peer: &str) -> Result<()> {
+    let tx = conn.transaction()?;
+    for library in shared_libraries(&tx, peer)? {
+        if libraries::library_exists(&tx, &library)? {
+            ops::ensure_registered(&tx, &library)?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
 }
 
 /// A paired device and the libraries that go to it.

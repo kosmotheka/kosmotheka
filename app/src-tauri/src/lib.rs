@@ -99,6 +99,8 @@ pub fn run() {
             commands::dismiss_request_notices,
             commands::list_people,
             commands::start_roles,
+            commands::known_people,
+            commands::give_access,
             commands::set_role,
             commands::assign_device,
             commands::remove_device,

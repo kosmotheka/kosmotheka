@@ -24,6 +24,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0012_roles.sql")),
     M::up(include_str!("../migrations/0013_change_requests.sql")),
     M::up(include_str!("../migrations/0014_request_notes.sql")),
+    M::up(include_str!("../migrations/0015_pending_owners.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 

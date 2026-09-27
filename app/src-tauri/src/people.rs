@@ -29,6 +29,8 @@ pub struct Person {
     pub role: Option<String>,
     pub can_share: bool,
     pub devices: Vec<PersonDevice>,
+    /// Other libraries on this device where the same person is (same member id).
+    pub elsewhere: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -41,8 +43,8 @@ pub struct People {
     pub people: Vec<Person>,
     /// Devices that write to the library but belong to nobody: they count as readers.
     pub unassigned: Vec<PersonDevice>,
-    /// Only one administrator, with only one device: losing it would leave the
-    /// library without anyone who can change permissions (D58).
+    /// Only one person administers the library: losing their devices would leave
+    /// nobody who can change permissions (D58).
     pub lone_admin: bool,
 }
 
@@ -69,6 +71,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
                 role: row.get(2)?,
                 can_share: row.get::<_, Option<i64>>(3)?.unwrap_or(0) != 0,
                 devices: Vec::new(),
+                elsewhere: Vec::new(),
             })
         })?
         .collect::<rusqlite::Result<_>>()?;
@@ -83,7 +86,10 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
         .iter()
         .filter(|p| p.role.as_deref() == Some("admin"))
         .collect();
-    let lone_admin = admins.len() == 1 && admins[0].devices.len() <= 1;
+    let lone_admin = admins.len() == 1;
+    for person in &mut people {
+        person.elsewhere = libraries_of(conn, &person.id, library)?;
+    }
     let my_role = people
         .iter()
         .find(|p| p.devices.iter().any(|d| d.this_device))
@@ -97,10 +103,124 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
     })
 }
 
+/// Someone known in other libraries of this device but not in this one: the same
+/// person can join it with the same member id (D73).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KnownPerson {
+    pub id: String,
+    pub name: String,
+    pub libraries: Vec<String>,
+}
+
+pub fn known_elsewhere(conn: &Connection, library: &str) -> Result<Vec<KnownPerson>> {
+    let found: Vec<(String, String)> = conn
+        .prepare(
+            "SELECT id, min(name) FROM members
+              WHERE library_id != ?1
+                AND id NOT IN (SELECT id FROM members WHERE library_id = ?1)
+              GROUP BY id ORDER BY min(name) COLLATE NOCASE",
+        )?
+        .query_map([library], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    found
+        .into_iter()
+        .map(|(id, name)| {
+            Ok(KnownPerson {
+                libraries: libraries_of(conn, &id, library)?,
+                id,
+                name,
+            })
+        })
+        .collect()
+}
+
+/// The names of the libraries, other than `except`, where `member` is.
+fn libraries_of(conn: &Connection, member: &str, except: &str) -> Result<Vec<String>> {
+    Ok(conn
+        .prepare(
+            "SELECT l.name FROM members m JOIN libraries l ON l.id = m.library_id
+              WHERE m.id = ?1 AND m.library_id != ?2 ORDER BY l.name COLLATE NOCASE",
+        )?
+        .query_map([member, except], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+/// A person picked on screen: one already in the library or in another one
+/// (`id`), or somebody new (`id` empty, `name` given).
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonPick {
+    pub id: Option<String>,
+    pub name: String,
+}
+
+/// Whose a device is, when roles are turned on, and with which role.
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceOwner {
+    pub device_id: String,
+    /// `None`: nobody's, so it counts as a reader.
+    pub person: Option<PersonPick>,
+    pub role: Option<String>,
+}
+
+/// The member row for `pick` in `library`: an update when it is already there
+/// (the role only if it has none), a create otherwise, keeping the id it has in
+/// other libraries. Returns its id.
+fn member_changes(
+    conn: &Connection,
+    library: &str,
+    pick: &PersonPick,
+    role: Option<&str>,
+    can_share: Option<bool>,
+    changes: &mut Vec<Change>,
+) -> Result<String> {
+    let current: Option<Option<String>> = match &pick.id {
+        Some(id) => conn
+            .query_row(
+                "SELECT role FROM members WHERE library_id = ?1 AND id = ?2",
+                [library, id],
+                |row| row.get(0),
+            )
+            .optional()?,
+        None => None,
+    };
+    let id = pick.id.clone().unwrap_or_else(new_id);
+    let mut fields = serde_json::Map::new();
+    if let Some(role) = role {
+        fields.insert("role".into(), json!(role));
+    }
+    if let Some(can_share) = can_share {
+        fields.insert("can_share".into(), json!(can_share));
+    }
+    match current {
+        // A role is given, never inherited: an existing one stays as it is.
+        Some(Some(_)) => {}
+        Some(None) if !fields.is_empty() => {
+            changes.push(Change::update(Entity::Member, &id, Value::Object(fields)));
+        }
+        Some(None) => {}
+        None => {
+            if role.is_none() {
+                return Err(Error::NotAllowed);
+            }
+            fields.insert("name".into(), json!(pick.name.trim()));
+            changes.push(Change::create(Entity::Member, &id, Value::Object(fields)));
+        }
+    }
+    Ok(id)
+}
+
 /// Turns roles on: this device's person becomes the first administrator. `name`
 /// names that person; an existing member with that name (the owner of copies) is
 /// reused. Returns the member's id.
-pub fn start_roles(conn: &mut Connection, library: &str, name: &str) -> Result<String> {
+pub fn start_roles(
+    conn: &mut Connection,
+    library: &str,
+    name: &str,
+    owners: &[DeviceOwner],
+) -> Result<String> {
     if permissions::has_roles(conn, library)? {
         return Err(Error::NotAllowed);
     }
@@ -125,9 +245,32 @@ pub fn start_roles(conn: &mut Connection, library: &str, name: &str) -> Result<S
     };
     // One operation, judged while the library has no roles yet: made in two, the
     // second would come from a device that belongs to nobody, a reader's.
-    let link = Change::update(Entity::Device, &me, json!({ "member_id": member }));
+    let mut changes = vec![
+        first,
+        Change::update(Entity::Device, &me, json!({ "member_id": member })),
+    ];
+    // Everyone already sharing the library says whose device it is, in the same step.
+    for owner in owners.iter().filter(|owner| owner.device_id != me) {
+        let member = match &owner.person {
+            Some(pick) if pick.id.as_deref() == Some(member.as_str()) => Some(member.clone()),
+            Some(pick) => Some(member_changes(
+                conn,
+                library,
+                pick,
+                Some(owner.role.as_deref().unwrap_or("editor")),
+                None,
+                &mut changes,
+            )?),
+            None => None,
+        };
+        changes.push(Change::update(
+            Entity::Device,
+            &owner.device_id,
+            json!({ "member_id": member }),
+        ));
+    }
     let tx = conn.transaction()?;
-    ops::record(&tx, library, "member.roles", vec![first, link])?;
+    ops::record(&tx, library, "member.roles", changes)?;
     tx.commit()?;
     Ok(member)
 }
@@ -179,6 +322,86 @@ pub fn assign_device(
     )?;
     tx.commit()?;
     Ok(())
+}
+
+/// Says whose a newly paired device is (D73): `person` joins each of `libraries`
+/// with the role given for it where they have none yet (a role is never inherited),
+/// and the device becomes theirs in each one. The device may not have registered
+/// there yet, since only it can create its row: then the assignment waits until
+/// its registration arrives (`apply_pending_owners`).
+pub fn give_access(
+    conn: &mut Connection,
+    device: &str,
+    person: &PersonPick,
+    roles: &std::collections::BTreeMap<String, String>,
+    can_share: bool,
+) -> Result<()> {
+    let libraries: Vec<String> = conn
+        .prepare("SELECT library_id FROM library_peers WHERE device_id = ?1")?
+        .query_map([device], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut member_id = person.id.clone();
+    let tx = conn.transaction()?;
+    for library in &libraries {
+        let pick = PersonPick {
+            id: member_id.clone(),
+            name: person.name.clone(),
+        };
+        let mut changes = Vec::new();
+        let role = roles.get(library).map(String::as_str);
+        let member = member_changes(&tx, library, &pick, role, Some(can_share), &mut changes)?;
+        member_id = Some(member.clone());
+        if is_registered(&tx, library, device)? {
+            changes.push(Change::update(
+                Entity::Device,
+                device,
+                json!({ "member_id": member }),
+            ));
+        } else {
+            tx.execute(
+                "INSERT OR REPLACE INTO pending_owners (library_id, device_id, member_id)
+                 VALUES (?1, ?2, ?3)",
+                [library, device, &member],
+            )?;
+        }
+        if !changes.is_empty() {
+            ops::record(&tx, library, "device.give_access", changes)?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
+}
+
+/// Records the assignments that were waiting for their device to register. One
+/// this device may not make (it stopped being an administrator) is dropped.
+pub fn apply_pending_owners(tx: &rusqlite::Transaction<'_>) -> Result<()> {
+    let ready: Vec<(String, String, String)> = tx
+        .prepare(
+            "SELECT p.library_id, p.device_id, p.member_id FROM pending_owners p
+               JOIN devices d ON d.library_id = p.library_id AND d.id = p.device_id",
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    for (library, device, member) in ready {
+        let change = Change::update(Entity::Device, &device, json!({ "member_id": member }));
+        match ops::record(tx, &library, "device.assign", vec![change]) {
+            Ok(_) | Err(Error::NotAllowed) => {}
+            Err(error) => return Err(error),
+        }
+        tx.execute(
+            "DELETE FROM pending_owners WHERE library_id = ?1 AND device_id = ?2",
+            [&library, &device],
+        )?;
+    }
+    Ok(())
+}
+
+fn is_registered(conn: &Connection, library: &str, device: &str) -> Result<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM devices WHERE library_id = ?1 AND id = ?2)",
+        [library, device],
+        |row| row.get(0),
+    )?)
 }
 
 /// A lost or stolen device (D58): in every library it writes to, its access is
@@ -282,7 +505,7 @@ mod tests {
         let mut conn = db::open_in_memory().unwrap();
         catalog::create_book(&mut conn, LIB, &book("Dune"), None).unwrap();
 
-        let member = start_roles(&mut conn, LIB, "tersoal").unwrap();
+        let member = start_roles(&mut conn, LIB, "tersoal", &[]).unwrap();
         let people = list_people(&conn, LIB).unwrap();
 
         assert!(people.has_roles);
@@ -292,7 +515,7 @@ mod tests {
         assert!(me.can_share);
         assert!(people.lone_admin, "one administrator with one device");
         assert!(matches!(
-            start_roles(&mut conn, LIB, "Ana"),
+            start_roles(&mut conn, LIB, "Ana", &[]),
             Err(Error::NotAllowed)
         ));
     }
@@ -300,7 +523,7 @@ mod tests {
     #[test]
     fn the_last_administrator_stays_one() {
         let mut conn = db::open_in_memory().unwrap();
-        let member = start_roles(&mut conn, LIB, "Tersoal").unwrap();
+        let member = start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
 
         let result = set_role(&mut conn, LIB, &member, Some("editor"), false);
 
@@ -312,14 +535,14 @@ mod tests {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
         catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
-        let member = start_roles(&mut laptop, LIB, "Tersoal").unwrap();
+        let member = start_roles(&mut laptop, LIB, "Tersoal", &[]).unwrap();
         pull(&mut laptop, &phone);
         let phone_id = ops::device_id(&phone).unwrap();
         assign_device(&mut laptop, LIB, &phone_id, Some(&member)).unwrap();
         pull(&mut phone, &laptop);
         assert!(
-            !list_people(&laptop, LIB).unwrap().lone_admin,
-            "two devices"
+            list_people(&laptop, LIB).unwrap().lone_admin,
+            "one person administers it, however many devices she has"
         );
 
         assert_eq!(remove_device(&mut laptop, &phone_id).unwrap(), 1);
@@ -339,7 +562,7 @@ mod tests {
     fn a_duplicate_has_the_books_and_no_roles() {
         let mut conn = db::open_in_memory().unwrap();
         catalog::create_book(&mut conn, LIB, &book("Dune"), None).unwrap();
-        start_roles(&mut conn, LIB, "Tersoal").unwrap();
+        start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
 
         let copy = backup::duplicate(&mut conn, LIB, "Casa (copia)").unwrap();
 
@@ -347,5 +570,143 @@ mod tests {
         assert!(!permissions::has_roles(&conn, &copy).unwrap());
         assert_eq!(ops::active_library(&conn).unwrap(), copy);
         catalog::create_book(&mut conn, &copy, &book("Tehanu"), None).unwrap();
+    }
+
+    #[test]
+    fn a_second_administrator_ends_the_warning() {
+        let mut conn = db::open_in_memory().unwrap();
+        start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let mut changes = Vec::new();
+        let id = member_changes(&conn, LIB, &laura, Some("admin"), None, &mut changes).unwrap();
+        let tx = conn.transaction().unwrap();
+        ops::record(&tx, LIB, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+
+        let people = list_people(&conn, LIB).unwrap();
+
+        assert!(!people.lone_admin);
+        assert!(people.people.iter().any(|p| p.id == id));
+    }
+
+    #[test]
+    fn turning_roles_on_says_whose_every_device_is() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut phone = db::open_in_memory().unwrap();
+        let mut tablet = db::open_in_memory().unwrap();
+        catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
+        catalog::create_book(&mut tablet, LIB, &book("Solaris"), None).unwrap();
+        pull(&mut laptop, &phone);
+        pull(&mut laptop, &tablet);
+        let (phone_id, tablet_id) = (
+            ops::device_id(&phone).unwrap(),
+            ops::device_id(&tablet).unwrap(),
+        );
+
+        start_roles(
+            &mut laptop,
+            LIB,
+            "Ana",
+            &[
+                DeviceOwner {
+                    device_id: phone_id.clone(),
+                    person: Some(PersonPick {
+                        id: None,
+                        name: "Laura".into(),
+                    }),
+                    role: None,
+                },
+                DeviceOwner {
+                    device_id: tablet_id.clone(),
+                    person: None,
+                    role: None,
+                },
+            ],
+        )
+        .unwrap();
+
+        let people = list_people(&laptop, LIB).unwrap();
+        let laura = people.people.iter().find(|p| p.name == "Laura").unwrap();
+        assert_eq!(laura.role.as_deref(), Some("editor"), "editor by default");
+        assert_eq!(laura.devices[0].id, phone_id);
+        assert_eq!(people.unassigned[0].id, tablet_id, "nobody's: a reader");
+    }
+
+    #[test]
+    fn the_same_person_joins_another_library_with_the_same_id() {
+        let mut conn = db::open_in_memory().unwrap();
+        let hugo = PersonPick {
+            id: None,
+            name: "Hugo".into(),
+        };
+        let mut changes = Vec::new();
+        let id = member_changes(&conn, LIB, &hugo, Some("reader"), None, &mut changes).unwrap();
+        let tx = conn.transaction().unwrap();
+        ops::record(&tx, LIB, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+        let games = crate::libraries::create_library(&mut conn, "Juegos").unwrap();
+
+        let known = known_elsewhere(&conn, &games).unwrap();
+        assert_eq!(known.len(), 1);
+        assert_eq!(known[0].id, id);
+
+        let again = PersonPick {
+            id: Some(id.clone()),
+            name: "Hugo".into(),
+        };
+        let mut changes = Vec::new();
+        assert!(
+            member_changes(&conn, &games, &again, None, None, &mut changes).is_err(),
+            "joining a library needs a role chosen for it"
+        );
+        let joined =
+            member_changes(&conn, &games, &again, Some("editor"), None, &mut changes).unwrap();
+        assert_eq!(joined, id);
+    }
+
+    #[test]
+    fn a_new_device_becomes_its_person_s_once_it_registers() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut phone = db::open_in_memory().unwrap();
+        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
+        let phone_id = ops::device_id(&phone).unwrap();
+        lan::share_library(&laptop, LIB, &phone_id).unwrap();
+        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "editor".to_owned())]);
+
+        give_access(
+            &mut laptop,
+            &phone_id,
+            &PersonPick {
+                id: None,
+                name: "Laura".into(),
+            },
+            &roles,
+            false,
+        )
+        .unwrap();
+        assert!(
+            list_people(&laptop, LIB).unwrap().unassigned.is_empty(),
+            "not registered yet"
+        );
+
+        // Over the network, the phone registers as soon as the library arrives.
+        let laptop_id = ops::device_id(&laptop).unwrap();
+        lan::share_library(&phone, LIB, &laptop_id).unwrap();
+        pull(&mut phone, &laptop);
+        lan::register_in_shared(&mut phone, &laptop_id).unwrap();
+        pull(&mut laptop, &phone);
+        pull(&mut phone, &laptop);
+
+        let people = list_people(&laptop, LIB).unwrap();
+        let laura = people.people.iter().find(|p| p.name == "Laura").unwrap();
+        assert_eq!(laura.devices[0].id, phone_id);
+        assert_eq!(
+            list_people(&phone, LIB).unwrap().my_role.as_deref(),
+            Some("editor")
+        );
+        catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
     }
 }

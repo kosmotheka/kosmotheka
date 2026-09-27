@@ -96,13 +96,8 @@ fn record_inner(
     let registers_itself = changes.iter().any(|change| {
         change.entity == Entity::Device && change.action == Action::Create && change.id == device_id
     });
-    if !registers_itself && !is_registered(tx, library, &device_id)? {
-        let registration = Change::create(
-            Entity::Device,
-            &device_id,
-            json!({ "public_key": key.public_key(), "name": crate::lan::device_name(tx)? }),
-        );
-        record_operation(tx, library, "device.register", vec![registration], true)?;
+    if !registers_itself {
+        ensure_registered(tx, library)?;
     }
     let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
 
@@ -157,6 +152,26 @@ fn record_inner(
     log_operation(tx, &operation, schema_version(tx)?, Status::Applied)?;
     write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
     Ok(operation)
+}
+
+/// Registers this device in `library` if it has not yet (D56): its own `device`
+/// row, with the key it signs with. Every device may register itself, so it never
+/// turns into a request (D73).
+pub fn ensure_registered(tx: &Transaction<'_>, library: &str) -> Result<()> {
+    let device_id = device_id(tx)?;
+    if is_registered(tx, library, &device_id)? {
+        return Ok(());
+    }
+    let registration = Change::create(
+        Entity::Device,
+        &device_id,
+        json!({
+            "public_key": signing_key(tx)?.public_key(),
+            "name": crate::lan::device_name(tx)?,
+        }),
+    );
+    record_operation(tx, library, "device.register", vec![registration], true)?;
+    Ok(())
 }
 
 /// This device's signing key (D56), made the first time it is needed. It stays in

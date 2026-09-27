@@ -976,4 +976,9 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Peticiones:** nota opcional de quien pide, «Editar y aceptar» (el administrador corrige antes de aceptar), retirar una petición propia pendiente, y quién la resolvió y cuándo.
 - **Aviso de administrador único:** siempre que la biblioteca tenga una sola persona administradora, tenga los dispositivos que tenga (el texto dice cuáles perdería).
 
+**Añadido con la segunda revisión de pantallas (27/09/2026):**
+- **Un rol nunca se hereda:** lo da, activamente, alguien con permiso para ello. Al emparejar un dispositivo de alguien que ya está en otras bibliotecas, en las que aún no tiene rol hay que elegirlo; en las que ya lo tiene, se mantiene.
+- **En móvil, emparejar va en dos pasos:** «¿De quién es?» y, solo si falta algún rol, «Qué recibirá y con qué rol». En escritorio cabe en una pantalla.
+- **Los roles se nombran en forma neutra** en español (Administrador, Editor, Lector): la app no sabe el género de cada persona.
+
 **Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/plans/fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.

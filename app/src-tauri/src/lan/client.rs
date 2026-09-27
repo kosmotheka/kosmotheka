@@ -19,7 +19,8 @@ use super::pairing::PairingCode;
 use super::{
     Hello, KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest,
     SyncReport, device_name, find_server, notices_for, only_shared, only_shared_operations,
-    reconcile, record_server_sync, save_server, share_library, shared_libraries,
+    reconcile, record_server_sync, register_in_shared, save_server, share_library,
+    shared_libraries,
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -255,6 +256,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
             &mut conn,
             only_shared_operations(pulled.operations, &shared),
         )?;
+        register_in_shared(&mut conn, device_id)?;
         let theirs = only_shared(pulled.vectors, &shared);
         (
             received,
