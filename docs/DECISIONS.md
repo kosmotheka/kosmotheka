@@ -739,7 +739,7 @@ Cada dispositivo tiene un par de claves Ed25519, firma sus operaciones y los dem
 | Compartida, con un único administrador que pierde su único dispositivo | Duplicarla como nueva (ver abajo) |
 
 - **Caso del administrador único, cerrado el 27/09/2026:**
-  - **Prevenir:** la app avisa cuando la biblioteca tiene un solo administrador con un solo dispositivo, y sugiere vincular otro dispositivo suyo o nombrar un segundo administrador.
+  - **Prevenir:** la app avisa cuando la biblioteca tiene una sola persona administradora, y sugiere nombrar a otra (o, al menos, vincular otro dispositivo suyo). Criterio ajustado el 27/09/2026 con las pantallas de Design; antes era «un solo administrador con un solo dispositivo».
   - **Último recurso:** quien tenga la biblioteca la duplica como una nueva, de la que es administrador, y los demás vuelven a unirse. Se pierden el historial y los vínculos, pero no los datos.
   - **Con cuenta en la nube** (Fase 7), el control se recupera con el email.
   - **Descartado el código de recuperación:** es un secreto más que se pierde o se deja a la vista, y quien lo encuentre se queda con la biblioteca.
@@ -969,5 +969,11 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Converger:** cada operación se juzga con los roles vigentes en su HLC. Si llega tarde una que cambia roles, el dispositivo recalcula la biblioteca desde su registro.
 - **Nada se pierde:** lo no permitido se queda en el registro, viaja como las demás y es una petición para los administradores.
 - **Operaciones sin firma** (anteriores a la Fase 5): se aceptan mientras la biblioteca no tenga roles; con roles, cuentan como de un lector.
+
+**Añadido al revisar las pantallas de Design (27/09/2026):**
+- **Activar los roles incluye decir de quién es cada dispositivo.** Quien activa los roles pasa a administrar; en el mismo paso asigna persona a los dispositivos que ya comparten la biblioteca, con **editor** por defecto. Así nadie pierde de golpe lo que podía hacer, y se mantiene la regla de que un dispositivo sin persona cuenta como lector (un dispositivo perdido y quitado no conserva permisos). Todo va en una sola operación, que se juzga cuando aún no hay roles.
+- **La persona es la misma en todas las bibliotecas:** al añadir a alguien a otra biblioteca se reutiliza su id de miembro (los ids solo tienen que ser únicos dentro de cada biblioteca). La interfaz agrupa por ese id. No cambia el formato de las operaciones.
+- **Peticiones:** nota opcional de quien pide, «Editar y aceptar» (el administrador corrige antes de aceptar), retirar una petición propia pendiente, y quién la resolvió y cuándo.
+- **Aviso de administrador único:** siempre que la biblioteca tenga una sola persona administradora, tenga los dispositivos que tenga (el texto dice cuáles perdería).
 
 **Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/plans/fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.
