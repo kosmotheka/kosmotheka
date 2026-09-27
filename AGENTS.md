@@ -77,6 +77,8 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | editorial | `publisher` | |
 | miembro de la familia | `member` | A catalog row that owns copies; **not** an account, though it may be linked to one (D46) |
 | deseo | `wish` | Wishlist entry |
+| marca (de una persona sobre una obra) | `mark` | Status, rating and favorite of one person for one work (D68) |
+| estado · valoración · favorito | `status` · `rating` · `favorite` | Fields of a `mark` |
 | operación · cambio · intención | `operation` · `change` · `intent` | D25 |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
 | reloj lógico híbrido | `hlc` | |

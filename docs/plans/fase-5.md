@@ -17,6 +17,7 @@ Cada hito deja la app funcionando, con sus tests, y se prueba antes de seguir.
 | **5.5 Peticiones** | Lo que un rol no puede hacer se convierte en petición; los administradores aceptan o rechazan | `spec/`, `app/` |
 | **5.6 Dispositivo perdido** | Un administrador quita un dispositivo perdido desde otro y vincula el nuevo (D58). Aviso cuando hay un solo administrador con un solo dispositivo. Último recurso: duplicar la biblioteca como nueva | `libraries.rs`, `lan/` |
 | **5.7 Interfaz** | Personas y permisos, peticiones, «Pedir que se borre» y a quién pertenece cada dispositivo | `app/src`, encargo a Claude Design |
+| **5.8 Marcas por persona** (D68) | Cada persona marca en cada obra su estado (pendiente, en curso, terminado o abandonado, con fecha), su valoración y si es favorita. Cada una marca lo suyo, sea cual sea su rol | `spec/`, `crates/domain`, `app/`, encargo a Claude Design |
 
 Las pantallas de 5.2, 5.5 y 5.7 se piden a Claude Design antes de construirlas. Encargo revisado el 27/09/2026: [design/encargo-fase-5.md](../design/encargo-fase-5.md).
 
@@ -46,11 +47,21 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 
 - **Una petición apunta a la operación que no se permitió** y no crea nada por sí misma. Aceptarla es una operación nueva del administrador que aplica esos cambios; rechazarla, otra que la cierra. Así quien acepta firma lo que entra.
 
+### 5.8 Marcas por persona
+
+- **Una fila `mark` por persona y obra**, con `member_id`, `work_id`, `status` (`pending`, `in_progress`, `finished` o `abandoned`), `status_on` (fecha), `rating` y `favorite`. Todo opcional salvo las dos referencias.
+- **Su id se deriva de la persona y la obra** (UUID v5 de `member_id` y `work_id`), en vez de ser aleatorio: si la misma persona marca la misma obra en dos dispositivos sin conexión, las dos marcas son la misma fila y se fusionan campo a campo. Rust y PHP calculan el mismo id; `spec/` lo fija con ejemplos.
+- **Regla de permisos:** cualquiera con persona, sea cual sea su rol, crea, cambia y borra las marcas de **su** persona; quien administra, las de todas. Un dispositivo sin persona o una operación sin firma, ninguna. Va en `spec/README.md` con sus casos de conformidad.
+- **Valoración de 1 a 5**, sin medias estrellas.
+- **La fecha** se pone sola al cambiar el estado (hoy) y se puede corregir.
+- **Borrar una obra borra sus marcas**, en la misma operación.
+- **Interfaz:** en la ficha, «Lo mío» con estado, fecha, estrellas y favorito; en el catálogo, un filtro por mi estado y por favoritos. Pantallas a Claude Design antes de construirla.
+
 ## Pendiente de decidir
 
 Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](../DECISIONS.md). Quedan:
 
-1. **Las marcas por persona (D68: leído, valoración, favorito):** ¿entran en esta fase, ya que el lector «marca lo suyo», o van en la 9?
+1. ~~Las marcas por persona (D68): ¿en esta fase?~~ Sí: hito 5.8 (27/09/2026).
 
 ## Estado
 
@@ -70,6 +81,7 @@ Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](
   - [x] **e. Pedir en lugar de hacer** (27/09/2026): quien lee ve «Pedir que se añada» en la barra superior, el botón flotante del catálogo y ¿Lo tengo?; el formulario de añadir se convierte en petición con nota (sin descargar la portada, que se quedaría en su dispositivo). En la ficha, «Editar» y «Añadir ejemplar» desaparecen para quien lee, y «Borrar» pasa a «Pedir que se borre» (con nota) en lo que ese dispositivo no puede borrar: la ficha lo sabe juzgando en seco los mismos cambios con las mismas reglas (`ops::would_allow`). Al sincronizar, si un cambio propio ha pasado a petición, sale el aviso con «Ver mi petición». Quien lee también apunta deseos (añadido a D73): una regla nueva en la especificación, con su caso de conformidad.
   - [x] **f. Dispositivos y emparejar** (27/09/2026): columna «De quién es» en dispositivos (en móvil, «Es de»), que quien administra cambia o asigna y los demás solo ven. Tras emparejar, si el dispositivo recibe alguna biblioteca con roles que administras, un paso más: «¿De quién es?» con las personas de esas bibliotecas u «Otra persona», y el rol donde aún no lo tenga (nunca se hereda); en móvil, los roles van en un tercer paso solo si faltan. «Ahora no» lo deja sin persona (cuenta como lector). `give_access` ya no toca bibliotecas sin roles ni las que no administras. **Diferencias con Design:** no hay columna «Rol» en dispositivos (está en Personas y permisos) ni se detecta «Sustituye al Móvil de Hugo»; «Puede compartir» se comprueba al compartir (añadido a D73): quien no puede no ve la opción, con el aviso de Design, y el motor lo rechaza.
   - [x] **g. Documentación** (27/09/2026): lista de pruebas en pantalla en `docs/testing/fase-5.md`. La fase se cierra cuando pasen.
+- [ ] 5.8 Marcas por persona (D68): datos y regla, casos de conformidad, pantallas de Design e interfaz.
 
 ### 5.7 Decisiones técnicas propuestas
 

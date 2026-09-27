@@ -871,7 +871,9 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Favorito**, aparte de la valoración: sirve de filtro, y un favorito puede tener menos puntuación que otros.
 - **Deseado** se mantiene (D61).
 
-**Consecuencias:** sustituye a «leído» en las marcas por persona de D61. Entra en la Fase 6, junto con géneros, temáticas y etiquetas.
+**Consecuencias:** sustituye a «leído» en las marcas por persona de D61. ~~Entra en la Fase 6, junto con géneros, temáticas y etiquetas.~~
+
+**Cambio de fase (27/09/2026):** se adelanta a la Fase 5 (hito 5.8), porque la regla que la sostiene es de permisos (cada persona marca lo suyo, sea cual sea su rol) y el objetivo de la fase ya dice «mi hijo marca lo leído». En la 5 llegan los datos, la regla y la interfaz para libros; en la 6, los nombres de «en curso» según el tipo (jugando, viendo) y los filtros por tipo.
 
 ## D69 · Reserva de regalos oculta solo en pantalla — `aceptada`
 

@@ -77,6 +77,7 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 - **El miembro es la persona:** los dispositivos se asocian a un miembro al compartir («el móvil de Hugo» es de Hugo).
 - **Roles:** administrador, editor y lector. Nadie da más de lo que tiene; **compartir es un permiso aparte**; puede haber varios administradores.
 - **Peticiones:** el lector pide añadir o borrar; los administradores aceptan o rechazan.
+- **Marcas por persona** (D68, adelantadas de la Fase 6): estado (pendiente, en curso, terminado o abandonado, con fecha y sin progreso), valoración y favorito. Cada persona marca lo suyo, también quien solo lee.
 - **Firmas:** cada dispositivo firma sus operaciones (Ed25519) y los demás las comprueban.
 - **Cada dispositivo comprueba lo que recibe:** lo que no está permitido pasa a petición, y todos llegan al mismo resultado aunque les lleguen las cosas en distinto orden. Casos de conformidad compartidos en `spec/`.
 - **Recuperación:** revocar un dispositivo perdido desde otro administrador; para el administrador único, una salida por decidir (código de recuperación u otra).
@@ -102,7 +103,7 @@ Deja de estar centrado en libros.
 - **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).
 - **Series:** agrupan obras con orden o sin él; una obra puede estar en varias; relación «necesita» (expansiones, suplementos).
 - **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
-- **Marcas por persona** (D68): estado (pendiente, en curso, terminado o abandonado, con fecha y sin progreso; «en curso» se llama leyendo, jugando o viendo según el tipo), valoración, favorito y deseado.
+- **Marcas por persona** (D68): llegan en la Fase 5 (hito 5.8); aquí, «en curso» pasa a llamarse leyendo, jugando o viendo según el tipo, y los filtros por tipo.
 - **Géneros, temáticas y etiquetas.**
 - **Precio de compra**, como mucho un campo opcional del ejemplar y solo si no complica la interfaz; sin estadísticas.
 - **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
