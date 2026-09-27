@@ -981,4 +981,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **En móvil, emparejar va en dos pasos:** «¿De quién es?» y, solo si falta algún rol, «Qué recibirá y con qué rol». En escritorio cabe en una pantalla.
 - **Los roles se nombran en forma neutra** en español (Administrador, Editor, Lector): la app no sabe el género de cada persona.
 
+**Añadido al construir «Pedir en lugar de hacer» (27/09/2026):**
+- **Quien lee apunta deseos:** un deseo no cambia nada de las estanterías, así que un lector con persona puede crear deseos en «Me falta» y editar o borrar los que añadió su persona. Un dispositivo sin persona, o una operación sin firma, sigue sin poder: cualquiera podría hacerse pasar por él. Los casos de conformidad que usaban «un lector añade un deseo» como ejemplo de petición pasan a usar una editorial, y hay un caso nuevo para la lista de deseos.
+
 **Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/plans/fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.

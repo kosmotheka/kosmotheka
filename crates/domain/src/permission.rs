@@ -44,10 +44,11 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         return true;
     }
     let author = operation.hlc.device.as_str();
-    // Without a signature nobody can tell who wrote it: it counts as a reader's.
+    // Without a signature nobody can tell who wrote it: it counts as a reader's,
+    // and as nobody's in particular, like a device that belongs to no person.
     let role = match operation.signature {
-        Some(_) => view.role_of_device(author).unwrap_or(Role::Reader),
-        None => Role::Reader,
+        Some(_) => view.role_of_device(author),
+        None => None,
     };
     operation
         .changes
@@ -55,7 +56,14 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         .all(|change| change_allowed(change, author, role, view))
 }
 
-fn change_allowed(change: &Change, author: &str, role: Role, view: &impl LibraryView) -> bool {
+fn change_allowed(
+    change: &Change,
+    author: &str,
+    role: Option<Role>,
+    view: &impl LibraryView,
+) -> bool {
+    let someone = role.is_some();
+    let role = role.unwrap_or(Role::Reader);
     if role == Role::Admin {
         return true;
     }
@@ -76,6 +84,13 @@ fn change_allowed(change: &Change, author: &str, role: Role, view: &impl Library
         Entity::Device | Entity::Library | Entity::Revocation => false,
         // Nobody gives more than they have.
         Entity::Member if touches("role") || touches("can_share") => false,
+        // Wishes change nothing on the shelves: a reader with a person keeps a
+        // wishlist, and deletes or edits only what their person added.
+        Entity::Wish if role == Role::Reader => {
+            someone
+                && (change.action == Action::Create
+                    || view.created_by_same_person(change.entity, &change.id, author))
+        }
         _ => match (role, change.action) {
             (Role::Reader, _) => false,
             (_, Action::Create | Action::Update) => true,
@@ -156,6 +171,36 @@ mod tests {
             ..view(Some(Role::Editor))
         };
         assert!(is_allowed(&delete, &mine));
+    }
+
+    #[test]
+    fn a_reader_with_a_person_keeps_a_wishlist() {
+        let add = op(vec![Change::create(
+            Entity::Wish,
+            WISH,
+            json!({ "title": "Tehanu" }),
+        )]);
+        let delete = op(vec![Change::delete(Entity::Wish, WISH)]);
+        let publisher = op(vec![Change::create(
+            Entity::Publisher,
+            WISH,
+            json!({ "name": "Minotauro" }),
+        )]);
+        let mine = View {
+            same_person: true,
+            ..view(Some(Role::Reader))
+        };
+        assert!(is_allowed(&add, &view(Some(Role::Reader))));
+        assert!(!is_allowed(&delete, &view(Some(Role::Reader))));
+        assert!(is_allowed(&delete, &mine));
+        assert!(
+            !is_allowed(&publisher, &mine),
+            "the catalog is still asked for"
+        );
+        assert!(
+            !is_allowed(&add, &view(None)),
+            "a device of nobody only asks"
+        );
     }
 
     #[test]
