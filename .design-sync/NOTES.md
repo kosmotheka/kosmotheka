@@ -26,7 +26,7 @@
 ## Re-sync risks
 
 - **Old Geist font files stay in the project** (`fonts/geist-*.woff2`, 2026-09-27): the sync anchor never listed fonts, so the diff cannot delete them. Nothing references them any more (`fonts/fonts.css` points at Figtree). Harmless; remove them by hand from the project if they ever confuse a designer.
-- **Files uploaded outside the sync** (`guidelines/encargo-fase-4.md`, `templates/**`, `_preview/*.png`, `_preview/gen-helpers.js`) are not in the anchor either, so no sync touches them.
+- **Files uploaded outside the sync** (`guidelines/encargo-fase-4.md`, `guidelines/encargo-fase-5-marcas.md` on 2026-09-27, `templates/**`, `_preview/*.png`, `_preview/gen-helpers.js`) are not in the anchor either, so no sync touches them.
 
 - The safelist in `tailwind.css` decides which utilities designs can use; classes outside it and outside the app's own code render unstyled. Extend it when the design agent needs more.
 - `prepare.sh` symlinks every entry of `app/node_modules`; after `npm install` in `app/`, re-run it.
