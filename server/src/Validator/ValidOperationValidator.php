@@ -84,6 +84,10 @@ final class ValidOperationValidator extends ConstraintValidator
         if (ChangeAction::Delete === $change->action && [] !== $change->fields) {
             return $this->report(OperationErrorCode::FieldsOnDelete, "$path.fields");
         }
+        // A tombstone on a mark's derived id would block its person for good (D68).
+        if (ChangeAction::Delete === $change->action && CatalogEntity::Mark === $change->entity) {
+            return $this->report(OperationErrorCode::Undeletable, "$path.id");
+        }
         if (ChangeAction::Update === $change->action && [] === $change->fields) {
             return $this->report(OperationErrorCode::EmptyUpdate, "$path.fields");
         }

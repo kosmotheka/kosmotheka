@@ -142,7 +142,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
             return "changes[$change].fields[$field]";
         }
 
-        return \in_array($expect['code'], ['invalid_id', 'other_library', 'other_device', 'wrong_id'], true) ? "changes[$change].id" : "changes[$change].fields";
+        return \in_array($expect['code'], ['invalid_id', 'other_library', 'other_device', 'wrong_id', 'undeletable'], true) ? "changes[$change].id" : "changes[$change].fields";
     }
 
     /**

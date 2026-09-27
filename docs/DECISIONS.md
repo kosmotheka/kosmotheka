@@ -120,7 +120,7 @@ Es el patrón de mutaciones optimistas que el servidor vuelve a aplicar con auto
 **Consecuencias.**
 - El modo sin conexión forma parte de la arquitectura desde el primer día; no es una caché que se añade al final.
 - El modelo de datos funciona igual en SQLite y en PostgreSQL (D08).
-- Los identificadores se generan en el cliente (UUID v7), no son autoincrementales.
+- Los identificadores se generan en el cliente (UUID v7), no son autoincrementales. *Excepción:* las marcas por persona tienen un id derivado de persona y obra (D68).
 - Las operaciones son **independientes del transporte**: el mismo formato sirve para sincronizar con el servidor (HTTP) y entre dispositivos en la red local (D13).
 
 ## D06 · Servidor en Symfony — `aceptada`
@@ -874,6 +874,12 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 **Consecuencias:** sustituye a «leído» en las marcas por persona de D61. ~~Entra en la Fase 6, junto con géneros, temáticas y etiquetas.~~
 
 **Cambio de fase (27/09/2026):** se adelanta a la Fase 5 (hito 5.8), porque la regla que la sostiene es de permisos (cada persona marca lo suyo, sea cual sea su rol) y el objetivo de la fase ya dice «mi hijo marca lo leído». En la 5 llegan los datos, la regla y la interfaz para libros; en la 6, los nombres de «en curso» según el tipo (jugando, viendo) y los filtros por tipo.
+
+**Al construirlo (27/09/2026, aceptado por el maintainer):**
+- **Excepción a los ids UUID v7:** el id de una marca no es aleatorio, se deriva de la persona y la obra (UUID v5 de `<member_id>:<work_id>`, con un espacio de nombres fijo en `spec/README.md`). Con un v7, si la misma persona marcara la misma obra en dos dispositivos sin conexión, habría dos marcas suyas y haría falta una regla nueva para juntarlas; con el id derivado son la misma fila y se fusionan campo a campo, como todo lo demás. Hay precedentes de filas sin id aleatorio: los datos de libro usan el de su edición, una petición resuelta el de su operación y un dispositivo el suyo propio. La validación exige el id derivado (`wrong_id`), en Rust y en PHP.
+- **Las marcas no se borran con un cambio** (`undeletable`): una lápida en su id derivado impediría a esa persona volver a marcar la obra nunca. Vaciar una marca deja sus campos a `null`; la marca solo se va, en cascada, con su obra o con su persona.
+- **Cada persona marca lo suyo, sea cual sea su rol;** quien administra, las de todos. Un dispositivo sin persona no marca. En una biblioteca sin roles, el dispositivo dice antes quién es («¿Quién eres?»).
+- **Valoración de 1 a 5**, sin medias estrellas.
 
 ## D69 · Reserva de regalos oculta solo en pantalla — `aceptada`
 

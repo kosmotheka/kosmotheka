@@ -60,6 +60,7 @@ pub enum OperationErrorCode {
     EmptyUpdate,
     FieldsOnDelete,
     WrongId,
+    Undeletable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
@@ -136,6 +137,8 @@ impl Change {
 
         match self.action {
             Action::Delete if !self.fields.is_empty() => return Err(fail(FieldsOnDelete, None)),
+            // A tombstone on a mark's derived id would block its person for good (D68).
+            Action::Delete if self.entity == Entity::Mark => return Err(fail(Undeletable, None)),
             Action::Update if self.fields.is_empty() => return Err(fail(EmptyUpdate, None)),
             _ => {}
         }

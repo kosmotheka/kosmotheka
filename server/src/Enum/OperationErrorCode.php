@@ -24,4 +24,5 @@ enum OperationErrorCode: string
     case EmptyUpdate = 'empty_update';
     case FieldsOnDelete = 'fields_on_delete';
     case WrongId = 'wrong_id';
+    case Undeletable = 'undeletable';
 }

@@ -155,6 +155,26 @@
           }
         },
         {
+          "description": "A mark is never deleted by a change (D68): the tombstone would keep its derived id, and so its person, from ever marking the work again. It goes with its work or its person.",
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "mark"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "create",
+                  "update"
+                ]
+              }
+            }
+          }
+        },
+        {
           "$ref": "#/$defs/entityFields"
         }
       ]
