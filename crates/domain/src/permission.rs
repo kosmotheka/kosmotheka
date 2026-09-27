@@ -147,7 +147,14 @@ mod tests {
             self.role.map(|_| MY_MEMBER.to_owned())
         }
         fn mark_member(&self, _: &str) -> Option<String> {
-            Some(if self.same_person { MY_MEMBER } else { OTHER_MEMBER }.to_owned())
+            Some(
+                if self.same_person {
+                    MY_MEMBER
+                } else {
+                    OTHER_MEMBER
+                }
+                .to_owned(),
+            )
         }
     }
 
@@ -179,7 +186,10 @@ mod tests {
         assert!(is_allowed(&mark(OTHER_MEMBER), &view(Some(Role::Admin))));
         assert!(is_allowed(&update, &mine));
         assert!(!is_allowed(&update, &reader), "someone else's mark");
-        assert!(!is_allowed(&mark(MY_MEMBER), &view(None)), "a device of nobody");
+        assert!(
+            !is_allowed(&mark(MY_MEMBER), &view(None)),
+            "a device of nobody"
+        );
     }
 
     const ME: &str = "01997c7e-0000-7000-8000-0000000000fb";
