@@ -1307,6 +1307,64 @@ mod tests {
     }
 
     #[test]
+    fn an_administrator_corrects_a_book_request_before_accepting_it() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        ops::as_request(None, || {
+            catalog::create_book(&mut phone.0, LIB, &book("Wingspam", None, "Hugo"), None)
+        })
+        .unwrap();
+        laptop.pull_from(&phone);
+        let request = &crate::requests::list_requests(&laptop.0, LIB).unwrap()[0];
+        assert_eq!(request.summary.action, "add_book");
+        assert_eq!(request.summary.title.as_deref(), Some("Wingspam"));
+        assert!(request.applies && request.editable);
+        let draft = crate::requests::requested_book(&laptop.0, LIB, &request.id).unwrap();
+        assert_eq!(draft.copy.owner.as_deref(), Some("Hugo"));
+
+        catalog::create_book_accepting(
+            &mut laptop.0,
+            LIB,
+            &book("Wingspan", None, "Hugo"),
+            None,
+            Some(&request.id),
+        )
+        .unwrap();
+        phone.sync_with(&mut laptop);
+
+        assert!(phone.titles().contains(&"Wingspan".to_owned()));
+        assert!(!phone.titles().contains(&"Wingspam".to_owned()));
+        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_request_on_a_deleted_book_no_longer_applies() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let dune = |device: &Device| {
+            catalog::list_books(&device.0, LIB, &BookFilter::default())
+                .unwrap()
+                .into_iter()
+                .find(|b| b.title == "Dune")
+                .unwrap()
+                .edition_id
+        };
+        let edition = dune(&phone);
+        ops::as_request(None, || catalog::delete_book(&mut phone.0, LIB, &edition)).unwrap();
+        laptop.pull_from(&phone);
+        let request = crate::requests::list_requests(&laptop.0, LIB).unwrap()[0].clone();
+        assert_eq!(request.summary.action, "delete_book");
+        assert_eq!(request.summary.title.as_deref(), Some("Dune"));
+        assert!(request.applies);
+
+        let on_laptop = dune(&laptop);
+        catalog::delete_book(&mut laptop.0, LIB, &on_laptop).unwrap();
+
+        let request = &crate::requests::list_requests(&laptop.0, LIB).unwrap()[0];
+        assert!(!request.applies);
+    }
+
+    #[test]
     fn whoever_asked_withdraws_and_it_can_no_longer_be_accepted() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
         ops::as_request(None, || {

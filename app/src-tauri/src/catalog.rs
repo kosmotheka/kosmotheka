@@ -89,8 +89,28 @@ pub fn create_book(
     book: &ValidBook,
     cover: Option<&str>,
 ) -> Result<CreatedBook> {
+    create_book_accepting(conn, library, book, cover, None)
+}
+
+/// Adds a book; with `request`, in the same operation that accepts that request,
+/// for an administrator who corrected what was asked before accepting it (D73).
+pub fn create_book_accepting(
+    conn: &mut Connection,
+    library: &str,
+    book: &ValidBook,
+    cover: Option<&str>,
+    request: Option<&str>,
+) -> Result<CreatedBook> {
     let tx = conn.transaction()?;
     let mut plan = Plan::new(&tx, library);
+    if let Some(request) = request {
+        crate::requests::ensure_pending(&tx, library, request)?;
+        plan.changes.push(Change::create(
+            Entity::ChangeRequest,
+            request,
+            json!({ "status": "accepted" }),
+        ));
+    }
 
     let existing_edition_id = match &book.edition.isbn {
         Some(isbn) => edition_with_isbn(&tx, library, isbn.as_str())?,
@@ -103,7 +123,9 @@ pub fn create_book(
     };
     plan.add_copy(&edition_id, &book.copy)?;
 
-    let intent = if existing_edition {
+    let intent = if request.is_some() {
+        "request.accept"
+    } else if existing_edition {
         "copy.add"
     } else {
         "book.add"

@@ -95,6 +95,8 @@ pub fn run() {
             commands::accept_request,
             commands::reject_request,
             commands::withdraw_request,
+            commands::requested_book,
+            commands::accept_request_edited,
             commands::request_notices,
             commands::dismiss_request_notices,
             commands::list_people,

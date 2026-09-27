@@ -494,6 +494,36 @@ pub fn reject_request(database: State<'_, Database>, id: String) -> Result<()> {
     requests::reject(&mut conn, &library, &id)
 }
 
+/// What a book request asked for, as the add form fills it in.
+#[tauri::command]
+pub fn requested_book(database: State<'_, Database>, id: String) -> Result<requests::BookDraft> {
+    let conn = database.lock()?;
+    requests::requested_book(&conn, &ops::active_library(&conn)?, &id)
+}
+
+/// «Edit and accept»: adds the book as corrected, in the operation that accepts
+/// the request (D73).
+#[tauri::command]
+pub async fn accept_request_edited(
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    lookup: State<'_, Lookup>,
+    id: String,
+    book: NewBook,
+) -> Result<Saved<CreatedBook>> {
+    let book = book.validate().map_err(Error::Validation)?;
+    let (cover, cover_failed) =
+        download_cover(&covers, &lookup, book.edition.cover_url.as_ref()).await;
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let created =
+        catalog::create_book_accepting(&mut conn, &library, &book, cover.as_deref(), Some(&id))?;
+    Ok(Saved {
+        value: created,
+        cover_failed,
+    })
+}
+
 #[tauri::command]
 pub fn withdraw_request(database: State<'_, Database>, id: String) -> Result<()> {
     let mut conn = database.lock()?;
