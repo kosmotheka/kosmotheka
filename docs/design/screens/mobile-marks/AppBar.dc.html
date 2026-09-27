@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<header style="flex-shrink:0;height:64px;padding:0 4px;display:grid;grid-template-columns:48px 1fr auto;align-items:center;background:var(--background)"><button aria-label="Abrir menú" style="width:48px;height:48px;border:0;background:transparent;color:var(--foreground);display:flex;align-items:center;justify-content:center;border-radius:24px"><x-import component-from-global-scope="Library.MenuIcon" size="22" hint-size="22px,22px"></x-import></button><button aria-label="Cambiar de biblioteca" style="justify-self:center;border:0;background:transparent;color:var(--foreground);display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 12px;border-radius:12px;font-family:inherit"><span style="display:flex;align-items:center;gap:4px;font-size:17px;font-weight:600;letter-spacing:-0.01em">{{ library }}<x-import component-from-global-scope="Library.ChevronDownIcon" size="16" hint-size="16px,16px"></x-import></span><span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted-foreground)"><span style="width:6px;height:6px;border-radius:3px;background:var(--success)"></span>Al día</span></button><div style="display:flex;align-items:center"><button aria-label="Buscar" style="width:44px;height:48px;border:0;background:transparent;color:var(--foreground);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Library.SearchIcon" size="21" hint-size="21px,21px"></x-import></button><sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}"><button aria-label="Peticiones pendientes: 3" style="position:relative;width:44px;height:48px;border:0;background:transparent;color:var(--foreground);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Library.BellIcon" size="21" hint-size="21px,21px"></x-import><span style="position:absolute;top:8px;right:5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--destructive);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--background)">3</span></button></sc-if><sc-if value="{{ notAdmin }}" hint-placeholder-val="{{ false }}"><span style="width:4px"></span></sc-if></div></header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;lector&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;'admin'|'lector'&quot;},&quot;library&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Familia&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const admin = this.props.role === 'admin';
+    return { admin, notAdmin: !admin, library: this.props.library ?? 'Familia' };
+  }
+}
+</script>
+</body>
+</html>
