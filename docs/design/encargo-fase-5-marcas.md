@@ -33,6 +33,8 @@ En la misma ficha, una línea discreta con lo que han marcado las otras personas
 
 En los filtros del catálogo: por mi estado (pendiente, leyendo, terminado, abandonado, sin marcar) y «Mis favoritos». En la lista y la tabla del catálogo, un indicador pequeño de mi estado en cada obra, sin recargar la fila.
 
-### 4. Sin persona
+### 4. ¿Quién eres?
 
-Un dispositivo que no es de ninguna persona no puede marcar: el bloque «Lo mío» se ve desactivado, con una línea que diga que primero alguien que administra tiene que decir de quién es el dispositivo.
+Las marcas son de una persona, así que el dispositivo tiene que ser de alguien:
+- **Biblioteca sin roles** (la mayoría, al principio): la primera vez que alguien marca algo, un paso corto «¿Quién eres?» para elegir una persona que ya esté (por ejemplo, la dueña de algunos ejemplares) o escribir su nombre. Queda guardado y no se vuelve a preguntar.
+- **Biblioteca con roles y dispositivo sin persona:** el bloque «Lo mío» se ve desactivado, con una línea que diga que primero alguien que administra tiene que decir de quién es el dispositivo.

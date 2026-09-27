@@ -16,6 +16,7 @@ use crate::error::{Error, Result};
 use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
+use crate::marks;
 use crate::metadata::{Lookup, LookupResult};
 use crate::ops;
 use crate::people::{self, People};
@@ -478,6 +479,28 @@ pub fn known_people(database: State<'_, Database>) -> Result<Vec<people::KnownPe
 
 /// Whose a newly paired device is, with the role its person gets in each library
 /// where they have none yet (a role is chosen, never inherited).
+// --- Marks (D68) -----------------------------------------------------------------
+
+#[tauri::command]
+pub fn work_marks(database: State<'_, Database>, work_id: String) -> Result<marks::WorkMarks> {
+    let conn = database.lock()?;
+    marks::work_marks(&conn, &ops::active_library(&conn)?, &work_id)
+}
+
+#[tauri::command]
+pub fn set_mark(database: State<'_, Database>, work_id: String, mark: marks::Mark) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    marks::set_mark(&mut conn, &library, &work_id, &mark)
+}
+
+#[tauri::command]
+pub fn claim_person(database: State<'_, Database>, person: people::PersonPick) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    marks::claim_person(&mut conn, &library, &person)
+}
+
 #[tauri::command]
 pub fn pairing_owners(
     database: State<'_, Database>,

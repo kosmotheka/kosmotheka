@@ -1339,6 +1339,79 @@ mod tests {
     }
 
     #[test]
+    fn one_person_marking_on_two_devices_offline_ends_with_one_merged_mark() {
+        use crate::marks::{self, Mark};
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        laptop.add("Dune", None, "Tersoal");
+        let hugo = crate::people::PersonPick {
+            id: None,
+            name: "Hugo".into(),
+        };
+        marks::claim_person(&mut laptop.0, LIB, &hugo).unwrap();
+        laptop.sync_with(&mut phone);
+        let member = marks::my_member(&laptop.0, LIB).unwrap();
+        let same = crate::people::PersonPick {
+            id: member,
+            name: "Hugo".into(),
+        };
+        marks::claim_person(&mut phone.0, LIB, &same).unwrap();
+        let work = |device: &Device| {
+            let edition = catalog::list_books(&device.0, LIB, &BookFilter::default()).unwrap()[0]
+                .edition_id
+                .clone();
+            catalog::get_book(&device.0, LIB, &edition).unwrap().work_id
+        };
+        let dune = work(&laptop);
+
+        let finished = Mark {
+            status: Some("finished".into()),
+            status_on: Some("2026-03-14".into()),
+            ..Mark::default()
+        };
+        marks::set_mark(&mut laptop.0, LIB, &dune, &finished).unwrap();
+        let loved = Mark {
+            rating: Some(5),
+            favorite: true,
+            ..Mark::default()
+        };
+        marks::set_mark(&mut phone.0, LIB, &dune, &loved).unwrap();
+        laptop.sync_with(&mut phone);
+        laptop.sync_with(&mut phone);
+
+        assert_converged(&[&laptop, &phone]);
+        let seen = marks::work_marks(&phone.0, LIB, &dune).unwrap();
+        assert!(seen.others.is_empty(), "one row, not two");
+        let mine = seen.mine.unwrap();
+        assert_eq!(mine.status.as_deref(), Some("finished"));
+        assert!(mine.favorite, "both devices' changes are there");
+
+        // Emptied and marked again: an emptied mark is never a tombstone.
+        marks::set_mark(&mut phone.0, LIB, &dune, &Mark::default()).unwrap();
+        marks::set_mark(&mut phone.0, LIB, &dune, &finished).unwrap();
+        laptop.sync_with(&mut phone);
+        let again = marks::work_marks(&laptop.0, LIB, &dune)
+            .unwrap()
+            .mine
+            .unwrap();
+        assert_eq!(again.status.as_deref(), Some("finished"));
+        assert!(!again.favorite);
+
+        let edition = catalog::list_books(&laptop.0, LIB, &BookFilter::default()).unwrap()[0]
+            .edition_id
+            .clone();
+        catalog::delete_book(&mut laptop.0, LIB, &edition).unwrap();
+        laptop.sync_with(&mut phone);
+        assert!(
+            marks::work_marks(&phone.0, LIB, &dune)
+                .unwrap()
+                .mine
+                .is_none()
+        );
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
     fn the_book_says_what_each_device_may_delete_and_asking_says_what_happened() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
         let dune = |device: &Device| {

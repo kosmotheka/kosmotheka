@@ -54,7 +54,9 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 - **Regla de permisos:** cualquiera con persona, sea cual sea su rol, crea, cambia y borra las marcas de **su** persona; quien administra, las de todas. Un dispositivo sin persona o una operación sin firma, ninguna. Va en `spec/README.md` con sus casos de conformidad.
 - **Valoración de 1 a 5**, sin medias estrellas.
 - **La fecha** se pone sola al cambiar el estado (hoy) y se puede corregir.
-- **Borrar una obra borra sus marcas**, en la misma operación.
+- **Borrar una obra borra sus marcas** en cascada, como a sus ejemplares el motor: sin cambios explícitos, así borrar un libro no toca las marcas de otras personas ni pasa a petición por ellas. *Cambiado al construirlo.*
+- **Una marca vaciada no se borra:** se queda con los campos vacíos. Borrarla dejaría una lápida en su id derivado y esa persona no podría volver a marcar la obra nunca. Al crearla solo viajan los campos con valor, para no pisar lo que otro dispositivo de la misma persona puso a la vez. *Añadido al construirlo.*
+- **¿Quién eres?** En una biblioteca sin roles los dispositivos no son de nadie. La primera vez que se marca algo, la app pregunta quién eres (una persona que ya esté o una nueva, sin rol) y liga este dispositivo a ella. Sin roles lo puede hacer cualquiera; con roles, sigue siendo cosa de quien administra.
 - **Interfaz:** en la ficha, «Lo mío» con estado, fecha, estrellas y favorito; en el catálogo, un filtro por mi estado y por favoritos. Pantallas a Claude Design antes de construirla.
 
 ## Pendiente de decidir

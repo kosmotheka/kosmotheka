@@ -8,6 +8,7 @@ mod db;
 mod error;
 mod lan;
 mod libraries;
+mod marks;
 mod metadata;
 mod ops;
 mod people;
@@ -107,6 +108,9 @@ pub fn run() {
             commands::known_people,
             commands::pairing_owners,
             commands::give_access,
+            commands::work_marks,
+            commands::set_mark,
+            commands::claim_person,
             commands::set_role,
             commands::assign_device,
             commands::remove_device,
