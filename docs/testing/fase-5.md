@@ -72,3 +72,30 @@ Pon nombre a cada instancia en Compartir y dispositivos → «Nombre de este dis
 ### Dispositivo perdido
 
 - [ ] **Quitar un dispositivo.** En A → Personas y permisos → Hugo → quitar el móvil de Hugo. *Esperado:* explica qué bibliotecas pierde. Sincroniza C: esas bibliotecas desaparecen de C.
+
+## 5.8 · Marcas por persona
+
+Esta versión añade la migración 16 (tabla `marks`) y deja su copia al lado, como las anteriores.
+
+### Sin roles
+
+Con una biblioteca sin permisos activados, y dos instancias **A** y **B** que la comparten.
+
+- [ ] **¿Quién eres?** En A, abre un libro y toca «Terminado» en «Lo mío». *Esperado:* sale «¿Quién eres?» con las personas que ya tienen ejemplares (y cuántos) y «Otra persona». Elige una. *Esperado:* el libro queda terminado con la fecha de hoy; la biblioteca sigue sin permisos (Personas y permisos no cambia).
+- [ ] **No se vuelve a preguntar.** Marca otro libro en A. *Esperado:* se marca sin preguntar.
+- [ ] **Estado, fecha, estrellas y favorito.** Cambia a «Leyendo». *Esperado:* «Desde el …» con la fecha de hoy. Toca la fecha y elige otra. Pon 4 estrellas y «Favorito». Toca otra vez la cuarta estrella. *Esperado:* se quitan las estrellas.
+- [ ] **Quitar.** Toca «Quitar». *Esperado:* «Lo mío» vuelve a estar vacío. Marca de nuevo. *Esperado:* se puede marcar otra vez sin problema.
+- [ ] **Lo de los demás.** En B, di quién eres (otra persona) y marca el mismo libro. Sincroniza. *Esperado:* en A sale una línea «… lo terminó en …» bajo «Lo mío» que se despliega con cada persona; en B, lo mismo con lo de A.
+- [ ] **Misma persona en dos dispositivos.** En B, di que eres la misma persona que en A. Sin sincronizar, pon «Terminado» en A y 5 estrellas en B en el mismo libro. Sincroniza. *Esperado:* en los dos, una sola marca con «Terminado» y 5 estrellas.
+
+### En el catálogo
+
+- [ ] **Indicador.** *Esperado:* junto al título de lo que has marcado, un icono pequeño con tu estado y un corazón si es favorito; nada en lo que no has marcado. En escritorio aparece en cuanto marcas algo en el panel.
+- [ ] **Filtrar.** «Filtros» → «Mi estado» → «Terminado». *Esperado:* solo lo que has terminado, con la etiqueta «Mi estado: Terminado» para quitarlo. Añade «Sin marcar». *Esperado:* también lo que no has marcado.
+- [ ] **Mis favoritos.** Activa «Solo mis favoritos». *Esperado:* solo tus favoritos; «Quitar filtros» lo deja todo como estaba.
+
+### Con roles
+
+- [ ] **Cada persona marca lo suyo.** En la biblioteca con roles de las pruebas de arriba, en C (Hugo, lector), marca un libro. *Esperado:* se marca sin pedir nada, aunque sea lector.
+- [ ] **Dispositivo sin persona.** En un dispositivo que no es de nadie. *Esperado:* «Lo mío» sale desactivado con «alguien que administra … tiene que decir antes de quién es este dispositivo»; no pregunta «¿Quién eres?».
+- [ ] **Borrar el libro.** Borra un libro marcado y sincroniza. *Esperado:* desaparece con sus marcas en todos los dispositivos, sin pasar a petición por las marcas de otras personas.

@@ -91,6 +91,7 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 - [x] 5.5 Peticiones, sin interfaz: pedir, aceptar y rechazar, también desde otro dispositivo (27/09/2026).
 - [x] 5.6 Dispositivo perdido, sin interfaz: quitarlo de todas las bibliotecas, aviso de administrador único y duplicar como nueva (D58, 27/09/2026).
 - [x] 5.7 Interfaz: personas y permisos, peticiones con campanita, pedir en lugar de hacer, de quién es cada dispositivo y emparejar con persona y rol (27/09/2026). Lista de pruebas en pantalla: [testing/fase-5.md](testing/fase-5.md).
+- [x] 5.8 Marcas por persona (D68, adelantadas de la Fase 6): estado con fecha, valoración y favorito; cada persona marca lo suyo y ve lo de los demás (28/09/2026).
 - [ ] Pruebas en pantalla de la fase y cierre.
 
 ## Fase 6 — Catálogo general
