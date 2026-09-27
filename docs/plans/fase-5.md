@@ -48,12 +48,10 @@ Detalles de construcción que no cambian lo decidido. Son **propuestas** hasta q
 
 ## Pendiente de decidir
 
-Preguntas para el maintainer, en orden de urgencia:
+Las preguntas 1 y 2 y las reglas del borrador se aceptaron el 27/09/2026: [D73](../DECISIONS.md). Quedan:
 
-1. **Operaciones sin firma.** Las de antes de la Fase 5 no llevan firma. Propuesta: se aceptan mientras la biblioteca no tenga roles; desde que tiene roles, una operación sin firma nueva se trata como de un lector (pasa a petición). ¿De acuerdo?
-2. **¿Quién es administrador al estrenar los roles?** Propuesta: quien los activa, asignándose a sí mismo el primero. Hasta entonces, todos pueden todo.
-3. **El administrador único que pierde su único dispositivo** (abierto en D58): código de recuperación, sugerir un segundo administrador al compartir, o duplicar la biblioteca.
-4. **Las marcas por persona (D68: leído, valoración, favorito):** ¿entran en esta fase, ya que el lector «marca lo suyo», o van en la 9?
+1. **El administrador único que pierde su único dispositivo** (abierto en D58): código de recuperación, sugerir un segundo administrador al compartir, o duplicar la biblioteca.
+2. **Las marcas por persona (D68: leído, valoración, favorito):** ¿entran en esta fase, ya que el lector «marca lo suyo», o van en la 9?
 
 ## Estado
 

@@ -78,6 +78,7 @@
 | D70 | Nombre del proyecto: Kosmotheka | aceptada |
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
 | D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
+| D73 | Cómo se comprueban los permisos sin servidor | aceptada |
 
 ---
 
@@ -947,3 +948,19 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - Antes de abrir el repositorio hay que añadir la exclusión en LICENSE y README, y un TRADEMARKS.md o similar. Relacionado con D64 y con el repositorio kosmotheka/kosmotheka.
 - En la Fase 8 del ROADMAP: la búsqueda de marcas y el registro del logo, junto al del nombre si lo hay.
 - Amplía D11 y D70.
+
+## D73 · Cómo se comprueban los permisos sin servidor — `aceptada`
+
+**Contexto:** D55 decide que cada dispositivo compruebe lo que recibe contra los roles, y que todos lleguen al mismo resultado sea cual sea el orden de llegada. Faltaban las reglas concretas. Se propusieron en el plan de la Fase 5 y en los casos en borrador `spec/conformance/draft/permissions.json` (reglas en su README), y el maintainer las aceptó el 27/09/2026.
+
+**Decisión:**
+- **Sin roles, como hoy:** una biblioteca sin ningún rol asignado deja hacer todo a todos. El primer rol se asigna con esa misma regla, y quien lo asigna se hace administrador.
+- **Quién y con qué rol:** el autor de una operación es el dispositivo de su `hlc` (firmado, D56); su persona, el miembro al que apunta su fila `device`; su rol, el de ese miembro **en el momento de la operación**. Un dispositivo que no es de nadie cuenta como lector.
+- **Roles:** un campo `role` en el miembro (`admin`, `editor`, `reader`) y otro, `can_share`, para compartir. Cambiar roles, el permiso de compartir o de quién es un dispositivo es cosa de administradores. El editor borra solo lo que creó su persona (D45).
+- **Cada dispositivo se registra y se renombra a sí mismo**, tenga el rol que tenga.
+- **Todo o nada:** si un solo cambio de una operación no está permitido, la operación entera pasa a petición.
+- **Converger:** cada operación se juzga con los roles vigentes en su HLC. Si llega tarde una que cambia roles, el dispositivo recalcula la biblioteca desde su registro.
+- **Nada se pierde:** lo no permitido se queda en el registro, viaja como las demás y es una petición para los administradores.
+- **Operaciones sin firma** (anteriores a la Fase 5): se aceptan mientras la biblioteca no tenga roles; con roles, cuentan como de un lector.
+
+**Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/plans/fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.
