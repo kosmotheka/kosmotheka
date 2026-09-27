@@ -46,10 +46,13 @@ export function MarksSection({
   workId,
   desktop,
   onNotice,
+  onChanged,
 }: {
   workId: string;
   desktop: boolean;
   onNotice: (message: string) => void;
+  /** After saving, so the catalog shows the new status. */
+  onChanged: () => void;
 }) {
   const { t } = useTranslation();
   const libraries = useLibraries();
@@ -82,6 +85,7 @@ export function MarksSection({
       onNotice(key ? t(key) : String(e));
     }
     load();
+    onChanged();
   };
 
   const chooseStatus = (status: MarkStatus) =>
@@ -234,6 +238,7 @@ export function MarksSection({
             setPending(null);
             await setMark(workId, next).catch((e: unknown) => onNotice(String(e)));
             load();
+            onChanged();
           }}
         />
       )}

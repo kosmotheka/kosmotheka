@@ -1385,6 +1385,18 @@ mod tests {
         let mine = seen.mine.unwrap();
         assert_eq!(mine.status.as_deref(), Some("finished"));
         assert!(mine.favorite, "both devices' changes are there");
+        let listed = |statuses: &[&str], favorites: bool| {
+            let filter = BookFilter {
+                my_statuses: statuses.iter().map(|s| s.to_string()).collect(),
+                my_favorites: favorites,
+                ..BookFilter::default()
+            };
+            catalog::list_books(&phone.0, LIB, &filter).unwrap()
+        };
+        assert_eq!(listed(&[], false)[0].my_status.as_deref(), Some("finished"));
+        assert_eq!(listed(&["finished", "pending"], false).len(), 1);
+        assert!(listed(&["none"], false).is_empty(), "Dune is marked");
+        assert_eq!(listed(&[], true).len(), 1);
 
         // Emptied and marked again: an emptied mark is never a tombstone.
         marks::set_mark(&mut phone.0, LIB, &dune, &Mark::default()).unwrap();

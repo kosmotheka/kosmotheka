@@ -42,6 +42,9 @@ pub struct BookSummary {
     pub copy_count: i64,
     pub formats: Vec<Format>,
     pub owners: Vec<String>,
+    /// This device's person's status for the work (D68), if any.
+    pub my_status: Option<String>,
+    pub my_favorite: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -655,6 +658,9 @@ pub struct BookFilter {
     /// Owner name: duplicates of the same member created on other devices match too (D33).
     pub owner: Option<String>,
     pub location: Option<String>,
+    /// My status, any of them; `none` matches works I have not marked (D68).
+    pub my_statuses: Vec<String>,
+    pub my_favorites: bool,
 }
 
 pub fn list_books(
@@ -662,13 +668,18 @@ pub fn list_books(
     library: &str,
     filter: &BookFilter,
 ) -> Result<Vec<BookSummary>> {
-    let mut conditions: Vec<&str> = vec!["e.library_id = ?"];
-    let mut args: Vec<SqlValue> = vec![SqlValue::Text(library.to_owned())];
+    // The first argument is this device, whose person's marks come with each work.
+    let mut conditions: Vec<String> = vec!["e.library_id = ?".to_owned()];
+    let mut args: Vec<SqlValue> = vec![
+        SqlValue::Text(ops::device_id(conn)?),
+        SqlValue::Text(library.to_owned()),
+    ];
 
     if let Some(query) = filter.query.as_deref().and_then(search::fts_query) {
         conditions.push(
             "e.id IN (SELECT edition_id FROM search_index
-                       WHERE search_index MATCH ? AND library_id = e.library_id)",
+                       WHERE search_index MATCH ? AND library_id = e.library_id)"
+                .to_owned(),
         );
         args.push(SqlValue::Text(query));
     }
@@ -680,7 +691,8 @@ pub fn list_books(
                       AND (? IS NULL OR c.owner_id IN (SELECT id FROM members
                                                          WHERE library_id = e.library_id
                                                            AND name = ? COLLATE NOCASE))
-                      AND (? IS NULL OR c.location = ?))",
+                      AND (? IS NULL OR c.location = ?))"
+                .to_owned(),
         );
         let text =
             |value: Option<&str>| value.map_or(SqlValue::Null, |v| SqlValue::Text(v.to_owned()));
@@ -692,6 +704,22 @@ pub fn list_books(
             args.push(value.clone());
             args.push(value);
         }
+    }
+    if !filter.my_statuses.is_empty() {
+        let set = filter.my_statuses.iter().filter(|s| *s != "none");
+        let mut any: Vec<String> = Vec::new();
+        let placeholders: Vec<&str> = set.clone().map(|_| "?").collect();
+        if !placeholders.is_empty() {
+            any.push(format!("mk.status IN ({})", placeholders.join(", ")));
+            args.extend(set.map(|s| SqlValue::Text(s.clone())));
+        }
+        if filter.my_statuses.iter().any(|s| s == "none") {
+            any.push("mk.status IS NULL".to_owned());
+        }
+        conditions.push(format!("({})", any.join(" OR ")));
+    }
+    if filter.my_favorites {
+        conditions.push("mk.favorite = 1".to_owned());
     }
     let where_clause = format!("WHERE {}", conditions.join(" AND "));
 
@@ -709,8 +737,12 @@ pub fn list_books(
             (SELECT group_concat(name, char(31) ORDER BY name COLLATE NOCASE)
                FROM (SELECT DISTINCT m.name FROM copies c
                        JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
-                      WHERE c.library_id = e.library_id AND c.edition_id = e.id))
+                      WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
+            mk.status, mk.favorite
          FROM editions e
+         LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
+              AND mk.member_id = (SELECT member_id FROM devices
+                                   WHERE library_id = e.library_id AND id = ?)
          LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
          LEFT JOIN publishers pu ON pu.library_id = e.library_id AND pu.id = e.publisher_id
          {where_clause}
@@ -733,6 +765,8 @@ pub fn list_books(
                 .filter_map(|format| format.parse().ok())
                 .collect(),
             owners: split_list(row.get(11)?),
+            my_status: row.get(12)?,
+            my_favorite: row.get::<_, Option<i64>>(13)?.unwrap_or(0) != 0,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)

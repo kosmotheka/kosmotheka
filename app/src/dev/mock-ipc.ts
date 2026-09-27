@@ -4,6 +4,7 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 
 import type {
+  BookFilter,
   BookSummary,
   ChangeRequest,
   LanStatus,
@@ -58,6 +59,8 @@ const book = (
   copyCount: formats.length,
   formats,
   owners,
+  myStatus: null,
+  myFavorite: false,
 });
 
 const books: BookSummary[] = [
@@ -225,8 +228,20 @@ const othersMarks: PersonMark[] = [
 
 mockIPC((cmd, args) => {
   switch (cmd) {
-    case "list_books":
-      return books;
+    case "list_books": {
+      const filter = (args as { filter?: BookFilter }).filter ?? {};
+      return books
+        .map((b) => {
+          const mark = myMarks.get(`work-${b.editionId}`);
+          return { ...b, myStatus: mark?.status ?? null, myFavorite: mark?.favorite ?? false };
+        })
+        .filter(
+          (b) =>
+            (!filter.myStatuses?.length ||
+              filter.myStatuses.includes(b.myStatus ?? "none")) &&
+            (!filter.myFavorites || b.myFavorite),
+        );
+    }
     case "list_libraries":
       return libraries;
     case "library_devices":

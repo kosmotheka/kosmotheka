@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Circle, Heart, SlidersHorizontal, X } from "lucide-react";
 
 import { useCatalogOptions } from "@/components/catalog-options";
+import { STATUS_ICONS } from "@/components/marks/marks-section";
+import { Switch } from "@/components/people/role-parts";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -14,15 +16,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { type BookFilter, type Format, formats } from "@/lib/api";
+import { type BookFilter, type Format, type MarkStatus, formats, markStatuses } from "@/lib/api";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 
 // Radix Select cannot use "" as a value, so "all" stands for "no filter".
 const ALL = "all";
 
 export function isFiltering(filter: BookFilter) {
-  return Boolean(filter.query?.trim() || filter.format || filter.owner || filter.location);
+  return Boolean(
+    filter.query?.trim() ||
+    filter.format ||
+    filter.owner ||
+    filter.location ||
+    filter.myStatuses?.length ||
+    filter.myFavorites,
+  );
 }
+
+type MineOption = MarkStatus | "none";
+const MINE_OPTIONS: MineOption[] = [...markStatuses, "none"];
+const MINE_ICONS = { ...STATUS_ICONS, none: Circle };
 
 /** The "Filters" button and one removable chip per active filter. */
 export function FilterBar({
@@ -33,10 +47,32 @@ export function FilterBar({
   onChange: (filter: BookFilter) => void;
 }) {
   const { t } = useTranslation();
-  const chips: { key: keyof BookFilter; label: string }[] = [];
-  if (filter.format) chips.push({ key: "format", label: t(`formats.${filter.format}`) });
-  if (filter.owner) chips.push({ key: "owner", label: filter.owner });
-  if (filter.location) chips.push({ key: "location", label: filter.location });
+  const chips: { key: string; label: string; remove: () => BookFilter }[] = [];
+  const without = (key: keyof BookFilter) => () => ({ ...filter, [key]: undefined });
+  if (filter.format) {
+    chips.push({ key: "format", label: t(`formats.${filter.format}`), remove: without("format") });
+  }
+  if (filter.owner) chips.push({ key: "owner", label: filter.owner, remove: without("owner") });
+  if (filter.location) {
+    chips.push({ key: "location", label: filter.location, remove: without("location") });
+  }
+  for (const status of filter.myStatuses ?? []) {
+    chips.push({
+      key: `mine-${status}`,
+      label: t("marks.filter.mine", { status: t(`marks.statuses.${status}`) }),
+      remove: () => ({
+        ...filter,
+        myStatuses: filter.myStatuses?.filter((other) => other !== status),
+      }),
+    });
+  }
+  if (filter.myFavorites) {
+    chips.push({
+      key: "favorites",
+      label: t("marks.filter.favorites"),
+      remove: without("myFavorites"),
+    });
+  }
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto">
@@ -52,7 +88,7 @@ export function FilterBar({
           key={chip.key}
           className="h-9 shrink-0 rounded-[10px]"
           aria-label={t("filters.remove", { filter: chip.label })}
-          onClick={() => onChange({ ...filter, [chip.key]: undefined })}
+          onClick={() => onChange(chip.remove())}
         >
           {chip.label} <X />
         </Button>
@@ -79,8 +115,55 @@ export function FilterPanel({
     onChange({ ...filter, [key]: value });
   const onOpenChange = (next: boolean) => !next && closeOverlay();
 
+  const mine = filter.myStatuses ?? [];
+  const toggleMine = (option: MineOption) =>
+    set(
+      "myStatuses",
+      mine.includes(option) ? mine.filter((other) => other !== option) : [...mine, option],
+    );
+
   const body = (
     <div className="flex flex-col gap-4 px-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-medium">{t("marks.filter.title")}</span>
+          <span className="text-xs text-muted-foreground">{t("marks.filter.hint")}</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {MINE_OPTIONS.map((option) => {
+            const on = mine.includes(option);
+            const Icon = MINE_ICONS[option];
+            return (
+              <button
+                key={option}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => toggleMine(option)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-2.5 text-[13px]",
+                  desktop ? "h-[30px]" : "h-10 rounded-[10px] px-3 text-sm",
+                  on
+                    ? "bg-primary/12 font-semibold shadow-[inset_0_0_0_1px_var(--primary)]"
+                    : "shadow-[inset_0_0_0_1px_var(--border)]",
+                )}
+              >
+                <Icon className={cn("size-3.5", !on && "text-muted-foreground")} />
+                {t(`marks.statuses.${option}`)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <label className="flex items-center gap-2.5">
+        <Heart className="size-[15px]" fill="currentColor" />
+        <span className="flex-1 text-sm font-medium">{t("marks.filter.favorites")}</span>
+        <Switch
+          checked={Boolean(filter.myFavorites)}
+          label={t("marks.filter.favorites")}
+          onChange={(on) => set("myFavorites", on || undefined)}
+        />
+      </label>
       <Field id="filter-format" label={t("form.fields.format")}>
         <Select
           value={filter.format ?? ALL}

@@ -60,6 +60,9 @@ export interface BookSummary {
   copyCount: number;
   formats: Format[];
   owners: string[];
+  /** This device's person's status for the work (D68). */
+  myStatus: MarkStatus | null;
+  myFavorite: boolean;
 }
 
 export type FieldErrorCode =
@@ -100,6 +103,9 @@ export interface BookFilter {
   /** Owner name; matches duplicates created on other devices too. */
   owner?: string;
   location?: string;
+  /** My status, any of them; `none` matches works I have not marked (D68). */
+  myStatuses?: (MarkStatus | "none")[];
+  myFavorites?: boolean;
 }
 
 /** The active library's books, or every library's with `everywhere`. */

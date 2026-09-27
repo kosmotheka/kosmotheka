@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Cover } from "@/components/cover";
+import { MineIndicator } from "@/components/marks/mine-indicator";
 import type { BookSummary } from "@/lib/api";
 
 /** The catalog on mobile: one compact row per work, like an Android list. */
@@ -25,7 +26,10 @@ export function BookList({
             >
               <Cover file={book.cover} alt="" className="h-16 w-12 rounded-md" />
               <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                <span className="truncate text-[15px] font-medium">{book.title}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-[15px] font-medium">{book.title}</span>
+                  <MineIndicator book={book} large />
+                </span>
                 {meta && <span className="truncate text-[13px] text-muted-foreground">{meta}</span>}
                 <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   {book.formats.map((format) => (

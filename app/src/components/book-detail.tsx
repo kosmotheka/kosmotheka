@@ -218,6 +218,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
             workId={book.workId}
             desktop={desktop}
             onNotice={onNotice}
+            onChanged={onChanged}
           />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start border-b">

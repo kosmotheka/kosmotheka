@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Cover } from "@/components/cover";
+import { MineIndicator } from "@/components/marks/mine-indicator";
 import type { BookSummary } from "@/lib/api";
 
 /** The catalog on desktop. Rows are buttons, so the keyboard can open them too. */
@@ -20,10 +21,7 @@ export function BookTable({
 
   return (
     <div role="table" className="text-[13px]">
-      <div
-        role="row"
-        className={`${row} h-9 border-b text-xs font-medium text-muted-foreground`}
-      >
+      <div role="row" className={`${row} h-9 border-b text-xs font-medium text-muted-foreground`}>
         <span className="w-10 shrink-0" role="columnheader">
           <span className="sr-only">{t("book.cover")}</span>
         </span>
@@ -60,7 +58,10 @@ export function BookTable({
             <Cover file={book.cover} alt="" className="h-11 w-[30px]" />
           </span>
           <span className="flex min-w-0 flex-[2.4] flex-col gap-0.5">
-            <span className="truncate text-sm font-medium">{book.title}</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-sm font-medium">{book.title}</span>
+              <MineIndicator book={book} />
+            </span>
             <span className="truncate text-xs text-muted-foreground">
               {book.authors.join(", ")}
             </span>
