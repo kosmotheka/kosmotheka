@@ -439,6 +439,8 @@ export interface LibrarySummary {
   works: number;
   active: boolean;
   created: { device: string | null; at: number } | null;
+  /** This device may take it to other devices (D73). */
+  canShare: boolean;
 }
 
 export function listLibraries(): Promise<LibrarySummary[]> {

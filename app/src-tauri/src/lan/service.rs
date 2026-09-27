@@ -91,6 +91,7 @@ impl LanService {
     }
 
     pub async fn open_pairing(&self, libraries: Vec<String>) -> Result<PairingInfo> {
+        crate::people::ensure_may_share(&*self.database.lock()?, &libraries)?;
         let port = self.ensure_serving().await?;
         let token = random_secret();
         *self.pairing.lock().map_err(|_| Error::LockPoisoned)? =

@@ -16,7 +16,7 @@ import {
 import { Field } from "@/components/book-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ShareTargetsDialog } from "@/components/libraries/share-targets-dialog";
-import { Tick } from "@/components/libraries/library-checklist";
+import { CannotShare, Tick } from "@/components/libraries/library-checklist";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { Avatar } from "@/components/people/role-parts";
 import { Button } from "@/components/ui/button";
@@ -210,6 +210,8 @@ export function DevicesPage({
     </DropdownMenu>
   );
 
+  const locked = libraries.all.filter((l) => !l.canShare).map((l) => nameOf(l));
+
   const body =
     devices === null ? null : devices.length === 0 ? (
       <div className="flex flex-col items-start gap-3 rounded-2xl border p-5">
@@ -246,6 +248,24 @@ export function DevicesPage({
                   {owners && <td className="px-2">{owner(device)}</td>}
                   {libraries.all.map((library) => {
                     const on = device.libraries.includes(library.id);
+                    // Not offered where this device may not share (D73).
+                    if (!library.canShare) {
+                      return (
+                        <td key={library.id} className="px-2 text-center">
+                          {on && (
+                            <span
+                              className="inline-flex size-9 items-center justify-center opacity-50"
+                              aria-label={t("devices.cell", {
+                                library: nameOf(library),
+                                device: device.name,
+                              })}
+                            >
+                              <Tick on />
+                            </span>
+                          )}
+                        </td>
+                      );
+                    }
                     return (
                       <td key={library.id} className="px-2 text-center">
                         <button
@@ -352,6 +372,7 @@ export function DevicesPage({
     <div className="flex min-h-full flex-col gap-5">
       {header}
       <div className="flex w-full max-w-4xl flex-col gap-4">
+        {locked.length > 0 && <CannotShare libraries={locked} />}
         {body}
         {devices && devices.length > 0 && (
           <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">

@@ -475,7 +475,10 @@
     "stopBody": "{{library}} will disappear from {{device}} the next time they sync, and it will receive nothing else. You can share it again whenever you want.",
     "removed_one": "You no longer have access to {{count}} shared library: it was removed from this device.",
     "removed_other": "You no longer have access to {{count}} shared libraries: they were removed from this device.",
-    "activeHint": "The one you are using · {{works}}"
+    "activeHint": "The one you are using · {{works}}",
+    "locked": "Only an administrator can withdraw it",
+    "cannotShare_one": "You may not share {{libraries}}; ask whoever administers it.",
+    "cannotShare_other": "You may not share {{libraries}}; ask whoever administers them."
   },
   "pair": {
     "title": "Pair a device",
@@ -618,7 +621,8 @@
     "errors": {
       "not_allowed": "You are not allowed to do this in this library.",
       "last_admin": "You are the only administrator of this library: name someone else first.",
-      "request_resolved": "This request was already resolved."
+      "request_resolved": "This request was already resolved.",
+      "cannot_share": "You may not share this library; ask whoever administers it."
     }
   },
   "requests": {

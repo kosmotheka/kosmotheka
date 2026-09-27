@@ -17,6 +17,7 @@ import {
   openPairing,
   pairWith,
   pairingOwners,
+  permissionErrorKey,
   syncErrorKey,
 } from "@/lib/api";
 import { closeOverlay } from "@/lib/navigation";
@@ -73,7 +74,7 @@ export function PairDialog({
   const activeId = libraries.active?.id;
   if (open && !seeded && activeId) {
     setSeeded(true);
-    setSelected([activeId]);
+    setSelected(libraries.active?.canShare ? [activeId] : []);
     setMode("show");
   }
   if (!open && seeded) {
@@ -111,7 +112,7 @@ export function PairDialog({
           setError(null);
         }
       })
-      .catch((e: unknown) => !cancelled && setError(t(syncErrorKey(e))));
+      .catch((e: unknown) => !cancelled && setError(t(permissionErrorKey(e) ?? syncErrorKey(e))));
     return () => {
       cancelled = true;
     };
@@ -174,7 +175,7 @@ export function PairDialog({
         }),
       );
     } catch (e) {
-      setError(t(syncErrorKey(e)));
+      setError(t(permissionErrorKey(e) ?? syncErrorKey(e)));
     } finally {
       setBusy(false);
     }

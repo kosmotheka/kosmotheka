@@ -324,6 +324,31 @@ pub fn assign_device(
     Ok(())
 }
 
+/// Whether this device may take `library` to another device (D73): anyone while
+/// the library has no roles; then administrators and people with «Can share». It
+/// is checked here, where the library is handed over; a modified app could still
+/// hand over what it has, but the device it reaches belongs to nobody and only reads.
+pub fn may_share(conn: &Connection, library: &str) -> Result<bool> {
+    let people = list_people(conn, library)?;
+    if !people.has_roles {
+        return Ok(true);
+    }
+    Ok(people
+        .people
+        .iter()
+        .find(|p| p.devices.iter().any(|d| d.this_device))
+        .is_some_and(|me| me.role.as_deref() == Some("admin") || me.can_share))
+}
+
+pub fn ensure_may_share(conn: &Connection, libraries: &[String]) -> Result<()> {
+    for library in libraries {
+        if !may_share(conn, library)? {
+            return Err(Error::CannotShare);
+        }
+    }
+    Ok(())
+}
+
 /// Who a newly paired device may belong to: the people of the libraries it
 /// receives where this device may say whose it is (roles on, and administrator).
 #[derive(Debug, Clone, Serialize)]
@@ -734,6 +759,49 @@ mod tests {
         let joined =
             member_changes(&conn, &games, &again, Some("editor"), None, &mut changes).unwrap();
         assert_eq!(joined, id);
+    }
+
+    #[test]
+    fn only_administrators_and_people_who_may_share_take_a_library_elsewhere() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut phone = db::open_in_memory().unwrap();
+        assert!(may_share(&phone, LIB).unwrap(), "without roles, anyone");
+        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
+        assert!(may_share(&laptop, LIB).unwrap(), "an administrator");
+
+        let phone_id = ops::device_id(&phone).unwrap();
+        let laptop_id = ops::device_id(&laptop).unwrap();
+        lan::share_library(&laptop, LIB, &phone_id).unwrap();
+        lan::share_library(&phone, LIB, &laptop_id).unwrap();
+        pull(&mut phone, &laptop);
+        lan::register_in_shared(&mut phone, &laptop_id).unwrap();
+        pull(&mut laptop, &phone);
+        assert!(!may_share(&phone, LIB).unwrap(), "a device of nobody");
+        assert!(matches!(
+            crate::libraries::grant_access(&mut phone, LIB, "tablet"),
+            Err(Error::CannotShare)
+        ));
+
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "editor".to_owned())]);
+        give_access(&mut laptop, &phone_id, &laura, &roles, false).unwrap();
+        pull(&mut phone, &laptop);
+        assert!(
+            !may_share(&phone, LIB).unwrap(),
+            "an editor without «Can share»"
+        );
+        let member = list_people(&laptop, LIB)
+            .unwrap()
+            .people
+            .into_iter()
+            .find(|p| p.name == "Laura")
+            .unwrap();
+        set_role(&mut laptop, LIB, &member.id, Some("editor"), true).unwrap();
+        pull(&mut phone, &laptop);
+        assert!(may_share(&phone, LIB).unwrap(), "an editor who may share");
     }
 
     #[test]

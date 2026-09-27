@@ -475,7 +475,10 @@
     "stopBody": "{{library}} desaparecerá de {{device}} la próxima vez que se sincronicen, y no recibirá nada más. Podrás volver a compartirla cuando quieras.",
     "removed_one": "Ya no tienes acceso a {{count}} biblioteca compartida: se ha quitado de este dispositivo.",
     "removed_other": "Ya no tienes acceso a {{count}} bibliotecas compartidas: se han quitado de este dispositivo.",
-    "activeHint": "La que usas ahora · {{works}}"
+    "activeHint": "La que usas ahora · {{works}}",
+    "locked": "Solo quien administra puede retirarla",
+    "cannotShare_one": "En {{libraries}} no puedes compartir; pídeselo a quien la administra.",
+    "cannotShare_other": "En {{libraries}} no puedes compartir; pídeselo a quien las administra."
   },
   "pair": {
     "title": "Emparejar un dispositivo",
@@ -618,7 +621,8 @@
     "errors": {
       "not_allowed": "No tienes permiso para hacer esto en esta biblioteca.",
       "last_admin": "Eres la única persona que administra esta biblioteca: nombra antes a otra.",
-      "request_resolved": "Esta petición ya estaba resuelta."
+      "request_resolved": "Esta petición ya estaba resuelta.",
+      "cannot_share": "No puedes compartir esta biblioteca; pídeselo a quien la administra."
     }
   },
   "requests": {

@@ -17,13 +17,22 @@ const HOME = "00000000-0000-7000-8000-000000000001";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
 
 const libraries: LibrarySummary[] = [
-  { id: HOME, name: "Casa", works: 7, active: true, created: null },
+  {
+    id: HOME,
+    name: "Casa",
+    works: 7,
+    active: true,
+    created: null,
+    // `?noshare`: this device may not share Casa.
+    canShare: !new URLSearchParams(window.location.search).has("noshare"),
+  },
   {
     id: CLUB,
     name: "Club de rol",
     works: 3,
     active: false,
     created: { device: "Móvil de Laura", at: Date.parse("2026-09-25T18:00:00Z") },
+    canShare: true,
   },
 ];
 

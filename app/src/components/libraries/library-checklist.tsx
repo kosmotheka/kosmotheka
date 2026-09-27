@@ -1,10 +1,14 @@
 import { Trans, useTranslation } from "react-i18next";
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, Lock, ShieldCheck } from "lucide-react";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { cn } from "@/lib/utils";
 
-/** Ticks which libraries go to another device. Nothing is sent unless ticked. */
+/**
+ * Ticks which libraries go to another device. Nothing is sent unless ticked. A
+ * library this device may not share is not offered; if it already goes there, it
+ * stays ticked and locked, since only an administrator withdraws it (D73).
+ */
 export function LibraryChecklist({
   selected,
   onChange,
@@ -20,33 +24,52 @@ export function LibraryChecklist({
   const toggle = (id: string) =>
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
 
+  const shown = libraries.all.filter((l) => l.canShare || selected.includes(l.id));
+  const withheld = libraries.all.filter((l) => !l.canShare && !selected.includes(l.id));
+
   return (
-    <div className="flex flex-col divide-y overflow-hidden rounded-xl border">
-      {libraries.all.map((library) => {
-        const on = selected.includes(library.id);
-        return (
-          <button
-            key={library.id}
-            type="button"
-            role="checkbox"
-            aria-checked={on}
-            disabled={disabled}
-            className="flex min-h-14 items-center gap-3.5 px-3.5 py-2 text-left hover:bg-muted disabled:opacity-60"
-            onClick={() => toggle(library.id)}
-          >
-            <Tick on={on} />
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate text-[15px] font-medium">{nameOf(library)}</span>
-              <span className="text-[13px] text-muted-foreground">
-                {library.active
-                  ? t("sharing.activeHint", { works: t("nav.works", { count: library.works }) })
-                  : t("nav.works", { count: library.works })}
+    <>
+      <div className="flex flex-col divide-y overflow-hidden rounded-xl border">
+        {shown.map((library) => {
+          const on = selected.includes(library.id);
+          return (
+            <button
+              key={library.id}
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              disabled={disabled || !library.canShare}
+              className="flex min-h-14 items-center gap-3.5 px-3.5 py-2 text-left hover:bg-muted disabled:opacity-60"
+              onClick={() => toggle(library.id)}
+            >
+              <Tick on={on} />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-[15px] font-medium">{nameOf(library)}</span>
+                <span className="text-[13px] text-muted-foreground">
+                  {!library.canShare
+                    ? t("sharing.locked")
+                    : library.active
+                      ? t("sharing.activeHint", { works: t("nav.works", { count: library.works }) })
+                      : t("nav.works", { count: library.works })}
+                </span>
               </span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
+            </button>
+          );
+        })}
+      </div>
+      {withheld.length > 0 && <CannotShare libraries={withheld.map((l) => nameOf(l))} />}
+    </>
+  );
+}
+
+/** Why some libraries are not offered: sharing them is for others to decide. */
+export function CannotShare({ libraries }: { libraries: string[] }) {
+  const { t } = useTranslation();
+  return (
+    <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">
+      <Lock className="mt-0.5 size-4 shrink-0" />
+      {t("sharing.cannotShare", { libraries: libraries.join(", "), count: libraries.length })}
+    </p>
   );
 }
 

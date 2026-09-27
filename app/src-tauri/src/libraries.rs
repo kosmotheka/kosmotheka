@@ -21,6 +21,8 @@ pub struct LibrarySummary {
     pub works: i64,
     pub active: bool,
     pub created: Option<Creation>,
+    /// This device may take it to other devices (D73).
+    pub can_share: bool,
 }
 
 /// Who created a library and when, read from the operation that created it.
@@ -48,6 +50,7 @@ pub fn list_libraries(conn: &Connection) -> Result<Vec<LibrarySummary>> {
         .map(|(id, name, works)| {
             Ok(LibrarySummary {
                 created: creation(conn, &id)?,
+                can_share: crate::people::may_share(conn, &id)?,
                 active: id == active,
                 id,
                 name,
@@ -271,6 +274,7 @@ pub fn revoke_access(conn: &mut Connection, id: &str, device_id: &str) -> Result
 /// Shares a library with a paired device, lifting any earlier revocation.
 pub fn grant_access(conn: &mut Connection, id: &str, device_id: &str) -> Result<()> {
     ensure_exists(conn, id)?;
+    crate::people::ensure_may_share(conn, &[id.to_owned()])?;
     let tx = conn.transaction()?;
     let revocations = lan::revocations_of(&tx, id, device_id)?;
     if !revocations.is_empty() {

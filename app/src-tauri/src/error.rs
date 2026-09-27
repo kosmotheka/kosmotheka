@@ -54,6 +54,9 @@ pub enum Error {
     /// The library would be left without anyone who can manage it (D65).
     #[error("this is the library's only administrator")]
     LastAdmin,
+    /// Taking the library to another device needs «Can share» or administrator (D73).
+    #[error("you may not share this library")]
+    CannotShare,
 }
 
 /// Shape of an error as the UI receives it.
@@ -93,6 +96,9 @@ impl Serialize for Error {
             },
             Error::RequestResolved => ErrorPayload::Permission {
                 reason: "request_resolved",
+            },
+            Error::CannotShare => ErrorPayload::Permission {
+                reason: "cannot_share",
             },
             other => ErrorPayload::Internal {
                 message: other.to_string(),

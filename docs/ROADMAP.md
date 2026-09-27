@@ -180,6 +180,7 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **«¿Qué leo ahora?».**
 - **Estantería visual** con lomos.
 - **Base de datos colaborativa** (futuro lejano).
+- **Reconocer mejor los dispositivos «sin persona»** (27/09/2026): con muchos dispositivos y sin servidor pueden juntarse varios sin persona difíciles de distinguir. Ideas: en Android, usar como nombre por defecto el de los ajustes del móvil (el mismo que ve el Bluetooth del coche) o el modelo, en vez de «Kosmotheka»; enseñar el nombre al emparejar («Te verán como…», con «Cambiar»); y mostrar en la fila cuándo apareció y cuándo se sincronizó por última vez. Se dejó para más adelante para no añadir código nativo de Android por un detalle.
 - **Modelo de pago:** no se espera; la app es gratuita. Si llegara, sería un módulo aparte, fuera del repositorio público.
 
 ---

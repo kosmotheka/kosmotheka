@@ -173,6 +173,7 @@ pub async fn pair(
         if code.device_id == ops::device_id(&conn)? {
             return Err(Error::Lan("same_device"));
         }
+        crate::people::ensure_may_share(&conn, libraries)?;
         PairRequest {
             token: code.token.clone(),
             device_id: ops::device_id(&conn)?,
