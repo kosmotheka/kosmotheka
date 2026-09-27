@@ -224,6 +224,19 @@ mockIPC((cmd, args) => {
       return { authors: [], publishers: [], owners: ["Tersoal", "Laura", "Hugo"], locations: ["Salón", "Estudio"] };
     case "lan_status":
       return lan;
+    case "pair_with":
+      return { deviceId: "pixel9", name: "Pixel 9" };
+    case "pairing_owners":
+      return {
+        libraries: [HOME, CLUB],
+        people: [
+          { id: "ana", name: "Ana", me: true, roles: { [HOME]: "admin", [CLUB]: "admin" }, devices: 2 },
+          { id: "laura", name: "Laura", me: false, roles: { [HOME]: "editor" }, devices: 1 },
+          { id: "hugo", name: "Hugo", me: false, roles: { [HOME]: "reader", [CLUB]: "reader" }, devices: 2 },
+        ],
+      };
+    case "give_access":
+      return null;
     case "sync_with":
       if ((args as { deviceId: string }).deviceId === "tablet") {
         throw { kind: "sync", reason: "other_version" };

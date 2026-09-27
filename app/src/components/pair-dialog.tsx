@@ -5,10 +5,20 @@ import { ClipboardPaste, Copy, QrCode, ScanLine } from "lucide-react";
 
 import { LibraryChecklist, SendSummary } from "@/components/libraries/library-checklist";
 import { useLibraries } from "@/components/libraries-context";
+import { OwnerStep } from "@/components/people/owner-step";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { closePairing, isMobile, lanStatus, openPairing, pairWith, syncErrorKey } from "@/lib/api";
+import {
+  type PairingOwners,
+  closePairing,
+  isMobile,
+  lanStatus,
+  openPairing,
+  pairWith,
+  pairingOwners,
+  syncErrorKey,
+} from "@/lib/api";
 import { closeOverlay } from "@/lib/navigation";
 import { CameraDenied, scanQr } from "@/lib/scanner";
 import { syncDevice } from "@/lib/sync-errors";
@@ -47,6 +57,13 @@ export function PairDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canScan, setCanScan] = useState(false);
+  // Paired: now whose it is, where this device administers a library with roles.
+  const [owning, setOwning] = useState<{
+    deviceId: string;
+    name: string;
+    owners: PairingOwners;
+    message: string;
+  } | null>(null);
   const paired = useRef(onPaired);
   useEffect(() => {
     paired.current = onPaired;
@@ -64,7 +81,19 @@ export function PairDialog({
     setShown(null);
     setCode("");
     setError(null);
+    setOwning(null);
   }
+
+  /** After pairing: ask whose the device is when it matters, or finish. */
+  const finish = useRef(async (deviceId: string, name: string, message: string) => {
+    const owners = await pairingOwners(deviceId).catch(() => null);
+    if (owners && owners.libraries.length > 0) {
+      setOwning({ deviceId, name, owners, message });
+    } else {
+      paired.current(message);
+      closeOverlay();
+    }
+  });
 
   useEffect(() => {
     void isMobile().then(setCanScan);
@@ -89,19 +118,25 @@ export function PairDialog({
   }, [open, mode, seeded, selected, t]);
 
   // While the code is shown, watch for the other device pairing through it.
+  const waiting = open && mode === "show" && owning === null;
   useEffect(() => {
-    if (!open || mode !== "show") return;
+    if (!waiting) return;
     let known: Set<string> | null = null;
+    let done = false;
     const check = async () => {
       const status = await lanStatus().catch(() => null);
-      if (!status) return;
+      if (!status || done) return;
       const ids = new Set(status.clients.map((c) => c.deviceId));
       if (known) {
         const joined = status.clients.find((c) => !known?.has(c.deviceId));
         if (joined) {
+          done = true;
           void closePairing();
-          paired.current(t("pair.pairedWith", { name: joined.name }));
-          closeOverlay();
+          void finish.current(
+            joined.deviceId,
+            joined.name,
+            t("pair.pairedWith", { name: joined.name }),
+          );
           return;
         }
       }
@@ -112,8 +147,11 @@ export function PairDialog({
       setNow(Date.now());
       void check();
     }, 2000);
-    return () => clearInterval(timer);
-  }, [open, mode, t]);
+    return () => {
+      done = true;
+      clearInterval(timer);
+    };
+  }, [waiting, t]);
 
   const close = () => {
     void closePairing();
@@ -126,14 +164,15 @@ export function PairDialog({
     try {
       const device = await pairWith(text, selected);
       const report = await syncDevice(device.deviceId);
-      onPaired(
+      await finish.current(
+        device.deviceId,
+        device.name,
         t("devices.pairedAndSynced", {
           name: device.name,
           received: report.received.received,
           sent: report.sent,
         }),
       );
-      closeOverlay();
     } catch (e) {
       setError(t(syncErrorKey(e)));
     } finally {
@@ -213,7 +252,9 @@ export function PairDialog({
           <ScanLine /> {t("pair.scan")}
         </Button>
       )}
-      <p className="text-[13px] text-muted-foreground">{t(canScan ? "pair.pasteHint" : "pair.pasteOnly")}</p>
+      <p className="text-[13px] text-muted-foreground">
+        {t(canScan ? "pair.pasteHint" : "pair.pasteOnly")}
+      </p>
       <div className="flex gap-2">
         <Input
           aria-label={t("devices.code")}
@@ -257,7 +298,18 @@ export function PairDialog({
       title={t("pair.title")}
       className="sm:max-w-3xl"
     >
-      {desktop ? (
+      {owning ? (
+        <OwnerStep
+          deviceId={owning.deviceId}
+          deviceName={owning.name}
+          owners={owning.owners}
+          desktop={desktop}
+          onDone={(message) => {
+            onPaired(message ? `${owning.message} ${message}` : owning.message);
+            closeOverlay();
+          }}
+        />
+      ) : desktop ? (
         <>
           <div className="grid grid-cols-2 gap-6">
             {choose}

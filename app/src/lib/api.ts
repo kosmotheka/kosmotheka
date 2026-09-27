@@ -554,6 +554,27 @@ export function removeDevice(device: string): Promise<number> {
   return invoke<number>("remove_device", { device });
 }
 
+/** Who a newly paired device may belong to, in the libraries it receives (D73). */
+export interface PairingOwners {
+  /** Ids of the libraries where this device says whose it is. */
+  libraries: string[];
+  people: PairingCandidate[];
+}
+
+export interface PairingCandidate {
+  id: string;
+  name: string;
+  /** The person this device belongs to. */
+  me: boolean;
+  /** Their role in each of those libraries where they have one. */
+  roles: Record<string, Role>;
+  devices: number;
+}
+
+export function pairingOwners(device: string): Promise<PairingOwners> {
+  return invoke<PairingOwners>("pairing_owners", { device });
+}
+
 export function giveAccess(
   device: string,
   person: PersonPick,
