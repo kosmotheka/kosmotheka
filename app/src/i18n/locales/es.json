@@ -731,5 +731,60 @@
     "notLost": "No se ha perdido: quien administra lo verá entre sus peticiones y decidirá. Lo puedes seguir en Mis peticiones.",
     "see_one": "Ver mi petición",
     "see_other": "Ver mis peticiones"
+  },
+  "marks": {
+    "mine": "Lo mío",
+    "others": "Lo de los demás",
+    "hint": "Toca un estado; la fecha se pone sola",
+    "clear": "Quitar",
+    "changeDate": "Cambiar la fecha",
+    "status": "Mi estado",
+    "rating": "Mi valoración",
+    "favorite": "Favorito",
+    "tapAgain": "Tócalo otra vez para quitarlo",
+    "stars_one": "{{count}} estrella",
+    "stars_other": "{{count}} estrellas",
+    "unrated": "Sin valorar",
+    "noDate": "Sin fecha",
+    "since": "Desde el {{date}}",
+    "sinceLower": "desde el {{date}}",
+    "on": "El {{date}}",
+    "andMore_one": "y {{count}} más",
+    "andMore_other": "y {{count}} más",
+    "statuses": {
+      "pending": "Pendiente",
+      "in_progress": "Leyendo",
+      "finished": "Terminado",
+      "abandoned": "Abandonado",
+      "none": "Sin marcar"
+    },
+    "summary": {
+      "pending": "{{person}} lo tiene pendiente",
+      "in_progress": "{{person}} lo está leyendo",
+      "finished": "{{person}} lo terminó",
+      "finishedIn": "{{person}} lo terminó en {{month}}",
+      "abandoned": "{{person}} lo abandonó"
+    },
+    "lockedDevice": "Para apuntar lo tuyo, alguien que administra {{library}} tiene que decir antes de quién es este dispositivo.",
+    "lockedPhone": "Para apuntar lo tuyo, alguien que administra {{library}} tiene que decir antes de quién es este móvil.",
+    "who": {
+      "title": "¿Quién eres?",
+      "intro": "Lo que marques en {{library}} (estado, estrellas y favoritos) será de esta persona. Solo se pregunta una vez en este dispositivo.",
+      "introPhone": "Lo que marques en {{library}} será de esta persona. Solo se pregunta una vez en este móvil.",
+      "copies_one": "Tiene {{count}} ejemplar en {{library}}",
+      "copies_other": "Tiene {{count}} ejemplares en {{library}}",
+      "someoneElse": "Otra persona: escribe tu nombre",
+      "noRoles": "{{library}} sigue sin permisos: esto solo dice de quién son las marcas.",
+      "notNow": "Ahora no",
+      "iAm": "Soy {{person}}",
+      "continueAs": "Continuar como {{person}}",
+      "continue": "Continuar"
+    },
+    "filter": {
+      "title": "Mi estado",
+      "hint": "Solo cuenta lo que marcas tú",
+      "favorites": "Solo mis favoritos",
+      "mine": "Mi estado: {{status}}"
+    }
   }
 }

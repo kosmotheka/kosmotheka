@@ -661,3 +661,54 @@ export function requestNotices(): Promise<ChangeRequest[]> {
 export function dismissRequestNotices(): Promise<void> {
   return invoke("dismiss_request_notices");
 }
+
+// --- Marks (D68), mirrors src-tauri/src/marks.rs ---------------------------------
+
+export type MarkStatus = "pending" | "in_progress" | "finished" | "abandoned";
+export const markStatuses: MarkStatus[] = ["pending", "in_progress", "finished", "abandoned"];
+
+export interface Mark {
+  status: MarkStatus | null;
+  /** `YYYY-MM-DD`: when the status was set. */
+  statusOn: string | null;
+  /** From 1 to 5. */
+  rating: number | null;
+  favorite: boolean;
+}
+
+export const emptyMark: Mark = { status: null, statusOn: null, rating: null, favorite: false };
+
+export interface PersonMark extends Mark {
+  person: string;
+}
+
+export interface WorkMarks {
+  mine: Mark | null;
+  others: PersonMark[];
+  /** This device belongs to a person, so it can mark. */
+  canMark: boolean;
+  /** It belongs to nobody and the library has no roles: it may say who it is. */
+  mayClaim: boolean;
+}
+
+export interface ClaimCandidate {
+  id: string;
+  name: string;
+  copies: number;
+}
+
+export function workMarks(workId: string): Promise<WorkMarks> {
+  return invoke<WorkMarks>("work_marks", { workId });
+}
+
+export function setMark(workId: string, mark: Mark): Promise<void> {
+  return invoke("set_mark", { workId, mark });
+}
+
+export function claimCandidates(): Promise<ClaimCandidate[]> {
+  return invoke<ClaimCandidate[]>("claim_candidates");
+}
+
+export function claimPerson(person: PersonPick): Promise<void> {
+  return invoke("claim_person", { person });
+}

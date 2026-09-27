@@ -111,6 +111,7 @@ pub fn run() {
             commands::work_marks,
             commands::set_mark,
             commands::claim_person,
+            commands::claim_candidates,
             commands::set_role,
             commands::assign_device,
             commands::remove_device,

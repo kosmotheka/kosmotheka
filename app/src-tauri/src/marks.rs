@@ -152,6 +152,34 @@ pub fn set_mark(conn: &mut Connection, library: &str, work: &str, mark: &Mark) -
     Ok(())
 }
 
+/// Someone this device may say it is, with how many copies they own here, so the
+/// person is easy to recognise.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Candidate {
+    pub id: String,
+    pub name: String,
+    pub copies: i64,
+}
+
+/// The people of `library`, the ones with more copies first.
+pub fn claim_candidates(conn: &Connection, library: &str) -> Result<Vec<Candidate>> {
+    let mut statement = conn.prepare(
+        "SELECT m.id, m.name,
+                (SELECT count(*) FROM copies c WHERE c.library_id = m.library_id AND c.owner_id = m.id)
+           FROM members m WHERE m.library_id = ?1
+          ORDER BY 3 DESC, m.name COLLATE NOCASE",
+    )?;
+    let rows = statement.query_map([library], |row| {
+        Ok(Candidate {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            copies: row.get(2)?,
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
 /// «Who are you?»: in a library without roles, this device says which person it
 /// belongs to, an existing one or a new one without a role, so it can mark.
 pub fn claim_person(conn: &mut Connection, library: &str, pick: &PersonPick) -> Result<()> {

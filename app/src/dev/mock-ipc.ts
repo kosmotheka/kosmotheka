@@ -8,7 +8,9 @@ import type {
   ChangeRequest,
   LanStatus,
   LibrarySummary,
+  Mark,
   People,
+  PersonMark,
   RequestSummary,
   Wish,
 } from "@/lib/api";
@@ -212,6 +214,15 @@ const requests: ChangeRequest[] = [
   ),
 ];
 
+// Marks (D68): `?who` asks «Who are you?» first; `?locked` is a device of nobody
+// in a library with roles.
+let claimed = !params.has("who") && !params.has("locked");
+const myMarks = new Map<string, Mark>();
+const othersMarks: PersonMark[] = [
+  { person: "Laura", status: "finished", statusOn: "2026-03-18", rating: 5, favorite: true },
+  { person: "Hugo", status: "in_progress", statusOn: "2026-09-02", rating: null, favorite: false },
+];
+
 mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books":
@@ -262,12 +273,34 @@ mockIPC((cmd, args) => {
     }
     case "lookup_isbn":
       throw new Error("offline");
+    case "work_marks": {
+      const { workId } = args as { workId: string };
+      return {
+        mine: myMarks.get(workId) ?? null,
+        others: workId.endsWith("1") ? othersMarks : othersMarks.slice(0, 1),
+        canMark: claimed,
+        mayClaim: !claimed && !params.has("locked"),
+      };
+    }
+    case "set_mark": {
+      const { workId, mark } = args as { workId: string; mark: Mark };
+      myMarks.set(workId, mark);
+      return null;
+    }
+    case "claim_candidates":
+      return [
+        { id: "laura", name: "Laura", copies: 12 },
+        { id: "hugo", name: "Hugo", copies: 5 },
+      ];
+    case "claim_person":
+      claimed = true;
+      return null;
     case "get_book": {
       const id = (args as { editionId: string }).editionId;
       const found = books.find((b) => b.editionId === id) ?? books[0];
       return {
         ...found,
-        workId: "work",
+        workId: `work-${found.editionId}`,
         language: "es",
         googleBooksId: "abc",
         openLibraryId: null,

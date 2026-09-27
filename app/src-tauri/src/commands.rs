@@ -495,6 +495,12 @@ pub fn set_mark(database: State<'_, Database>, work_id: String, mark: marks::Mar
 }
 
 #[tauri::command]
+pub fn claim_candidates(database: State<'_, Database>) -> Result<Vec<marks::Candidate>> {
+    let conn = database.lock()?;
+    marks::claim_candidates(&conn, &ops::active_library(&conn)?)
+}
+
+#[tauri::command]
 pub fn claim_person(database: State<'_, Database>, person: people::PersonPick) -> Result<()> {
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;

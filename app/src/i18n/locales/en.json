@@ -731,5 +731,60 @@
     "notLost": "Nothing is lost: the administrators will see it among their requests and decide. You can follow it in My requests.",
     "see_one": "See my request",
     "see_other": "See my requests"
+  },
+  "marks": {
+    "mine": "Mine",
+    "others": "Everyone else's",
+    "hint": "Tap a status; the date is set for you",
+    "clear": "Clear",
+    "changeDate": "Change the date",
+    "status": "My status",
+    "rating": "My rating",
+    "favorite": "Favorite",
+    "tapAgain": "Tap it again to clear it",
+    "stars_one": "{{count}} star",
+    "stars_other": "{{count}} stars",
+    "unrated": "Not rated",
+    "noDate": "No date",
+    "since": "Since {{date}}",
+    "sinceLower": "since {{date}}",
+    "on": "On {{date}}",
+    "andMore_one": "and {{count}} more",
+    "andMore_other": "and {{count}} more",
+    "statuses": {
+      "pending": "Pending",
+      "in_progress": "Reading",
+      "finished": "Finished",
+      "abandoned": "Abandoned",
+      "none": "Not marked"
+    },
+    "summary": {
+      "pending": "{{person}} has it pending",
+      "in_progress": "{{person}} is reading it",
+      "finished": "{{person}} finished it",
+      "finishedIn": "{{person}} finished it in {{month}}",
+      "abandoned": "{{person}} abandoned it"
+    },
+    "lockedDevice": "To note your own, an administrator of {{library}} has to say whose this device is first.",
+    "lockedPhone": "To note your own, an administrator of {{library}} has to say whose this phone is first.",
+    "who": {
+      "title": "Who are you?",
+      "intro": "What you mark in {{library}} (status, stars and favorites) will be this person's. It is asked only once on this device.",
+      "introPhone": "What you mark in {{library}} will be this person's. It is asked only once on this phone.",
+      "copies_one": "Owns {{count}} copy in {{library}}",
+      "copies_other": "Owns {{count}} copies in {{library}}",
+      "someoneElse": "Someone else: type your name",
+      "noRoles": "{{library}} still has no permissions: this only says whose the marks are.",
+      "notNow": "Not now",
+      "iAm": "I'm {{person}}",
+      "continueAs": "Continue as {{person}}",
+      "continue": "Continue"
+    },
+    "filter": {
+      "title": "My status",
+      "hint": "Only what you mark counts",
+      "favorites": "Only my favorites",
+      "mine": "My status: {{status}}"
+    }
   }
 }

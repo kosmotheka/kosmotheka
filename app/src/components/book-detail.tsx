@@ -35,6 +35,7 @@ import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
 import { Cover } from "@/components/cover";
 import { HistoryList } from "@/components/history-list";
+import { MarksSection } from "@/components/marks/marks-section";
 import { Button } from "@/components/ui/button";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -212,6 +213,12 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
       {book && (
         <div className={cn("flex flex-col gap-5 pb-8", desktop ? "px-5" : "px-4")}>
           <Hero book={book} desktop={desktop} />
+          <MarksSection
+            key={book.workId}
+            workId={book.workId}
+            desktop={desktop}
+            onNotice={onNotice}
+          />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start border-b">
               <TabsTrigger value="copies" className="flex-none">
