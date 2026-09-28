@@ -15,7 +15,7 @@
 | 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; sincronizar por wifi | ✅ en código, falta probar |
 | 3 | Diseño del nuevo modelo | Saber cómo se ve y se usa todo lo decidido, antes de construirlo | ✅ |
 | 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | En curso |
-| 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | |
+| 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | ✅ |
 | 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | |
 | 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | Hito 7.0 ✅ |
 | 8 | Publicación | La app en la tienda de Android y una landing | |
@@ -85,14 +85,14 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 - **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
 
 **Estado:**
-- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [plans/fase-5.md](plans/fase-5.md) (27/09/2026).
+- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [historico/plan-fase-5.md](historico/plan-fase-5.md) (27/09/2026).
 - [x] 5.1 Firmas: cada dispositivo firma sus operaciones y los demás las comprueban, también a través de otro dispositivo (27/09/2026).
 - [x] 5.2 a 5.4, sin interfaz: roles y de quién es cada dispositivo; cada dispositivo comprueba lo que recibe y lo que escribe, y lo no permitido queda como petición (D73, 27/09/2026).
 - [x] 5.5 Peticiones, sin interfaz: pedir, aceptar y rechazar, también desde otro dispositivo (27/09/2026).
 - [x] 5.6 Dispositivo perdido, sin interfaz: quitarlo de todas las bibliotecas, aviso de administrador único y duplicar como nueva (D58, 27/09/2026).
 - [x] 5.7 Interfaz: personas y permisos, peticiones con campanita, pedir en lugar de hacer, de quién es cada dispositivo y emparejar con persona y rol (27/09/2026). Lista de pruebas en pantalla: [testing/fase-5.md](testing/fase-5.md).
 - [x] 5.8 Marcas por persona (D68, adelantadas de la Fase 6): estado con fecha, valoración y favorito; cada persona marca lo suyo y ve lo de los demás (28/09/2026).
-- [ ] Pruebas en pantalla de la fase y cierre.
+- [x] Fase cerrada por el maintainer el 28/09/2026. El plan pasa a [historico/plan-fase-5.md](historico/plan-fase-5.md).
 
 ## Fase 6 — Catálogo general
 

@@ -1,6 +1,6 @@
 # Encargo de diseño: marcas por persona (Fase 5, hito 5.8)
 
-> Cuarto encargo de la Fase 5 para Claude Design, 27/09/2026. Lo decidido está en D68 ([DECISIONS.md](../DECISIONS.md)) y los detalles de construcción en [plans/fase-5.md §5.8](../plans/fase-5.md). Todo en español, móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro.
+> Cuarto encargo de la Fase 5 para Claude Design, 27/09/2026. Lo decidido está en D68 ([DECISIONS.md](../DECISIONS.md)) y los detalles de construcción en [historico/plan-fase-5.md §5.8](../historico/plan-fase-5.md). Todo en español, móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro.
 
 ## Contexto
 

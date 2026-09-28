@@ -1,6 +1,6 @@
 # Plan de la Fase 5 — Personas, roles y peticiones
 
-> Plan de trabajo mientras dure la fase. Se basa en D45, D55, D56 y D58 ([DECISIONS.md](../DECISIONS.md)) y en el [ROADMAP](../ROADMAP.md). Al cerrar la fase pasa a `historico/`. Escrito el 27/09/2026 sin el maintainer: todo lo que no está en esas decisiones es **propuesta** y está marcado así.
+> **Fase cerrada el 28/09/2026.** Plan de trabajo mientras duró la fase. Se basa en D45, D55, D56 y D58 ([DECISIONS.md](../DECISIONS.md)) y en el [ROADMAP](../ROADMAP.md). Al cerrar la fase pasa a `historico/`. Escrito el 27/09/2026 sin el maintainer: todo lo que no está en esas decisiones es **propuesta** y está marcado así.
 
 **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
 

@@ -328,7 +328,7 @@ pub fn library_log(conn: &Connection, library: &str) -> Result<Vec<Operation>> {
 /// one registered in the library, or the one the operation itself registers. A
 /// device's key never changes: an operation that sets another one is refused.
 /// Operations from before signatures carry none and pass, until the library has
-/// roles (docs/plans/fase-5.md, question 1).
+/// roles; then they count as a reader's (D73).
 fn signature_holds(tx: &Transaction<'_>, operation: &Operation) -> Result<bool> {
     let library = operation.library.as_str();
     for change in &operation.changes {
