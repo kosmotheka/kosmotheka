@@ -8,7 +8,7 @@
 - **Tablas `STRICT`**: SQLite comprueba los tipos de cada columna (por defecto no lo hace).
 - **Fechas** en texto ISO 8601: `2026-09-24` para días y `2026-09-24T21:30:00.000Z` para instantes.
 - **ISBN normalizado a ISBN-13** y sin guiones. Un ISBN-10 se convierte al darlo de alta; el ISBN-10 se puede recalcular cuando haga falta.
-- **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y `book_details` lo específico de los libros.
+- **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y una tabla `<tipo>_details` lo específico de cada tipo. La música y «Otro» no tienen: el artista es un contribuidor (`artist`) y el sello, la editorial.
 - **Todo pertenece a una biblioteca** (D46, D54, migración 9): cada tabla del catálogo lleva `library_id` y su clave es `(library_id, id)`. El mismo id en dos bibliotecas son dos filas distintas, y las referencias entre tablas incluyen la biblioteca. No hay clave foránea hacia `libraries`: un cambio se aplica aunque la fila de la biblioteca no haya llegado todavía.
 
 ## Esquema
@@ -30,6 +30,11 @@ works ──< work_contributors >── people
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
+| `comic_details` | Datos propios de un cómic | `edition_id`, `number` |
+| `boardgame_details` | Datos propios de un juego de mesa | `edition_id`, `players_min`, `players_max`, `duration_minutes`, `min_age` |
+| `film_details` | Datos propios de una película | `edition_id`, `duration_minutes` |
+| `tv_series_details` | Datos propios de una serie | `edition_id`, `seasons` |
+| `videogame_details` | Datos propios de un videojuego | `edition_id`, `platform` |
 | `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
 | `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |

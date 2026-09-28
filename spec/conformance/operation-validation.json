@@ -1463,5 +1463,258 @@
       "change": 0,
       "field": "role"
     }
+  },
+  {
+    "name": "comic with its own details",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000200",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000201",
+          "action": "create",
+          "fields": {
+            "kind": "comic",
+            "title": "Saga"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000202",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000201",
+            "title": "Saga"
+          }
+        },
+        {
+          "entity": "comic_details",
+          "id": "01997c7e-0000-7000-8000-000000000202",
+          "action": "create",
+          "fields": {
+            "number": "12"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "boardgame with its own details",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000210",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000211",
+          "action": "create",
+          "fields": {
+            "kind": "boardgame",
+            "title": "Catan"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000212",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000211",
+            "title": "Catan"
+          }
+        },
+        {
+          "entity": "boardgame_details",
+          "id": "01997c7e-0000-7000-8000-000000000212",
+          "action": "create",
+          "fields": {
+            "players_min": 2,
+            "players_max": 4,
+            "duration_minutes": 90,
+            "min_age": 10
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "film with its own details",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000220",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000221",
+          "action": "create",
+          "fields": {
+            "kind": "film",
+            "title": "Alien"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000222",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000221",
+            "title": "Alien"
+          }
+        },
+        {
+          "entity": "film_details",
+          "id": "01997c7e-0000-7000-8000-000000000222",
+          "action": "create",
+          "fields": {
+            "duration_minutes": 142
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "tv_series with its own details",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000230",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000231",
+          "action": "create",
+          "fields": {
+            "kind": "tv_series",
+            "title": "The Wire"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000232",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000231",
+            "title": "The Wire"
+          }
+        },
+        {
+          "entity": "tv_series_details",
+          "id": "01997c7e-0000-7000-8000-000000000232",
+          "action": "create",
+          "fields": {
+            "seasons": 7
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "videogame with its own details",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000240",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000241",
+          "action": "create",
+          "fields": {
+            "kind": "videogame",
+            "title": "Hollow Knight"
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000242",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000241",
+            "title": "Hollow Knight"
+          }
+        },
+        {
+          "entity": "videogame_details",
+          "id": "01997c7e-0000-7000-8000-000000000242",
+          "action": "create",
+          "fields": {
+            "platform": "Nintendo Switch"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "board game details with a field of another kind",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000250",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "boardgame_details",
+          "id": "01997c7e-0000-7000-8000-000000000251",
+          "action": "create",
+          "fields": {
+            "platform": "Switch"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "unknown_field",
+      "change": 0,
+      "field": "platform"
+    }
+  },
+  {
+    "name": "seasons given as text",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000260",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "tv_series_details",
+          "id": "01997c7e-0000-7000-8000-000000000261",
+          "action": "create",
+          "fields": {
+            "seasons": "seven"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "seasons"
+    }
   }
 ]

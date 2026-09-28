@@ -22,6 +22,6 @@ pub use library::validate_library_name;
 pub use mark::mark_id;
 pub use operation::{Action, Change, Operation, OperationError, OperationErrorCode};
 pub use permission::{LibraryView, Role, is_allowed};
-pub use schema::{Entity, FieldSpec, FieldType};
+pub use schema::{DETAILS, Entity, FieldSpec, FieldType};
 pub use signature::{DeviceKey, SignatureError, canonical_bytes, verify};
 pub use wish::{ValidWish, WishInput};

@@ -13,6 +13,12 @@ pub enum Entity {
     WorkContributor,
     Edition,
     BookDetails,
+    /// The other kinds' own data, one table each like `BookDetails` (D08).
+    ComicDetails,
+    BoardgameDetails,
+    FilmDetails,
+    TvSeriesDetails,
+    VideogameDetails,
     Member,
     Copy,
     Publisher,
@@ -129,6 +135,25 @@ const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
     field("google_books_id", FieldType::Text, false),
     field("open_library_id", FieldType::Text, false),
 ];
+const COMIC_DETAILS_FIELDS: &[FieldSpec] = &[field("number", FieldType::Text, false)];
+const BOARDGAME_DETAILS_FIELDS: &[FieldSpec] = &[
+    field("players_min", FieldType::Integer, false),
+    field("players_max", FieldType::Integer, false),
+    field("duration_minutes", FieldType::Integer, false),
+    field("min_age", FieldType::Integer, false),
+];
+const FILM_DETAILS_FIELDS: &[FieldSpec] = &[field("duration_minutes", FieldType::Integer, false)];
+const TV_SERIES_DETAILS_FIELDS: &[FieldSpec] = &[field("seasons", FieldType::Integer, false)];
+const VIDEOGAME_DETAILS_FIELDS: &[FieldSpec] = &[field("platform", FieldType::Text, false)];
+/// The entities that hang from an edition by its id, one per kind that has data of its own.
+pub const DETAILS: [Entity; 6] = [
+    Entity::BookDetails,
+    Entity::ComicDetails,
+    Entity::BoardgameDetails,
+    Entity::FilmDetails,
+    Entity::TvSeriesDetails,
+    Entity::VideogameDetails,
+];
 /// Roles a member can have in a library (D55, D73).
 pub const ROLES: &[&str] = &["admin", "editor", "reader"];
 const MEMBER_FIELDS: &[FieldSpec] = &[
@@ -188,6 +213,11 @@ impl Entity {
             Entity::WorkContributor => "work_contributors",
             Entity::Edition => "editions",
             Entity::BookDetails => "book_details",
+            Entity::ComicDetails => "comic_details",
+            Entity::BoardgameDetails => "boardgame_details",
+            Entity::FilmDetails => "film_details",
+            Entity::TvSeriesDetails => "tv_series_details",
+            Entity::VideogameDetails => "videogame_details",
             Entity::Member => "members",
             Entity::Copy => "copies",
             Entity::Publisher => "publishers",
@@ -207,11 +237,12 @@ impl Entity {
         }
     }
 
-    /// Book details share their edition's id.
+    /// Every kind's details share their edition's id.
     pub fn id_column(self) -> &'static str {
-        match self {
-            Entity::BookDetails => "edition_id",
-            _ => "id",
+        if DETAILS.contains(&self) {
+            "edition_id"
+        } else {
+            "id"
         }
     }
 
@@ -223,6 +254,11 @@ impl Entity {
             Entity::WorkContributor => WORK_CONTRIBUTOR_FIELDS,
             Entity::Edition => EDITION_FIELDS,
             Entity::BookDetails => BOOK_DETAILS_FIELDS,
+            Entity::ComicDetails => COMIC_DETAILS_FIELDS,
+            Entity::BoardgameDetails => BOARDGAME_DETAILS_FIELDS,
+            Entity::FilmDetails => FILM_DETAILS_FIELDS,
+            Entity::TvSeriesDetails => TV_SERIES_DETAILS_FIELDS,
+            Entity::VideogameDetails => VIDEOGAME_DETAILS_FIELDS,
             Entity::Member => MEMBER_FIELDS,
             Entity::Copy => COPY_FIELDS,
             Entity::Publisher => PUBLISHER_FIELDS,

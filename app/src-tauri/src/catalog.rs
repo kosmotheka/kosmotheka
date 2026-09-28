@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use kosmotheka_domain::{
-    Change, CopyInput, EditionInput, Entity, ErrorCode, FieldError, Format, Hlc, ValidBook,
-    ValidCopy, ValidEdition,
+    Change, CopyInput, DETAILS, EditionInput, Entity, ErrorCode, FieldError, Format, Hlc,
+    ValidBook, ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -337,8 +337,10 @@ fn book_removal(conn: &Connection, library: &str, edition_id: &str) -> Result<Ve
     .into_iter()
     .map(|id| Change::delete(Entity::Copy, id))
     .collect();
-    if exists(conn, library, Entity::BookDetails, edition_id)? {
-        changes.push(Change::delete(Entity::BookDetails, edition_id));
+    for details in DETAILS {
+        if exists(conn, library, details, edition_id)? {
+            changes.push(Change::delete(details, edition_id));
+        }
     }
     changes.push(Change::delete(Entity::Edition, edition_id));
 

@@ -35,7 +35,7 @@ Todo **propuesta** hasta que el maintainer lo revise.
 - **`work.kind`** pasa a admitir `book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music` y `other`.
 - **Los formatos, una sola lista para todos los tipos** en `copy.format`: `hardcover`, `paperback`, `ebook`, `pdf`, `audiobook`, `box`, `dvd`, `bluray`, `cartridge`, `disc`, `digital_download`, `vinyl`, `cd`, `cassette`, `other`… La interfaz ofrece solo los del tipo de la obra. Así la validación sigue siendo de una fila sola y no hay que mirar la obra para validar un ejemplar.
 - **Lo digital:** los formatos digitales no tienen estantería; su «dónde» es la plataforma («Kindle», «Steam»), como dice D60, en el mismo campo `location`.
-- **Los datos propios de cada tipo** en una fila de detalles por tipo, como `book_details` hoy, con pocos campos (pregunta 2). Los identificadores de proveedor, en su fila de detalles.
+- **Los datos propios de cada tipo** en una tabla 1:1 por tipo (D08), como `book_details` hoy, con pocos campos (pregunta 2). Los identificadores de proveedor, en su fila de detalles.
 - **Papeles de los contribuidores:** `work_contributor.role` admite más valores (autoría, ilustración, dirección, diseño, artista, estudio…). La persona sigue siendo `person`.
 - **Código de barras genérico** (EAN/UPC) en la edición, aparte del ISBN, para que el escáner reconozca juegos, discos y películas.
 
@@ -87,3 +87,5 @@ Todo **propuesta** hasta que el maintainer lo revise.
 
 - [x] Plan escrito (28/09/2026).
 - [x] 6.1 (a) Listas de tipos, papeles y formatos: spec, dominio, PHP y migración 0017 (las tablas se reconstruyen sin `CHECK`).
+- [x] 6.1 (b) Código de barras en la edición.
+- [x] 6.1 (c) Una tabla de detalles por tipo, como manda D08 (cómic, juego de mesa, película, serie, videojuego); música y «Otro» no tienen. Test de convergencia.

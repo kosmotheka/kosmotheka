@@ -20,7 +20,7 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 13] = [
+pub const ORDER: [Entity; 18] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
@@ -30,6 +30,11 @@ pub const ORDER: [Entity; 13] = [
     Entity::WorkContributor,
     Entity::Edition,
     Entity::BookDetails,
+    Entity::ComicDetails,
+    Entity::BoardgameDetails,
+    Entity::FilmDetails,
+    Entity::TvSeriesDetails,
+    Entity::VideogameDetails,
     Entity::Copy,
     Entity::Wish,
     Entity::Revocation,
@@ -1061,6 +1066,68 @@ mod tests {
             .collect();
         assert_eq!(titles, vec!["Tehanu"]);
         assert_converged(&[&desk, &phone]);
+    }
+
+    #[test]
+    fn a_board_game_and_its_details_converge_field_by_field() {
+        let mut a = Device::new();
+        let mut b = Device::new();
+        let (work, edition) = (ops::new_id(), ops::new_id());
+        let tx = a.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "book.add",
+            vec![
+                Change::create(
+                    Entity::Work,
+                    &work,
+                    json!({ "kind": "boardgame", "title": "Catan" }),
+                ),
+                Change::create(
+                    Entity::Edition,
+                    &edition,
+                    json!({ "work_id": work, "title": "Catan", "barcode": "0029877030712" }),
+                ),
+                Change::create(
+                    Entity::BoardgameDetails,
+                    &edition,
+                    json!({ "players_min": 3, "players_max": 4 }),
+                ),
+            ],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        a.sync_with(&mut b);
+
+        // Each device fixes a different field of the same details.
+        for (device, field, value) in [(&mut a, "players_max", 6), (&mut b, "duration_minutes", 90)]
+        {
+            let tx = device.0.transaction().unwrap();
+            ops::record(
+                &tx,
+                LIB,
+                "book.edit",
+                vec![Change::update(
+                    Entity::BoardgameDetails,
+                    &edition,
+                    json!({ field: value }),
+                )],
+            )
+            .unwrap();
+            tx.commit().unwrap();
+        }
+        a.sync_with(&mut b);
+
+        assert_converged(&[&a, &b]);
+        let (max, minutes): (i64, i64) =
+            b.0.query_row(
+                "SELECT players_max, duration_minutes FROM boardgame_details",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((max, minutes), (6, 90));
     }
 
     #[test]

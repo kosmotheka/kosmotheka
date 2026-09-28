@@ -94,6 +94,11 @@
             "work_contributor",
             "edition",
             "book_details",
+            "comic_details",
+            "boardgame_details",
+            "film_details",
+            "tv_series_details",
+            "videogame_details",
             "member",
             "copy",
             "publisher",
@@ -379,6 +384,120 @@
                     "$ref": "#/$defs/text"
                   },
                   "open_library_id": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "comic_details"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "number": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "boardgame_details"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "players_min": {
+                    "$ref": "#/$defs/integer"
+                  },
+                  "players_max": {
+                    "$ref": "#/$defs/integer"
+                  },
+                  "duration_minutes": {
+                    "$ref": "#/$defs/integer"
+                  },
+                  "min_age": {
+                    "$ref": "#/$defs/integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "film_details"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "duration_minutes": {
+                    "$ref": "#/$defs/integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "tv_series_details"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "seasons": {
+                    "$ref": "#/$defs/integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "videogame_details"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "platform": {
                     "$ref": "#/$defs/text"
                   }
                 }

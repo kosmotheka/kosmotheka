@@ -22,6 +22,11 @@ enum CatalogEntity: string
     case WorkContributor = 'work_contributor';
     case Edition = 'edition';
     case BookDetails = 'book_details';
+    case ComicDetails = 'comic_details';
+    case BoardgameDetails = 'boardgame_details';
+    case FilmDetails = 'film_details';
+    case TvSeriesDetails = 'tv_series_details';
+    case VideogameDetails = 'videogame_details';
     case Member = 'member';
     case Copy = 'copy';
     case Publisher = 'publisher';
@@ -102,6 +107,16 @@ enum CatalogEntity: string
                 'google_books_id' => $text(),
                 'open_library_id' => $text(),
             ],
+            self::ComicDetails => ['number' => $text()],
+            self::BoardgameDetails => [
+                'players_min' => $integer(),
+                'players_max' => $integer(),
+                'duration_minutes' => $integer(),
+                'min_age' => $integer(),
+            ],
+            self::FilmDetails => ['duration_minutes' => $integer()],
+            self::TvSeriesDetails => ['seasons' => $integer()],
+            self::VideogameDetails => ['platform' => $text()],
             self::Copy => [
                 'edition_id' => $ref(true),
                 'owner_id' => $ref(),

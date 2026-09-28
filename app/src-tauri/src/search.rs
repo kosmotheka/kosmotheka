@@ -93,7 +93,12 @@ pub fn affected_editions(
         | Entity::Revocation
         | Entity::Device
         | Entity::ChangeRequest
-        | Entity::Mark => BTreeSet::new(),
+        | Entity::Mark
+        | Entity::ComicDetails
+        | Entity::BoardgameDetails
+        | Entity::FilmDetails
+        | Entity::TvSeriesDetails
+        | Entity::VideogameDetails => BTreeSet::new(),
     };
     Ok(found)
 }
