@@ -1916,5 +1916,114 @@
       "change": 0,
       "field": "tag_id"
     }
+  },
+  {
+    "name": "an ordered series with a work in it",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000500",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "series.add",
+      "changes": [
+        {
+          "entity": "series",
+          "id": "01997c7e-0000-7000-8000-000000000501",
+          "action": "create",
+          "fields": {
+            "name": "Dune",
+            "ordered": true
+          }
+        },
+        {
+          "entity": "series_entry",
+          "id": "01997c7e-0000-7000-8000-000000000502",
+          "action": "create",
+          "fields": {
+            "series_id": "01997c7e-0000-7000-8000-000000000501",
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "position": 1
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "an expansion requires its base game",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000503",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "work.require",
+      "changes": [
+        {
+          "entity": "work_relation",
+          "id": "01997c7e-0000-7000-8000-000000000504",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "related_work_id": "01997c7e-0000-7000-8000-000000000012",
+            "relation": "requires"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a relation that does not exist",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000505",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "work.require",
+      "changes": [
+        {
+          "entity": "work_relation",
+          "id": "01997c7e-0000-7000-8000-000000000506",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "related_work_id": "01997c7e-0000-7000-8000-000000000012",
+            "relation": "sequel"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "relation"
+    }
+  },
+  {
+    "name": "a series without saying whether it is ordered",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000507",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "series.add",
+      "changes": [
+        {
+          "entity": "series",
+          "id": "01997c7e-0000-7000-8000-000000000508",
+          "action": "create",
+          "fields": {
+            "name": "Dune"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "ordered"
+    }
   }
 ]

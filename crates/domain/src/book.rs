@@ -408,6 +408,8 @@ pub enum ErrorCode {
     BarcodeInUse,
     /// Not a key of `genre::GENRES`.
     InvalidGenre,
+    /// A work cannot require or relate to itself.
+    SelfReference,
 }
 
 impl From<IsbnError> for ErrorCode {

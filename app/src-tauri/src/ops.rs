@@ -454,7 +454,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 20] = [
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 23] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::ComicDetails,
@@ -465,11 +465,14 @@ const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 20] = [
     Entity::Edition,
     Entity::WorkTag,
     Entity::WorkGenre,
+    Entity::SeriesEntry,
+    Entity::WorkRelation,
     Entity::WorkContributor,
     Entity::Work,
     Entity::Person,
     Entity::Publisher,
     Entity::Tag,
+    Entity::Series,
     Entity::Member,
     Entity::Wish,
     Entity::Revocation,

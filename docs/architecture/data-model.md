@@ -32,6 +32,9 @@ works ──< work_contributors >── people
 | `tags` | Etiquetas: palabras libres que cada biblioteca crea para sí misma | `id`, `name` |
 | `work_tags` | Qué etiquetas tiene cada obra. Sin restricción de unicidad a propósito: dos dispositivos pueden añadir la misma etiqueta sin conexión, y las dos filas deben sobrevivir para que converjan; quien lee, deduplica | `id`, `work_id`, `tag_id` |
 | `work_genres` | Qué géneros tiene cada obra, de la lista cerrada por tipo (`crates/domain/src/genre.rs`). Misma regla de no unicidad que `work_tags` | `id`, `work_id`, `genre` |
+| `series` | Series (D61): una saga (ordenada) o una línea de producto (no). Una obra puede estar en varias, y una serie puede mezclar autores | `id`, `name`, `ordered` |
+| `series_entries` | Qué obras tiene cada serie y en qué posición. Sin restricción de unicidad a propósito (misma regla que `work_tags`) | `id`, `series_id`, `work_id`, `position` (empieza en 1, opcional) |
+| `work_relations` | Qué obra necesita a cuál (D61): p. ej. una expansión necesita su juego base. Sin restricción de unicidad a propósito (misma regla que `work_tags`) | `id`, `work_id`, `related_work_id`, `relation` (`requires`) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
 | `comic_details` | Datos propios de un cómic | `edition_id`, `number` |
 | `boardgame_details` | Datos propios de un juego de mesa | `edition_id`, `players_min`, `players_max`, `duration_minutes`, `min_age` |
@@ -67,7 +70,7 @@ works ──< work_contributors >── people
 ## Pendiente en hitos posteriores
 
 - Ubicaciones como jerarquía (salón → estantería → balda) en lugar de texto libre (1.5).
-- Saga y número, temáticas, etiquetas y campos de rol (sin hito asignado todavía).
+- Campos de rol (sin hito asignado todavía).
 
 ## Actualizar la app: copia automática
 

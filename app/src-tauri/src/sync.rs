@@ -20,17 +20,20 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 22] = [
+pub const ORDER: [Entity; 25] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
     Entity::Tag,
+    Entity::Series,
     Entity::Person,
     Entity::Member,
     Entity::Work,
     Entity::WorkContributor,
     Entity::WorkTag,
     Entity::WorkGenre,
+    Entity::SeriesEntry,
+    Entity::WorkRelation,
     Entity::Edition,
     Entity::BookDetails,
     Entity::ComicDetails,
@@ -532,6 +535,7 @@ mod tests {
     use crate::catalog::{self, BookFilter};
     use crate::db;
     use crate::ops::DEFAULT_LIBRARY_ID as LIB;
+    use crate::series;
 
     /// A simulated device: its own database, as a phone or a laptop would have.
     struct Device(Connection);
@@ -1884,6 +1888,48 @@ mod tests {
 
         assert!(genres_of_work(&laptop.0, &work_id).is_empty());
         assert!(genres_of_work(&phone.0, &work_id).is_empty());
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn the_same_work_added_to_a_series_offline_on_two_devices_converges() {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        let edition_id = laptop.add("Dune", None, "Ana");
+        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+            .unwrap()
+            .work_id;
+        let series_id = series::create_series(&mut laptop.0, LIB, "Dune", true).unwrap();
+        phone.pull_from(&laptop);
+
+        series::add_to_series(&mut laptop.0, LIB, &series_id, &work_id, Some(1)).unwrap();
+        series::add_to_series(&mut phone.0, LIB, &series_id, &work_id, Some(1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        let laptop_detail = series::get_series(&laptop.0, LIB, &series_id).unwrap();
+        let phone_detail = series::get_series(&phone.0, LIB, &series_id).unwrap();
+        assert_eq!(laptop_detail.entries.len(), 1);
+        assert_eq!(phone_detail.entries.len(), 1);
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn deleting_a_series_while_another_device_adds_to_it_offline_converges() {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        let edition_id = laptop.add("Dune", None, "Ana");
+        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+            .unwrap()
+            .work_id;
+        let series_id = series::create_series(&mut laptop.0, LIB, "Dune", true).unwrap();
+        phone.pull_from(&laptop);
+
+        series::delete_series(&mut laptop.0, LIB, &series_id).unwrap();
+        series::add_to_series(&mut phone.0, LIB, &series_id, &work_id, Some(1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        assert!(series::get_series(&laptop.0, LIB, &series_id).is_err());
+        assert!(series::get_series(&phone.0, LIB, &series_id).is_err());
         assert_converged(&[&laptop, &phone]);
     }
 }

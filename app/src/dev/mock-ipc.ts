@@ -446,8 +446,53 @@ mockIPC((cmd, args) => {
         canDelete: !params.has("reader"),
         genres: ["fantasy", "science_fiction"],
         tags: ["Favorite"],
+        series: [{ seriesId: "series-1", name: "Dune", ordered: true, position: 1 }],
+        requires: [],
+        requiredBy: [],
       };
     }
+    case "list_series":
+      return [{ id: "series-1", name: "Dune", ordered: true, works: 2, missing: 1 }];
+    case "get_series":
+      return {
+        id: "series-1",
+        name: "Dune",
+        ordered: true,
+        entries: [
+          {
+            entryId: "entry-1",
+            workId: `work-${books[0].editionId}`,
+            editionId: books[0].editionId,
+            title: books[0].title,
+            kind: books[0].kind,
+            cover: books[0].cover,
+            position: 1,
+            copies: books[0].copyCount,
+          },
+          {
+            entryId: "entry-2",
+            workId: `work-${books[1].editionId}`,
+            editionId: books[1].editionId,
+            title: books[1].title,
+            kind: books[1].kind,
+            cover: books[1].cover,
+            position: 2,
+            copies: 0,
+          },
+        ],
+      };
+    case "create_series":
+      return "series-new";
+    case "update_series":
+    case "delete_series":
+    case "set_series_entry_position":
+    case "remove_from_series":
+    case "reorder_series":
+    case "add_requirement":
+    case "remove_requirement":
+      return null;
+    case "add_to_series":
+      return "entry-new";
     case "list_tags":
       return [
         { id: "tag-1", name: "Favorite", works: 3 },

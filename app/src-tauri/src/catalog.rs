@@ -84,6 +84,32 @@ pub struct BookDetail {
     pub genres: Vec<String>,
     /// Names, sorted case-insensitively.
     pub tags: Vec<String>,
+    /// The series this work belongs to.
+    pub series: Vec<WorkSeries>,
+    /// Works this one requires (an expansion needs its base game).
+    pub requires: Vec<RelatedWork>,
+    /// Works that require this one.
+    pub required_by: Vec<RelatedWork>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkSeries {
+    pub series_id: String,
+    pub name: String,
+    pub ordered: bool,
+    pub position: Option<i64>,
+}
+
+/// A work related to another (D61), with enough to show "you have the expansion
+/// but not the base game": its first edition and how many copies it has.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RelatedWork {
+    pub work_id: String,
+    pub edition_id: Option<String>,
+    pub title: String,
+    pub copies: i64,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -474,6 +500,27 @@ fn book_removal(conn: &Connection, library: &str, edition_id: &str) -> Result<Ve
             .into_iter()
             .map(|id| Change::delete(Entity::WorkGenre, id)),
         );
+        changes.extend(
+            ids(
+                conn,
+                "SELECT id FROM series_entries WHERE library_id = ?1 AND work_id = ?2",
+                library,
+                &work_id,
+            )?
+            .into_iter()
+            .map(|id| Change::delete(Entity::SeriesEntry, id)),
+        );
+        changes.extend(
+            ids(
+                conn,
+                "SELECT id FROM work_relations WHERE library_id = ?1
+                  AND (work_id = ?2 OR related_work_id = ?2)",
+                library,
+                &work_id,
+            )?
+            .into_iter()
+            .map(|id| Change::delete(Entity::WorkRelation, id)),
+        );
         changes.push(Change::delete(Entity::Work, &work_id));
     }
     Ok(changes)
@@ -855,7 +902,7 @@ fn work_of(conn: &Connection, library: &str, edition_id: &str) -> Result<String>
     .ok_or_else(|| missing(Entity::Edition, edition_id))
 }
 
-fn exists(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<bool> {
+pub(crate) fn exists(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<bool> {
     Ok(conn
         .query_row(
             &format!(
@@ -871,7 +918,12 @@ fn exists(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<
         .is_some())
 }
 
-fn ensure_exists(conn: &Connection, library: &str, entity: Entity, id: &str) -> Result<()> {
+pub(crate) fn ensure_exists(
+    conn: &Connection,
+    library: &str,
+    entity: Entity,
+    id: &str,
+) -> Result<()> {
     if exists(conn, library, entity, id)? {
         Ok(())
     } else {
@@ -879,14 +931,14 @@ fn ensure_exists(conn: &Connection, library: &str, entity: Entity, id: &str) -> 
     }
 }
 
-fn missing(entity: Entity, id: &str) -> Error {
+pub(crate) fn missing(entity: Entity, id: &str) -> Error {
     Error::MissingRow {
         entity: entity.table(),
         id: id.to_owned(),
     }
 }
 
-fn ids(conn: &Connection, sql: &str, library: &str, param: &str) -> Result<Vec<String>> {
+pub(crate) fn ids(conn: &Connection, sql: &str, library: &str, param: &str) -> Result<Vec<String>> {
     let mut statement = conn.prepare(sql)?;
     let rows = statement.query_map([library, param], |row| row.get(0))?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -1169,6 +1221,9 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     can_delete: false,
                     genres: Vec::new(),
                     tags: Vec::new(),
+                    series: Vec::new(),
+                    requires: Vec::new(),
+                    required_by: Vec::new(),
                 })
             },
         )
@@ -1236,7 +1291,86 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
         )?
         .query_map([library, &book.work_id], |row| row.get(0))?
         .collect::<rusqlite::Result<_>>()?;
+
+    book.series = conn
+        .prepare(
+            "SELECT DISTINCT s.id, s.name, s.ordered,
+                    (SELECT se2.position FROM series_entries se2
+                      WHERE se2.library_id = s.library_id AND se2.series_id = s.id
+                        AND se2.work_id = ?2
+                      ORDER BY se2.position IS NULL, se2.position LIMIT 1)
+               FROM series_entries se
+               JOIN series s ON s.library_id = se.library_id AND s.id = se.series_id
+              WHERE se.library_id = ?1 AND se.work_id = ?2
+              ORDER BY s.name COLLATE NOCASE, s.id",
+        )?
+        .query_map([library, &book.work_id], |row| {
+            Ok(WorkSeries {
+                series_id: row.get(0)?,
+                name: row.get(1)?,
+                ordered: row.get::<_, i64>(2)? != 0,
+                position: row.get(3)?,
+            })
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+
+    let requires_ids = ids(
+        conn,
+        "SELECT DISTINCT related_work_id FROM work_relations
+          WHERE library_id = ?1 AND work_id = ?2 AND relation = 'requires'",
+        library,
+        &book.work_id,
+    )?;
+    book.requires = related_works(conn, library, &requires_ids)?;
+    let required_by_ids = ids(
+        conn,
+        "SELECT DISTINCT work_id FROM work_relations
+          WHERE library_id = ?1 AND related_work_id = ?2 AND relation = 'requires'",
+        library,
+        &book.work_id,
+    )?;
+    book.required_by = related_works(conn, library, &required_by_ids)?;
     Ok(book)
+}
+
+/// Each related work with its first edition (by title) and its total copies, so
+/// the UI can say "you have the expansion but not the base game", sorted by title.
+fn related_works(
+    conn: &Connection,
+    library: &str,
+    work_ids: &[String],
+) -> Result<Vec<RelatedWork>> {
+    let mut result = Vec::with_capacity(work_ids.len());
+    for work_id in work_ids {
+        let title: String = conn.query_row(
+            "SELECT title FROM works WHERE library_id = ?1 AND id = ?2",
+            [library, work_id],
+            |row| row.get(0),
+        )?;
+        let edition_id: Option<String> = conn
+            .query_row(
+                "SELECT id FROM editions WHERE library_id = ?1 AND work_id = ?2
+                  ORDER BY title COLLATE NOCASE, id LIMIT 1",
+                [library, work_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        let copies: i64 = conn.query_row(
+            "SELECT coalesce(sum(c.quantity), 0) FROM copies c
+               JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+              WHERE e.library_id = ?1 AND e.work_id = ?2",
+            [library, work_id],
+            |row| row.get(0),
+        )?;
+        result.push(RelatedWork {
+            work_id: work_id.clone(),
+            edition_id,
+            title,
+            copies,
+        });
+    }
+    result.sort_by_key(|w| w.title.to_lowercase());
+    Ok(result)
 }
 
 /// Operations that touched the edition, its work or any of its copies, oldest first.

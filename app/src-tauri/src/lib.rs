@@ -15,6 +15,7 @@ mod people;
 mod permissions;
 mod requests;
 mod search;
+mod series;
 mod settings;
 mod sync;
 mod wishes;
@@ -119,7 +120,18 @@ pub fn run() {
             commands::set_role,
             commands::assign_device,
             commands::remove_device,
-            commands::duplicate_library
+            commands::duplicate_library,
+            commands::list_series,
+            commands::get_series,
+            commands::create_series,
+            commands::update_series,
+            commands::delete_series,
+            commands::add_to_series,
+            commands::set_series_entry_position,
+            commands::remove_from_series,
+            commands::reorder_series,
+            commands::add_requirement,
+            commands::remove_requirement
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

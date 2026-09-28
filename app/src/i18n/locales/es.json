@@ -141,7 +141,8 @@
     "invalid_format": "Formato desconocido. Usa hardcover, paperback, pocket, ebook, audiobook u other.",
     "invalid_barcode": "El código de barras no es válido.",
     "invalid_genre": "No es un género conocido para este tipo.",
-    "barcode_in_use": "Ya hay otra edición con este código de barras."
+    "barcode_in_use": "Ya hay otra edición con este código de barras.",
+    "self_reference": "Una obra no puede necesitarse a sí misma."
   },
   "history": {
     "title": "Historial",

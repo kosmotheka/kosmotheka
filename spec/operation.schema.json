@@ -106,6 +106,9 @@
             "work_tag",
             "work_genre",
             "wish",
+            "series",
+            "series_entry",
+            "work_relation",
             "revocation",
             "device",
             "change_request",
@@ -672,6 +675,86 @@
                       "flamenco",
                       "soundtrack",
                       "world"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "series"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "ordered": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "series_entry"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "series_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "position": {
+                    "$ref": "#/$defs/integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "work_relation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "related_work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "relation": {
+                    "enum": [
+                      "requires"
                     ]
                   }
                 }

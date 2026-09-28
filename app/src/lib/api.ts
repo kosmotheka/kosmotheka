@@ -117,7 +117,8 @@ export type FieldErrorCode =
   | "name_in_use"
   | "invalid_barcode"
   | "barcode_in_use"
-  | "invalid_genre";
+  | "invalid_genre"
+  | "self_reference";
 
 export interface FieldError {
   field: string;
@@ -234,6 +235,28 @@ export interface BookDetail {
   genres: string[];
   /** Names, sorted case-insensitively. */
   tags: string[];
+  /** The series this work belongs to. */
+  series: WorkSeries[];
+  /** Works this one requires (an expansion needs its base game). */
+  requires: RelatedWork[];
+  /** Works that require this one. */
+  requiredBy: RelatedWork[];
+}
+
+export interface WorkSeries {
+  seriesId: string;
+  name: string;
+  ordered: boolean;
+  position: number | null;
+}
+
+/** A work related to another (D61): its first edition and how many copies it has,
+ * so the UI can say "you have the expansion but not the base game". */
+export interface RelatedWork {
+  workId: string;
+  editionId: string | null;
+  title: string;
+  copies: number;
 }
 
 export function getBook(editionId: string): Promise<BookDetail> {
@@ -817,4 +840,81 @@ export function claimCandidates(): Promise<ClaimCandidate[]> {
 
 export function claimPerson(person: PersonPick): Promise<void> {
   return invoke("claim_person", { person });
+}
+
+export interface SeriesSummary {
+  id: string;
+  name: string;
+  ordered: boolean;
+  /** Distinct works in the series. */
+  works: number;
+  /** Works in the series with no copies. */
+  missing: number;
+}
+
+export interface SeriesEntry {
+  entryId: string;
+  workId: string;
+  /** The work's first edition by title. */
+  editionId: string | null;
+  title: string;
+  kind: Kind;
+  cover: string | null;
+  position: number | null;
+  copies: number;
+}
+
+export interface SeriesDetail {
+  id: string;
+  name: string;
+  ordered: boolean;
+  entries: SeriesEntry[];
+}
+
+export function listSeries(): Promise<SeriesSummary[]> {
+  return invoke<SeriesSummary[]>("list_series");
+}
+
+export function getSeries(id: string): Promise<SeriesDetail> {
+  return invoke<SeriesDetail>("get_series", { id });
+}
+
+export function createSeries(name: string, ordered: boolean): Promise<string> {
+  return invoke<string>("create_series", { name, ordered });
+}
+
+export function updateSeries(id: string, name: string, ordered: boolean): Promise<void> {
+  return invoke("update_series", { id, name, ordered });
+}
+
+export function deleteSeries(id: string): Promise<void> {
+  return invoke("delete_series", { id });
+}
+
+export function addToSeries(
+  seriesId: string,
+  workId: string,
+  position: number | null = null,
+): Promise<string> {
+  return invoke<string>("add_to_series", { seriesId, workId, position });
+}
+
+export function setSeriesEntryPosition(entryId: string, position: number | null): Promise<void> {
+  return invoke("set_series_entry_position", { entryId, position });
+}
+
+export function removeFromSeries(seriesId: string, workId: string): Promise<void> {
+  return invoke("remove_from_series", { seriesId, workId });
+}
+
+export function reorderSeries(seriesId: string, workIds: string[]): Promise<void> {
+  return invoke("reorder_series", { seriesId, workIds });
+}
+
+export function addRequirement(workId: string, requiredWorkId: string): Promise<void> {
+  return invoke("add_requirement", { workId, requiredWorkId });
+}
+
+export function removeRequirement(workId: string, requiredWorkId: string): Promise<void> {
+  return invoke("remove_requirement", { workId, requiredWorkId });
 }

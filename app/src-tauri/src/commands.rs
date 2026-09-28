@@ -22,6 +22,7 @@ use crate::metadata::{Lookup, LookupResult};
 use crate::ops;
 use crate::people::{self, People};
 use crate::requests::{self, Request};
+use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
 use crate::wishes::{self, IsbnCheck, Wish};
 
@@ -684,4 +685,111 @@ pub fn move_book(database: State<'_, Database>, edition_id: String, to: String) 
 #[tauri::command]
 pub fn is_mobile() -> bool {
     cfg!(mobile)
+}
+
+#[tauri::command]
+pub fn list_series(database: State<'_, Database>) -> Result<Vec<SeriesSummary>> {
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::list_series(&conn, &library)
+}
+
+#[tauri::command]
+pub fn get_series(database: State<'_, Database>, id: String) -> Result<SeriesDetail> {
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::get_series(&conn, &library, &id)
+}
+
+#[tauri::command]
+pub fn create_series(database: State<'_, Database>, name: String, ordered: bool) -> Result<String> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::create_series(&mut conn, &library, &name, ordered)
+}
+
+#[tauri::command]
+pub fn update_series(
+    database: State<'_, Database>,
+    id: String,
+    name: String,
+    ordered: bool,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::update_series(&mut conn, &library, &id, &name, ordered)
+}
+
+#[tauri::command]
+pub fn delete_series(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::delete_series(&mut conn, &library, &id)
+}
+
+#[tauri::command]
+pub fn add_to_series(
+    database: State<'_, Database>,
+    series_id: String,
+    work_id: String,
+    position: Option<i64>,
+) -> Result<String> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::add_to_series(&mut conn, &library, &series_id, &work_id, position)
+}
+
+#[tauri::command]
+pub fn set_series_entry_position(
+    database: State<'_, Database>,
+    entry_id: String,
+    position: Option<i64>,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::set_position(&mut conn, &library, &entry_id, position)
+}
+
+#[tauri::command]
+pub fn remove_from_series(
+    database: State<'_, Database>,
+    series_id: String,
+    work_id: String,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::remove_from_series(&mut conn, &library, &series_id, &work_id)
+}
+
+#[tauri::command]
+pub fn reorder_series(
+    database: State<'_, Database>,
+    series_id: String,
+    work_ids: Vec<String>,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::reorder(&mut conn, &library, &series_id, &work_ids)
+}
+
+#[tauri::command]
+pub fn add_requirement(
+    database: State<'_, Database>,
+    work_id: String,
+    required_work_id: String,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::add_requirement(&mut conn, &library, &work_id, &required_work_id)
+}
+
+#[tauri::command]
+pub fn remove_requirement(
+    database: State<'_, Database>,
+    work_id: String,
+    required_work_id: String,
+) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    series::remove_requirement(&mut conn, &library, &work_id, &required_work_id)
 }

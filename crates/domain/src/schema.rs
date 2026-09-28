@@ -31,6 +31,13 @@ pub enum Entity {
     /// no-unique-constraint rule as `WorkTag`.
     WorkGenre,
     Wish,
+    /// A group of works (D61): a saga (ordered) or a product line (not).
+    Series,
+    /// A work linked to a series; no unique constraint (same rule as `WorkTag`).
+    SeriesEntry,
+    /// One work requiring another (an expansion requires its base game); no
+    /// unique constraint (same rule as `WorkTag`).
+    WorkRelation,
     /// A device whose access to the library was withdrawn (D71).
     Revocation,
     /// A device that writes to the library, with the public key its operations
@@ -180,6 +187,22 @@ const WORK_GENRE_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),
     field("genre", FieldType::OneOf(crate::genre::GENRES), true),
 ];
+/// What one work may say about another (D61): only "requires" for now.
+pub const WORK_RELATIONS: &[&str] = &["requires"];
+const SERIES_FIELDS: &[FieldSpec] = &[
+    field("name", FieldType::Text, true),
+    field("ordered", FieldType::Boolean, true),
+];
+const SERIES_ENTRY_FIELDS: &[FieldSpec] = &[
+    field("series_id", FieldType::Ref(Entity::Series), true),
+    field("work_id", FieldType::Ref(Entity::Work), true),
+    field("position", FieldType::Integer, false),
+];
+const WORK_RELATION_FIELDS: &[FieldSpec] = &[
+    field("work_id", FieldType::Ref(Entity::Work), true),
+    field("related_work_id", FieldType::Ref(Entity::Work), true),
+    field("relation", FieldType::OneOf(WORK_RELATIONS), true),
+];
 const WISH_FIELDS: &[FieldSpec] = &[
     field("title", FieldType::Text, true),
     field("author", FieldType::Text, false),
@@ -244,6 +267,9 @@ impl Entity {
             Entity::WorkTag => "work_tags",
             Entity::WorkGenre => "work_genres",
             Entity::Wish => "wishes",
+            Entity::Series => "series",
+            Entity::SeriesEntry => "series_entries",
+            Entity::WorkRelation => "work_relations",
             Entity::Revocation => "revocations",
             Entity::Device => "devices",
             Entity::ChangeRequest => "change_requests",
@@ -288,6 +314,9 @@ impl Entity {
             Entity::WorkTag => WORK_TAG_FIELDS,
             Entity::WorkGenre => WORK_GENRE_FIELDS,
             Entity::Wish => WISH_FIELDS,
+            Entity::Series => SERIES_FIELDS,
+            Entity::SeriesEntry => SERIES_ENTRY_FIELDS,
+            Entity::WorkRelation => WORK_RELATION_FIELDS,
             Entity::Revocation => REVOCATION_FIELDS,
             Entity::Device => DEVICE_FIELDS,
             Entity::ChangeRequest => CHANGE_REQUEST_FIELDS,

@@ -92,3 +92,4 @@ Todo **propuesta** hasta que el maintainer lo revise.
 - [x] 6.5 (a) «Lo deseo» como campo `wished` de la marca, con filtros «lo que deseo» y «lo que desean otros» en el motor.
 - [x] 6.2 (motor) El catálogo crea, edita, lee, mueve y filtra obras de cualquier tipo: contribuidores por papel, código de barras (también para no duplicar ediciones) y datos propios de cada tipo. `authors` convive con `contributors` hasta que la interfaz pase a usar solo `contributors`.
 - [x] 6.7 (motor) Géneros (lista cerrada por tipo, en `genre.rs`; **pendiente de que el maintainer revise la lista**) y etiquetas de cada biblioteca, con filtros, búsqueda por etiqueta y gestión de etiquetas. Las filas de enlace no son únicas a propósito, para converger.
+- [x] 6.6 (motor) Series con orden o sin él, una obra en varias, reordenar, «cuántas faltan», y la relación «necesita» en las dos direcciones. Convergencia probada (misma obra añadida sin conexión; serie borrada mientras otro añade).

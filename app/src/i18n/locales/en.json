@@ -141,7 +141,8 @@
     "invalid_format": "Unknown format. Use hardcover, paperback, pocket, ebook, audiobook or other.",
     "invalid_barcode": "This barcode is not valid.",
     "barcode_in_use": "Another edition already has this barcode.",
-    "invalid_genre": "Not a known genre for this type."
+    "invalid_genre": "Not a known genre for this type.",
+    "self_reference": "A work cannot require itself."
   },
   "history": {
     "title": "History",

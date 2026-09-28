@@ -34,6 +34,9 @@ enum CatalogEntity: string
     case WorkTag = 'work_tag';
     case WorkGenre = 'work_genre';
     case Wish = 'wish';
+    case Series = 'series';
+    case SeriesEntry = 'series_entry';
+    case WorkRelation = 'work_relation';
     case Revocation = 'revocation';
     case Device = 'device';
     case ChangeRequest = 'change_request';
@@ -70,6 +73,9 @@ enum CatalogEntity: string
 
     /** Where a person is with a work (D68). */
     public const array MARK_STATUSES = ['pending', 'in_progress', 'finished', 'abandoned'];
+
+    /** What one work may say about another (D61). */
+    public const array WORK_RELATIONS = ['requires'];
 
     /** The closed list of genres shipped with the app, per kind (mirrors crates/domain/src/genre.rs). */
     public const array GENRES = [
@@ -157,6 +163,20 @@ enum CatalogEntity: string
                 'isbn13' => $text(),
                 'note' => $text(),
                 'cover_url' => $text(),
+            ],
+            self::Series => [
+                'name' => $text(true),
+                'ordered' => new FieldSpec(FieldType::Boolean, true),
+            ],
+            self::SeriesEntry => [
+                'series_id' => $ref(true),
+                'work_id' => $ref(true),
+                'position' => $integer(),
+            ],
+            self::WorkRelation => [
+                'work_id' => $ref(true),
+                'related_work_id' => $ref(true),
+                'relation' => $oneOf(...self::WORK_RELATIONS),
             ],
             self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
             self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref()],
