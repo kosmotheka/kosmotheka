@@ -32,7 +32,7 @@ Todo **propuesta** hasta que el maintainer lo revise.
 
 ### 6.1 Tipos y formatos
 
-- **`work.kind`** pasa a admitir `book`, `comic`, `boardgame`, `film`, `videogame`, `music` y `other` (ver pregunta 1 para películas y series).
+- **`work.kind`** pasa a admitir `book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music` y `other`.
 - **Los formatos, una sola lista para todos los tipos** en `copy.format`: `hardcover`, `paperback`, `ebook`, `pdf`, `audiobook`, `box`, `dvd`, `bluray`, `cartridge`, `disc`, `digital_download`, `vinyl`, `cd`, `cassette`, `other`… La interfaz ofrece solo los del tipo de la obra. Así la validación sigue siendo de una fila sola y no hay que mirar la obra para validar un ejemplar.
 - **Lo digital:** los formatos digitales no tienen estantería; su «dónde» es la plataforma («Kindle», «Steam»), como dice D60, en el mismo campo `location`.
 - **Los datos propios de cada tipo** en una fila de detalles por tipo, como `book_details` hoy, con pocos campos (pregunta 2). Los identificadores de proveedor, en su fila de detalles.
@@ -43,7 +43,7 @@ Todo **propuesta** hasta que el maintainer lo revise.
 
 - **«Me falta»** = una obra del catálogo sin ejemplares (D61). Ya lo es hoy en parte: una obra puede quedarse sin ejemplares.
 - **«Lo deseo»** = un campo `wished` en la marca de la persona (D61 y D68: deseado es una marca). Así cada persona desea lo suyo y lo marca sin pedir nada, como las demás marcas.
-- **Migración de la lista de deseos (D36):** cada deseo pasa a ser una obra sin ejemplares, con la marca «lo deseo» de… (pregunta 3).
+- **Sin migración de la lista de deseos (D36)** (28/09/2026): no hace falta ahora; se simplifica. Queda por decir qué pasa con la lista actual (pregunta 3).
 
 ### 6.6 Series
 
@@ -57,19 +57,19 @@ Todo **propuesta** hasta que el maintainer lo revise.
 
 ## Pendiente de decidir
 
-Para hablarlo antes de construir, no para contestar de golpe.
+Para hablarlo antes de construir, no para contestar de golpe. Respuestas del 28/09/2026 anotadas.
 
-1. **Películas y series de televisión:** ¿un tipo o dos? D60 dice «películas y series» como uno; una serie de televisión tiene temporadas, que se parecen más a los tomos de una saga.
-2. **Qué datos propios tiene cada tipo.** Propuesta de mínimo: juegos de mesa, jugadores (mínimo y máximo), duración y edad; películas, dirección y duración; videojuegos, plataforma; música, artista y sello; cómics, guion, dibujo y número. ¿Algo más, o menos?
-3. **La lista de deseos actual y el lector.** Hoy un lector apunta deseos sueltos (lo decidimos al construir 5.7). Si «me falta» pasa a ser una obra del catálogo, un lector que quiera algo que no está tendría que pedirlo (crear la obra es catálogo), aunque luego pueda marcarlo «lo deseo» sin pedir nada. ¿Nos vale, o el lector debe poder crear obras «que faltan» sin pedir permiso? Y al migrar, ¿de quién es la marca «lo deseo» de cada deseo antiguo?
-4. **Qué proveedores en esta fase.** Propuesta: solo los sin clave (6.4). Los de clave (BoardGameGeek, TMDB, IGDB, Comic Vine, Discogs) van con la nube (Fase 7), porque sus claves viven en el servidor (D62).
-5. **Géneros y temáticas:** ¿lista libre que crece con el uso, o una lista inicial por tipo?
-6. **Precio de compra** (ROADMAP): ¿lo metemos como campo opcional del ejemplar, o lo dejamos fuera hasta que alguien lo pida?
+1. ~~Películas y series: ¿un tipo o dos?~~ **Dos** (D60): sus formatos son distintos; la película relacionada con una serie no se modela.
+2. **Qué datos propios tiene cada tipo.** Algo básico, que se puede ir de las manos: se decide aquí, tipo a tipo.
+3. **Lo que falta, lo que deseo y el lector.** ~~Migrar la lista de deseos~~: no se migra. Quedan: qué pasa con la lista actual al cambiar de modelo, y si un lector puede crear una obra «que falta» sin pedir permiso.
+4. **Proveedores:** solo los sin clave en esta fase. Propuesta para unificar criterio: cualquier proveedor que pida clave admite la clave propia del usuario en Ajustes, como ya hace Google Books; con la nube, las pone el servidor (D62).
+5. **Géneros, temáticas y etiquetas:** mejor una lista predefinida que pueda crecer, pero con dudas: quién da de alta los nuevos, para quién son, y que no aparezca contenido inapropiado para una familia con niños.
+6. ~~Precio de compra~~: **fuera** de la fase (obligaría a elegir divisa, entre otras cosas); queda en ideas para el futuro.
 
 ## Antes de empezar
 
 - **Auditoría:** se hace antes de construir nada de esta fase.
-- **Fase 4:** quedan sus pruebas en pantalla y guardar la copia en Google Drive desde el móvil (ver el ROADMAP).
+- **Fase 4:** quedan sus pruebas en pantalla (ver el ROADMAP). Google Drive desde el móvil, aplazado.
 
 ## Estado
 

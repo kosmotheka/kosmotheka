@@ -4,7 +4,7 @@
 
 ## Qué producto es, en una frase
 
-**Kosmotheka** (D70): una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas y series, videojuegos, música y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
+**Kosmotheka** (D70): una app libre para catalogar lo que tienes (libros, cómics, juegos de mesa, películas, series, videojuegos, música y cualquier otra cosa) en **bibliotecas** que compartes con quien quieres, con permisos, **sin cuenta** por la red local o **con cuenta** a través de la nube.
 
 ## Visión general
 
@@ -68,7 +68,8 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 - [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
 - [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
 - [x] Copias completas y por biblioteca (formato versión 3, D30).
-- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md) y guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30).
+- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md).
+- Guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30): aplazado el 28/09/2026, puede llevar trabajo.
 
 ## Fase 5 — Personas, roles y peticiones
 
@@ -106,7 +107,6 @@ Deja de estar centrado en libros.
 - **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
 - **Marcas por persona** (D68): llegan en la Fase 5 (hito 5.8); aquí, «en curso» pasa a llamarse leyendo, jugando o viendo según el tipo, y los filtros por tipo.
 - **Géneros, temáticas y etiquetas.**
-- **Precio de compra**, como mucho un campo opcional del ejemplar y solo si no complica la interfaz; sin estadísticas.
 - **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
 
 **Estado:**
@@ -188,6 +188,7 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **Estantería visual** con lomos.
 - **Base de datos colaborativa** (futuro lejano).
 - **Reconocer mejor los dispositivos «sin persona»** (27/09/2026): con muchos dispositivos y sin servidor pueden juntarse varios sin persona difíciles de distinguir. Ideas: en Android, usar como nombre por defecto el de los ajustes del móvil (el mismo que ve el Bluetooth del coche) o el modelo, en vez de «Kosmotheka»; enseñar el nombre al emparejar («Te verán como…», con «Cambiar»); y mostrar en la fila cuándo apareció y cuándo se sincronizó por última vez. Se dejó para más adelante para no añadir código nativo de Android por un detalle.
+- **Precio de compra** de cada ejemplar: fuera de la Fase 6 (28/09/2026); obligaría a elegir divisa, entre otras cosas.
 - **Modelo de pago:** no se espera; la app es gratuita. Si llegara, sería un módulo aparte, fuera del repositorio público.
 
 ---

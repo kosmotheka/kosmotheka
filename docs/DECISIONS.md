@@ -754,13 +754,15 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 ## D60 · Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar — `aceptada`
 
 **Decisión:**
-- **Tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos y **música** (vinilo, CD, casete y digital; añadida el 26/09/2026, se nos había olvidado). Lista cerrada: el usuario no crea tipos.
+- **Tipos con ficha propia y proveedores:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas, series (desde el 28/09/2026, dos tipos), videojuegos y **música** (vinilo, CD, casete y digital; añadida el 26/09/2026, se nos había olvidado). Lista cerrada: el usuario no crea tipos.
 - **«Otro»** para todo lo demás (sellos, monedas, Playmobil): los campos comunes a todo y sin proveedores. Es el mismo formulario sin la parte específica de cada tipo.
 - **Formatos por tipo**, físicos y digitales. PDF y ebook son formatos de un libro, no otro tipo. Lo digital no tiene estantería: su ubicación es «Steam» o «Kindle».
 - **El alta empieza por buscar o escanear, no por el ISBN**, y **siempre se puede hacer a mano**, sin buscar nada. El ISBN es un campo de los libros; el escáner lee cualquier código y la app decide qué es.
 - Los campos personalizados por el usuario quedan fuera, salvo que alguien los pida de verdad.
 
 **Consecuencias:** se apoya en D08 y D24. Es la Fase 6 del ROADMAP.
+
+**Cambio (28/09/2026):** películas y series de televisión son **dos tipos**, porque sus formatos son distintos. Una película relacionada con una serie es un caso puntual que no se modela.
 
 ## D61 · Series y estados: lo tengo, me falta, lo deseo — `aceptada`
 
