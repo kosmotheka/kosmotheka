@@ -63,6 +63,7 @@ const book = (
   myStatus: null,
   myFavorite: false,
   myWished: false,
+  tags: [],
 });
 
 const books: BookSummary[] = [
@@ -443,8 +444,20 @@ mockIPC((cmd, args) => {
           canDelete: !params.has("reader"),
         })),
         canDelete: !params.has("reader"),
+        genres: ["fantasy", "science_fiction"],
+        tags: ["Favorite"],
       };
     }
+    case "list_tags":
+      return [
+        { id: "tag-1", name: "Favorite", works: 3 },
+        { id: "tag-2", name: "Gift", works: 1 },
+      ];
+    case "rename_tag":
+    case "delete_tag":
+      return null;
+    case "genres_of_kind":
+      return ["fantasy", "science_fiction", "adventure"];
     case "request_book":
     case "request_delete_copy":
     case "request_delete_book":

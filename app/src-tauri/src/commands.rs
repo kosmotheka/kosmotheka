@@ -8,6 +8,7 @@ use url::Url;
 use crate::backup::{self, BackupSummary, RestoreSummary};
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
+    TagSummary,
 };
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
@@ -225,6 +226,35 @@ pub fn delete_copy(database: State<'_, Database>, copy_id: String) -> Result<()>
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     catalog::delete_copy(&mut conn, &library, &copy_id)
+}
+
+#[tauri::command]
+pub fn list_tags(database: State<'_, Database>) -> Result<Vec<TagSummary>> {
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    catalog::list_tags(&conn, &library)
+}
+
+#[tauri::command]
+pub fn rename_tag(database: State<'_, Database>, id: String, name: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    catalog::rename_tag(&mut conn, &library, &id, &name)
+}
+
+#[tauri::command]
+pub fn delete_tag(database: State<'_, Database>, id: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    catalog::delete_tag(&mut conn, &library, &id)
+}
+
+#[tauri::command]
+pub fn genres_of_kind(kind: String) -> Vec<String> {
+    kosmotheka_domain::genres_of(&kind)
+        .iter()
+        .map(|genre| genre.to_string())
+        .collect()
 }
 
 #[tauri::command]

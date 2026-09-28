@@ -24,12 +24,15 @@ use crate::sync::{entity_rows, is_tombstoned};
 /// What a library holds; the library row itself is where it is restored to.
 /// Same order as `sync::ORDER`: parents before children. Revocations stay out:
 /// who may sync a library is not part of its catalogue.
-const CONTENTS: [Entity; 15] = [
+const CONTENTS: [Entity; 18] = [
     Entity::Publisher,
+    Entity::Tag,
     Entity::Person,
     Entity::Member,
     Entity::Work,
     Entity::WorkContributor,
+    Entity::WorkTag,
+    Entity::WorkGenre,
     Entity::Edition,
     Entity::BookDetails,
     Entity::ComicDetails,

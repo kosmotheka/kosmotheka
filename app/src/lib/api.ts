@@ -58,6 +58,9 @@ export interface EditionInput {
   minAge?: number | null;
   seasons?: number | null;
   platform?: string | null;
+  genres?: string[];
+  /** Tag names; found or created case-insensitively. */
+  tags?: string[];
 }
 
 export interface CopyInput {
@@ -98,6 +101,7 @@ export interface BookSummary {
   myStatus: MarkStatus | null;
   myFavorite: boolean;
   myWished: boolean;
+  tags: string[];
 }
 
 export type FieldErrorCode =
@@ -112,7 +116,8 @@ export type FieldErrorCode =
   | "invalid_format"
   | "name_in_use"
   | "invalid_barcode"
-  | "barcode_in_use";
+  | "barcode_in_use"
+  | "invalid_genre";
 
 export interface FieldError {
   field: string;
@@ -148,6 +153,10 @@ export interface BookFilter {
   myWished?: boolean;
   /** Works someone other than me wishes. */
   othersWished?: boolean;
+  /** A work matches if it has any of these (ignored when empty). */
+  genres?: string[];
+  /** Tag ids; a work matches if it has any of these (ignored when empty). */
+  tags?: string[];
 }
 
 /** The active library's books, or every library's with `everywhere`. */
@@ -221,10 +230,37 @@ export interface BookDetail {
   copies: CopyDetail[];
   /** This device may delete the whole book; otherwise it can only ask. */
   canDelete: boolean;
+  /** Sorted case-insensitively. */
+  genres: string[];
+  /** Names, sorted case-insensitively. */
+  tags: string[];
 }
 
 export function getBook(editionId: string): Promise<BookDetail> {
   return invoke<BookDetail>("get_book", { editionId });
+}
+
+export interface TagSummary {
+  id: string;
+  name: string;
+  /** Distinct works this tag is linked to. */
+  works: number;
+}
+
+export function listTags(): Promise<TagSummary[]> {
+  return invoke<TagSummary[]>("list_tags");
+}
+
+export function renameTag(id: string, name: string): Promise<void> {
+  return invoke("rename_tag", { id, name });
+}
+
+export function deleteTag(id: string): Promise<void> {
+  return invoke("delete_tag", { id });
+}
+
+export function genresOfKind(kind: Kind): Promise<string[]> {
+  return invoke<string[]>("genres_of_kind", { kind });
 }
 
 export function updateEdition(

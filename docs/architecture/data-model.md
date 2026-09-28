@@ -29,6 +29,9 @@ works ──< work_contributors >── people
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`, `studio`), `position` |
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
+| `tags` | Etiquetas: palabras libres que cada biblioteca crea para sí misma | `id`, `name` |
+| `work_tags` | Qué etiquetas tiene cada obra. Sin restricción de unicidad a propósito: dos dispositivos pueden añadir la misma etiqueta sin conexión, y las dos filas deben sobrevivir para que converjan; quien lee, deduplica | `id`, `work_id`, `tag_id` |
+| `work_genres` | Qué géneros tiene cada obra, de la lista cerrada por tipo (`crates/domain/src/genre.rs`). Misma regla de no unicidad que `work_tags` | `id`, `work_id`, `genre` |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
 | `comic_details` | Datos propios de un cómic | `edition_id`, `number` |
 | `boardgame_details` | Datos propios de un juego de mesa | `edition_id`, `players_min`, `players_max`, `duration_minutes`, `min_age` |

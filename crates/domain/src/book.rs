@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
+use crate::genre::{GENRES, genres_of};
 use crate::isbn::{Isbn, IsbnError};
 use crate::schema::Entity;
 
@@ -309,6 +310,11 @@ pub struct EditionInput {
     pub seasons: Option<i64>,
     #[serde(default)]
     pub platform: Option<String>,
+    #[serde(default)]
+    pub genres: Vec<String>,
+    /// Tag names; found or created case-insensitively.
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 /// A copy as entered by the user, before validation. Used to add and to edit.
@@ -357,6 +363,10 @@ pub struct ValidEdition {
     pub contributors: Vec<ValidContributor>,
     pub barcode: Option<String>,
     pub details: KindDetails,
+    /// Deduplicated, dropped if unknown to `genre::GENRES` or not offered by `kind`.
+    pub genres: Vec<String>,
+    /// Tag names: trimmed, deduplicated case-insensitively, at most 40 characters each.
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -396,6 +406,8 @@ pub enum ErrorCode {
     InvalidBarcode,
     /// Another edition already has this barcode.
     BarcodeInUse,
+    /// Not a key of `genre::GENRES`.
+    InvalidGenre,
 }
 
 impl From<IsbnError> for ErrorCode {
@@ -446,6 +458,7 @@ pub fn parse_cover_url(raw: &str) -> Option<Url> {
     trusted.then_some(url)
 }
 pub const MAX_QUANTITY: u32 = 999;
+pub const MAX_TAG_LENGTH: usize = 40;
 
 impl EditionInput {
     /// Checks every field and reports all problems at once, not just the first.
@@ -589,6 +602,36 @@ impl EditionInput {
             })
             .collect();
 
+        // Unknown genres are an error; genres of another kind are just dropped, since
+        // the form may still hold them after the user changed the kind.
+        let mut genres: Vec<String> = Vec::new();
+        for raw in self.genres {
+            let Some(genre) = clean(Some(raw)) else {
+                continue;
+            };
+            if !GENRES.contains(&genre.as_str()) {
+                errors.push(FieldError::new("genres", ErrorCode::InvalidGenre));
+                continue;
+            }
+            genres.push(genre);
+        }
+        let allowed = genres_of(kind.as_str());
+        genres.retain(|genre| allowed.contains(&genre.as_str()));
+        let genres = dedupe_ignoring_case(genres.into_iter());
+
+        let mut tags: Vec<String> = Vec::new();
+        for raw in self.tags {
+            let Some(tag) = clean(Some(raw)) else {
+                continue;
+            };
+            if tag.chars().count() > MAX_TAG_LENGTH {
+                errors.push(FieldError::new("tags", ErrorCode::OutOfRange));
+                continue;
+            }
+            tags.push(tag);
+        }
+        let tags = dedupe_ignoring_case(tags.into_iter());
+
         match title {
             Some(title) if errors.is_empty() => Ok(ValidEdition {
                 title,
@@ -610,6 +653,8 @@ impl EditionInput {
                 contributors,
                 barcode,
                 details,
+                genres,
+                tags,
             }),
             _ => Err(errors),
         }
@@ -992,6 +1037,47 @@ mod tests {
             book.validate().unwrap_err(),
             vec![FieldError::new("playersMax", ErrorCode::OutOfRange)]
         );
+    }
+
+    #[test]
+    fn unknown_genre_is_rejected() {
+        let mut book = minimal("A");
+        book.edition.genres = vec!["not_a_genre".into()];
+        assert_eq!(
+            book.validate().unwrap_err(),
+            vec![FieldError::new("genres", ErrorCode::InvalidGenre)]
+        );
+    }
+
+    #[test]
+    fn a_genre_of_another_kind_is_dropped_and_duplicates_removed() {
+        let mut book = minimal("A");
+        book.edition.kind = Kind::Boardgame;
+        // "manga" belongs to comic, not boardgame; "strategy" is repeated.
+        book.edition.genres = vec!["manga".into(), "strategy".into(), "strategy".into()];
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(valid.genres, vec!["strategy"]);
+    }
+
+    #[test]
+    fn tags_are_trimmed_deduplicated_and_length_checked() {
+        let mut book = minimal("A");
+        book.edition.tags = vec![
+            "  Fantasía  ".into(),
+            "fantasía".into(),
+            "".into(),
+            "x".repeat(41),
+        ];
+
+        let errors = book.validate().unwrap_err();
+
+        assert_eq!(errors, vec![FieldError::new("tags", ErrorCode::OutOfRange)]);
+
+        let mut book = minimal("A");
+        book.edition.tags = vec!["  Fantasía  ".into(), "fantasía".into(), "".into()];
+        assert_eq!(book.validate().unwrap().edition.tags, vec!["Fantasía"]);
     }
 
     #[test]

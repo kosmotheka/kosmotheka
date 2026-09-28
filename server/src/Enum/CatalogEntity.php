@@ -30,6 +30,9 @@ enum CatalogEntity: string
     case Member = 'member';
     case Copy = 'copy';
     case Publisher = 'publisher';
+    case Tag = 'tag';
+    case WorkTag = 'work_tag';
+    case WorkGenre = 'work_genre';
     case Wish = 'wish';
     case Revocation = 'revocation';
     case Device = 'device';
@@ -68,6 +71,21 @@ enum CatalogEntity: string
     /** Where a person is with a work (D68). */
     public const array MARK_STATUSES = ['pending', 'in_progress', 'finished', 'abandoned'];
 
+    /** The closed list of genres shipped with the app, per kind (mirrors crates/domain/src/genre.rs). */
+    public const array GENRES = [
+        'fantasy', 'science_fiction', 'horror', 'mystery', 'thriller', 'romance',
+        'historical_fiction', 'adventure', 'humor', 'poetry', 'theatre', 'essay',
+        'biography', 'history', 'science', 'philosophy', 'art', 'cooking', 'travel',
+        'roleplaying', 'children', 'young_adult', 'superheroes', 'manga', 'crime',
+        'slice_of_life', 'strategy', 'family', 'party', 'cooperative', 'abstract',
+        'deduction', 'wargame', 'card_game', 'dexterity', 'trivia', 'action',
+        'animation', 'comedy', 'drama', 'war', 'western', 'musical', 'documentary',
+        'simulation', 'sports', 'racing', 'puzzle', 'platformer', 'shooter',
+        'fighting', 'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip_hop',
+        'folk', 'metal', 'blues', 'soul', 'reggae', 'latin', 'flamenco',
+        'soundtrack', 'world',
+    ];
+
     /**
      * @return array<string, FieldSpec>
      */
@@ -80,7 +98,7 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
-            self::Library, self::Person, self::Publisher => ['name' => $text(true)],
+            self::Library, self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
             self::Member => [
                 'name' => $text(true),
                 'role' => new FieldSpec(FieldType::OneOf, false, self::ROLES),
@@ -124,6 +142,14 @@ enum CatalogEntity: string
                 'quantity' => $integer(true),
                 'location' => $text(),
                 'acquired_on' => new FieldSpec(FieldType::Date, false),
+            ],
+            self::WorkTag => [
+                'work_id' => $ref(true),
+                'tag_id' => $ref(true),
+            ],
+            self::WorkGenre => [
+                'work_id' => $ref(true),
+                'genre' => $oneOf(...self::GENRES),
             ],
             self::Wish => [
                 'title' => $text(true),

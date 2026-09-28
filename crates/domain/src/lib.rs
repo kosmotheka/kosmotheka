@@ -2,6 +2,7 @@
 //! It has no storage or UI code, so it can be reused by any client.
 
 pub mod book;
+pub mod genre;
 pub mod hlc;
 pub mod isbn;
 pub mod library;
@@ -14,9 +15,10 @@ pub mod wish;
 
 pub use book::{
     COVER_HOSTS, ContributorInput, ContributorRole, CopyInput, EditionInput, ErrorCode, FieldError,
-    Format, Kind, KindDetails, NewBook, ValidBook, ValidContributor, ValidCopy, ValidEdition,
-    parse_cover_url,
+    Format, Kind, KindDetails, MAX_TAG_LENGTH, NewBook, ValidBook, ValidContributor, ValidCopy,
+    ValidEdition, parse_cover_url,
 };
+pub use genre::{GENRES, genres_of};
 pub use hlc::{Hlc, HlcClock};
 pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;

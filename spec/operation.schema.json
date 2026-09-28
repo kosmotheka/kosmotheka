@@ -102,6 +102,9 @@
             "member",
             "copy",
             "publisher",
+            "tag",
+            "work_tag",
+            "work_genre",
             "wish",
             "revocation",
             "device",
@@ -227,7 +230,8 @@
                 "enum": [
                   "library",
                   "person",
-                  "publisher"
+                  "publisher",
+                  "tag"
                 ]
               }
             }
@@ -554,6 +558,121 @@
                   },
                   "acquired_on": {
                     "$ref": "#/$defs/date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "work_tag"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "tag_id": {
+                    "$ref": "#/$defs/uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "work_genre"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "work_id": {
+                    "$ref": "#/$defs/uuid"
+                  },
+                  "genre": {
+                    "enum": [
+                      "fantasy",
+                      "science_fiction",
+                      "horror",
+                      "mystery",
+                      "thriller",
+                      "romance",
+                      "historical_fiction",
+                      "adventure",
+                      "humor",
+                      "poetry",
+                      "theatre",
+                      "essay",
+                      "biography",
+                      "history",
+                      "science",
+                      "philosophy",
+                      "art",
+                      "cooking",
+                      "travel",
+                      "roleplaying",
+                      "children",
+                      "young_adult",
+                      "superheroes",
+                      "manga",
+                      "crime",
+                      "slice_of_life",
+                      "strategy",
+                      "family",
+                      "party",
+                      "cooperative",
+                      "abstract",
+                      "deduction",
+                      "wargame",
+                      "card_game",
+                      "dexterity",
+                      "trivia",
+                      "action",
+                      "animation",
+                      "comedy",
+                      "drama",
+                      "war",
+                      "western",
+                      "musical",
+                      "documentary",
+                      "simulation",
+                      "sports",
+                      "racing",
+                      "puzzle",
+                      "platformer",
+                      "shooter",
+                      "fighting",
+                      "rock",
+                      "pop",
+                      "jazz",
+                      "classical",
+                      "electronic",
+                      "hip_hop",
+                      "folk",
+                      "metal",
+                      "blues",
+                      "soul",
+                      "reggae",
+                      "latin",
+                      "flamenco",
+                      "soundtrack",
+                      "world"
+                    ]
                   }
                 }
               }

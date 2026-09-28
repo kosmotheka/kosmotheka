@@ -22,6 +22,14 @@ pub enum Entity {
     Member,
     Copy,
     Publisher,
+    /// A free word a library creates for itself, linked to works.
+    Tag,
+    /// A tag linked to a work; no unique constraint (D25: two devices may add the
+    /// same one offline, and both rows must survive).
+    WorkTag,
+    /// A genre linked to a work, from the closed list in `genre::GENRES`; same
+    /// no-unique-constraint rule as `WorkTag`.
+    WorkGenre,
     Wish,
     /// A device whose access to the library was withdrawn (D71).
     Revocation,
@@ -163,6 +171,15 @@ const MEMBER_FIELDS: &[FieldSpec] = &[
     field("can_share", FieldType::Boolean, false),
 ];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const TAG_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const WORK_TAG_FIELDS: &[FieldSpec] = &[
+    field("work_id", FieldType::Ref(Entity::Work), true),
+    field("tag_id", FieldType::Ref(Entity::Tag), true),
+];
+const WORK_GENRE_FIELDS: &[FieldSpec] = &[
+    field("work_id", FieldType::Ref(Entity::Work), true),
+    field("genre", FieldType::OneOf(crate::genre::GENRES), true),
+];
 const WISH_FIELDS: &[FieldSpec] = &[
     field("title", FieldType::Text, true),
     field("author", FieldType::Text, false),
@@ -223,6 +240,9 @@ impl Entity {
             Entity::Member => "members",
             Entity::Copy => "copies",
             Entity::Publisher => "publishers",
+            Entity::Tag => "tags",
+            Entity::WorkTag => "work_tags",
+            Entity::WorkGenre => "work_genres",
             Entity::Wish => "wishes",
             Entity::Revocation => "revocations",
             Entity::Device => "devices",
@@ -264,6 +284,9 @@ impl Entity {
             Entity::Member => MEMBER_FIELDS,
             Entity::Copy => COPY_FIELDS,
             Entity::Publisher => PUBLISHER_FIELDS,
+            Entity::Tag => TAG_FIELDS,
+            Entity::WorkTag => WORK_TAG_FIELDS,
+            Entity::WorkGenre => WORK_GENRE_FIELDS,
             Entity::Wish => WISH_FIELDS,
             Entity::Revocation => REVOCATION_FIELDS,
             Entity::Device => DEVICE_FIELDS,

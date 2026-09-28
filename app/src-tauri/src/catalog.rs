@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use kosmotheka_domain::{
     Change, ContributorInput, ContributorRole, CopyInput, DETAILS, EditionInput, Entity, ErrorCode,
-    FieldError, Format, Hlc, Kind, ValidBook, ValidCopy, ValidEdition,
+    FieldError, Format, Hlc, Kind, MAX_TAG_LENGTH, ValidBook, ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -47,6 +47,7 @@ pub struct BookSummary {
     pub my_status: Option<String>,
     pub my_favorite: bool,
     pub my_wished: bool,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -79,6 +80,10 @@ pub struct BookDetail {
     pub copies: Vec<CopyDetail>,
     /// This device may delete the whole book; otherwise it can only ask (D73).
     pub can_delete: bool,
+    /// Sorted case-insensitively.
+    pub genres: Vec<String>,
+    /// Names, sorted case-insensitively.
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -265,6 +270,8 @@ pub fn update_edition(
         plan.update_if_changed(Entity::Work, &work_id, json!({ "title": edition.title }))?;
     }
     plan.sync_all_contributors(&work_id, edition)?;
+    plan.sync_genres(&work_id, &edition.genres)?;
+    plan.sync_tags(&work_id, &edition.tags)?;
 
     plan.record("edition.edit")?;
     tx.commit()?;
@@ -358,6 +365,8 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
         min_age: book.min_age,
         seasons: book.seasons,
         platform: book.platform,
+        genres: book.genres,
+        tags: book.tags,
     }
     .validate()
     .map_err(Error::Validation)?;
@@ -445,6 +454,26 @@ fn book_removal(conn: &Connection, library: &str, edition_id: &str) -> Result<Ve
             .into_iter()
             .map(|id| Change::delete(Entity::WorkContributor, id)),
         );
+        changes.extend(
+            ids(
+                conn,
+                "SELECT id FROM work_tags WHERE library_id = ?1 AND work_id = ?2",
+                library,
+                &work_id,
+            )?
+            .into_iter()
+            .map(|id| Change::delete(Entity::WorkTag, id)),
+        );
+        changes.extend(
+            ids(
+                conn,
+                "SELECT id FROM work_genres WHERE library_id = ?1 AND work_id = ?2",
+                library,
+                &work_id,
+            )?
+            .into_iter()
+            .map(|id| Change::delete(Entity::WorkGenre, id)),
+        );
         changes.push(Change::delete(Entity::Work, &work_id));
     }
     Ok(changes)
@@ -485,6 +514,8 @@ impl<'a> Plan<'a> {
             json!({ "kind": edition.kind.as_str(), "title": edition.title }),
         ));
         self.sync_all_contributors(&work_id, edition)?;
+        self.sync_genres(&work_id, &edition.genres)?;
+        self.sync_tags(&work_id, &edition.tags)?;
         let publisher_id = self.publisher_id(edition)?;
 
         let edition_id = new_id();
@@ -606,6 +637,83 @@ impl<'a> Plan<'a> {
         for (contributor_id, _) in current.into_values() {
             self.changes
                 .push(Change::delete(Entity::WorkContributor, contributor_id));
+        }
+        Ok(())
+    }
+
+    /// Makes the work's genres match `genres`: creates missing links, deletes every
+    /// row of a genre no longer wanted. Genres kept are left as they are, duplicates
+    /// included: two devices may have added the same one offline (no unique
+    /// constraint), and both rows must survive for the devices to converge.
+    fn sync_genres(&mut self, work_id: &str, genres: &[String]) -> Result<()> {
+        let mut current: HashMap<String, Vec<String>> = HashMap::new();
+        {
+            let mut statement = self.tx.prepare(
+                "SELECT genre, id FROM work_genres WHERE library_id = ?1 AND work_id = ?2",
+            )?;
+            let rows = statement.query_map([self.library, work_id], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?;
+            for row in rows {
+                let (genre, id) = row?;
+                current.entry(genre).or_default().push(id);
+            }
+        }
+        for genre in genres {
+            if !current.contains_key(genre) {
+                self.changes.push(Change::create(
+                    Entity::WorkGenre,
+                    new_id(),
+                    json!({ "work_id": work_id, "genre": genre }),
+                ));
+            }
+        }
+        for (genre, ids) in current {
+            if !genres.contains(&genre) {
+                for id in ids {
+                    self.changes.push(Change::delete(Entity::WorkGenre, id));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Makes the work's tags match `names` (found or created by name): same rule as
+    /// `sync_genres` for rows kept.
+    fn sync_tags(&mut self, work_id: &str, names: &[String]) -> Result<()> {
+        let mut desired = Vec::with_capacity(names.len());
+        for name in names {
+            desired.push(self.find_or_create(Entity::Tag, name)?);
+        }
+
+        let mut current: HashMap<String, Vec<String>> = HashMap::new();
+        {
+            let mut statement = self.tx.prepare(
+                "SELECT tag_id, id FROM work_tags WHERE library_id = ?1 AND work_id = ?2",
+            )?;
+            let rows = statement.query_map([self.library, work_id], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?;
+            for row in rows {
+                let (tag_id, id) = row?;
+                current.entry(tag_id).or_default().push(id);
+            }
+        }
+        for tag_id in &desired {
+            if !current.contains_key(tag_id) {
+                self.changes.push(Change::create(
+                    Entity::WorkTag,
+                    new_id(),
+                    json!({ "work_id": work_id, "tag_id": tag_id }),
+                ));
+            }
+        }
+        for (tag_id, ids) in current {
+            if !desired.contains(&tag_id) {
+                for id in ids {
+                    self.changes.push(Change::delete(Entity::WorkTag, id));
+                }
+            }
         }
         Ok(())
     }
@@ -801,6 +909,10 @@ pub struct BookFilter {
     pub my_wished: bool,
     /// Works someone other than me wishes.
     pub others_wished: bool,
+    /// A work matches if it has any of these (ignored when empty).
+    pub genres: Vec<String>,
+    /// Tag ids; a work matches if it has any of these (ignored when empty).
+    pub tags: Vec<String>,
 }
 
 pub fn list_books(
@@ -880,6 +992,24 @@ pub fn list_books(
         );
         args.push(SqlValue::Text(device.clone()));
     }
+    if !filter.genres.is_empty() {
+        let placeholders: Vec<&str> = filter.genres.iter().map(|_| "?").collect();
+        conditions.push(format!(
+            "EXISTS (SELECT 1 FROM work_genres wg WHERE wg.library_id = e.library_id
+                       AND wg.work_id = e.work_id AND wg.genre IN ({}))",
+            placeholders.join(", ")
+        ));
+        args.extend(filter.genres.iter().map(|g| SqlValue::Text(g.clone())));
+    }
+    if !filter.tags.is_empty() {
+        let placeholders: Vec<&str> = filter.tags.iter().map(|_| "?").collect();
+        conditions.push(format!(
+            "EXISTS (SELECT 1 FROM work_tags wt WHERE wt.library_id = e.library_id
+                       AND wt.work_id = e.work_id AND wt.tag_id IN ({}))",
+            placeholders.join(", ")
+        ));
+        args.extend(filter.tags.iter().map(|t| SqlValue::Text(t.clone())));
+    }
     let where_clause = format!("WHERE {}", conditions.join(" AND "));
 
     let mut statement = conn.prepare(&format!(
@@ -897,7 +1027,11 @@ pub fn list_books(
                FROM (SELECT DISTINCT m.name FROM copies c
                        JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
                       WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
-            mk.status, mk.favorite, mk.wished, w.kind
+            mk.status, mk.favorite, mk.wished, w.kind,
+            (SELECT group_concat(name, char(31) ORDER BY name COLLATE NOCASE)
+               FROM (SELECT DISTINCT t.name AS name FROM work_tags wt
+                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                      WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id))
          FROM editions e
          JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
          LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
@@ -929,6 +1063,7 @@ pub fn list_books(
             my_favorite: row.get::<_, Option<i64>>(13)?.unwrap_or(0) != 0,
             my_wished: row.get::<_, Option<i64>>(14)?.unwrap_or(0) != 0,
             kind: row.get::<_, String>(15)?.parse().unwrap_or_default(),
+            tags: split_list(row.get(16)?),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -1032,6 +1167,8 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     platform: row.get(20)?,
                     copies: Vec::new(),
                     can_delete: false,
+                    genres: Vec::new(),
+                    tags: Vec::new(),
                 })
             },
         )
@@ -1082,6 +1219,23 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
             ops::would_allow(conn, library, vec![Change::delete(Entity::Copy, &copy.id)])?;
     }
     book.can_delete = ops::would_allow(conn, library, book_removal(conn, library, edition_id)?)?;
+
+    book.genres = conn
+        .prepare(
+            "SELECT DISTINCT genre FROM work_genres WHERE library_id = ?1 AND work_id = ?2
+              ORDER BY genre COLLATE NOCASE",
+        )?
+        .query_map([library, &book.work_id], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    book.tags = conn
+        .prepare(
+            "SELECT DISTINCT t.name FROM work_tags wt
+               JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+              WHERE wt.library_id = ?1 AND wt.work_id = ?2
+              ORDER BY t.name COLLATE NOCASE",
+        )?
+        .query_map([library, &book.work_id], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
     Ok(book)
 }
 
@@ -1112,6 +1266,86 @@ pub fn book_history(
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagSummary {
+    pub id: String,
+    pub name: String,
+    /// Distinct works this tag is linked to.
+    pub works: i64,
+}
+
+pub fn list_tags(conn: &Connection, library: &str) -> Result<Vec<TagSummary>> {
+    let mut statement = conn.prepare(
+        "SELECT t.id, t.name, (SELECT count(DISTINCT wt.work_id) FROM work_tags wt
+                                 WHERE wt.library_id = t.library_id AND wt.tag_id = t.id)
+           FROM tags t WHERE t.library_id = ?1 ORDER BY t.name COLLATE NOCASE, t.id",
+    )?;
+    let rows = statement.query_map([library], |row| {
+        Ok(TagSummary {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            works: row.get(2)?,
+        })
+    })?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
+}
+
+pub fn rename_tag(conn: &mut Connection, library: &str, id: &str, name: &str) -> Result<()> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err(Error::Validation(vec![FieldError::new(
+            "name",
+            ErrorCode::Required,
+        )]));
+    }
+    if trimmed.chars().count() > MAX_TAG_LENGTH {
+        return Err(Error::Validation(vec![FieldError::new(
+            "name",
+            ErrorCode::OutOfRange,
+        )]));
+    }
+
+    let tx = conn.transaction()?;
+    ensure_exists(&tx, library, Entity::Tag, id)?;
+    let taken: bool = tx.query_row(
+        "SELECT EXISTS (SELECT 1 FROM tags WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
+                           AND id <> ?3)",
+        [library, trimmed, id],
+        |row| row.get(0),
+    )?;
+    if taken {
+        return Err(Error::Validation(vec![FieldError::new(
+            "name",
+            ErrorCode::NameInUse,
+        )]));
+    }
+
+    let mut plan = Plan::new(&tx, library);
+    plan.update_if_changed(Entity::Tag, id, json!({ "name": trimmed }))?;
+    plan.record("tag.rename")?;
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn delete_tag(conn: &mut Connection, library: &str, id: &str) -> Result<()> {
+    let tx = conn.transaction()?;
+    ensure_exists(&tx, library, Entity::Tag, id)?;
+    let mut changes: Vec<Change> = ids(
+        &tx,
+        "SELECT id FROM work_tags WHERE library_id = ?1 AND tag_id = ?2",
+        library,
+        id,
+    )?
+    .into_iter()
+    .map(|row_id| Change::delete(Entity::WorkTag, row_id))
+    .collect();
+    changes.push(Change::delete(Entity::Tag, id));
+    ops::record(&tx, library, "tag.remove", changes)?;
+    tx.commit()?;
+    Ok(())
 }
 
 fn split_list(joined: Option<String>) -> Vec<String> {
@@ -2088,5 +2322,212 @@ mod tests {
         );
         assert_eq!(detail.players_min, Some(2));
         assert_eq!(detail.duration_minutes, Some(60));
+    }
+
+    fn with_genres_and_tags(title: &str, genres: &[&str], tags: &[&str]) -> ValidEdition {
+        EditionInput {
+            title: title.to_owned(),
+            genres: genres.iter().map(|g| g.to_string()).collect(),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap()
+    }
+
+    #[test]
+    fn genres_and_tags_are_saved_and_read_back() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: with_genres_and_tags("A", &["fantasy", "adventure"], &["favorite", "gift"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        assert_eq!(detail.genres, vec!["adventure", "fantasy"]);
+        assert_eq!(detail.tags, vec!["favorite", "gift"]);
+
+        let summary = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        assert_eq!(summary[0].tags, vec!["favorite", "gift"]);
+    }
+
+    #[test]
+    fn unknown_genre_on_create_is_rejected() {
+        let input = EditionInput {
+            title: "A".to_owned(),
+            genres: vec!["not_a_genre".into()],
+            ..EditionInput::default()
+        };
+        assert!(matches!(
+            input.validate().unwrap_err()[0].code,
+            ErrorCode::InvalidGenre
+        ));
+    }
+
+    #[test]
+    fn a_genre_of_another_kind_is_dropped_when_saved() {
+        let mut conn = db::open_in_memory().unwrap();
+        let edition = EditionInput {
+            title: "Wingspan".to_owned(),
+            kind: Kind::Boardgame,
+            // "manga" belongs to comic, not boardgame.
+            genres: vec!["manga".into(), "strategy".into()],
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap();
+        let book = ValidBook {
+            edition,
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        assert_eq!(detail.genres, vec!["strategy"]);
+    }
+
+    #[test]
+    fn updating_genres_and_tags_removes_and_adds() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: with_genres_and_tags("A", &["fantasy"], &["favorite"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        update_edition(
+            &mut conn,
+            LIB,
+            &created.edition_id,
+            &with_genres_and_tags("A", &["horror"], &["gift"]),
+            None,
+        )
+        .unwrap();
+
+        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        assert_eq!(detail.genres, vec!["horror"]);
+        assert_eq!(detail.tags, vec!["gift"]);
+    }
+
+    #[test]
+    fn the_same_tag_name_reuses_the_tag() {
+        let mut conn = db::open_in_memory().unwrap();
+        for title in ["A", "B"] {
+            let book = ValidBook {
+                edition: with_genres_and_tags(title, &[], &["Favorite"]),
+                copy: copy("Tersoal", Format::Hardcover),
+            };
+            create_book(&mut conn, LIB, &book, None).unwrap();
+        }
+        // A second spelling reuses the same row case-insensitively.
+        let book = ValidBook {
+            edition: with_genres_and_tags("C", &[], &["favorite"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let tags = list_tags(&conn, LIB).unwrap();
+        assert_eq!(tags.len(), 1);
+        assert_eq!(tags[0].name, "Favorite");
+        assert_eq!(tags[0].works, 3);
+    }
+
+    #[test]
+    fn filters_by_genre_and_by_tag() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &ValidBook {
+                edition: with_genres_and_tags("A", &["fantasy"], &["favorite"]),
+                copy: copy("Tersoal", Format::Hardcover),
+            },
+            None,
+        )
+        .unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &ValidBook {
+                edition: with_genres_and_tags("B", &["horror"], &["gift"]),
+                copy: copy("Tersoal", Format::Hardcover),
+            },
+            None,
+        )
+        .unwrap();
+
+        let titles = |filter: BookFilter| -> Vec<String> {
+            list_books(&conn, LIB, &filter)
+                .unwrap()
+                .into_iter()
+                .map(|b| b.title)
+                .collect()
+        };
+        assert_eq!(
+            titles(BookFilter {
+                genres: vec!["fantasy".into()],
+                ..Default::default()
+            }),
+            vec!["A"]
+        );
+        let gift_tag = list_tags(&conn, LIB)
+            .unwrap()
+            .into_iter()
+            .find(|t| t.name == "gift")
+            .unwrap()
+            .id;
+        assert_eq!(
+            titles(BookFilter {
+                tags: vec![gift_tag],
+                ..Default::default()
+            }),
+            vec!["B"]
+        );
+    }
+
+    #[test]
+    fn renaming_and_deleting_a_tag() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: with_genres_and_tags("A", &[], &["favorite"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let tag_id = list_tags(&conn, LIB).unwrap()[0].id.clone();
+
+        rename_tag(&mut conn, LIB, &tag_id, "  Top pick  ").unwrap();
+        assert_eq!(list_tags(&conn, LIB).unwrap()[0].name, "Top pick");
+
+        delete_tag(&mut conn, LIB, &tag_id).unwrap();
+        assert!(list_tags(&conn, LIB).unwrap().is_empty());
+        assert!(
+            get_book(&conn, LIB, &created.edition_id)
+                .unwrap()
+                .tags
+                .is_empty()
+        );
+        // The work itself stays.
+        assert_eq!(
+            get_book(&conn, LIB, &created.edition_id).unwrap().title,
+            "A"
+        );
+    }
+
+    #[test]
+    fn renaming_a_tag_to_an_existing_name_is_rejected() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: with_genres_and_tags("A", &[], &["favorite", "gift"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        create_book(&mut conn, LIB, &book, None).unwrap();
+        let tags = list_tags(&conn, LIB).unwrap();
+        let favorite = tags.iter().find(|t| t.name == "favorite").unwrap();
+
+        let error = rename_tag(&mut conn, LIB, &favorite.id, "gift").unwrap_err();
+        assert!(
+            matches!(error, Error::Validation(errors) if errors[0].code == ErrorCode::NameInUse)
+        );
     }
 }

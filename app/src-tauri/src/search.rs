@@ -84,9 +84,36 @@ pub fn affected_editions(
             library,
             id,
         )?,
+        Entity::WorkTag => {
+            let work_id = match field("work_id") {
+                Some(work_id) => Some(work_id.to_owned()),
+                None => conn
+                    .query_row(
+                        "SELECT work_id FROM work_tags WHERE library_id = ?1 AND id = ?2",
+                        [library, id],
+                        |r| r.get(0),
+                    )
+                    .optional()?,
+            };
+            match work_id {
+                Some(work_id) => editions_of_work(&work_id)?,
+                None => BTreeSet::new(),
+            }
+        }
+        // A tag rename changes the text of every work it is linked to.
+        Entity::Tag if change.action == Action::Update => query_ids(
+            conn,
+            "SELECT e.id FROM editions e
+               JOIN work_tags wt ON wt.library_id = e.library_id AND wt.work_id = e.work_id
+              WHERE e.library_id = ?1 AND wt.tag_id = ?2",
+            library,
+            id,
+        )?,
         Entity::Library
         | Entity::Person
         | Entity::Publisher
+        | Entity::Tag
+        | Entity::WorkGenre
         | Entity::Member
         | Entity::Copy
         | Entity::Wish
@@ -131,7 +158,11 @@ fn document(conn: &Connection, library: &str, edition_id: &str) -> Result<Option
                     (SELECT group_concat(pe.name, ' ')
                        FROM work_contributors wc
                        JOIN people pe ON pe.library_id = wc.library_id AND pe.id = wc.person_id
-                      WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id))
+                      WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id),
+                    (SELECT group_concat(t.name, ' ')
+                       FROM work_tags wt
+                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                      WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id))
                FROM editions e
                JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
                LEFT JOIN publishers p ON p.library_id = e.library_id AND p.id = e.publisher_id

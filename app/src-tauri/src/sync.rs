@@ -20,14 +20,17 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 19] = [
+pub const ORDER: [Entity; 22] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
+    Entity::Tag,
     Entity::Person,
     Entity::Member,
     Entity::Work,
     Entity::WorkContributor,
+    Entity::WorkTag,
+    Entity::WorkGenre,
     Entity::Edition,
     Entity::BookDetails,
     Entity::ComicDetails,
@@ -1801,5 +1804,86 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn add_genre(conn: &mut Connection, work_id: &str, genre: &str) {
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "work.genre_add",
+            vec![Change::create(
+                Entity::WorkGenre,
+                ops::new_id(),
+                json!({ "work_id": work_id, "genre": genre }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+    }
+
+    fn remove_genre(conn: &mut Connection, work_id: &str, genre: &str) {
+        let tx = conn.transaction().unwrap();
+        let rows: Vec<String> = tx
+            .prepare(
+                "SELECT id FROM work_genres WHERE library_id = ?1 AND work_id = ?2 AND genre = ?3",
+            )
+            .unwrap()
+            .query_map(params![LIB, work_id, genre], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        let changes = rows
+            .into_iter()
+            .map(|id| Change::delete(Entity::WorkGenre, id))
+            .collect();
+        ops::record(&tx, LIB, "work.genre_remove", changes).unwrap();
+        tx.commit().unwrap();
+    }
+
+    fn genres_of_work(conn: &Connection, work_id: &str) -> Vec<String> {
+        conn.prepare(
+            "SELECT DISTINCT genre FROM work_genres WHERE library_id = ?1 AND work_id = ?2",
+        )
+        .unwrap()
+        .query_map(params![LIB, work_id], |row| row.get(0))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap()
+    }
+
+    /// Two devices add the same genre to the same work offline: no unique constraint
+    /// means both rows arrive, but readers deduplicate, so it converges as one genre;
+    /// removing it then removes every row of the pair, on both devices.
+    #[test]
+    fn duplicate_genre_added_offline_converges() {
+        let mut laptop = Device::new();
+        let mut phone = Device::new();
+        let edition_id = laptop.add("Dune", None, "Ana");
+        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+            .unwrap()
+            .work_id;
+        phone.pull_from(&laptop);
+
+        add_genre(&mut laptop.0, &work_id, "science_fiction");
+        add_genre(&mut phone.0, &work_id, "science_fiction");
+        laptop.sync_with(&mut phone);
+
+        assert_eq!(
+            genres_of_work(&laptop.0, &work_id),
+            vec!["science_fiction".to_owned()]
+        );
+        assert_eq!(
+            genres_of_work(&phone.0, &work_id),
+            vec!["science_fiction".to_owned()]
+        );
+        assert_converged(&[&laptop, &phone]);
+
+        remove_genre(&mut laptop.0, &work_id, "science_fiction");
+        laptop.sync_with(&mut phone);
+
+        assert!(genres_of_work(&laptop.0, &work_id).is_empty());
+        assert!(genres_of_work(&phone.0, &work_id).is_empty());
+        assert_converged(&[&laptop, &phone]);
     }
 }

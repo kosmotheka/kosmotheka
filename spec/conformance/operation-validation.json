@@ -1811,5 +1811,110 @@
     "expect": {
       "result": "valid"
     }
+  },
+  {
+    "name": "a tag linked to a work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000400",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "tag.add",
+      "changes": [
+        {
+          "entity": "tag",
+          "id": "01997c7e-0000-7000-8000-000000000401",
+          "action": "create",
+          "fields": {
+            "name": "Favorites"
+          }
+        },
+        {
+          "entity": "work_tag",
+          "id": "01997c7e-0000-7000-8000-000000000402",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "tag_id": "01997c7e-0000-7000-8000-000000000401"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a genre on a work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000403",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "genre.add",
+      "changes": [
+        {
+          "entity": "work_genre",
+          "id": "01997c7e-0000-7000-8000-000000000404",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "genre": "fantasy"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a genre that does not exist",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000405",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "genre.add",
+      "changes": [
+        {
+          "entity": "work_genre",
+          "id": "01997c7e-0000-7000-8000-000000000406",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011",
+            "genre": "steampunk"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "genre"
+    }
+  },
+  {
+    "name": "a work tag without its tag",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000407",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "tag.add",
+      "changes": [
+        {
+          "entity": "work_tag",
+          "id": "01997c7e-0000-7000-8000-000000000408",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000011"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "missing_field",
+      "change": 0,
+      "field": "tag_id"
+    }
   }
 ]
