@@ -95,6 +95,7 @@ enum CatalogEntity: string
                 'published_year' => $integer(),
                 'language' => $text(),
                 'cover' => $text(),
+                'barcode' => $text(),
             ],
             self::BookDetails => [
                 'isbn13' => $text(),

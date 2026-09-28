@@ -1390,7 +1390,8 @@
           "action": "create",
           "fields": {
             "work_id": "01997c7e-0000-7000-8000-000000000151",
-            "title": "Catan"
+            "title": "Catan",
+            "barcode": "0029877030712"
           }
         },
         {

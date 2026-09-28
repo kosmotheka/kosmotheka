@@ -349,6 +349,10 @@
                       "null"
                     ],
                     "pattern": "^[0-9a-f]{64}\\.(jpg|png|webp|gif)$"
+                  },
+                  "barcode": {
+                    "description": "EAN or UPC printed on the edition, for what has no ISBN.",
+                    "$ref": "#/$defs/text"
                   }
                 }
               }
