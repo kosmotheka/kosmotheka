@@ -49,6 +49,7 @@ const book = (
 ): BookSummary => ({
   libraryId: HOME,
   editionId: `01997c7e-0000-7000-8000-${String(n).padStart(12, "0")}`,
+  kind: "book",
   title,
   subtitle: null,
   authors,
@@ -70,13 +71,36 @@ const books: BookSummary[] = [
   book(3, "Fundación", ["Isaac Asimov"], 1951, ["pocket"], ["Tersoal"]),
   book(4, "La mano izquierda de la oscuridad", ["Ursula K. Le Guin"], 1969, ["ebook"], ["Laura"]),
   book(5, "El nombre del viento", ["Patrick Rothfuss"], 2007, ["hardcover"], ["Tersoal"]),
-  book(6, "Crónicas de la Dragonlance", ["Margaret Weis", "Tracy Hickman"], 1987, ["paperback"], ["Hugo"]),
+  book(
+    6,
+    "Crónicas de la Dragonlance",
+    ["Margaret Weis", "Tracy Hickman"],
+    1987,
+    ["paperback"],
+    ["Hugo"],
+  ),
   book(7, "Vampiro: la mascarada", ["Mark Rein-Hagen"], 1991, ["hardcover", "other"], ["Tersoal"]),
 ];
 
 const wishes: Wish[] = [
-  { id: "w1", title: "Hijos de Dune", author: "Frank Herbert", isbn13: null, note: null, coverUrl: null, createdAt: "2026-09-20T10:00:00Z" },
-  { id: "w2", title: "Wingspan", author: null, isbn13: null, note: "La pide Laura", coverUrl: null, createdAt: "2026-09-21T10:00:00Z" },
+  {
+    id: "w1",
+    title: "Hijos de Dune",
+    author: "Frank Herbert",
+    isbn13: null,
+    note: null,
+    coverUrl: null,
+    createdAt: "2026-09-20T10:00:00Z",
+  },
+  {
+    id: "w2",
+    title: "Wingspan",
+    author: null,
+    isbn13: null,
+    note: "La pide Laura",
+    coverUrl: null,
+    createdAt: "2026-09-21T10:00:00Z",
+  },
 ];
 
 const lan: LanStatus = {
@@ -86,8 +110,18 @@ const lan: LanStatus = {
   addresses: [],
   pairingOpen: false,
   servers: [
-    { deviceId: "phone", name: "Móvil de Laura", pairedAt: "2026-09-24T10:00:00Z", lastSyncAt: new Date(Date.now() - 2 * 60000).toISOString() },
-    { deviceId: "tablet", name: "Tablet Lenovo", pairedAt: "2026-09-24T10:00:00Z", lastSyncAt: null },
+    {
+      deviceId: "phone",
+      name: "Móvil de Laura",
+      pairedAt: "2026-09-24T10:00:00Z",
+      lastSyncAt: new Date(Date.now() - 2 * 60000).toISOString(),
+    },
+    {
+      deviceId: "tablet",
+      name: "Tablet Lenovo",
+      pairedAt: "2026-09-24T10:00:00Z",
+      lastSyncAt: null,
+    },
   ],
   clients: [],
 };
@@ -100,15 +134,43 @@ const people: People = {
   myRole: params.has("reader") ? "reader" : "admin",
   loneAdmin: true,
   people: [
-    { id: "ana", name: "Ana", role: "admin", canShare: true, devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")], elsewhere: ["Club de rol"] },
-    { id: "laura", name: "Laura", role: "editor", canShare: true, devices: [dev("phone", "Móvil de Laura")], elsewhere: [] },
-    { id: "hugo", name: "Hugo", role: "reader", canShare: false, devices: [dev("hugo-phone", "Móvil de Hugo", params.has("reader")), dev("tablet", "Tablet Lenovo")], elsewhere: ["Club de rol"] },
+    {
+      id: "ana",
+      name: "Ana",
+      role: "admin",
+      canShare: true,
+      devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
+      elsewhere: ["Club de rol"],
+    },
+    {
+      id: "laura",
+      name: "Laura",
+      role: "editor",
+      canShare: true,
+      devices: [dev("phone", "Móvil de Laura")],
+      elsewhere: [],
+    },
+    {
+      id: "hugo",
+      name: "Hugo",
+      role: "reader",
+      canShare: false,
+      devices: [
+        dev("hugo-phone", "Móvil de Hugo", params.has("reader")),
+        dev("tablet", "Tablet Lenovo"),
+      ],
+      elsewhere: ["Club de rol"],
+    },
   ],
   unassigned: [dev("kitchen", "Tablet de la cocina")],
 };
 if (params.has("noroles")) {
   people.people = people.people.map((p) => ({ ...p, role: null, devices: [] }));
-  people.unassigned = [dev("dev", "Portátil", true), dev("phone", "Móvil de Laura"), dev("tablet", "Tablet Lenovo")];
+  people.unassigned = [
+    dev("dev", "Portátil", true),
+    dev("phone", "Móvil de Laura"),
+    dev("tablet", "Tablet Lenovo"),
+  ];
 }
 
 // `?stale` makes Hugo's request no longer applicable; `?elsewhere` has Laura
@@ -223,8 +285,22 @@ const requests: ChangeRequest[] = [
 let claimed = !params.has("who") && !params.has("locked");
 const myMarks = new Map<string, Mark>();
 const othersMarks: PersonMark[] = [
-  { person: "Laura", status: "finished", statusOn: "2026-03-18", rating: 5, favorite: true, wished: false },
-  { person: "Hugo", status: "in_progress", statusOn: "2026-09-02", rating: null, favorite: false, wished: false },
+  {
+    person: "Laura",
+    status: "finished",
+    statusOn: "2026-03-18",
+    rating: 5,
+    favorite: true,
+    wished: false,
+  },
+  {
+    person: "Hugo",
+    status: "in_progress",
+    statusOn: "2026-09-02",
+    rating: null,
+    favorite: false,
+    wished: false,
+  },
 ];
 
 mockIPC((cmd, args) => {
@@ -243,8 +319,8 @@ mockIPC((cmd, args) => {
         })
         .filter(
           (b) =>
-            (!filter.myStatuses?.length ||
-              filter.myStatuses.includes(b.myStatus ?? "none")) &&
+            (!filter.kind || b.kind === filter.kind) &&
+            (!filter.myStatuses?.length || filter.myStatuses.includes(b.myStatus ?? "none")) &&
             (!filter.myFavorites || b.myFavorite) &&
             (!filter.myWished || b.myWished),
         );
@@ -263,7 +339,12 @@ mockIPC((cmd, args) => {
     case "list_wishes":
       return wishes;
     case "catalog_options":
-      return { authors: [], publishers: [], owners: ["Tersoal", "Laura", "Hugo"], locations: ["Salón", "Estudio"] };
+      return {
+        authors: [],
+        publishers: [],
+        owners: ["Tersoal", "Laura", "Hugo"],
+        locations: ["Salón", "Estudio"],
+      };
     case "lan_status":
       return lan;
     case "pair_with":
@@ -272,9 +353,21 @@ mockIPC((cmd, args) => {
       return {
         libraries: [HOME, CLUB],
         people: [
-          { id: "ana", name: "Ana", me: true, roles: { [HOME]: "admin", [CLUB]: "admin" }, devices: 2 },
+          {
+            id: "ana",
+            name: "Ana",
+            me: true,
+            roles: { [HOME]: "admin", [CLUB]: "admin" },
+            devices: 2,
+          },
           { id: "laura", name: "Laura", me: false, roles: { [HOME]: "editor" }, devices: 1 },
-          { id: "hugo", name: "Hugo", me: false, roles: { [HOME]: "reader", [CLUB]: "reader" }, devices: 2 },
+          {
+            id: "hugo",
+            name: "Hugo",
+            me: false,
+            roles: { [HOME]: "reader", [CLUB]: "reader" },
+            devices: 2,
+          },
         ],
       };
     case "give_access":
@@ -283,7 +376,12 @@ mockIPC((cmd, args) => {
       if ((args as { deviceId: string }).deviceId === "tablet") {
         throw { kind: "sync", reason: "other_version" };
       }
-      return { received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 }, sent: 0, takenUp: false, removed: [] };
+      return {
+        received: { received: 0, known: 0, rejected: 0, skippedChanges: 0 },
+        sent: 0,
+        takenUp: false,
+        removed: [],
+      };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
     // Any ISBN starting with 97884 is "not owned"; lookups always fail, as if offline.
@@ -326,6 +424,15 @@ mockIPC((cmd, args) => {
         language: "es",
         googleBooksId: "abc",
         openLibraryId: null,
+        barcode: null,
+        contributors: [],
+        number: null,
+        playersMin: null,
+        playersMax: null,
+        durationMinutes: null,
+        minAge: null,
+        seasons: null,
+        platform: null,
         copies: found.formats.map((format, i) => ({
           id: `copy-${i}`,
           owner: found.owners[i] ?? found.owners[0] ?? null,

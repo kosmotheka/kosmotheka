@@ -13,8 +13,9 @@ pub mod signature;
 pub mod wish;
 
 pub use book::{
-    COVER_HOSTS, CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook, ValidBook,
-    ValidCopy, ValidEdition, parse_cover_url,
+    COVER_HOSTS, ContributorInput, ContributorRole, CopyInput, EditionInput, ErrorCode, FieldError,
+    Format, Kind, KindDetails, NewBook, ValidBook, ValidContributor, ValidCopy, ValidEdition,
+    parse_cover_url,
 };
 pub use hlc::{Hlc, HlcClock};
 pub use isbn::{Isbn, IsbnError};

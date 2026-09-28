@@ -3,15 +3,36 @@ import { join } from "@tauri-apps/api/path";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
 
-export const formats = [
-  "hardcover",
-  "paperback",
-  "pocket",
-  "ebook",
-  "audiobook",
+export const formats = ["hardcover", "paperback", "pocket", "ebook", "audiobook", "other"] as const;
+export type Format = (typeof formats)[number];
+
+export const kinds = [
+  "book",
+  "comic",
+  "boardgame",
+  "film",
+  "tv_series",
+  "videogame",
+  "music",
   "other",
 ] as const;
-export type Format = (typeof formats)[number];
+export type Kind = (typeof kinds)[number];
+
+export const contributorRoles = [
+  "author",
+  "writer",
+  "illustrator",
+  "designer",
+  "director",
+  "artist",
+  "studio",
+] as const;
+export type ContributorRole = (typeof contributorRoles)[number];
+
+export interface ContributorInput {
+  name: string;
+  role: ContributorRole;
+}
 
 export interface EditionInput {
   title: string;
@@ -25,6 +46,18 @@ export interface EditionInput {
   coverUrl: string | null;
   googleBooksId: string | null;
   openLibraryId: string | null;
+  kind?: Kind;
+  /** Contributors in any role other than the book's authors (`authors` means `author`). */
+  contributors?: ContributorInput[];
+  /** EAN/UPC, for what has no ISBN. */
+  barcode?: string | null;
+  number?: string | null;
+  playersMin?: number | null;
+  playersMax?: number | null;
+  durationMinutes?: number | null;
+  minAge?: number | null;
+  seasons?: number | null;
+  platform?: string | null;
 }
 
 export interface CopyInput {
@@ -50,6 +83,7 @@ export interface BookSummary {
   editionId: string;
   /** The library the book is in; searches across libraries mix them. */
   libraryId: string;
+  kind: Kind;
   title: string;
   subtitle: string | null;
   authors: string[];
@@ -76,7 +110,9 @@ export type FieldErrorCode =
   | "isbn_in_use"
   | "invalid_cover_url"
   | "invalid_format"
-  | "name_in_use";
+  | "name_in_use"
+  | "invalid_barcode"
+  | "barcode_in_use";
 
 export interface FieldError {
   field: string;
@@ -100,6 +136,7 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
 
 export interface BookFilter {
   query?: string;
+  kind?: Kind;
   format?: Format;
   /** Owner name; matches duplicates created on other devices too. */
   owner?: string;
@@ -151,12 +188,20 @@ export interface CopyDetail {
   canDelete: boolean;
 }
 
+export interface ContributorDetail {
+  name: string;
+  role: ContributorRole;
+}
+
 export interface BookDetail {
   editionId: string;
   workId: string;
+  kind: Kind;
   title: string;
   subtitle: string | null;
   authors: string[];
+  /** Every role but author, ordered by role then position. */
+  contributors: ContributorDetail[];
   publisher: string | null;
   publishedYear: number | null;
   language: string | null;
@@ -164,6 +209,15 @@ export interface BookDetail {
   cover: string | null;
   googleBooksId: string | null;
   openLibraryId: string | null;
+  barcode: string | null;
+  number: string | null;
+  playersMin: number | null;
+  playersMax: number | null;
+  /** Boardgame or film, whichever the edition's kind is; never both at once. */
+  durationMinutes: number | null;
+  minAge: number | null;
+  seasons: number | null;
+  platform: string | null;
   copies: CopyDetail[];
   /** This device may delete the whole book; otherwise it can only ask. */
   canDelete: boolean;
@@ -261,10 +315,8 @@ export async function coverSrc(file: string): Promise<string> {
 }
 
 export const externalLinks = {
-  googleBooks: (id: string) =>
-    `https://books.google.com/books?id=${encodeURIComponent(id)}`,
-  openLibrary: (id: string) =>
-    `https://openlibrary.org/books/${encodeURIComponent(id)}`,
+  googleBooks: (id: string) => `https://books.google.com/books?id=${encodeURIComponent(id)}`,
+  openLibrary: (id: string) => `https://openlibrary.org/books/${encodeURIComponent(id)}`,
 };
 
 export interface BackupSummary {

@@ -70,7 +70,9 @@
     "internal": "Algo ha fallado: {{message}}",
     "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN.",
     "invalid_cover_url": "Esta dirección de portada no está permitida.",
-    "invalid_format": "Formato desconocido. Usa hardcover, paperback, pocket, ebook, audiobook u other."
+    "invalid_format": "Formato desconocido. Usa hardcover, paperback, pocket, ebook, audiobook u other.",
+    "invalid_barcode": "El código de barras no es válido.",
+    "barcode_in_use": "Ya hay otra edición con este código de barras."
   },
   "history": {
     "title": "Historial",

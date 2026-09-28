@@ -280,7 +280,7 @@ impl Entity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::book::Format;
+    use crate::book::{ContributorRole, Format, Kind};
 
     #[test]
     fn copy_formats_match_the_format_enum() {
@@ -293,5 +293,20 @@ mod tests {
         };
         let enum_names: Vec<&str> = Format::ALL.into_iter().map(Format::as_str).collect();
         assert_eq!(*names, enum_names.as_slice());
+    }
+
+    #[test]
+    fn kinds_match_the_kind_enum() {
+        let enum_names: Vec<&str> = Kind::ALL.into_iter().map(Kind::as_str).collect();
+        assert_eq!(KINDS, enum_names.as_slice());
+    }
+
+    #[test]
+    fn contributor_roles_match_the_contributor_role_enum() {
+        let enum_names: Vec<&str> = ContributorRole::ALL
+            .into_iter()
+            .map(ContributorRole::as_str)
+            .collect();
+        assert_eq!(CONTRIBUTOR_ROLES, enum_names.as_slice());
     }
 }

@@ -2,9 +2,11 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use url::Url;
 
 use crate::isbn::{Isbn, IsbnError};
+use crate::schema::Entity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -83,6 +85,184 @@ impl FromStr for Format {
     }
 }
 
+/// What a work is (D60). Each kind has its own details and formats in the UI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Kind {
+    #[default]
+    Book,
+    Comic,
+    Boardgame,
+    Film,
+    TvSeries,
+    Videogame,
+    Music,
+    Other,
+}
+
+impl Kind {
+    pub const ALL: [Kind; 8] = [
+        Kind::Book,
+        Kind::Comic,
+        Kind::Boardgame,
+        Kind::Film,
+        Kind::TvSeries,
+        Kind::Videogame,
+        Kind::Music,
+        Kind::Other,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Kind::Book => "book",
+            Kind::Comic => "comic",
+            Kind::Boardgame => "boardgame",
+            Kind::Film => "film",
+            Kind::TvSeries => "tv_series",
+            Kind::Videogame => "videogame",
+            Kind::Music => "music",
+            Kind::Other => "other",
+        }
+    }
+}
+
+impl FromStr for Kind {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Kind::ALL
+            .into_iter()
+            .find(|kind| kind.as_str() == s)
+            .ok_or(())
+    }
+}
+
+/// What someone did for a work: writing, drawing, designing, directing, performing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContributorRole {
+    Author,
+    Writer,
+    Illustrator,
+    Designer,
+    Director,
+    Artist,
+    Studio,
+}
+
+impl ContributorRole {
+    pub const ALL: [ContributorRole; 7] = [
+        ContributorRole::Author,
+        ContributorRole::Writer,
+        ContributorRole::Illustrator,
+        ContributorRole::Designer,
+        ContributorRole::Director,
+        ContributorRole::Artist,
+        ContributorRole::Studio,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ContributorRole::Author => "author",
+            ContributorRole::Writer => "writer",
+            ContributorRole::Illustrator => "illustrator",
+            ContributorRole::Designer => "designer",
+            ContributorRole::Director => "director",
+            ContributorRole::Artist => "artist",
+            ContributorRole::Studio => "studio",
+        }
+    }
+}
+
+impl FromStr for ContributorRole {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ContributorRole::ALL
+            .into_iter()
+            .find(|role| role.as_str() == s)
+            .ok_or(())
+    }
+}
+
+/// A contributor as entered by the user, before validation.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContributorInput {
+    pub name: String,
+    pub role: ContributorRole,
+}
+
+/// A contributor that passed validation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ValidContributor {
+    pub name: String,
+    pub role: ContributorRole,
+}
+
+/// The data specific to one kind, one per kind that has any (D08).
+#[derive(Debug, Clone, PartialEq)]
+pub enum KindDetails {
+    /// Book (its data stays in isbn/google_books_id/open_library_id), music, other.
+    None,
+    Comic {
+        number: Option<String>,
+    },
+    Boardgame {
+        players_min: Option<i64>,
+        players_max: Option<i64>,
+        duration_minutes: Option<i64>,
+        min_age: Option<i64>,
+    },
+    Film {
+        duration_minutes: Option<i64>,
+    },
+    TvSeries {
+        seasons: Option<i64>,
+    },
+    Videogame {
+        platform: Option<String>,
+    },
+}
+
+impl KindDetails {
+    /// The details table this data belongs to, if any.
+    pub fn entity(&self) -> Option<Entity> {
+        match self {
+            KindDetails::None => None,
+            KindDetails::Comic { .. } => Some(Entity::ComicDetails),
+            KindDetails::Boardgame { .. } => Some(Entity::BoardgameDetails),
+            KindDetails::Film { .. } => Some(Entity::FilmDetails),
+            KindDetails::TvSeries { .. } => Some(Entity::TvSeriesDetails),
+            KindDetails::Videogame { .. } => Some(Entity::VideogameDetails),
+        }
+    }
+
+    /// The fields of the operation that creates or updates this details row.
+    pub fn fields(&self) -> serde_json::Value {
+        match self {
+            KindDetails::None => json!({}),
+            KindDetails::Comic { number } => json!({ "number": number }),
+            KindDetails::Boardgame {
+                players_min,
+                players_max,
+                duration_minutes,
+                min_age,
+            } => json!({
+                "players_min": players_min,
+                "players_max": players_max,
+                "duration_minutes": duration_minutes,
+                "min_age": min_age,
+            }),
+            KindDetails::Film { duration_minutes } => {
+                json!({ "duration_minutes": duration_minutes })
+            }
+            KindDetails::TvSeries { seasons } => json!({ "seasons": seasons }),
+            KindDetails::Videogame { platform } => json!({ "platform": platform }),
+        }
+    }
+}
+
 /// Edition data as entered by the user, before validation. Used to add and to edit.
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -107,6 +287,28 @@ pub struct EditionInput {
     pub google_books_id: Option<String>,
     #[serde(default)]
     pub open_library_id: Option<String>,
+    #[serde(default)]
+    pub kind: Kind,
+    /// Contributors in any role other than the book's authors (`authors` means `author`).
+    #[serde(default)]
+    pub contributors: Vec<ContributorInput>,
+    /// EAN/UPC, for what has no ISBN.
+    #[serde(default)]
+    pub barcode: Option<String>,
+    #[serde(default)]
+    pub number: Option<String>,
+    #[serde(default)]
+    pub players_min: Option<i64>,
+    #[serde(default)]
+    pub players_max: Option<i64>,
+    #[serde(default)]
+    pub duration_minutes: Option<i64>,
+    #[serde(default)]
+    pub min_age: Option<i64>,
+    #[serde(default)]
+    pub seasons: Option<i64>,
+    #[serde(default)]
+    pub platform: Option<String>,
 }
 
 /// A copy as entered by the user, before validation. Used to add and to edit.
@@ -150,6 +352,11 @@ pub struct ValidEdition {
     pub cover_url: Option<Url>,
     pub google_books_id: Option<String>,
     pub open_library_id: Option<String>,
+    pub kind: Kind,
+    /// Contributors other than the authors, deduplicated case-insensitively per role.
+    pub contributors: Vec<ValidContributor>,
+    pub barcode: Option<String>,
+    pub details: KindDetails,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -185,6 +392,10 @@ pub enum ErrorCode {
     InvalidFormat,
     /// Another library on this device already has this name.
     NameInUse,
+    /// Not 8, 12, 13 or 14 digits with a valid GS1 check digit.
+    InvalidBarcode,
+    /// Another edition already has this barcode.
+    BarcodeInUse,
 }
 
 impl From<IsbnError> for ErrorCode {
@@ -251,7 +462,15 @@ impl EditionInput {
             errors.push(FieldError::new("publishedYear", ErrorCode::OutOfRange));
         }
 
-        let isbn = match clean(self.isbn) {
+        // ISBN and the external ids only belong to books; other kinds drop them silently.
+        let kind = self.kind;
+        let (isbn_raw, google_books_id_raw, open_library_id_raw) = if kind == Kind::Book {
+            (self.isbn, self.google_books_id, self.open_library_id)
+        } else {
+            (None, None, None)
+        };
+
+        let isbn = match clean(isbn_raw) {
             Some(raw) => match Isbn::parse(&raw) {
                 Ok(isbn) => Some(isbn),
                 Err(error) => {
@@ -273,24 +492,150 @@ impl EditionInput {
             None => None,
         };
 
+        let barcode = match clean(self.barcode) {
+            Some(raw) => match parse_barcode(&raw) {
+                Some(barcode) => Some(barcode),
+                None => {
+                    errors.push(FieldError::new("barcode", ErrorCode::InvalidBarcode));
+                    None
+                }
+            },
+            None => None,
+        };
+
+        let details = match kind {
+            Kind::Book | Kind::Music | Kind::Other => KindDetails::None,
+            Kind::Comic => KindDetails::Comic {
+                number: clean(self.number),
+            },
+            Kind::Boardgame => {
+                let players_min = self.players_min;
+                let players_max = self.players_max;
+                if players_min.is_some_and(|v| !(1..=99).contains(&v)) {
+                    errors.push(FieldError::new("playersMin", ErrorCode::OutOfRange));
+                }
+                if players_max.is_some_and(|v| !(1..=99).contains(&v)) {
+                    errors.push(FieldError::new("playersMax", ErrorCode::OutOfRange));
+                }
+                if let (Some(min), Some(max)) = (players_min, players_max)
+                    && min > max
+                {
+                    errors.push(FieldError::new("playersMax", ErrorCode::OutOfRange));
+                }
+                let duration_minutes = self.duration_minutes;
+                if duration_minutes.is_some_and(|v| !(1..=10000).contains(&v)) {
+                    errors.push(FieldError::new("durationMinutes", ErrorCode::OutOfRange));
+                }
+                let min_age = self.min_age;
+                if min_age.is_some_and(|v| !(0..=99).contains(&v)) {
+                    errors.push(FieldError::new("minAge", ErrorCode::OutOfRange));
+                }
+                KindDetails::Boardgame {
+                    players_min,
+                    players_max,
+                    duration_minutes,
+                    min_age,
+                }
+            }
+            Kind::Film => {
+                let duration_minutes = self.duration_minutes;
+                if duration_minutes.is_some_and(|v| !(1..=10000).contains(&v)) {
+                    errors.push(FieldError::new("durationMinutes", ErrorCode::OutOfRange));
+                }
+                KindDetails::Film { duration_minutes }
+            }
+            Kind::TvSeries => {
+                let seasons = self.seasons;
+                if seasons.is_some_and(|v| !(1..=999).contains(&v)) {
+                    errors.push(FieldError::new("seasons", ErrorCode::OutOfRange));
+                }
+                KindDetails::TvSeries { seasons }
+            }
+            Kind::Videogame => KindDetails::Videogame {
+                platform: clean(self.platform),
+            },
+        };
+
+        // Contributors other than authors, grouped and deduplicated per role, in
+        // `ContributorRole::ALL` order so a form and `BookDetail` agree on it.
+        let mut by_role: Vec<(ContributorRole, Vec<String>)> = ContributorRole::ALL
+            .into_iter()
+            .filter(|role| *role != ContributorRole::Author)
+            .map(|role| (role, Vec::new()))
+            .collect();
+        // Authors sent through `contributors` (tomorrow's UI) join `authors` (today's),
+        // rather than being dropped: the same person, just two paths to the same field.
+        let mut extra_authors: Vec<String> = Vec::new();
+        for contributor in self.contributors {
+            if contributor.role == ContributorRole::Author {
+                extra_authors.push(contributor.name);
+                continue;
+            }
+            if let (Some(name), Some(entry)) = (
+                clean(Some(contributor.name)),
+                by_role
+                    .iter_mut()
+                    .find(|(role, _)| *role == contributor.role),
+            ) {
+                entry.1.push(name);
+            }
+        }
+        let contributors: Vec<ValidContributor> = by_role
+            .into_iter()
+            .flat_map(|(role, names)| {
+                dedupe_ignoring_case(names.into_iter())
+                    .into_iter()
+                    .map(move |name| ValidContributor { name, role })
+            })
+            .collect();
+
         match title {
             Some(title) if errors.is_empty() => Ok(ValidEdition {
                 title,
                 subtitle: clean(self.subtitle),
                 authors: dedupe_ignoring_case(
-                    self.authors.into_iter().filter_map(|a| clean(Some(a))),
+                    self.authors
+                        .into_iter()
+                        .chain(extra_authors)
+                        .filter_map(|a| clean(Some(a))),
                 ),
                 publisher: clean(self.publisher),
                 published_year,
                 language: clean(self.language),
                 isbn,
                 cover_url,
-                google_books_id: clean(self.google_books_id),
-                open_library_id: clean(self.open_library_id),
+                google_books_id: clean(google_books_id_raw),
+                open_library_id: clean(open_library_id_raw),
+                kind,
+                contributors,
+                barcode,
+                details,
             }),
             _ => Err(errors),
         }
     }
+}
+
+/// Trims separators and checks length and GS1 check digit (mod 10, weights 3 and 1
+/// from the right, excluding the check digit itself). `None` when invalid.
+fn parse_barcode(raw: &str) -> Option<String> {
+    let cleaned: String = raw.chars().filter(|c| !matches!(c, '-' | ' ')).collect();
+    if !matches!(cleaned.len(), 8 | 12 | 13 | 14) {
+        return None;
+    }
+    let digits: Vec<u32> = cleaned
+        .chars()
+        .map(|c| c.to_digit(10))
+        .collect::<Option<_>>()?;
+    let (body, check) = digits.split_at(digits.len() - 1);
+    let sum: u32 = body
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(i, d)| if i % 2 == 0 { d * 3 } else { *d })
+        .sum();
+    let expected = (10 - sum % 10) % 10;
+    (expected == check[0]).then_some(cleaned)
 }
 
 impl CopyInput {
@@ -505,5 +850,187 @@ mod tests {
         for format in Format::ALL {
             assert_eq!(format.as_str().parse(), Ok(format));
         }
+    }
+
+    #[test]
+    fn kind_round_trips_through_its_database_name() {
+        for kind in Kind::ALL {
+            assert_eq!(kind.as_str().parse(), Ok(kind));
+        }
+    }
+
+    #[test]
+    fn contributor_role_round_trips_through_its_database_name() {
+        for role in ContributorRole::ALL {
+            assert_eq!(role.as_str().parse(), Ok(role));
+        }
+    }
+
+    #[test]
+    fn authors_sent_as_contributors_join_the_author_list() {
+        let mut book = minimal("A");
+        book.edition.authors = vec!["A".into()];
+        book.edition.contributors = vec![
+            ContributorInput {
+                name: "B".into(),
+                role: ContributorRole::Author,
+            },
+            ContributorInput {
+                name: "a".into(),
+                role: ContributorRole::Author,
+            },
+            ContributorInput {
+                name: "C".into(),
+                role: ContributorRole::Writer,
+            },
+        ];
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(valid.authors, vec!["A", "B"]);
+        assert_eq!(
+            valid.contributors,
+            vec![ValidContributor {
+                name: "C".into(),
+                role: ContributorRole::Writer,
+            }]
+        );
+    }
+
+    #[test]
+    fn a_boardgame_keeps_its_own_details() {
+        let mut book = minimal("Wingspan");
+        book.edition.kind = Kind::Boardgame;
+        book.edition.players_min = Some(1);
+        book.edition.players_max = Some(5);
+        book.edition.duration_minutes = Some(70);
+        book.edition.min_age = Some(10);
+        book.edition.contributors = vec![ContributorInput {
+            name: "Elizabeth Hargrave".into(),
+            role: ContributorRole::Designer,
+        }];
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(valid.kind, Kind::Boardgame);
+        assert_eq!(
+            valid.details,
+            KindDetails::Boardgame {
+                players_min: Some(1),
+                players_max: Some(5),
+                duration_minutes: Some(70),
+                min_age: Some(10),
+            }
+        );
+        assert_eq!(
+            valid.contributors,
+            vec![ValidContributor {
+                name: "Elizabeth Hargrave".into(),
+                role: ContributorRole::Designer,
+            }]
+        );
+    }
+
+    #[test]
+    fn details_of_another_kind_are_dropped() {
+        let mut book = minimal("Wingspan");
+        book.edition.kind = Kind::Boardgame;
+        book.edition.seasons = Some(3);
+        book.edition.platform = Some("PC".into());
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(
+            valid.details,
+            KindDetails::Boardgame {
+                players_min: None,
+                players_max: None,
+                duration_minutes: None,
+                min_age: None,
+            }
+        );
+    }
+
+    #[test]
+    fn isbn_is_dropped_for_a_film() {
+        let mut book = minimal("Dune");
+        book.edition.kind = Kind::Film;
+        book.edition.isbn = Some("978-0-306-40615-7".into());
+        book.edition.google_books_id = Some("abc".into());
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(valid.isbn, None);
+        assert_eq!(valid.google_books_id, None);
+    }
+
+    #[test]
+    fn a_valid_and_an_invalid_barcode() {
+        let mut book = minimal("A");
+        book.edition.barcode = Some("4006381333931".into());
+        assert_eq!(
+            book.validate().unwrap().edition.barcode.as_deref(),
+            Some("4006381333931")
+        );
+
+        let mut book = minimal("A");
+        book.edition.barcode = Some("4006381333932".into());
+        assert_eq!(
+            book.validate().unwrap_err(),
+            vec![FieldError::new("barcode", ErrorCode::InvalidBarcode)]
+        );
+    }
+
+    #[test]
+    fn players_min_over_max_is_out_of_range() {
+        let mut book = minimal("A");
+        book.edition.kind = Kind::Boardgame;
+        book.edition.players_min = Some(5);
+        book.edition.players_max = Some(2);
+
+        assert_eq!(
+            book.validate().unwrap_err(),
+            vec![FieldError::new("playersMax", ErrorCode::OutOfRange)]
+        );
+    }
+
+    #[test]
+    fn empty_contributor_names_are_dropped_and_duplicates_removed_per_role() {
+        let mut book = minimal("A");
+        book.edition.kind = Kind::Boardgame;
+        book.edition.contributors = vec![
+            ContributorInput {
+                name: "  ".into(),
+                role: ContributorRole::Designer,
+            },
+            ContributorInput {
+                name: "Ana".into(),
+                role: ContributorRole::Designer,
+            },
+            ContributorInput {
+                name: "ana".into(),
+                role: ContributorRole::Designer,
+            },
+            ContributorInput {
+                name: "Bea".into(),
+                role: ContributorRole::Illustrator,
+            },
+        ];
+
+        let valid = book.validate().unwrap().edition;
+
+        assert_eq!(
+            valid.contributors,
+            vec![
+                ValidContributor {
+                    name: "Bea".into(),
+                    role: ContributorRole::Illustrator,
+                },
+                ValidContributor {
+                    name: "Ana".into(),
+                    role: ContributorRole::Designer,
+                },
+            ]
+        );
     }
 }

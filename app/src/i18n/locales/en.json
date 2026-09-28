@@ -70,7 +70,9 @@
     "internal": "Something went wrong: {{message}}",
     "isbn_in_use": "Another book in the catalog already has this ISBN.",
     "invalid_cover_url": "This cover address is not allowed.",
-    "invalid_format": "Unknown format. Use hardcover, paperback, pocket, ebook, audiobook or other."
+    "invalid_format": "Unknown format. Use hardcover, paperback, pocket, ebook, audiobook or other.",
+    "invalid_barcode": "This barcode is not valid.",
+    "barcode_in_use": "Another edition already has this barcode."
   },
   "history": {
     "title": "History",

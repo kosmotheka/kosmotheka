@@ -127,7 +127,7 @@ pub fn reindex<'a>(
 fn document(conn: &Connection, library: &str, edition_id: &str) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT concat_ws(' ', e.title, e.subtitle, w.title, p.name, bd.isbn13,
+            "SELECT concat_ws(' ', e.title, e.subtitle, w.title, p.name, bd.isbn13, e.barcode,
                     (SELECT group_concat(pe.name, ' ')
                        FROM work_contributors wc
                        JOIN people pe ON pe.library_id = wc.library_id AND pe.id = wc.person_id

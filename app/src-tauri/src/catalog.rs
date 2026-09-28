@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use kosmotheka_domain::{
-    Change, CopyInput, DETAILS, EditionInput, Entity, ErrorCode, FieldError, Format, Hlc,
-    ValidBook, ValidCopy, ValidEdition,
+    Change, ContributorInput, ContributorRole, CopyInput, DETAILS, EditionInput, Entity, ErrorCode,
+    FieldError, Format, Hlc, Kind, ValidBook, ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -31,6 +31,7 @@ pub struct BookSummary {
     pub edition_id: String,
     /// The library the book is in: searches across libraries mix them.
     pub library_id: String,
+    pub kind: Kind,
     pub title: String,
     pub subtitle: Option<String>,
     pub authors: Vec<String>,
@@ -53,9 +54,12 @@ pub struct BookSummary {
 pub struct BookDetail {
     pub edition_id: String,
     pub work_id: String,
+    pub kind: Kind,
     pub title: String,
     pub subtitle: Option<String>,
     pub authors: Vec<String>,
+    /// Every role but author, ordered by role (`ContributorRole::ALL`) then position.
+    pub contributors: Vec<ContributorDetail>,
     pub publisher: Option<String>,
     pub published_year: Option<i32>,
     pub language: Option<String>,
@@ -63,9 +67,25 @@ pub struct BookDetail {
     pub cover: Option<String>,
     pub google_books_id: Option<String>,
     pub open_library_id: Option<String>,
+    pub barcode: Option<String>,
+    pub number: Option<String>,
+    pub players_min: Option<i64>,
+    pub players_max: Option<i64>,
+    /// Boardgame or film, whichever the edition's kind is; never both at once.
+    pub duration_minutes: Option<i64>,
+    pub min_age: Option<i64>,
+    pub seasons: Option<i64>,
+    pub platform: Option<String>,
     pub copies: Vec<CopyDetail>,
     /// This device may delete the whole book; otherwise it can only ask (D73).
     pub can_delete: bool,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContributorDetail {
+    pub name: String,
+    pub role: ContributorRole,
 }
 
 #[derive(Debug, Serialize)]
@@ -123,7 +143,11 @@ pub fn create_book_accepting(
     let existing_edition_id = match &book.edition.isbn {
         Some(isbn) => edition_with_isbn(&tx, library, isbn.as_str())?,
         None => None,
-    };
+    }
+    .or(match &book.edition.barcode {
+        Some(barcode) => edition_with_barcode(&tx, library, barcode)?,
+        None => None,
+    });
     let existing_edition = existing_edition_id.is_some();
     let edition_id = match existing_edition_id {
         Some(id) => id,
@@ -164,6 +188,14 @@ pub fn update_edition(
             ErrorCode::IsbnInUse,
         )]));
     }
+    if let Some(barcode) = &edition.barcode
+        && edition_with_barcode(&tx, library, barcode)?.is_some_and(|other| other != edition_id)
+    {
+        return Err(Error::Validation(vec![FieldError::new(
+            "barcode",
+            ErrorCode::BarcodeInUse,
+        )]));
+    }
 
     let mut plan = Plan::new(&tx, library);
     let publisher_id = plan.publisher_id(edition)?;
@@ -176,17 +208,52 @@ pub fn update_edition(
             "publisher_id": publisher_id,
             "published_year": edition.published_year,
             "language": edition.language,
+            "barcode": edition.barcode,
         }),
     )?;
     // Without a new cover the current one stays; clearing covers is not supported yet.
     if let Some(cover) = new_cover {
         plan.update_if_changed(Entity::Edition, edition_id, json!({ "cover": cover }))?;
     }
-    plan.update_if_changed(
-        Entity::BookDetails,
-        edition_id,
-        book_details_fields(edition),
+
+    // A change of kind moves the details from one table to another.
+    let current_kind: String = tx.query_row(
+        "SELECT kind FROM works WHERE library_id = ?1 AND id = ?2",
+        [library, &work_id],
+        |row| row.get(0),
     )?;
+    // book_details is kept for books only; other kinds keep at most one details row.
+    let keep_details = if edition.kind == Kind::Book {
+        Some(Entity::BookDetails)
+    } else {
+        edition.details.entity()
+    };
+    if current_kind != edition.kind.as_str() {
+        plan.update_if_changed(
+            Entity::Work,
+            &work_id,
+            json!({ "kind": edition.kind.as_str() }),
+        )?;
+        for details in DETAILS {
+            if Some(details) != keep_details && exists(&tx, library, details, edition_id)? {
+                plan.changes.push(Change::delete(details, edition_id));
+            }
+        }
+    }
+    if edition.kind == Kind::Book {
+        plan.update_if_changed(
+            Entity::BookDetails,
+            edition_id,
+            book_details_fields(edition),
+        )?;
+    } else if let Some(entity) = edition.details.entity() {
+        if exists(&tx, library, entity, edition_id)? {
+            plan.update_if_changed(entity, edition_id, edition.details.fields())?;
+        } else {
+            plan.changes
+                .push(Change::create(entity, edition_id, edition.details.fields()));
+        }
+    }
 
     // A work with a single edition takes its title from it.
     let edition_count: i64 = tx.query_row(
@@ -197,7 +264,7 @@ pub fn update_edition(
     if edition_count == 1 {
         plan.update_if_changed(Entity::Work, &work_id, json!({ "title": edition.title }))?;
     }
-    plan.sync_authors(&work_id, &edition.authors)?;
+    plan.sync_all_contributors(&work_id, edition)?;
 
     plan.record("edition.edit")?;
     tx.commit()?;
@@ -274,6 +341,23 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
         cover_url: None,
         google_books_id: book.google_books_id,
         open_library_id: book.open_library_id,
+        kind: book.kind,
+        contributors: book
+            .contributors
+            .into_iter()
+            .map(|c| ContributorInput {
+                name: c.name,
+                role: c.role,
+            })
+            .collect(),
+        barcode: book.barcode,
+        number: book.number,
+        players_min: book.players_min,
+        players_max: book.players_max,
+        duration_minutes: book.duration_minutes,
+        min_age: book.min_age,
+        seasons: book.seasons,
+        platform: book.platform,
     }
     .validate()
     .map_err(Error::Validation)?;
@@ -398,9 +482,9 @@ impl<'a> Plan<'a> {
         self.changes.push(Change::create(
             Entity::Work,
             &work_id,
-            json!({ "kind": "book", "title": edition.title }),
+            json!({ "kind": edition.kind.as_str(), "title": edition.title }),
         ));
-        self.sync_authors(&work_id, &edition.authors)?;
+        self.sync_all_contributors(&work_id, edition)?;
         let publisher_id = self.publisher_id(edition)?;
 
         let edition_id = new_id();
@@ -415,13 +499,22 @@ impl<'a> Plan<'a> {
                 "published_year": edition.published_year,
                 "language": edition.language,
                 "cover": cover,
+                "barcode": edition.barcode,
             }),
         ));
-        self.changes.push(Change::create(
-            Entity::BookDetails,
-            &edition_id,
-            book_details_fields(edition),
-        ));
+        if edition.kind == Kind::Book {
+            self.changes.push(Change::create(
+                Entity::BookDetails,
+                &edition_id,
+                book_details_fields(edition),
+            ));
+        } else if let Some(entity) = edition.details.entity() {
+            self.changes.push(Change::create(
+                entity,
+                &edition_id,
+                edition.details.fields(),
+            ));
+        }
         Ok(edition_id)
     }
 
@@ -450,16 +543,41 @@ impl<'a> Plan<'a> {
             .transpose()
     }
 
-    /// Makes the work's author list match `names`, in order: adds, moves and removes
-    /// contributor rows as needed. Works for new works too (nothing to compare against).
-    fn sync_authors(&mut self, work_id: &str, names: &[String]) -> Result<()> {
+    /// Makes every contributor role of the work match `edition`, in order: adds,
+    /// moves and removes rows as needed. An empty list for a role removes its rows,
+    /// so every role is synced even when the UI still sends only `authors`.
+    fn sync_all_contributors(&mut self, work_id: &str, edition: &ValidEdition) -> Result<()> {
+        self.sync_contributors(work_id, ContributorRole::Author, &edition.authors)?;
+        for role in ContributorRole::ALL {
+            if role == ContributorRole::Author {
+                continue;
+            }
+            let names: Vec<String> = edition
+                .contributors
+                .iter()
+                .filter(|c| c.role == role)
+                .map(|c| c.name.clone())
+                .collect();
+            self.sync_contributors(work_id, role, &names)?;
+        }
+        Ok(())
+    }
+
+    /// Makes the work's contributors in `role` match `names`, in order: adds, moves
+    /// and removes rows as needed. Works for new works too (nothing to compare against).
+    fn sync_contributors(
+        &mut self,
+        work_id: &str,
+        role: ContributorRole,
+        names: &[String],
+    ) -> Result<()> {
         let mut current: HashMap<String, (String, i64)> = HashMap::new();
         {
             let mut statement = self.tx.prepare(
                 "SELECT person_id, id, position FROM work_contributors
-                  WHERE library_id = ?1 AND work_id = ?2 AND role = 'author'",
+                  WHERE library_id = ?1 AND work_id = ?2 AND role = ?3",
             )?;
-            let rows = statement.query_map([self.library, work_id], |row| {
+            let rows = statement.query_map([self.library, work_id, role.as_str()], |row| {
                 Ok((row.get(0)?, (row.get(1)?, row.get(2)?)))
             })?;
             for row in rows {
@@ -481,7 +599,7 @@ impl<'a> Plan<'a> {
                 None => self.changes.push(Change::create(
                     Entity::WorkContributor,
                     new_id(),
-                    json!({ "work_id": work_id, "person_id": person_id, "role": "author", "position": position }),
+                    json!({ "work_id": work_id, "person_id": person_id, "role": role.as_str(), "position": position }),
                 )),
             }
         }
@@ -605,6 +723,20 @@ pub fn edition_with_isbn(conn: &Connection, library: &str, isbn13: &str) -> Resu
         .optional()?)
 }
 
+pub fn edition_with_barcode(
+    conn: &Connection,
+    library: &str,
+    barcode: &str,
+) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT id FROM editions WHERE library_id = ?1 AND barcode = ?2 ORDER BY id LIMIT 1",
+            [library, barcode],
+            |row| row.get(0),
+        )
+        .optional()?)
+}
+
 fn work_of(conn: &Connection, library: &str, edition_id: &str) -> Result<String> {
     conn.query_row(
         "SELECT work_id FROM editions WHERE library_id = ?1 AND id = ?2",
@@ -657,6 +789,7 @@ fn ids(conn: &Connection, sql: &str, library: &str, param: &str) -> Result<Vec<S
 #[serde(rename_all = "camelCase", default)]
 pub struct BookFilter {
     pub query: Option<String>,
+    pub kind: Option<Kind>,
     pub format: Option<Format>,
     /// Owner name: duplicates of the same member created on other devices match too (D33).
     pub owner: Option<String>,
@@ -690,6 +823,10 @@ pub fn list_books(
                 .to_owned(),
         );
         args.push(SqlValue::Text(query));
+    }
+    if let Some(kind) = filter.kind {
+        conditions.push("w.kind = ?".to_owned());
+        args.push(SqlValue::Text(kind.as_str().to_owned()));
     }
     // One copy must match every copy filter at once.
     if filter.format.is_some() || filter.owner.is_some() || filter.location.is_some() {
@@ -760,8 +897,9 @@ pub fn list_books(
                FROM (SELECT DISTINCT m.name FROM copies c
                        JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
                       WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
-            mk.status, mk.favorite, mk.wished
+            mk.status, mk.favorite, mk.wished, w.kind
          FROM editions e
+         JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
          LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
               AND mk.member_id = (SELECT member_id FROM devices
                                    WHERE library_id = e.library_id AND id = ?)
@@ -790,6 +928,7 @@ pub fn list_books(
             my_status: row.get(12)?,
             my_favorite: row.get::<_, Option<i64>>(13)?.unwrap_or(0) != 0,
             my_wished: row.get::<_, Option<i64>>(14)?.unwrap_or(0) != 0,
+            kind: row.get::<_, String>(15)?.parse().unwrap_or_default(),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -852,10 +991,19 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                        FROM work_contributors wc
                        JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
                       WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id
-                        AND wc.role = 'author')
+                        AND wc.role = 'author'),
+                    w.kind, e.barcode, cd.number,
+                    gd.players_min, gd.players_max, coalesce(gd.duration_minutes, fd.duration_minutes),
+                    gd.min_age, td.seasons, vd.platform
                FROM editions e
+               JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
                LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
                LEFT JOIN publishers pu ON pu.library_id = e.library_id AND pu.id = e.publisher_id
+               LEFT JOIN comic_details cd ON cd.library_id = e.library_id AND cd.edition_id = e.id
+               LEFT JOIN boardgame_details gd ON gd.library_id = e.library_id AND gd.edition_id = e.id
+               LEFT JOIN film_details fd ON fd.library_id = e.library_id AND fd.edition_id = e.id
+               LEFT JOIN tv_series_details td ON td.library_id = e.library_id AND td.edition_id = e.id
+               LEFT JOIN videogame_details vd ON vd.library_id = e.library_id AND vd.edition_id = e.id
               WHERE e.library_id = ?1 AND e.id = ?2",
             [library, edition_id],
             |row| {
@@ -872,6 +1020,16 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     google_books_id: row.get(9)?,
                     open_library_id: row.get(10)?,
                     authors: split_list(row.get(11)?),
+                    kind: row.get::<_, String>(12)?.parse().unwrap_or_default(),
+                    barcode: row.get(13)?,
+                    contributors: Vec::new(),
+                    number: row.get(14)?,
+                    players_min: row.get(15)?,
+                    players_max: row.get(16)?,
+                    duration_minutes: row.get(17)?,
+                    min_age: row.get(18)?,
+                    seasons: row.get(19)?,
+                    platform: row.get(20)?,
                     copies: Vec::new(),
                     can_delete: false,
                 })
@@ -879,6 +1037,26 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
         )
         .optional()?
         .ok_or_else(|| missing(Entity::Edition, edition_id))?;
+
+    let mut contributors_statement = conn.prepare(
+        "SELECT p.name, wc.role
+           FROM work_contributors wc
+           JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
+          WHERE wc.library_id = ?1 AND wc.work_id = ?2 AND wc.role <> 'author'
+          ORDER BY wc.position",
+    )?;
+    let mut contributors: Vec<ContributorDetail> = contributors_statement
+        .query_map([library, &book.work_id], |row| {
+            let role: String = row.get(1)?;
+            Ok(ContributorDetail {
+                name: row.get(0)?,
+                role: role.parse().unwrap_or(ContributorRole::Author),
+            })
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    // Stable sort: keeps the position order already fetched within each role.
+    contributors.sort_by_key(|c| ContributorRole::ALL.iter().position(|r| *r == c.role));
+    book.contributors = contributors;
 
     let mut statement = conn.prepare(
         "SELECT c.id, m.name, c.format, c.quantity, c.location, c.acquired_on
@@ -1712,5 +1890,203 @@ mod tests {
                 .iter()
                 .all(|b| b.publisher.as_deref() == Some("Minotauro"))
         );
+    }
+
+    fn boardgame(title: &str, barcode: Option<&str>, designer: &str) -> ValidEdition {
+        EditionInput {
+            title: title.to_owned(),
+            kind: Kind::Boardgame,
+            contributors: vec![ContributorInput {
+                name: designer.to_owned(),
+                role: ContributorRole::Designer,
+            }],
+            barcode: barcode.map(str::to_owned),
+            players_min: Some(2),
+            players_max: Some(5),
+            duration_minutes: Some(60),
+            min_age: Some(10),
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap()
+    }
+
+    #[test]
+    fn a_boardgame_with_designer_barcode_and_details_round_trips() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+
+        assert_eq!(detail.kind, Kind::Boardgame);
+        assert_eq!(detail.barcode.as_deref(), Some("4006381333931"));
+        assert_eq!(
+            detail.contributors,
+            vec![ContributorDetail {
+                name: "Elizabeth Hargrave".into(),
+                role: ContributorRole::Designer,
+            }]
+        );
+        assert_eq!(detail.players_min, Some(2));
+        assert_eq!(detail.players_max, Some(5));
+        assert_eq!(detail.duration_minutes, Some(60));
+        assert_eq!(detail.min_age, Some(10));
+    }
+
+    #[test]
+    fn the_same_barcode_adds_a_copy_to_the_existing_edition() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let second = ValidBook {
+            edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
+            copy: copy("Laura", Format::Box),
+        };
+        let result = create_book(&mut conn, LIB, &second, None).unwrap();
+
+        assert!(result.existing_edition);
+        assert_eq!(result.edition_id, created.edition_id);
+        assert_eq!(
+            get_book(&conn, LIB, &created.edition_id)
+                .unwrap()
+                .copies
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn editing_players_updates_only_that_field() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: boardgame("Wingspan", None, "Elizabeth Hargrave"),
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let mut edited = boardgame("Wingspan", None, "Elizabeth Hargrave");
+        edited.details = kosmotheka_domain::KindDetails::Boardgame {
+            players_min: Some(2),
+            players_max: Some(7),
+            duration_minutes: Some(60),
+            min_age: Some(10),
+        };
+
+        update_edition(&mut conn, LIB, &created.edition_id, &edited, None).unwrap();
+
+        let changes = last_changes(&conn);
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].entity, Entity::BoardgameDetails);
+        assert_eq!(
+            Value::Object(changes[0].fields.clone()),
+            json!({ "players_max": 7 })
+        );
+        assert_eq!(
+            get_book(&conn, LIB, &created.edition_id)
+                .unwrap()
+                .players_max,
+            Some(7)
+        );
+    }
+
+    #[test]
+    fn changing_the_kind_moves_the_details_to_the_new_kinds_table() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: boardgame("Dune", None, "Someone"),
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let film = EditionInput {
+            title: "Dune".to_owned(),
+            kind: Kind::Film,
+            duration_minutes: Some(155),
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap();
+        update_edition(&mut conn, LIB, &created.edition_id, &film, None).unwrap();
+
+        let count = |table: &str| -> i64 {
+            conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap()
+        };
+        assert_eq!(count("boardgame_details"), 0);
+        assert_eq!(count("film_details"), 1);
+        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        assert_eq!(detail.kind, Kind::Film);
+        assert_eq!(detail.duration_minutes, Some(155));
+    }
+
+    #[test]
+    fn book_filter_by_kind_returns_only_that_kind() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &ValidBook {
+                edition: boardgame("Wingspan", None, "Elizabeth Hargrave"),
+                copy: copy("Tersoal", Format::Box),
+            },
+            None,
+        )
+        .unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("A", None, "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+
+        let titles: Vec<String> = list_books(
+            &conn,
+            LIB,
+            &BookFilter {
+                kind: Some(Kind::Boardgame),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .into_iter()
+        .map(|b| b.title)
+        .collect();
+        assert_eq!(titles, vec!["Wingspan"]);
+    }
+
+    #[test]
+    fn moving_a_boardgame_keeps_kind_designer_barcode_and_details() {
+        let mut conn = db::open_in_memory().unwrap();
+        let book = ValidBook {
+            edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
+            copy: copy("Tersoal", Format::Box),
+        };
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        let other_library = crate::libraries::create_library(&mut conn, "Other").unwrap();
+
+        let new_edition = move_book(&mut conn, LIB, &created.edition_id, &other_library).unwrap();
+
+        let detail = get_book(&conn, &other_library, &new_edition).unwrap();
+        assert_eq!(detail.kind, Kind::Boardgame);
+        assert_eq!(detail.barcode.as_deref(), Some("4006381333931"));
+        assert_eq!(
+            detail.contributors,
+            vec![ContributorDetail {
+                name: "Elizabeth Hargrave".into(),
+                role: ContributorRole::Designer,
+            }]
+        );
+        assert_eq!(detail.players_min, Some(2));
+        assert_eq!(detail.duration_minutes, Some(60));
     }
 }
