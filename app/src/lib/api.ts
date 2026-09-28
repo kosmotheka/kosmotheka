@@ -63,6 +63,7 @@ export interface BookSummary {
   /** This device's person's status for the work (D68). */
   myStatus: MarkStatus | null;
   myFavorite: boolean;
+  myWished: boolean;
 }
 
 export type FieldErrorCode =
@@ -106,6 +107,10 @@ export interface BookFilter {
   /** My status, any of them; `none` matches works I have not marked (D68). */
   myStatuses?: (MarkStatus | "none")[];
   myFavorites?: boolean;
+  /** Works I wish I had (D61). */
+  myWished?: boolean;
+  /** Works someone other than me wishes. */
+  othersWished?: boolean;
 }
 
 /** The active library's books, or every library's with `everywhere`. */
@@ -680,9 +685,16 @@ export interface Mark {
   /** From 1 to 5. */
   rating: number | null;
   favorite: boolean;
+  wished: boolean;
 }
 
-export const emptyMark: Mark = { status: null, statusOn: null, rating: null, favorite: false };
+export const emptyMark: Mark = {
+  status: null,
+  statusOn: null,
+  rating: null,
+  favorite: false,
+  wished: false,
+};
 
 export interface PersonMark extends Mark {
   person: string;

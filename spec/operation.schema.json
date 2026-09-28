@@ -721,6 +721,9 @@
                   },
                   "favorite": {
                     "$ref": "#/$defs/boolean"
+                  },
+                  "wished": {
+                    "$ref": "#/$defs/boolean"
                   }
                 }
               }

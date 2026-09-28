@@ -195,6 +195,7 @@ const MARK_FIELDS: &[FieldSpec] = &[
     field("status_on", FieldType::Date, false),
     field("rating", FieldType::Rating, false),
     field("favorite", FieldType::Boolean, false),
+    field("wished", FieldType::Boolean, false),
 ];
 const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),

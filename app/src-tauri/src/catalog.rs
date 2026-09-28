@@ -45,6 +45,7 @@ pub struct BookSummary {
     /// This device's person's status for the work (D68), if any.
     pub my_status: Option<String>,
     pub my_favorite: bool,
+    pub my_wished: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -663,6 +664,10 @@ pub struct BookFilter {
     /// My status, any of them; `none` matches works I have not marked (D68).
     pub my_statuses: Vec<String>,
     pub my_favorites: bool,
+    /// Works I wish I had (D61).
+    pub my_wished: bool,
+    /// Works someone other than me wishes.
+    pub others_wished: bool,
 }
 
 pub fn list_books(
@@ -671,9 +676,10 @@ pub fn list_books(
     filter: &BookFilter,
 ) -> Result<Vec<BookSummary>> {
     // The first argument is this device, whose person's marks come with each work.
+    let device = ops::device_id(conn)?;
     let mut conditions: Vec<String> = vec!["e.library_id = ?".to_owned()];
     let mut args: Vec<SqlValue> = vec![
-        SqlValue::Text(ops::device_id(conn)?),
+        SqlValue::Text(device.clone()),
         SqlValue::Text(library.to_owned()),
     ];
 
@@ -723,6 +729,20 @@ pub fn list_books(
     if filter.my_favorites {
         conditions.push("mk.favorite = 1".to_owned());
     }
+    if filter.my_wished {
+        conditions.push("mk.wished = 1".to_owned());
+    }
+    if filter.others_wished {
+        // `IS NOT` on purpose: a device with no person sees everyone's wishes as "others".
+        conditions.push(
+            "EXISTS (SELECT 1 FROM marks o WHERE o.library_id = e.library_id
+                       AND o.work_id = e.work_id AND o.wished = 1
+                       AND o.member_id IS NOT (SELECT member_id FROM devices
+                                                 WHERE library_id = e.library_id AND id = ?))"
+                .to_owned(),
+        );
+        args.push(SqlValue::Text(device.clone()));
+    }
     let where_clause = format!("WHERE {}", conditions.join(" AND "));
 
     let mut statement = conn.prepare(&format!(
@@ -740,7 +760,7 @@ pub fn list_books(
                FROM (SELECT DISTINCT m.name FROM copies c
                        JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
                       WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
-            mk.status, mk.favorite
+            mk.status, mk.favorite, mk.wished
          FROM editions e
          LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
               AND mk.member_id = (SELECT member_id FROM devices
@@ -769,6 +789,7 @@ pub fn list_books(
             owners: split_list(row.get(11)?),
             my_status: row.get(12)?,
             my_favorite: row.get::<_, Option<i64>>(13)?.unwrap_or(0) != 0,
+            my_wished: row.get::<_, Option<i64>>(14)?.unwrap_or(0) != 0,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -1531,6 +1552,145 @@ mod tests {
                 ..Default::default()
             }),
             vec!["A"]
+        );
+    }
+
+    #[test]
+    fn wished_marks_are_filtered_by_who_wishes() {
+        use crate::marks::{self, Mark};
+        use crate::people::PersonPick;
+
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("Dune", None, "Ana", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("Wingspan", None, "Ana", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        fn work(conn: &Connection, title: &str) -> String {
+            let edition = list_books(conn, LIB, &BookFilter::default())
+                .unwrap()
+                .into_iter()
+                .find(|b| b.title == title)
+                .unwrap()
+                .edition_id;
+            get_book(conn, LIB, &edition).unwrap().work_id
+        }
+        let dune = work(&conn, "Dune");
+
+        marks::claim_person(
+            &mut conn,
+            LIB,
+            &PersonPick {
+                id: None,
+                name: "Tersoal".into(),
+            },
+        )
+        .unwrap();
+        marks::set_mark(
+            &mut conn,
+            LIB,
+            &dune,
+            &Mark {
+                wished: true,
+                ..Mark::default()
+            },
+        )
+        .unwrap();
+
+        fn titles(conn: &Connection, filter: BookFilter) -> Vec<String> {
+            list_books(conn, LIB, &filter)
+                .unwrap()
+                .into_iter()
+                .map(|b| b.title)
+                .collect()
+        }
+        assert_eq!(
+            titles(
+                &conn,
+                BookFilter {
+                    my_wished: true,
+                    ..Default::default()
+                }
+            ),
+            vec!["Dune"]
+        );
+        assert!(
+            titles(
+                &conn,
+                BookFilter {
+                    others_wished: true,
+                    ..Default::default()
+                }
+            )
+            .is_empty(),
+            "the only wish is mine"
+        );
+        assert!(
+            list_books(&conn, LIB, &BookFilter::default())
+                .unwrap()
+                .into_iter()
+                .find(|b| b.title == "Dune")
+                .unwrap()
+                .my_wished
+        );
+
+        // Someone else wishes Wingspan: seen as "others", not "mine".
+        let wingspan = work(&conn, "Wingspan");
+        let tx = conn.transaction().unwrap();
+        let bea = new_id();
+        ops::record(
+            &tx,
+            LIB,
+            "person.claim",
+            vec![kosmotheka_domain::Change::create(
+                kosmotheka_domain::Entity::Member,
+                &bea,
+                json!({ "name": "Bea" }),
+            )],
+        )
+        .unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "mark.set",
+            vec![kosmotheka_domain::Change::create(
+                kosmotheka_domain::Entity::Mark,
+                kosmotheka_domain::mark_id(&bea, &wingspan),
+                json!({ "member_id": bea, "work_id": wingspan, "wished": true }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        assert_eq!(
+            titles(
+                &conn,
+                BookFilter {
+                    others_wished: true,
+                    ..Default::default()
+                }
+            ),
+            vec!["Wingspan"]
+        );
+        assert_eq!(
+            titles(
+                &conn,
+                BookFilter {
+                    my_wished: true,
+                    ..Default::default()
+                }
+            ),
+            vec!["Dune"],
+            "Bea's wish is not mine"
         );
     }
 

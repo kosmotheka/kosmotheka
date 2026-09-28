@@ -89,3 +89,4 @@ Todo **propuesta** hasta que el maintainer lo revise.
 - [x] 6.1 (a) Listas de tipos, papeles y formatos: spec, dominio, PHP y migración 0017 (las tablas se reconstruyen sin `CHECK`).
 - [x] 6.1 (b) Código de barras en la edición.
 - [x] 6.1 (c) Una tabla de detalles por tipo, como manda D08 (cómic, juego de mesa, película, serie, videojuego); música y «Otro» no tienen. Test de convergencia.
+- [x] 6.5 (a) «Lo deseo» como campo `wished` de la marca, con filtros «lo que deseo» y «lo que desean otros» en el motor.

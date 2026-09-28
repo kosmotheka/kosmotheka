@@ -22,11 +22,12 @@ pub struct Mark {
     /// From 1 to 5.
     pub rating: Option<i64>,
     pub favorite: bool,
+    pub wished: bool,
 }
 
 impl Mark {
     fn is_empty(&self) -> bool {
-        self.status.is_none() && self.rating.is_none() && !self.favorite
+        self.status.is_none() && self.rating.is_none() && !self.favorite && !self.wished
     }
 
     fn fields(&self) -> Map<String, Value> {
@@ -35,6 +36,7 @@ impl Mark {
         fields.insert("status_on".into(), json!(self.status_on));
         fields.insert("rating".into(), json!(self.rating));
         fields.insert("favorite".into(), json!(self.favorite));
+        fields.insert("wished".into(), json!(self.wished));
         fields
     }
 }
@@ -75,7 +77,7 @@ pub fn my_member(conn: &Connection, library: &str) -> Result<Option<String>> {
 pub fn work_marks(conn: &Connection, library: &str, work: &str) -> Result<WorkMarks> {
     let me = my_member(conn, library)?;
     let mut statement = conn.prepare(
-        "SELECT k.member_id, m.name, k.status, k.status_on, k.rating, k.favorite
+        "SELECT k.member_id, m.name, k.status, k.status_on, k.rating, k.favorite, k.wished
            FROM marks k JOIN members m ON m.library_id = k.library_id AND m.id = k.member_id
           WHERE k.library_id = ?1 AND k.work_id = ?2
           ORDER BY m.name COLLATE NOCASE",
@@ -90,6 +92,7 @@ pub fn work_marks(conn: &Connection, library: &str, work: &str) -> Result<WorkMa
                     status_on: row.get(3)?,
                     rating: row.get(4)?,
                     favorite: row.get::<_, Option<i64>>(5)?.unwrap_or(0) != 0,
+                    wished: row.get::<_, Option<i64>>(6)?.unwrap_or(0) != 0,
                 },
             },
         ))

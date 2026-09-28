@@ -61,6 +61,7 @@ const book = (
   owners,
   myStatus: null,
   myFavorite: false,
+  myWished: false,
 });
 
 const books: BookSummary[] = [
@@ -222,8 +223,8 @@ const requests: ChangeRequest[] = [
 let claimed = !params.has("who") && !params.has("locked");
 const myMarks = new Map<string, Mark>();
 const othersMarks: PersonMark[] = [
-  { person: "Laura", status: "finished", statusOn: "2026-03-18", rating: 5, favorite: true },
-  { person: "Hugo", status: "in_progress", statusOn: "2026-09-02", rating: null, favorite: false },
+  { person: "Laura", status: "finished", statusOn: "2026-03-18", rating: 5, favorite: true, wished: false },
+  { person: "Hugo", status: "in_progress", statusOn: "2026-09-02", rating: null, favorite: false, wished: false },
 ];
 
 mockIPC((cmd, args) => {
@@ -233,13 +234,19 @@ mockIPC((cmd, args) => {
       return books
         .map((b) => {
           const mark = myMarks.get(`work-${b.editionId}`);
-          return { ...b, myStatus: mark?.status ?? null, myFavorite: mark?.favorite ?? false };
+          return {
+            ...b,
+            myStatus: mark?.status ?? null,
+            myFavorite: mark?.favorite ?? false,
+            myWished: mark?.wished ?? false,
+          };
         })
         .filter(
           (b) =>
             (!filter.myStatuses?.length ||
               filter.myStatuses.includes(b.myStatus ?? "none")) &&
-            (!filter.myFavorites || b.myFavorite),
+            (!filter.myFavorites || b.myFavorite) &&
+            (!filter.myWished || b.myWished),
         );
     }
     case "list_libraries":

@@ -1441,6 +1441,7 @@ mod tests {
         let loved = Mark {
             rating: Some(5),
             favorite: true,
+            wished: true,
             ..Mark::default()
         };
         marks::set_mark(&mut phone.0, LIB, &dune, &loved).unwrap();
@@ -1453,6 +1454,15 @@ mod tests {
         let mine = seen.mine.unwrap();
         assert_eq!(mine.status.as_deref(), Some("finished"));
         assert!(mine.favorite, "both devices' changes are there");
+        assert!(mine.wished, "wished travels like favorite");
+        assert!(
+            marks::work_marks(&laptop.0, LIB, &dune)
+                .unwrap()
+                .mine
+                .unwrap()
+                .wished,
+            "the other device sees it too"
+        );
         let listed = |statuses: &[&str], favorites: bool| {
             let filter = BookFilter {
                 my_statuses: statuses.iter().map(|s| s.to_string()).collect(),

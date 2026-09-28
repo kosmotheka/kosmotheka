@@ -145,6 +145,7 @@ enum CatalogEntity: string
                 'status_on' => new FieldSpec(FieldType::Date, false),
                 'rating' => new FieldSpec(FieldType::Rating, false),
                 'favorite' => new FieldSpec(FieldType::Boolean, false),
+                'wished' => new FieldSpec(FieldType::Boolean, false),
             ],
         };
     }

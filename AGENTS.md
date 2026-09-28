@@ -79,6 +79,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | deseo | `wish` | Wishlist entry |
 | marca (de una persona sobre una obra) | `mark` | Status, rating and favorite of one person for one work (D68) |
 | estado · valoración · favorito | `status` · `rating` · `favorite` | Fields of a `mark` |
+| lo deseo (marca de una persona) | `wished` | Field of a `mark`; replaces the `wish` entity in phase 6 (D61) |
 | operación · cambio · intención | `operation` · `change` · `intent` | D25 |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
 | reloj lógico híbrido | `hlc` | |

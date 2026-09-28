@@ -1181,6 +1181,59 @@
     }
   },
   {
+    "name": "a person wishes a work",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000310",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "create",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000013",
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+            "status": "finished",
+            "status_on": "2026-03-14",
+            "rating": 4,
+            "favorite": true,
+            "wished": true
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "wished that is not true or false",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000311",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "mark.set",
+      "changes": [
+        {
+          "entity": "mark",
+          "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
+          "action": "update",
+          "fields": {
+            "wished": "yes"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "wished"
+    }
+  },
+  {
     "name": "a mark whose id is not derived from its person and work",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000141",
