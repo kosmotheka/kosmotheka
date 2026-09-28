@@ -31,7 +31,31 @@ enum CatalogEntity: string
     case ChangeRequest = 'change_request';
     case Mark = 'mark';
 
-    public const array FORMATS = ['hardcover', 'paperback', 'pocket', 'ebook', 'audiobook', 'other'];
+    public const array FORMATS = [
+        'hardcover',
+        'paperback',
+        'pocket',
+        'ebook',
+        'pdf',
+        'audiobook',
+        'single_issue',
+        'box',
+        'dvd',
+        'bluray',
+        'uhd',
+        'physical',
+        'digital',
+        'vinyl',
+        'cd',
+        'cassette',
+        'other',
+    ];
+
+    /** What a work is (D60). */
+    public const array KINDS = ['book', 'comic', 'boardgame', 'film', 'tv_series', 'videogame', 'music', 'other'];
+
+    /** What someone did for a work. */
+    public const array CONTRIBUTOR_ROLES = ['author', 'writer', 'illustrator', 'designer', 'director', 'artist'];
 
     /** Roles a member can have in a library (D55, D73). */
     public const array ROLES = ['admin', 'editor', 'reader'];
@@ -50,7 +74,7 @@ enum CatalogEntity: string
         $oneOf = static fn (string ...$allowed): FieldSpec => new FieldSpec(FieldType::OneOf, true, array_values($allowed));
 
         return match ($this) {
-            self::Work => ['kind' => $oneOf('book'), 'title' => $text(true)],
+            self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
             self::Library, self::Person, self::Publisher => ['name' => $text(true)],
             self::Member => [
                 'name' => $text(true),
@@ -60,7 +84,7 @@ enum CatalogEntity: string
             self::WorkContributor => [
                 'work_id' => $ref(true),
                 'person_id' => $ref(true),
-                'role' => $oneOf('author'),
+                'role' => $oneOf(...self::CONTRIBUTOR_ROLES),
                 'position' => $integer(true),
             ],
             self::Edition => [

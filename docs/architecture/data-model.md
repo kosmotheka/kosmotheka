@@ -24,9 +24,9 @@ works ──< work_contributors >── people
 | Tabla | Qué es | Columnas principales |
 |---|---|---|
 | `libraries` | Bibliotecas: lo que se comparte, se sincroniza y tiene permisos. Un nombre vacío es «sin nombre» y la app muestra el suyo, en el idioma del usuario | `id`, `name` |
-| `works` | Obra: el libro en abstracto | `id`, `kind` (de momento solo `book`), `title` |
+| `works` | Obra: el libro en abstracto | `id`, `kind` (`book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music`, `other`; D60), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
-| `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`), `position` |
+| `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`), `position` |
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
@@ -46,7 +46,7 @@ works ──< work_contributors >── people
 | `leave_notices` | Bibliotecas de las que este dispositivo salió, pendientes de decírselo a cada dispositivo que se las ofrecía; local (D71) | `library_id`, `device_id` |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida, la biblioteca activa y los ajustes (clave de Google Books) | `key`, `value` |
 
-**Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `audiobook`, `other`. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.
+**Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `pdf`, `audiobook`, `single_issue` (grapa), `box` (caja), `dvd`, `bluray`, `uhd` (4K), `physical` (videojuego en cartucho o disco), `digital`, `vinyl`, `cd`, `cassette`, `other`. Es una sola lista para todos los tipos, y la interfaz ofrece solo los de cada uno (así un ejemplar se valida sin mirar su obra). Estas listas no llevan `CHECK` en SQLite: solo las fija la spec. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.
 
 ## Reglas del alta
 

@@ -1347,5 +1347,120 @@
       "code": "undeletable",
       "change": 0
     }
+  },
+  {
+    "name": "board game with its designer and a boxed copy",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000150",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000151",
+          "action": "create",
+          "fields": {
+            "kind": "boardgame",
+            "title": "Catan"
+          }
+        },
+        {
+          "entity": "person",
+          "id": "01997c7e-0000-7000-8000-000000000152",
+          "action": "create",
+          "fields": {
+            "name": "Klaus Teuber"
+          }
+        },
+        {
+          "entity": "work_contributor",
+          "id": "01997c7e-0000-7000-8000-000000000153",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000151",
+            "person_id": "01997c7e-0000-7000-8000-000000000152",
+            "role": "designer",
+            "position": 0
+          }
+        },
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-000000000154",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000151",
+            "title": "Catan"
+          }
+        },
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000155",
+          "action": "create",
+          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-000000000154",
+            "format": "box",
+            "quantity": 1
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a kind that does not exist",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000156",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000157",
+          "action": "create",
+          "fields": {
+            "kind": "podcast",
+            "title": "Radio"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "kind"
+    }
+  },
+  {
+    "name": "a contributor role that does not exist",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000158",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work_contributor",
+          "id": "01997c7e-0000-7000-8000-000000000159",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000151",
+            "person_id": "01997c7e-0000-7000-8000-000000000152",
+            "role": "catering",
+            "position": 0
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "role"
+    }
   }
 ]

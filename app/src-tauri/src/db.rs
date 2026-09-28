@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use rusqlite_migration::{M, Migrations};
 
 use crate::error::{Error, Result};
@@ -26,6 +26,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0014_request_notes.sql")),
     M::up(include_str!("../migrations/0015_pending_owners.sql")),
     M::up(include_str!("../migrations/0016_marks.sql")),
+    M::up(include_str!("../migrations/0017_kinds.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -81,9 +82,19 @@ fn copy_before_migrating(conn: &Connection, path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Migrations run with foreign keys off, so a table can be rebuilt without its
+/// dependents being deleted by the cascade (SQLite's own advice); afterwards every
+/// key is checked and they are turned on again.
 fn migrate(conn: &mut Connection) -> Result<()> {
-    conn.pragma_update(None, "foreign_keys", true)?;
+    conn.pragma_update(None, "foreign_keys", false)?;
     MIGRATIONS.to_latest(conn)?;
+    let broken = conn
+        .query_row("PRAGMA foreign_key_check", [], |_| Ok(()))
+        .optional()?;
+    if broken.is_some() {
+        return Err(Error::CorruptState("a migration broke a foreign key"));
+    }
+    conn.pragma_update(None, "foreign_keys", true)?;
     Ok(())
 }
 
@@ -128,7 +139,7 @@ mod tests {
         )
         .unwrap();
 
-        MIGRATIONS.to_latest(&mut conn).unwrap();
+        migrate(&mut conn).unwrap();
 
         let publishers: i64 = conn
             .query_row("SELECT count(*) FROM publishers", [], |r| r.get(0))
@@ -196,7 +207,7 @@ mod tests {
         )
         .unwrap();
 
-        MIGRATIONS.to_latest(&mut conn).unwrap();
+        migrate(&mut conn).unwrap();
 
         let library = crate::ops::DEFAULT_LIBRARY_ID;
         let in_library = |table: &str| -> i64 {
@@ -235,6 +246,38 @@ mod tests {
             shared, library,
             "existing pairings keep sharing the migrated library"
         );
+    }
+
+    #[test]
+    fn migration_17_keeps_everything_that_hangs_from_a_work() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        MIGRATIONS.to_version(&mut conn, 16).unwrap();
+        conn.execute_batch(
+            "INSERT INTO works (library_id, id, kind, title) VALUES ('l', 'w', 'book', 'Dune');
+             INSERT INTO people (library_id, id, name) VALUES ('l', 'p', 'Herbert');
+             INSERT INTO members (library_id, id, name) VALUES ('l', 'm', 'Ana');
+             INSERT INTO work_contributors (library_id, id, work_id, person_id, role, position)
+                 VALUES ('l', 'c', 'w', 'p', 'author', 0);
+             INSERT INTO editions (library_id, id, work_id, title) VALUES ('l', 'e', 'w', 'Dune');
+             INSERT INTO copies (library_id, id, edition_id, format) VALUES ('l', 'k', 'e', 'ebook');
+             INSERT INTO marks (library_id, id, member_id, work_id, status)
+                 VALUES ('l', 'x', 'm', 'w', 'finished');",
+        )
+        .unwrap();
+
+        migrate(&mut conn).unwrap();
+
+        for table in ["works", "work_contributors", "editions", "copies", "marks"] {
+            let rows: i64 = conn
+                .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(rows, 1, "{table} lost its row");
+        }
+        conn.execute(
+            "INSERT INTO works (library_id, id, kind, title) VALUES ('l', 'g', 'boardgame', 'Catan')",
+            [],
+        )
+        .unwrap();
     }
 
     #[test]

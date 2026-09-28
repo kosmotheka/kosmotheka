@@ -65,13 +65,45 @@ const FORMATS: &[&str] = &[
     "paperback",
     "pocket",
     "ebook",
+    "pdf",
     "audiobook",
+    "single_issue",
+    "box",
+    "dvd",
+    "bluray",
+    "uhd",
+    "physical",
+    "digital",
+    "vinyl",
+    "cd",
+    "cassette",
     "other",
+];
+
+/// What a work is (D60). Each kind has its own details and formats in the UI.
+pub const KINDS: &[&str] = &[
+    "book",
+    "comic",
+    "boardgame",
+    "film",
+    "tv_series",
+    "videogame",
+    "music",
+    "other",
+];
+/// What someone did for a work: writing, drawing, designing, directing, performing.
+pub const CONTRIBUTOR_ROLES: &[&str] = &[
+    "author",
+    "writer",
+    "illustrator",
+    "designer",
+    "director",
+    "artist",
 ];
 
 // Declared as constants so the slices live for the whole program ('static).
 const WORK_FIELDS: &[FieldSpec] = &[
-    field("kind", FieldType::OneOf(&["book"]), true),
+    field("kind", FieldType::OneOf(KINDS), true),
     field("title", FieldType::Text, true),
 ];
 const LIBRARY_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
@@ -79,7 +111,7 @@ const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),
     field("person_id", FieldType::Ref(Entity::Person), true),
-    field("role", FieldType::OneOf(&["author"]), true),
+    field("role", FieldType::OneOf(CONTRIBUTOR_ROLES), true),
     field("position", FieldType::Integer, true),
 ];
 const EDITION_FIELDS: &[FieldSpec] = &[

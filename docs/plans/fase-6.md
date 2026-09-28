@@ -86,3 +86,4 @@ Todo **propuesta** hasta que el maintainer lo revise.
 ## Estado
 
 - [x] Plan escrito (28/09/2026).
+- [x] 6.1 (a) Listas de tipos, papeles y formatos: spec, dominio, PHP y migración 0017 (las tablas se reconstruyen sin `CHECK`).

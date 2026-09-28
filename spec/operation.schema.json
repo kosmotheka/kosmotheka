@@ -197,7 +197,14 @@
                 "properties": {
                   "kind": {
                     "enum": [
-                      "book"
+                      "book",
+                      "comic",
+                      "boardgame",
+                      "film",
+                      "tv_series",
+                      "videogame",
+                      "music",
+                      "other"
                     ]
                   },
                   "title": {
@@ -288,7 +295,12 @@
                   },
                   "role": {
                     "enum": [
-                      "author"
+                      "author",
+                      "writer",
+                      "illustrator",
+                      "designer",
+                      "director",
+                      "artist"
                     ]
                   },
                   "position": {
@@ -395,7 +407,18 @@
                       "paperback",
                       "pocket",
                       "ebook",
+                      "pdf",
                       "audiobook",
+                      "single_issue",
+                      "box",
+                      "dvd",
+                      "bluray",
+                      "uhd",
+                      "physical",
+                      "digital",
+                      "vinyl",
+                      "cd",
+                      "cassette",
                       "other"
                     ]
                   },
