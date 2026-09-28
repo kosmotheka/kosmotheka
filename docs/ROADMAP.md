@@ -109,6 +109,9 @@ Deja de estar centrado en libros.
 - **Precio de compra**, como mucho un campo opcional del ejemplar y solo si no complica la interfaz; sin estadísticas.
 - **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
 
+**Estado:**
+- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [plans/fase-6.md](plans/fase-6.md) (28/09/2026).
+
 ## Fase 7 — La nube
 
 La nube es un dispositivo más, siempre encendido, con los mismos roles.
