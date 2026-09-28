@@ -65,6 +65,8 @@ pub fn run() {
             commands::delete_tag,
             commands::genres_of_kind,
             commands::request_book,
+            commands::add_missing,
+            commands::request_missing,
             commands::request_delete_copy,
             commands::request_delete_book,
             commands::book_history,

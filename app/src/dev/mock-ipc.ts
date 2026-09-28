@@ -7,6 +7,7 @@ import type {
   BookFilter,
   BookSummary,
   ChangeRequest,
+  Holding,
   LanStatus,
   LibrarySummary,
   Mark,
@@ -304,6 +305,9 @@ const othersMarks: PersonMark[] = [
   },
 ];
 
+const matchesHolding = (holding: Holding | undefined, copyCount: number): boolean =>
+  !holding || (holding === "owned" ? copyCount > 0 : copyCount === 0);
+
 mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books": {
@@ -321,6 +325,7 @@ mockIPC((cmd, args) => {
         .filter(
           (b) =>
             (!filter.kind || b.kind === filter.kind) &&
+            matchesHolding(filter.holding, b.copyCount) &&
             (!filter.myStatuses?.length || filter.myStatuses.includes(b.myStatus ?? "none")) &&
             (!filter.myFavorites || b.myFavorite) &&
             (!filter.myWished || b.myWished),
@@ -503,7 +508,10 @@ mockIPC((cmd, args) => {
       return null;
     case "genres_of_kind":
       return ["fantasy", "science_fiction", "adventure"];
+    case "add_missing":
+      return null;
     case "request_book":
+    case "request_missing":
     case "request_delete_copy":
     case "request_delete_book":
       return { requested: true };

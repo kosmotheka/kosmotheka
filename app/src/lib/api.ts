@@ -140,10 +140,16 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
   return invoke<CreatedBook>("create_book", { book });
 }
 
+/** Whether a work's edition has copies (D61): `missing` is catalogued without owning it yet. */
+export const holdings = ["owned", "missing"] as const;
+export type Holding = (typeof holdings)[number];
+
 export interface BookFilter {
   query?: string;
   kind?: Kind;
   format?: Format;
+  /** `owned` = has copies, `missing` = has none (D61); omitted matches everything. */
+  holding?: Holding;
   /** Owner name; matches duplicates created on other devices too. */
   owner?: string;
   location?: string;
@@ -316,6 +322,15 @@ export interface Asked {
 
 export function requestBook(book: NewBook, note: string | null): Promise<Asked> {
   return invoke<Asked>("request_book", { book, note });
+}
+
+/** Catalogs a work with no copy yet (D61); editors and admins only. */
+export function addMissing(edition: EditionInput): Promise<CreatedBook> {
+  return invoke<CreatedBook>("add_missing", { edition });
+}
+
+export function requestMissing(edition: EditionInput, note: string | null): Promise<Asked> {
+  return invoke<Asked>("request_missing", { edition, note });
 }
 
 export function requestDeleteCopy(copyId: string, note: string | null): Promise<Asked> {

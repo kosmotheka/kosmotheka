@@ -80,6 +80,44 @@ pub fn request_book(
     Ok(Asked { requested })
 }
 
+/// Catalogs a work with no copy yet (D61): the next volume of a saga, the
+/// expansion we lack. Editors and admins do this directly.
+#[tauri::command]
+pub async fn add_missing(
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    lookup: State<'_, Lookup>,
+    edition: EditionInput,
+) -> Result<Saved<CreatedBook>> {
+    let edition = edition.validate().map_err(Error::Validation)?;
+    // Download before locking: the database lock must never be held while waiting on the network.
+    let (cover, cover_failed) = download_cover(&covers, &lookup, edition.cover_url.as_ref()).await;
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let created = catalog::create_missing(&mut conn, &library, &edition, cover.as_deref())?;
+    Ok(Saved {
+        value: created,
+        cover_failed,
+    })
+}
+
+/// «Ask to catalog»: a reader asks for a missing work, with a note for whoever
+/// decides. The cover is not downloaded, like `request_book`.
+#[tauri::command]
+pub fn request_missing(
+    database: State<'_, Database>,
+    edition: EditionInput,
+    note: Option<String>,
+) -> Result<Asked> {
+    let edition = edition.validate().map_err(Error::Validation)?;
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let (_, requested) = ops::as_request(note.as_deref(), || {
+        catalog::create_missing(&mut conn, &library, &edition, None)
+    })?;
+    Ok(Asked { requested })
+}
+
 /// «Ask to delete» a copy that someone else added.
 #[tauri::command]
 pub fn request_delete_copy(

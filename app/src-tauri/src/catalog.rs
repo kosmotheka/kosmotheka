@@ -201,6 +201,42 @@ pub fn create_book_accepting(
     })
 }
 
+/// Adds a work with an edition and no copy (D61): the catalog knows about it
+/// ("I'm missing it") without owning it yet. `cover` is the file name of an
+/// already stored cover, if any.
+pub fn create_missing(
+    conn: &mut Connection,
+    library: &str,
+    edition: &ValidEdition,
+    cover: Option<&str>,
+) -> Result<CreatedBook> {
+    let tx = conn.transaction()?;
+    let mut plan = Plan::new(&tx, library);
+
+    let existing_edition_id = match &edition.isbn {
+        Some(isbn) => edition_with_isbn(&tx, library, isbn.as_str())?,
+        None => None,
+    }
+    .or(match &edition.barcode {
+        Some(barcode) => edition_with_barcode(&tx, library, barcode)?,
+        None => None,
+    });
+    let existing_edition = existing_edition_id.is_some();
+    let edition_id = match existing_edition_id {
+        Some(id) => id,
+        None => plan.add_edition(edition, cover)?,
+    };
+
+    // No-op when the edition already existed: `plan.changes` is empty, and
+    // `Plan::record` skips recording an operation with nothing in it.
+    plan.record("work.add_missing")?;
+    tx.commit()?;
+    Ok(CreatedBook {
+        edition_id,
+        existing_edition,
+    })
+}
+
 pub fn update_edition(
     conn: &mut Connection,
     library: &str,
@@ -944,6 +980,15 @@ pub(crate) fn ids(conn: &Connection, sql: &str, library: &str, param: &str) -> R
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
+/// Whether a work's edition has copies (D61): `Missing` is what we catalog
+/// without owning yet, like the next volume of a saga we lack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Holding {
+    Owned,
+    Missing,
+}
+
 /// Search text and copy filters; empty means "everything".
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -951,6 +996,9 @@ pub struct BookFilter {
     pub query: Option<String>,
     pub kind: Option<Kind>,
     pub format: Option<Format>,
+    /// `Owned` = the edition has copies, `Missing` = it has none (D61);
+    /// `None` matches everything.
+    pub holding: Option<Holding>,
     /// Owner name: duplicates of the same member created on other devices match too (D33).
     pub owner: Option<String>,
     pub location: Option<String>,
@@ -991,6 +1039,16 @@ pub fn list_books(
     if let Some(kind) = filter.kind {
         conditions.push("w.kind = ?".to_owned());
         args.push(SqlValue::Text(kind.as_str().to_owned()));
+    }
+    if let Some(holding) = filter.holding {
+        let cmp = match holding {
+            Holding::Owned => ">",
+            Holding::Missing => "=",
+        };
+        conditions.push(format!(
+            "(SELECT coalesce(sum(c.quantity), 0) FROM copies c
+               WHERE c.library_id = e.library_id AND c.edition_id = e.id) {cmp} 0"
+        ));
     }
     // One copy must match every copy filter at once.
     if filter.format.is_some() || filter.owner.is_some() || filter.location.is_some() {
@@ -1599,6 +1657,180 @@ mod tests {
             books[0].owners,
             vec!["Tersoal"],
             "owners match case-insensitively"
+        );
+    }
+
+    #[test]
+    fn creates_a_missing_work_with_no_copy() {
+        let mut conn = db::open_in_memory().unwrap();
+        let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
+
+        let created = create_missing(&mut conn, LIB, &missing, None).unwrap();
+        let books = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+
+        assert!(!created.existing_edition);
+        assert_eq!(books.len(), 1);
+        assert_eq!(books[0].title, "Elantris");
+        assert_eq!(books[0].copy_count, 0);
+        assert_eq!(intents(&conn), vec!["work.add_missing"]);
+    }
+
+    #[test]
+    fn creating_the_same_missing_work_twice_returns_the_existing_edition() {
+        let mut conn = db::open_in_memory().unwrap();
+        let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
+        let first = create_missing(&mut conn, LIB, &missing, None).unwrap();
+
+        let second = create_missing(&mut conn, LIB, &missing, None).unwrap();
+
+        assert!(second.existing_edition);
+        assert_eq!(second.edition_id, first.edition_id);
+        assert_eq!(
+            intents(&conn),
+            vec!["work.add_missing"],
+            "nothing recorded twice"
+        );
+    }
+
+    #[test]
+    fn holding_filters_owned_and_missing_works() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("Owned", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        create_missing(
+            &mut conn,
+            LIB,
+            &edition("Missing", Some("9780765350374"), &["Someone"]),
+            None,
+        )
+        .unwrap();
+
+        let owned = list_books(
+            &conn,
+            LIB,
+            &BookFilter {
+                holding: Some(Holding::Owned),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let missing = list_books(
+            &conn,
+            LIB,
+            &BookFilter {
+                holding: Some(Holding::Missing),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let everything = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+
+        assert_eq!(
+            owned.iter().map(|b| &b.title).collect::<Vec<_>>(),
+            vec!["Owned"]
+        );
+        assert_eq!(
+            missing.iter().map(|b| &b.title).collect::<Vec<_>>(),
+            vec!["Missing"]
+        );
+        assert_eq!(everything.len(), 2);
+    }
+
+    #[test]
+    fn adding_and_removing_the_last_copy_moves_between_holdings() {
+        let mut conn = db::open_in_memory().unwrap();
+        let created = create_missing(
+            &mut conn,
+            LIB,
+            &edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]),
+            None,
+        )
+        .unwrap();
+
+        let copy_id = add_copy(
+            &mut conn,
+            LIB,
+            &created.edition_id,
+            &copy("Tersoal", Format::Paperback),
+        )
+        .unwrap();
+        let owned = list_books(
+            &conn,
+            LIB,
+            &BookFilter {
+                holding: Some(Holding::Owned),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(owned.len(), 1, "adding a copy makes it owned");
+
+        delete_copy(&mut conn, LIB, &copy_id).unwrap();
+        let missing = list_books(
+            &conn,
+            LIB,
+            &BookFilter {
+                holding: Some(Holding::Missing),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            missing.len(),
+            1,
+            "deleting its last copy makes it missing again"
+        );
+    }
+
+    #[test]
+    fn a_reader_can_only_request_a_missing_work() {
+        let mut conn = db::open_in_memory().unwrap();
+        let device = ops::device_id(&conn).unwrap();
+        let (admin, reader) = (ops::new_id(), ops::new_id());
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "member.roles",
+            vec![
+                Change::create(
+                    Entity::Member,
+                    &admin,
+                    json!({ "name": "Tersoal", "role": "admin" }),
+                ),
+                Change::create(
+                    Entity::Member,
+                    &reader,
+                    json!({ "name": "Hugo", "role": "reader" }),
+                ),
+                Change::update(Entity::Device, &device, json!({ "member_id": reader })),
+            ],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
+        let refused = create_missing(&mut conn, LIB, &missing, None);
+        assert!(matches!(refused, Err(Error::NotAllowed)), "{refused:?}");
+        assert!(
+            list_books(&conn, LIB, &BookFilter::default())
+                .unwrap()
+                .is_empty()
+        );
+
+        let (_, requested) =
+            ops::as_request(None, || create_missing(&mut conn, LIB, &missing, None)).unwrap();
+        assert!(requested);
+        assert!(
+            list_books(&conn, LIB, &BookFilter::default())
+                .unwrap()
+                .is_empty(),
+            "kept as a request, no work created"
         );
     }
 
