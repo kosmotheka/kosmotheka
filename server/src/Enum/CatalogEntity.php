@@ -60,7 +60,7 @@ enum CatalogEntity: string
     public const array KINDS = ['book', 'comic', 'boardgame', 'film', 'tv_series', 'videogame', 'music', 'other'];
 
     /** What someone did for a work. */
-    public const array CONTRIBUTOR_ROLES = ['author', 'writer', 'illustrator', 'designer', 'director', 'artist'];
+    public const array CONTRIBUTOR_ROLES = ['author', 'writer', 'illustrator', 'designer', 'director', 'artist', 'studio'];
 
     /** Roles a member can have in a library (D55, D73). */
     public const array ROLES = ['admin', 'editor', 'reader'];

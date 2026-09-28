@@ -1716,5 +1716,47 @@
       "change": 0,
       "field": "seasons"
     }
+  },
+  {
+    "name": "video game with its studio",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000300",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000301",
+          "action": "create",
+          "fields": {
+            "kind": "videogame",
+            "title": "Hollow Knight"
+          }
+        },
+        {
+          "entity": "person",
+          "id": "01997c7e-0000-7000-8000-000000000302",
+          "action": "create",
+          "fields": {
+            "name": "Team Cherry"
+          }
+        },
+        {
+          "entity": "work_contributor",
+          "id": "01997c7e-0000-7000-8000-000000000303",
+          "action": "create",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-000000000301",
+            "person_id": "01997c7e-0000-7000-8000-000000000302",
+            "role": "studio",
+            "position": 0
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
   }
 ]

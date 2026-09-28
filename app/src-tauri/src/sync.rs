@@ -20,7 +20,7 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 18] = [
+pub const ORDER: [Entity; 19] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
@@ -36,6 +36,7 @@ pub const ORDER: [Entity; 18] = [
     Entity::TvSeriesDetails,
     Entity::VideogameDetails,
     Entity::Copy,
+    Entity::Mark,
     Entity::Wish,
     Entity::Revocation,
     Entity::ChangeRequest,

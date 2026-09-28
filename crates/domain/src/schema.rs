@@ -105,6 +105,7 @@ pub const CONTRIBUTOR_ROLES: &[&str] = &[
     "designer",
     "director",
     "artist",
+    "studio",
 ];
 
 // Declared as constants so the slices live for the whole program ('static).

@@ -24,7 +24,7 @@ use crate::sync::{entity_rows, is_tombstoned};
 /// What a library holds; the library row itself is where it is restored to.
 /// Same order as `sync::ORDER`: parents before children. Revocations stay out:
 /// who may sync a library is not part of its catalogue.
-const CONTENTS: [Entity; 14] = [
+const CONTENTS: [Entity; 15] = [
     Entity::Publisher,
     Entity::Person,
     Entity::Member,
@@ -38,6 +38,7 @@ const CONTENTS: [Entity; 14] = [
     Entity::TvSeriesDetails,
     Entity::VideogameDetails,
     Entity::Copy,
+    Entity::Mark,
     Entity::Wish,
 ];
 
@@ -408,12 +409,15 @@ fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook};
+    use rusqlite::OptionalExtension;
 
     use super::*;
     use crate::catalog::{self, BookFilter};
     use crate::db;
     use crate::libraries;
+    use crate::marks::{self, Mark};
     use crate::ops::DEFAULT_LIBRARY_ID as LIB;
+    use crate::people::PersonPick;
 
     fn temp(name: &str) -> std::path::PathBuf {
         let dir =
@@ -461,6 +465,17 @@ mod tests {
         .unwrap()
     }
 
+    fn mark_status(conn: &Connection, library: &str, work: &str) -> Option<String> {
+        conn.query_row(
+            "SELECT status FROM marks WHERE library_id = ?1 AND work_id = ?2",
+            [library, work],
+            |r| r.get(0),
+        )
+        .optional()
+        .unwrap()
+        .flatten()
+    }
+
     #[test]
     fn export_and_restore_round_trip() {
         let dir = temp("roundtrip");
@@ -475,6 +490,32 @@ mod tests {
         )
         .unwrap();
         catalog::create_book(&mut source, LIB, &book("The Dispossessed", None), None).unwrap();
+        marks::claim_person(
+            &mut source,
+            LIB,
+            &PersonPick {
+                id: None,
+                name: "Tersoal".into(),
+            },
+        )
+        .unwrap();
+        let earthsea_edition = catalog::list_books(&source, LIB, &BookFilter::default()).unwrap()
+            [0]
+        .edition_id
+        .clone();
+        let earthsea_work = catalog::get_book(&source, LIB, &earthsea_edition)
+            .unwrap()
+            .work_id;
+        marks::set_mark(
+            &mut source,
+            LIB,
+            &earthsea_work,
+            &Mark {
+                status: Some("finished".into()),
+                ..Mark::default()
+            },
+        )
+        .unwrap();
         let file = dir.join("backup.zip");
 
         let exported = export(&source, &[LIB.to_owned()], &source_covers, &file).unwrap();
@@ -523,6 +564,11 @@ mod tests {
             )
             .unwrap();
         assert_eq!(intent, "backup.restore");
+        assert_eq!(
+            mark_status(&target, LIB, &earthsea_work),
+            Some("finished".into()),
+            "a mark survives the backup and the restore"
+        );
     }
 
     #[test]

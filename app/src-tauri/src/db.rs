@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::Connection;
 use rusqlite_migration::{M, Migrations};
 
 use crate::error::{Error, Result};
@@ -26,7 +26,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0014_request_notes.sql")),
     M::up(include_str!("../migrations/0015_pending_owners.sql")),
     M::up(include_str!("../migrations/0016_marks.sql")),
-    M::up(include_str!("../migrations/0017_kinds.sql")),
+    M::up(include_str!("../migrations/0017_kinds.sql")).foreign_key_check(),
     M::up(include_str!("../migrations/0018_edition_barcode.sql")),
     M::up(include_str!("../migrations/0019_kind_details.sql")),
 ];
@@ -85,17 +85,13 @@ fn copy_before_migrating(conn: &Connection, path: &Path) -> Result<()> {
 }
 
 /// Migrations run with foreign keys off, so a table can be rebuilt without its
-/// dependents being deleted by the cascade (SQLite's own advice); afterwards every
-/// key is checked and they are turned on again.
+/// dependents being deleted by the cascade (SQLite's own advice); they are turned on
+/// again afterwards. A migration that rebuilds tables checks the keys itself, inside
+/// its own transaction, via `foreign_key_check()` (see the 0017 entry above), so a
+/// broken reference rolls back that migration instead of being committed.
 fn migrate(conn: &mut Connection) -> Result<()> {
     conn.pragma_update(None, "foreign_keys", false)?;
     MIGRATIONS.to_latest(conn)?;
-    let broken = conn
-        .query_row("PRAGMA foreign_key_check", [], |_| Ok(()))
-        .optional()?;
-    if broken.is_some() {
-        return Err(Error::CorruptState("a migration broke a foreign key"));
-    }
     conn.pragma_update(None, "foreign_keys", true)?;
     Ok(())
 }
@@ -280,6 +276,27 @@ mod tests {
             [],
         )
         .unwrap();
+    }
+
+    #[test]
+    fn migration_17_is_undone_if_it_leaves_a_broken_reference() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        MIGRATIONS.to_version(&mut conn, 16).unwrap();
+        // Keys off, as `migrate` itself would have them mid-migration, so this
+        // broken insert is accepted.
+        conn.pragma_update(None, "foreign_keys", false).unwrap();
+        conn.execute(
+            "INSERT INTO copies (library_id, id, edition_id, format) VALUES ('l', 'k', 'missing', 'ebook')",
+            [],
+        )
+        .unwrap();
+
+        assert!(migrate(&mut conn).is_err());
+
+        let version: i64 = conn
+            .query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, 16);
     }
 
     #[test]

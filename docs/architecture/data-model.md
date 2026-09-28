@@ -26,7 +26,7 @@ works ──< work_contributors >── people
 | `libraries` | Bibliotecas: lo que se comparte, se sincroniza y tiene permisos. Un nombre vacío es «sin nombre» y la app muestra el suyo, en el idioma del usuario | `id`, `name` |
 | `works` | Obra: el libro en abstracto | `id`, `kind` (`book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music`, `other`; D60), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
-| `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`), `position` |
+| `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`, `studio`), `position` |
 | `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
