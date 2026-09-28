@@ -774,6 +774,11 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 
 **Consecuencias:** sustituye a la lista de deseos de D36; su migración se decide al construirlo (Fase 6).
 
+**Al preparar la Fase 6 (28/09/2026):**
+- **Sin migración:** la lista de deseos de D36 está vacía; se sustituye sin más.
+- **«Lo deseo» es una marca** (un campo más de D68): cada persona lo pone en lo suyo sin pedir nada, sea cual sea su rol.
+- **Un lector no crea obras,** tampoco las «que faltan»: por principio de los permisos, lo pide (D73). La regla de 5.7 que dejaba a un lector apuntar deseos sueltos desaparece con la entidad `wish`.
+
 ## D62 · Proveedores: todos los posibles, con las claves en el servidor — `aceptada`
 
 **Decisión:**
@@ -784,6 +789,8 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 - Tabla de proveedores y condiciones: [research/proveedores.md](research/proveedores.md).
 
 **Consecuencias:** varios proveedores prohíben el uso comercial (BoardGameGeek, TMDB, IGDB, Comic Vine): un servicio de pago necesitaría licencias. Sustituye a D21.
+
+**Criterio unificado (28/09/2026):** cualquier proveedor que pida clave admite la **clave propia** del usuario en Ajustes, sin nube, como ya hacía Google Books; con la nube, las pone el servidor. En la Fase 6 se construyen los proveedores sin clave y Ajustes preparado para claves de cualquier proveedor; los de clave llegan después, uno a uno.
 
 ## D63 · Distribución: Google Play, sin iOS — `aceptada`
 
