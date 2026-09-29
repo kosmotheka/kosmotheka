@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div class="{{ theme }}" style="width:390px;height:844px;display:flex;flex-direction:column;overflow:hidden;background:var(--background);color:var(--foreground);font-family:var(--font-sans)"><dc-import name="StatusBar" hint-size="100%,32px"></dc-import><header style="height:64px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 4px"><button aria-label="Atrás" style="width:48px;height:48px;border:0;border-radius:24px;background:transparent;color:var(--foreground);display:flex;align-items:center;justify-content:center"><x-import component-from-global-scope="Library.ArrowLeftIcon" size="22" hint-size="22px,22px"></x-import></button><h1 style="margin:0;font-size:20px;font-weight:600">{{ heading }}</h1></header><div style="flex:1;min-height:0;overflow:hidden;padding:0 16px 16px;display:flex;flex-direction:column;gap:12px"><sc-if value="{{ list }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font-size:14px;line-height:1.45;color:var(--muted-foreground);text-wrap:pretty">Dónde busca la app al añadir. Sin nube, las que piden clave usan la tuya.</p><div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1px solid var(--border);font-size:14px"><x-import component-from-global-scope="Library.CloudOffIcon" size="18" hint-size="18px,18px"></x-import><span style="flex:1">Sin nube</span><span style="font-size:14px;font-weight:600;color:var(--primary)">Activar</span></div><div style="display:flex;flex-direction:column"><sc-for list="{{ types }}" as="t" hint-placeholder-count="8"><div style="min-height:56px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)"><x-import component-from-global-scope="Library.{{ t.icon }}" size="20" hint-size="20px,20px"></x-import><span style="flex:1;display:flex;flex-direction:column"><span style="font-size:16px">{{ t.label }}</span><sc-if value="{{ t._c_tone }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--warning)">{{ t.sum }}</span></sc-if><sc-if value="{{ t._nc_tone }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:var(--muted-foreground)">{{ t.sum }}</span></sc-if></span><x-import component-from-global-scope="Library.ChevronRightIcon" size="18" hint-size="18px,18px"></x-import></div></sc-for></div></sc-if><sc-if value="{{ detail }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ sources }}" as="s" hint-placeholder-count="4"><div style="padding:14px;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:16px;font-weight:600">{{ s.name }}</span><span style="font-size:13px;color:var(--muted-foreground)">{{ s.badge }} · {{ s.desc }}</span></div><sc-if value="{{ s._c_track }}" hint-placeholder-val="{{ false }}"><span role="switch" aria-checked="{{ s.on }}" style="width:52px;height:32px;border-radius:16px;background:var(--primary);position:relative;flex-shrink:0;opacity:1"><span style="position:absolute;top:4px;left:24px;width:24px;height:24px;border-radius:12px;background:var(--background)"></span></span></sc-if><sc-if value="{{ s._nc_track }}" hint-placeholder-val="{{ true }}"><span role="switch" aria-checked="{{ s.on }}" style="width:52px;height:32px;border-radius:16px;background:var(--input);position:relative;flex-shrink:0;opacity:0.5"><span style="position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:12px;background:var(--background)"></span></span></sc-if></div><sc-if value="{{ s.keyField }}" hint-placeholder-val="{{ false }}"><sc-if value="{{ s._c_keyTone }}" hint-placeholder-val="{{ false }}"><div style="height:48px;display:flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--input);font:14px var(--font-mono);color:var(--foreground)">{{ s.key }}</div></sc-if><sc-if value="{{ s._nc_keyTone }}" hint-placeholder-val="{{ true }}"><div style="height:48px;display:flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--input);font:14px var(--font-mono);color:var(--muted-foreground)">{{ s.key }}</div></sc-if><a style="font-size:14px;color:var(--primary);text-decoration:none">Cómo conseguir una clave</a></sc-if></div></sc-for></sc-if></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;type&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;book&quot;,&quot;film&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  _rv() {
+    const sel = this.props.type ?? '';
+    const F = 'Sin clave', K = 'Pide clave';
+    const S = {
+      book: ['Libros', 'BookIcon', [['Open Library', F, 'título e ISBN'], ['Inventaire', F, 'ediciones y portadas'], ['Wikidata', F, 'obras y autorías'], ['Google Books', K, 'la más completa', 'AIzaSy••••••3kQ']]],
+      comic: ['Cómics', 'BookImageIcon', [['Wikidata', F, ''], ['Comic Vine', K, '']]],
+      game: ['Juegos de mesa', 'Dice5Icon', [['Wikidata', F, ''], ['GameUPC', K, ''], ['BoardGameGeek', K, '']]],
+      film: ['Películas', 'ClapperboardIcon', [['Wikidata', F, 'título, dirección y año'], ['TMDb', K, 'carátulas y códigos de disco']]],
+      series: ['Series', 'TvMinimalIcon', [['Wikidata', F, ''], ['TMDb', K, '']]],
+      videogame: ['Videojuegos', 'Gamepad2Icon', [['Wikidata', F, ''], ['IGDB', K, '']]],
+      music: ['Música', 'Disc3Icon', [['MusicBrainz', F, ''], ['Wikidata', F, ''], ['Discogs', K, '']]],
+      other: ['Otro', 'ShapesIcon', []]
+    };
+    const n = (k, src) => src.filter(s => s[1] === F || (k === 'book' && s[3])).length;
+    const types = Object.entries(S).map(([k, [label, icon, src]]) => { const a = n(k, src); return { label, icon, sum: src.length ? a + ' de ' + src.length + ' fuentes' + (a < 2 ? ' · busca poco' : '') : 'Solo a mano', tone: src.length && a < 2 ? 'var(--warning)' : 'var(--muted-foreground)' }; });
+    const d = S[sel];
+    const sources = d ? d[2].map(([name, badge, desc, key]) => { const needs = badge === K, has = !!key, on = !needs || has; return { name, badge, desc: desc || '—', on: String(on), track: on ? 'var(--primary)' : 'var(--input)', knob: on ? '24px' : '4px', op: on || !needs ? 1 : 0.5, keyField: needs, key: has ? key : 'Pega aquí tu clave', keyTone: has ? 'var(--foreground)' : 'var(--muted-foreground)' }; }) : [];
+    return { theme: this.props.theme ?? 'light', list: !d, detail: !!d, heading: d ? d[0] : 'Proveedores', types, sources };
+  }
+  renderVals() {
+    const o = this._rv();
+    for (const [lk, k, a] of [["types","tone","var(--warning)"],["sources","track","var(--primary)"],["sources","keyTone","var(--foreground)"]]) {
+      if (!lk) { o['_c_' + k] = o[k] === a; o['_nc_' + k] = !o['_c_' + k]; continue; }
+      (o[lk] || []).forEach(it => { it['_c_' + k] = it[k] === a; it['_nc_' + k] = !it['_c_' + k]; });
+    }
+    return o;
+  }
+}
+</script>
+</body>
+</html>

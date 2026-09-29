@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Kosmotheka · proveedores, me falta, series y etiquetas (Fase 6.4–6.7) · escritorio" description="Fase 6.4–6.7 en escritorio (1280 × 800), claro y oscuro: proveedores por tipo, alta que empieza por buscar, Me falta y deseos, series con huecos y «necesita», géneros y etiquetas, textos ES/EN." -->
+<helmet><script src="./ds-base.js"></script></helmet><div style="min-height:100vh;background:oklch(0.93 0 0);padding:40px;display:flex;flex-direction:column;gap:56px;font-family:var(--font-sans)"><header style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font:600 28px var(--font-sans);letter-spacing:-0.02em;color:oklch(0.2 0 0)">Kosmotheka · Fase 6.4–6.7 · escritorio</h1><p style="margin:0;font-size:14px;line-height:1.5;color:oklch(0.4 0 0);text-wrap:pretty">«Lista de deseos» desaparece y no se sustituye: «Me falta» sigue en la navegación y es el catálogo con la vista «Me falta» ya puesta. Los deseos son un filtro («Lo que deseo», «Lo que desean otros») que vale en cualquier vista. El deseo usa el rosa de estado; «necesita» se ve en las dos obras, y en ámbar solo cuando falta lo necesario.</p></header><sc-for list="{{ themes }}" as="th" hint-placeholder-count="1"><section style="display:flex;flex-direction:column;gap:32px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">{{ th.name }}</h2><sc-for list="{{ th.groups }}" as="g" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">{{ g.title }}</h3><div style="display:flex;flex-wrap:wrap;gap:40px 32px"><sc-for list="{{ g.frames }}" as="f" hint-placeholder-count="3"><div data-screen-label="{{ f.n }}" style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);max-width:1280px;text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ th.cls }}" style="width:1280px;height:800px;border-radius:12px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.prov }}" hint-placeholder-val="{{ false }}"><dc-import name="Providers" theme="{{ th.cls }}" type="{{ f.type }}" cloud="{{ f.cloud }}" with-key="{{ f.key }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.add }}" hint-placeholder-val="{{ false }}"><dc-import name="AddDialog" theme="{{ th.cls }}" state="{{ f.state }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.cat }}" hint-placeholder-val="{{ false }}"><dc-import name="Catalog" theme="{{ th.cls }}" view="{{ f.view }}" role="{{ f.role }}" panel="{{ f.panel }}" panel-variant="{{ f.pv }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.ser }}" hint-placeholder-val="{{ false }}"><dc-import name="SeriesPage" theme="{{ th.cls }}" mode="{{ f.mode }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.sdlg }}" hint-placeholder-val="{{ false }}"><dc-import name="SeriesDialog" theme="{{ th.cls }}" state="{{ f.state }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.form }}" hint-placeholder-val="{{ false }}"><dc-import name="FormClassify" theme="{{ th.cls }}" open="{{ f.open }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.tags }}" hint-placeholder-val="{{ false }}"><dc-import name="Tags" theme="{{ th.cls }}" state="{{ f.state }}" hint-size="100%,100%"></dc-import></sc-if></div></div></sc-for></div></div></sc-for><div style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">Referencia: géneros y textos</h3><dc-import name="Reference" theme="{{ th.cls }}" hint-size="1100px,1800px"></dc-import></div></section></sc-for></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;oscuro&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;claro&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.theme ?? 'claro';
+    const build = (cls, name) => {
+      let n = 0; const F = (kind, label, p = {}) => ({ prov: kind === 'prov', add: kind === 'add', cat: kind === 'cat', ser: kind === 'ser', sdlg: kind === 'sdlg', form: kind === 'form', tags: kind === 'tags', label, role: 'admin', panel: false, pv: 'missing', ...p, n: String(++n).padStart(2, '0') });
+      return { cls, name, groups: [
+        { title: '6.4 · Proveedores', frames: [
+          F('prov', 'Ajustes › Proveedores, Libros: tres sin clave y Google Books con la clave puesta', { type: 'book', cloud: false, key: true }),
+          F('prov', 'Películas sin nube ni clave: solo Wikidata; el tipo sale en ámbar en la lista', { type: 'film', cloud: false, key: false }),
+          F('prov', 'Con la nube: todo disponible, sin campos de clave', { type: 'game', cloud: true, key: false }),
+          F('add', 'Alta: busca por título en el tipo elegido; cada resultado dice su fuente; «Añadir a mano» fijo abajo', { state: 'results' }),
+          F('add', 'Película sin nube ni clave: aviso discreto con enlace a la ayuda', { state: 'limited' }),
+          F('add', 'Escaneado un ISBN: la app sabe que es un libro y lo elige sola', { state: 'isbn' }),
+          F('add', 'Código que no dice qué es: «¿Qué es?»', { state: 'ask' })
+        ] },
+        { title: '6.5 · Me falta y Lo deseo', frames: [
+          F('cat', 'Me falta: obras del catálogo sin ejemplares; quién las desea en la columna', { view: 'missing' }),
+          F('cat', 'Ficha de una obra que falta: «Lo tengo» añade un ejemplar; quién la desea, para regalos', { view: 'missing', panel: true, pv: 'missing' }),
+          F('cat', 'Lector: la misma ficha con «Pedir que se añada»; su «Lo deseo» lo pone sin pedir', { view: 'missing', role: 'lector', panel: true, pv: 'reader' }),
+          F('cat', 'Filtro «Lo que deseo», en Todo: lo que falta y lo que ya hay', { view: 'wishMine' }),
+          F('cat', 'Filtro «Lo que desean otros»: la lista de regalos', { view: 'wishOthers' })
+        ] },
+        { title: '6.6 · Series y «necesita»', frames: [
+          F('ser', 'Saga con orden: números, lo que falta punteado y el hueco sin apuntar', { mode: 'ordered' }),
+          F('ser', 'Reordenar: asas y número editable', { mode: 'reorder' }),
+          F('ser', 'Línea sin orden (Catán): sin números', { mode: 'unordered' }),
+          F('sdlg', 'Añadir a una serie desde la ficha: elegir la serie y el número', { state: 'pick' }),
+          F('sdlg', 'Serie nueva: con orden o sin orden', { state: 'new' }),
+          F('cat', 'Tienes la expansión pero no el juego base: aviso ámbar arriba de la ficha', { view: 'genre', panel: true, pv: 'expansion' }),
+          F('cat', 'El juego base: «Lo necesitan» lista sus expansiones', { view: 'genre', panel: true, pv: 'base' })
+        ] },
+        { title: '6.7 · Géneros y etiquetas', frames: [
+          F('form', 'Formulario: géneros de la lista del tipo, varios a la vez', { open: 'genres' }),
+          F('form', 'Etiquetas: autocompletado con las de la biblioteca, o crear una', { open: 'tags' }),
+          F('cat', 'Catálogo filtrado por género y etiqueta, junto a los otros filtros', { view: 'genre' }),
+          F('tags', 'Ajustes de la biblioteca › Etiquetas', { state: 'list' }),
+          F('tags', 'Renombrar a una que ya existe: se unen', { state: 'rename' }),
+          F('tags', 'Borrar: se quita de las obras, no las borra', { state: 'delete' })
+        ] }
+      ] };
+    };
+    const themes = [];
+    if (t !== 'oscuro') themes.push(build('light', 'Claro'));
+    if (t !== 'claro') themes.push(build('dark', 'Oscuro'));
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>

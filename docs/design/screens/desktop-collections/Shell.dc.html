@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div style="width:1280px;height:800px;display:flex;overflow:hidden;background:var(--background);color:var(--foreground);font-family:var(--font-sans)"><dc-import name="Sidebar" active="{{ active }}" role="{{ role }}" hint-size="256px,100%"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column"><dc-import name="TopBar" role="{{ role }}" hint-size="100%,56px"></dc-import><div style="flex:1;padding:24px;display:grid;grid-template-columns:repeat(6,1fr);gap:20px;align-content:start"><sc-for list="{{ ghosts }}" as="g" hint-placeholder-count="12"><div style="aspect-ratio:2/3;border-radius:6px;background:var(--muted)"></div></sc-for></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+  renderVals() { return { active: this.props.active ?? 'catalog', role: this.props.role ?? 'admin', ghosts: Array.from({ length: 12 }, (_, i) => ({ i })) }; }
+}
+</script>
+</body>
+</html>

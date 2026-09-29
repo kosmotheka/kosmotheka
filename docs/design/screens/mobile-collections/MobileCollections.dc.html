@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Kosmotheka · proveedores, me falta, series y etiquetas (Fase 6.4–6.7) · móvil" description="Fase 6.4–6.7 en móvil (390 × 844), claro y oscuro: proveedores, alta que empieza por buscar, Me falta y deseos, series con huecos y «necesita», géneros y etiquetas. Referencia de géneros y textos ES/EN en DesktopCollections." -->
+<helmet><script src="./ds-base.js"></script></helmet><div style="min-height:100vh;background:oklch(0.93 0 0);padding:40px;display:flex;flex-direction:column;gap:56px;font-family:var(--font-sans)"><header style="display:flex;flex-direction:column;gap:6px;max-width:860px"><h1 style="margin:0;font:600 28px var(--font-sans);letter-spacing:-0.02em;color:oklch(0.2 0 0)">Kosmotheka · Fase 6.4–6.7 · móvil</h1><p style="margin:0;font-size:14px;line-height:1.5;color:oklch(0.4 0 0);text-wrap:pretty">La barra inferior no cambia: Catálogo · ¿Lo tengo? · Me falta. «Me falta» ya no tiene «Solo deseos»: los deseos son el primer filtro de la vista. En «Me falta» el botón flotante es «Apuntar» (añadir sin ejemplar).</p></header><sc-for list="{{ themes }}" as="th" hint-placeholder-count="1"><section style="display:flex;flex-direction:column;gap:32px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">{{ th.name }}</h2><sc-for list="{{ th.groups }}" as="g" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">{{ g.title }}</h3><div style="display:flex;flex-wrap:wrap;gap:40px 28px"><sc-for list="{{ g.frames }}" as="f" hint-placeholder-count="4"><div data-screen-label="{{ f.n }}" style="width:390px;display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);min-height:36px;text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ th.cls }}" style="width:390px;height:844px;border-radius:28px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.prov }}" hint-placeholder-val="{{ false }}"><dc-import name="MProviders" theme="{{ th.cls }}" type="{{ f.type }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.add }}" hint-placeholder-val="{{ false }}"><dc-import name="MAdd" theme="{{ th.cls }}" state="{{ f.state }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.cat }}" hint-placeholder-val="{{ false }}"><dc-import name="MCatalog" theme="{{ th.cls }}" view="{{ f.view }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.work }}" hint-placeholder-val="{{ false }}"><dc-import name="MWork" theme="{{ th.cls }}" variant="{{ f.variant }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.ser }}" hint-placeholder-val="{{ false }}"><dc-import name="MSeries" theme="{{ th.cls }}" mode="{{ f.mode }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.form }}" hint-placeholder-val="{{ false }}"><dc-import name="MClassify" theme="{{ th.cls }}" open="{{ f.open }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.tags }}" hint-placeholder-val="{{ false }}"><dc-import name="MTags" theme="{{ th.cls }}" sheet="{{ f.tsheet }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.sheet }}" hint-placeholder-val="{{ false }}"><dc-import name="MSeriesSheet" theme="{{ th.cls }}" state="{{ f.state }}" hint-size="100%,100%"></dc-import></sc-if></div></div></sc-for></div></div></sc-for></section></sc-for></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;oscuro&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;claro&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.theme ?? 'claro';
+    const build = (cls, name) => {
+      let n = 0; const F = (k, label, p = {}) => ({ prov: k === 'prov', add: k === 'add', cat: k === 'cat', work: k === 'work', ser: k === 'ser', form: k === 'form', tags: k === 'tags', sheet: k === 'sheet', label, ...p, n: String(++n).padStart(2, '0') });
+      return { cls, name, groups: [
+        { title: '6.4 · Proveedores', frames: [F('prov', 'Ajustes › Proveedores: cada tipo dice cuántas fuentes usa; en ámbar, los que buscan poco', { type: '' }), F('prov', 'Libros: las que no piden clave y la de Google Books', { type: 'book' }), F('add', 'Alta: busca por título en el tipo elegido; fuente en cada resultado', { state: 'results' }), F('add', 'Películas sin nube ni clave: aviso discreto', { state: 'limited' }), F('add', 'Un ISBN escaneado elige Libro solo', { state: 'isbn' }), F('add', 'Código sin tipo: «¿Qué es?»', { state: 'ask' })] },
+        { title: '6.5 · Me falta y Lo deseo', frames: [F('cat', 'Me falta: quién desea cada obra, en rosa', { view: 'missing' }), F('work', 'Ficha de una obra que falta: «Lo tengo»', { variant: 'missing' }), F('work', 'Lector: «Pedir que se añada»; su deseo, puesto sin pedir', { variant: 'reader' }), F('cat', '«Lo que desean otros»: la lista de regalos', { view: 'wishOthers' })] },
+        { title: '6.6 · Series y «necesita»', frames: [F('ser', 'Saga con huecos: lo que falta y el número sin apuntar', { mode: 'ordered' }), F('ser', 'Reordenar', { mode: 'reorder' }), F('ser', 'Línea sin orden (Catán): sin números', { mode: 'unordered' }), F('sheet', 'Añadir a una serie desde la ficha: elegir serie y número', { state: 'pick' }), F('sheet', 'Serie nueva: con orden o sin orden', { state: 'new' }), F('work', 'Expansión sin el juego base: aviso ámbar', { variant: 'expansion' }), F('work', 'El juego base: «Lo necesitan»', { variant: 'base' })] },
+        { title: '6.7 · Géneros y etiquetas', frames: [F('form', 'Géneros: hoja con la lista cerrada del tipo', { open: 'genres' }), F('form', 'Etiquetas: autocompletado o crear', { open: 'tags' }), F('cat', 'Catálogo filtrado por género y etiqueta', { view: 'genre' }), F('tags', 'Ajustes de la biblioteca › Etiquetas', { tsheet: false }), F('tags', 'Renombrar o borrar una etiqueta', { tsheet: true })] }
+      ] };
+    };
+    const themes = [];
+    if (t !== 'oscuro') themes.push(build('light', 'Claro'));
+    if (t !== 'claro') themes.push(build('dark', 'Oscuro'));
+    return { themes };
+  }
+}
+</script>
+</body>
+</html>

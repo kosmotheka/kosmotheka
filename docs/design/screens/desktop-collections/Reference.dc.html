@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div class="{{ theme }}" style="width:1100px;padding:32px;border-radius:12px;background:var(--background);color:var(--foreground);font-family:var(--font-sans);display:flex;flex-direction:column;gap:28px;box-sizing:border-box"><section style="display:flex;flex-direction:column;gap:10px"><h3 style="margin:0;font-size:16px;font-weight:600">Géneros por tipo (lista cerrada que trae la app)</h3><div style="display:grid;grid-template-columns:160px 1fr;gap:8px 16px;font-size:13.5px;line-height:1.5"><sc-for list="{{ genres }}" as="g" hint-placeholder-count="8"><span style="font-weight:600">{{ g.t }}</span><span style="color:var(--muted-foreground);text-wrap:pretty">{{ g.l }}</span></sc-for></div></section><section style="display:flex;flex-direction:column;gap:10px"><h3 style="margin:0;font-size:16px;font-weight:600">Textos nuevos · ES / EN</h3><div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);font-size:13.5px"><sc-for list="{{ strings }}" as="s" hint-placeholder-count="20"><span style="padding:7px 12px 7px 0;border-bottom:1px solid var(--border)">{{ s.es }}</span><span style="padding:7px 0;border-bottom:1px solid var(--border);color:var(--muted-foreground)">{{ s.en }}</span></sc-for></div></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:1600}}">
+class Component extends DCLogic {
+  renderVals() {
+    const G = [
+      ['Libros', 'Novela · Ciencia ficción · Fantasía · Terror · Misterio y policiaca · Histórica · Romántica · Aventuras · Poesía · Teatro · Ensayo · Biografía y memorias · Divulgación · Infantil · Juvenil · Rol · Cocina · Arte y fotografía · Viajes · Otros'],
+      ['Cómics', 'Superhéroes · Manga · Ciencia ficción · Fantasía · Terror · Humor · Aventuras · Novela gráfica · Policiaco · Histórico · Infantil · Otros'],
+      ['Juegos de mesa', 'Estrategia · Familiar · Party · Cooperativo · Abstracto · Cartas · Colocación de losetas · Colocación de trabajadores · Construcción de mazos · Deducción · Wargame · Infantil · Rol · Otros'],
+      ['Películas y series', 'Acción · Aventuras · Animación · Ciencia ficción · Comedia · Documental · Drama · Fantasía · Musical · Suspense · Terror · Romántica · Bélica · Western · Policiaca · Infantil · Otros'],
+      ['Videojuegos', 'Acción · Aventura · Rol · Estrategia · Plataformas · Puzles · Carreras · Deportes · Lucha · Disparos · Simulación · Terror · Party · Otros'],
+      ['Música', 'Rock · Pop · Jazz · Clásica · Electrónica · Hip hop · Folk · Flamenco · Blues · Soul y funk · Metal · Bandas sonoras · Infantil · Otros'],
+      ['Otro', 'Sin géneros: solo etiquetas']
+    ];
+    const S = [['Proveedores de datos', 'Data providers'], ['Sin clave', 'No key needed'], ['Pide clave', 'Needs a key'], ['Por la nube', 'Through the cloud'], ['Pega aquí tu clave', 'Paste your key here'], ['Cómo conseguir una clave', 'How to get a key'], ['Sin nube ni clave, las películas solo se buscan en Wikidata: puede que falten carátulas o ediciones.', 'Without the cloud or a key, films are only searched on Wikidata: covers or editions may be missing.'], ['Cómo buscar mejor', 'How to search better'], ['¿Qué es?', 'What is it?'], ['Este código no dice de qué tipo es. Elige uno y lo buscamos ahí.', "This code doesn't say what it is. Pick a type and we'll search there."], ['Añadir a mano', 'Add manually'], ['Ya está en Familia · añadir un ejemplar', 'Already in Familia · add a copy'], ['Lo tengo', 'I have it'], ['Me falta', 'Missing'], ['Lo deseo', 'I want it'], ['Lo desean Laura, Hugo', 'Wanted by Laura, Hugo'], ['Lo que deseo', 'What I want'], ['Lo que desean otros', 'What others want'], ['Pedir que se añada', 'Ask to add it'], ['Añadir a una serie', 'Add to a series'], ['Con orden · Una saga: 1, 2, 3…', 'Ordered · A saga: 1, 2, 3…'], ['Sin orden · Una línea, como Catán', 'Unordered · A line, like Catan'], ['Reordenar', 'Reorder'], ['Hueco · Apuntar aquí', 'Gap · Add one here'], ['Necesita', 'Needs'], ['Lo necesitan', 'Needed by'], ['Necesita Dune: Imperium, que no tienes.', "Needs Dune: Imperium, which you don't have."], ['Géneros', 'Genres'], ['Etiquetas', 'Tags'], ['Crear «reg»', 'Create “reg”'], ['Ya existe «regalos»: se unirán las dos', '“regalos” already exists: both will be merged'], ['¿Borrar «para viajes»? Se quita de las 6 obras que la llevan.', 'Delete “para viajes”? It will be removed from the 6 works that have it.'], ['Quitar filtros', 'Clear filters']];
+    return { theme: this.props.theme ?? 'light', genres: G.map(([t, l]) => ({ t, l })), strings: S.map(([es, en]) => ({ es, en })) };
+  }
+}
+</script>
+</body>
+</html>

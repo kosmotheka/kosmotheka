@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div class="{{ theme }}" style="width:1280px;height:800px;position:relative;overflow:hidden;font-family:var(--font-sans);color:var(--foreground)"><dc-import name="Catalog" theme="{{ theme }}" view="missing" panel="{{ true }}" panel-variant="missing" hint-size="100%,100%"></dc-import><div style="position:absolute;inset:0;background:oklch(0 0 0 / 45%);display:flex;align-items:center;justify-content:center"><div role="dialog" aria-label="Añadir a una serie" style="width:480px;border-radius:14px;background:var(--background);border:1px solid var(--border);box-shadow:0 24px 64px -16px oklch(0 0 0 / 40%);display:flex;flex-direction:column;gap:16px;padding:22px 24px"><div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:18px;font-weight:600">Añadir a una serie</h2><span style="font-size:14px;color:var(--muted-foreground)">Dune: El emperador-dios</span></div><div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:13px;font-weight:500">Serie</label><div style="height:38px;display:flex;align-items:center;padding:0 12px;border-radius:8px;border:1px solid var(--ring);box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 25%,transparent);font-size:14px">{{ q }}<span style="width:1px;height:18px;background:var(--foreground);margin-left:1px"></span></div><div role="listbox" style="border:1px solid var(--border);border-radius:10px;padding:4px;display:flex;flex-direction:column"><sc-for list="{{ opts }}" as="o" hint-placeholder-count="3"><sc-if value="{{ o._c_bg }}" hint-placeholder-val="{{ false }}"><div role="option" style="height:40px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:7px;background:var(--muted);font-size:14px"><x-import component-from-global-scope="Library.{{ o.icon }}" size="15" hint-size="15px,15px"></x-import><span style="flex:1">{{ o.label }}</span><span style="font-size:12.5px;color:var(--muted-foreground)">{{ o.meta }}</span></div></sc-if><sc-if value="{{ o._nc_bg }}" hint-placeholder-val="{{ true }}"><div role="option" style="height:40px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:7px;background:transparent;font-size:14px"><x-import component-from-global-scope="Library.{{ o.icon }}" size="15" hint-size="15px,15px"></x-import><span style="flex:1">{{ o.label }}</span><span style="font-size:12.5px;color:var(--muted-foreground)">{{ o.meta }}</span></div></sc-if></sc-for></div></div><sc-if value="{{ newOne }}" hint-placeholder-val="{{ false }}"><div role="radiogroup" aria-label="Tipo de serie" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div role="radio" aria-checked="true" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--primary);display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">Con orden</span><span style="font-size:12.5px;color:var(--muted-foreground)">Una saga: 1, 2, 3…</span></div><div role="radio" aria-checked="false" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">Sin orden</span><span style="font-size:12.5px;color:var(--muted-foreground)">Una línea, como Catán</span></div></div></sc-if><sc-if value="{{ picked }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:flex-end;gap:12px"><div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:13px;font-weight:500">Número</label><div style="width:88px;height:38px;display:flex;align-items:center;padding:0 12px;border-radius:8px;border:1px solid var(--input);font:600 14px var(--font-mono)">4</div></div><span style="flex:1;padding-bottom:10px;font-size:13px;color:var(--muted-foreground)">Entre «Hijos de Dune» (3) y el hueco del 5</span></div></sc-if><div style="display:flex;justify-content:flex-end;gap:8px"><button style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--background);color:var(--foreground);font:500 14px var(--font-sans)">Cancelar</button><button style="height:36px;padding:0 14px;border-radius:8px;border:0;background:var(--primary);color:var(--primary-foreground);font:600 14px var(--font-sans)">{{ ok }}</button></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pick&quot;,&quot;new&quot;],&quot;default&quot;:&quot;pick&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  _rv() {
+    const nw = (this.props.state ?? 'pick') === 'new';
+    const opts = nw
+      ? [['PlusIcon', 'Crear la serie «Herbert, relatos»', ''], ['ListOrderedIcon', 'Dune', '6 obras']]
+      : [['ListOrderedIcon', 'Dune', '6 obras · con orden'], ['ListOrderedIcon', 'Dune (todo)', '14 obras · con orden'], ['LayersIcon', 'Dune: Imperium', '3 obras · sin orden']];
+    return { theme: this.props.theme ?? 'light', q: nw ? 'Herbert, relatos' : 'Dune', newOne: nw, picked: !nw, ok: nw ? 'Crear y añadir' : 'Añadir a Dune', opts: opts.map(([icon, label, meta], i) => ({ icon, label, meta, bg: i === 0 ? 'var(--muted)' : 'transparent' })) };
+  }
+  renderVals() {
+    const o = this._rv();
+    for (const [lk, k, a] of [["opts","bg","var(--muted)"]]) {
+      if (!lk) { o['_c_' + k] = o[k] === a; o['_nc_' + k] = !o['_c_' + k]; continue; }
+      (o[lk] || []).forEach(it => { it['_c_' + k] = it[k] === a; it['_nc_' + k] = !it['_c_' + k]; });
+    }
+    return o;
+  }
+}
+</script>
+</body>
+</html>
