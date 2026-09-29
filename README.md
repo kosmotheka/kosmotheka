@@ -21,7 +21,7 @@ Phases 1 (desktop catalogue) and 2 (phone and local sync) are feature-complete, 
 - Accent-insensitive full-text search and filters by format, owner and location.
 - Backups (zip with covers) and CSV import/export.
 - Sync between devices over the home network, with no server or account: pair by QR code, encrypted with a pinned certificate, conflict-free merging.
-- On the phone: scan a barcode to check whether you already own a book, even offline, and keep a wishlist.
+- On the phone: scan a barcode to check whether you already own a book, even offline.
 - English and Spanish.
 
 See the roadmap and the architecture decision log in [`docs/`](docs/) (currently in Spanish).

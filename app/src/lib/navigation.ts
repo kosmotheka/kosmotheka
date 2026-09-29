@@ -24,7 +24,7 @@ export type Overlay =
   | { name: "backups" }
   | { name: "filters" }
   | { name: "burst" }
-  | { name: "add"; prefill?: { isbn?: string; title?: string; author?: string }; wishId?: string }
+  | { name: "add"; prefill?: { isbn?: string; title?: string; author?: string } }
   | { name: "book"; editionId: string }
   | { name: "newLibrary" }
   | { name: "deleteLibrary" }

@@ -29,7 +29,6 @@ pub enum Entity {
     /// A genre linked to a work, from the closed list in `genre::GENRES`; same
     /// no-unique-constraint rule as `WorkTag`.
     WorkGenre,
-    Wish,
     /// A group of works (D61): a saga (ordered) or a product line (not).
     Series,
     /// A work linked to a series; no unique constraint (same rule as `WorkTag`).
@@ -201,13 +200,6 @@ const WORK_RELATION_FIELDS: &[FieldSpec] = &[
     field("related_work_id", FieldType::Ref(Entity::Work), true),
     field("relation", FieldType::OneOf(WORK_RELATIONS), true),
 ];
-const WISH_FIELDS: &[FieldSpec] = &[
-    field("title", FieldType::Text, true),
-    field("author", FieldType::Text, false),
-    field("isbn13", FieldType::Text, false),
-    field("note", FieldType::Text, false),
-    field("cover_url", FieldType::Text, false),
-];
 const REVOCATION_FIELDS: &[FieldSpec] = &[
     field("device_id", FieldType::Text, true),
     field("device_name", FieldType::Text, true),
@@ -267,7 +259,6 @@ impl Entity {
             Entity::Tag => "tags",
             Entity::WorkTag => "work_tags",
             Entity::WorkGenre => "work_genres",
-            Entity::Wish => "wishes",
             Entity::Series => "series",
             Entity::SeriesEntry => "series_entries",
             Entity::WorkRelation => "work_relations",
@@ -313,7 +304,6 @@ impl Entity {
             Entity::Tag => TAG_FIELDS,
             Entity::WorkTag => WORK_TAG_FIELDS,
             Entity::WorkGenre => WORK_GENRE_FIELDS,
-            Entity::Wish => WISH_FIELDS,
             Entity::Series => SERIES_FIELDS,
             Entity::SeriesEntry => SERIES_ENTRY_FIELDS,
             Entity::WorkRelation => WORK_RELATION_FIELDS,

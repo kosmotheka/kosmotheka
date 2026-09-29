@@ -47,6 +47,9 @@ pub struct BookSummary {
     pub my_status: Option<String>,
     pub my_favorite: bool,
     pub my_wished: bool,
+    /// Names of the members who wished the work (D61): this device's person first,
+    /// as `"me"` if they wished it, the rest sorted by name.
+    pub wished_by: Vec<String>,
     pub tags: Vec<String>,
 }
 
@@ -84,6 +87,9 @@ pub struct BookDetail {
     pub genres: Vec<String>,
     /// Names, sorted case-insensitively.
     pub tags: Vec<String>,
+    /// Names of the members who wished the work (D61): this device's person first,
+    /// as `"me"` if they wished it, the rest sorted by name.
+    pub wished_by: Vec<String>,
     /// The series this work belongs to.
     pub series: Vec<WorkSeries>,
     /// Works this one requires (an expansion needs its base game).
@@ -1052,8 +1058,18 @@ pub fn list_books(
 ) -> Result<Vec<BookSummary>> {
     // The first argument is this device, whose person's marks come with each work.
     let device = ops::device_id(conn)?;
+    let my_member: Option<String> = conn
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [library, &device],
+            |row| row.get(0),
+        )
+        .optional()?
+        .flatten();
     let mut conditions: Vec<String> = vec!["e.library_id = ?".to_owned()];
     let mut args: Vec<SqlValue> = vec![
+        my_member.clone().map_or(SqlValue::Null, SqlValue::Text),
+        my_member.clone().map_or(SqlValue::Null, SqlValue::Text),
         SqlValue::Text(device.clone()),
         SqlValue::Text(library.to_owned()),
     ];
@@ -1171,7 +1187,13 @@ pub fn list_books(
             (SELECT group_concat(name, char(31) ORDER BY name COLLATE NOCASE)
                FROM (SELECT DISTINCT t.name AS name FROM work_tags wt
                        JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
-                      WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id))
+                      WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id)),
+            (SELECT group_concat(
+                      CASE WHEN wm.member_id = ? THEN 'me' ELSE wmem.name END,
+                      char(31) ORDER BY wm.member_id = ? DESC, wmem.name COLLATE NOCASE
+                    )
+               FROM marks wm JOIN members wmem ON wmem.library_id = wm.library_id AND wmem.id = wm.member_id
+              WHERE wm.library_id = e.library_id AND wm.work_id = w.id AND wm.wished = 1)
          FROM editions e
          JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
          LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
@@ -1204,6 +1226,7 @@ pub fn list_books(
             my_wished: row.get::<_, Option<i64>>(14)?.unwrap_or(0) != 0,
             kind: row.get::<_, String>(15)?.parse().unwrap_or_default(),
             tags: split_list(row.get(16)?),
+            wished_by: split_list(row.get(17)?),
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -1220,6 +1243,29 @@ pub fn list_books_everywhere(conn: &Connection, filter: &BookFilter) -> Result<V
         books.extend(list_books(conn, &library, filter)?);
     }
     Ok(books)
+}
+
+/// What the catalog knows about an ISBN, from the local database only, so it works
+/// in a shop without coverage.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IsbnCheck {
+    pub isbn13: String,
+    pub books: Vec<BookSummary>,
+}
+
+/// Looks in every library on the device: "do I have it?" is about the household, not one list.
+pub fn check_isbn(conn: &Connection, raw: &str) -> Result<IsbnCheck> {
+    let isbn = Isbn::parse(raw)
+        .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
+    let filter = BookFilter {
+        query: Some(isbn.as_str().to_owned()),
+        ..BookFilter::default()
+    };
+    Ok(IsbnCheck {
+        isbn13: isbn.as_str().to_owned(),
+        books: list_books_everywhere(conn, &filter)?,
+    })
 }
 
 /// Values already in the catalog, for autocompletion and filters.
@@ -1308,6 +1354,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     can_delete: false,
                     genres: Vec::new(),
                     tags: Vec::new(),
+                    wished_by: Vec::new(),
                     series: Vec::new(),
                     requires: Vec::new(),
                     required_by: Vec::new(),
@@ -1380,6 +1427,26 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
         )?
         .query_map([library, &book.work_id], |row| row.get(0))?
         .collect::<rusqlite::Result<_>>()?;
+
+    let device = ops::device_id(conn)?;
+    let my_member: Option<String> = conn
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [library, &device],
+            |row| row.get(0),
+        )
+        .optional()?
+        .flatten();
+    book.wished_by = split_list(conn.query_row(
+        "SELECT group_concat(
+                      CASE WHEN m.id = ?1 THEN 'me' ELSE m.name END,
+                      char(31) ORDER BY m.id = ?1 DESC, m.name COLLATE NOCASE
+                    )
+               FROM marks mk JOIN members m ON m.library_id = mk.library_id AND m.id = mk.member_id
+              WHERE mk.library_id = ?2 AND mk.work_id = ?3 AND mk.wished = 1",
+        rusqlite::params![my_member, library, &book.work_id],
+        |row| row.get(0),
+    )?);
 
     book.series = conn
         .prepare(
@@ -1664,6 +1731,27 @@ mod tests {
     }
 
     #[test]
+    fn check_isbn_finds_books_in_any_format() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("Owned", Some("9780306406157"), "Ana", Format::Ebook),
+            None,
+        )
+        .unwrap();
+
+        let owned = check_isbn(&conn, "0-306-40615-2").unwrap();
+        assert_eq!(owned.books.len(), 1);
+        assert_eq!(owned.books[0].owners, vec!["Ana"]);
+
+        let missing = check_isbn(&conn, "9780140328721").unwrap();
+        assert!(missing.books.is_empty());
+
+        assert!(matches!(check_isbn(&conn, "12"), Err(Error::Validation(_))));
+    }
+
+    #[test]
     fn same_isbn_adds_a_copy_to_the_existing_edition() {
         let mut conn = db::open_in_memory().unwrap();
         create_book(
@@ -1865,6 +1953,62 @@ mod tests {
                 .is_empty(),
             "kept as a request, no work created"
         );
+    }
+
+    #[test]
+    fn a_reader_asks_to_add_a_copy_of_a_missing_work_an_editor_adds_it_directly() {
+        let mut conn = db::open_in_memory().unwrap();
+        let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
+        let edition_id = create_missing(&mut conn, LIB, &missing, None)
+            .unwrap()
+            .edition_id;
+
+        let device = ops::device_id(&conn).unwrap();
+        let (admin, reader) = (ops::new_id(), ops::new_id());
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "member.roles",
+            vec![
+                Change::create(
+                    Entity::Member,
+                    &admin,
+                    json!({ "name": "Tersoal", "role": "admin" }),
+                ),
+                Change::create(
+                    Entity::Member,
+                    &reader,
+                    json!({ "name": "Hugo", "role": "reader" }),
+                ),
+                Change::update(Entity::Device, &device, json!({ "member_id": reader })),
+            ],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        let new_copy = copy("Hugo", Format::Paperback);
+        let refused = add_copy(&mut conn, LIB, &edition_id, &new_copy);
+        assert!(matches!(refused, Err(Error::NotAllowed)), "{refused:?}");
+
+        let (_, requested) =
+            ops::as_request(None, || add_copy(&mut conn, LIB, &edition_id, &new_copy)).unwrap();
+        assert!(requested);
+        assert!(
+            get_book(&conn, LIB, &edition_id).unwrap().copies.is_empty(),
+            "kept as a request, no copy added"
+        );
+
+        // Promoting Hugo is an administrator's call, not something this device (his)
+        // can do to itself; the row is set directly, since only his new role matters
+        // here, not how he came to have it.
+        conn.execute(
+            "UPDATE members SET role = 'editor' WHERE library_id = ?1 AND id = ?2",
+            rusqlite::params![LIB, &reader],
+        )
+        .unwrap();
+        add_copy(&mut conn, LIB, &edition_id, &new_copy).unwrap();
+        assert_eq!(get_book(&conn, LIB, &edition_id).unwrap().copies.len(), 1);
     }
 
     #[test]
@@ -2523,6 +2667,83 @@ mod tests {
             }),
             vec!["A"]
         );
+    }
+
+    #[test]
+    fn wished_by_lists_who_wishes_a_work_with_me_first() {
+        use crate::marks::{self, Mark};
+        use crate::people::PersonPick;
+
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("Dune", None, "Ana", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        let edition_id = list_books(&conn, LIB, &BookFilter::default())
+            .unwrap()
+            .into_iter()
+            .find(|b| b.title == "Dune")
+            .unwrap()
+            .edition_id;
+        let work_id = get_book(&conn, LIB, &edition_id).unwrap().work_id;
+
+        marks::claim_person(
+            &mut conn,
+            LIB,
+            &PersonPick {
+                id: None,
+                name: "Tersoal".into(),
+            },
+        )
+        .unwrap();
+        marks::set_mark(
+            &mut conn,
+            LIB,
+            &work_id,
+            &Mark {
+                wished: true,
+                ..Mark::default()
+            },
+        )
+        .unwrap();
+
+        let bea = new_id();
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &bea,
+                json!({ "name": "Bea" }),
+            )],
+        )
+        .unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "mark.set",
+            vec![Change::create(
+                Entity::Mark,
+                kosmotheka_domain::mark_id(&bea, &work_id),
+                json!({ "member_id": bea, "work_id": work_id, "wished": true }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        let summary = list_books(&conn, LIB, &BookFilter::default())
+            .unwrap()
+            .into_iter()
+            .find(|b| b.title == "Dune")
+            .unwrap();
+        assert_eq!(summary.wished_by, vec!["me", "Bea"]);
+        let detail = get_book(&conn, LIB, &edition_id).unwrap();
+        assert_eq!(detail.wished_by, vec!["me", "Bea"]);
     }
 
     #[test]

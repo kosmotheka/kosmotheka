@@ -34,6 +34,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0022_series.sql")),
     M::up(include_str!("../migrations/0023_copy_platform.sql")).foreign_key_check(),
     M::up(include_str!("../migrations/0024_edition_notes.sql")),
+    M::up(include_str!("../migrations/0025_drop_wishes.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -302,6 +303,51 @@ mod tests {
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .unwrap();
         assert_eq!(version, 16);
+    }
+
+    /// A local log written before the `wish` entity was dropped (D61) may still have
+    /// an operation that touches it. The migration only drops the `wishes` table; the
+    /// operation stays in the log, and opening the database, then rebuilding a
+    /// library from its log, must not fail on it.
+    #[test]
+    fn a_wish_operation_left_in_the_log_does_not_stop_the_database_from_opening() {
+        let dir = std::env::temp_dir().join(format!("library-db-wish-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.sqlite3");
+        {
+            let mut conn = Connection::open(&path).unwrap();
+            MIGRATIONS.to_version(&mut conn, 24).unwrap();
+            conn.execute(
+                "INSERT INTO operations (id, hlc, device_id, intent, changes) VALUES (
+                    'o1',
+                    '0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa',
+                    '01997c7e-0000-7000-8000-0000000000fa',
+                    'wish.add',
+                    '[{\"entity\":\"wish\",\"id\":\"w1\",\"action\":\"create\",\"fields\":{\"title\":\"Tehanu\"}}]'
+                )",
+                [],
+            )
+            .unwrap();
+        }
+
+        let db = Database::open(path.clone()).unwrap();
+
+        let conn = db.lock().unwrap();
+        let tables: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE name = 'wishes'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(tables, 0, "the wishes table is dropped");
+        let log = sync::library_log(&conn, ops::DEFAULT_LIBRARY_ID).unwrap();
+        assert!(
+            log.iter().all(|op| op.id != "o1"),
+            "the unparsable operation is left out entirely, not replayed with some changes missing"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

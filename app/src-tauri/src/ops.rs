@@ -454,7 +454,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 22] = [
+const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 21] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::ComicDetails,
@@ -473,7 +473,6 @@ const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 22] = [
     Entity::Tag,
     Entity::Series,
     Entity::Member,
-    Entity::Wish,
     Entity::Revocation,
     Entity::Device,
     Entity::ChangeRequest,
@@ -525,6 +524,21 @@ fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| elapsed.as_millis() as u64)
+}
+
+/// Parses a stored operation's `changes` column, skipping any change whose entity
+/// this build no longer knows: an entity dropped from the schema (like `wish`,
+/// D61) can still sit in an old local log, and it must not stop it from being
+/// read for local, read-only purposes (listing or describing a request). Lenient
+/// on purpose: never use it to rebuild what is sent to another device, since
+/// dropping a change would no longer match the operation's signature (see
+/// `sync::operations_since`, which skips the whole operation instead).
+pub fn parse_known_changes(raw: &str) -> Result<Vec<Change>> {
+    let values: Vec<Value> = serde_json::from_str(raw)?;
+    Ok(values
+        .into_iter()
+        .filter_map(|value| serde_json::from_value(value).ok())
+        .collect())
 }
 
 #[cfg(test)]

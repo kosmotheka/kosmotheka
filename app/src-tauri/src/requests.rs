@@ -54,7 +54,7 @@ pub struct Request {
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Summary {
-    /// `add_book`, `add_copy`, `delete_copy`, `delete_book`, `edit`, `add_wish` or `other`.
+    /// `add_book`, `add_copy`, `delete_copy`, `delete_book`, `edit` or `other`.
     pub action: &'static str,
     pub title: Option<String>,
     pub authors: Vec<String>,
@@ -128,7 +128,7 @@ fn list(conn: &Connection, library: &str, only: &str) -> Result<Vec<Request>> {
     for row in rows {
         let (id, intent, hlc, changes, device_id, device_name, person, member, resolved, when) =
             row?;
-        let all: Vec<Change> = serde_json::from_str(&changes)?;
+        let all: Vec<Change> = ops::parse_known_changes(&changes)?;
         let note = all
             .iter()
             .find(|c| c.entity == Entity::ChangeRequest && c.id == id)
@@ -258,7 +258,7 @@ fn pending(conn: &Connection, library: &str, id: &str) -> Result<Vec<Change>> {
     if resolved {
         return Err(Error::RequestResolved);
     }
-    Ok(requested(serde_json::from_str(&changes)?))
+    Ok(requested(ops::parse_known_changes(&changes)?))
 }
 
 /// Fails unless the request exists and nobody has resolved it yet.
@@ -383,9 +383,6 @@ fn summarize(conn: &Connection, library: &str, changes: &[Change]) -> Result<Sum
             _ => stored_text(conn, library, Entity::Copy, &change.id, "edition_id")
                 .and_then(|id| edition_title(&id)),
         };
-    } else if let Some(wish) = find(Entity::Wish, Action::Create) {
-        summary.action = "add_wish";
-        summary.title = field_text(wish, "title");
     }
     Ok(summary)
 }

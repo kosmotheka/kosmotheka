@@ -32,7 +32,6 @@ enum CatalogEntity: string
     case Tag = 'tag';
     case WorkTag = 'work_tag';
     case WorkGenre = 'work_genre';
-    case Wish = 'wish';
     case Series = 'series';
     case SeriesEntry = 'series_entry';
     case WorkRelation = 'work_relation';
@@ -159,13 +158,6 @@ enum CatalogEntity: string
             self::WorkGenre => [
                 'work_id' => $ref(true),
                 'genre' => $oneOf(...self::GENRES),
-            ],
-            self::Wish => [
-                'title' => $text(true),
-                'author' => $text(),
-                'isbn13' => $text(),
-                'note' => $text(),
-                'cover_url' => $text(),
             ],
             self::Series => [
                 'name' => $text(true),

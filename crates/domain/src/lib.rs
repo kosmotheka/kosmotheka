@@ -11,7 +11,6 @@ pub mod operation;
 pub mod permission;
 pub mod schema;
 pub mod signature;
-pub mod wish;
 
 pub use book::{
     COVER_HOSTS, ContributorInput, ContributorRole, CopyInput, EditionInput, ErrorCode, FieldError,
@@ -27,4 +26,3 @@ pub use operation::{Action, Change, Operation, OperationError, OperationErrorCod
 pub use permission::{LibraryView, Role, is_allowed};
 pub use schema::{DETAILS, Entity, FieldSpec, FieldType, WORK_RELATIONS};
 pub use signature::{DeviceKey, SignatureError, canonical_bytes, verify};
-pub use wish::{ValidWish, WishInput};

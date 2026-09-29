@@ -1,190 +1,182 @@
 [
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "result": "valid"
+    },
     "name": "signed by its author",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "author": "Ursula K. Le Guin",
-            "note": null,
-            "title": "Tehanu"
+            "name": "Minotauro"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000301",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "W4Z7S2hubQvsKgsYLujWbLSv1jpFIUFndrpYgHhtCbEylHmLUApm1-mXx-zBVoH6RVD80NaJW_cq2UykTwfCBQ"
+      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"author\":\"Ursula K. Le Guin\",\"note\":null,\"title\":\"Tehanu\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "result": "valid"
-    }
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"«El \\\"mesías\\\"» de Dune\\n\\t/ñ €\\u0001\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000302\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "result": "valid"
+    },
     "name": "quotes, escapes and non-ASCII text",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "note": "a\\b\u0001",
-            "title": "«El \"mesías\"» de Dune\n\t/ñ €"
+            "name": "«El \"mesías\"» de Dune\n\t/ñ €\u0001"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000302",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "7tKbOgPvNjD-7qloo2VUfnkcg6wsRJkWGuhFjE4Ptns-rrJJeync0ruMvRMICyLmM0bDtbL8V-CXGcdQFfjwCw"
+      "signature": "XxQOUtEqGIt22Zl6pUEEnajrJnbVeStrlF6aJZcN1YDTgz5lPNdeRltQYpLIiRjis-I_7nP1znWeaaXXQcZcDg"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"note\":\"a\\\\b\\u0001\",\"title\":\"«El \\\"mesías\\\"» de Dune\\n\\t/ñ €\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000302\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "result": "valid"
-    }
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro (2)\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "code": "mismatch",
+      "result": "invalid"
+    },
     "name": "changed after signing",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "author": "Ursula K. Le Guin",
-            "note": null,
-            "title": "Tehanu (2)"
+            "name": "Minotauro (2)"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000301",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "W4Z7S2hubQvsKgsYLujWbLSv1jpFIUFndrpYgHhtCbEylHmLUApm1-mXx-zBVoH6RVD80NaJW_cq2UykTwfCBQ"
+      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"author\":\"Ursula K. Le Guin\",\"note\":null,\"title\":\"Tehanu (2)\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+  },
+  {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000303\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
     "expect": {
       "code": "mismatch",
       "result": "invalid"
-    }
-  },
-  {
+    },
     "name": "signed by another device",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "title": "Tehanu"
+            "name": "Minotauro"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000303",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "zpo8E6Q9HYwLszNRGA_2jFV4JDKWBnBwU3NEWTcpTDIAS0T3QNotQ01QjfPK-97S2omhVOcANNHvxltsiM6QDw"
+      "signature": "twz8caJ2jMRpyd60F1ISrp8y7V39CqXLvxO1OhG9xppmm1NNFa9U-qEVIVdTyTa5Sg5XK46s-Spb-vDYjEHcAA"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"title\":\"Tehanu\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000303\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "code": "mismatch",
-      "result": "invalid"
-    }
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "code": "malformed",
+      "result": "invalid"
+    },
     "name": "signature that is not Ed25519",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "author": "Ursula K. Le Guin",
-            "note": null,
-            "title": "Tehanu"
+            "name": "Minotauro"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000301",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
       "signature": "not-a-signature"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"author\":\"Ursula K. Le Guin\",\"note\":null,\"title\":\"Tehanu\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "code": "malformed",
-      "result": "invalid"
-    }
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "code": "bad_key",
+      "result": "invalid"
+    },
     "name": "public key that is not Ed25519",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "author": "Ursula K. Le Guin",
-            "note": null,
-            "title": "Tehanu"
+            "name": "Minotauro"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000301",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "W4Z7S2hubQvsKgsYLujWbLSv1jpFIUFndrpYgHhtCbEylHmLUApm1-mXx-zBVoH6RVD80NaJW_cq2UykTwfCBQ"
+      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
     },
-    "publicKey": "AAAA",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"author\":\"Ursula K. Le Guin\",\"note\":null,\"title\":\"Tehanu\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "code": "bad_key",
-      "result": "invalid"
-    }
+    "publicKey": "AAAA"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000304\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "expect": {
+      "code": "missing",
+      "result": "invalid"
+    },
     "name": "not signed",
     "operation": {
       "changes": [
         {
           "action": "create",
-          "entity": "wish",
+          "entity": "publisher",
           "fields": {
-            "title": "Tehanu"
+            "name": "Minotauro"
           },
           "id": "01997c7e-0000-7000-8000-000000000061"
         }
       ],
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000304",
-      "intent": "wish.add",
+      "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa"
     },
-    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"wish\",\"fields\":{\"title\":\"Tehanu\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000304\",\"intent\":\"wish.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
-    "expect": {
-      "code": "missing",
-      "result": "invalid"
-    }
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   }
 ]
+

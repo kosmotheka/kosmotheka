@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook, WishInput};
+use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
 use serde::Serialize;
 use tauri::State;
 use url::Url;
@@ -8,7 +8,7 @@ use url::Url;
 use crate::backup::{self, BackupSummary, RestoreSummary};
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
-    TagSummary,
+    IsbnCheck, TagSummary,
 };
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
@@ -24,7 +24,6 @@ use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
-use crate::wishes::{self, IsbnCheck, Wish};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,6 +113,24 @@ pub fn request_missing(
     let library = ops::active_library(&conn)?;
     let (_, requested) = ops::as_request(note.as_deref(), || {
         catalog::create_missing(&mut conn, &library, &edition, None)
+    })?;
+    Ok(Asked { requested })
+}
+
+/// «Ask to add a copy»: a reader asks to add a copy of a work they are missing,
+/// with a note for whoever decides.
+#[tauri::command]
+pub fn request_add_copy(
+    database: State<'_, Database>,
+    edition_id: String,
+    copy: CopyInput,
+    note: Option<String>,
+) -> Result<Asked> {
+    let copy = copy.validate().map_err(Error::Validation)?;
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    let (_, requested) = ops::as_request(note.as_deref(), || {
+        catalog::add_copy(&mut conn, &library, &edition_id, &copy)
     })?;
     Ok(Asked { requested })
 }
@@ -499,33 +516,12 @@ pub fn forget_device(database: State<'_, Database>, device_id: String) -> Result
     lan::forget_device(&*database.lock()?, &device_id)
 }
 
-// --- Wishlist and "do I have it?" ---------------------------------------------
-
-#[tauri::command]
-pub fn add_wish(database: State<'_, Database>, wish: WishInput) -> Result<String> {
-    let wish = wish.validate().map_err(Error::Validation)?;
-    let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    wishes::add_wish(&mut conn, &library, &wish)
-}
-
-#[tauri::command]
-pub fn list_wishes(database: State<'_, Database>) -> Result<Vec<Wish>> {
-    let conn = database.lock()?;
-    wishes::list_wishes(&conn, &ops::active_library(&conn)?)
-}
-
-#[tauri::command]
-pub fn delete_wish(database: State<'_, Database>, id: String) -> Result<()> {
-    let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    wishes::delete_wish(&mut conn, &library, &id)
-}
+// --- "Do I have it?" -------------------------------------------------------------
 
 #[tauri::command]
 pub fn check_isbn(database: State<'_, Database>, isbn: String) -> Result<IsbnCheck> {
     let conn = database.lock()?;
-    wishes::check_isbn(&conn, &isbn)
+    catalog::check_isbn(&conn, &isbn)
 }
 
 // --- Libraries ------------------------------------------------------------------

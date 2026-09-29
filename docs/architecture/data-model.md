@@ -43,7 +43,6 @@ works ──< work_contributors >── people
 | `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location` (en lo digital, la plataforma: «Kindle», «Steam»), `acquired_on`, `platform` (videojuegos: «Switch»), `seasons` (series: qué temporadas tiene, texto libre) |
 | `marks` | Lo que cada persona apunta de cada obra (D68): estado, valoración, favorito y «lo deseo» (D61) | `id` (derivado de persona y obra), `member_id`, `work_id`, `status`, `status_on`, `rating`, `favorite`, `wished` |
-| `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
 | `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |
 | `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name`, `member_id` (de quién es, D73) |
 | `row_authors` | Qué dispositivo creó cada fila, para que un editor borre lo que creó su persona (D45); local, se recalcula desde el registro | `library_id`, `entity`, `entity_id`, `device_id` |

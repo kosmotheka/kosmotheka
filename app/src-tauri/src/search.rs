@@ -143,7 +143,6 @@ pub fn affected_editions(
         | Entity::WorkRelation
         | Entity::Member
         | Entity::Copy
-        | Entity::Wish
         | Entity::Revocation
         | Entity::Device
         | Entity::ChangeRequest

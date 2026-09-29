@@ -440,11 +440,7 @@
     "empty": {
       "title": "No te falta nada",
       "body": "Usa «¿Lo tengo?» en una tienda para apuntar lo que aún no tienes."
-    },
-    "bought": "Lo he comprado",
-    "remove": "Quitar de Me falta",
-    "removeConfirm": "¿Quitar «{{title}}» de Me falta?",
-    "note": "Apuntar"
+    }
   },
   "nav": {
     "catalog": "Catálogo",

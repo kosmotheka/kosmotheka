@@ -50,7 +50,7 @@ Every device checks each operation it receives, and each one it makes, against t
 3. **Roles** (`member.role`: `admin`, `editor` or `reader`; `member.can_share`: true or false):
    - **admin** may do everything, including roles, who owns each device, access (`revocation`), the `library` row and deleting the library.
    - **editor** creates and edits the catalog. It deletes only rows its person created: a row whose first create change came from a device of the same person.
-   - **reader** changes nothing in the catalog: what it tries becomes a request. The exception is the wishlist: a reader may create `wish` rows, and edit or delete those its person created. Only a reader with a person: a device linked to no member, or an unsigned operation, may not.
+   - **reader** changes nothing in the catalog: what it tries becomes a request.
    - **Everyone keeps their own marks** (D68), whatever their role: a device with a person creates, changes and deletes the `mark` rows of that person (a create names it in `member_id`), and only administrators touch other people's. A device linked to no member, or an unsigned operation, may not.
    - **Nobody gives more than they have:** changing `role`, `can_share` or a device's `member_id` is for administrators.
 4. **Every device registers and renames itself**, whatever its role: its own `device` row, without `member_id`.

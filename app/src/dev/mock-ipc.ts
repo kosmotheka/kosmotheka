@@ -17,7 +17,6 @@ import type {
   PersonMark,
   RequestSummary,
   Settings,
-  Wish,
 } from "@/lib/api";
 
 // Mutable so the Providers screen can save keys and toggles across calls,
@@ -73,6 +72,7 @@ const work = (
   myStatus: null,
   myFavorite: false,
   myWished: false,
+  wishedBy: [],
   tags: [],
 });
 
@@ -121,27 +121,6 @@ const books: BookSummary[] = [
 books[2] = { ...books[2], isbn13: "9788497596824" };
 // Dune shows a filled ISBN row on its own work page.
 books[0] = { ...books[0], isbn13: "9788497596848" };
-
-const wishes: Wish[] = [
-  {
-    id: "w1",
-    title: "Hijos de Dune",
-    author: "Frank Herbert",
-    isbn13: null,
-    note: null,
-    coverUrl: null,
-    createdAt: "2026-09-20T10:00:00Z",
-  },
-  {
-    id: "w2",
-    title: "Wingspan",
-    author: null,
-    isbn13: null,
-    note: "La pide Laura",
-    coverUrl: null,
-    createdAt: "2026-09-21T10:00:00Z",
-  },
-];
 
 const lan: LanStatus = {
   deviceId: "dev",
@@ -468,8 +447,6 @@ mockIPC((cmd, args) => {
       }));
     case "open_pairing":
       return { code: "KOSMOTHEKA1:eyJkZXZpY2VJZCI6ImRldiJ9", expiresInSeconds: 582 };
-    case "list_wishes":
-      return wishes;
     case "catalog_options":
       return {
         authors: [],
@@ -520,8 +497,8 @@ mockIPC((cmd, args) => {
     case "check_isbn": {
       const isbn = String((args as { isbn: string }).isbn).replace(/\D/g, "");
       return isbn.startsWith("97884")
-        ? { isbn13: isbn, books: [], wishes: [] }
-        : { isbn13: isbn, books: [books[0]], wishes: [] };
+        ? { isbn13: isbn, books: [] }
+        : { isbn13: isbn, books: [books[0]] };
     }
     case "lookup_isbn":
       throw new Error("offline");
@@ -745,6 +722,7 @@ mockIPC((cmd, args) => {
       return null;
     case "request_book":
     case "request_missing":
+    case "request_add_copy":
     case "request_delete_copy":
     case "request_delete_book":
       return { requested: true };

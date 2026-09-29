@@ -18,7 +18,6 @@ mod search;
 mod series;
 mod settings;
 mod sync;
-mod wishes;
 
 use tauri::Manager;
 
@@ -67,6 +66,7 @@ pub fn run() {
             commands::request_book,
             commands::add_missing,
             commands::request_missing,
+            commands::request_add_copy,
             commands::request_delete_copy,
             commands::request_delete_book,
             commands::book_history,
@@ -89,9 +89,6 @@ pub fn run() {
             commands::pair_with,
             commands::sync_with,
             commands::forget_device,
-            commands::add_wish,
-            commands::list_wishes,
-            commands::delete_wish,
             commands::check_isbn,
             commands::is_mobile,
             commands::list_libraries,

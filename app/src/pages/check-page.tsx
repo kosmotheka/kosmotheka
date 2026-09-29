@@ -18,13 +18,15 @@ import { useRequests } from "@/components/requests-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  type EditionInput,
   type IsbnCheck,
   type LookupResult,
-  addWish,
+  addMissing,
   checkIsbn,
   isCommandError,
   isMobile,
   lookupIsbn,
+  requestMissing,
 } from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
 import { CameraDenied, scanIsbn } from "@/lib/scanner";
@@ -126,20 +128,31 @@ export function CheckPage({
     if (isbn.trim()) void run(isbn.trim());
   };
 
+  // Readers ask for it instead of adding it (D73).
+  const reader = useRequests().myRole === "reader";
+
+  /** Catalogs the work with no copy yet (D61): "I'm missing it". */
   const wish = async () => {
     if (!check || !wishTitle.trim()) return;
-    await addWish({
+    const edition: EditionInput = {
+      kind: "book",
       title: wishTitle.trim(),
-      author: online?.authors.join(", ") || null,
+      subtitle: null,
+      authors: online?.authors ?? [],
+      publisher: null,
+      publishedYear: null,
+      language: null,
       isbn: check.isbn13,
       coverUrl: online?.coverUrl ?? null,
-    });
+      googleBooksId: null,
+      openLibraryId: null,
+    };
+    if (reader) await requestMissing(edition, null);
+    else await addMissing(edition);
     setWished(true);
     onChanged();
   };
 
-  // Readers ask for it instead of adding it (D73).
-  const reader = useRequests().myRole === "reader";
   const bought = () =>
     check &&
     openOverlay({
@@ -307,7 +320,7 @@ export function CheckPage({
               </div>
             </div>
             <div className="mt-1 flex flex-col gap-2.5">
-              {check.wishes.length > 0 || wished ? (
+              {wished ? (
                 <p className="flex items-center justify-center gap-2 text-sm">
                   <Bookmark className="size-4" /> {t("check.alreadyWished")}
                 </p>

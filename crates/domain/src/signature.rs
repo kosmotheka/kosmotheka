@@ -229,9 +229,9 @@ mod tests {
             hlc: "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff"
                 .parse()
                 .unwrap(),
-            intent: "wish.add".into(),
+            intent: "publisher.add".into(),
             changes: vec![Change::create(
-                Entity::Wish,
+                Entity::Publisher,
                 "01997c7e-0000-7000-8000-000000000061",
                 fields,
             )],
@@ -244,25 +244,25 @@ mod tests {
         let plain = signed(
             op(
                 "01997c7e-0000-7000-8000-000000000301",
-                json!({ "title": "Tehanu", "author": "Ursula K. Le Guin", "note": null }),
+                json!({ "name": "Minotauro" }),
             ),
             &author,
         );
         let tricky = signed(
             op(
                 "01997c7e-0000-7000-8000-000000000302",
-                json!({ "title": "«El \"mesías\"» de Dune\n\t/ñ €", "note": "a\\b\u{1}" }),
+                json!({ "name": "«El \"mesías\"» de Dune\n\t/ñ €\u{1}" }),
             ),
             &author,
         );
         let mut tampered = plain.clone();
         tampered.changes[0]
             .fields
-            .insert("title".into(), json!("Tehanu (2)"));
+            .insert("name".into(), json!("Minotauro (2)"));
         let by_stranger = signed(
             op(
                 "01997c7e-0000-7000-8000-000000000303",
-                json!({ "title": "Tehanu" }),
+                json!({ "name": "Minotauro" }),
             ),
             &stranger,
         );
@@ -270,7 +270,7 @@ mod tests {
         malformed.signature = Some("not-a-signature".into());
         let unsigned = op(
             "01997c7e-0000-7000-8000-000000000304",
-            json!({ "title": "Tehanu" }),
+            json!({ "name": "Minotauro" }),
         );
         let case = |name: &str, o: &Operation, key: &str, expect: Value| {
             json!({

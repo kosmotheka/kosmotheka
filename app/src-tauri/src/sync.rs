@@ -20,7 +20,7 @@ use crate::permissions;
 use crate::search;
 
 /// Parents before children, so every reference exists when a row is created.
-pub const ORDER: [Entity; 24] = [
+pub const ORDER: [Entity; 23] = [
     Entity::Library,
     Entity::Device,
     Entity::Publisher,
@@ -42,7 +42,6 @@ pub const ORDER: [Entity; 24] = [
     Entity::TvSeriesDetails,
     Entity::Copy,
     Entity::Mark,
-    Entity::Wish,
     Entity::Revocation,
     Entity::ChangeRequest,
 ];
@@ -202,6 +201,13 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
             })?;
         for row in rows {
             let (id, library, hlc, intent, changes, schema_version, signature) = row?;
+            // An entity dropped from the schema since this operation was recorded
+            // (like `wish`, D61) makes it unparsable: it can no longer be applied
+            // anywhere, so it is left out entirely rather than sent with some of its
+            // changes silently missing, which would no longer match its signature.
+            let Ok(changes) = serde_json::from_str(&changes) else {
+                continue;
+            };
             operations.push(SyncOperation {
                 schema_version,
                 operation: Operation {
@@ -211,7 +217,7 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                         .parse()
                         .map_err(|_| crate::error::Error::CorruptState("operations.hlc"))?,
                     intent,
-                    changes: serde_json::from_str(&changes)?,
+                    changes,
                     signature,
                 },
             });
@@ -642,7 +648,7 @@ mod tests {
         let mut statement = conn
             .prepare(
                 "SELECT id FROM libraries UNION SELECT library_id FROM members
-                  UNION SELECT library_id FROM editions UNION SELECT library_id FROM wishes
+                  UNION SELECT library_id FROM editions
                   ORDER BY 1",
             )
             .unwrap();
@@ -1055,25 +1061,73 @@ mod tests {
     }
 
     #[test]
-    fn wishes_noted_on_the_phone_reach_the_desktop() {
+    fn missing_works_noted_on_the_phone_reach_the_desktop() {
         let mut desk = Device::new();
         let mut phone = Device::new();
-        let wish = kosmotheka_domain::WishInput {
+        let missing = kosmotheka_domain::EditionInput {
             title: "Tehanu".into(),
             ..Default::default()
         }
         .validate()
         .unwrap();
-        crate::wishes::add_wish(&mut phone.0, LIB, &wish).unwrap();
+        catalog::create_missing(&mut phone.0, LIB, &missing, None).unwrap();
 
         desk.sync_with(&mut phone);
 
-        let titles: Vec<String> = crate::wishes::list_wishes(&desk.0, LIB)
+        let titles: Vec<String> = catalog::list_books(&desk.0, LIB, &BookFilter::default())
             .unwrap()
             .into_iter()
-            .map(|w| w.title)
+            .map(|b| b.title)
             .collect();
         assert_eq!(titles, vec!["Tehanu"]);
+        assert_converged(&[&desk, &phone]);
+    }
+
+    /// An entity dropped from the schema (like `wish`, D61) may still sit in an old
+    /// local log. Sending it as-is with the unknown change simply left out would no
+    /// longer match its signature, so the whole operation stays home; every other
+    /// operation is unaffected.
+    #[test]
+    fn an_operation_with_an_unknown_entity_is_not_sent_but_the_rest_still_converges() {
+        let mut desk = Device::new();
+        let mut phone = Device::new();
+        phone.add("Tehanu", None, "Ana");
+
+        let phone_id = device_id_of(&phone);
+        phone
+            .0
+            .execute(
+                "INSERT INTO operations (id, hlc, device_id, intent, changes) VALUES (
+                    '01997c7e-0000-7000-8000-000000000998',
+                    '0001727222200099-00000000-' || ?1,
+                    ?1,
+                    'wish.add',
+                    '[{\"entity\":\"wish\",\"id\":\"01997c7e-0000-7000-8000-000000000997\",\"action\":\"create\",\"fields\":{\"title\":\"Hijos de Dune\"}}]'
+                )",
+                [&phone_id],
+            )
+            .unwrap();
+
+        desk.sync_with(&mut phone);
+
+        assert_eq!(
+            desk.titles(),
+            vec!["Tehanu"],
+            "the normal operation arrives"
+        );
+        let sent: i64 = desk
+            .0
+            .query_row(
+                "SELECT count(*) FROM operations
+                  WHERE id = '01997c7e-0000-7000-8000-000000000998'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            sent, 0,
+            "the operation with the unknown entity is never sent"
+        );
         assert_converged(&[&desk, &phone]);
     }
 

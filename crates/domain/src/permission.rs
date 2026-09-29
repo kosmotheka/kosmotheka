@@ -103,13 +103,6 @@ fn change_allowed(
             };
             owner.is_some_and(|owner| owner.eq_ignore_ascii_case(&me))
         }
-        // Wishes change nothing on the shelves: a reader with a person keeps a
-        // wishlist, and deletes or edits only what their person added.
-        Entity::Wish if role == Role::Reader => {
-            someone
-                && (change.action == Action::Create
-                    || view.created_by_same_person(change.entity, &change.id, author))
-        }
         _ => match (role, change.action) {
             (Role::Reader, _) => false,
             (_, Action::Create | Action::Update) => true,
@@ -213,11 +206,11 @@ mod tests {
         }
     }
 
-    const WISH: &str = "01997c7e-0000-7000-8000-000000000061";
+    const TAG: &str = "01997c7e-0000-7000-8000-000000000061";
 
     #[test]
     fn roles_decide_only_once_the_library_has_them() {
-        let delete = op(vec![Change::delete(Entity::Wish, WISH)]);
+        let delete = op(vec![Change::delete(Entity::Tag, TAG)]);
         let none = View {
             roles: false,
             role: None,
@@ -231,42 +224,12 @@ mod tests {
 
     #[test]
     fn an_editor_deletes_what_her_person_created() {
-        let delete = op(vec![Change::delete(Entity::Wish, WISH)]);
+        let delete = op(vec![Change::delete(Entity::Tag, TAG)]);
         let mine = View {
             same_person: true,
             ..view(Some(Role::Editor))
         };
         assert!(is_allowed(&delete, &mine));
-    }
-
-    #[test]
-    fn a_reader_with_a_person_keeps_a_wishlist() {
-        let add = op(vec![Change::create(
-            Entity::Wish,
-            WISH,
-            json!({ "title": "Tehanu" }),
-        )]);
-        let delete = op(vec![Change::delete(Entity::Wish, WISH)]);
-        let publisher = op(vec![Change::create(
-            Entity::Publisher,
-            WISH,
-            json!({ "name": "Minotauro" }),
-        )]);
-        let mine = View {
-            same_person: true,
-            ..view(Some(Role::Reader))
-        };
-        assert!(is_allowed(&add, &view(Some(Role::Reader))));
-        assert!(!is_allowed(&delete, &view(Some(Role::Reader))));
-        assert!(is_allowed(&delete, &mine));
-        assert!(
-            !is_allowed(&publisher, &mine),
-            "the catalog is still asked for"
-        );
-        assert!(
-            !is_allowed(&add, &view(None)),
-            "a device of nobody only asks"
-        );
     }
 
     #[test]
@@ -288,9 +251,9 @@ mod tests {
     #[test]
     fn an_unsigned_operation_counts_as_a_readers() {
         let mut add = op(vec![Change::create(
-            Entity::Wish,
-            WISH,
-            json!({ "title": "Tehanu" }),
+            Entity::Tag,
+            TAG,
+            json!({ "name": "Tehanu" }),
         )]);
         assert!(is_allowed(&add, &view(Some(Role::Editor))));
         add.signature = None;

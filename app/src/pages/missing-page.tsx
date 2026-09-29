@@ -1,23 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
 
-import { WishList } from "@/components/wish-list";
-import { Button } from "@/components/ui/button";
-import { type Wish, deleteWish } from "@/lib/api";
-import { navigate, openOverlay } from "@/lib/navigation";
+import { BookList } from "@/components/book-list";
+import type { BookSummary } from "@/lib/api";
 
 /**
- * "Missing": for now, the wishlist (D36). Series gaps and the owned / missing /
- * wished states arrive with the general catalog (roadmap phase 6, D61).
+ * "Missing" (D61): works catalogued with no copy yet, the catalog filtered by
+ * `holding: "missing"`. A plain list for now; it is redesigned with series gaps
+ * and "I wish it" (roadmap phase 6).
  */
 export function MissingPage({
-  wishes,
+  books,
   desktop,
-  onChanged,
+  onOpenBook,
 }: {
-  wishes: Wish[];
+  books: BookSummary[];
   desktop: boolean;
-  onChanged: () => void;
+  onOpenBook: (book: BookSummary) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -26,38 +24,21 @@ export function MissingPage({
         <div className="flex items-center gap-2.5">
           <h1 className="text-[22px] font-semibold tracking-tight">{t("nav.missing")}</h1>
           <span className="text-[13px] text-muted-foreground">
-            {t("nav.works", { count: wishes.length })}
+            {t("nav.works", { count: books.length })}
           </span>
-          <Button className="ml-auto" onClick={() => navigate("check")}>
-            <Plus /> {t("wishes.note")}
-          </Button>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">{t("nav.works", { count: wishes.length })}</p>
+        <p className="text-xs text-muted-foreground">{t("nav.works", { count: books.length })}</p>
       )}
-      <WishList
-        wishes={wishes}
-        onRemove={(wish) => void deleteWish(wish.id).then(onChanged)}
-        onBought={(wish) =>
-          openOverlay({
-            name: "add",
-            prefill: {
-              isbn: wish.isbn13 ?? undefined,
-              title: wish.title,
-              author: wish.author ?? undefined,
-            },
-            wishId: wish.id,
-          })
-        }
-      />
-      {!desktop && (
-        // Until wishes can be written by hand (phase 6), noting one goes through "Do I have it?".
-        <Button
-          className="fixed right-4 bottom-[calc(112px+env(safe-area-inset-bottom))] h-14 gap-2.5 rounded-2xl pr-5 pl-4 text-[15px] font-semibold shadow-[0_8px_20px_-6px_oklch(0_0_0/35%)]"
-          onClick={() => navigate("check")}
-        >
-          <Plus className="size-[22px]" /> {t("wishes.note")}
-        </Button>
+      {books.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2.5 pt-10 pb-20 text-center">
+          <p className="mt-1 text-[17px] font-semibold">{t("wishes.empty.title")}</p>
+          <p className="max-w-[420px] text-sm text-pretty text-muted-foreground">
+            {t("wishes.empty.body")}
+          </p>
+        </div>
+      ) : (
+        <BookList books={books} onOpen={onOpenBook} />
       )}
     </div>
   );

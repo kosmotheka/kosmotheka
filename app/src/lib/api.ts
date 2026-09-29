@@ -123,6 +123,9 @@ export interface BookSummary {
   myStatus: MarkStatus | null;
   myFavorite: boolean;
   myWished: boolean;
+  /** Names of the members who wished the work (D61): this device's person first,
+   * as `"me"` if they wished it, the rest sorted by name. */
+  wishedBy: string[];
   tags: string[];
 }
 
@@ -267,6 +270,9 @@ export interface BookDetail {
   genres: string[];
   /** Names, sorted case-insensitively. */
   tags: string[];
+  /** Names of the members who wished the work (D61): this device's person first,
+   * as `"me"` if they wished it, the rest sorted by name. */
+  wishedBy: string[];
   /** The series this work belongs to. */
   series: WorkSeries[];
   /** Works this one requires (an expansion needs its base game). */
@@ -357,6 +363,15 @@ export function addMissing(edition: EditionInput): Promise<CreatedBook> {
 
 export function requestMissing(edition: EditionInput, note: string | null): Promise<Asked> {
   return invoke<Asked>("request_missing", { edition, note });
+}
+
+/** «Ask to add a copy» of a work the reader is missing (D73). */
+export function requestAddCopy(
+  editionId: string,
+  copy: CopyInput,
+  note: string | null,
+): Promise<Asked> {
+  return invoke<Asked>("request_add_copy", { editionId, copy, note });
 }
 
 export function requestDeleteCopy(copyId: string, note: string | null): Promise<Asked> {
@@ -602,40 +617,9 @@ export function syncErrorKey(error: unknown): string {
   return "devices.errors.peer_error";
 }
 
-export interface Wish {
-  id: string;
-  title: string;
-  author: string | null;
-  isbn13: string | null;
-  note: string | null;
-  coverUrl: string | null;
-  createdAt: string;
-}
-
-export interface WishInput {
-  title: string;
-  author?: string | null;
-  isbn?: string | null;
-  note?: string | null;
-  coverUrl?: string | null;
-}
-
 export interface IsbnCheck {
   isbn13: string;
   books: BookSummary[];
-  wishes: Wish[];
-}
-
-export function addWish(wish: WishInput): Promise<string> {
-  return invoke<string>("add_wish", { wish });
-}
-
-export function listWishes(): Promise<Wish[]> {
-  return invoke<Wish[]>("list_wishes");
-}
-
-export function deleteWish(id: string): Promise<void> {
-  return invoke("delete_wish", { id });
 }
 
 /** Local only: works without coverage. */
@@ -818,7 +802,7 @@ export function permissionErrorKey(error: unknown): string | null {
 export type RequestStatus = "pending" | "accepted" | "rejected" | "withdrawn";
 
 export interface RequestSummary {
-  action: "add_book" | "add_copy" | "delete_copy" | "delete_book" | "edit" | "add_wish" | "other";
+  action: "add_book" | "add_copy" | "delete_copy" | "delete_book" | "edit" | "other";
   title: string | null;
   authors: string[];
   year: number | null;

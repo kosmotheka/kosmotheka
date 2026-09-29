@@ -32,16 +32,14 @@ import { useDesktop } from "@/components/shell/use-desktop";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   type BookFilter,
+  type BookSummary,
   type CatalogOptions,
   type CreatedBook,
   type LibrarySummary,
-  type Wish,
   catalogOptions,
-  deleteWish,
   lanStatus,
   listBooks,
   listLibraries,
-  listWishes,
   setActiveLibrary,
 } from "@/lib/api";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
@@ -70,7 +68,7 @@ export default function App() {
   const { section, overlay } = useLocation();
   const desktop = useDesktop();
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [missing, setMissing] = useState<BookSummary[]>([]);
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -103,15 +101,16 @@ export default function App() {
     catalogOptions()
       .then((loaded) => !cancelled && setOptions(loaded))
       .catch(() => {});
-    listWishes()
-      .then((loaded) => !cancelled && setWishes(loaded))
+    // "Missing": works catalogued with no copy yet (D61).
+    listBooks({ holding: "missing" })
+      .then((loaded) => !cancelled && setMissing(loaded))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [activeFilter, searchEverywhere, version]);
 
-  /** Reloads books, wishes and suggestions after any change. */
+  /** Reloads books, the missing list and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
 
   // Quietly catch up with every reachable paired device when the app opens, and again
@@ -146,14 +145,12 @@ export default function App() {
   const filtering = isFiltering(activeFilter);
   const counts = {
     catalog: activeLibrary?.works ?? (filtering ? 0 : books.length),
-    missing: wishes.length,
+    missing: missing.length,
   };
 
-  const handleCreated = async (result: CreatedBook, title: string, wishId?: string) => {
+  const handleCreated = (result: CreatedBook, title: string) => {
     const message = t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", { title });
     setNotice(result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message);
-    // A wish that became a book is no longer wished for.
-    if (wishId) await deleteWish(wishId).catch(() => {});
     reload();
   };
 
@@ -184,7 +181,11 @@ export default function App() {
 
   const page =
     section === "missing" ? (
-      <MissingPage wishes={wishes} desktop={desktop} onChanged={reload} />
+      <MissingPage
+        books={missing}
+        desktop={desktop}
+        onOpenBook={(book) => void openBookIn(book.libraryId, book.editionId)}
+      />
     ) : section === "check" ? (
       <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
     ) : section === "library" ? (
@@ -326,7 +327,7 @@ export default function App() {
               library={library}
               prefill={overlay.prefill}
               onOpenChange={(open) => !open && closeOverlay()}
-              onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+              onCreated={handleCreated}
               onRequested={(requested) => {
                 setNotice(t(requested ? "ask.sent" : "ask.done"));
                 reload();
@@ -339,7 +340,7 @@ export default function App() {
               desktop={desktop}
               library={library}
               onOpenChange={(open) => !open && closeOverlay()}
-              onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+              onCreated={handleCreated}
               onRequested={(requested) => {
                 setNotice(t(requested ? "ask.sent" : "ask.done"));
                 reload();

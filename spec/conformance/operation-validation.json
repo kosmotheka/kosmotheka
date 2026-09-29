@@ -177,31 +177,6 @@
     }
   },
   {
-    "name": "wish added from a bookshop",
-    "operation": {
-      "id": "01997c7e-0000-7000-8000-000000000060",
-      "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "hlc": "0001727222222222-00000006-01997c7e-0000-7000-8000-0000000000ff",
-      "intent": "wish.add",
-      "changes": [
-        {
-          "entity": "wish",
-          "id": "01997c7e-0000-7000-8000-000000000061",
-          "action": "create",
-          "fields": {
-            "title": "Tehanu",
-            "author": "Ursula K. Le Guin",
-            "isbn13": "9780140328721",
-            "note": "Tapa dura, si puede ser"
-          }
-        }
-      ]
-    },
-    "expect": {
-      "result": "valid"
-    }
-  },
-  {
     "name": "operation id is not a UUID",
     "operation": {
       "id": "42",

@@ -440,11 +440,7 @@
     "empty": {
       "title": "Nothing missing",
       "body": "Use \"Do I have it?\" in a shop to note down what you do not have yet."
-    },
-    "bought": "I bought it",
-    "remove": "Remove from Missing",
-    "removeConfirm": "Remove \"{{title}}\" from Missing?",
-    "note": "Note down"
+    }
   },
   "nav": {
     "catalog": "Catalog",

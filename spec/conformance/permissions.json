@@ -41,14 +41,14 @@
         "id": "01997c7e-0000-7000-8000-000000000003",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000a1",
             "action": "create",
             "fields": {
-              "title": "Tehanu"
+              "name": "Tehanu"
             }
           }
         ]
@@ -57,10 +57,10 @@
         "id": "01997c7e-0000-7000-8000-000000000004",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "wish.remove",
+        "intent": "tag.remove",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000a1",
             "action": "delete"
           }
@@ -438,14 +438,14 @@
         "id": "01997c7e-0000-7000-8000-000000000006",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000c1",
             "action": "create",
             "fields": {
-              "title": "Tehanu"
+              "name": "Tehanu"
             }
           }
         ]
@@ -454,14 +454,14 @@
         "id": "01997c7e-0000-7000-8000-000000000007",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fa",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000c2",
             "action": "create",
             "fields": {
-              "title": "Dune"
+              "name": "Dune"
             }
           }
         ]
@@ -470,10 +470,10 @@
         "id": "01997c7e-0000-7000-8000-000000000008",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200032-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "wish.remove",
+        "intent": "tag.remove",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000c1",
             "action": "delete"
           }
@@ -483,10 +483,10 @@
         "id": "01997c7e-0000-7000-8000-000000000009",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200033-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "wish.remove",
+        "intent": "tag.remove",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000c2",
             "action": "delete"
           }
@@ -541,258 +541,6 @@
       ],
       "requests": [
         "01997c7e-0000-7000-8000-000000000009"
-      ]
-    }
-  },
-  {
-    "name": "a reader keeps a wishlist: adds wishes and removes their own, and nobody else's",
-    "note": "Wishes change nothing on the shelves, so a reader with a person may add them and delete the ones their person added. A device that belongs to nobody still only asks.",
-    "operations": [
-      {
-        "id": "01997c7e-0000-7000-8000-000000000001",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
-        "intent": "device.register",
-        "changes": [
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fa",
-            "action": "create",
-            "fields": {
-              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-              "name": "laptop"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000002",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "device.register",
-        "changes": [
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fb",
-            "action": "create",
-            "fields": {
-              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-              "name": "phone"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000003",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "device.register",
-        "changes": [
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fc",
-            "action": "create",
-            "fields": {
-              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-              "name": "tablet"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000004",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200013-00000000-01997c7e-0000-7000-8000-0000000000fd",
-        "intent": "device.register",
-        "changes": [
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fd",
-            "action": "create",
-            "fields": {
-              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-              "name": "stranger"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000005",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
-        "intent": "member.roles",
-        "changes": [
-          {
-            "entity": "member",
-            "id": "01997c7e-0000-7000-8000-000000000011",
-            "action": "create",
-            "fields": {
-              "name": "Tersoal",
-              "role": "admin",
-              "can_share": true
-            }
-          },
-          {
-            "entity": "member",
-            "id": "01997c7e-0000-7000-8000-000000000012",
-            "action": "create",
-            "fields": {
-              "name": "Laura",
-              "role": "editor",
-              "can_share": false
-            }
-          },
-          {
-            "entity": "member",
-            "id": "01997c7e-0000-7000-8000-000000000013",
-            "action": "create",
-            "fields": {
-              "name": "Hugo",
-              "role": "reader",
-              "can_share": false
-            }
-          },
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fa",
-            "action": "update",
-            "fields": {
-              "member_id": "01997c7e-0000-7000-8000-000000000011"
-            }
-          },
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fb",
-            "action": "update",
-            "fields": {
-              "member_id": "01997c7e-0000-7000-8000-000000000012"
-            }
-          },
-          {
-            "entity": "device",
-            "id": "01997c7e-0000-7000-8000-0000000000fc",
-            "action": "update",
-            "fields": {
-              "member_id": "01997c7e-0000-7000-8000-000000000013"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000006",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fa",
-        "intent": "wish.add",
-        "changes": [
-          {
-            "entity": "wish",
-            "id": "01997c7e-0000-7000-8000-0000000000e1",
-            "action": "create",
-            "fields": {
-              "title": "Dune"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000007",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "wish.add",
-        "changes": [
-          {
-            "entity": "wish",
-            "id": "01997c7e-0000-7000-8000-0000000000e2",
-            "action": "create",
-            "fields": {
-              "title": "Tehanu"
-            }
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000008",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200032-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "wish.remove",
-        "changes": [
-          {
-            "entity": "wish",
-            "id": "01997c7e-0000-7000-8000-0000000000e2",
-            "action": "delete"
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000009",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200033-00000000-01997c7e-0000-7000-8000-0000000000fc",
-        "intent": "wish.remove",
-        "changes": [
-          {
-            "entity": "wish",
-            "id": "01997c7e-0000-7000-8000-0000000000e1",
-            "action": "delete"
-          }
-        ]
-      },
-      {
-        "id": "01997c7e-0000-7000-8000-000000000010",
-        "library": "01997c7e-0000-7000-8000-00000000aaaa",
-        "hlc": "0001727222200034-00000000-01997c7e-0000-7000-8000-0000000000fd",
-        "intent": "wish.add",
-        "changes": [
-          {
-            "entity": "wish",
-            "id": "01997c7e-0000-7000-8000-0000000000e3",
-            "action": "create",
-            "fields": {
-              "title": "Wingspan"
-            }
-          }
-        ]
-      }
-    ],
-    "deliveries": [
-      [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9
-      ],
-      [
-        3,
-        2,
-        0,
-        9,
-        1,
-        6,
-        4,
-        7,
-        5,
-        8
-      ]
-    ],
-    "expect": {
-      "applied": [
-        "01997c7e-0000-7000-8000-000000000001",
-        "01997c7e-0000-7000-8000-000000000002",
-        "01997c7e-0000-7000-8000-000000000003",
-        "01997c7e-0000-7000-8000-000000000004",
-        "01997c7e-0000-7000-8000-000000000005",
-        "01997c7e-0000-7000-8000-000000000006",
-        "01997c7e-0000-7000-8000-000000000007",
-        "01997c7e-0000-7000-8000-000000000008"
-      ],
-      "requests": [
-        "01997c7e-0000-7000-8000-000000000009",
-        "01997c7e-0000-7000-8000-000000000010"
       ]
     }
   },
@@ -1551,14 +1299,14 @@
         "id": "01997c7e-0000-7000-8000-000000000006",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fd",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000e1",
             "action": "create",
             "fields": {
-              "title": "Tehanu"
+              "name": "Tehanu"
             }
           }
         ]
@@ -1741,14 +1489,14 @@
         "id": "01997c7e-0000-7000-8000-000000000006",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000f1",
             "action": "create",
             "fields": {
-              "title": "Tehanu"
+              "name": "Tehanu"
             }
           }
         ],
@@ -1796,7 +1544,7 @@
   },
   {
     "name": "an operation is all or nothing",
-    "note": "The phone may edit Tersoal's wish but not delete it, so neither change is applied: the whole operation becomes one request.",
+    "note": "The phone may edit Tersoal's tag but not delete it, so neither change is applied: the whole operation becomes one request.",
     "operations": [
       {
         "id": "01997c7e-0000-7000-8000-000000000001",
@@ -1932,14 +1680,14 @@
         "id": "01997c7e-0000-7000-8000-000000000006",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fa",
-        "intent": "wish.add",
+        "intent": "tag.add",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000a9",
             "action": "create",
             "fields": {
-              "title": "Dune"
+              "name": "Dune"
             }
           }
         ]
@@ -1948,18 +1696,18 @@
         "id": "01997c7e-0000-7000-8000-000000000007",
         "library": "01997c7e-0000-7000-8000-00000000aaaa",
         "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fb",
-        "intent": "wish.edit",
+        "intent": "tag.edit",
         "changes": [
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000a9",
             "action": "update",
             "fields": {
-              "note": "Tapa dura"
+              "name": "Tapa dura"
             }
           },
           {
-            "entity": "wish",
+            "entity": "tag",
             "id": "01997c7e-0000-7000-8000-0000000000a9",
             "action": "delete"
           }
@@ -2220,7 +1968,7 @@
   },
   {
     "name": "only an administrator resolves a request, and accepting applies it",
-    "note": "Hugo, a reader, asks for a wish. Laura, an editor, cannot reject it: her attempt becomes a request too. Tersoal, the administrator, accepts it in an operation that also makes the change, signed by him.",
+    "note": "Hugo, a reader, asks to add a publisher. Laura, an editor, cannot reject it: her attempt becomes a request too. Tersoal, the administrator, accepts it in an operation that also makes the change, signed by him.",
     "operations": [
       {
         "id": "01997c7e-0000-7000-8000-000000000001",
@@ -2458,7 +2206,7 @@
   },
   {
     "name": "whoever asked withdraws a request, and nobody else does",
-    "note": "Hugo, a reader, asks for a wish with a note, carried as a change_request row inside the request. Laura, an editor, cannot withdraw Hugo's request: her attempt becomes a request. Hugo withdraws it himself.",
+    "note": "Hugo, a reader, asks to add a publisher with a note, carried as a change_request row inside the request. Laura, an editor, cannot withdraw Hugo's request: her attempt becomes a request. Hugo withdraws it himself.",
     "operations": [
       {
         "id": "01997c7e-0000-7000-8000-000000000001",

@@ -104,7 +104,6 @@
             "tag",
             "work_tag",
             "work_genre",
-            "wish",
             "series",
             "series_entry",
             "work_relation",
@@ -743,39 +742,6 @@
                     "enum": [
                       "requires"
                     ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "entity": {
-                "const": "wish"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "fields": {
-                "additionalProperties": false,
-                "properties": {
-                  "title": {
-                    "type": "string"
-                  },
-                  "author": {
-                    "$ref": "#/$defs/text"
-                  },
-                  "isbn13": {
-                    "$ref": "#/$defs/text"
-                  },
-                  "note": {
-                    "$ref": "#/$defs/text"
-                  },
-                  "cover_url": {
-                    "$ref": "#/$defs/text"
                   }
                 }
               }
