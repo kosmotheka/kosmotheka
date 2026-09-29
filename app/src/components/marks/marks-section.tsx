@@ -18,6 +18,7 @@ import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { WhoDialog } from "@/components/marks/who-dialog";
 import { Avatar } from "@/components/people/role-parts";
 import {
+  type Kind,
   type Mark,
   type MarkStatus,
   type PersonMark,
@@ -28,6 +29,7 @@ import {
   setMark,
   workMarks,
 } from "@/lib/api";
+import { statusKey } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
 
 export const STATUS_ICONS = {
@@ -44,11 +46,13 @@ export const STATUS_ICONS = {
  */
 export function MarksSection({
   workId,
+  kind,
   desktop,
   onNotice,
   onChanged,
 }: {
   workId: string;
+  kind: Kind;
   desktop: boolean;
   onNotice: (message: string) => void;
   /** After saving, so the catalog shows the new status. */
@@ -113,7 +117,7 @@ export function MarksSection({
           <span className={cn("font-semibold", desktop ? "text-[13px]" : "text-[15px]")}>
             {t("marks.mine")}
           </span>
-          <StatusPicker status={null} desktop={desktop} onChoose={() => {}} />
+          <StatusPicker status={null} kind={kind} desktop={desktop} onChoose={() => {}} />
         </div>
         <p className="flex items-start gap-2 text-[12.5px] leading-snug text-pretty">
           <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -168,7 +172,7 @@ export function MarksSection({
             </span>
           )}
         </div>
-        <StatusPicker status={mine.status} desktop={desktop} onChoose={chooseStatus} />
+        <StatusPicker status={mine.status} kind={kind} desktop={desktop} onChoose={chooseStatus} />
         <div className="flex items-center gap-2.5">
           <div
             role="radiogroup"
@@ -224,6 +228,7 @@ export function MarksSection({
       {marks.others.length > 0 && (
         <Others
           others={marks.others}
+          kind={kind}
           desktop={desktop}
           expanded={expanded}
           onToggle={() => setExpanded(!expanded)}
@@ -248,10 +253,12 @@ export function MarksSection({
 
 function StatusPicker({
   status,
+  kind,
   desktop,
   onChoose,
 }: {
   status: MarkStatus | null;
+  kind: Kind;
   desktop: boolean;
   onChoose: (status: MarkStatus) => void;
 }) {
@@ -287,7 +294,7 @@ function StatusPicker({
             )}
           >
             {on && <Icon className={desktop ? "size-3.5" : "size-[15px]"} />}
-            <span className="truncate">{t(`marks.statuses.${option}`)}</span>
+            <span className="truncate">{t(statusKey(kind, option))}</span>
           </button>
         );
       })}
@@ -297,11 +304,13 @@ function StatusPicker({
 
 function Others({
   others,
+  kind,
   desktop,
   expanded,
   onToggle,
 }: {
   others: PersonMark[];
+  kind: Kind;
   desktop: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -370,7 +379,9 @@ function Others({
             <span className={cn("font-medium", desktop ? "text-[13px]" : "text-sm")}>
               {o.person}
             </span>
-            {o.status && <span className="text-xs text-muted-foreground">{detail(t, o)}</span>}
+            {o.status && (
+              <span className="text-xs text-muted-foreground">{detail(t, o, kind)}</span>
+            )}
           </span>
           {o.rating ? (
             <span className="text-xs tracking-[1px]">{"★".repeat(o.rating)}</span>
@@ -431,8 +442,9 @@ function summary(t: T, o: PersonMark) {
 }
 
 /** «Finished · 18 Mar 2026», «Reading · since 2 Sep». */
-function detail(t: T, o: PersonMark) {
-  const status = t(`marks.statuses.${o.status}`);
+function detail(t: T, o: PersonMark, kind: Kind) {
+  if (!o.status) return "";
+  const status = t(statusKey(kind, o.status));
   if (!o.statusOn) return status;
   const since = o.status === "pending" || o.status === "in_progress";
   return since

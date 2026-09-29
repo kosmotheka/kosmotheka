@@ -3,7 +3,25 @@ import { join } from "@tauri-apps/api/path";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
 
-export const formats = ["hardcover", "paperback", "pocket", "ebook", "audiobook", "other"] as const;
+export const formats = [
+  "hardcover",
+  "paperback",
+  "pocket",
+  "ebook",
+  "pdf",
+  "audiobook",
+  "single_issue",
+  "box",
+  "dvd",
+  "bluray",
+  "uhd",
+  "physical",
+  "digital",
+  "vinyl",
+  "cd",
+  "cassette",
+  "other",
+] as const;
 export type Format = (typeof formats)[number];
 
 export const kinds = [

@@ -16,7 +16,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { type BookFilter, type Format, type MarkStatus, formats, markStatuses } from "@/lib/api";
+import {
+  type BookFilter,
+  type Format,
+  type Kind,
+  type MarkStatus,
+  formats,
+  kinds,
+  markStatuses,
+} from "@/lib/api";
+import { statusKey } from "@/lib/kinds";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +35,7 @@ const ALL = "all";
 export function isFiltering(filter: BookFilter) {
   return Boolean(
     filter.query?.trim() ||
+    filter.kind ||
     filter.format ||
     filter.owner ||
     filter.location ||
@@ -38,13 +48,18 @@ type MineOption = MarkStatus | "none";
 const MINE_OPTIONS: MineOption[] = [...markStatuses, "none"];
 const MINE_ICONS = { ...STATUS_ICONS, none: Circle };
 
-/** The "Filters" button and one removable chip per active filter. */
+/** One kind chip, plus "Todo"/"All" (`k === null`). Single choice: picking the active one clears it. */
+const KIND_CHOICES: (Kind | null)[] = [null, ...kinds];
+
+/** The kind chips, the "Filters" button and one removable chip per active filter. */
 export function FilterBar({
   filter,
   onChange,
+  desktop,
 }: {
   filter: BookFilter;
   onChange: (filter: BookFilter) => void;
+  desktop: boolean;
 }) {
   const { t } = useTranslation();
   const chips: { key: string; label: string; remove: () => BookFilter }[] = [];
@@ -59,7 +74,10 @@ export function FilterBar({
   for (const status of filter.myStatuses ?? []) {
     chips.push({
       key: `mine-${status}`,
-      label: t("marks.filter.mine", { status: t(`marks.statuses.${status}`) }),
+      label: t("marks.filter.mine", {
+        status:
+          status === "none" ? t("marks.statuses.none") : t(statusKey(filter.kind ?? null, status)),
+      }),
       remove: () => ({
         ...filter,
         myStatuses: filter.myStatuses?.filter((other) => other !== status),
@@ -74,15 +92,35 @@ export function FilterBar({
     });
   }
 
+  const filtersButton = (
+    <Button
+      variant="outline"
+      className="h-9 shrink-0 rounded-[10px]"
+      onClick={() => openOverlay({ name: "filters" })}
+    >
+      <SlidersHorizontal /> {t("filters.open")}
+    </Button>
+  );
+  const kindChips = KIND_CHOICES.map((kind) => {
+    const active = kind === null ? !filter.kind : filter.kind === kind;
+    return (
+      <Button
+        key={kind ?? "all"}
+        variant={active ? "default" : "outline"}
+        className="h-9 shrink-0 rounded-[10px]"
+        aria-pressed={active}
+        onClick={() => onChange({ ...filter, kind: kind ?? undefined })}
+      >
+        {kind === null ? t("types.all") : t(`typesPlural.${kind}`)}
+      </Button>
+    );
+  });
+
   return (
     <div className="flex items-center gap-2 overflow-x-auto">
-      <Button
-        variant="outline"
-        className="h-9 shrink-0 rounded-[10px]"
-        onClick={() => openOverlay({ name: "filters" })}
-      >
-        <SlidersHorizontal /> {t("filters.open")}
-      </Button>
+      {!desktop && filtersButton}
+      {kindChips}
+      {desktop && filtersButton}
       {chips.map((chip) => (
         <Button
           key={chip.key}
@@ -149,7 +187,9 @@ export function FilterPanel({
                 )}
               >
                 <Icon className={cn("size-3.5", !on && "text-muted-foreground")} />
-                {t(`marks.statuses.${option}`)}
+                {option === "none"
+                  ? t("marks.statuses.none")
+                  : t(statusKey(filter.kind ?? null, option))}
               </button>
             );
           })}

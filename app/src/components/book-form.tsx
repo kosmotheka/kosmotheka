@@ -76,8 +76,7 @@ export const emptyCopyForm: CopyForm = {
 };
 
 const orNull = (value: string) => value.trim() || null;
-const numberOrNull = (value: string) =>
-  value.trim() === "" ? null : Number(value);
+const numberOrNull = (value: string) => (value.trim() === "" ? null : Number(value));
 
 export function toEditionInput(form: EditionForm): EditionInput {
   return {
@@ -265,18 +264,11 @@ export function EditionFields({
             {t("lookup.search")}
           </Button>
         </div>
-        {errorFor("isbn") && (
-          <p className="text-sm text-destructive">{errorFor("isbn")}</p>
-        )}
+        {errorFor("isbn") && <p className="text-sm text-destructive">{errorFor("isbn")}</p>}
         <LookupStatus lookup={lookup} currentEditionId={currentEditionId} />
       </div>
       <div className="flex gap-4">
-        <Cover
-          file={value.cover}
-          url={value.coverUrl || null}
-          alt={value.title}
-          className="h-36 w-24"
-        />
+        <Cover file={value.cover} url={value.coverUrl || null} alt={value.title} className="h-36" />
         <div className="flex-1">
           <Field id="title" label={t("form.fields.title")} error={errorFor("title")} required>
             <Input
@@ -402,16 +394,10 @@ export function CopyFields({
             value={value.owner}
             onChange={(e) => set("owner", e.target.value)}
           />
-          <Suggestions
-            id={id("known-owners")}
-            values={options.owners}
-          />
+          <Suggestions id={id("known-owners")} values={options.owners} />
         </Field>
         <Field id={id("format")} label={t("form.fields.format")}>
-          <Select
-            value={value.format}
-            onValueChange={(v) => set("format", v as Format)}
-          >
+          <Select value={value.format} onValueChange={(v) => set("format", v as Format)}>
             <SelectTrigger id={id("format")} className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -424,11 +410,7 @@ export function CopyFields({
             </SelectContent>
           </Select>
         </Field>
-        <Field
-          id={id("quantity")}
-          label={t("form.fields.quantity")}
-          error={errorFor("quantity")}
-        >
+        <Field id={id("quantity")} label={t("form.fields.quantity")} error={errorFor("quantity")}>
           <Input
             id={id("quantity")}
             type="number"
@@ -507,13 +489,10 @@ export function LookupStatus({
   if (error) return <p className="text-sm text-destructive">{t(error)}</p>;
   if (!result) return null;
 
-  const quota = result.warnings.some(
-    (w) => w.source === "google_books" && w.kind === "quota",
-  );
+  const quota = result.warnings.some((w) => w.source === "google_books" && w.kind === "quota");
   const unreachable = result.warnings.filter((w) => w.kind !== "quota");
   const alreadyHere =
-    result.existingEditionId !== null &&
-    result.existingEditionId !== currentEditionId;
+    result.existingEditionId !== null && result.existingEditionId !== currentEditionId;
 
   return (
     <div className="space-y-1 text-sm">

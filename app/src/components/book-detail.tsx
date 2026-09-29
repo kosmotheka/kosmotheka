@@ -216,6 +216,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
           <MarksSection
             key={book.workId}
             workId={book.workId}
+            kind={book.kind}
             desktop={desktop}
             onNotice={onNotice}
             onChanged={onChanged}
@@ -291,7 +292,9 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
         className="flex w-[400px] shrink-0 flex-col border-l bg-background"
       >
         <div className="flex h-14 shrink-0 items-center gap-1.5 px-4">
-          <span className="flex-1 text-[13px] text-muted-foreground">{t("types.book")}</span>
+          <span className="flex-1 text-[13px] text-muted-foreground">
+            {book ? t(`types.${book.kind}`) : null}
+          </span>
           {!reader && (
             <Button variant="outline" size="sm" onClick={edit} disabled={!book}>
               <Pencil /> {t("book.edit")}
@@ -347,14 +350,17 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
 
 function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
   const { t } = useTranslation();
-  const meta = [t("types.book"), book.publishedYear, book.publisher].filter(Boolean).join(" · ");
+  const meta = [t(`types.${book.kind}`), book.publishedYear, book.publisher]
+    .filter(Boolean)
+    .join(" · ");
   const copies = book.copies.reduce((sum, copy) => sum + copy.quantity, 0);
   return (
     <div className="flex items-end gap-4">
       <Cover
         file={book.cover}
         alt={book.title}
-        className={cn("rounded-md", desktop ? "h-[150px] w-[100px]" : "h-[156px] w-[104px]")}
+        kind={book.kind}
+        className={cn("rounded-md", desktop ? "h-[150px]" : "h-[156px]")}
       />
       <div className="flex min-w-0 flex-col gap-1 pb-1">
         <h2 className="text-[22px] leading-tight font-semibold tracking-tight">{book.title}</h2>

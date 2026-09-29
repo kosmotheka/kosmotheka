@@ -42,21 +42,23 @@ const libraries: LibrarySummary[] = [
   },
 ];
 
-const book = (
+const work = (
   n: number,
+  kind: Kind,
   title: string,
   authors: string[],
   year: number,
   formats: BookSummary["formats"],
   owners: string[],
+  publisher: string | null = null,
 ): BookSummary => ({
   libraryId: HOME,
   editionId: `01997c7e-0000-7000-8000-${String(n).padStart(12, "0")}`,
-  kind: "book",
+  kind,
   title,
   subtitle: null,
   authors,
-  publisher: "Debolsillo",
+  publisher,
   publishedYear: year,
   isbn13: null,
   cover: null,
@@ -68,6 +70,15 @@ const book = (
   myWished: false,
   tags: [],
 });
+
+const book = (
+  n: number,
+  title: string,
+  authors: string[],
+  year: number,
+  formats: BookSummary["formats"],
+  owners: string[],
+): BookSummary => work(n, "book", title, authors, year, formats, owners, "Debolsillo");
 
 const books: BookSummary[] = [
   book(1, "Dune", ["Frank Herbert"], 1965, ["paperback", "ebook"], ["Tersoal", "Laura"]),
@@ -84,6 +95,13 @@ const books: BookSummary[] = [
     ["Hugo"],
   ),
   book(7, "Vampiro: la mascarada", ["Mark Rein-Hagen"], 1991, ["hardcover", "other"], ["Tersoal"]),
+  // Non-book kinds (D60), so the catalog can be seen mixed.
+  work(8, "film", "Blade Runner 2049", ["Denis Villeneuve"], 2017, ["bluray"], ["Tersoal"]),
+  work(9, "boardgame", "Catán", [], 1995, ["box"], ["Hugo", "Laura"]),
+  work(10, "videogame", "Zelda: Tears of the Kingdom", [], 2023, ["physical"], ["Hugo"]),
+  work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd"], ["Tersoal", "Laura"]),
+  work(12, "music", "Abbey Road", ["The Beatles"], 1969, ["vinyl"], ["Tersoal"]),
+  work(13, "other", "Playmobil Barco pirata 5135", [], 2006, ["other"], ["Laura"]),
 ];
 
 const wishes: Wish[] = [

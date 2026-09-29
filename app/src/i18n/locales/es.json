@@ -28,7 +28,18 @@
     "paperback": "Tapa blanda",
     "pocket": "Bolsillo",
     "ebook": "Ebook",
+    "pdf": "PDF",
     "audiobook": "Audiolibro",
+    "single_issue": "Grapa",
+    "box": "Caja",
+    "dvd": "DVD",
+    "bluray": "Blu-ray",
+    "uhd": "4K",
+    "physical": "Físico",
+    "digital": "Digital",
+    "vinyl": "Vinilo",
+    "cd": "CD",
+    "cassette": "Casete",
     "other": "Otro"
   },
   "genres": {
@@ -466,7 +477,25 @@
     }
   },
   "types": {
-    "book": "Libro"
+    "all": "Todo",
+    "book": "Libro",
+    "comic": "Cómic",
+    "boardgame": "Juego de mesa",
+    "film": "Película",
+    "tv_series": "Serie",
+    "videogame": "Videojuego",
+    "music": "Música",
+    "other": "Otro"
+  },
+  "typesPlural": {
+    "book": "Libros",
+    "comic": "Cómics",
+    "boardgame": "Juegos de mesa",
+    "film": "Películas",
+    "tv_series": "Series",
+    "videogame": "Videojuegos",
+    "music": "Música",
+    "other": "Otros"
   },
   "common": {
     "close": "Cerrar",
@@ -825,14 +854,64 @@
     "andMore_other": "y {{count}} más",
     "statuses": {
       "pending": "Pendiente",
-      "in_progress": "Leyendo",
+      "in_progress": "En curso",
       "finished": "Terminado",
       "abandoned": "Abandonado",
       "none": "Sin marcar"
     },
+    "statusesByKind": {
+      "book": {
+        "pending": "Por leer",
+        "in_progress": "Leyendo",
+        "finished": "Leído",
+        "abandoned": "Abandonado"
+      },
+      "comic": {
+        "pending": "Por leer",
+        "in_progress": "Leyendo",
+        "finished": "Leído",
+        "abandoned": "Abandonado"
+      },
+      "boardgame": {
+        "pending": "Por jugar",
+        "in_progress": "Jugando",
+        "finished": "Jugado",
+        "abandoned": "Abandonado"
+      },
+      "film": {
+        "pending": "Por ver",
+        "in_progress": "Viendo",
+        "finished": "Vista",
+        "abandoned": "Abandonada"
+      },
+      "tv_series": {
+        "pending": "Por ver",
+        "in_progress": "Viendo",
+        "finished": "Vista",
+        "abandoned": "Abandonada"
+      },
+      "videogame": {
+        "pending": "Por jugar",
+        "in_progress": "Jugando",
+        "finished": "Terminado",
+        "abandoned": "Abandonado"
+      },
+      "music": {
+        "pending": "Por escuchar",
+        "in_progress": "Escuchando",
+        "finished": "Escuchado",
+        "abandoned": "Abandonado"
+      },
+      "other": {
+        "pending": "Pendiente",
+        "in_progress": "Empezado",
+        "finished": "Terminado",
+        "abandoned": "Abandonado"
+      }
+    },
     "summary": {
       "pending": "{{person}} lo tiene pendiente",
-      "in_progress": "{{person}} lo está leyendo",
+      "in_progress": "{{person}} lo tiene en curso",
       "finished": "{{person}} lo terminó",
       "finishedIn": "{{person}} lo terminó en {{month}}",
       "abandoned": "{{person}} lo abandonó"

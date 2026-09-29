@@ -2,18 +2,21 @@ import { useTranslation } from "react-i18next";
 
 import { Cover } from "@/components/cover";
 import { MineIndicator } from "@/components/marks/mine-indicator";
-import type { BookSummary } from "@/lib/api";
+import type { BookSummary, Kind } from "@/lib/api";
 
 /** The catalog on desktop. Rows are buttons, so the keyboard can open them too. */
 export function BookTable({
   books,
   onOpen,
   selectedId,
+  activeKind = null,
 }: {
   books: BookSummary[];
   onOpen: (book: BookSummary) => void;
   /** The book open in the side panel: highlighted, and the table drops two columns to make room. */
   selectedId?: string | null;
+  /** The kind chip selected, if any: shows this kind's status wording in `MineIndicator`. */
+  activeKind?: Kind | null;
 }) {
   const wide = !selectedId;
   const { t } = useTranslation();
@@ -55,18 +58,20 @@ export function BookTable({
           onClick={() => onOpen(book)}
         >
           <span className="flex w-10 shrink-0 justify-center">
-            <Cover file={book.cover} alt="" className="h-11 w-[30px]" />
+            <Cover file={book.cover} alt="" kind={book.kind} className="h-11" />
           </span>
           <span className="flex min-w-0 flex-[2.4] flex-col gap-0.5">
             <span className="flex min-w-0 items-center gap-1.5">
               <span className="truncate text-sm font-medium">{book.title}</span>
-              <MineIndicator book={book} />
+              <MineIndicator book={book} activeKind={activeKind} />
             </span>
             <span className="truncate text-xs text-muted-foreground">
               {book.authors.join(", ")}
             </span>
           </span>
-          <span className="w-24 shrink-0 text-muted-foreground">{t("types.book")}</span>
+          <span className="w-24 shrink-0 truncate text-muted-foreground">
+            {t(`types.${book.kind}`)}
+          </span>
           <span className="w-11 shrink-0 text-muted-foreground tabular-nums">
             {book.publishedYear}
           </span>

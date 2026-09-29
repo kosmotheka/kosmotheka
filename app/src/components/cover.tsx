@@ -1,23 +1,21 @@
 import { useEffect, useState } from "react";
-import { Book, BookImage, Clapperboard, Dice5, Disc3, Gamepad2, Shapes } from "lucide-react";
 
-import { coverSrc } from "@/lib/api";
+import { coverSrc, type Kind } from "@/lib/api";
+import { COVER_SHAPES, KIND_ICONS, type CoverShape } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
 
-/** The kinds of work the catalog will hold (D60); each has its own placeholder icon. */
-export type CoverKind = "book" | "comic" | "game" | "film" | "videogame" | "music" | "other";
+const SHAPE_ASPECT: Record<CoverShape, string> = {
+  tall: "aspect-[2/3]",
+  square: "aspect-square",
+  case: "aspect-[5/7]",
+  game: "aspect-[3/4]",
+};
 
-const PLACEHOLDER_ICONS = {
-  book: Book,
-  comic: BookImage,
-  game: Dice5,
-  film: Clapperboard,
-  videogame: Gamepad2,
-  music: Disc3,
-  other: Shapes,
-} satisfies Record<CoverKind, unknown>;
-
-/** A remote `url` (not yet saved) wins over a stored `file`; otherwise a placeholder. */
+/**
+ * A remote `url` (not yet saved) wins over a stored `file`; otherwise a placeholder
+ * shaped like the kind's cover (Design's `Cover.dc.html`). Callers set the height
+ * through `className`; the width follows the kind's aspect ratio.
+ */
 export function Cover({
   file,
   url,
@@ -28,12 +26,10 @@ export function Cover({
   file?: string | null;
   url?: string | null;
   alt: string;
-  kind?: CoverKind;
+  kind?: Kind;
   className?: string;
 }) {
-  const [localSrc, setLocalSrc] = useState<{ file: string; src: string } | null>(
-    null,
-  );
+  const [localSrc, setLocalSrc] = useState<{ file: string; src: string } | null>(null);
   const [broken, setBroken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,27 +42,26 @@ export function Cover({
   }, [file]);
 
   const src = url ?? (localSrc && localSrc.file === file ? localSrc.src : null);
+  const shape = COVER_SHAPES[kind];
   const box = cn(
-    "flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted",
+    "relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted",
+    SHAPE_ASPECT[shape],
     className,
   );
 
   if (!src || broken === src) {
-    const Icon = PLACEHOLDER_ICONS[kind];
+    const Icon = KIND_ICONS[kind];
     return (
       <div className={cn(box, "cover-placeholder")} aria-hidden>
+        {shape === "case" && <span className="cover-spine" />}
+        {shape === "game" && <span className="cover-band" />}
         <Icon className="size-2/5 text-muted-foreground" strokeWidth={1.5} />
       </div>
     );
   }
   return (
     <div className={box}>
-      <img
-        src={src}
-        alt={alt}
-        className="size-full object-cover"
-        onError={() => setBroken(src)}
-      />
+      <img src={src} alt={alt} className="size-full object-cover" onError={() => setBroken(src)} />
     </div>
   );
 }

@@ -36,7 +36,7 @@ export function WishList({
     <ul className="-mx-4 md:mx-0">
       {wishes.map((wish) => (
         <li key={wish.id} className="flex min-h-16 items-center gap-3.5 px-4 py-2">
-          <Cover url={wish.coverUrl} alt="" className="h-14 w-10 rounded-md opacity-75" />
+          <Cover url={wish.coverUrl} alt="" className="h-14 rounded-md opacity-75" />
           <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
             <span className="truncate text-[15px] font-medium">{wish.title}</span>
             <span className="truncate text-[13px] text-muted-foreground">

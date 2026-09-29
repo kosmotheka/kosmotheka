@@ -28,7 +28,18 @@
     "paperback": "Paperback",
     "pocket": "Pocket",
     "ebook": "Ebook",
+    "pdf": "PDF",
     "audiobook": "Audiobook",
+    "single_issue": "Single issue",
+    "box": "Box",
+    "dvd": "DVD",
+    "bluray": "Blu-ray",
+    "uhd": "4K",
+    "physical": "Physical",
+    "digital": "Digital",
+    "vinyl": "Vinyl",
+    "cd": "CD",
+    "cassette": "Cassette",
     "other": "Other"
   },
   "genres": {
@@ -466,7 +477,25 @@
     }
   },
   "types": {
-    "book": "Book"
+    "all": "All",
+    "book": "Book",
+    "comic": "Comic",
+    "boardgame": "Board game",
+    "film": "Film",
+    "tv_series": "TV series",
+    "videogame": "Video game",
+    "music": "Music",
+    "other": "Other"
+  },
+  "typesPlural": {
+    "book": "Books",
+    "comic": "Comics",
+    "boardgame": "Board games",
+    "film": "Films",
+    "tv_series": "TV series",
+    "videogame": "Video games",
+    "music": "Music",
+    "other": "Other"
   },
   "common": {
     "close": "Close",
@@ -825,14 +854,64 @@
     "andMore_other": "and {{count}} more",
     "statuses": {
       "pending": "Pending",
-      "in_progress": "Reading",
+      "in_progress": "In progress",
       "finished": "Finished",
       "abandoned": "Abandoned",
       "none": "Not marked"
     },
+    "statusesByKind": {
+      "book": {
+        "pending": "To read",
+        "in_progress": "Reading",
+        "finished": "Read",
+        "abandoned": "Dropped"
+      },
+      "comic": {
+        "pending": "To read",
+        "in_progress": "Reading",
+        "finished": "Read",
+        "abandoned": "Dropped"
+      },
+      "boardgame": {
+        "pending": "To play",
+        "in_progress": "Playing",
+        "finished": "Played",
+        "abandoned": "Dropped"
+      },
+      "film": {
+        "pending": "To watch",
+        "in_progress": "Watching",
+        "finished": "Watched",
+        "abandoned": "Dropped"
+      },
+      "tv_series": {
+        "pending": "To watch",
+        "in_progress": "Watching",
+        "finished": "Watched",
+        "abandoned": "Dropped"
+      },
+      "videogame": {
+        "pending": "To play",
+        "in_progress": "Playing",
+        "finished": "Finished",
+        "abandoned": "Dropped"
+      },
+      "music": {
+        "pending": "To listen",
+        "in_progress": "Listening",
+        "finished": "Listened",
+        "abandoned": "Dropped"
+      },
+      "other": {
+        "pending": "To do",
+        "in_progress": "Started",
+        "finished": "Finished",
+        "abandoned": "Dropped"
+      }
+    },
     "summary": {
       "pending": "{{person}} has it pending",
-      "in_progress": "{{person}} is reading it",
+      "in_progress": "{{person}} has it in progress",
       "finished": "{{person}} finished it",
       "finishedIn": "{{person}} finished it in {{month}}",
       "abandoned": "{{person}} abandoned it"

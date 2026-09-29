@@ -58,9 +58,14 @@ export function CatalogPage({
   const groups = everywhere ? groupByLibrary(books) : [];
   const list = (shown: BookSummary[]) =>
     desktop ? (
-      <BookTable books={shown} onOpen={openBook} selectedId={selectedId} />
+      <BookTable
+        books={shown}
+        onOpen={openBook}
+        selectedId={selectedId}
+        activeKind={filter.kind ?? null}
+      />
     ) : (
-      <BookList books={shown} onOpen={openBook} />
+      <BookList books={shown} onOpen={openBook} activeKind={filter.kind ?? null} />
     );
   const count = t(filtering ? "filters.results" : "nav.works", { count: books.length });
 
@@ -104,12 +109,14 @@ export function CatalogPage({
       {!desktop && filter.query?.trim() && libraries.all.length > 1 && (
         <SearchScope library={library} everywhere={everywhere} onChange={onEverywhereChange} />
       )}
-      {!catalogIsEmpty && <FilterBar filter={filter} onChange={onFilterChange} />}
+      {!catalogIsEmpty && <FilterBar filter={filter} onChange={onFilterChange} desktop={desktop} />}
       {!desktop && state.status === "ready" && !catalogIsEmpty && (
         <p className="text-xs text-muted-foreground">{count}</p>
       )}
 
-      {state.status === "loading" && <p className="text-muted-foreground">{t("catalog.loading")}</p>}
+      {state.status === "loading" && (
+        <p className="text-muted-foreground">{t("catalog.loading")}</p>
+      )}
       {state.status === "error" && (
         <p className="text-destructive">{t("errors.internal", { message: state.message })}</p>
       )}

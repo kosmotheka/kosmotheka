@@ -1,12 +1,6 @@
 import { type FormEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  CircleAlert,
-  CircleCheck,
-  CircleHelp,
-  Copy as CopyIcon,
-  Loader2,
-} from "lucide-react";
+import { CircleAlert, CircleCheck, CircleHelp, Copy as CopyIcon, Loader2 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
@@ -33,14 +27,7 @@ import {
 } from "@/lib/api";
 
 type Status =
-  | "queued"
-  | "working"
-  | "added"
-  | "copyAdded"
-  | "exists"
-  | "notFound"
-  | "invalid"
-  | "failed";
+  "queued" | "working" | "added" | "copyAdded" | "exists" | "notFound" | "invalid" | "failed";
 
 interface Entry {
   id: number;
@@ -189,7 +176,6 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
       description={t("burst.description")}
       className="sm:max-w-2xl"
     >
-
       <div className="grid gap-3 sm:grid-cols-3">
         <Field id="burst-owner" label={t("form.fields.owner")}>
           <Input
@@ -198,10 +184,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
           />
-          <Suggestions
-            id="burst-known-owners"
-            values={options.owners}
-          />
+          <Suggestions id="burst-known-owners" values={options.owners} />
         </Field>
         <Field id="burst-format" label={t("form.fields.format")}>
           <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
@@ -287,7 +270,7 @@ function EntryRow({
 
   return (
     <li className="flex items-start gap-3 rounded-lg border p-2">
-      <Cover url={entry.coverUrl} alt="" className="h-12 w-8" />
+      <Cover url={entry.coverUrl} alt="" className="h-12" />
       <div className="min-w-0 flex-1 space-y-1 text-sm">
         <div className="flex items-center gap-2">
           {icon}
