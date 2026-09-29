@@ -24,7 +24,7 @@ import {
   type EditionForm,
   copyFormFrom,
   editionFormFrom,
-  emptyCopyForm,
+  emptyCopyFormFor,
   toCopyInput,
   toEditionInput,
   useCommandErrors,
@@ -425,6 +425,7 @@ function EditionSection({
           onChange={onFormChange}
           errorFor={errors.errorFor}
           currentEditionId={book.editionId}
+          kindLocked
         />
         {errors.message && (
           <p className="text-sm text-destructive">
@@ -493,7 +494,7 @@ function CopiesSection({
   const [asking, setAsking] = useState<CopyDetail | null>(null);
   /** Id of the copy being edited, or "new" while adding one. */
   const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState<CopyForm>(emptyCopyForm);
+  const [form, setForm] = useState<CopyForm>(() => emptyCopyFormFor(book.kind));
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<CopyDetail | null>(null);
   const errors = useCommandErrors();
@@ -539,6 +540,7 @@ function CopiesSection({
         value={form}
         onChange={setForm}
         errorFor={errors.errorFor}
+        kind={book.kind}
         idPrefix={`copy-${editing}`}
       />
       <div className="flex justify-end gap-2">
@@ -623,7 +625,7 @@ function CopiesSection({
         <Button
           variant="outline"
           className="h-12 rounded-xl border-dashed"
-          onClick={() => start("new", emptyCopyForm)}
+          onClick={() => start("new", emptyCopyFormFor(book.kind))}
         >
           <Plus /> {t("copies.add")}
         </Button>

@@ -114,27 +114,76 @@
     "title": "Add to {{library}}",
     "description": "If the ISBN is already in the catalog, a copy is added to that edition.",
     "copySection": "Your copy",
+    "whatIsIt": "What is it?",
+    "whatIsItHint": "We’ll ask for different details depending on the type. If nothing fits, choose “Other”.",
     "fields": {
+      "kind": "Type",
       "title": "Title",
       "subtitle": "Subtitle",
-      "authors": "Authors",
-      "author": "Author {{number}}",
       "publisher": "Publisher",
+      "label": "Label",
       "publishedYear": "Year",
       "isbn": "ISBN",
+      "barcode": "Barcode (EAN/UPC)",
+      "number": "Issue number",
+      "players": "Players",
+      "playersMin": "Minimum players",
+      "playersMax": "Maximum players",
+      "durationMinutes": "Duration",
+      "minAge": "Minimum age",
+      "seasons": "Seasons",
+      "seasonsHeld": "Which seasons",
+      "notes": "Notes",
       "language": "Language",
       "owner": "Owner",
       "format": "Format",
+      "platform": "Platform",
+      "platformOther": "Other",
       "quantity": "Copies",
       "acquiredOn": "Purchase date",
-      "location": "Location"
+      "location": "Location",
+      "changeCover": "Change cover"
+    },
+    "units": {
+      "minutes": "min",
+      "years": "years"
+    },
+    "people": {
+      "author": "Authorship",
+      "writer": "Writer",
+      "illustrator": "Artist",
+      "designer": "Design",
+      "director": "Direction",
+      "studio": "Studio",
+      "artist": "Artist",
+      "add": "Add…",
+      "remove": "Remove {{name}}"
+    },
+    "kindHeading": {
+      "book": "Book details",
+      "comic": "Comic details",
+      "boardgame": "Board game details",
+      "film": "Film details",
+      "tv_series": "TV series details",
+      "videogame": "Video game details",
+      "music": "Music details",
+      "other": "Own details"
+    },
+    "hints": {
+      "isbn": "Optional. Old books don’t have one",
+      "barcode": "Optional",
+      "barcodeVideogame": "Optional. Platform is set on each copy",
+      "seasonsHeld": "Optional. Leave empty if you have them all",
+      "locationDigital": "Digital copies aren’t on a shelf: say where you have them."
+    },
+    "otherFormatOnly": "Other · the only format for “Other”",
+    "other": {
+      "notice": "“Other” has no details of its own. Anything you want to note (maker, reference, condition…) goes in the notes."
     },
     "placeholders": {
       "language": "en, es…",
       "location": "Living room, shelf 2, row 3"
     },
-    "addAuthor": "Add author",
-    "removeAuthor": "Remove author",
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving…"

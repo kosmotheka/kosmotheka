@@ -510,24 +510,73 @@ mockIPC((cmd, args) => {
     case "get_book": {
       const id = (args as { editionId: string }).editionId;
       const found = books.find((b) => b.editionId === id) ?? books[0];
+      // Plausible per-kind extras (D68-ish), so every kind's edit and copy forms have
+      // something to show; kinds without a field keep it null, as the engine would.
+      const KIND_EXTRAS: Partial<
+        Record<
+          Kind,
+          {
+            contributors?: { name: string; role: string }[];
+            number?: string;
+            playersMin?: number;
+            playersMax?: number;
+            durationMinutes?: number;
+            minAge?: number;
+            seasons?: number;
+            barcode?: string;
+          }
+        >
+      > = {
+        comic: {
+          contributors: [
+            { name: "Alan Moore", role: "writer" },
+            { name: "Dave Gibbons", role: "illustrator" },
+          ],
+          number: "1",
+          barcode: "9788467905236",
+        },
+        boardgame: {
+          contributors: [{ name: "Klaus Teuber", role: "designer" }],
+          playersMin: 3,
+          playersMax: 4,
+          durationMinutes: 75,
+          minAge: 10,
+          barcode: "4001504036136",
+        },
+        film: {
+          contributors: [{ name: "Denis Villeneuve", role: "director" }],
+          durationMinutes: 163,
+          barcode: "8420266008358",
+        },
+        tv_series: { seasons: 3, barcode: "7321900000000" },
+        videogame: {
+          contributors: [{ name: "Nintendo EPD", role: "studio" }],
+          barcode: "0045496596439",
+        },
+        music: {
+          contributors: [{ name: "The Beatles", role: "artist" }],
+          barcode: "5099969944924",
+        },
+      };
+      const extras = KIND_EXTRAS[found.kind] ?? {};
       return {
         ...found,
         workId: `work-${found.editionId}`,
-        language: "es",
-        googleBooksId: "abc",
+        language: found.kind === "book" ? "es" : null,
+        googleBooksId: found.kind === "book" ? "abc" : null,
         openLibraryId: null,
-        barcode: null,
+        barcode: extras.barcode ?? null,
         notes:
           found.editionId === books[0].editionId
             ? "Completo, con la caja original. Falta una vela."
             : null,
-        contributors: [],
-        number: null,
-        playersMin: null,
-        playersMax: null,
-        durationMinutes: null,
-        minAge: null,
-        seasons: null,
+        contributors: extras.contributors ?? [],
+        number: extras.number ?? null,
+        playersMin: extras.playersMin ?? null,
+        playersMax: extras.playersMax ?? null,
+        durationMinutes: extras.durationMinutes ?? null,
+        minAge: extras.minAge ?? null,
+        seasons: extras.seasons ?? null,
         copies: found.formats.map((format, i) => ({
           id: `copy-${i}`,
           owner: found.owners[i] ?? found.owners[0] ?? null,
@@ -535,18 +584,31 @@ mockIPC((cmd, args) => {
           quantity: 1,
           location: format === "ebook" ? null : "Salón, balda 3",
           acquiredOn: null,
-          platform: null,
-          seasons: null,
+          platform: found.kind === "videogame" ? "Switch" : null,
+          seasons: found.kind === "tv_series" ? "1-2" : null,
           canDelete: !params.has("reader"),
         })),
         canDelete: !params.has("reader"),
-        genres: ["fantasy", "science_fiction"],
+        genres: found.kind === "book" ? ["fantasy", "science_fiction"] : [],
         tags: ["Favorite"],
-        series: [{ seriesId: "series-1", name: "Dune", ordered: true, position: 1 }],
+        series:
+          found.kind === "book"
+            ? [{ seriesId: "series-1", name: "Dune", ordered: true, position: 1 }]
+            : [],
         requires: [],
         requiredBy: [],
       };
     }
+    case "create_book":
+      return { editionId: "new-edition-id", existingEdition: false, coverFailed: false };
+    case "update_edition":
+      return { coverFailed: false };
+    case "add_copy":
+      return "new-copy-id";
+    case "update_copy":
+    case "delete_copy":
+    case "delete_book":
+      return null;
     case "list_series":
       return [{ id: "series-1", name: "Dune", ordered: true, works: 2, missing: 1 }];
     case "get_series":

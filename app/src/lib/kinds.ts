@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { Format, Kind, MarkStatus } from "@/lib/api";
+import type { ContributorRole, Format, Kind, MarkStatus } from "@/lib/api";
 
 /** Icon shown on a cover placeholder and next to the kind's name (Design, TypeReference). */
 export const KIND_ICONS: Record<Kind, LucideIcon> = {
@@ -57,6 +57,36 @@ export const COVER_SHAPES: Record<Kind, CoverShape> = {
   music: "square",
   other: "square",
 };
+
+/** The person/group roles the form's "own data" section asks for, per kind, in order (D68-ish). */
+export const KIND_PEOPLE: Record<Kind, { role: ContributorRole; labelKey: string }[]> = {
+  book: [{ role: "author", labelKey: "form.people.author" }],
+  comic: [
+    { role: "writer", labelKey: "form.people.writer" },
+    { role: "illustrator", labelKey: "form.people.illustrator" },
+  ],
+  boardgame: [{ role: "designer", labelKey: "form.people.designer" }],
+  film: [{ role: "director", labelKey: "form.people.director" }],
+  tv_series: [],
+  videogame: [{ role: "studio", labelKey: "form.people.studio" }],
+  music: [{ role: "artist", labelKey: "form.people.artist" }],
+  other: [],
+};
+
+/** Suggested "where" for a digital copy of each kind: services, not shelves (Design's CopySheet). */
+export const DIGITAL_PLATFORMS: Record<Kind, string[]> = {
+  book: ["Kindle", "Kobo", "Audible"],
+  comic: ["ComiXology", "Kindle"],
+  boardgame: ["Board Game Arena", "Tabletopia"],
+  film: ["Apple TV", "Google TV", "Filmin"],
+  tv_series: ["Apple TV", "Filmin", "Google TV"],
+  videogame: ["Nintendo eShop", "Steam", "PlayStation Store"],
+  music: ["Bandcamp", "Spotify", "Apple Music"],
+  other: [],
+};
+
+/** Starting list of video game platforms, used until the engine offers the library's own. */
+export const VIDEOGAME_PLATFORMS = ["Switch", "PS5", "PS4", "Xbox Series", "PC"];
 
 /**
  * The i18n key for a mark status, worded for one kind ("Leyendo", "Viendo"…), or the

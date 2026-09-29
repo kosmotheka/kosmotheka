@@ -8,7 +8,8 @@ import {
   type EditionForm,
   CopyFields,
   EditionFields,
-  emptyCopyForm,
+  KindGrid,
+  emptyCopyFormFor,
   emptyEditionForm,
   toCopyInput,
   toEditionInput,
@@ -25,7 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type CreatedBook, type NewBook, createBook, requestBook } from "@/lib/api";
+import { type CreatedBook, type Kind, type NewBook, createBook, requestBook } from "@/lib/api";
+import { KIND_FORMATS } from "@/lib/kinds";
 
 export interface AddBookPrefill {
   isbn?: string;
@@ -50,6 +52,16 @@ interface Props {
   onRequested?: (requested: boolean) => void;
 }
 
+const initialEditionForm = (prefill?: AddBookPrefill, initial?: NewBook): EditionForm =>
+  initial
+    ? editionFormFromInput(initial)
+    : {
+        ...emptyEditionForm,
+        isbn: prefill?.isbn ?? "",
+        title: prefill?.title ?? "",
+        people: prefill?.author ? { author: [prefill.author] } : {},
+      };
+
 export function AddBookDialog({
   open,
   desktop,
@@ -66,25 +78,31 @@ export function AddBookDialog({
   // Readers ask for the book instead of adding it (D73).
   const asking = useRequests().myRole === "reader" && !customSubmit;
   const [note, setNote] = useState("");
-  const [edition, setEdition] = useState(() =>
-    initial
-      ? editionFormFromInput(initial)
-      : {
-          ...emptyEditionForm,
-          isbn: prefill?.isbn ?? "",
-          title: prefill?.title ?? "",
-          authors: prefill?.author ? [prefill.author] : emptyEditionForm.authors,
-        },
+  const [edition, setEdition] = useState(() => initialEditionForm(prefill, initial));
+  const [copy, setCopy] = useState(() =>
+    initial ? copyFormFromInput(initial) : emptyCopyFormFor(edition.kind),
   );
-  const [copy, setCopy] = useState(() => (initial ? copyFormFromInput(initial) : emptyCopyForm));
   const [saving, setSaving] = useState(false);
   const errors = useCommandErrors();
+  // A fresh add (no ISBN prefill, no request to correct) starts by asking "What is it?"
+  // on mobile; desktop shows the type row inline in the form instead.
+  const [pickingKind, setPickingKind] = useState(!initial && !prefill);
+
+  // The chosen format may not exist for the new kind (e.g. "Pocket" picked, then switched
+  // to a kind without it): fall back to that kind's first format.
+  const changeEdition = (next: EditionForm) => {
+    if (next.kind !== edition.kind && !KIND_FORMATS[next.kind].includes(copy.format)) {
+      setCopy((c) => ({ ...c, format: KIND_FORMATS[next.kind][0] }));
+    }
+    setEdition(next);
+  };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setEdition(emptyEditionForm);
-      setCopy(emptyCopyForm);
+      setCopy(emptyCopyFormFor(emptyEditionForm.kind));
       setNote("");
+      setPickingKind(!initial && !prefill);
       errors.clear();
     }
     onOpenChange(next);
@@ -111,15 +129,23 @@ export function AddBookDialog({
     }
   };
 
+  const pickKind = (kind: Kind) => changeEdition({ ...edition, kind });
+
   const fields = (
     <>
-      <EditionFields value={edition} onChange={setEdition} errorFor={errors.errorFor} />
+      <EditionFields
+        value={edition}
+        onChange={changeEdition}
+        errorFor={errors.errorFor}
+        showKindSelect={!desktop}
+      />
       <section className="space-y-4 border-t pt-5">
         <h3 className="text-sm font-medium">{t("form.copySection")}</h3>
         <CopyFields
           value={copy}
           onChange={setCopy}
           errorFor={(field) => errors.errorFor(`copy.${field}`)}
+          kind={edition.kind}
         />
       </section>
       {asking && (
@@ -145,26 +171,53 @@ export function AddBookDialog({
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <ScreenDialogContent>
-          <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
-            <header className="flex h-16 shrink-0 items-center gap-1 px-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-lg"
-                className="size-12 rounded-full"
-                aria-label={t("common.close")}
-                onClick={() => handleOpenChange(false)}
-              >
-                <X className="size-[22px]" />
-              </Button>
-              <DialogTitle className="flex-1 text-lg font-semibold">{title}</DialogTitle>
-              <Button type="submit" className="mr-3 rounded-full px-4" disabled={saving}>
-                {submitLabel}
-              </Button>
-            </header>
-            <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
-            <div className="flex-1 space-y-6 overflow-y-auto px-4 pt-2 pb-10">{fields}</div>
-          </form>
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
+              <header className="flex h-16 shrink-0 items-center gap-1 px-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
+                  className="size-12 rounded-full"
+                  aria-label={t("common.close")}
+                  onClick={() => handleOpenChange(false)}
+                >
+                  <X className="size-[22px]" />
+                </Button>
+                <DialogTitle className="flex-1 text-lg font-semibold">{title}</DialogTitle>
+                <Button type="submit" className="mr-3 rounded-full px-4" disabled={saving}>
+                  {submitLabel}
+                </Button>
+              </header>
+              <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
+              <div className="flex-1 space-y-6 overflow-y-auto px-4 pt-2 pb-10">{fields}</div>
+            </form>
+            {pickingKind && (
+              <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/10">
+                <div className="flex flex-col gap-3.5 rounded-t-[28px] bg-popover px-4 pt-2.5 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
+                  <div
+                    className="mx-auto h-1 w-8 rounded-full bg-muted-foreground/40"
+                    aria-hidden
+                  />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-lg font-semibold">{t("form.whatIsIt")}</span>
+                    <span className="text-[13.5px] leading-snug text-pretty text-muted-foreground">
+                      {t("form.whatIsItHint")}
+                    </span>
+                  </div>
+                  <KindGrid
+                    value={edition.kind}
+                    onChange={(kind) => {
+                      pickKind(kind);
+                      setPickingKind(false);
+                    }}
+                    columns={4}
+                    size="lg"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </ScreenDialogContent>
       </Dialog>
     );
@@ -178,6 +231,10 @@ export function AddBookDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">{t("form.whatIsIt")}</p>
+            <KindGrid value={edition.kind} onChange={pickKind} columns={8} />
+          </div>
           {fields}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
@@ -195,13 +252,22 @@ export function AddBookDialog({
 
 function editionFormFromInput(book: NewBook): EditionForm {
   return {
+    kind: book.kind ?? "book",
     title: book.title,
     subtitle: book.subtitle ?? "",
-    authors: book.authors.length > 0 ? book.authors : [""],
+    people: book.authors.length > 0 ? { author: book.authors } : {},
     publisher: book.publisher ?? "",
     publishedYear: book.publishedYear?.toString() ?? "",
     language: book.language ?? "",
     isbn: book.isbn ?? "",
+    barcode: book.barcode ?? "",
+    number: book.number ?? "",
+    playersMin: book.playersMin?.toString() ?? "",
+    playersMax: book.playersMax?.toString() ?? "",
+    durationMinutes: book.durationMinutes?.toString() ?? "",
+    minAge: book.minAge?.toString() ?? "",
+    seasons: book.seasons?.toString() ?? "",
+    notes: book.notes ?? "",
     coverUrl: book.coverUrl ?? "",
     cover: null,
     googleBooksId: book.googleBooksId,
@@ -216,5 +282,7 @@ function copyFormFromInput(book: NewBook): CopyForm {
     quantity: book.copy.quantity.toString(),
     location: book.copy.location ?? "",
     acquiredOn: book.copy.acquiredOn ?? "",
+    platform: book.copy.platform ?? "",
+    seasons: book.copy.seasons ?? "",
   };
 }

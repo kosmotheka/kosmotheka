@@ -114,27 +114,76 @@
     "title": "Añadir a {{library}}",
     "description": "Si el ISBN ya está en el catálogo, se añade un ejemplar a esa edición.",
     "copySection": "Tu ejemplar",
+    "whatIsIt": "¿Qué es?",
+    "whatIsItHint": "Según el tipo te pediremos unos datos u otros. Si no encaja en ninguno, «Otro».",
     "fields": {
+      "kind": "Tipo",
       "title": "Título",
       "subtitle": "Subtítulo",
-      "authors": "Autores",
-      "author": "Autor {{number}}",
       "publisher": "Editorial",
+      "label": "Sello",
       "publishedYear": "Año",
       "isbn": "ISBN",
+      "barcode": "Código de barras (EAN/UPC)",
+      "number": "Número",
+      "players": "Jugadores",
+      "playersMin": "Jugadores mínimo",
+      "playersMax": "Jugadores máximo",
+      "durationMinutes": "Duración",
+      "minAge": "Edad mínima",
+      "seasons": "Temporadas",
+      "seasonsHeld": "Qué temporadas",
+      "notes": "Notas",
       "language": "Idioma",
       "owner": "Propietario",
       "format": "Formato",
+      "platform": "Plataforma",
+      "platformOther": "Otra",
       "quantity": "Unidades",
       "acquiredOn": "Fecha de compra",
-      "location": "Ubicación"
+      "location": "Ubicación",
+      "changeCover": "Cambiar portada"
+    },
+    "units": {
+      "minutes": "min",
+      "years": "años"
+    },
+    "people": {
+      "author": "Autoría",
+      "writer": "Guion",
+      "illustrator": "Dibujo",
+      "designer": "Diseño",
+      "director": "Dirección",
+      "studio": "Estudio",
+      "artist": "Artista",
+      "add": "Añadir…",
+      "remove": "Quitar {{name}}"
+    },
+    "kindHeading": {
+      "book": "Datos de libro",
+      "comic": "Datos de cómic",
+      "boardgame": "Datos de juego de mesa",
+      "film": "Datos de película",
+      "tv_series": "Datos de serie",
+      "videogame": "Datos de videojuego",
+      "music": "Datos de la música",
+      "other": "Datos propios"
+    },
+    "hints": {
+      "isbn": "Opcional. Los libros antiguos no lo tienen",
+      "barcode": "Opcional",
+      "barcodeVideogame": "Opcional. La plataforma va en cada ejemplar",
+      "seasonsHeld": "Opcional. Vacío si están todas",
+      "locationDigital": "Lo digital no está en una balda: di dónde lo tienes."
+    },
+    "otherFormatOnly": "Otro · es el único formato de «Otro»",
+    "other": {
+      "notice": "«Otro» no tiene datos propios. Lo que quieras apuntar (fabricante, referencia, estado…) va en las notas."
     },
     "placeholders": {
       "language": "es, en…",
       "location": "Salón, estantería 2, balda 3"
     },
-    "addAuthor": "Añadir autor",
-    "removeAuthor": "Quitar autor",
     "cancel": "Cancelar",
     "save": "Guardar",
     "saving": "Guardando…"
