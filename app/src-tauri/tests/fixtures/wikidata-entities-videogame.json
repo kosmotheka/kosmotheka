@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "Q17185964": {
+      "type": "item",
+      "id": "Q17185964",
+      "labels": {
+        "en": { "language": "en", "value": "The Legend of Zelda: Breath of the Wild" }
+      },
+      "claims": {
+        "P31": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q7889" } } } }
+        ],
+        "P178": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q20972825" } } } },
+          { "mainsnak": { "datavalue": { "value": { "id": "Q1239326" } } } }
+        ],
+        "P400": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q56942" } } } },
+          { "mainsnak": { "datavalue": { "value": { "id": "Q19610114" } } } },
+          { "mainsnak": { "datavalue": { "value": { "id": "Q122761124" } } } }
+        ],
+        "P123": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q8093" } } } }
+        ],
+        "P577": [
+          { "mainsnak": { "datavalue": { "value": { "time": "+2017-03-03T00:00:00Z" } } } }
+        ]
+      }
+    }
+  },
+  "success": 1
+}

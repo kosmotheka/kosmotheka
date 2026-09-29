@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "Q60834962": {
+      "type": "item",
+      "id": "Q60834962",
+      "labels": {
+        "en": { "language": "en", "value": "Dune" },
+        "es": { "language": "es", "value": "Dune" }
+      },
+      "claims": {
+        "P31": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q11424" } } } }
+        ],
+        "P57": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q548823" } } } }
+        ],
+        "P577": [
+          { "mainsnak": { "datavalue": { "value": { "time": "+2021-09-03T00:00:00Z" } } } }
+        ],
+        "P2047": [
+          {
+            "mainsnak": {
+              "datavalue": {
+                "value": { "amount": "+155", "unit": "http://www.wikidata.org/entity/Q7727" }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "success": 1
+}

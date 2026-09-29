@@ -451,6 +451,9 @@ pub const COVER_HOSTS: &[&str] = &[
     // policy already follows https redirects, so only this first host needs
     // to be trusted (see metadata::musicbrainz).
     "coverartarchive.org",
+    // Special:FilePath redirects (302, then 301) to thumb.wikimedia.org; same
+    // reasoning as coverartarchive.org above (see metadata::wikidata).
+    "commons.wikimedia.org",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {

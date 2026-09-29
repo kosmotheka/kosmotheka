@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "Q531592": {
+      "type": "item",
+      "id": "Q531592",
+      "labels": {
+        "en": { "language": "en", "value": "Pandemic" },
+        "es": { "language": "es", "value": "Pandemic" }
+      },
+      "claims": {
+        "P31": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q3244175" } } } },
+          { "mainsnak": { "datavalue": { "value": { "id": "Q131436" } } } }
+        ],
+        "P287": [
+          { "mainsnak": { "datavalue": { "value": { "id": "Q24053471" } } } }
+        ],
+        "P1872": [
+          { "mainsnak": { "datavalue": { "value": { "amount": "+2", "unit": "1" } } } }
+        ],
+        "P1873": [
+          { "mainsnak": { "datavalue": { "value": { "amount": "+4", "unit": "1" } } } }
+        ],
+        "P18": [
+          { "mainsnak": { "datavalue": { "value": "Essen 2008 50101.jpg" } } }
+        ]
+      }
+    }
+  },
+  "success": 1
+}

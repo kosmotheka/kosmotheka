@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Q548823": {
+      "type": "item",
+      "id": "Q548823",
+      "labels": {
+        "en": { "language": "en", "value": "Denis Villeneuve" },
+        "es": { "language": "es", "value": "Denis Villeneuve" }
+      }
+    },
+    "Q20972825": {
+      "type": "item",
+      "id": "Q20972825",
+      "labels": {
+        "en": { "language": "en", "value": "Nintendo Entertainment Planning & Development" },
+        "es": { "language": "es", "value": "Nintendo Entertainment Planning & Development" }
+      }
+    },
+    "Q56942": {
+      "type": "item",
+      "id": "Q56942",
+      "labels": {
+        "en": { "language": "en", "value": "Wii U" },
+        "es": { "language": "es", "value": "Nintendo Wii U" }
+      }
+    },
+    "Q8093": {
+      "type": "item",
+      "id": "Q8093",
+      "labels": {
+        "en": { "language": "en", "value": "Nintendo" }
+      }
+    },
+    "Q24053471": {
+      "type": "item",
+      "id": "Q24053471",
+      "labels": {
+        "en": { "language": "en", "value": "Matt Leacock" },
+        "es": { "language": "es", "value": "Matt Leacock" }
+      }
+    }
+  },
+  "success": 1
+}

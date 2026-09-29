@@ -6,6 +6,7 @@ pub mod google;
 pub mod inventaire;
 pub mod musicbrainz;
 pub mod openlibrary;
+pub mod wikidata;
 
 use std::time::Duration;
 
@@ -35,6 +36,7 @@ pub enum Source {
     OpenLibrary,
     Inventaire,
     MusicBrainz,
+    Wikidata,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -148,7 +150,7 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
     candidate.external_id = match source {
         Source::GoogleBooks => result.google_books_id.clone(),
         Source::OpenLibrary => result.open_library_id.clone(),
-        Source::Inventaire | Source::MusicBrainz => None,
+        Source::Inventaire | Source::MusicBrainz | Source::Wikidata => None,
     };
     candidate
 }
@@ -180,7 +182,8 @@ impl Lookup {
         merge(isbn, google, open_library)
     }
 
-    /// Title search: books, and now music (part 3 adds board games).
+    /// Title search: books, music, and now everything Wikidata covers (films,
+    /// TV series, video games, comics, board games).
     pub async fn search(&self, kind: Kind, query: &str) -> SearchResult {
         let query = query.trim();
         if query.chars().count() < 2 {
@@ -188,20 +191,28 @@ impl Lookup {
         }
         match kind {
             Kind::Book => {
-                let (open_library, inventaire) = tokio::join!(
+                let (open_library, inventaire, wikidata) = tokio::join!(
                     openlibrary::search(&self.client, query),
                     inventaire::search(&self.client, query),
+                    wikidata::search(&self.client, kind, query),
                 );
                 collect_candidates(vec![
                     (Source::OpenLibrary, open_library),
                     (Source::Inventaire, inventaire),
+                    // Last: the other two providers are book-specific and
+                    // usually better for Spanish editions.
+                    (Source::Wikidata, wikidata),
                 ])
             }
             Kind::Music => {
                 let musicbrainz = musicbrainz::search(&self.client, query).await;
                 collect_candidates(vec![(Source::MusicBrainz, musicbrainz)])
             }
-            _ => SearchResult::default(),
+            Kind::Film | Kind::TvSeries | Kind::Videogame | Kind::Comic | Kind::Boardgame => {
+                let wikidata = wikidata::search(&self.client, kind, query).await;
+                collect_candidates(vec![(Source::Wikidata, wikidata)])
+            }
+            Kind::Other => SearchResult::default(),
         }
     }
 
@@ -539,6 +550,68 @@ mod live {
             .await
             .unwrap();
         println!("musicbrainz barcode: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_film() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::Film, "Dune").await.unwrap();
+        println!("wikidata film: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_tv_series() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::TvSeries, "Breaking Bad")
+            .await
+            .unwrap();
+        println!("wikidata tv series: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_videogame() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::Videogame, "Portal 2")
+            .await
+            .unwrap();
+        println!("wikidata videogame: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_boardgame() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::Boardgame, "Pandemic")
+            .await
+            .unwrap();
+        println!("wikidata boardgame: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_comic() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::Comic, "Maus")
+            .await
+            .unwrap();
+        println!("wikidata comic: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_wikidata_book() {
+        let client = http_client().unwrap();
+        let candidates = wikidata::search(&client, Kind::Book, "Dune").await.unwrap();
+        println!("wikidata book: {candidates:#?}");
         assert!(!candidates.is_empty());
     }
 }

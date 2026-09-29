@@ -345,7 +345,8 @@ export type Source =
   | "google_books"
   | "open_library"
   | "inventaire"
-  | "music_brainz";
+  | "music_brainz"
+  | "wikidata";
 
 export interface LookupResult {
   isbn13: string;
