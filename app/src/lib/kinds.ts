@@ -2,15 +2,18 @@ import {
   Book,
   BookImage,
   Clapperboard,
+  Cloud,
   Dice5,
   Disc3,
   Gamepad2,
+  Headphones,
   Shapes,
+  Tablet,
   TvMinimal,
   type LucideIcon,
 } from "lucide-react";
 
-import type { ContributorRole, Format, Kind, MarkStatus } from "@/lib/api";
+import type { ContributorRole, CopyDetail, Format, Kind, MarkStatus } from "@/lib/api";
 
 /** Icon shown on a cover placeholder and next to the kind's name (Design, TypeReference). */
 export const KIND_ICONS: Record<Kind, LucideIcon> = {
@@ -94,4 +97,46 @@ export const VIDEOGAME_PLATFORMS = ["Switch", "PS5", "PS4", "Xbox Series", "PC"]
  */
 export function statusKey(kind: Kind | null, status: MarkStatus) {
   return kind ? `marks.statusesByKind.${kind}.${status}` : `marks.statuses.${status}`;
+}
+
+/** Formats with an icon of their own, instead of the cloud or the kind icon. */
+const COPY_FORMAT_ICONS: Partial<Record<Format, LucideIcon>> = {
+  ebook: Tablet,
+  audiobook: Headphones,
+};
+
+/** A copy's icon: its format's own icon, the cloud for other digital formats, or the kind icon. */
+export function copyIcon(kind: Kind, format: Format): LucideIcon {
+  return COPY_FORMAT_ICONS[format] ?? (DIGITAL_FORMATS.has(format) ? Cloud : KIND_ICONS[kind]);
+}
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** A copy's "what" line: its format, with the video game platform or the held seasons. */
+export function copyWhatText(
+  kind: Kind,
+  copy: Pick<CopyDetail, "format" | "platform" | "seasons">,
+  t: Translate,
+): string {
+  const formatLabel = t(`formats.${copy.format}`);
+  if (kind === "videogame" && copy.platform) return `${copy.platform} · ${formatLabel}`;
+  if (kind === "tv_series" && copy.seasons) {
+    const several = /[-,]/.test(copy.seasons);
+    return `${formatLabel} · ${t("copies.seasonsCount", { count: several ? 2 : 1, range: copy.seasons })}`;
+  }
+  return formatLabel;
+}
+
+/** A copy's "where" line: who has it, where, and how many. */
+export function copyWhereText(
+  copy: Pick<CopyDetail, "owner" | "location" | "quantity">,
+  t: Translate,
+): string {
+  return [
+    copy.owner ?? t("copies.noOwner"),
+    copy.location,
+    copy.quantity > 1 ? t("copies.units", { count: copy.quantity }) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }

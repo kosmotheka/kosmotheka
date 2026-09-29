@@ -240,7 +240,17 @@
     "back": "Atrás",
     "owned_one": "Lo tienes",
     "owned_other": "Lo tienes · {{count}}",
-    "noCopies": "Sin ejemplares"
+    "noCopies": "Sin ejemplares",
+    "data": {
+      "code": "Código",
+      "playersRange": "De {{min}} a {{max}}",
+      "minAgeYears": "{{age}} años"
+    },
+    "facts": {
+      "minAge": "{{age}}+",
+      "seasons_one": "{{count}} temporada",
+      "seasons_other": "{{count}} temporadas"
+    }
   },
   "copies": {
     "empty": "Sin ejemplares: esta edición está en el catálogo, pero nadie la tiene.",
@@ -253,7 +263,9 @@
       "title": "¿Borrar este ejemplar?",
       "body": "La edición seguirá en el catálogo."
     },
-    "more": "Opciones del ejemplar"
+    "more": "Opciones del ejemplar",
+    "seasonsCount_one": "temporada {{range}}",
+    "seasonsCount_other": "temporadas {{range}}"
   },
   "lookup": {
     "placeholder": "978…",
@@ -986,5 +998,20 @@
       "favorites": "Solo mis favoritos",
       "mine": "Mi estado: {{status}}"
     }
+  },
+  "changeKind": {
+    "title": "¿Cambiar de {{from}} a {{to}}?",
+    "titleOther": "¿Cambiar a «Otro»?",
+    "description": "Título, año, portada y notas no cambian. De lo propio de {{from}}:",
+    "kept": "Pasa a {{to}}: ",
+    "lost": "Se pierde: ",
+    "copiesHeading_one": "Su ejemplar",
+    "copiesHeading_other": "Sus ejemplares",
+    "choose": "Elige…",
+    "formatHint": "«{{format}}» no es un formato de {{kind}}: dinos cuál es.",
+    "confirm": "Cambiar a {{to}}",
+    "confirmLose": "Cambiar y perder esos datos",
+    "keep": "Dejarlo como {{from}}",
+    "and": " y "
   }
 }

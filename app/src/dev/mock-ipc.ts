@@ -97,12 +97,25 @@ const books: BookSummary[] = [
   book(7, "Vampiro: la mascarada", ["Mark Rein-Hagen"], 1991, ["hardcover", "other"], ["Tersoal"]),
   // Non-book kinds (D60), so the catalog can be seen mixed.
   work(8, "film", "Blade Runner 2049", ["Denis Villeneuve"], 2017, ["bluray"], ["Tersoal"]),
-  work(9, "boardgame", "Catán", [], 1995, ["box"], ["Hugo", "Laura"]),
-  work(10, "videogame", "Zelda: Tears of the Kingdom", [], 2023, ["physical"], ["Hugo"]),
-  work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd"], ["Tersoal", "Laura"]),
+  work(9, "boardgame", "Catán", [], 1995, ["box"], ["Hugo", "Laura"], "Devir"),
+  work(
+    10,
+    "videogame",
+    "Zelda: Tears of the Kingdom",
+    [],
+    2023,
+    ["physical", "digital"],
+    ["Hugo", "Tersoal"],
+  ),
+  work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd", "digital"], ["Tersoal", "Laura"]),
   work(12, "music", "Abbey Road", ["The Beatles"], 1969, ["vinyl"], ["Tersoal"]),
   work(13, "other", "Playmobil Barco pirata 5135", [], 2006, ["other"], ["Laura"]),
 ];
+// Fundación keeps a pocket copy and an ISBN, for the change-of-kind screenshots
+// (book -> comic): the ISBN becomes a barcode and "Bolsillo" needs a new format.
+books[2] = { ...books[2], isbn13: "9788497596824" };
+// Dune shows a filled ISBN row on its own work page.
+books[0] = { ...books[0], isbn13: "9788497596848" };
 
 const wishes: Wish[] = [
   {
@@ -577,17 +590,26 @@ mockIPC((cmd, args) => {
         durationMinutes: extras.durationMinutes ?? null,
         minAge: extras.minAge ?? null,
         seasons: extras.seasons ?? null,
-        copies: found.formats.map((format, i) => ({
-          id: `copy-${i}`,
-          owner: found.owners[i] ?? found.owners[0] ?? null,
-          format,
-          quantity: 1,
-          location: format === "ebook" ? null : "Salón, balda 3",
-          acquiredOn: null,
-          platform: found.kind === "videogame" ? "Switch" : null,
-          seasons: found.kind === "tv_series" ? "1-2" : null,
-          canDelete: !params.has("reader"),
-        })),
+        copies: found.formats.map((format, i) => {
+          const digital = ["ebook", "pdf", "audiobook", "digital"].includes(format);
+          return {
+            id: `copy-${i}`,
+            owner: found.owners[i] ?? found.owners[0] ?? null,
+            format,
+            quantity: 1,
+            location: !digital
+              ? "Salón, balda 3"
+              : found.kind === "videogame"
+                ? "Nintendo eShop"
+                : found.kind === "tv_series"
+                  ? "Filmin"
+                  : null,
+            acquiredOn: null,
+            platform: found.kind === "videogame" ? (i === 0 ? "Switch" : "PS5") : null,
+            seasons: found.kind === "tv_series" ? (i === 0 ? "1-2" : "3") : null,
+            canDelete: !params.has("reader"),
+          };
+        }),
         canDelete: !params.has("reader"),
         genres: found.kind === "book" ? ["fantasy", "science_fiction"] : [],
         tags: ["Favorite"],

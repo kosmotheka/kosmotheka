@@ -1,18 +1,20 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ArrowLeft,
-  Book,
+  Baby,
   Check,
+  Clock,
   Ellipsis,
   EllipsisVertical,
   ExternalLink,
   FolderInput,
-  Headphones,
+  Layers,
   Pencil,
   Plus,
-  Tablet,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -30,6 +32,7 @@ import {
   useCommandErrors,
 } from "@/components/book-form";
 import { AskDialog } from "@/components/ask-dialog";
+import { ChangeKindDialog } from "@/components/change-kind-dialog";
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
@@ -38,6 +41,7 @@ import { HistoryList } from "@/components/history-list";
 import { MarksSection } from "@/components/marks/marks-section";
 import { Button } from "@/components/ui/button";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
+import { useDesktop } from "@/components/shell/use-desktop";
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -49,6 +53,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   type BookDetail,
+  type ContributorRole,
   type CopyDetail,
   type Format,
   addCopy,
@@ -61,6 +66,8 @@ import {
   updateCopy,
   updateEdition,
 } from "@/lib/api";
+import { type KindChangePlan, planKindChange } from "@/lib/change-kind";
+import { KIND_ICONS, KIND_PEOPLE, copyIcon, copyWhatText, copyWhereText } from "@/lib/kinds";
 import { openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -348,11 +355,48 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
   );
 }
 
+function contributorNames(book: BookDetail, role: ContributorRole): string | null {
+  const names =
+    role === "author"
+      ? book.authors
+      : book.contributors.filter((c) => c.role === role).map((c) => c.name);
+  return names.length > 0 ? names.join(", ") : null;
+}
+
+/** The header's people line: authors for a book, or the kind's main roles for the rest
+ * (comic writer + illustrator, boardgame designer, film director…); none for a series or "other". */
+function mainPeopleLine(book: BookDetail): string {
+  return KIND_PEOPLE[book.kind]
+    .map(({ role }) => contributorNames(book, role))
+    .filter((name): name is string => name !== null)
+    .join(", ");
+}
+
+/** The fact chips under the title, per kind (Design's WorkDetail/DetailPanel). */
+function factChips(book: BookDetail, t: TFunction): { icon: typeof Users; text: string }[] {
+  const chips: { icon: typeof Users; text: string }[] = [];
+  if (book.kind === "boardgame") {
+    if (book.playersMin && book.playersMax) {
+      chips.push({ icon: Users, text: `${book.playersMin}–${book.playersMax}` });
+    }
+    if (book.durationMinutes) {
+      chips.push({ icon: Clock, text: `${book.durationMinutes} ${t("form.units.minutes")}` });
+    }
+    if (book.minAge) chips.push({ icon: Baby, text: t("book.facts.minAge", { age: book.minAge }) });
+  } else if (book.kind === "film" && book.durationMinutes) {
+    chips.push({ icon: Clock, text: `${book.durationMinutes} ${t("form.units.minutes")}` });
+  } else if (book.kind === "tv_series" && book.seasons) {
+    chips.push({ icon: Layers, text: t("book.facts.seasons", { count: book.seasons }) });
+  }
+  return chips;
+}
+
 function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
   const { t } = useTranslation();
-  const meta = [t(`types.${book.kind}`), book.publishedYear, book.publisher]
-    .filter(Boolean)
-    .join(" · ");
+  const KindIcon = KIND_ICONS[book.kind];
+  const meta = [t(`types.${book.kind}`), book.publishedYear].filter(Boolean).join(" · ");
+  const by = mainPeopleLine(book);
+  const chips = factChips(book, t);
   const copies = book.copies.reduce((sum, copy) => sum + copy.quantity, 0);
   return (
     <div className="flex items-end gap-4">
@@ -365,8 +409,24 @@ function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
       <div className="flex min-w-0 flex-col gap-1 pb-1">
         <h2 className="text-[22px] leading-tight font-semibold tracking-tight">{book.title}</h2>
         {book.subtitle && <p className="text-sm text-muted-foreground">{book.subtitle}</p>}
-        <p className="text-[15px]">{book.authors.join(", ") || t("book.noAuthors")}</p>
-        <p className="text-[13px] text-muted-foreground">{meta}</p>
+        {(by || book.kind === "book") && <p className="text-[15px]">{by || t("book.noAuthors")}</p>}
+        <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <KindIcon className="size-3.5" />
+          {meta}
+        </p>
+        {chips.length > 0 && (
+          <div className="mt-0.5 flex flex-wrap gap-1.5">
+            {chips.map((chip, i) => (
+              <span
+                key={i}
+                className="flex h-7 items-center gap-1.5 rounded-lg bg-muted px-2.5 text-[13px] font-medium"
+              >
+                <chip.icon className="size-3.5 text-muted-foreground" />
+                {chip.text}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           {copies > 0 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-medium text-success">
@@ -384,6 +444,83 @@ function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
   );
 }
 
+/** The "Datos" rows for a work, per kind (Design's WorkDetail/DetailPanel lists). Rows with
+ * no value are skipped rather than shown as "—", except book kept its earlier row set. */
+function datosRows(book: BookDetail, t: TFunction): [string, string | null][] {
+  const code = book.barcode ? ([t("book.data.code"), book.barcode] as [string, string]) : null;
+  const rows: [string, string | null][] = (() => {
+    switch (book.kind) {
+      case "book":
+        return [
+          [t("form.people.author"), contributorNames(book, "author")],
+          [t("form.fields.publisher"), book.publisher],
+          [t("form.fields.isbn"), book.isbn13],
+          [t("form.fields.language"), book.language],
+        ];
+      case "comic":
+        return [
+          [t("form.people.writer"), contributorNames(book, "writer")],
+          [t("form.people.illustrator"), contributorNames(book, "illustrator")],
+          [t("form.fields.publisher"), book.publisher],
+          [t("form.fields.number"), book.number],
+          ...(code ? [code] : []),
+        ];
+      case "boardgame":
+        return [
+          [t("form.people.designer"), contributorNames(book, "designer")],
+          [t("form.fields.publisher"), book.publisher],
+          [
+            t("form.fields.players"),
+            book.playersMin && book.playersMax
+              ? t("book.data.playersRange", { min: book.playersMin, max: book.playersMax })
+              : null,
+          ],
+          [
+            t("form.fields.durationMinutes"),
+            book.durationMinutes ? `${book.durationMinutes} ${t("form.units.minutes")}` : null,
+          ],
+          [
+            t("form.fields.minAge"),
+            book.minAge ? t("book.data.minAgeYears", { age: book.minAge }) : null,
+          ],
+          ...(code ? [code] : []),
+        ];
+      case "film":
+        return [
+          [t("form.people.director"), contributorNames(book, "director")],
+          [
+            t("form.fields.durationMinutes"),
+            book.durationMinutes ? `${book.durationMinutes} ${t("form.units.minutes")}` : null,
+          ],
+          ...(code ? [code] : []),
+        ];
+      case "tv_series":
+        return [
+          [
+            t("form.fields.seasons"),
+            book.seasons ? t("book.facts.seasons", { count: book.seasons }) : null,
+          ],
+          ...(code ? [code] : []),
+        ];
+      case "videogame":
+        return [
+          [t("form.people.studio"), contributorNames(book, "studio")],
+          ...(code ? [code] : []),
+        ];
+      case "music":
+        return [
+          [t("form.people.artist"), contributorNames(book, "artist")],
+          [t("form.fields.label"), book.publisher],
+          ...(code ? [code] : []),
+        ];
+      case "other":
+        return code ? [code] : [];
+    }
+  })();
+  if (book.notes) rows.push([t("form.fields.notes"), book.notes]);
+  return rows.filter(([, value]) => value !== null);
+}
+
 function EditionSection({
   book,
   form,
@@ -398,6 +535,9 @@ function EditionSection({
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
+  const [kindChangePlan, setKindChangePlan] = useState<KindChangePlan | null>(null);
+  const [copyFormatChanges, setCopyFormatChanges] = useState<Record<string, Format>>({});
+  const desktop = useDesktop();
   const errors = useCommandErrors();
 
   const save = async (event: FormEvent) => {
@@ -408,6 +548,17 @@ function EditionSection({
     try {
       const result = await updateEdition(book.editionId, toEditionInput(form));
       setCoverFailed(result.coverFailed);
+      for (const copy of book.copies) {
+        const newFormat = copyFormatChanges[copy.id];
+        if (!newFormat || newFormat === copy.format) continue;
+        try {
+          await updateCopy(copy.id, { ...toCopyInput(copyFormFrom(copy)), format: newFormat });
+        } catch (e) {
+          errors.handle(e);
+          break;
+        }
+      }
+      setCopyFormatChanges({});
       onFormChange(null);
       onSaved();
     } catch (e) {
@@ -425,7 +576,7 @@ function EditionSection({
           onChange={onFormChange}
           errorFor={errors.errorFor}
           currentEditionId={book.editionId}
-          kindLocked
+          onKindChange={(kind) => setKindChangePlan(planKindChange(book, kind))}
         />
         {errors.message && (
           <p className="text-sm text-destructive">
@@ -438,6 +589,7 @@ function EditionSection({
             variant="outline"
             onClick={() => {
               errors.clear();
+              setCopyFormatChanges({});
               onFormChange(null);
             }}
           >
@@ -447,24 +599,30 @@ function EditionSection({
             {saving ? t("form.saving") : t("form.save")}
           </Button>
         </div>
+        {kindChangePlan && (
+          <ChangeKindDialog
+            book={book}
+            plan={kindChangePlan}
+            desktop={desktop}
+            onCancel={() => setKindChangePlan(null)}
+            onConfirm={(copyFormats) => {
+              onFormChange({ ...form, kind: kindChangePlan.toKind, ...kindChangePlan.formPatch });
+              setCopyFormatChanges(copyFormats);
+              setKindChangePlan(null);
+            }}
+          />
+        )}
       </form>
     );
   }
 
-  const rows: [string, string | number | null][] = [
-    [t("form.fields.isbn"), book.isbn13],
-    [t("form.fields.publisher"), book.publisher],
-    [t("form.fields.publishedYear"), book.publishedYear],
-    [t("form.fields.language"), book.language],
-  ];
-
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-sm">
-        {rows.map(([label, value]) => (
+        {datosRows(book, t).map(([label, value]) => (
           <div key={label} className="contents">
             <dt className="text-muted-foreground">{label}</dt>
-            <dd>{value ?? "—"}</dd>
+            <dd className="text-pretty">{value}</dd>
           </div>
         ))}
       </dl>
@@ -472,8 +630,6 @@ function EditionSection({
     </div>
   );
 }
-
-const DIGITAL: Partial<Record<Format, typeof Book>> = { ebook: Tablet, audiobook: Headphones };
 
 function CopiesSection({
   book,
@@ -561,22 +717,17 @@ function CopiesSection({
       )}
       {book.copies.map((copy) => {
         if (editing === copy.id) return <div key={copy.id}>{editor}</div>;
-        const Icon = DIGITAL[copy.format] ?? Book;
-        const where = [
-          copy.owner ?? t("copies.noOwner"),
-          copy.location,
-          copy.quantity > 1 ? t("copies.units", { count: copy.quantity }) : null,
-        ]
-          .filter(Boolean)
-          .join(" · ");
+        const Icon = copyIcon(book.kind, copy.format);
         return (
           <div key={copy.id} className="flex items-center gap-3 rounded-xl border p-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
               <Icon className="size-[19px]" />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[15px] font-medium">{t(`formats.${copy.format}`)}</span>
-              <span className="truncate text-[13px] text-muted-foreground">{where}</span>
+              <span className="text-[15px] font-medium">{copyWhatText(book.kind, copy, t)}</span>
+              <span className="truncate text-[13px] text-muted-foreground">
+                {copyWhereText(copy, t)}
+              </span>
               {copy.acquiredOn && (
                 <span className="text-[13px] text-muted-foreground">
                   {t("copies.acquired", { date: copy.acquiredOn })}

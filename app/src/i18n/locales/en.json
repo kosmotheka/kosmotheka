@@ -240,7 +240,17 @@
     "back": "Back",
     "owned_one": "You have it",
     "owned_other": "You have it · {{count}}",
-    "noCopies": "No copies"
+    "noCopies": "No copies",
+    "data": {
+      "code": "Barcode",
+      "playersRange": "{{min}} to {{max}}",
+      "minAgeYears": "{{age}} years"
+    },
+    "facts": {
+      "minAge": "{{age}}+",
+      "seasons_one": "{{count}} season",
+      "seasons_other": "{{count}} seasons"
+    }
   },
   "copies": {
     "empty": "No copies: this edition is in the catalog but nobody owns it.",
@@ -253,7 +263,9 @@
       "title": "Delete this copy?",
       "body": "The edition stays in the catalog."
     },
-    "more": "Copy options"
+    "more": "Copy options",
+    "seasonsCount_one": "season {{range}}",
+    "seasonsCount_other": "seasons {{range}}"
   },
   "lookup": {
     "placeholder": "978…",
@@ -986,5 +998,20 @@
       "favorites": "Only my favorites",
       "mine": "My status: {{status}}"
     }
+  },
+  "changeKind": {
+    "title": "Change from {{from}} to {{to}}?",
+    "titleOther": "Change to “Other”?",
+    "description": "Title, year, cover and notes stay the same. Of {{from}}’s own details:",
+    "kept": "Moves to {{to}}: ",
+    "lost": "Will be lost: ",
+    "copiesHeading_one": "Its copy",
+    "copiesHeading_other": "Its copies",
+    "choose": "Choose…",
+    "formatHint": "“{{format}}” isn’t a {{kind}} format: pick one.",
+    "confirm": "Change to {{to}}",
+    "confirmLose": "Change and lose these details",
+    "keep": "Keep it as {{from}}",
+    "and": " and "
   }
 }

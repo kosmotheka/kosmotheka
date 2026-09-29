@@ -417,7 +417,7 @@ export function EditionFields({
   errorFor,
   currentEditionId,
   showKindSelect = true,
-  kindLocked = false,
+  onKindChange,
 }: {
   value: EditionForm;
   onChange: (value: EditionForm) => void;
@@ -426,8 +426,12 @@ export function EditionFields({
   currentEditionId?: string;
   /** Desktop's add form shows a tile row outside this component instead (`KindGrid`). */
   showKindSelect?: boolean;
-  /** Editing an existing work: changing the kind needs the part-3 warning dialog first. */
-  kindLocked?: boolean;
+  /**
+   * Editing an existing work: picking another kind opens the change-of-kind
+   * confirmation instead of switching right away. Omitted in the add form, where
+   * there is nothing to lose yet.
+   */
+  onKindChange?: (kind: Kind) => void;
 }) {
   const { t } = useTranslation();
   const set = <K extends keyof EditionForm>(key: K, v: EditionForm[K]) =>
@@ -676,16 +680,15 @@ export function EditionFields({
         <Field id="kind" label={t("form.fields.kind")}>
           <Select
             value={value.kind}
-            onValueChange={(v) => set("kind", v as Kind)}
-            disabled={kindLocked}
+            onValueChange={(v) => (onKindChange ? onKindChange(v as Kind) : set("kind", v as Kind))}
           >
-            <SelectTrigger id="kind" className="w-full justify-start" disabled={kindLocked}>
+            <SelectTrigger id="kind" className="w-full justify-start">
               <span className="flex flex-1 items-center gap-2 overflow-hidden">
                 <KindIcon className="size-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{t(`types.${value.kind}`)}</span>
               </span>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               {kinds.map((k) => {
                 const Icon = KIND_ICONS[k];
                 return (
