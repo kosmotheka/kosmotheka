@@ -26,7 +26,6 @@ enum CatalogEntity: string
     case BoardgameDetails = 'boardgame_details';
     case FilmDetails = 'film_details';
     case TvSeriesDetails = 'tv_series_details';
-    case VideogameDetails = 'videogame_details';
     case Member = 'member';
     case Copy = 'copy';
     case Publisher = 'publisher';
@@ -140,7 +139,6 @@ enum CatalogEntity: string
             ],
             self::FilmDetails => ['duration_minutes' => $integer()],
             self::TvSeriesDetails => ['seasons' => $integer()],
-            self::VideogameDetails => ['platform' => $text()],
             self::Copy => [
                 'edition_id' => $ref(true),
                 'owner_id' => $ref(),
@@ -148,6 +146,10 @@ enum CatalogEntity: string
                 'quantity' => $integer(true),
                 'location' => $text(),
                 'acquired_on' => new FieldSpec(FieldType::Date, false),
+                // A video game copy's platform: belongs to the copy, not the edition.
+                'platform' => $text(),
+                // A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
+                'seasons' => $text(),
             ],
             self::WorkTag => [
                 'work_id' => $ref(true),

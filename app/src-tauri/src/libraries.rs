@@ -362,6 +362,8 @@ mod tests {
                 quantity: 2,
                 location: Some("Salón".into()),
                 acquired_on: None,
+                platform: None,
+                seasons: None,
             }
             .validate()
             .unwrap(),

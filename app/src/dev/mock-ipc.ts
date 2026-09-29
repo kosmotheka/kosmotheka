@@ -506,7 +506,6 @@ mockIPC((cmd, args) => {
         durationMinutes: null,
         minAge: null,
         seasons: null,
-        platform: null,
         copies: found.formats.map((format, i) => ({
           id: `copy-${i}`,
           owner: found.owners[i] ?? found.owners[0] ?? null,
@@ -514,6 +513,8 @@ mockIPC((cmd, args) => {
           quantity: 1,
           location: format === "ebook" ? null : "Salón, balda 3",
           acquiredOn: null,
+          platform: null,
+          seasons: null,
           canDelete: !params.has("reader"),
         })),
         canDelete: !params.has("reader"),

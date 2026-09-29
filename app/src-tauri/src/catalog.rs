@@ -76,7 +76,6 @@ pub struct BookDetail {
     pub duration_minutes: Option<i64>,
     pub min_age: Option<i64>,
     pub seasons: Option<i64>,
-    pub platform: Option<String>,
     pub copies: Vec<CopyDetail>,
     /// This device may delete the whole book; otherwise it can only ask (D73).
     pub can_delete: bool,
@@ -128,6 +127,10 @@ pub struct CopyDetail {
     pub quantity: i64,
     pub location: Option<String>,
     pub acquired_on: Option<String>,
+    /// A video game copy's platform: belongs to the copy, not the edition.
+    pub platform: Option<String>,
+    /// A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
+    pub seasons: Option<String>,
     /// This device may delete the copy; otherwise it can only ask (D73).
     pub can_delete: bool,
 }
@@ -426,7 +429,6 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
         duration_minutes: book.duration_minutes,
         min_age: book.min_age,
         seasons: book.seasons,
-        platform: book.platform,
         genres: book.genres,
         tags: book.tags,
     }
@@ -442,6 +444,8 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
                 quantity: copy.quantity as u32,
                 location: copy.location,
                 acquired_on: copy.acquired_on,
+                platform: copy.platform,
+                seasons: copy.seasons,
             }
             .validate()
             .map_err(Error::Validation)
@@ -883,6 +887,8 @@ fn copy_fields(copy: &ValidCopy, owner_id: Option<String>) -> Value {
         "quantity": copy.quantity,
         "location": copy.location,
         "acquired_on": copy.acquired_on.map(|date| date.to_string()),
+        "platform": copy.platform,
+        "seasons": copy.seasons,
     })
 }
 
@@ -1239,7 +1245,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                         AND wc.role = 'author'),
                     w.kind, e.barcode, cd.number,
                     gd.players_min, gd.players_max, coalesce(gd.duration_minutes, fd.duration_minutes),
-                    gd.min_age, td.seasons, vd.platform
+                    gd.min_age, td.seasons
                FROM editions e
                JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
                LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
@@ -1248,7 +1254,6 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                LEFT JOIN boardgame_details gd ON gd.library_id = e.library_id AND gd.edition_id = e.id
                LEFT JOIN film_details fd ON fd.library_id = e.library_id AND fd.edition_id = e.id
                LEFT JOIN tv_series_details td ON td.library_id = e.library_id AND td.edition_id = e.id
-               LEFT JOIN videogame_details vd ON vd.library_id = e.library_id AND vd.edition_id = e.id
               WHERE e.library_id = ?1 AND e.id = ?2",
             [library, edition_id],
             |row| {
@@ -1274,7 +1279,6 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     duration_minutes: row.get(17)?,
                     min_age: row.get(18)?,
                     seasons: row.get(19)?,
-                    platform: row.get(20)?,
                     copies: Vec::new(),
                     can_delete: false,
                     genres: Vec::new(),
@@ -1309,7 +1313,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
     book.contributors = contributors;
 
     let mut statement = conn.prepare(
-        "SELECT c.id, m.name, c.format, c.quantity, c.location, c.acquired_on
+        "SELECT c.id, m.name, c.format, c.quantity, c.location, c.acquired_on, c.platform, c.seasons
            FROM copies c LEFT JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
           WHERE c.library_id = ?1 AND c.edition_id = ?2
           ORDER BY c.created_at, c.id",
@@ -1323,6 +1327,8 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
             quantity: row.get(3)?,
             location: row.get(4)?,
             acquired_on: row.get(5)?,
+            platform: row.get(6)?,
+            seasons: row.get(7)?,
             can_delete: false,
         })
     })?;
@@ -1574,6 +1580,8 @@ mod tests {
             quantity: 1,
             location: None,
             acquired_on: None,
+            platform: None,
+            seasons: None,
         }
         .validate()
         .unwrap()
@@ -1917,6 +1925,100 @@ mod tests {
         assert_eq!(book.copies.len(), 2);
         assert_eq!(book.copies[1].owner.as_deref(), Some("Ana"));
         assert_eq!(book.copies[1].format, Format::Ebook);
+    }
+
+    /// The platform belongs to each copy, not the edition (D08): one game can have
+    /// copies on different platforms.
+    #[test]
+    fn a_video_game_with_two_copies_on_different_platforms_round_trips() {
+        let mut conn = db::open_in_memory().unwrap();
+        let game = EditionInput {
+            title: "Hollow Knight".to_owned(),
+            kind: Kind::Videogame,
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap();
+        let switch_copy = CopyInput {
+            owner: None,
+            format: Format::Physical,
+            quantity: 1,
+            location: None,
+            acquired_on: None,
+            platform: Some("Nintendo Switch".to_owned()),
+            seasons: None,
+        }
+        .validate()
+        .unwrap();
+        let created = create_book(
+            &mut conn,
+            LIB,
+            &ValidBook {
+                edition: game,
+                copy: switch_copy,
+            },
+            None,
+        )
+        .unwrap();
+        let wiiu_copy = CopyInput {
+            owner: None,
+            format: Format::Physical,
+            quantity: 1,
+            location: None,
+            acquired_on: None,
+            platform: Some("Wii U".to_owned()),
+            seasons: None,
+        }
+        .validate()
+        .unwrap();
+        add_copy(&mut conn, LIB, &created.edition_id, &wiiu_copy).unwrap();
+
+        let book = get_book(&conn, LIB, &created.edition_id).unwrap();
+
+        assert_eq!(book.copies.len(), 2);
+        assert_eq!(book.copies[0].platform.as_deref(), Some("Nintendo Switch"));
+        assert_eq!(book.copies[1].platform.as_deref(), Some("Wii U"));
+    }
+
+    /// A TV series' total seasons stay on the edition; which ones a copy holds is
+    /// free text on the copy.
+    #[test]
+    fn a_series_copy_with_the_seasons_it_holds_round_trips() {
+        let mut conn = db::open_in_memory().unwrap();
+        let series = EditionInput {
+            title: "The Wire".to_owned(),
+            kind: Kind::TvSeries,
+            seasons: Some(5),
+            ..EditionInput::default()
+        }
+        .validate()
+        .unwrap();
+        let dvd_copy = CopyInput {
+            owner: None,
+            format: Format::Dvd,
+            quantity: 1,
+            location: None,
+            acquired_on: None,
+            platform: None,
+            seasons: Some("1–2".to_owned()),
+        }
+        .validate()
+        .unwrap();
+        let created = create_book(
+            &mut conn,
+            LIB,
+            &ValidBook {
+                edition: series,
+                copy: dvd_copy,
+            },
+            None,
+        )
+        .unwrap();
+
+        let book = get_book(&conn, LIB, &created.edition_id).unwrap();
+
+        assert_eq!(book.seasons, Some(5));
+        assert_eq!(book.copies[0].seasons.as_deref(), Some("1–2"));
     }
 
     #[test]

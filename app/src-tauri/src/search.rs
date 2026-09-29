@@ -151,8 +151,7 @@ pub fn affected_editions(
         | Entity::ComicDetails
         | Entity::BoardgameDetails
         | Entity::FilmDetails
-        | Entity::TvSeriesDetails
-        | Entity::VideogameDetails => BTreeSet::new(),
+        | Entity::TvSeriesDetails => BTreeSet::new(),
     };
     Ok(found)
 }

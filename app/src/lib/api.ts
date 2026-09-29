@@ -57,7 +57,6 @@ export interface EditionInput {
   durationMinutes?: number | null;
   minAge?: number | null;
   seasons?: number | null;
-  platform?: string | null;
   genres?: string[];
   /** Tag names; found or created case-insensitively. */
   tags?: string[];
@@ -69,6 +68,10 @@ export interface CopyInput {
   quantity: number;
   location: string | null;
   acquiredOn: string | null;
+  /** A video game copy's platform: belongs to the copy, not the edition. */
+  platform?: string | null;
+  /** A TV series copy's held seasons, as free text ("1-2", "1-3, 5"). */
+  seasons?: string | null;
 }
 
 export interface NewBook extends EditionInput {
@@ -200,6 +203,10 @@ export interface CopyDetail {
   quantity: number;
   location: string | null;
   acquiredOn: string | null;
+  /** A video game copy's platform: belongs to the copy, not the edition. */
+  platform: string | null;
+  /** A TV series copy's held seasons, as free text ("1-2", "1-3, 5"). */
+  seasons: string | null;
   /** This device may delete it; otherwise it can only ask (D73). */
   canDelete: boolean;
 }
@@ -233,7 +240,6 @@ export interface BookDetail {
   durationMinutes: number | null;
   minAge: number | null;
   seasons: number | null;
-  platform: string | null;
   copies: CopyDetail[];
   /** This device may delete the whole book; otherwise it can only ask. */
   canDelete: boolean;
@@ -341,12 +347,7 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
   return invoke<Asked>("request_delete_book", { editionId, note });
 }
 
-export type Source =
-  | "google_books"
-  | "open_library"
-  | "inventaire"
-  | "music_brainz"
-  | "wikidata";
+export type Source = "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata";
 
 export interface LookupResult {
   isbn13: string;

@@ -18,7 +18,6 @@ pub enum Entity {
     BoardgameDetails,
     FilmDetails,
     TvSeriesDetails,
-    VideogameDetails,
     Member,
     Copy,
     Publisher,
@@ -160,15 +159,13 @@ const BOARDGAME_DETAILS_FIELDS: &[FieldSpec] = &[
 ];
 const FILM_DETAILS_FIELDS: &[FieldSpec] = &[field("duration_minutes", FieldType::Integer, false)];
 const TV_SERIES_DETAILS_FIELDS: &[FieldSpec] = &[field("seasons", FieldType::Integer, false)];
-const VIDEOGAME_DETAILS_FIELDS: &[FieldSpec] = &[field("platform", FieldType::Text, false)];
 /// The entities that hang from an edition by its id, one per kind that has data of its own.
-pub const DETAILS: [Entity; 6] = [
+pub const DETAILS: [Entity; 5] = [
     Entity::BookDetails,
     Entity::ComicDetails,
     Entity::BoardgameDetails,
     Entity::FilmDetails,
     Entity::TvSeriesDetails,
-    Entity::VideogameDetails,
 ];
 /// Roles a member can have in a library (D55, D73).
 pub const ROLES: &[&str] = &["admin", "editor", "reader"];
@@ -244,6 +241,10 @@ const COPY_FIELDS: &[FieldSpec] = &[
     field("quantity", FieldType::Integer, true),
     field("location", FieldType::Text, false),
     field("acquired_on", FieldType::Date, false),
+    // A video game copy's platform: it belongs to the copy, not the edition.
+    field("platform", FieldType::Text, false),
+    // A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
+    field("seasons", FieldType::Text, false),
 ];
 
 impl Entity {
@@ -259,7 +260,6 @@ impl Entity {
             Entity::BoardgameDetails => "boardgame_details",
             Entity::FilmDetails => "film_details",
             Entity::TvSeriesDetails => "tv_series_details",
-            Entity::VideogameDetails => "videogame_details",
             Entity::Member => "members",
             Entity::Copy => "copies",
             Entity::Publisher => "publishers",
@@ -306,7 +306,6 @@ impl Entity {
             Entity::BoardgameDetails => BOARDGAME_DETAILS_FIELDS,
             Entity::FilmDetails => FILM_DETAILS_FIELDS,
             Entity::TvSeriesDetails => TV_SERIES_DETAILS_FIELDS,
-            Entity::VideogameDetails => VIDEOGAME_DETAILS_FIELDS,
             Entity::Member => MEMBER_FIELDS,
             Entity::Copy => COPY_FIELDS,
             Entity::Publisher => PUBLISHER_FIELDS,

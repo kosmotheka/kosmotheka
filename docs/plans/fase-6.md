@@ -67,8 +67,8 @@ Todo **propuesta** hasta que el maintainer lo revise.
    | Cómic | guion, dibujo, editorial, número | tapa dura, blanda, grapa, digital |
    | Juego de mesa | diseño, editorial, jugadores (mín.–máx.), duración, edad mínima | caja, digital |
    | Película | dirección, duración | DVD, Blu-ray, 4K, digital |
-   | Serie | temporadas | DVD, Blu-ray, digital |
-   | Videojuego | plataforma, estudio | físico (cartucho o disco), digital |
+   | Serie | temporadas (cada ejemplar dice cuáles tiene; 29/09) | DVD, Blu-ray, digital |
+   | Videojuego | estudio (la plataforma, en cada ejemplar; cambio del 29/09) | físico (cartucho o disco), digital |
    | Música | artista, sello | vinilo, CD, casete, digital |
    | Otro | nada propio | otro |
 
@@ -97,3 +97,4 @@ Todo **propuesta** hasta que el maintainer lo revise.
 - [x] 6.4 (a, motor) Resultados comunes para elegir (`Candidate`), búsqueda por título en Open Library e Inventaire, y `lookup_code`, que reconoce un ISBN. Inventaire solo da título y portada al buscar por título (no tiene búsqueda de ediciones).
 - [x] 6.4 (b, motor) MusicBrainz y Cover Art Archive: música por título y por código de barras, con el formato (CD, vinilo, casete) sugerido. **GameUPC pide clave** (la investigación decía que no): queda para cuando haya claves propias en Ajustes (D62); los juegos de mesa por código de barras, sin proveedor de momento.
 - [x] 6.4 (c, motor) Wikidata como respaldo de todos los tipos: películas, series, videojuegos, cómics y juegos de mesa por título (su única fuente sin clave), y libros como última fuente. Limitaciones vistas: muchos cómics famosos no están clasificados como cómic en Wikidata, y los juegos de mesa casi nunca tienen su autor.
+- [x] Cambio del 29/09: la plataforma del videojuego y las temporadas de una serie van en el ejemplar (migración 0023; `videogame_details` desaparece).

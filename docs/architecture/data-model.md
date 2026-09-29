@@ -8,7 +8,7 @@
 - **Tablas `STRICT`**: SQLite comprueba los tipos de cada columna (por defecto no lo hace).
 - **Fechas** en texto ISO 8601: `2026-09-24` para días y `2026-09-24T21:30:00.000Z` para instantes.
 - **ISBN normalizado a ISBN-13** y sin guiones. Un ISBN-10 se convierte al darlo de alta; el ISBN-10 se puede recalcular cuando haga falta.
-- **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y una tabla `<tipo>_details` lo específico de cada tipo. La música y «Otro» no tienen: el artista es un contribuidor (`artist`) y el sello, la editorial.
+- **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y una tabla `<tipo>_details` lo específico de cada tipo. La música, el videojuego y «Otro» no tienen (la plataforma del videojuego va en el ejemplar): el artista es un contribuidor (`artist`) y el sello, la editorial.
 - **Todo pertenece a una biblioteca** (D46, D54, migración 9): cada tabla del catálogo lleva `library_id` y su clave es `(library_id, id)`. El mismo id en dos bibliotecas son dos filas distintas, y las referencias entre tablas incluyen la biblioteca. No hay clave foránea hacia `libraries`: un cambio se aplica aunque la fila de la biblioteca no haya llegado todavía.
 
 ## Esquema
@@ -40,9 +40,8 @@ works ──< work_contributors >── people
 | `boardgame_details` | Datos propios de un juego de mesa | `edition_id`, `players_min`, `players_max`, `duration_minutes`, `min_age` |
 | `film_details` | Datos propios de una película | `edition_id`, `duration_minutes` |
 | `tv_series_details` | Datos propios de una serie | `edition_id`, `seasons` |
-| `videogame_details` | Datos propios de un videojuego | `edition_id`, `platform` |
 | `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73) |
-| `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location`, `acquired_on` |
+| `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location` (en lo digital, la plataforma: «Kindle», «Steam»), `acquired_on`, `platform` (videojuegos: «Switch»), `seasons` (series: qué temporadas tiene, texto libre) |
 | `marks` | Lo que cada persona apunta de cada obra (D68): estado, valoración, favorito y «lo deseo» (D61) | `id` (derivado de persona y obra), `member_id`, `work_id`, `status`, `status_on`, `rating`, `favorite`, `wished` |
 | `wishes` | Lista de deseos, sincronizada (D36) | `id`, `title`, `author`, `isbn13`, `note`, `cover_url` |
 | `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |

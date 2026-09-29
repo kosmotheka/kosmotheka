@@ -98,7 +98,6 @@
             "boardgame_details",
             "film_details",
             "tv_series_details",
-            "videogame_details",
             "member",
             "copy",
             "publisher",
@@ -496,27 +495,6 @@
           "if": {
             "properties": {
               "entity": {
-                "const": "videogame_details"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "fields": {
-                "additionalProperties": false,
-                "properties": {
-                  "platform": {
-                    "$ref": "#/$defs/text"
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "entity": {
                 "const": "copy"
               }
             }
@@ -561,6 +539,12 @@
                   },
                   "acquired_on": {
                     "$ref": "#/$defs/date"
+                  },
+                  "platform": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "seasons": {
+                    "$ref": "#/$defs/text"
                   }
                 }
               }

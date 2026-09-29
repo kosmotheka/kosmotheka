@@ -32,6 +32,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0020_mark_wished.sql")),
     M::up(include_str!("../migrations/0021_genres_and_tags.sql")),
     M::up(include_str!("../migrations/0022_series.sql")),
+    M::up(include_str!("../migrations/0023_copy_platform.sql")).foreign_key_check(),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 

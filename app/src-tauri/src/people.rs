@@ -572,6 +572,8 @@ mod tests {
                 quantity: 1,
                 location: None,
                 acquired_on: None,
+                platform: None,
+                seasons: None,
             }
             .validate()
             .unwrap(),

@@ -24,7 +24,7 @@ use crate::sync::{entity_rows, is_tombstoned};
 /// What a library holds; the library row itself is where it is restored to.
 /// Same order as `sync::ORDER`: parents before children. Revocations stay out:
 /// who may sync a library is not part of its catalogue.
-const CONTENTS: [Entity; 21] = [
+const CONTENTS: [Entity; 20] = [
     Entity::Publisher,
     Entity::Tag,
     Entity::Series,
@@ -42,7 +42,6 @@ const CONTENTS: [Entity; 21] = [
     Entity::BoardgameDetails,
     Entity::FilmDetails,
     Entity::TvSeriesDetails,
-    Entity::VideogameDetails,
     Entity::Copy,
     Entity::Mark,
     Entity::Wish,
@@ -450,6 +449,8 @@ mod tests {
                 quantity: 2,
                 location: Some("Salón".into()),
                 acquired_on: Some("2026-09-25".into()),
+                platform: None,
+                seasons: None,
             }
             .validate()
             .unwrap(),
@@ -686,6 +687,95 @@ mod tests {
 
         assert_eq!(summary.restored[0].id, other);
         assert_eq!(titles(&target, &other), vec!["Old backup"]);
+    }
+
+    /// A backup made before migration 0023 has a `videogame_details` table (dropped
+    /// since) and copies with neither `platform` nor `seasons` (added since): restore
+    /// only reads the tables in `CONTENTS`, so the stray table is ignored and the
+    /// copy comes back with those two columns simply unset, nothing lost that ever
+    /// existed (D08: no video game details were ever created before this change).
+    #[test]
+    fn a_backup_from_before_the_copy_had_platform_and_seasons_still_restores() {
+        let dir = temp("v22");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let work_id = "01997c7e-0000-7000-8000-000000000901";
+        let edition_id = "01997c7e-0000-7000-8000-000000000902";
+        let copy_id = "01997c7e-0000-7000-8000-000000000903";
+
+        let mut entities = Rows::new();
+        entities.insert(
+            "works".to_owned(),
+            vec![
+                json!({ "id": work_id, "kind": "videogame", "title": "Hollow Knight" })
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ],
+        );
+        entities.insert(
+            "editions".to_owned(),
+            vec![
+                json!({ "id": edition_id, "work_id": work_id, "title": "Hollow Knight" })
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ],
+        );
+        // Gone since migration 0023; a pre-migration export still has it.
+        entities.insert(
+            "videogame_details".to_owned(),
+            vec![
+                json!({ "id": edition_id, "platform": "Nintendo Switch" })
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ],
+        );
+        entities.insert(
+            "copies".to_owned(),
+            vec![
+                json!({
+                    "id": copy_id,
+                    "edition_id": edition_id,
+                    "format": "physical",
+                    "quantity": 1,
+                })
+                .as_object()
+                .unwrap()
+                .clone(),
+            ],
+        );
+
+        let old = json!({
+            "format": LEGACY_FORMAT,
+            "version": 2,
+            "schemaVersion": 22,
+            "exportedAt": "2026-09-26T10:00:00.000Z",
+            "entities": entities,
+            "operations": [],
+        });
+        let file = dir.join("old.zip");
+        let mut zip = ZipWriter::new(File::create(&file).unwrap());
+        zip.start_file(DATA_FILE, SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(old.to_string().as_bytes()).unwrap();
+        zip.finish().unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let other = libraries::create_library(&mut target, "Other").unwrap();
+
+        let summary = restore(&mut target, &other, &covers, &file).unwrap();
+
+        assert_eq!(summary.restored[0].id, other);
+        assert_eq!(titles(&target, &other), vec!["Hollow Knight"]);
+        let (platform, seasons): (Option<String>, Option<String>) = target
+            .query_row(
+                "SELECT platform, seasons FROM copies WHERE library_id = ?1",
+                [&other],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(platform, None);
+        assert_eq!(seasons, None);
     }
 
     #[test]

@@ -1681,37 +1681,47 @@
     }
   },
   {
-    "name": "videogame with its own details",
+    "name": "a video game copy on its platform",
     "operation": {
-      "id": "01997c7e-0000-7000-8000-000000000240",
+      "id": "01997c7e-0000-7000-8000-000000000600",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
-      "intent": "book.add",
+      "intent": "copy.add",
       "changes": [
         {
-          "entity": "work",
-          "id": "01997c7e-0000-7000-8000-000000000241",
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000601",
           "action": "create",
           "fields": {
-            "kind": "videogame",
-            "title": "Hollow Knight"
-          }
-        },
-        {
-          "entity": "edition",
-          "id": "01997c7e-0000-7000-8000-000000000242",
-          "action": "create",
-          "fields": {
-            "work_id": "01997c7e-0000-7000-8000-000000000241",
-            "title": "Hollow Knight"
-          }
-        },
-        {
-          "entity": "videogame_details",
-          "id": "01997c7e-0000-7000-8000-000000000242",
-          "action": "create",
-          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-000000000012",
+            "format": "physical",
+            "quantity": 1,
             "platform": "Nintendo Switch"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a series copy with the seasons it holds",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000602",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.add",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000603",
+          "action": "create",
+          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-000000000012",
+            "format": "dvd",
+            "quantity": 1,
+            "seasons": "1–2"
           }
         }
       ]

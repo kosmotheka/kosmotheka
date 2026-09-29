@@ -202,6 +202,8 @@ fn to_book(row: Row) -> std::result::Result<NewBook, Vec<FieldError>> {
             quantity,
             location: optional(row.location),
             acquired_on: optional(row.acquired_on),
+            platform: None,
+            seasons: None,
         },
     })
 }

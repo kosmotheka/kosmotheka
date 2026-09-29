@@ -764,6 +764,8 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 
 **Cambio (28/09/2026):** películas y series de televisión son **dos tipos**, porque sus formatos son distintos. Una película relacionada con una serie es un caso puntual que no se modela.
 
+**Cambio (29/09/2026, con las pantallas de la 6.2):** la **plataforma del videojuego va en cada ejemplar**, no en la obra (un Zelda en Switch físico, en Wii U y en Switch digital); los videojuegos se quedan sin datos propios en la edición, porque el estudio es un contribuidor. En una **serie**, la obra guarda el total de temporadas y **cada ejemplar dice cuáles tiene**, en texto libre («1–2»). Al cambiar de tipo se conserva lo que tiene equivalente (la autoría pasa a guion, el ISBN a código de barras) y solo se avisa de lo que se pierde.
+
 ## D61 · Series y estados: lo tengo, me falta, lo deseo — `aceptada`
 
 **Decisión:**

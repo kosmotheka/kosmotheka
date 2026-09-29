@@ -221,9 +221,6 @@ pub enum KindDetails {
     TvSeries {
         seasons: Option<i64>,
     },
-    Videogame {
-        platform: Option<String>,
-    },
 }
 
 impl KindDetails {
@@ -235,7 +232,6 @@ impl KindDetails {
             KindDetails::Boardgame { .. } => Some(Entity::BoardgameDetails),
             KindDetails::Film { .. } => Some(Entity::FilmDetails),
             KindDetails::TvSeries { .. } => Some(Entity::TvSeriesDetails),
-            KindDetails::Videogame { .. } => Some(Entity::VideogameDetails),
         }
     }
 
@@ -259,7 +255,6 @@ impl KindDetails {
                 json!({ "duration_minutes": duration_minutes })
             }
             KindDetails::TvSeries { seasons } => json!({ "seasons": seasons }),
-            KindDetails::Videogame { platform } => json!({ "platform": platform }),
         }
     }
 }
@@ -309,8 +304,6 @@ pub struct EditionInput {
     #[serde(default)]
     pub seasons: Option<i64>,
     #[serde(default)]
-    pub platform: Option<String>,
-    #[serde(default)]
     pub genres: Vec<String>,
     /// Tag names; found or created case-insensitively.
     #[serde(default)]
@@ -330,6 +323,12 @@ pub struct CopyInput {
     pub location: Option<String>,
     #[serde(default)]
     pub acquired_on: Option<String>,
+    /// A video game copy's platform: belongs to the copy, not the edition or work.
+    #[serde(default)]
+    pub platform: Option<String>,
+    /// A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
+    #[serde(default)]
+    pub seasons: Option<String>,
 }
 
 fn one() -> u32 {
@@ -376,6 +375,8 @@ pub struct ValidCopy {
     pub quantity: u32,
     pub location: Option<String>,
     pub acquired_on: Option<NaiveDate>,
+    pub platform: Option<String>,
+    pub seasons: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -469,6 +470,8 @@ pub fn parse_cover_url(raw: &str) -> Option<Url> {
 }
 pub const MAX_QUANTITY: u32 = 999;
 pub const MAX_TAG_LENGTH: usize = 40;
+/// Longest a copy's `platform` or `seasons` free text may be.
+pub const MAX_COPY_TEXT_LENGTH: usize = 60;
 
 impl EditionInput {
     /// Checks every field and reports all problems at once, not just the first.
@@ -527,7 +530,7 @@ impl EditionInput {
         };
 
         let details = match kind {
-            Kind::Book | Kind::Music | Kind::Other => KindDetails::None,
+            Kind::Book | Kind::Music | Kind::Other | Kind::Videogame => KindDetails::None,
             Kind::Comic => KindDetails::Comic {
                 number: clean(self.number),
             },
@@ -574,9 +577,6 @@ impl EditionInput {
                 }
                 KindDetails::TvSeries { seasons }
             }
-            Kind::Videogame => KindDetails::Videogame {
-                platform: clean(self.platform),
-            },
         };
 
         // Contributors other than authors, grouped and deduplicated per role, in
@@ -713,6 +713,23 @@ impl CopyInput {
             None => None,
         };
 
+        // The kind is not checked here (a copy is validated alone, like `format`);
+        // the UI only shows each field for the work's kind.
+        let platform = clean(self.platform);
+        if platform
+            .as_ref()
+            .is_some_and(|p| p.chars().count() > MAX_COPY_TEXT_LENGTH)
+        {
+            errors.push(FieldError::new("platform", ErrorCode::OutOfRange));
+        }
+        let seasons = clean(self.seasons);
+        if seasons
+            .as_ref()
+            .is_some_and(|s| s.chars().count() > MAX_COPY_TEXT_LENGTH)
+        {
+            errors.push(FieldError::new("seasons", ErrorCode::OutOfRange));
+        }
+
         if !errors.is_empty() {
             return Err(errors);
         }
@@ -722,6 +739,8 @@ impl CopyInput {
             quantity,
             location: clean(self.location),
             acquired_on,
+            platform,
+            seasons,
         })
     }
 }
@@ -781,6 +800,8 @@ mod tests {
                 quantity: 1,
                 location: None,
                 acquired_on: None,
+                platform: None,
+                seasons: None,
             },
         }
     }
@@ -850,6 +871,8 @@ mod tests {
             quantity: 0,
             location: None,
             acquired_on: None,
+            platform: None,
+            seasons: None,
         };
         assert_eq!(
             copy.validate().unwrap_err(),
@@ -992,7 +1015,6 @@ mod tests {
         let mut book = minimal("Wingspan");
         book.edition.kind = Kind::Boardgame;
         book.edition.seasons = Some(3);
-        book.edition.platform = Some("PC".into());
 
         let valid = book.validate().unwrap().edition;
 
@@ -1089,6 +1111,34 @@ mod tests {
         let mut book = minimal("A");
         book.edition.tags = vec!["  Fantasía  ".into(), "fantasía".into(), "".into()];
         assert_eq!(book.validate().unwrap().edition.tags, vec!["Fantasía"]);
+    }
+
+    #[test]
+    fn copy_platform_and_seasons_are_trimmed_and_length_checked() {
+        let mut copy = minimal("A").copy;
+        copy.platform = Some("  Nintendo Switch  ".into());
+        copy.seasons = Some("  1-2  ".into());
+        let valid = copy.validate().unwrap();
+        assert_eq!(valid.platform.as_deref(), Some("Nintendo Switch"));
+        assert_eq!(valid.seasons.as_deref(), Some("1-2"));
+
+        let mut copy = minimal("A").copy;
+        copy.platform = Some("".into());
+        copy.seasons = Some("   ".into());
+        let valid = copy.validate().unwrap();
+        assert_eq!(valid.platform, None);
+        assert_eq!(valid.seasons, None);
+
+        let mut copy = minimal("A").copy;
+        copy.platform = Some("x".repeat(61));
+        copy.seasons = Some("x".repeat(61));
+        assert_eq!(
+            copy.validate().unwrap_err(),
+            vec![
+                FieldError::new("platform", ErrorCode::OutOfRange),
+                FieldError::new("seasons", ErrorCode::OutOfRange),
+            ]
+        );
     }
 
     #[test]
