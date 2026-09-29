@@ -75,7 +75,7 @@ Todo **propuesta** hasta que el maintainer lo revise.
    Nada de sinopsis, reparto, páginas ni pistas; se añade si alguien lo pide.
 3. **Lo que falta y lo que deseo** (D61): la lista de deseos actual está vacía y **no se migra**. «Lo deseo» es una marca por persona, sin pedir nada. **Un lector no crea obras**, tampoco las que faltan: lo pide, como todo lo demás (D73).
 4. **Proveedores:** solo los sin clave en esta fase; cualquier proveedor que pida clave admitirá la clave propia en Ajustes (D62).
-5. **Géneros y etiquetas, de cada biblioteca:** una lista cerrada de géneros por tipo que trae la app, traducida y revisada, y etiquetas libres que crea cada biblioteca solo para sí. Nada es global, así que nadie ve lo que crea un desconocido.
+5. **Géneros y etiquetas, de cada biblioteca:** una lista cerrada de géneros por tipo que trae la app, traducida y revisada, y etiquetas libres que crea cada biblioteca solo para sí. Nada es global, así que nadie ve lo que crea un desconocido. **Lista de géneros (29/09/2026):** la que propuso Design en `docs/design/screens/desktop-collections/Reference.dc.html`, con «Otros» en cada tipo; películas y series comparten lista, y «Otro» no tiene géneros.
 6. **Precio de compra: fuera** de la fase (obligaría a elegir divisa); queda en ideas para el futuro.
 
 ## Antes de empezar
