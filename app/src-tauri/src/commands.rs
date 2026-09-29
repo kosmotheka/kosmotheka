@@ -192,14 +192,17 @@ pub async fn lookup_isbn(
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
     // The block ends before `.await`, releasing the lock. Holding a MutexGuard across
     // an await would not even compile here: the guard cannot move between threads.
-    let (api_key, existing_edition_id) = {
+    let (api_key, disabled_sources, existing_edition_id) = {
         let conn = database.lock()?;
         (
-            settings::load(&conn)?.google_books_api_key,
+            settings::api_key(&conn, "google_books")?,
+            settings::load(&conn)?.disabled_sources,
             catalog::edition_with_isbn(&conn, &ops::active_library(&conn)?, isbn.as_str())?,
         )
     };
-    let mut result = lookup.run(&isbn, api_key.as_deref()).await;
+    let mut result = lookup
+        .run(&isbn, api_key.as_deref(), &disabled_sources)
+        .await;
     result.existing_edition_id = existing_edition_id;
     Ok(result)
 }
@@ -211,7 +214,11 @@ pub async fn search_works(
     kind: Kind,
     query: String,
 ) -> Result<SearchResult> {
-    let mut result = lookup.search(kind, &query).await;
+    let disabled_sources = {
+        let conn = database.lock()?;
+        settings::load(&conn)?.disabled_sources
+    };
+    let mut result = lookup.search(kind, &query, &disabled_sources).await;
     // The block ends before this function returns and there is no further await,
     // so the lock is never held across one.
     let conn = database.lock()?;
@@ -233,16 +240,29 @@ pub async fn lookup_code(
     lookup: State<'_, Lookup>,
     code: String,
 ) -> Result<CodeResult> {
-    let (api_key, existing_edition_id) = {
+    let (google_api_key, gameupc_api_key, disabled_sources, existing_edition_id) = {
         let conn = database.lock()?;
         let library = ops::active_library(&conn)?;
         let existing = match Isbn::parse(&code) {
             Ok(isbn) => catalog::edition_with_isbn(&conn, &library, isbn.as_str())?,
             Err(_) => catalog::edition_with_barcode(&conn, &library, &code)?,
         };
-        (settings::load(&conn)?.google_books_api_key, existing)
+        let settings = settings::load(&conn)?;
+        (
+            settings.api_keys.get("google_books").cloned(),
+            settings.api_keys.get("gameupc").cloned(),
+            settings.disabled_sources,
+            existing,
+        )
     };
-    let mut result = lookup.lookup_code(&code, api_key.as_deref()).await;
+    let mut result = lookup
+        .lookup_code(
+            &code,
+            google_api_key.as_deref(),
+            gameupc_api_key.as_deref(),
+            &disabled_sources,
+        )
+        .await;
     result.existing_edition_id = existing_edition_id;
     Ok(result)
 }

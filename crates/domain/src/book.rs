@@ -460,6 +460,8 @@ pub const COVER_HOSTS: &[&str] = &[
     // Special:FilePath redirects (302, then 301) to thumb.wikimedia.org; same
     // reasoning as coverartarchive.org above (see metadata::wikidata).
     "commons.wikimedia.org",
+    // BoardGameGeek's own image CDN, returned by GameUPC (see metadata::gameupc).
+    "cf.geekdo-images.com",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {

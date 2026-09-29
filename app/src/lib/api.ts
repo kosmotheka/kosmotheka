@@ -367,7 +367,8 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
   return invoke<Asked>("request_delete_book", { editionId, note });
 }
 
-export type Source = "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata";
+export type Source =
+  "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata" | "game_upc";
 
 export interface LookupResult {
   isbn13: string;
@@ -382,7 +383,7 @@ export interface LookupResult {
   googleBooksId: string | null;
   openLibraryId: string | null;
   sources: Source[];
-  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+  warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
   existingEditionId: string | null;
 }
 
@@ -427,7 +428,7 @@ export interface Candidate {
 
 export interface SearchResult {
   candidates: Candidate[];
-  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+  warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
 }
 
 export function searchWorks(kind: Kind, query: string): Promise<SearchResult> {
@@ -437,7 +438,7 @@ export function searchWorks(kind: Kind, query: string): Promise<SearchResult> {
 export interface CodeResult {
   kind: Kind | null;
   candidates: Candidate[];
-  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+  warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
   existingEditionId: string | null;
 }
 
@@ -446,7 +447,8 @@ export function lookupCode(code: string): Promise<CodeResult> {
 }
 
 export interface Settings {
-  googleBooksApiKey: string | null;
+  apiKeys: Record<string, string>;
+  disabledSources: string[];
 }
 
 export function getSettings(): Promise<Settings> {

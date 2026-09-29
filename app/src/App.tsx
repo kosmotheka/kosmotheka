@@ -17,6 +17,7 @@ import {
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { PairDialog } from "@/components/pair-dialog";
+import { ProvidersDialog } from "@/components/providers-dialog";
 import { RequestNotices } from "@/components/request-notices";
 import { RequestsContext, useRequestsState } from "@/components/requests-context";
 import { SettingsDialog } from "@/components/settings-dialog";
@@ -347,6 +348,10 @@ export default function App() {
           )}
           <SettingsDialog
             open={overlay?.name === "settings"}
+            onOpenChange={(open) => !open && closeOverlay()}
+          />
+          <ProvidersDialog
+            open={overlay?.name === "providers"}
             onOpenChange={(open) => !open && closeOverlay()}
           />
           <BackupsDialog

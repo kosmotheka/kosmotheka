@@ -13,20 +13,14 @@ import { useSyncExternalStore } from "react";
 //   overlay closes without leaving a step behind.
 
 export type Section =
-  | "catalog"
-  | "check"
-  | "missing"
-  | "library"
-  | "devices"
-  | "people"
-  | "requests"
-  | "help";
+  "catalog" | "check" | "missing" | "library" | "devices" | "people" | "requests" | "help";
 
 export type Overlay =
   | { name: "drawer" }
   | { name: "libraries" }
   | { name: "pair" }
   | { name: "settings" }
+  | { name: "providers" }
   | { name: "backups" }
   | { name: "filters" }
   | { name: "burst" }

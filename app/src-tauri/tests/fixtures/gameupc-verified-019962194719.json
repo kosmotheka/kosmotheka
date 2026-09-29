@@ -1,0 +1,22 @@
+{
+  "upc": "019962194719",
+  "name": "Gloomhaven",
+  "searched_for": "gloomhaven",
+  "bgg_info_status": "verified",
+  "bgg_info": [
+    {
+      "id": 174430,
+      "name": "Gloomhaven",
+      "published": "2017",
+      "thumbnail_url": "https://cf.geekdo-images.com/sZYp_3BTDGjh2unaZfZmuA__small/img/veqFeP4d_3zNhFc3GNBkV95rBEQ=/fit-in/200x150/filters:strip_icc()/pic2437871.jpg",
+      "image_url": "https://cf.geekdo-images.com/sZYp_3BTDGjh2unaZfZmuA__original/img/7d-lj5Gd1e8PFnD97LYFah2c45M=/0x0/filters:format(jpeg)/pic2437871.jpg",
+      "page_url": "https://boardgamegeek.com/boardgame/174430",
+      "data_url": "https://api.geekdo.com/xmlapi2/thing?id=174430",
+      "update_url": "https://api.gameupc.com/test/upc/019962194719/bgg_id/174430",
+      "version_status": "choose_from_versions",
+      "confidence": 95
+    }
+  ],
+  "stage": "test",
+  "status": "ok"
+}

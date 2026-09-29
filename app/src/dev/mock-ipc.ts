@@ -16,8 +16,13 @@ import type {
   People,
   PersonMark,
   RequestSummary,
+  Settings,
   Wish,
 } from "@/lib/api";
+
+// Mutable so the Providers screen can save keys and toggles across calls,
+// preserved only for the life of this dev-server tab.
+let mockSettings: Settings = { apiKeys: {}, disabledSources: [] };
 
 const HOME = "00000000-0000-7000-8000-000000000001";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
@@ -800,7 +805,10 @@ mockIPC((cmd, args) => {
     case "known_people":
       return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":
-      return { googleBooksApiKey: null };
+      return mockSettings;
+    case "save_settings":
+      mockSettings = (args as { settings: typeof mockSettings }).settings;
+      return null;
     default:
       return null;
   }

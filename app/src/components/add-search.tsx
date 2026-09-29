@@ -133,7 +133,7 @@ export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onR
   const [kind, setKind] = useState<Kind>("book");
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  type Warning = { source: Source; kind: "network" | "quota" | "unexpected" };
+  type Warning = { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" };
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(false);
   const [foundByCode, setFoundByCode] = useState(false);
@@ -424,7 +424,9 @@ export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onR
         <p key={i}>
           {w.kind === "quota" && w.source === "google_books"
             ? t("lookup.googleQuota")
-            : t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
+            : w.kind === "bad_key"
+              ? t("lookup.badKey", { source: t(`lookup.sources.${w.source}`) })
+              : t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
         </p>
       ))}
       {scanError && <p className="text-destructive">{scanError}</p>}

@@ -2,12 +2,15 @@
 //! optional: failures become warnings and never block the user (D18).
 
 pub mod candidate;
+pub mod gameupc;
 pub mod google;
 pub mod inventaire;
 pub mod musicbrainz;
 pub mod openlibrary;
 pub mod wikidata;
 
+use std::collections::BTreeSet;
+use std::future::Future;
 use std::time::Duration;
 
 use kosmotheka_domain::{Isbn, Kind};
@@ -37,6 +40,22 @@ pub enum Source {
     Inventaire,
     MusicBrainz,
     Wikidata,
+    GameUpc,
+}
+
+impl Source {
+    /// Stable id used for `Settings::disabled_sources`, matching the snake_case
+    /// serialization above.
+    pub fn id(self) -> &'static str {
+        match self {
+            Source::GoogleBooks => "google_books",
+            Source::OpenLibrary => "open_library",
+            Source::Inventaire => "inventaire",
+            Source::MusicBrainz => "music_brainz",
+            Source::Wikidata => "wikidata",
+            Source::GameUpc => "game_upc",
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -45,6 +64,9 @@ pub enum ProviderError {
     Network(#[from] reqwest::Error),
     #[error("quota exceeded")]
     Quota,
+    /// The stored key was rejected (HTTP 401/403): the UI says so instead of a generic warning.
+    #[error("api key rejected")]
+    BadKey,
     #[error("unexpected response: {0}")]
     Unexpected(String),
 }
@@ -54,6 +76,7 @@ pub enum ProviderError {
 pub enum WarningKind {
     Network,
     Quota,
+    BadKey,
     Unexpected,
 }
 
@@ -98,6 +121,7 @@ fn warning_kind(error: &ProviderError) -> WarningKind {
     match error {
         ProviderError::Network(_) => WarningKind::Network,
         ProviderError::Quota => WarningKind::Quota,
+        ProviderError::BadKey => WarningKind::BadKey,
         ProviderError::Unexpected(_) => WarningKind::Unexpected,
     }
 }
@@ -150,7 +174,7 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
     candidate.external_id = match source {
         Source::GoogleBooks => result.google_books_id.clone(),
         Source::OpenLibrary => result.open_library_id.clone(),
-        Source::Inventaire | Source::MusicBrainz | Source::Wikidata => None,
+        Source::Inventaire | Source::MusicBrainz | Source::Wikidata | Source::GameUpc => None,
     };
     candidate
 }
@@ -174,17 +198,33 @@ impl Lookup {
     }
 
     /// Asks every provider at the same time and merges the answers.
-    pub async fn run(&self, isbn: &Isbn, google_api_key: Option<&str>) -> LookupResult {
+    pub async fn run(
+        &self,
+        isbn: &Isbn,
+        google_api_key: Option<&str>,
+        disabled: &BTreeSet<String>,
+    ) -> LookupResult {
         let (google, open_library) = tokio::join!(
-            google::lookup(&self.client, isbn, google_api_key),
-            openlibrary::lookup(&self.client, isbn),
+            maybe(
+                disabled.contains(Source::GoogleBooks.id()),
+                google::lookup(&self.client, isbn, google_api_key),
+            ),
+            maybe(
+                disabled.contains(Source::OpenLibrary.id()),
+                openlibrary::lookup(&self.client, isbn),
+            ),
         );
         merge(isbn, google, open_library)
     }
 
     /// Title search: books, music, and now everything Wikidata covers (films,
     /// TV series, video games, comics, board games).
-    pub async fn search(&self, kind: Kind, query: &str) -> SearchResult {
+    pub async fn search(
+        &self,
+        kind: Kind,
+        query: &str,
+        disabled: &BTreeSet<String>,
+    ) -> SearchResult {
         let query = query.trim();
         if query.chars().count() < 2 {
             return SearchResult::default();
@@ -192,9 +232,18 @@ impl Lookup {
         match kind {
             Kind::Book => {
                 let (open_library, inventaire, wikidata) = tokio::join!(
-                    openlibrary::search(&self.client, query),
-                    inventaire::search(&self.client, query),
-                    wikidata::search(&self.client, kind, query),
+                    maybe_vec(
+                        disabled.contains(Source::OpenLibrary.id()),
+                        openlibrary::search(&self.client, query),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Inventaire.id()),
+                        inventaire::search(&self.client, query),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Wikidata.id()),
+                        wikidata::search(&self.client, kind, query),
+                    ),
                 );
                 collect_candidates(vec![
                     (Source::OpenLibrary, open_library),
@@ -205,10 +254,16 @@ impl Lookup {
                 ])
             }
             Kind::Music => {
+                if disabled.contains(Source::MusicBrainz.id()) {
+                    return SearchResult::default();
+                }
                 let musicbrainz = musicbrainz::search(&self.client, query).await;
                 collect_candidates(vec![(Source::MusicBrainz, musicbrainz)])
             }
             Kind::Film | Kind::TvSeries | Kind::Videogame | Kind::Comic | Kind::Boardgame => {
+                if disabled.contains(Source::Wikidata.id()) {
+                    return SearchResult::default();
+                }
                 let wikidata = wikidata::search(&self.client, kind, query).await;
                 collect_candidates(vec![(Source::Wikidata, wikidata)])
             }
@@ -217,18 +272,35 @@ impl Lookup {
     }
 
     /// A scanned or typed code: an ISBN is a book, anything else is tried
-    /// against the non-ISBN providers (part 3 adds board games alongside music).
-    pub async fn lookup_code(&self, code: &str, google_api_key: Option<&str>) -> CodeResult {
+    /// against the non-ISBN providers (music, board games).
+    pub async fn lookup_code(
+        &self,
+        code: &str,
+        google_api_key: Option<&str>,
+        gameupc_api_key: Option<&str>,
+        disabled: &BTreeSet<String>,
+    ) -> CodeResult {
         match Isbn::parse(code) {
-            Ok(isbn) => self.lookup_isbn_code(&isbn, google_api_key).await,
-            Err(_) => self.lookup_non_isbn_code(code).await,
+            Ok(isbn) => self.lookup_isbn_code(&isbn, google_api_key, disabled).await,
+            Err(_) => {
+                self.lookup_non_isbn_code(code, gameupc_api_key, disabled)
+                    .await
+            }
         }
     }
 
-    async fn lookup_isbn_code(&self, isbn: &Isbn, google_api_key: Option<&str>) -> CodeResult {
+    async fn lookup_isbn_code(
+        &self,
+        isbn: &Isbn,
+        google_api_key: Option<&str>,
+        disabled: &BTreeSet<String>,
+    ) -> CodeResult {
         let (merged, inventaire) = tokio::join!(
-            self.run(isbn, google_api_key),
-            inventaire::lookup(&self.client, isbn)
+            self.run(isbn, google_api_key, disabled),
+            maybe(
+                disabled.contains(Source::Inventaire.id()),
+                inventaire::lookup(&self.client, isbn),
+            ),
         );
 
         let mut result = CodeResult {
@@ -250,24 +322,75 @@ impl Lookup {
         result
     }
 
-    /// A non-ISBN code so far only goes to MusicBrainz; GameUPC (board games)
-    /// needs an API key and is deferred (see the brief for part 2). Once a
-    /// keyless board-game provider lands, wire it in here alongside MusicBrainz
-    /// and pass its outcome to `decide_kind`.
-    async fn lookup_non_isbn_code(&self, code: &str) -> CodeResult {
+    /// A non-ISBN code: MusicBrainz always runs (it needs no key); GameUPC
+    /// (board games) only runs when a key is set. `decide_kind` resolves the
+    /// ambiguity when a code could plausibly be either.
+    async fn lookup_non_isbn_code(
+        &self,
+        code: &str,
+        gameupc_api_key: Option<&str>,
+        disabled: &BTreeSet<String>,
+    ) -> CodeResult {
         let mut result = CodeResult::default();
-        match musicbrainz::lookup_barcode(&self.client, code).await {
+        let run_gameupc = gameupc_api_key.filter(|_| !disabled.contains(Source::GameUpc.id()));
+        let gameupc_fut = async {
+            match run_gameupc {
+                Some(key) => gameupc::lookup(&self.client, code, key).await,
+                None => Ok(None),
+            }
+        };
+
+        let (music, gameupc) = tokio::join!(
+            maybe_vec(
+                disabled.contains(Source::MusicBrainz.id()),
+                musicbrainz::lookup_barcode(&self.client, code),
+            ),
+            gameupc_fut,
+        );
+
+        let mut music_found = false;
+        match music {
             Ok(candidates) => {
-                result.kind = decide_kind(!candidates.is_empty(), false);
-                result.candidates = candidates;
+                music_found = !candidates.is_empty();
+                result.candidates.extend(candidates);
             }
             Err(error) => result.warnings.push(ProviderWarning {
                 source: Source::MusicBrainz,
                 kind: warning_kind(&error),
             }),
         }
+
+        let mut boardgame_found = false;
+        match gameupc {
+            Ok(Some(candidate)) => {
+                boardgame_found = true;
+                result.candidates.push(candidate);
+            }
+            Ok(None) => {}
+            Err(error) => result.warnings.push(ProviderWarning {
+                source: Source::GameUpc,
+                kind: warning_kind(&error),
+            }),
+        }
+
+        result.kind = decide_kind(music_found, boardgame_found);
         result
     }
+}
+
+/// Skips a provider call entirely (no network) when its source is disabled.
+async fn maybe<T>(
+    disabled: bool,
+    fut: impl Future<Output = Result<Option<T>, ProviderError>>,
+) -> Result<Option<T>, ProviderError> {
+    if disabled { Ok(None) } else { fut.await }
+}
+
+async fn maybe_vec(
+    disabled: bool,
+    fut: impl Future<Output = Result<Vec<Candidate>, ProviderError>>,
+) -> Result<Vec<Candidate>, ProviderError> {
+    if disabled { Ok(Vec::new()) } else { fut.await }
 }
 
 /// The ambiguity rule for a non-ISBN code: `Kind::Music` when only MusicBrainz
@@ -475,7 +598,7 @@ mod live {
         let lookup = Lookup::new().unwrap();
         let isbn = Isbn::parse("9780140328721").unwrap();
 
-        let result = lookup.run(&isbn, None).await;
+        let result = lookup.run(&isbn, None, &BTreeSet::new()).await;
 
         println!("{result:#?}");
         assert!(result.sources.contains(&Source::OpenLibrary));

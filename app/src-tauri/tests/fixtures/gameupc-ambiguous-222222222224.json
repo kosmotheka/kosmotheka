@@ -1,0 +1,33 @@
+{
+  "upc": "222222222224",
+  "name": "Tiny Towns",
+  "searched_for": "",
+  "bgg_info_status": "choose_from_bgg_info_or_search",
+  "bgg_info": [
+    {
+      "id": 265736,
+      "name": "Tiny Towns",
+      "published": "2019",
+      "thumbnail_url": "https://cf.geekdo-images.com/aE1EoOzr530gQin8bj8QDA__small/img/AI-Ro3wLJtpyZLmCMNywOlpz0S8=/fit-in/200x150/filters:strip_icc()/pic4460401.jpg",
+      "image_url": "https://cf.geekdo-images.com/aE1EoOzr530gQin8bj8QDA__original/img/-GDAsvmQ3wkuHaZ8h9G5Gk_nvVA=/0x0/filters:format(jpeg)/pic4460401.jpg",
+      "page_url": "https://boardgamegeek.com/boardgame/265736",
+      "data_url": "https://api.geekdo.com/xmlapi2/thing?id=265736",
+      "update_url": "https://api.gameupc.com/test/upc/222222222224/bgg_id/265736",
+      "version_status": "choose_from_versions",
+      "confidence": 91
+    },
+    {
+      "id": 287576,
+      "name": "Tiny Towns: Fortune",
+      "published": "2021",
+      "thumbnail_url": "https://cf.geekdo-images.com/placeholder__small/img/placeholder.jpg",
+      "image_url": "https://cf.geekdo-images.com/placeholder__original/img/placeholder.jpg",
+      "page_url": "https://boardgamegeek.com/boardgame/287576",
+      "data_url": "https://api.geekdo.com/xmlapi2/thing?id=287576",
+      "update_url": "https://api.gameupc.com/test/upc/222222222224/bgg_id/287576",
+      "confidence": 0
+    }
+  ],
+  "stage": "test",
+  "status": "ok"
+}

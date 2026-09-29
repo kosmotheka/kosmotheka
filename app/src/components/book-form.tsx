@@ -1021,7 +1021,8 @@ export function LookupStatus({
   if (!result) return null;
 
   const quota = result.warnings.some((w) => w.source === "google_books" && w.kind === "quota");
-  const unreachable = result.warnings.filter((w) => w.kind !== "quota");
+  const badKey = result.warnings.filter((w) => w.kind === "bad_key");
+  const unreachable = result.warnings.filter((w) => w.kind !== "quota" && w.kind !== "bad_key");
   const alreadyHere =
     result.existingEditionId !== null && result.existingEditionId !== currentEditionId;
 
@@ -1042,6 +1043,11 @@ export function LookupStatus({
         </p>
       )}
       {quota && <p className="text-muted-foreground">{t("lookup.googleQuota")}</p>}
+      {badKey.map((w) => (
+        <p key={w.source} className="text-muted-foreground">
+          {t("lookup.badKey", { source: t(`lookup.sources.${w.source}`) })}
+        </p>
+      ))}
       {unreachable.map((w) => (
         <p key={w.source} className="text-muted-foreground">
           {t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}

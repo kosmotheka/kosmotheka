@@ -281,14 +281,16 @@
       "open_library": "Open Library",
       "inventaire": "Inventaire",
       "wikidata": "Wikidata",
-      "music_brainz": "MusicBrainz"
-    }
+      "music_brainz": "MusicBrainz",
+      "game_upc": "GameUPC"
+    },
+    "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers."
   },
   "settings": {
     "title": "Settings",
     "description": "Stored only on this device: never synced or exported.",
-    "googleBooksKey": "Google Books API key (optional)",
-    "googleBooksHelp": "Without a key, Google Books often refuses requests. Create a free key in Google Cloud Console (APIs & Services → Credentials) with the Books API enabled."
+    "providers": "Data providers",
+    "providersHelp": "Which catalogues the app searches, and your keys for the ones that need one."
   },
   "burst": {
     "open": "Quick add",
@@ -1030,5 +1032,50 @@
     "confirmLose": "Change and lose these details",
     "keep": "Keep it as {{from}}",
     "and": " and "
+  },
+  "providers": {
+    "title": "Data providers",
+    "description": "Where the app searches when you add something. Sources that need a key work with your own; with the cloud, every source works without keys.",
+    "noCloud": "No cloud. Keyless sources already work; for the others, add your key.",
+    "noKeyBadge": "No key needed",
+    "needsKeyBadge": "Needs a key",
+    "keyPlaceholder": "Paste your key here",
+    "save": "Save",
+    "test": "Test",
+    "testOk": "Key works.",
+    "testBadKey": "This key was rejected.",
+    "testFailed": "Could not test the key. Check your connection.",
+    "getKey": "How to get a key",
+    "other": "“Other” does not search anywhere: it is added by hand.",
+    "fewSources": "{{count}} of {{total}}",
+    "noSources": "By hand",
+    "descriptions": {
+      "book": {
+        "open_library": "Title, authors and ISBN",
+        "inventaire": "Spanish editions and covers",
+        "wikidata": "Works and authorship",
+        "google_books": "The most complete source for ISBN lookups"
+      },
+      "comic": {
+        "wikidata": "Series and authorship"
+      },
+      "boardgame": {
+        "wikidata": "Title, designer and year",
+        "game_upc": "By the box's barcode"
+      },
+      "film": {
+        "wikidata": "Title, director and year"
+      },
+      "tv_series": {
+        "wikidata": "Title and seasons"
+      },
+      "videogame": {
+        "wikidata": "Title, studio and year"
+      },
+      "music": {
+        "music_brainz": "Albums by title or barcode"
+      }
+    },
+    "toggleAria": "Use {{name}}"
   }
 }
