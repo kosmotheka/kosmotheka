@@ -206,11 +206,25 @@ pub async fn lookup_isbn(
 
 #[tauri::command]
 pub async fn search_works(
+    database: State<'_, Database>,
     lookup: State<'_, Lookup>,
     kind: Kind,
     query: String,
 ) -> Result<SearchResult> {
-    Ok(lookup.search(kind, &query).await)
+    let mut result = lookup.search(kind, &query).await;
+    // The block ends before this function returns and there is no further await,
+    // so the lock is never held across one.
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    for candidate in &mut result.candidates {
+        candidate.existing_edition_id = catalog::edition_matching_candidate(
+            &conn,
+            &library,
+            candidate.isbn.as_deref(),
+            candidate.barcode.as_deref(),
+        )?;
+    }
+    Ok(result)
 }
 
 #[tauri::command]

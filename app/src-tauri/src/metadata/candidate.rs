@@ -38,6 +38,8 @@ pub struct Candidate {
     pub platform: Option<String>,
     /// A suggested copy format, when the provider knows it (e.g. `SingleIssue` for a comic).
     pub format: Option<Format>,
+    /// Set when this candidate's ISBN or barcode already exists in the active library.
+    pub existing_edition_id: Option<String>,
 }
 
 impl Candidate {
@@ -66,6 +68,7 @@ impl Candidate {
             seasons: None,
             platform: None,
             format: None,
+            existing_edition_id: None,
         }
     }
 }

@@ -278,7 +278,10 @@
     "failed": "La búsqueda ha fallado. Revisa la conexión.",
     "sources": {
       "google_books": "Google Books",
-      "open_library": "Open Library"
+      "open_library": "Open Library",
+      "inventaire": "Inventaire",
+      "wikidata": "Wikidata",
+      "music_brainz": "MusicBrainz"
     }
   },
   "settings": {
@@ -885,6 +888,20 @@
     "done": "Hecho: ahora puedes hacerlo sin pedirlo.",
     "whyDeleteReader": "Eres lector en {{library}}: lo decide quien administra.",
     "deletePlaceholder": "Por ejemplo: está repetido"
+  },
+  "addSearch": {
+    "placeholder": "Busca por título…",
+    "manual": "Añadir a mano",
+    "backToSearch": "Volver a buscar",
+    "cameraDenied": "Sin permiso de cámara: escríbelo o pégalo.",
+    "limitedNotice": "Sin nube ni clave, {{kindPlural}} solo se buscan en {{source}}: puede que falten portadas o ediciones.",
+    "footerHint": "¿No está? Añádelo tú; puedes completarlo después.",
+    "askHint": "Este código no dice de qué tipo es. Elige uno y lo buscamos ahí.",
+    "askFooter": "O guárdalo sin buscar: el código queda en la obra.",
+    "foundByCode": "Encontrado por el código",
+    "resultCount_one": "{{count}} resultado",
+    "resultCount_other": "{{count}} resultados",
+    "alreadyHere": "Ya está en {{library}} · añadir un ejemplar"
   },
   "notices": {
     "title_one": "Un cambio tuyo ha pasado a petición",

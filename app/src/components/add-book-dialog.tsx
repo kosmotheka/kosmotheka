@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 
 import { NoteField } from "@/components/ask-dialog";
 import {
@@ -26,7 +26,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { type CreatedBook, type Kind, type NewBook, createBook, requestBook } from "@/lib/api";
+import {
+  type ContributorRole,
+  type CreatedBook,
+  type Kind,
+  type NewBook,
+  createBook,
+  requestBook,
+} from "@/lib/api";
 import { KIND_FORMATS } from "@/lib/kinds";
 
 export interface AddBookPrefill {
@@ -50,6 +57,8 @@ interface Props {
   title?: string;
   /** A reader's book went to the administrators, or was simply added if allowed now. */
   onRequested?: (requested: boolean) => void;
+  /** Shown as a back arrow instead of the close button: returns to the search step (D60). */
+  onBack?: () => void;
 }
 
 const initialEditionForm = (prefill?: AddBookPrefill, initial?: NewBook): EditionForm =>
@@ -73,6 +82,7 @@ export function AddBookDialog({
   submit: customSubmit,
   title: customTitle,
   onRequested,
+  onBack,
 }: Props) {
   const { t } = useTranslation();
   // Readers ask for the book instead of adding it (D73).
@@ -179,10 +189,10 @@ export function AddBookDialog({
                   variant="ghost"
                   size="icon-lg"
                   className="size-12 rounded-full"
-                  aria-label={t("common.close")}
-                  onClick={() => handleOpenChange(false)}
+                  aria-label={onBack ? t("addSearch.backToSearch") : t("common.close")}
+                  onClick={onBack ?? (() => handleOpenChange(false))}
                 >
-                  <X className="size-[22px]" />
+                  {onBack ? <ArrowLeft className="size-[22px]" /> : <X className="size-[22px]" />}
                 </Button>
                 <DialogTitle className="flex-1 text-lg font-semibold">{title}</DialogTitle>
                 <Button type="submit" className="mr-3 rounded-full px-4" disabled={saving}>
@@ -228,6 +238,17 @@ export function AddBookDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <form onSubmit={submit} noValidate className="space-y-6">
           <DialogHeader>
+            {onBack && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="-ml-2 w-fit gap-1.5 text-muted-foreground"
+                onClick={onBack}
+              >
+                <ArrowLeft className="size-4" /> {t("addSearch.backToSearch")}
+              </Button>
+            )}
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
           </DialogHeader>
@@ -251,11 +272,16 @@ export function AddBookDialog({
 }
 
 function editionFormFromInput(book: NewBook): EditionForm {
+  const people: Partial<Record<ContributorRole, string[]>> = {};
+  if (book.authors.length > 0) people.author = book.authors;
+  for (const contributor of book.contributors ?? []) {
+    (people[contributor.role] ??= []).push(contributor.name);
+  }
   return {
     kind: book.kind ?? "book",
     title: book.title,
     subtitle: book.subtitle ?? "",
-    people: book.authors.length > 0 ? { author: book.authors } : {},
+    people,
     publisher: book.publisher ?? "",
     publishedYear: book.publishedYear?.toString() ?? "",
     language: book.language ?? "",

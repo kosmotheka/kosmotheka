@@ -278,7 +278,10 @@
     "failed": "The search failed. Check your connection.",
     "sources": {
       "google_books": "Google Books",
-      "open_library": "Open Library"
+      "open_library": "Open Library",
+      "inventaire": "Inventaire",
+      "wikidata": "Wikidata",
+      "music_brainz": "MusicBrainz"
     }
   },
   "settings": {
@@ -885,6 +888,20 @@
     "done": "Done: you may now do this without asking.",
     "whyDeleteReader": "You are a reader in {{library}}: the administrators decide.",
     "deletePlaceholder": "For example: it is a duplicate"
+  },
+  "addSearch": {
+    "placeholder": "Search by title…",
+    "manual": "Add manually",
+    "backToSearch": "Back to search",
+    "cameraDenied": "No camera permission: type or paste it instead.",
+    "limitedNotice": "Without the cloud or a key, {{kindPlural}} are only searched on {{source}}: covers or editions may be missing.",
+    "footerHint": "Not there? Add it yourself; you can fill it in later.",
+    "askHint": "This code doesn't say what it is. Pick a type and we'll search there.",
+    "askFooter": "Or save it without searching: the code stays on the work.",
+    "foundByCode": "Found by the code",
+    "resultCount_one": "{{count}} result",
+    "resultCount_other": "{{count}} results",
+    "alreadyHere": "Already in {{library}} · add a copy"
   },
   "notices": {
     "title_one": "A change of yours became a request",

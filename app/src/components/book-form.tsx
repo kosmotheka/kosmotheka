@@ -291,7 +291,8 @@ export function KindGrid({
   columns,
   size = "sm",
 }: {
-  value: Kind;
+  /** Null shows no tile as picked (the "¿Qué es?" step for an ambiguous code). */
+  value: Kind | null;
   onChange: (kind: Kind) => void;
   columns: number;
   size?: "sm" | "lg";

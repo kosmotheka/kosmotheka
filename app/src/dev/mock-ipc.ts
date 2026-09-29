@@ -341,9 +341,9 @@ const othersMarks: PersonMark[] = [
 const matchesHolding = (holding: Holding | undefined, copyCount: number): boolean =>
   !holding || (holding === "owned" ? copyCount > 0 : copyCount === 0);
 
-function mockCandidates(query: string): Candidate[] {
+function mockCandidates(kind: Kind, query: string): Candidate[] {
   const candidate = (over: Partial<Candidate>): Candidate => ({
-    kind: "book",
+    kind,
     source: "open_library",
     externalId: null,
     title: query,
@@ -364,28 +364,67 @@ function mockCandidates(query: string): Candidate[] {
     seasons: null,
     platform: null,
     format: null,
+    existingEditionId: null,
     ...over,
   });
 
+  if (kind === "book") {
+    return [
+      candidate({
+        source: "open_library",
+        externalId: "/works/OL893414W",
+        title: `${query} (Open Library)`,
+        authors: ["Frank Herbert"],
+        publisher: "Gollancz",
+        publishedYear: 1965,
+        language: "en",
+        isbn: "9780441013593",
+        // No cover: a remote one here made the placeholder flaky in screenshots
+        // (still loading, not yet erroring, when the shot was taken).
+        coverUrl: null,
+        // Same edition already in the catalog (books[0], "Dune"), to show "Ya está".
+        existingEditionId: books[0].editionId,
+      }),
+      candidate({
+        source: "inventaire",
+        externalId: "wd:Q190192",
+        title: `${query} (Inventaire)`,
+        authors: ["Frank Herbert"],
+        language: "es",
+        coverUrl: "https://inventaire.io/img/entities/a936e0978d400fb13e0c0a2527d345a56b799e54",
+      }),
+      candidate({
+        source: "wikidata",
+        externalId: "wd:Q846578",
+        title: `${query}: la casa Atreides`,
+        authors: ["Brian Herbert", "Kevin J. Anderson"],
+        publishedYear: 1999,
+      }),
+    ];
+  }
+  if (kind === "music") {
+    return [
+      candidate({
+        source: "music_brainz",
+        externalId: "mb-1",
+        title: query,
+        authors: ["Pink Floyd"],
+        publisher: "Harvest",
+        publishedYear: 1973,
+        format: "vinyl",
+      }),
+    ];
+  }
+  // The other kinds only search Wikidata without the cloud or a key (D26): the
+  // limited notice shows for them.
   return [
     candidate({
-      source: "open_library",
-      externalId: "/works/OL893414W",
-      title: `${query} (Open Library)`,
-      authors: ["Frank Herbert"],
-      publisher: "Gollancz",
-      publishedYear: 1965,
-      language: "en",
-      isbn: "9780441013593",
-      coverUrl: "https://covers.openlibrary.org/b/id/11481354-L.jpg",
-    }),
-    candidate({
-      source: "inventaire",
-      externalId: "wd:Q190192",
-      title: `${query} (Inventaire)`,
-      authors: ["Frank Herbert"],
-      language: "es",
-      coverUrl: "https://inventaire.io/img/entities/a936e0978d400fb13e0c0a2527d345a56b799e54",
+      source: "wikidata",
+      externalId: "wd:Q1",
+      title: query,
+      authors: [kind === "film" || kind === "tv_series" ? "Denis Villeneuve" : "Studio"],
+      publishedYear: 2021,
+      durationMinutes: kind === "film" ? 155 : null,
     }),
   ];
 }
@@ -483,20 +522,34 @@ mockIPC((cmd, args) => {
       throw new Error("offline");
     case "search_works": {
       const { kind, query } = args as { kind: Kind; query: string };
-      if (kind !== "book" || query.trim().length < 2) {
-        return { candidates: [], warnings: [] };
-      }
-      return { candidates: mockCandidates(query), warnings: [] };
+      if (query.trim().length < 2) return { candidates: [], warnings: [] };
+      return { candidates: mockCandidates(kind, query), warnings: [] };
     }
     case "lookup_code": {
       const { code } = args as { code: string };
-      const candidates = mockCandidates(code);
-      return {
-        kind: candidates.length > 0 ? "book" : null,
-        candidates,
-        warnings: [],
-        existingEditionId: null,
-      };
+      const digits = code.replace(/\D/g, "");
+      // A 978/979 EAN-13 is an ISBN: always a book. One sample EAN is a known
+      // album; any other code has no clear kind, showing the "¿Qué es?" step.
+      if (digits.length === 13 && /^97[89]/.test(digits)) {
+        // A code lookup only returns sources for that one edition (unlike a
+        // title search, which can turn up other related works).
+        const candidates = mockCandidates("book", "Dune").slice(0, 2);
+        return {
+          kind: "book",
+          candidates,
+          warnings: [],
+          existingEditionId: candidates[0].existingEditionId,
+        };
+      }
+      if (digits === "5099902988371") {
+        return {
+          kind: "music",
+          candidates: mockCandidates("music", "The Dark Side of the Moon"),
+          warnings: [],
+          existingEditionId: null,
+        };
+      }
+      return { kind: null, candidates: [], warnings: [], existingEditionId: null };
     }
     case "work_marks": {
       const { workId } = args as { workId: string };

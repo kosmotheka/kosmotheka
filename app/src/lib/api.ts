@@ -421,6 +421,8 @@ export interface Candidate {
   platform: string | null;
   /** A suggested copy format, when the provider knows it. */
   format: Format | null;
+  /** Set when this candidate's ISBN or barcode already exists in the active library. */
+  existingEditionId: string | null;
 }
 
 export interface SearchResult {

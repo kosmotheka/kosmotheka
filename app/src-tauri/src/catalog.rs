@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use kosmotheka_domain::{
     Change, ContributorInput, ContributorRole, CopyInput, DETAILS, EditionInput, Entity, ErrorCode,
-    FieldError, Format, Hlc, Kind, MAX_TAG_LENGTH, ValidBook, ValidCopy, ValidEdition,
+    FieldError, Format, Hlc, Isbn, Kind, MAX_TAG_LENGTH, ValidBook, ValidCopy, ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -936,6 +936,26 @@ pub fn edition_with_barcode(
             |row| row.get(0),
         )
         .optional()?)
+}
+
+/// Which existing edition, if any, a search candidate already matches: by ISBN first
+/// (parsed, so "978-..." and "9780..." are the same), then by barcode.
+pub fn edition_matching_candidate(
+    conn: &Connection,
+    library: &str,
+    isbn: Option<&str>,
+    barcode: Option<&str>,
+) -> Result<Option<String>> {
+    if let Some(isbn) = isbn.and_then(|isbn| Isbn::parse(isbn).ok()) {
+        let found = edition_with_isbn(conn, library, isbn.as_str())?;
+        if found.is_some() {
+            return Ok(found);
+        }
+    }
+    match barcode {
+        Some(barcode) => edition_with_barcode(conn, library, barcode),
+        None => Ok(None),
+    }
 }
 
 fn work_of(conn: &Connection, library: &str, edition_id: &str) -> Result<String> {
@@ -2278,6 +2298,49 @@ mod tests {
             get_book(&conn, LIB, &unknown),
             Err(Error::MissingRow { .. })
         ));
+    }
+
+    #[test]
+    fn edition_matching_candidate_checks_isbn_then_barcode() {
+        let mut conn = db::open_in_memory().unwrap();
+        create_book(
+            &mut conn,
+            LIB,
+            &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        let with_barcode = ValidBook {
+            edition: EditionInput {
+                title: "B".to_owned(),
+                barcode: Some("4006381333931".to_owned()),
+                ..EditionInput::default()
+            }
+            .validate()
+            .unwrap(),
+            copy: copy("Tersoal", Format::Box),
+        };
+        create_book(&mut conn, LIB, &with_barcode, None).unwrap();
+
+        // Same ISBN in another format ("0-306-...") still matches.
+        assert!(
+            edition_matching_candidate(&conn, LIB, Some("0-306-40615-2"), None)
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            edition_matching_candidate(&conn, LIB, None, Some("4006381333931"))
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(
+            edition_matching_candidate(&conn, LIB, Some("9780000000002"), None).unwrap(),
+            None
+        );
+        assert_eq!(
+            edition_matching_candidate(&conn, LIB, None, None).unwrap(),
+            None
+        );
     }
 
     #[test]

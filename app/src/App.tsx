@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CircleCheck } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
+import { AddSearch } from "@/components/add-search";
 import { BackupsDialog } from "@/components/backups-dialog";
 import { BookDetailView } from "@/components/book-detail";
 import { BurstDialog } from "@/components/burst-dialog";
@@ -268,7 +269,7 @@ export default function App() {
           )}
 
           <RequestNotices version={version} desktop={desktop} />
-        <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
+          <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
           <NewLibraryDialog
             open={overlay?.name === "newLibrary"}
             desktop={desktop}
@@ -315,7 +316,9 @@ export default function App() {
             filter={filter}
             onChange={setFilter}
           />
-          {overlay?.name === "add" && (
+          {overlay?.name === "add" && overlay.prefill && (
+            // A title already typed in the catalog search (no results found): straight
+            // to the form, not another search step (D60).
             <AddBookDialog
               open
               desktop={desktop}
@@ -323,10 +326,23 @@ export default function App() {
               prefill={overlay.prefill}
               onOpenChange={(open) => !open && closeOverlay()}
               onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
-            onRequested={(requested) => {
-              setNotice(t(requested ? "ask.sent" : "ask.done"));
-              reload();
-            }}
+              onRequested={(requested) => {
+                setNotice(t(requested ? "ask.sent" : "ask.done"));
+                reload();
+              }}
+            />
+          )}
+          {overlay?.name === "add" && !overlay.prefill && (
+            <AddSearch
+              open
+              desktop={desktop}
+              library={library}
+              onOpenChange={(open) => !open && closeOverlay()}
+              onCreated={(result, title) => void handleCreated(result, title, overlay.wishId)}
+              onRequested={(requested) => {
+                setNotice(t(requested ? "ask.sent" : "ask.done"));
+                reload();
+              }}
             />
           )}
           <SettingsDialog
