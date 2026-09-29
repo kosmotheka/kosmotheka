@@ -308,6 +308,9 @@ pub struct EditionInput {
     /// Tag names; found or created case-insensitively.
     #[serde(default)]
     pub tags: Vec<String>,
+    /// Free text, common to all kinds ("Complete, with its original box.").
+    #[serde(default)]
+    pub notes: Option<String>,
 }
 
 /// A copy as entered by the user, before validation. Used to add and to edit.
@@ -366,6 +369,8 @@ pub struct ValidEdition {
     pub genres: Vec<String>,
     /// Tag names: trimmed, deduplicated case-insensitively, at most 40 characters each.
     pub tags: Vec<String>,
+    /// Trimmed, inner newlines kept, at most `MAX_NOTES_LENGTH` characters.
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -470,6 +475,7 @@ pub fn parse_cover_url(raw: &str) -> Option<Url> {
 }
 pub const MAX_QUANTITY: u32 = 999;
 pub const MAX_TAG_LENGTH: usize = 40;
+pub const MAX_NOTES_LENGTH: usize = 2000;
 /// Longest a copy's `platform` or `seasons` free text may be.
 pub const MAX_COPY_TEXT_LENGTH: usize = 60;
 
@@ -642,6 +648,14 @@ impl EditionInput {
         }
         let tags = dedupe_ignoring_case(tags.into_iter());
 
+        let notes = clean(self.notes);
+        if notes
+            .as_ref()
+            .is_some_and(|n| n.chars().count() > MAX_NOTES_LENGTH)
+        {
+            errors.push(FieldError::new("notes", ErrorCode::OutOfRange));
+        }
+
         match title {
             Some(title) if errors.is_empty() => Ok(ValidEdition {
                 title,
@@ -665,6 +679,7 @@ impl EditionInput {
                 details,
                 genres,
                 tags,
+                notes,
             }),
             _ => Err(errors),
         }
@@ -1056,6 +1071,27 @@ mod tests {
         assert_eq!(
             book.validate().unwrap_err(),
             vec![FieldError::new("barcode", ErrorCode::InvalidBarcode)]
+        );
+    }
+
+    #[test]
+    fn notes_are_trimmed_kept_empty_or_too_long() {
+        let mut book = minimal("A");
+        book.edition.notes = Some("  Complete, with its original box.\nMissing a candle.  ".into());
+        assert_eq!(
+            book.validate().unwrap().edition.notes.as_deref(),
+            Some("Complete, with its original box.\nMissing a candle.")
+        );
+
+        let mut book = minimal("A");
+        book.edition.notes = Some("   ".into());
+        assert_eq!(book.validate().unwrap().edition.notes, None);
+
+        let mut book = minimal("A");
+        book.edition.notes = Some("x".repeat(MAX_NOTES_LENGTH + 1));
+        assert_eq!(
+            book.validate().unwrap_err(),
+            vec![FieldError::new("notes", ErrorCode::OutOfRange)]
         );
     }
 

@@ -124,6 +124,7 @@ enum CatalogEntity: string
                 'language' => $text(),
                 'cover' => $text(),
                 'barcode' => $text(),
+                'notes' => $text(),
             ],
             self::BookDetails => [
                 'isbn13' => $text(),

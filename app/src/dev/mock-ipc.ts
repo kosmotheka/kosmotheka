@@ -517,6 +517,10 @@ mockIPC((cmd, args) => {
         googleBooksId: "abc",
         openLibraryId: null,
         barcode: null,
+        notes:
+          found.editionId === books[0].editionId
+            ? "Completo, con la caja original. Falta una vela."
+            : null,
         contributors: [],
         number: null,
         playersMin: null,

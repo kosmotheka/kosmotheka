@@ -78,6 +78,7 @@ export interface EditionInput {
   genres?: string[];
   /** Tag names; found or created case-insensitively. */
   tags?: string[];
+  notes?: string | null;
 }
 
 export interface CopyInput {
@@ -251,6 +252,7 @@ export interface BookDetail {
   googleBooksId: string | null;
   openLibraryId: string | null;
   barcode: string | null;
+  notes: string | null;
   number: string | null;
   playersMin: number | null;
   playersMax: number | null;

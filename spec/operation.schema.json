@@ -365,6 +365,9 @@
                   "barcode": {
                     "description": "EAN or UPC printed on the edition, for what has no ISBN.",
                     "$ref": "#/$defs/text"
+                  },
+                  "notes": {
+                    "$ref": "#/$defs/text"
                   }
                 }
               }

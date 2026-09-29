@@ -69,6 +69,7 @@ pub struct BookDetail {
     pub google_books_id: Option<String>,
     pub open_library_id: Option<String>,
     pub barcode: Option<String>,
+    pub notes: Option<String>,
     pub number: Option<String>,
     pub players_min: Option<i64>,
     pub players_max: Option<i64>,
@@ -279,6 +280,7 @@ pub fn update_edition(
             "published_year": edition.published_year,
             "language": edition.language,
             "barcode": edition.barcode,
+            "notes": edition.notes,
         }),
     )?;
     // Without a new cover the current one stays; clearing covers is not supported yet.
@@ -423,6 +425,7 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
             })
             .collect(),
         barcode: book.barcode,
+        notes: book.notes,
         number: book.number,
         players_min: book.players_min,
         players_max: book.players_max,
@@ -618,6 +621,7 @@ impl<'a> Plan<'a> {
                 "language": edition.language,
                 "cover": cover,
                 "barcode": edition.barcode,
+                "notes": edition.notes,
             }),
         ));
         if edition.kind == Kind::Book {
@@ -1245,7 +1249,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                         AND wc.role = 'author'),
                     w.kind, e.barcode, cd.number,
                     gd.players_min, gd.players_max, coalesce(gd.duration_minutes, fd.duration_minutes),
-                    gd.min_age, td.seasons
+                    gd.min_age, td.seasons, e.notes
                FROM editions e
                JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
                LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
@@ -1279,6 +1283,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                     duration_minutes: row.get(17)?,
                     min_age: row.get(18)?,
                     seasons: row.get(19)?,
+                    notes: row.get(20)?,
                     copies: Vec::new(),
                     can_delete: false,
                     genres: Vec::new(),
@@ -2048,6 +2053,28 @@ mod tests {
                 .unwrap()
                 .published_year,
             Some(2011)
+        );
+    }
+
+    #[test]
+    fn notes_round_trip_and_can_be_cleared() {
+        let mut conn = db::open_in_memory().unwrap();
+        let mut book = new_book("A", None, "Tersoal", Format::Hardcover);
+        book.edition.notes = Some("Falta una vela.".into());
+        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+
+        assert_eq!(
+            get_book(&conn, LIB, &created.edition_id).unwrap().notes,
+            Some("Falta una vela.".into())
+        );
+
+        let mut cleared = edition("A", None, &["Patrick Rothfuss"]);
+        cleared.notes = None;
+        update_edition(&mut conn, LIB, &created.edition_id, &cleared, None).unwrap();
+
+        assert_eq!(
+            get_book(&conn, LIB, &created.edition_id).unwrap().notes,
+            None
         );
     }
 

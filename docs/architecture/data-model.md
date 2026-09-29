@@ -27,7 +27,7 @@ works ──< work_contributors >── people
 | `works` | Obra: el libro en abstracto | `id`, `kind` (`book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music`, `other`; D60), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`, `studio`), `position` |
-| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN) |
+| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN), `notes` (texto libre) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
 | `tags` | Etiquetas: palabras libres que cada biblioteca crea para sí misma | `id`, `name` |
 | `work_tags` | Qué etiquetas tiene cada obra. Sin restricción de unicidad a propósito: dos dispositivos pueden añadir la misma etiqueta sin conexión, y las dos filas deben sobrevivir para que converjan; quien lee, deduplica | `id`, `work_id`, `tag_id` |

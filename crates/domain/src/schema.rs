@@ -144,6 +144,7 @@ const EDITION_FIELDS: &[FieldSpec] = &[
     field("language", FieldType::Text, false),
     field("cover", FieldType::Text, false),
     field("barcode", FieldType::Text, false),
+    field("notes", FieldType::Text, false),
 ];
 const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
     field("isbn13", FieldType::Text, false),
