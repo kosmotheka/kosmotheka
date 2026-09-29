@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;font-family:var(--font-sans);color:var(--foreground)"><div role="alertdialog" aria-label="{{ heading }}" style="width:520px;box-sizing:border-box;background:var(--background);border-radius:16px;box-shadow:0 0 0 1px var(--border),0 24px 64px -16px oklch(0 0 0 / 40%);padding:22px 24px 20px;display:flex;flex-direction:column;gap:16px"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:18px;font-weight:600;letter-spacing:-0.01em;text-wrap:pretty">{{ heading }}</span><span style="font-size:13.5px;line-height:1.45;color:var(--muted-foreground);text-wrap:pretty">Título, año, portada y notas no cambian. De lo propio de {{ fromLower }}:</span></div><div style="display:flex;flex-direction:column;gap:8px"><sc-if value="{{ hasKept }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45"><x-import component-from-global-scope="Library.CheckIcon" size="17" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;color:var(--success)" hint-size="17px,17px"></x-import><span><span style="font-weight:600">Pasa a {{ toLower }}: </span>{{ kept }}</span></div></sc-if><div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--warning-soft);font-size:14px;line-height:1.45"><x-import component-from-global-scope="Library.TriangleAlertIcon" size="17" style="flex-shrink:0;margin-top:2px;color:var(--warning)" hint-size="17px,17px"></x-import><span><span style="font-weight:600">Se pierde: </span>{{ lost }}</span></div></div><div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">{{ copiesHeading }}</span><sc-for list="{{ copies }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;min-height:44px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:14px;font-weight:500">{{ c.from }}</span><span style="font-size:12.5px;color:var(--muted-foreground)">{{ c.where }}</span></div><x-import component-from-global-scope="Library.ArrowRightIcon" size="16" style="color:var(--muted-foreground);flex-shrink:0" hint-size="16px,16px"></x-import><sc-if value="{{ c.ok }}" hint-placeholder-val="{{ true }}"><span style="width:160px;height:36px;box-sizing:border-box;border-radius:8px;border:1px solid var(--input);display:flex;align-items:center;gap:6px;padding:0 10px 0 12px;font-size:14px;flex-shrink:0"><span style="flex:1">{{ c.to }}</span><x-import component-from-global-scope="Library.ChevronDownIcon" size="16" style="color:var(--muted-foreground)" hint-size="16px,16px"></x-import></span></sc-if><sc-if value="{{ c.pick }}" hint-placeholder-val="{{ false }}"><span style="width:160px;height:36px;box-sizing:border-box;border-radius:8px;border:2px solid var(--ring);display:flex;align-items:center;gap:6px;padding:0 10px 0 12px;font-size:14px;color:var(--muted-foreground);flex-shrink:0"><span style="flex:1">Elige…</span><x-import component-from-global-scope="Library.ChevronDownIcon" size="16" hint-size="16px,16px"></x-import></span></sc-if><sc-if value="{{ c.fixed }}" hint-placeholder-val="{{ false }}"><span style="width:160px;height:36px;box-sizing:border-box;display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--muted-foreground);flex-shrink:0">{{ c.to }}</span></sc-if></div></sc-for><sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--muted-foreground)">«Bolsillo» no existe en cómics: dinos cuál es.</span></sc-if></div><div style="display:flex;flex-direction:row-reverse;gap:8px;margin-top:4px"><sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}"><button disabled style="height:36px;padding:0 16px;border-radius:8px;border:0;background:var(--primary);color:var(--primary-foreground);opacity:0.45;font:500 14px var(--font-sans)">{{ cta }}</button></sc-if><sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}"><button style="height:36px;padding:0 16px;border-radius:8px;border:0;background:var(--primary);color:var(--primary-foreground);font:500 14px var(--font-sans)">{{ cta }}</button></sc-if><button style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--background);color:var(--foreground);font:500 14px var(--font-sans)">Dejarlo como {{ fromLower }}</button></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;scenario&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comic&quot;,&quot;other&quot;],&quot;default&quot;:&quot;comic&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;picked&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const sc = this.props.scenario ?? 'comic';
+    const picked = !!this.props.picked;
+    if (sc === 'other') {
+      return { heading: '¿Cambiar a «Otro»?', fromLower: 'juego de mesa', toLower: 'otro', hasKept: true, kept: 'el código de barras', lost: 'diseño (Klaus Teuber), editorial (Devir), jugadores (3–4), duración (75 min) y edad mínima (10 años)', copiesHeading: 'Su ejemplar', copies: [{ from: 'Caja', where: 'Tuyo · Estudio', to: 'Otro', ok: false, pick: false, fixed: true }], pending: false, ready: true, cta: 'Cambiar y perder esos datos' };
+    }
+    return {
+      heading: '¿Cambiar de libro a cómic?', fromLower: 'libro', toLower: 'cómic', hasKept: true,
+      kept: 'autoría como guion (Alan Moore, Dave Gibbons; revisa quién dibuja), editorial (ECC) e ISBN como código de barras',
+      lost: 'idioma (inglés)', copiesHeading: 'Sus ejemplares',
+      copies: [
+        { from: 'Tapa dura', where: 'Tuyo · Estudio', to: 'Tapa dura', ok: true, pick: false, fixed: false },
+        { from: 'Bolsillo', where: 'De Laura · Salón', to: 'Tapa blanda', ok: picked, pick: !picked, fixed: false },
+        { from: 'Ebook', where: 'Tuyo · Kindle', to: 'Digital', ok: true, pick: false, fixed: false }
+      ],
+      pending: !picked, ready: picked, cta: 'Cambiar a cómic'
+    };
+  }
+}
+</script>
+</body>
+</html>

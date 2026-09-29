@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:40px;font-family:var(--font-sans);color:oklch(0.2 0 0)"><section style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">Portadas sin imagen, por tipo</h3><div class="{{ theme }}" style="display:flex;flex-wrap:wrap;gap:28px;padding:24px;border-radius:16px;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px oklch(0 0 0 / 10%)"><sc-for list="{{ covers }}" as="c" hint-placeholder-count="8"><div style="width:112px;display:flex;flex-direction:column;gap:8px"><dc-import name="Cover" kind="{{ c.kind }}" size="{{ 150 }}" style="width:112px;height:150px" hint-size="112px,150px"></dc-import><span style="font-size:13px;font-weight:600">{{ c.label }}</span><span style="font-size:12px;color:var(--muted-foreground);margin-top:-6px">{{ c.shape }}</span></div></sc-for></div></section><section style="display:flex;flex-direction:column;gap:14px;max-width:1100px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">Mis estados según el tipo · ES / EN</h3><p style="margin:0;font-size:13.5px;line-height:1.5;color:oklch(0.4 0 0);text-wrap:pretty">Se guarda un solo estado (pendiente, en curso, terminado, abandonado); solo cambia el texto. Los adjetivos concuerdan con el tipo («Vista», «Abandonada»). En listas mezcladas, filtros y «Lo de los demás» con varios tipos se usan los genéricos de la primera fila.</p><div role="table" style="display:grid;grid-template-columns:150px repeat(4,minmax(0,1fr));border-radius:12px;overflow:hidden;background:white;box-shadow:0 0 0 1px oklch(0 0 0 / 10%);font-size:13.5px"><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Tipo</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Pendiente</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">En curso</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Terminado</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Abandonado</span><sc-for list="{{ states }}" as="s" hint-placeholder-count="9"><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);font-weight:500">{{ s.type }}</span><sc-for list="{{ s.cells }}" as="c" hint-placeholder-count="4"><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);display:flex;flex-direction:column;gap:2px"><span>{{ c.es }}</span><span style="font-size:12.5px;color:oklch(0.5 0 0)">{{ c.en }}</span></span></sc-for></sc-for></div></section><section style="display:flex;flex-direction:column;gap:14px;max-width:1100px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">Datos propios y formatos · ES / EN</h3><div role="table" style="display:grid;grid-template-columns:150px minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);border-radius:12px;overflow:hidden;background:white;box-shadow:0 0 0 1px oklch(0 0 0 / 10%);font-size:13.5px"><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Tipo</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Datos propios</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Formatos físicos</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Formatos digitales (dónde = plataforma)</span><sc-for list="{{ fields }}" as="f" hint-placeholder-count="8"><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);display:flex;flex-direction:column;gap:2px;font-weight:500"><span>{{ f.es }}</span><span style="font-size:12.5px;font-weight:400;color:oklch(0.5 0 0)">{{ f.en }}</span></span><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);display:flex;flex-direction:column;gap:2px"><span>{{ f.d }}</span><span style="font-size:12.5px;color:oklch(0.5 0 0)">{{ f.dEn }}</span></span><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);display:flex;flex-direction:column;gap:2px"><span>{{ f.p }}</span><span style="font-size:12.5px;color:oklch(0.5 0 0)">{{ f.pEn }}</span></span><span style="padding:10px 14px;border-top:1px solid oklch(0.92 0 0);display:flex;flex-direction:column;gap:2px"><span>{{ f.g }}</span><span style="font-size:12.5px;color:oklch(0.5 0 0)">{{ f.gEn }}</span></span></sc-for></div></section><section style="display:flex;flex-direction:column;gap:14px;max-width:1100px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">Textos de la interfaz · ES / EN</h3><div role="table" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-radius:12px;overflow:hidden;background:white;box-shadow:0 0 0 1px oklch(0 0 0 / 10%);font-size:13.5px;line-height:1.45"><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">Español</span><span style="padding:10px 14px;font-weight:600;background:oklch(0.96 0 0)">English</span><sc-for list="{{ texts }}" as="t" hint-placeholder-count="12"><span style="padding:9px 14px;border-top:1px solid oklch(0.92 0 0);text-wrap:pretty">{{ t.es }}</span><span style="padding:9px 14px;border-top:1px solid oklch(0.92 0 0);text-wrap:pretty">{{ t.en }}</span></sc-for></div></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1800},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const covers = [['book', 'Libro', 'Vertical 2:3'], ['comic', 'Cómic', 'Vertical 2:3'], ['game', 'Juego de mesa', 'Cuadrada 1:1'], ['music', 'Música', 'Cuadrada 1:1'], ['film', 'Película', 'Caja de DVD 5:7, con lomo'], ['series', 'Serie', 'Caja de DVD 5:7, con lomo'], ['videogame', 'Videojuego', 'Caja de juego 3:4, con franja'], ['other', 'Otro', 'Cuadrada 1:1']].map(([kind, label, shape]) => ({ kind, label, shape }));
+    const st = [
+      ['Genérico (mezcla)', 'Pendiente|To do', 'En curso|In progress', 'Terminado|Finished', 'Abandonado|Dropped'],
+      ['Libro', 'Por leer|To read', 'Leyendo|Reading', 'Leído|Read', 'Abandonado|Dropped'],
+      ['Cómic', 'Por leer|To read', 'Leyendo|Reading', 'Leído|Read', 'Abandonado|Dropped'],
+      ['Juego de mesa', 'Por jugar|To play', 'Jugando|Playing', 'Jugado|Played', 'Abandonado|Dropped'],
+      ['Película', 'Por ver|To watch', 'Viendo|Watching', 'Vista|Watched', 'Abandonada|Dropped'],
+      ['Serie', 'Por ver|To watch', 'Viendo|Watching', 'Vista|Watched', 'Abandonada|Dropped'],
+      ['Videojuego', 'Por jugar|To play', 'Jugando|Playing', 'Terminado|Finished', 'Abandonado|Dropped'],
+      ['Música', 'Por escuchar|To listen', 'Escuchando|Listening', 'Escuchado|Listened', 'Abandonado|Dropped'],
+      ['Otro', 'Pendiente|To do', 'Empezado|Started', 'Terminado|Finished', 'Abandonado|Dropped']
+    ].map(([type, ...c]) => ({ type, cells: c.map(x => { const [es, en] = x.split('|'); return { es, en }; }) }));
+    const fields = [
+      ['Libro|Book', 'Autoría*, editorial, ISBN, idioma|Author*, publisher, ISBN, language', 'Tapa dura, tapa blanda, bolsillo|Hardcover, paperback, pocket', 'Ebook, PDF, audiolibro|Ebook, PDF, audiobook'],
+      ['Cómic|Comic', 'Guion*, dibujo*, editorial, número, código|Writer*, artist*, publisher, issue, barcode', 'Tapa dura, tapa blanda, grapa|Hardcover, paperback, single issue', 'Digital|Digital'],
+      ['Juego de mesa|Board game', 'Diseño*, editorial, jugadores (mín.–máx.), duración, edad mínima, código|Designer*, publisher, players (min–max), playing time, minimum age, barcode', 'Caja|Box', 'Digital|Digital'],
+      ['Película|Film', 'Dirección*, duración, código|Director*, running time, barcode', 'DVD, Blu-ray, 4K|DVD, Blu-ray, 4K', 'Digital|Digital'],
+      ['Serie|TV series', 'Temporadas, código · el ejemplar dice cuáles|Seasons, barcode · each copy says which', 'DVD, Blu-ray|DVD, Blu-ray', 'Digital|Digital'],
+      ['Videojuego|Video game', 'Estudio*, código · la plataforma va en el ejemplar|Studio*, barcode · platform is set per copy', 'Físico (cartucho o disco)|Physical (cartridge or disc)', 'Digital|Digital'],
+      ['Música|Music', 'Artista*, sello, código|Artist*, label, barcode', 'Vinilo, CD, casete|Vinyl, CD, cassette', 'Digital|Digital'],
+      ['Otro|Other', 'Código|Barcode', 'Otro|Other', '—|—']
+    ].map(r => { const s = r.map(x => x.split('|')); return { es: s[0][0], en: s[0][1], d: s[1][0], dEn: s[1][1], p: s[2][0], pEn: s[2][1], g: s[3][0], gEn: s[3][1] }; });
+    const texts = [
+      ['¿Qué es?', 'What is it?'],
+      ['Según el tipo te pediremos unos datos u otros. Si no encaja en ninguno, «Otro».', 'We\u2019ll ask for different details depending on the type. If nothing fits, choose \u201cOther\u201d.'],
+      ['Añadir a mano', 'Add manually'],
+      ['Datos de libro · de cómic · de la música…', 'Book details · Comic details · Music details…'],
+      ['* Personas o grupos: se escriben con autocompletado; puede haber varias.', '* People or groups: autocompleted, several allowed.'],
+      ['Código de barras (EAN/UPC)', 'Barcode (EAN/UPC)'],
+      ['Opcional. La plataforma va en cada ejemplar', 'Optional. Platform is set on each copy'],
+      ['«Otro» no tiene datos propios. Lo que quieras apuntar va en las notas.', '\u201cOther\u201d has no details of its own. Anything else goes in the notes.'],
+      ['¿Cambiar de libro a cómic?', 'Change from book to comic?'],
+      ['Título, año, portada y notas no cambian.', 'Title, year, cover and notes stay the same.'],
+      ['Pasa a cómic: … · Se pierde: …', 'Moves to comic: … · Will be lost: …'],
+      ['«Bolsillo» no existe en cómics: dinos cuál es.', '\u201cPocket\u201d isn\u2019t a comic format: pick one.'],
+      ['Cambiar a cómic · Cambiar y perder esos datos · Dejarlo como libro', 'Change to comic · Change and lose these details · Keep it as a book'],
+      ['Nuevo ejemplar · Formato · Plataforma · De quién · Dónde', 'New copy · Format · Platform · Owner · Where'],
+      ['Lo digital no está en una balda: di dónde lo tienes.', 'Digital copies aren\u2019t on a shelf: say where you have them.'],
+      ['Qué temporadas · Vacío si están todas', 'Which seasons · Leave empty if all'],
+      ['Todo · Libros · Cómics · Juegos de mesa · Películas · Series · Videojuegos · Música · Otros', 'All · Books · Comics · Board games · Films · TV series · Video games · Music · Other'],
+      ['2–5 jugadores · 35 min · 7+', '2–5 players · 35 min · 7+'],
+      ['3 temporadas', '3 seasons']
+    ].map(([es, en]) => ({ es, en }));
+    return { theme: this.props.theme ?? 'light', covers, states: st, fields, texts };
+  }
+}
+</script>
+</body>
+</html>

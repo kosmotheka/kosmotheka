@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<nav aria-label="Navegación principal" style="flex-shrink:0;background:var(--background);border-top:1px solid var(--border);padding-bottom:18px"><div style="height:76px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:start"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:12px"><sc-if value="{{ cat }}" hint-placeholder-val="{{ true }}"><div style="width:64px;height:32px;border-radius:16px;background:var(--secondary);display:flex;align-items:center;justify-content:center;color:var(--foreground)"><x-import component-from-global-scope="Library.LibraryBigIcon" size="22" stroke-width="2.2" hint-size="22px,22px"></x-import></div><span style="font-size:12px;font-weight:600;color:var(--foreground)">Catálogo</span></sc-if><sc-if value="{{ notCat }}" hint-placeholder-val="{{ false }}"><div style="width:64px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground)"><x-import component-from-global-scope="Library.LibraryBigIcon" size="22" hint-size="22px,22px"></x-import></div><span style="font-size:12px;font-weight:500;color:var(--muted-foreground)">Catálogo</span></sc-if></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:-18px"><div style="width:60px;height:60px;border-radius:30px;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px var(--background),0 6px 16px -4px oklch(0 0 0 / 30%)"><x-import component-from-global-scope="Library.ScanBarcodeIcon" size="26" hint-size="26px,26px"></x-import></div><span style="font-size:12px;font-weight:600;color:var(--foreground)">¿Lo tengo?</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:12px"><sc-if value="{{ miss }}" hint-placeholder-val="{{ false }}"><div style="width:64px;height:32px;border-radius:16px;background:var(--secondary);display:flex;align-items:center;justify-content:center;color:var(--foreground)"><x-import component-from-global-scope="Library.BookmarkIcon" size="22" stroke-width="2.2" hint-size="22px,22px"></x-import></div><span style="font-size:12px;font-weight:600;color:var(--foreground)">Me falta</span></sc-if><sc-if value="{{ notMiss }}" hint-placeholder-val="{{ true }}"><div style="width:64px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground)"><x-import component-from-global-scope="Library.BookmarkIcon" size="22" hint-size="22px,22px"></x-import></div><span style="font-size:12px;font-weight:500;color:var(--muted-foreground)">Me falta</span></sc-if></div></div></nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;catalog&quot;,&quot;scan&quot;,&quot;missing&quot;],&quot;default&quot;:&quot;catalog&quot;,&quot;tsType&quot;:&quot;'catalog'|'scan'|'missing'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const a = this.props.active ?? 'catalog';
+    return { cat: a === 'catalog', notCat: a !== 'catalog', miss: a === 'missing', notMiss: a !== 'missing' };
+  }
+}
+</script>
+</body>
+</html>
