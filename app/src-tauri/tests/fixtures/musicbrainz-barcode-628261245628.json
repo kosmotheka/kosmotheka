@@ -1,0 +1,84 @@
+{
+  "created": "2026-09-29T04:44:06.124Z",
+  "count": 1,
+  "offset": 0,
+  "releases": [
+    {
+      "id": "b485a424-9fbd-4603-8ae3-d00096b294ac",
+      "score": 100,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "artist-credit-id": "7e5a5673-c1a3-3782-942d-c7693533e532",
+      "count": 2,
+      "title": "Miles Davis",
+      "status": "Official",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Miles Davis",
+          "artist": {
+            "id": "561d854a-6a28-4aa7-8c99-323e6ce46c2a",
+            "name": "Miles Davis",
+            "sort-name": "Davis, Miles",
+            "disambiguation": "jazz trumpeter, bandleader, songwriter"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "f03573f5-914e-4f1c-9a68-331e20605092",
+        "type-id": "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Miles Davis",
+        "primary-type": "Album",
+        "secondary-types": [
+          "Compilation"
+        ],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ]
+      },
+      "date": "2006",
+      "country": "CA",
+      "release-events": [
+        {
+          "date": "2006",
+          "area": {
+            "id": "71bbafaa-e825-3e15-8ca9-017dcad1748b",
+            "name": "Canada",
+            "sort-name": "Canada",
+            "iso-3166-1-codes": [
+              "CA"
+            ]
+          }
+        }
+      ],
+      "barcode": "628261245628",
+      "label-info": [
+        {
+          "catalog-number": "DDP2 52456",
+          "label": {
+            "id": "0afa4f14-70e2-479d-9b5e-9eaceeb25866",
+            "name": "Madacy Entertainment"
+          }
+        }
+      ],
+      "track-count": 24,
+      "media": [
+        {
+          "id": "abfb5733-1427-37a7-a29c-b4bf64cda02b",
+          "format": "CD",
+          "disc-count": 0,
+          "track-count": 11
+        },
+        {
+          "id": "7eb8cb67-ec2c-342d-b0af-c1169244e117",
+          "format": "CD",
+          "disc-count": 0,
+          "track-count": 13
+        }
+      ]
+    }
+  ]
+}

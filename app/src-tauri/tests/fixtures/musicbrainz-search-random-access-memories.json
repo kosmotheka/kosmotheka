@@ -1,0 +1,271 @@
+{
+  "created": "2026-09-29T04:44:38.136Z",
+  "count": 3,
+  "offset": 0,
+  "releases": [
+    {
+      "id": "8ecfafd1-89a8-423a-968f-3fff47f0b0f9",
+      "score": 91,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "artist-credit-id": "2ad79928-9236-33a3-830c-cc909d38f0c7",
+      "count": 2,
+      "title": "Random Access Memories",
+      "status": "Official",
+      "disambiguation": "10th anniversary edition",
+      "packaging": "Cardboard/Paper Sleeve",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Daft Punk",
+          "artist": {
+            "id": "056e4f3e-d505-4dad-8ec1-d04f521cbb56",
+            "name": "Daft Punk",
+            "sort-name": "Daft Punk",
+            "disambiguation": "French electronic duo"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "aa997ea0-2936-40bd-884d-3af8a0e064dc",
+        "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Random Access Memories",
+        "primary-type": "Album"
+      },
+      "date": "2023-05-12",
+      "country": "US",
+      "release-events": [
+        {
+          "date": "2023-05-12",
+          "area": {
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "name": "United States",
+            "sort-name": "United States",
+            "iso-3166-1-codes": [
+              "US"
+            ]
+          }
+        }
+      ],
+      "barcode": "196588010323",
+      "asin": "B0BVZT1WCL",
+      "label-info": [
+        {
+          "catalog-number": "19658801032",
+          "label": {
+            "id": "011d1192-6f65-45bd-85c4-0400dd45693e",
+            "name": "Columbia"
+          }
+        }
+      ],
+      "track-count": 22,
+      "media": [
+        {
+          "id": "f477e174-f5b7-37e6-8846-9da0d1fa241e",
+          "format": "CD",
+          "disc-count": 2,
+          "track-count": 13
+        },
+        {
+          "id": "a66234b2-8356-30b4-98ba-4e5ca68efcef",
+          "format": "CD",
+          "disc-count": 2,
+          "track-count": 9
+        }
+      ]
+    },
+    {
+      "id": "bbfc83ad-826f-4957-893d-a808105c828b",
+      "score": 91,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+      "artist-credit-id": "2ad79928-9236-33a3-830c-cc909d38f0c7",
+      "count": 1,
+      "title": "Random Access Memories",
+      "status": "Official",
+      "packaging": "Jewel Case",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Daft Punk",
+          "artist": {
+            "id": "056e4f3e-d505-4dad-8ec1-d04f521cbb56",
+            "name": "Daft Punk",
+            "sort-name": "Daft Punk",
+            "disambiguation": "French electronic duo"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "aa997ea0-2936-40bd-884d-3af8a0e064dc",
+        "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Random Access Memories",
+        "primary-type": "Album"
+      },
+      "date": "2013-05-17",
+      "country": "AU",
+      "release-events": [
+        {
+          "date": "2013-05-17",
+          "area": {
+            "id": "106e0bec-b638-3b37-b731-f53d507dc00e",
+            "name": "Australia",
+            "sort-name": "Australia",
+            "iso-3166-1-codes": [
+              "AU"
+            ]
+          }
+        }
+      ],
+      "barcode": "0888837168625",
+      "label-info": [
+        {
+          "catalog-number": "88883716862",
+          "label": {
+            "id": "011d1192-6f65-45bd-85c4-0400dd45693e",
+            "name": "Columbia"
+          }
+        }
+      ],
+      "track-count": 13,
+      "media": [
+        {
+          "id": "285e5b69-5727-3b54-9179-d5ccb0c1fcb9",
+          "format": "CD",
+          "disc-count": 0,
+          "track-count": 13
+        }
+      ]
+    },
+    {
+      "id": "6940fcdf-6e70-4764-8782-18e2c1e600de",
+      "score": 91,
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "packaging-id": "e724a489-a7e8-30a1-a17c-30dfd6831202",
+      "artist-credit-id": "2ad79928-9236-33a3-830c-cc909d38f0c7",
+      "count": 2,
+      "title": "Random Access Memories",
+      "status": "Official",
+      "disambiguation": "10th anniversary edition",
+      "packaging": "Gatefold Cover",
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "artist-credit": [
+        {
+          "name": "Daft Punk",
+          "artist": {
+            "id": "056e4f3e-d505-4dad-8ec1-d04f521cbb56",
+            "name": "Daft Punk",
+            "sort-name": "Daft Punk",
+            "disambiguation": "French electronic duo"
+          }
+        }
+      ],
+      "release-group": {
+        "id": "aa997ea0-2936-40bd-884d-3af8a0e064dc",
+        "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "title": "Random Access Memories",
+        "primary-type": "Album"
+      },
+      "date": "2023-05-12",
+      "country": "XE",
+      "release-events": [
+        {
+          "date": "2023-05-12",
+          "area": {
+            "id": "89a675c2-3e37-3518-b83c-418bad59a85a",
+            "name": "Europe",
+            "sort-name": "Europe",
+            "iso-3166-1-codes": [
+              "XE"
+            ]
+          }
+        }
+      ],
+      "barcode": "196588010323",
+      "label-info": [
+        {
+          "catalog-number": "19658801032",
+          "label": {
+            "id": "9e6b4d7f-4958-4db7-8504-d89e315836af",
+            "name": "Sony Music"
+          }
+        },
+        {
+          "catalog-number": "19658801032",
+          "label": {
+            "id": "011d1192-6f65-45bd-85c4-0400dd45693e",
+            "name": "Columbia"
+          }
+        },
+        {
+          "catalog-number": "19658801032",
+          "label": {
+            "id": "45ffe1d8-92da-4750-9a4a-f42861f46e2c",
+            "name": "Legacy"
+          }
+        }
+      ],
+      "track-count": 22,
+      "media": [
+        {
+          "id": "e168eb4d-023b-3a3a-8409-4194cca8f8c4",
+          "format": "CD",
+          "disc-count": 1,
+          "track-count": 13
+        },
+        {
+          "id": "405c905f-5d86-3738-b242-a5928e14d2ee",
+          "format": "CD",
+          "disc-count": 1,
+          "track-count": 9
+        }
+      ],
+      "tags": [
+        {
+          "count": 1,
+          "name": "electronic music"
+        },
+        {
+          "count": 1,
+          "name": "isrc"
+        },
+        {
+          "count": 0,
+          "name": "cd-text ascii english"
+        },
+        {
+          "count": 0,
+          "name": "cd-text iso-8859-1 french"
+        },
+        {
+          "count": 0,
+          "name": "7\u20ac"
+        },
+        {
+          "count": 1,
+          "name": "cultura.fr"
+        },
+        {
+          "count": 0,
+          "name": "2025"
+        },
+        {
+          "count": 0,
+          "name": "10h 2025-10"
+        }
+      ]
+    }
+  ]
+}

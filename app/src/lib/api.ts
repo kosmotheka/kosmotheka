@@ -341,7 +341,11 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
   return invoke<Asked>("request_delete_book", { editionId, note });
 }
 
-export type Source = "google_books" | "open_library" | "inventaire";
+export type Source =
+  | "google_books"
+  | "open_library"
+  | "inventaire"
+  | "music_brainz";
 
 export interface LookupResult {
   isbn13: string;

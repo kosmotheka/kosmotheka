@@ -4,6 +4,7 @@
 pub mod candidate;
 pub mod google;
 pub mod inventaire;
+pub mod musicbrainz;
 pub mod openlibrary;
 
 use std::time::Duration;
@@ -11,7 +12,7 @@ use std::time::Duration;
 use kosmotheka_domain::{Isbn, Kind};
 use serde::Serialize;
 
-pub use candidate::Candidate;
+pub use candidate::{Candidate, CandidateContributor};
 
 /// What one provider knows about an edition.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -33,6 +34,7 @@ pub enum Source {
     GoogleBooks,
     OpenLibrary,
     Inventaire,
+    MusicBrainz,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -146,7 +148,7 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
     candidate.external_id = match source {
         Source::GoogleBooks => result.google_books_id.clone(),
         Source::OpenLibrary => result.open_library_id.clone(),
-        Source::Inventaire => None,
+        Source::Inventaire | Source::MusicBrainz => None,
     };
     candidate
 }
@@ -178,7 +180,7 @@ impl Lookup {
         merge(isbn, google, open_library)
     }
 
-    /// Title search: only books have providers so far (parts 2 and 3 add the rest).
+    /// Title search: books, and now music (part 3 adds board games).
     pub async fn search(&self, kind: Kind, query: &str) -> SearchResult {
         let query = query.trim();
         if query.chars().count() < 2 {
@@ -195,18 +197,27 @@ impl Lookup {
                     (Source::Inventaire, inventaire),
                 ])
             }
+            Kind::Music => {
+                let musicbrainz = musicbrainz::search(&self.client, query).await;
+                collect_candidates(vec![(Source::MusicBrainz, musicbrainz)])
+            }
             _ => SearchResult::default(),
         }
     }
 
-    /// A scanned or typed code: an ISBN is a book (parts 2 and 3 add other codes).
+    /// A scanned or typed code: an ISBN is a book, anything else is tried
+    /// against the non-ISBN providers (part 3 adds board games alongside music).
     pub async fn lookup_code(&self, code: &str, google_api_key: Option<&str>) -> CodeResult {
-        let Ok(isbn) = Isbn::parse(code) else {
-            return CodeResult::default();
-        };
+        match Isbn::parse(code) {
+            Ok(isbn) => self.lookup_isbn_code(&isbn, google_api_key).await,
+            Err(_) => self.lookup_non_isbn_code(code).await,
+        }
+    }
+
+    async fn lookup_isbn_code(&self, isbn: &Isbn, google_api_key: Option<&str>) -> CodeResult {
         let (merged, inventaire) = tokio::join!(
-            self.run(&isbn, google_api_key),
-            inventaire::lookup(&self.client, &isbn)
+            self.run(isbn, google_api_key),
+            inventaire::lookup(&self.client, isbn)
         );
 
         let mut result = CodeResult {
@@ -226,6 +237,37 @@ impl Lookup {
         }
         result.kind = (!result.candidates.is_empty()).then_some(Kind::Book);
         result
+    }
+
+    /// A non-ISBN code so far only goes to MusicBrainz; GameUPC (board games)
+    /// needs an API key and is deferred (see the brief for part 2). Once a
+    /// keyless board-game provider lands, wire it in here alongside MusicBrainz
+    /// and pass its outcome to `decide_kind`.
+    async fn lookup_non_isbn_code(&self, code: &str) -> CodeResult {
+        let mut result = CodeResult::default();
+        match musicbrainz::lookup_barcode(&self.client, code).await {
+            Ok(candidates) => {
+                result.kind = decide_kind(!candidates.is_empty(), false);
+                result.candidates = candidates;
+            }
+            Err(error) => result.warnings.push(ProviderWarning {
+                source: Source::MusicBrainz,
+                kind: warning_kind(&error),
+            }),
+        }
+        result
+    }
+}
+
+/// The ambiguity rule for a non-ISBN code: `Kind::Music` when only MusicBrainz
+/// found something, `Kind::Boardgame` when only the board-game provider did,
+/// `None` when both or neither did (the UI then asks "¿Qué es?"). Pure so it
+/// can be tested without the network.
+fn decide_kind(music_found: bool, boardgame_found: bool) -> Option<Kind> {
+    match (music_found, boardgame_found) {
+        (true, false) => Some(Kind::Music),
+        (false, true) => Some(Kind::Boardgame),
+        _ => None,
     }
 }
 
@@ -392,6 +434,22 @@ mod tests {
         assert!(result.warnings.is_empty());
         assert_eq!(result.isbn13, "9780140328721");
     }
+
+    #[test]
+    fn kind_is_music_when_only_musicbrainz_found_something() {
+        assert_eq!(decide_kind(true, false), Some(Kind::Music));
+    }
+
+    #[test]
+    fn kind_is_boardgame_when_only_the_boardgame_provider_found_something() {
+        assert_eq!(decide_kind(false, true), Some(Kind::Boardgame));
+    }
+
+    #[test]
+    fn kind_is_ambiguous_when_both_or_neither_found_something() {
+        assert_eq!(decide_kind(true, true), None, "let the UI ask");
+        assert_eq!(decide_kind(false, false), None);
+    }
 }
 
 /// Hit the real services. Not run by default (CI must not depend on the network):
@@ -460,5 +518,27 @@ mod live {
         let candidate = inventaire::lookup(&client, &isbn).await.unwrap();
         println!("inventaire lookup: {candidate:#?}");
         assert!(candidate.is_some());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_musicbrainz() {
+        let client = http_client().unwrap();
+        let candidates = musicbrainz::search(&client, "Random Access Memories Daft Punk")
+            .await
+            .unwrap();
+        println!("musicbrainz: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_musicbrainz_barcode_lookup() {
+        let client = http_client().unwrap();
+        let candidates = musicbrainz::lookup_barcode(&client, "196588010323")
+            .await
+            .unwrap();
+        println!("musicbrainz barcode: {candidates:#?}");
+        assert!(!candidates.is_empty());
     }
 }

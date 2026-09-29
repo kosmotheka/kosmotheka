@@ -447,6 +447,10 @@ pub const COVER_HOSTS: &[&str] = &[
     "books.google.com",
     "books.googleusercontent.com",
     "inventaire.io",
+    // Redirects (307) to an archive.org host; the http client's redirect
+    // policy already follows https redirects, so only this first host needs
+    // to be trusted (see metadata::musicbrainz).
+    "coverartarchive.org",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {
