@@ -1,0 +1,12 @@
+{
+  "entities": {
+    "wd:Q892": {
+      "uri": "wd:Q892",
+      "type": "human",
+      "labels": {
+        "en": "J. R. R. Tolkien",
+        "es": "J. R. R. Tolkien"
+      }
+    }
+  }
+}

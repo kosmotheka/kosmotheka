@@ -1,14 +1,16 @@
 //! Open Library. The edition comes from `/isbn/{isbn}.json` (the old `/api/books`
 //! endpoint is gone); author names need one request per author.
 
-use kosmotheka_domain::Isbn;
+use kosmotheka_domain::{Isbn, Kind};
 use reqwest::StatusCode;
 use serde_json::Value;
 
-use super::{Metadata, ProviderError, text, year_in};
+use super::{Candidate, Metadata, ProviderError, Source, text, year_in};
 
 const BASE: &str = "https://openlibrary.org";
 const MAX_AUTHORS: usize = 5;
+const SEARCH_FIELDS: &str =
+    "key,title,subtitle,author_name,first_publish_year,publisher,language,isbn,cover_i";
 
 pub async fn lookup(
     client: &reqwest::Client,
@@ -47,6 +49,82 @@ pub async fn lookup(
         }
     }
     Ok(Some(metadata))
+}
+
+/// Title search, for the add-by-search flow (D26).
+pub async fn search(
+    client: &reqwest::Client,
+    query: &str,
+) -> Result<Vec<Candidate>, ProviderError> {
+    let response = client
+        .get(format!("{BASE}/search.json"))
+        .query(&[("q", query), ("limit", "10"), ("fields", SEARCH_FIELDS)])
+        .send()
+        .await?;
+    match response.status() {
+        StatusCode::TOO_MANY_REQUESTS => return Err(ProviderError::Quota),
+        status if !status.is_success() => {
+            return Err(ProviderError::Unexpected(format!("HTTP {status}")));
+        }
+        _ => {}
+    }
+    let body: Value = response.json().await?;
+    Ok(parse_search(&body))
+}
+
+pub fn parse_search(body: &Value) -> Vec<Candidate> {
+    let Some(docs) = body.get("docs").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+    docs.iter().map(candidate_from_doc).collect()
+}
+
+fn candidate_from_doc(doc: &Value) -> Candidate {
+    let str_field = |name: &str| text(doc.get(name).and_then(Value::as_str));
+    let mut candidate = Candidate::new(
+        Kind::Book,
+        Source::OpenLibrary,
+        str_field("title").unwrap_or_default(),
+    );
+    candidate.subtitle = str_field("subtitle");
+    candidate.authors = doc
+        .get("author_name")
+        .and_then(Value::as_array)
+        .map(|names| names.iter().filter_map(|n| text(n.as_str())).collect())
+        .unwrap_or_default();
+    candidate.published_year = doc
+        .get("first_publish_year")
+        .and_then(Value::as_i64)
+        .map(|y| y as i32);
+    candidate.publisher = doc
+        .get("publisher")
+        .and_then(Value::as_array)
+        .and_then(|values| values.first())
+        .and_then(Value::as_str)
+        .and_then(|s| text(Some(s)));
+    candidate.language = doc
+        .get("language")
+        .and_then(Value::as_array)
+        .and_then(|values| values.first())
+        .and_then(Value::as_str)
+        .map(language_code);
+    candidate.isbn = doc
+        .get("isbn")
+        .and_then(Value::as_array)
+        .and_then(|values| {
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .find_map(|s| Isbn::parse(s).ok())
+        })
+        .map(|isbn| isbn.as_str().to_owned());
+    candidate.cover_url = doc
+        .get("cover_i")
+        .and_then(Value::as_i64)
+        .filter(|id| *id > 0)
+        .map(|id| format!("https://covers.openlibrary.org/b/id/{id}-L.jpg"));
+    candidate.external_id = str_field("key");
+    candidate
 }
 
 /// Edition data plus the keys of its authors (`/authors/OL34184A`).
@@ -131,6 +209,8 @@ mod tests {
     const EDITION: &str =
         include_str!("../../tests/fixtures/openlibrary-edition-9780140328721.json");
     const AUTHOR: &str = include_str!("../../tests/fixtures/openlibrary-author-OL34184A.json");
+    // Trimmed to 3 docs, recorded on 2026-09-29.
+    const SEARCH: &str = include_str!("../../tests/fixtures/openlibrary-search-dune.json");
 
     #[test]
     fn reads_a_real_edition() {
@@ -166,5 +246,34 @@ mod tests {
     fn spanish_marc_code_becomes_iso() {
         assert_eq!(language_code("spa"), "es");
         assert_eq!(language_code("xyz"), "xyz");
+    }
+
+    #[test]
+    fn reads_a_real_search() {
+        let candidates = parse_search(&serde_json::from_str(SEARCH).unwrap());
+
+        assert_eq!(candidates.len(), 3);
+        let dune = &candidates[0];
+        assert_eq!(dune.kind, Kind::Book);
+        assert_eq!(dune.source, Source::OpenLibrary);
+        assert_eq!(dune.title, "Dune");
+        assert_eq!(dune.authors, vec!["Frank Herbert"]);
+        assert_eq!(dune.published_year, Some(1965));
+        assert_eq!(
+            dune.publisher.as_deref(),
+            Some("Dom Wydawniczy REBIS Sp. z o.o.")
+        );
+        assert_eq!(dune.language.as_deref(), Some("fr"));
+        assert_eq!(dune.isbn.as_deref(), Some("9780441013593"));
+        assert_eq!(
+            dune.cover_url.as_deref(),
+            Some("https://covers.openlibrary.org/b/id/11481354-L.jpg")
+        );
+        assert_eq!(dune.external_id.as_deref(), Some("/works/OL893414W"));
+    }
+
+    #[test]
+    fn a_search_with_no_docs_is_empty() {
+        assert!(parse_search(&serde_json::json!({})).is_empty());
     }
 }

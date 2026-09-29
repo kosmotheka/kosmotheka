@@ -6,8 +6,10 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
   BookFilter,
   BookSummary,
+  Candidate,
   ChangeRequest,
   Holding,
+  Kind,
   LanStatus,
   LibrarySummary,
   Mark,
@@ -308,6 +310,55 @@ const othersMarks: PersonMark[] = [
 const matchesHolding = (holding: Holding | undefined, copyCount: number): boolean =>
   !holding || (holding === "owned" ? copyCount > 0 : copyCount === 0);
 
+function mockCandidates(query: string): Candidate[] {
+  const candidate = (over: Partial<Candidate>): Candidate => ({
+    kind: "book",
+    source: "open_library",
+    externalId: null,
+    title: query,
+    subtitle: null,
+    authors: [],
+    contributors: [],
+    publisher: null,
+    publishedYear: null,
+    language: null,
+    coverUrl: null,
+    isbn: null,
+    barcode: null,
+    number: null,
+    playersMin: null,
+    playersMax: null,
+    durationMinutes: null,
+    minAge: null,
+    seasons: null,
+    platform: null,
+    format: null,
+    ...over,
+  });
+
+  return [
+    candidate({
+      source: "open_library",
+      externalId: "/works/OL893414W",
+      title: `${query} (Open Library)`,
+      authors: ["Frank Herbert"],
+      publisher: "Gollancz",
+      publishedYear: 1965,
+      language: "en",
+      isbn: "9780441013593",
+      coverUrl: "https://covers.openlibrary.org/b/id/11481354-L.jpg",
+    }),
+    candidate({
+      source: "inventaire",
+      externalId: "wd:Q190192",
+      title: `${query} (Inventaire)`,
+      authors: ["Frank Herbert"],
+      language: "es",
+      coverUrl: "https://inventaire.io/img/entities/a936e0978d400fb13e0c0a2527d345a56b799e54",
+    }),
+  ];
+}
+
 mockIPC((cmd, args) => {
   switch (cmd) {
     case "list_books": {
@@ -399,6 +450,23 @@ mockIPC((cmd, args) => {
     }
     case "lookup_isbn":
       throw new Error("offline");
+    case "search_works": {
+      const { kind, query } = args as { kind: Kind; query: string };
+      if (kind !== "book" || query.trim().length < 2) {
+        return { candidates: [], warnings: [] };
+      }
+      return { candidates: mockCandidates(query), warnings: [] };
+    }
+    case "lookup_code": {
+      const { code } = args as { code: string };
+      const candidates = mockCandidates(code);
+      return {
+        kind: candidates.length > 0 ? "book" : null,
+        candidates,
+        warnings: [],
+        existingEditionId: null,
+      };
+    }
     case "work_marks": {
       const { workId } = args as { workId: string };
       return {

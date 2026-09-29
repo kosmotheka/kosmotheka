@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "id": "Q190192",
+      "type": "works",
+      "uri": "wd:Q190192",
+      "label": "Dune",
+      "description": "novela de 1965 de Frank Herbert",
+      "image": "/img/entities/a936e0978d400fb13e0c0a2527d345a56b799e54",
+      "claims": {},
+      "_score": 301097.34,
+      "_popularity": 267
+    },
+    {
+      "id": "Q437383",
+      "type": "works",
+      "uri": "wd:Q437383",
+      "label": "El mesías de Dune",
+      "description": "novela de ciencia ficción de Frank Herbert",
+      "image": "/img/entities/7a7bd155f1d3fdabac10564adaefface13635039",
+      "claims": {},
+      "_score": 207475.2,
+      "_popularity": 110
+    },
+    {
+      "id": "Q437365",
+      "type": "works",
+      "uri": "wd:Q437365",
+      "label": "Hijos de Dune",
+      "description": "libro de Frank Herbert",
+      "image": "/img/entities/f42728c3a4a0732a978c40f8cb3f1fea2941c38f",
+      "claims": {},
+      "_score": 206281.36,
+      "_popularity": 107
+    }
+  ],
+  "total": 3999,
+  "continue": 10
+}

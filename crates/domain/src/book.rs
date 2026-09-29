@@ -446,6 +446,7 @@ pub const COVER_HOSTS: &[&str] = &[
     "covers.openlibrary.org",
     "books.google.com",
     "books.googleusercontent.com",
+    "inventaire.io",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {
@@ -866,6 +867,7 @@ mod tests {
         for good in [
             "https://covers.openlibrary.org/b/id/15152634-L.jpg",
             "https://books.google.com/books/content?id=x&printsec=frontcover&img=1&zoom=1",
+            "https://inventaire.io/img/entities/27186041c3516dd13e117bd7b9a750eef5111a57",
         ] {
             assert!(parse_cover_url(good).is_some(), "{good}");
         }

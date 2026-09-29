@@ -71,6 +71,8 @@ pub fn run() {
             commands::request_delete_book,
             commands::book_history,
             commands::lookup_isbn,
+            commands::search_works,
+            commands::lookup_code,
             commands::get_settings,
             commands::save_settings,
             commands::covers_dir,

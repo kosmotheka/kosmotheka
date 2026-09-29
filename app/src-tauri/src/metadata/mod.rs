@@ -1,13 +1,17 @@
 //! Book data from external catalogues, looked up by ISBN (D26). Every provider is
 //! optional: failures become warnings and never block the user (D18).
 
+pub mod candidate;
 pub mod google;
+pub mod inventaire;
 pub mod openlibrary;
 
 use std::time::Duration;
 
-use kosmotheka_domain::Isbn;
+use kosmotheka_domain::{Isbn, Kind};
 use serde::Serialize;
+
+pub use candidate::Candidate;
 
 /// What one provider knows about an edition.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -28,6 +32,7 @@ pub struct Metadata {
 pub enum Source {
     GoogleBooks,
     OpenLibrary,
+    Inventaire,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -76,6 +81,76 @@ pub struct LookupResult {
     pub existing_edition_id: Option<String>,
 }
 
+/// Candidates a person can pick from, and warnings from providers that failed.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResult {
+    pub candidates: Vec<Candidate>,
+    pub warnings: Vec<ProviderWarning>,
+}
+
+/// Turns one provider's outcome into a warning, kept for `merge` and `collect_candidates`.
+fn warning_kind(error: &ProviderError) -> WarningKind {
+    match error {
+        ProviderError::Network(_) => WarningKind::Network,
+        ProviderError::Quota => WarningKind::Quota,
+        ProviderError::Unexpected(_) => WarningKind::Unexpected,
+    }
+}
+
+/// Candidates keep provider order: the first provider's candidates come first.
+pub fn collect_candidates(
+    results: Vec<(Source, Result<Vec<Candidate>, ProviderError>)>,
+) -> SearchResult {
+    let mut result = SearchResult::default();
+    for (source, outcome) in results {
+        match outcome {
+            Ok(candidates) => result.candidates.extend(candidates),
+            Err(error) => result.warnings.push(ProviderWarning {
+                source,
+                kind: warning_kind(&error),
+            }),
+        }
+    }
+    result
+}
+
+/// Answer to looking up a scanned or typed code, which may be an ISBN or another
+/// kind of barcode (D26). Parts 2 and 3 add providers for non-book codes.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeResult {
+    pub kind: Option<Kind>,
+    pub candidates: Vec<Candidate>,
+    pub warnings: Vec<ProviderWarning>,
+    /// Set when this code is already in the catalog.
+    pub existing_edition_id: Option<String>,
+}
+
+/// Turns a merged ISBN lookup into the one candidate it represents.
+fn candidate_from_lookup(result: &LookupResult) -> Candidate {
+    let source = result
+        .sources
+        .first()
+        .copied()
+        .unwrap_or(Source::OpenLibrary);
+    let mut candidate =
+        Candidate::new(Kind::Book, source, result.title.clone().unwrap_or_default());
+    candidate.subtitle = result.subtitle.clone();
+    candidate.authors = result.authors.clone();
+    candidate.publisher = result.publisher.clone();
+    candidate.published_year = result.published_year;
+    candidate.language = result.language.clone();
+    candidate.cover_url = result.cover_url.clone();
+    candidate.isbn = Some(result.isbn13.clone());
+    candidate.external_id = match source {
+        Source::GoogleBooks => result.google_books_id.clone(),
+        Source::OpenLibrary => result.open_library_id.clone(),
+        Source::Inventaire => None,
+    };
+    candidate
+}
+
 type ProviderResult = Result<Option<Metadata>, ProviderError>;
 
 /// Shared HTTP client, kept in Tauri state so connections are reused.
@@ -101,6 +176,56 @@ impl Lookup {
             openlibrary::lookup(&self.client, isbn),
         );
         merge(isbn, google, open_library)
+    }
+
+    /// Title search: only books have providers so far (parts 2 and 3 add the rest).
+    pub async fn search(&self, kind: Kind, query: &str) -> SearchResult {
+        let query = query.trim();
+        if query.chars().count() < 2 {
+            return SearchResult::default();
+        }
+        match kind {
+            Kind::Book => {
+                let (open_library, inventaire) = tokio::join!(
+                    openlibrary::search(&self.client, query),
+                    inventaire::search(&self.client, query),
+                );
+                collect_candidates(vec![
+                    (Source::OpenLibrary, open_library),
+                    (Source::Inventaire, inventaire),
+                ])
+            }
+            _ => SearchResult::default(),
+        }
+    }
+
+    /// A scanned or typed code: an ISBN is a book (parts 2 and 3 add other codes).
+    pub async fn lookup_code(&self, code: &str, google_api_key: Option<&str>) -> CodeResult {
+        let Ok(isbn) = Isbn::parse(code) else {
+            return CodeResult::default();
+        };
+        let (merged, inventaire) = tokio::join!(
+            self.run(&isbn, google_api_key),
+            inventaire::lookup(&self.client, &isbn)
+        );
+
+        let mut result = CodeResult {
+            warnings: merged.warnings.clone(),
+            ..CodeResult::default()
+        };
+        if merged.found {
+            result.candidates.push(candidate_from_lookup(&merged));
+        }
+        match inventaire {
+            Ok(Some(candidate)) => result.candidates.push(candidate),
+            Ok(None) => {}
+            Err(error) => result.warnings.push(ProviderWarning {
+                source: Source::Inventaire,
+                kind: warning_kind(&error),
+            }),
+        }
+        result.kind = (!result.candidates.is_empty()).then_some(Kind::Book);
+        result
     }
 }
 
@@ -139,11 +264,7 @@ pub fn merge(isbn: &Isbn, google: ProviderResult, open_library: ProviderResult) 
         Err(error) => {
             result.warnings.push(ProviderWarning {
                 source,
-                kind: match error {
-                    ProviderError::Network(_) => WarningKind::Network,
-                    ProviderError::Quota => WarningKind::Quota,
-                    ProviderError::Unexpected(_) => WarningKind::Unexpected,
-                },
+                kind: warning_kind(&error),
             });
             None
         }
@@ -311,5 +432,33 @@ mod live {
         println!("stored as {name}");
         assert!(name.ends_with(".jpg"));
         assert!(covers.dir().join(&name).metadata().unwrap().len() > 10_000);
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_open_library() {
+        let client = http_client().unwrap();
+        let candidates = openlibrary::search(&client, "dune").await.unwrap();
+        println!("open library: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_search_inventaire() {
+        let client = http_client().unwrap();
+        let candidates = inventaire::search(&client, "dune").await.unwrap();
+        println!("inventaire: {candidates:#?}");
+        assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_inventaire_isbn_lookup() {
+        let client = http_client().unwrap();
+        let isbn = Isbn::parse("9788445000663").unwrap();
+        let candidate = inventaire::lookup(&client, &isbn).await.unwrap();
+        println!("inventaire lookup: {candidate:#?}");
+        assert!(candidate.is_some());
     }
 }

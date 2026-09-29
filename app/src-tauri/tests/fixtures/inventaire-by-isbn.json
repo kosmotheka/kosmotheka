@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "inv:8094bbeb1b0e1b1dc8c6d98bb3f6417d": {
+      "_id": "8094bbeb1b0e1b1dc8c6d98bb3f6417d",
+      "_rev": "2-0397b8d6ec8a97f5f9f0a080baf75b2a",
+      "type": "edition",
+      "labels": {
+        "fromclaims": "La comunidad del anillo"
+      },
+      "claims": {
+        "wdt:P1476": [
+          "La comunidad del anillo"
+        ],
+        "wdt:P212": [
+          "978-84-450-0066-3"
+        ],
+        "wdt:P957": [
+          "84-450-0066-7"
+        ],
+        "wdt:P407": [
+          "wd:Q1321"
+        ],
+        "wdt:P31": [
+          "wd:Q3331189"
+        ],
+        "wdt:P629": [
+          "wd:Q208002"
+        ],
+        "invp:P2": [
+          "27186041c3516dd13e117bd7b9a750eef5111a57"
+        ],
+        "wdt:P577": [
+          "2012"
+        ],
+        "wdt:P648": [
+          "OL26384839M"
+        ],
+        "wdt:P1104": [
+          566
+        ]
+      },
+      "created": 1775759467739,
+      "version": 3,
+      "updated": 1777761321358,
+      "uri": "inv:8094bbeb1b0e1b1dc8c6d98bb3f6417d",
+      "originalLang": "es",
+      "image": {
+        "url": "/img/entities/27186041c3516dd13e117bd7b9a750eef5111a57"
+      },
+      "invId": "8094bbeb1b0e1b1dc8c6d98bb3f6417d"
+    },
+    "wd:Q208002": {
+      "uri": "wd:Q208002",
+      "wdId": "Q208002",
+      "type": "work",
+      "labels": {
+        "en": "The Fellowship of the Ring",
+        "es": "La Comunidad del Anillo"
+      },
+      "claims": {
+        "wdt:P407": [
+          "wd:Q1860"
+        ],
+        "wdt:P50": [
+          "wd:Q892"
+        ],
+        "wdt:P1476": [
+          "The Fellowship of the Ring"
+        ]
+      },
+      "originalLang": "en",
+      "lastrevid": 2542482514
+    }
+  },
+  "redirects": {
+    "isbn:9788445000663": "inv:8094bbeb1b0e1b1dc8c6d98bb3f6417d"
+  }
+}

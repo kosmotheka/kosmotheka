@@ -341,7 +341,7 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
   return invoke<Asked>("request_delete_book", { editionId, note });
 }
 
-export type Source = "google_books" | "open_library";
+export type Source = "google_books" | "open_library" | "inventaire";
 
 export interface LookupResult {
   isbn13: string;
@@ -362,6 +362,59 @@ export interface LookupResult {
 
 export function lookupIsbn(isbn: string): Promise<LookupResult> {
   return invoke<LookupResult>("lookup_isbn", { isbn });
+}
+
+export interface CandidateContributor {
+  name: string;
+  role: ContributorRole;
+}
+
+/** One result a person can pick to prefill the add form; fields match `EditionInput`. */
+export interface Candidate {
+  kind: Kind;
+  source: Source;
+  externalId: string | null;
+  title: string;
+  subtitle: string | null;
+  authors: string[];
+  /** Contributors in any role other than author (`authors` means `author`). */
+  contributors: CandidateContributor[];
+  publisher: string | null;
+  publishedYear: number | null;
+  language: string | null;
+  coverUrl: string | null;
+  /** ISBN-13. */
+  isbn: string | null;
+  barcode: string | null;
+  number: string | null;
+  playersMin: number | null;
+  playersMax: number | null;
+  durationMinutes: number | null;
+  minAge: number | null;
+  seasons: number | null;
+  platform: string | null;
+  /** A suggested copy format, when the provider knows it. */
+  format: Format | null;
+}
+
+export interface SearchResult {
+  candidates: Candidate[];
+  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+}
+
+export function searchWorks(kind: Kind, query: string): Promise<SearchResult> {
+  return invoke<SearchResult>("search_works", { kind, query });
+}
+
+export interface CodeResult {
+  kind: Kind | null;
+  candidates: Candidate[];
+  warnings: { source: Source; kind: "network" | "quota" | "unexpected" }[];
+  existingEditionId: string | null;
+}
+
+export function lookupCode(code: string): Promise<CodeResult> {
+  return invoke<CodeResult>("lookup_code", { code });
 }
 
 export interface Settings {

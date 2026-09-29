@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, NewBook, WishInput};
+use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook, WishInput};
 use serde::Serialize;
 use tauri::State;
 use url::Url;
@@ -18,7 +18,7 @@ use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::marks;
-use crate::metadata::{Lookup, LookupResult};
+use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult};
 use crate::ops;
 use crate::people::{self, People};
 use crate::requests::{self, Request};
@@ -200,6 +200,35 @@ pub async fn lookup_isbn(
         )
     };
     let mut result = lookup.run(&isbn, api_key.as_deref()).await;
+    result.existing_edition_id = existing_edition_id;
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn search_works(
+    lookup: State<'_, Lookup>,
+    kind: Kind,
+    query: String,
+) -> Result<SearchResult> {
+    Ok(lookup.search(kind, &query).await)
+}
+
+#[tauri::command]
+pub async fn lookup_code(
+    database: State<'_, Database>,
+    lookup: State<'_, Lookup>,
+    code: String,
+) -> Result<CodeResult> {
+    let (api_key, existing_edition_id) = {
+        let conn = database.lock()?;
+        let library = ops::active_library(&conn)?;
+        let existing = match Isbn::parse(&code) {
+            Ok(isbn) => catalog::edition_with_isbn(&conn, &library, isbn.as_str())?,
+            Err(_) => catalog::edition_with_barcode(&conn, &library, &code)?,
+        };
+        (settings::load(&conn)?.google_books_api_key, existing)
+    };
+    let mut result = lookup.lookup_code(&code, api_key.as_deref()).await;
     result.existing_edition_id = existing_edition_id;
     Ok(result)
 }
