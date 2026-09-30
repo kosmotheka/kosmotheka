@@ -13,6 +13,7 @@ import {
   Layers,
   Pencil,
   Plus,
+  Send,
   Trash2,
   Users,
   X,
@@ -31,7 +32,7 @@ import {
   toEditionInput,
   useCommandErrors,
 } from "@/components/book-form";
-import { AskDialog } from "@/components/ask-dialog";
+import { AskDialog, NoteField } from "@/components/ask-dialog";
 import { ChangeKindDialog } from "@/components/change-kind-dialog";
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
@@ -59,6 +60,7 @@ import {
   addCopy,
   deleteBook,
   deleteCopy,
+  requestAddCopy,
   requestDeleteBook,
   requestDeleteCopy,
   externalLinks,
@@ -99,6 +101,11 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
   const [tab, setTab] = useState<Tab>("copies");
   const [editing, setEditing] = useState<EditionForm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Set by the missing-work CTA, read once by `CopiesSection` to open the "new copy"
+  // form straight away; `copyFormKey` forces a remount even when the copies tab was
+  // already showing, since picking a status doesn't otherwise change it (D61).
+  const [openNewCopy, setOpenNewCopy] = useState(false);
+  const [copyFormKey, setCopyFormKey] = useState(0);
 
   const reload = useCallback(() => {
     if (!editionId) return;
@@ -143,6 +150,16 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
     if (!book) return;
     setTab("details");
     setEditing(editionFormFrom(book));
+  };
+
+  /** «Lo tengo» / «Pedir que se añada» on a missing work (D61): straight to the copy form.
+   * `openNewCopy` is read once, when `CopiesSection` mounts on the tab switch; resetting it
+   * right after (outside React's render) keeps a later visit to the tab from reopening it. */
+  const startCopyForMissing = () => {
+    setTab("copies");
+    setOpenNewCopy(true);
+    setCopyFormKey((k) => k + 1);
+    setTimeout(() => setOpenNewCopy(false), 0);
   };
 
   const removeBook = async () => {
@@ -220,13 +237,25 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
       {book && (
         <div className={cn("flex flex-col gap-5 pb-8", desktop ? "px-5" : "px-4")}>
           <Hero book={book} desktop={desktop} />
+          {book.copies.length === 0 && (
+            <div className="flex flex-col gap-1.5">
+              <Button onClick={startCopyForMissing}>
+                {reader ? <Send /> : <Plus />}
+                {t(reader ? "ask.add" : "book.addCopyCta")}
+              </Button>
+              <p className="text-[12.5px] text-pretty text-muted-foreground">
+                {t(reader ? "book.addCopyHintReader" : "book.addCopyHint")}
+              </p>
+            </div>
+          )}
           <MarksSection
             key={book.workId}
             workId={book.workId}
             kind={book.kind}
             desktop={desktop}
+            wishedBy={book.wishedBy}
             onNotice={onNotice}
-            onChanged={onChanged}
+            onChanged={changed}
           />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start border-b">
@@ -242,9 +271,11 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
             </TabsList>
             <TabsContent value="copies" className="pt-4">
               <CopiesSection
+                key={copyFormKey}
                 book={book}
                 desktop={desktop}
                 reader={reader}
+                openNewCopy={openNewCopy}
                 onChanged={changed}
                 onNotice={onNotice}
               />
@@ -431,11 +462,11 @@ function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
           {copies > 0 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-medium text-success">
               <Check className="size-3.5" strokeWidth={2.5} />
-              {t("book.owned", { count: copies })}
+              {t("book.statusPill.owned", { count: copies })}
             </span>
           ) : (
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              {t("book.noCopies")}
+              {t("book.statusPill.missing")}
             </span>
           )}
         </div>
@@ -635,12 +666,16 @@ function CopiesSection({
   book,
   desktop,
   reader,
+  openNewCopy = false,
   onChanged,
   onNotice,
 }: {
   book: BookDetail;
   desktop: boolean;
   reader: boolean;
+  /** Mounts with the "new copy" form already open, from the missing-work CTA (D61). Read
+   * once: `BookDetailView` remounts this component (a fresh tab switch) to reuse it. */
+  openNewCopy?: boolean;
   onChanged: () => void;
   onNotice: (message: string) => void;
 }) {
@@ -649,17 +684,22 @@ function CopiesSection({
   const library = useLibraryName()(libraries.active);
   const [asking, setAsking] = useState<CopyDetail | null>(null);
   /** Id of the copy being edited, or "new" while adding one. */
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(() => (openNewCopy ? "new" : null));
   const [form, setForm] = useState<CopyForm>(() => emptyCopyFormFor(book.kind));
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<CopyDetail | null>(null);
   const errors = useCommandErrors();
 
   const start = (target: string, initial: CopyForm) => {
     errors.clear();
+    setNote("");
     setForm(initial);
     setEditing(target);
   };
+
+  // A reader has no other way to add a copy (D73): the "new copy" form always asks.
+  const askingNew = editing === "new" && reader;
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -668,7 +708,16 @@ function CopiesSection({
     errors.clear();
     try {
       if (editing === "new") {
-        await addCopy(book.editionId, toCopyInput(form));
+        if (askingNew) {
+          const { requested } = await requestAddCopy(
+            book.editionId,
+            toCopyInput(form),
+            note.trim() || null,
+          );
+          onNotice(t(requested ? "ask.sent" : "ask.done"));
+        } else {
+          await addCopy(book.editionId, toCopyInput(form));
+        }
       } else {
         await updateCopy(editing, toCopyInput(form));
       }
@@ -699,12 +748,20 @@ function CopiesSection({
         kind={book.kind}
         idPrefix={`copy-${editing}`}
       />
+      {askingNew && (
+        <div className="space-y-3 border-t pt-4">
+          <NoteField value={note} onChange={setNote} />
+          <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
+            {t("ask.whyAdd", { library })}
+          </p>
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => setEditing(null)}>
           {t("form.cancel")}
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? t("form.saving") : t("form.save")}
+          {saving ? t("form.saving") : askingNew ? t("ask.send") : t("form.save")}
         </Button>
       </div>
     </form>

@@ -32,9 +32,9 @@ import { useDesktop } from "@/components/shell/use-desktop";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   type BookFilter,
-  type BookSummary,
   type CatalogOptions,
   type CreatedBook,
+  type Holding,
   type LibrarySummary,
   catalogOptions,
   lanStatus,
@@ -49,7 +49,6 @@ import { CheckPage } from "@/pages/check-page";
 import { DevicesPage } from "@/pages/devices-page";
 import { HelpPage } from "@/pages/help-page";
 import { LibraryPage } from "@/pages/library-page";
-import { MissingPage } from "@/pages/missing-page";
 import { PeoplePage } from "@/pages/people-page";
 import { RequestsPage } from "@/pages/requests-page";
 
@@ -68,7 +67,7 @@ export default function App() {
   const { section, overlay } = useLocation();
   const desktop = useDesktop();
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [missing, setMissing] = useState<BookSummary[]>([]);
+  const [missingCount, setMissingCount] = useState(0);
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -87,13 +86,17 @@ export default function App() {
   const activeFilter = useDebounced(filter, 200);
   // "In every library" only means something while searching.
   const searchEverywhere = everywhere && Boolean(activeFilter.query?.trim());
+  // The desktop segmented control and the "Missing" nav entry both drive this,
+  // the nav entry by forcing it regardless of what the control last showed (D61).
+  // Not debounced, unlike the rest of the filter: picking a view should react at once.
+  const holding: Holding | undefined = section === "missing" ? "missing" : filter.holding;
 
   useEffect(() => {
     let cancelled = false;
     listLibraries()
       .then((loaded) => !cancelled && setAllLibraries(loaded))
       .catch(() => {});
-    listBooks(activeFilter, searchEverywhere)
+    listBooks({ ...activeFilter, holding }, searchEverywhere)
       .then((books) => !cancelled && setState({ status: "ready", books }))
       .catch(
         (error: unknown) => !cancelled && setState({ status: "error", message: String(error) }),
@@ -101,14 +104,14 @@ export default function App() {
     catalogOptions()
       .then((loaded) => !cancelled && setOptions(loaded))
       .catch(() => {});
-    // "Missing": works catalogued with no copy yet (D61).
+    // For the sidebar/bottom-nav badge, regardless of the current view's own filters.
     listBooks({ holding: "missing" })
-      .then((loaded) => !cancelled && setMissing(loaded))
+      .then((loaded) => !cancelled && setMissingCount(loaded.length))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [activeFilter, searchEverywhere, version]);
+  }, [activeFilter, searchEverywhere, version, holding]);
 
   /** Reloads books, the missing list and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
@@ -145,7 +148,7 @@ export default function App() {
   const filtering = isFiltering(activeFilter);
   const counts = {
     catalog: activeLibrary?.works ?? (filtering ? 0 : books.length),
-    missing: missing.length,
+    missing: missingCount,
   };
 
   const handleCreated = (result: CreatedBook, title: string) => {
@@ -179,14 +182,18 @@ export default function App() {
     setTimeout(() => document.getElementById("catalog-search")?.focus(), 50);
   };
 
+  /** The desktop segmented control («Lo tengo · Me falta · Todo», D61). */
+  const onViewChange = (next: Holding | undefined) => {
+    if (next === "missing") {
+      navigate("missing");
+      return;
+    }
+    navigate("catalog");
+    setFilter((f) => ({ ...f, holding: next }));
+  };
+
   const page =
-    section === "missing" ? (
-      <MissingPage
-        books={missing}
-        desktop={desktop}
-        onOpenBook={(book) => void openBookIn(book.libraryId, book.editionId)}
-      />
-    ) : section === "check" ? (
+    section === "check" ? (
       <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
     ) : section === "library" ? (
       <LibraryPage desktop={desktop} />
@@ -213,6 +220,8 @@ export default function App() {
         nameOfLibrary={nameOfId}
         onOpenBook={openBookIn}
         selectedId={desktop ? bookId : null}
+        holding={holding}
+        onViewChange={onViewChange}
       />
     );
 
@@ -246,6 +255,7 @@ export default function App() {
                     if (section !== "catalog") navigate("catalog");
                   }}
                   sync={sync}
+                  missing={section === "missing"}
                 />
                 <div className="flex min-h-0 flex-1">
                   <main className="min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
@@ -326,6 +336,7 @@ export default function App() {
               desktop={desktop}
               library={library}
               prefill={overlay.prefill}
+              missing={overlay.missing}
               onOpenChange={(open) => !open && closeOverlay()}
               onCreated={handleCreated}
               onRequested={(requested) => {
@@ -339,6 +350,7 @@ export default function App() {
               open
               desktop={desktop}
               library={library}
+              missing={overlay.missing}
               onOpenChange={(open) => !open && closeOverlay()}
               onCreated={handleCreated}
               onRequested={(requested) => {

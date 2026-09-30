@@ -31,8 +31,10 @@ import {
   type CreatedBook,
   type Kind,
   type NewBook,
+  addMissing,
   createBook,
   requestBook,
+  requestMissing,
 } from "@/lib/api";
 import { KIND_FORMATS } from "@/lib/kinds";
 
@@ -59,6 +61,8 @@ interface Props {
   onRequested?: (requested: boolean) => void;
   /** Shown as a back arrow instead of the close button: returns to the search step (D60). */
   onBack?: () => void;
+  /** «Me falta» (D61): no copy section; saves with `addMissing` (readers: `requestMissing`). */
+  missing?: boolean;
 }
 
 const initialEditionForm = (prefill?: AddBookPrefill, initial?: NewBook): EditionForm =>
@@ -83,6 +87,7 @@ export function AddBookDialog({
   title: customTitle,
   onRequested,
   onBack,
+  missing = false,
 }: Props) {
   const { t } = useTranslation();
   // Readers ask for the book instead of adding it (D73).
@@ -123,13 +128,24 @@ export function AddBookDialog({
     setSaving(true);
     errors.clear();
     try {
-      const book = { ...toEditionInput(edition), copy: toCopyInput(copy) };
-      if (asking) {
-        const { requested } = await requestBook(book, note.trim() || null);
-        onRequested?.(requested);
+      if (missing) {
+        const input = toEditionInput(edition);
+        if (asking) {
+          const { requested } = await requestMissing(input, note.trim() || null);
+          onRequested?.(requested);
+        } else {
+          const result = await addMissing(input);
+          onCreated(result, edition.title.trim());
+        }
       } else {
-        const result = await (customSubmit ?? createBook)(book);
-        onCreated(result, edition.title.trim());
+        const book = { ...toEditionInput(edition), copy: toCopyInput(copy) };
+        if (asking) {
+          const { requested } = await requestBook(book, note.trim() || null);
+          onRequested?.(requested);
+        } else {
+          const result = await (customSubmit ?? createBook)(book);
+          onCreated(result, edition.title.trim());
+        }
       }
       handleOpenChange(false);
     } catch (error) {
@@ -149,20 +165,26 @@ export function AddBookDialog({
         errorFor={errors.errorFor}
         showKindSelect={!desktop}
       />
-      <section className="space-y-4 border-t pt-5">
-        <h3 className="text-sm font-medium">{t("form.copySection")}</h3>
-        <CopyFields
-          value={copy}
-          onChange={setCopy}
-          errorFor={(field) => errors.errorFor(`copy.${field}`)}
-          kind={edition.kind}
-        />
-      </section>
+      {missing ? (
+        <p className="border-t pt-5 text-[13px] leading-snug text-pretty text-muted-foreground">
+          {t("form.missingHint")}
+        </p>
+      ) : (
+        <section className="space-y-4 border-t pt-5">
+          <h3 className="text-sm font-medium">{t("form.copySection")}</h3>
+          <CopyFields
+            value={copy}
+            onChange={setCopy}
+            errorFor={(field) => errors.errorFor(`copy.${field}`)}
+            kind={edition.kind}
+          />
+        </section>
+      )}
       {asking && (
         <section className="space-y-3 border-t pt-5">
           <NoteField value={note} onChange={setNote} />
           <p className="text-[13px] leading-snug text-pretty text-muted-foreground">
-            {t("ask.whyAdd", { library })}
+            {t(missing ? "ask.whyAddMissing" : "ask.whyAdd", { library })}
           </p>
         </section>
       )}
@@ -174,7 +196,10 @@ export function AddBookDialog({
     </>
   );
   const title =
-    customTitle ?? (asking ? t("ask.addTitle", { library }) : t("form.title", { library }));
+    customTitle ??
+    (missing
+      ? t(asking ? "ask.addMissingTitle" : "form.missingTitle", { library })
+      : t(asking ? "ask.addTitle" : "form.title", { library }));
   const submitLabel = saving ? t("form.saving") : asking ? t("ask.send") : t("form.save");
 
   if (!desktop) {

@@ -9,6 +9,7 @@ import {
   CircleDashed,
   CircleDot,
   CircleSlash,
+  Gift,
   Heart,
   Info,
   Star,
@@ -29,7 +30,7 @@ import {
   setMark,
   workMarks,
 } from "@/lib/api";
-import { statusKey } from "@/lib/kinds";
+import { statusKey, wishSummary } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
 
 export const STATUS_ICONS = {
@@ -48,12 +49,15 @@ export function MarksSection({
   workId,
   kind,
   desktop,
+  wishedBy,
   onNotice,
   onChanged,
 }: {
   workId: string;
   kind: Kind;
   desktop: boolean;
+  /** Names of who wishes the work (D61), this device's person first as `"me"`. */
+  wishedBy: string[];
   onNotice: (message: string) => void;
   /** After saving, so the catalog shows the new status. */
   onChanged: () => void;
@@ -203,6 +207,22 @@ export function MarksSection({
           <span className="flex-1" />
           <button
             type="button"
+            aria-pressed={mine.wished}
+            aria-label={t("wish.toggle")}
+            onClick={() => void save({ ...mine, wished: !mine.wished })}
+            className={cn(
+              "flex shrink-0 items-center justify-center gap-1.5 border whitespace-nowrap",
+              desktop ? "h-8 rounded-lg px-2.5 text-[13px]" : "h-11 rounded-xl px-3 text-sm",
+              mine.wished
+                ? "border-wish bg-wish-soft font-semibold text-wish"
+                : "border-border font-medium",
+            )}
+          >
+            <Gift className={desktop ? "size-[15px]" : "size-[18px]"} />
+            {t("wish.toggle")}
+          </button>
+          <button
+            type="button"
             aria-pressed={mine.favorite}
             aria-label={t("marks.favorite")}
             onClick={() => void save({ ...mine, favorite: !mine.favorite })}
@@ -219,6 +239,12 @@ export function MarksSection({
             {desktop && t("marks.favorite")}
           </button>
         </div>
+        {wishedBy.length > 0 && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Gift className="size-3.5 shrink-0" />
+            {wishSummary(t, wishedBy)}
+          </p>
+        )}
       </section>
     );
 

@@ -1,8 +1,11 @@
 import { useTranslation } from "react-i18next";
+import { Gift } from "lucide-react";
 
 import { Cover } from "@/components/cover";
 import { MineIndicator } from "@/components/marks/mine-indicator";
 import type { BookSummary, Kind } from "@/lib/api";
+import { wishSummary } from "@/lib/kinds";
+import { cn } from "@/lib/utils";
 
 /** The catalog on desktop. Rows are buttons, so the keyboard can open them too. */
 export function BookTable({
@@ -10,6 +13,7 @@ export function BookTable({
   onOpen,
   selectedId,
   activeKind = null,
+  showWish = false,
 }: {
   books: BookSummary[];
   onOpen: (book: BookSummary) => void;
@@ -17,6 +21,8 @@ export function BookTable({
   selectedId?: string | null;
   /** The kind chip selected, if any: shows this kind's status wording in `MineIndicator`. */
   activeKind?: Kind | null;
+  /** The «Me falta» view: a column with who wishes each work (D61). */
+  showWish?: boolean;
 }) {
   const wide = !selectedId;
   const { t } = useTranslation();
@@ -37,7 +43,7 @@ export function BookTable({
         <span role="columnheader" className="w-11 shrink-0">
           {t("catalog.columns.year")}
         </span>
-        {wide && (
+        {wide && !showWish && (
           <>
             <span role="columnheader" className="w-36 shrink-0">
               {t("catalog.columns.formats")}
@@ -46,6 +52,11 @@ export function BookTable({
               {t("catalog.columns.owners")}
             </span>
           </>
+        )}
+        {wide && showWish && (
+          <span role="columnheader" className="min-w-0 flex-[1.4]">
+            {t("filters.wish.chip")}
+          </span>
         )}
       </div>
       {books.map((book) => (
@@ -75,7 +86,7 @@ export function BookTable({
           <span className="w-11 shrink-0 text-muted-foreground tabular-nums">
             {book.publishedYear}
           </span>
-          {wide && (
+          {wide && !showWish && (
             <>
               <span className="w-36 shrink-0 truncate">
                 {book.formats.map((format) => t(`formats.${format}`)).join(", ")}
@@ -85,6 +96,23 @@ export function BookTable({
                 {book.copyCount > 1 && ` · ${t("catalog.copies", { count: book.copyCount })}`}
               </span>
             </>
+          )}
+          {wide && showWish && (
+            <span
+              className={cn(
+                "flex min-w-0 flex-[1.4] items-center gap-1.5 truncate",
+                book.wishedBy.includes("me") ? "font-medium text-wish" : "text-foreground",
+              )}
+            >
+              {book.wishedBy.length > 0 ? (
+                <>
+                  <Gift className="size-3.5 shrink-0" />
+                  {wishSummary(t, book.wishedBy)}
+                </>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </span>
           )}
         </button>
       ))}

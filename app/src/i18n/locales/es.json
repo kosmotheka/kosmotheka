@@ -7,6 +7,10 @@
     "add": "Añadir libro",
     "added": "«{{title}}» se ha añadido al catálogo.",
     "addedCopy": "Ya teníais esta edición de «{{title}}»: se le ha añadido un ejemplar más.",
+    "views": {
+      "owned": "Lo tengo",
+      "all": "Todo"
+    },
     "empty": {
       "title": "{{library}} está vacía",
       "body": "Busca por título o código, escanea con la cámara o importa una hoja de cálculo que ya tengas.",
@@ -112,6 +116,8 @@
   },
   "form": {
     "title": "Añadir a {{library}}",
+    "missingTitle": "Añadir a Me falta en {{library}}",
+    "missingHint": "Se cataloga sin ejemplar; añade uno cuando lo consigas.",
     "description": "Si el ISBN ya está en el catálogo, se añade un ejemplar a esa edición.",
     "copySection": "Tu ejemplar",
     "whatIsIt": "¿Qué es?",
@@ -241,6 +247,14 @@
     "owned_one": "Lo tienes",
     "owned_other": "Lo tienes · {{count}}",
     "noCopies": "Sin ejemplares",
+    "statusPill": {
+      "missing": "Me falta · sin ejemplares",
+      "owned_one": "Lo tienes · {{count}} ejemplar",
+      "owned_other": "Lo tienes · {{count}} ejemplares"
+    },
+    "addCopyCta": "Lo tengo",
+    "addCopyHint": "Añade un ejemplar: formato, de quién y dónde. Deja de faltar.",
+    "addCopyHintReader": "Un administrador añadirá el ejemplar; verás la respuesta en Mis peticiones.",
     "data": {
       "code": "Código",
       "playersRange": "De {{min}} a {{max}}",
@@ -326,7 +340,13 @@
     "done": "Hecho",
     "remove": "Quitar el filtro {{filter}}",
     "closeSearch": "Cerrar la búsqueda",
-    "noResultsTitle": "Nada con estos filtros"
+    "noResultsTitle": "Nada con estos filtros",
+    "wish": {
+      "chip": "Deseos",
+      "mine": "Lo que deseo",
+      "others": "Lo que desean otros"
+    },
+    "wishCount": "{{count}} de {{total}} · {{label}}"
   },
   "data": {
     "title": "Copias de seguridad",
@@ -469,6 +489,7 @@
     "quickAdd": "Alta rápida",
     "scan": "Escanear",
     "add": "Añadir",
+    "addMissing": "Apuntar",
     "works_one": "{{count}} obra",
     "works_other": "{{count}} obras",
     "languages": "Idioma",
@@ -885,7 +906,9 @@
     "sent": "Petición enviada a quien administra. La puedes seguir en Mis peticiones.",
     "done": "Hecho: ahora puedes hacerlo sin pedirlo.",
     "whyDeleteReader": "Eres lector en {{library}}: lo decide quien administra.",
-    "deletePlaceholder": "Por ejemplo: está repetido"
+    "deletePlaceholder": "Por ejemplo: está repetido",
+    "addMissingTitle": "Pedir añadir a Me falta en {{library}}",
+    "whyAddMissing": "Eres lector en {{library}}: se cataloga cuando quien administra lo acepte."
   },
   "addSearch": {
     "placeholder": "Busca por título…",
@@ -908,6 +931,13 @@
     "notLost": "No se ha perdido: quien administra lo verá entre sus peticiones y decidirá. Lo puedes seguir en Mis peticiones.",
     "see_one": "Ver mi petición",
     "see_other": "Ver mis peticiones"
+  },
+  "wish": {
+    "toggle": "Lo deseo",
+    "byMeOnly": "Lo deseas tú",
+    "byMeAnd": "Lo deseas tú y {{names}}",
+    "byOne": "Lo desea {{name}}",
+    "byMany": "Lo desean {{names}}"
   },
   "marks": {
     "mine": "Lo mío",

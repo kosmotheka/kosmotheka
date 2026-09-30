@@ -1,12 +1,18 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Circle, Heart, SlidersHorizontal, X } from "lucide-react";
+import { Circle, Gift, Heart, SlidersHorizontal, X } from "lucide-react";
 
 import { useCatalogOptions } from "@/components/catalog-options";
 import { STATUS_ICONS } from "@/components/marks/marks-section";
 import { Switch } from "@/components/people/role-parts";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -40,7 +46,9 @@ export function isFiltering(filter: BookFilter) {
     filter.owner ||
     filter.location ||
     filter.myStatuses?.length ||
-    filter.myFavorites,
+    filter.myFavorites ||
+    filter.myWished ||
+    filter.othersWished,
   );
 }
 
@@ -116,10 +124,49 @@ export function FilterBar({
     );
   });
 
+  // «Deseos» (D61): mine and others' wishes are independent, so both may be on at once.
+  const wishOn = Boolean(filter.myWished || filter.othersWished);
+  const wishLabel =
+    filter.myWished && filter.othersWished
+      ? t("filters.wish.chip")
+      : filter.myWished
+        ? t("filters.wish.mine")
+        : filter.othersWished
+          ? t("filters.wish.others")
+          : t("filters.wish.chip");
+  const wishChip = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={wishOn ? "default" : "outline"}
+          className="h-9 shrink-0 rounded-[10px]"
+          aria-pressed={wishOn}
+        >
+          <Gift /> {wishLabel}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuCheckboxItem
+          checked={Boolean(filter.myWished)}
+          onCheckedChange={(checked) => onChange({ ...filter, myWished: checked || undefined })}
+        >
+          {t("filters.wish.mine")}
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={Boolean(filter.othersWished)}
+          onCheckedChange={(checked) => onChange({ ...filter, othersWished: checked || undefined })}
+        >
+          {t("filters.wish.others")}
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="flex items-center gap-2 overflow-x-auto">
       {!desktop && filtersButton}
       {kindChips}
+      {wishChip}
       {desktop && filtersButton}
       {chips.map((chip) => (
         <Button

@@ -18,6 +18,7 @@ export function TopBar({
   everywhere,
   onEverywhereChange,
   sync,
+  missing = false,
 }: {
   library: string;
   query: string;
@@ -25,6 +26,8 @@ export function TopBar({
   everywhere: boolean;
   onEverywhereChange: (everywhere: boolean) => void;
   sync: ReturnType<typeof useSyncStatus>;
+  /** In the «Me falta» view: «Añadir» catalogs without a copy (D61). */
+  missing?: boolean;
 }) {
   const libraries = useLibraries();
   // Readers ask for books instead of adding them (D73).
@@ -62,15 +65,23 @@ export function TopBar({
         <ScanBarcode /> {t("nav.scan")}
       </Button>
       {reader ? (
-        <Button size="lg" onClick={() => openOverlay({ name: "add" })}>
+        <Button
+          size="lg"
+          onClick={() => openOverlay(missing ? { name: "add", missing: true } : { name: "add" })}
+        >
           <Send /> {t("ask.add")}
         </Button>
       ) : (
         <>
-          <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>
-            <Zap /> {t("nav.quickAdd")}
-          </Button>
-          <Button size="lg" onClick={() => openOverlay({ name: "add" })}>
+          {!missing && (
+            <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>
+              <Zap /> {t("nav.quickAdd")}
+            </Button>
+          )}
+          <Button
+            size="lg"
+            onClick={() => openOverlay(missing ? { name: "add", missing: true } : { name: "add" })}
+          >
             <Plus /> {t("nav.add")}
           </Button>
         </>

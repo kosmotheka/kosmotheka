@@ -115,12 +115,30 @@ const books: BookSummary[] = [
   work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd", "digital"], ["Tersoal", "Laura"]),
   work(12, "music", "Abbey Road", ["The Beatles"], 1969, ["vinyl"], ["Tersoal"]),
   work(13, "other", "Playmobil Barco pirata 5135", [], 2006, ["other"], ["Laura"]),
+  // "Me falta" (D61): catalogued, no copies yet. Who else wishes each one is set below.
+  work(14, "book", "Dune: El emperador-dios", ["Frank Herbert"], 1981, [], []),
+  work(15, "book", "Hijos de Dune", ["Frank Herbert"], 1976, [], []),
+  work(16, "boardgame", "Catán: Navegantes", [], 2015, [], [], "Devir"),
+  work(17, "film", "Blade Runner", ["Ridley Scott"], 1982, [], []),
 ];
 // Fundación keeps a pocket copy and an ISBN, for the change-of-kind screenshots
 // (book -> comic): the ISBN becomes a barcode and "Bolsillo" needs a new format.
 books[2] = { ...books[2], isbn13: "9788497596824" };
 // Dune shows a filled ISBN row on its own work page.
 books[0] = { ...books[0], isbn13: "9788497596848" };
+
+// Who else wishes a missing work (D61); this device's own wish is a mark, set below
+// so toggling "Lo deseo" on the work page stays consistent with the catalog rows.
+const otherWishersByEdition: Record<string, string[]> = {
+  [books[13].editionId]: ["Hugo"],
+  [books[15].editionId]: ["Laura"],
+  [books[16].editionId]: ["Laura"],
+};
+function wishedByFor(editionId: string): string[] {
+  const mine = myMarks.get(`work-${editionId}`)?.wished ?? false;
+  const others = otherWishersByEdition[editionId] ?? [];
+  return mine ? ["me", ...others] : others;
+}
 
 const lan: LanStatus = {
   deviceId: "dev",
@@ -303,6 +321,22 @@ const requests: ChangeRequest[] = [
 // in a library with roles.
 let claimed = !params.has("who") && !params.has("locked");
 const myMarks = new Map<string, Mark>();
+// One missing work already wished by "me", so the wish colour and «Lo desea…»
+// wording both show without having to click anything first (D61).
+myMarks.set(`work-${books[13].editionId}`, {
+  status: null,
+  statusOn: null,
+  rating: null,
+  favorite: false,
+  wished: true,
+});
+myMarks.set(`work-${books[15].editionId}`, {
+  status: null,
+  statusOn: null,
+  rating: null,
+  favorite: false,
+  wished: true,
+});
 const othersMarks: PersonMark[] = [
   {
     person: "Laura",
@@ -420,11 +454,13 @@ mockIPC((cmd, args) => {
       return books
         .map((b) => {
           const mark = myMarks.get(`work-${b.editionId}`);
+          const wishedBy = wishedByFor(b.editionId);
           return {
             ...b,
             myStatus: mark?.status ?? null,
             myFavorite: mark?.favorite ?? false,
             myWished: mark?.wished ?? false,
+            wishedBy,
           };
         })
         .filter(
@@ -433,7 +469,8 @@ mockIPC((cmd, args) => {
             matchesHolding(filter.holding, b.copyCount) &&
             (!filter.myStatuses?.length || filter.myStatuses.includes(b.myStatus ?? "none")) &&
             (!filter.myFavorites || b.myFavorite) &&
-            (!filter.myWished || b.myWished),
+            (!filter.myWished || b.myWished) &&
+            (!filter.othersWished || b.wishedBy.some((name) => name !== "me")),
         );
     }
     case "list_libraries":
@@ -648,6 +685,7 @@ mockIPC((cmd, args) => {
         canDelete: !params.has("reader"),
         genres: found.kind === "book" ? ["fantasy", "science_fiction"] : [],
         tags: ["Favorite"],
+        wishedBy: wishedByFor(found.editionId),
         series:
           found.kind === "book"
             ? [{ seriesId: "series-1", name: "Dune", ordered: true, position: 1 }]
@@ -719,7 +757,7 @@ mockIPC((cmd, args) => {
     case "genres_of_kind":
       return ["fantasy", "science_fiction", "adventure"];
     case "add_missing":
-      return null;
+      return { editionId: "new-missing-edition-id", existingEdition: false, coverFailed: false };
     case "request_book":
     case "request_missing":
     case "request_add_copy":

@@ -24,7 +24,12 @@ export type Overlay =
   | { name: "backups" }
   | { name: "filters" }
   | { name: "burst" }
-  | { name: "add"; prefill?: { isbn?: string; title?: string; author?: string } }
+  | {
+      name: "add";
+      prefill?: { isbn?: string; title?: string; author?: string };
+      /** Opened from «Me falta»: the form saves with `addMissing`/`requestMissing`, no copy (D61). */
+      missing?: boolean;
+    }
   | { name: "book"; editionId: string }
   | { name: "newLibrary" }
   | { name: "deleteLibrary" }

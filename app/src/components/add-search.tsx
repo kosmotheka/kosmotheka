@@ -125,10 +125,20 @@ interface Props {
   onCreated: (result: CreatedBook, title: string) => void;
   /** A reader's book went to the administrators, or was simply added if allowed now. */
   onRequested?: (requested: boolean) => void;
+  /** «Me falta» (D61): the form it leads to has no copy section, and saves with `addMissing`. */
+  missing?: boolean;
 }
 
 /** «Añadir» starts here: search first, «Añadir a mano» always at hand (D60). */
-export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onRequested }: Props) {
+export function AddSearch({
+  open,
+  desktop,
+  library,
+  onOpenChange,
+  onCreated,
+  onRequested,
+  missing,
+}: Props) {
   const { t } = useTranslation();
   const [kind, setKind] = useState<Kind>("book");
   const [query, setQuery] = useState("");
@@ -241,6 +251,7 @@ export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onR
         desktop={desktop}
         library={library}
         initial={formBook}
+        missing={missing}
         onOpenChange={onOpenChange}
         onCreated={onCreated}
         onRequested={onRequested}
@@ -466,7 +477,9 @@ export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onR
               >
                 <X className="size-[22px]" />
               </Button>
-              <DialogTitle className="flex-1 text-lg font-semibold">{t("nav.add")}</DialogTitle>
+              <DialogTitle className="flex-1 text-lg font-semibold">
+                {t(missing ? "nav.addMissing" : "nav.add")}
+              </DialogTitle>
             </header>
             <DialogDescription className="sr-only">{t("addSearch.placeholder")}</DialogDescription>
             <div className="flex flex-col gap-2.5 px-4">
@@ -496,7 +509,7 @@ export function AddSearch({ open, desktop, library, onOpenChange, onCreated, onR
       >
         <div className="flex items-center px-6 pt-4">
           <DialogTitle className="flex-1 text-lg font-semibold">
-            {t("form.title", { library })}
+            {t(missing ? "form.missingTitle" : "form.title", { library })}
           </DialogTitle>
         </div>
         <DialogDescription className="sr-only">{t("addSearch.placeholder")}</DialogDescription>

@@ -7,6 +7,10 @@
     "add": "Add book",
     "added": "“{{title}}” was added to the catalog.",
     "addedCopy": "You already had this edition of “{{title}}”: a new copy was added to it.",
+    "views": {
+      "owned": "I have it",
+      "all": "Everything"
+    },
     "empty": {
       "title": "{{library}} is empty",
       "body": "Search by title or code, scan with the camera or import a spreadsheet you already have.",
@@ -112,6 +116,8 @@
   },
   "form": {
     "title": "Add to {{library}}",
+    "missingTitle": "Add to Missing in {{library}}",
+    "missingHint": "Catalogued without a copy; add one later when you get it.",
     "description": "If the ISBN is already in the catalog, a copy is added to that edition.",
     "copySection": "Your copy",
     "whatIsIt": "What is it?",
@@ -241,6 +247,14 @@
     "owned_one": "You have it",
     "owned_other": "You have it · {{count}}",
     "noCopies": "No copies",
+    "statusPill": {
+      "missing": "Missing · no copies",
+      "owned_one": "You have it · {{count}} copy",
+      "owned_other": "You have it · {{count}} copies"
+    },
+    "addCopyCta": "I have it",
+    "addCopyHint": "Add a copy: format, whose and where. It stops being missing.",
+    "addCopyHintReader": "An administrator will add the copy; you will see the answer in My requests.",
     "data": {
       "code": "Barcode",
       "playersRange": "{{min}} to {{max}}",
@@ -326,7 +340,13 @@
     "done": "Done",
     "remove": "Remove the {{filter}} filter",
     "closeSearch": "Close search",
-    "noResultsTitle": "Nothing matches these filters"
+    "noResultsTitle": "Nothing matches these filters",
+    "wish": {
+      "chip": "Wishes",
+      "mine": "What I want",
+      "others": "What others want"
+    },
+    "wishCount": "{{count}} of {{total}} · {{label}}"
   },
   "data": {
     "title": "Backups",
@@ -469,6 +489,7 @@
     "quickAdd": "Quick add",
     "scan": "Scan",
     "add": "Add",
+    "addMissing": "Add one",
     "works_one": "{{count}} item",
     "works_other": "{{count}} items",
     "languages": "Language",
@@ -885,7 +906,9 @@
     "sent": "Request sent to the administrators. You can follow it in My requests.",
     "done": "Done: you may now do this without asking.",
     "whyDeleteReader": "You are a reader in {{library}}: the administrators decide.",
-    "deletePlaceholder": "For example: it is a duplicate"
+    "deletePlaceholder": "For example: it is a duplicate",
+    "addMissingTitle": "Ask to add to Missing in {{library}}",
+    "whyAddMissing": "You are a reader in {{library}}: it is catalogued when an administrator accepts it."
   },
   "addSearch": {
     "placeholder": "Search by title…",
@@ -908,6 +931,13 @@
     "notLost": "Nothing is lost: the administrators will see it among their requests and decide. You can follow it in My requests.",
     "see_one": "See my request",
     "see_other": "See my requests"
+  },
+  "wish": {
+    "toggle": "I want it",
+    "byMeOnly": "You want it",
+    "byMeAnd": "You and {{names}} want it",
+    "byOne": "{{name}} wants it",
+    "byMany": "{{names}} want it"
   },
   "marks": {
     "mine": "Mine",
