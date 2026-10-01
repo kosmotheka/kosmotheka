@@ -79,6 +79,7 @@
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
 | D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
 | D73 | Cómo se comprueban los permisos sin servidor | aceptada |
+| D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | propuesta |
 
 ---
 
@@ -1006,3 +1007,36 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **«Puede compartir» se comprueba en el dispositivo que comparte:** en una biblioteca con roles, solo quien administra o tiene «Puede compartir» la lleva a otro dispositivo; sin roles, cualquiera, como antes. Quien no puede no ve la opción (al emparejar ni en dispositivos, donde sale «En Familia no puedes compartir; pídeselo a quien la administra») y el motor lo rechaza igualmente (`people::may_share`). **Límite aceptado:** compartir no es una operación que juzguen los demás, sino entregar datos que el dispositivo ya tiene, así que una app modificada podría entregarlos igual. El dispositivo que los recibe no es de nadie: cuenta como lector, solo lee y pide, y quien administra lo ve «sin persona» y le puede retirar el acceso. Se descartó que los demás dispositivos rechacen a quien trajo alguien sin permiso: cambiaría el formato del alta y aun así no impediría la lectura.
 
 **Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/historico/plan-fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.
+
+## D74 · Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos — `propuesta`
+
+**Contexto:** la landing (D22) tendrá una página de descargas: Linux (`.deb`, `.rpm`, AppImage), el instalador de Windows y el enlace a Google Play, y conviene ofrecer también las versiones anteriores. Hay que decidir dónde viven los binarios y cómo llegan allí. Propuesto el 01/10/2026, al generar los primeros instaladores.
+
+**Opciones para los binarios de escritorio:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| En el repositorio, y se despliegan con la web | Todo en un sitio | Git guarda cada binario para siempre (el AppImage pesa 77 MB): el repositorio crecería sin remedio y limpiarlo obliga a reescribir la historia |
+| En el VPS (`public/` o `var/downloads` de Symfony) | Enlaces propios | Subida a mano en cada versión; disco y ancho de banda del VPS; las versiones anteriores hay que gestionarlas aparte |
+| **GitHub Releases** del repositorio público | Gratis, sin límite de tráfico práctico, versiones anteriores con sus notas, cuenta descargas, se llena desde el CI | Depende de GitHub |
+
+**Propuesta:**
+1. **Escritorio en GitHub Releases.** Al subir una etiqueta (`v0.2.0`), un workflow compila Linux y Windows con la acción oficial de Tauri y crea un *release* en borrador con los instaladores y sus sumas de comprobación. El maintainer lo revisa y lo publica.
+2. **Nombres sin versión** en los ficheros del *release* (`Kosmotheka-linux-x86_64.AppImage`, `Kosmotheka-windows-x64-setup.exe`…), para que la landing use los enlaces fijos `…/releases/latest/download/<fichero>`, que siempre dan la última versión. Las anteriores, en la página de *releases*.
+3. **Rutas propias que redirigen:** si la landing va en Symfony, `/download/{plataforma}` responde con un 302 al fichero de GitHub. Los enlaces compartidos no se rompen si un día cambia el alojamiento, y se pueden contar descargas sin cookies. En una landing estática, enlaces directos.
+4. **Android, a Google Play desde el mismo workflow:** compila el `.aab` firmado con la clave de subida y lo sube a la pista de prueba (interna o cerrada) con la API de Google Play Developer. Pasarlo a producción sigue siendo un paso a mano en la consola de Play.
+   - La **primera subida** es a mano: la API solo trabaja con apps que ya existen en la consola.
+   - **Secretos** en GitHub, nunca en el repositorio (D03): la clave de subida (keystore en base64 y sus contraseñas) y el JSON de una cuenta de servicio de Google Cloud con permiso solo para esta app.
+   - Con **Play App Signing**, Google guarda la clave que firma la app; nosotros solo la de subida, que Google puede cambiar si se pierde. Aun así, la clave de subida va con copia de seguridad fuera del repositorio.
+   - El `versionCode` de Android sale de la versión de `tauri.conf.json`, así que cada versión publicada tiene que subir de número.
+
+**Por estudiar cuando llegue:**
+- **Actualizaciones automáticas en escritorio** con el plugin `updater` de Tauri: lee un `latest.json` del mismo *release*. Los ficheros van firmados con otra clave propia, también fuera del repositorio.
+- **Firma de código en Windows:** sin ella, SmartScreen avisa al instalar («Windows protegió su PC»). Los certificados cuestan dinero; hay opciones gratuitas para open source (SignPath Foundation).
+- **Flathub** como canal más para Linux, y F-Droid para Android (ya en la Fase 8).
+
+**Consecuencias:**
+- Concreta la página de descargas de D22, que sigue abierta en si la landing va en Symfony o estática; esta propuesta sirve para las dos.
+- Necesita el repositorio público (D03, D64): los *releases* de un repositorio privado no se pueden descargar sin cuenta.
+- Hoy el CI genera el instalador de Windows como artefacto de cada push (caduca a los 14 días); es solo para pruebas y no sustituye a los *releases*.
+- En la Fase 8 del ROADMAP: el workflow de publicación y la página de descargas.
