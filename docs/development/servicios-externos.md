@@ -4,10 +4,10 @@
 
 | Servicio | Para qué | Cuándo | Decisión | Estado |
 |---|---|---|---|---|
-| **Correo con el dominio propio** (por decidir: servicio gratuito) | Dar de alta los demás servicios con una dirección del proyecto, y el contacto de la web y de Google Play | Antes del hito 7.1 | — | Pendiente de elegir |
+| **Buzón en Zoho Mail** (plan gratuito), en `kosmotheka.com` | Dar de alta los demás servicios con una dirección del proyecto, y el contacto de la web y de Google Play | Antes del hito 7.1 | D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Cuenta en X** con el nombre del proyecto | Reservar el nombre; no para iniciar sesión | Cuando haya correo propio | D70 | Pendiente |
 | **Google Cloud: proyecto, pantalla de consentimiento OAuth y credenciales** | «Continuar con Google» | Hito 7.1 | D77 | Pendiente |
-| **Proveedor de correo** (por decidir) y DNS del dominio (SPF, DKIM, DMARC) | Códigos de registro y de recuperación | Hito 7.1 | D49 | Pendiente de elegir |
+| **Brevo** y DNS del dominio (SPF, DKIM, DMARC) | Códigos de registro y de recuperación | Hito 7.1 | D49, D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Dominios** (D79): `api.kosmotheka.app`, `kosmotheka.app` con su página de instalación y `assetlinks.json` (sin la redirección actual a `.com`), y sus certificados HTTPS | Que la app hable con la nube, las invitaciones y volver de Google a la app | Hito 7.1 (`assetlinks.json`) y 7.9 | D48, D79 | Pendiente |
 | **Claves de proveedores:** BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine | Búsquedas con clave a través de la nube | Hito 7.8 | D62 | Pendiente |
 | **Firebase: proyecto, FCM y cuenta de servicio del servidor** | Notificaciones con la app cerrada en Android | Fase 8 | D75 | Pendiente |

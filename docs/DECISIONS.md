@@ -85,6 +85,7 @@
 | D77 | Entrar con email o con Google | aceptada |
 | D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada |
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
+| D80 | Correo: buzón en Zoho Mail gratis, envíos de la app con Brevo | aceptada |
 
 ---
 
@@ -661,7 +662,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 **Consecuencias:**
 - El código caduca, admite pocos intentos y se puede pedir otro, con límite de peticiones (D42).
 - **Contra bots**, sin honeypot (en una app no sirve: los bots atacan la API directamente): límite de peticiones por IP (D42); las cuentas sin confirmar se borran solas al cabo de 24 horas; y límite de correos enviados por dirección, para que nadie use el servidor para inundar el correo de otro. Si hay abusos, se añadirá Cloudflare Turnstile.
-- **Cómo se envía el correo está por decidir** (quizá con Cloudflare). `symfony/mailer` permite cambiar de proveedor sin tocar el código, con `MAILER_DSN` en `.env.local`.
+- **Cómo se envía el correo:** con Brevo (D80). `symfony/mailer` permite cambiar de proveedor sin tocar el código, con `MAILER_DSN` en `.env.local`.
 
 ## D50 · Recuperar la contraseña con un código en la app; revoca los demás dispositivos — `aceptada`
 
@@ -1164,3 +1165,26 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Consecuencias:** se apunta en [development/servicios-externos.md](development/servicios-externos.md). Concreta D22 (la web pública va en `.com`) y D74 (la página de descargas, en `.com`).
 
+## D80 · Correo: buzón en Zoho Mail gratis, envíos de la app con Brevo — `aceptada`
+
+**Contexto:** hace falta una dirección del proyecto para dar de alta los servicios externos (Google Cloud, Firebase, Play…) y para que nos escriban desde la web y Google Play, y hay que poder responder. Además, el servidor envía los códigos de registro y de recuperación (D49, D50). Requisitos del maintainer (01/10/2026): sin coste, un buzón separado del correo personal con su propia app en el móvil, y el DNS se queda en el proveedor del VPS.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Google Workspace | Lo más cómodo | Unos 5 € al mes |
+| Reenvío a Gmail (Cloudflare Email Routing o ImprovMX) y «Enviar como» | Gratis | Cloudflare exige mover el DNS; Gmail retira «Enviar como» para direcciones ajenas en enero de 2027; ata el proyecto al correo personal |
+| Reenvío a la bandeja Conversations de Brevo | Gratis, con app | Es una bandeja de atención al cliente, no un buzón; si Brevo suspende la cuenta, se pierden a la vez el buzón y los envíos |
+| Buzón de pago barato (Purelymail, Migadu, mailbox.org) | IMAP estándar | Cuesta dinero; los más baratos son servicios pequeños o limitan los envíos |
+| Servidor propio (Stalwart, docker-mailserver) | El buzón es nuestro | el proveedor del VPS bloquea el puerto 25 de salida, así que hace falta un relay igualmente; copias y mantenimiento a nuestro cargo |
+| **Zoho Mail gratis + Brevo** | Gratis; dos piezas independientes y cada una se cambia sin tocar la otra | El plan gratuito de Zoho no tiene IMAP ni SMTP (solo su web y su app) y admite un solo dominio |
+
+**Decisión:** Zoho Mail Forever Free para el buzón y Brevo para el correo que envía el servidor.
+
+- **El buzón vive en `kosmotheka.com`**, el dominio «que se lee» (D79). Se lee y se responde desde la app de Zoho, que envía con sus propios servidores.
+- **El servidor envía con Brevo** a través de `symfony/mailer` (`MAILER_DSN`), desde una dirección que no admite respuestas. Si Brevo falla o suspende la cuenta, se cambia el DSN a otro proveedor (Resend, Mailjet, Amazon SES) y el buzón no se entera.
+- **Las cuentas de los servicios se dan de alta con la dirección del dominio**, que es del proyecto y no de una persona. La recuperación de la cuenta de Zoho apunta al correo personal, para que no dependa de sí misma.
+- **Plan B si falla Zoho** (el plan gratuito no está disponible en todos los centros de datos): Zoho Mail Lite (unos 1 € al mes), que no cambia nada más.
+
+**Consecuencias:** el DNS de `kosmotheka.com` lleva los registros de Zoho y de Brevo (MX, un único SPF con los dos, DKIM de cada uno y DMARC). Los pasos están en [development/correo.md](development/correo.md), y la tabla de [development/servicios-externos.md](development/servicios-externos.md) queda actualizada. Quien aloje su servidor usa el proveedor que quiera con `MAILER_DSN` (D18). Resuelve lo que D49 y D50 dejaban pendiente.
