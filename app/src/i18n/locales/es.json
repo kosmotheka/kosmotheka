@@ -148,7 +148,8 @@
       "quantity": "Unidades",
       "acquiredOn": "Fecha de compra",
       "location": "Ubicación",
-      "changeCover": "Cambiar portada"
+      "changeCover": "Cambiar portada",
+      "requires": "Necesita"
     },
     "units": {
       "minutes": "min",
@@ -180,7 +181,8 @@
       "barcode": "Opcional",
       "barcodeVideogame": "Opcional. La plataforma va en cada ejemplar",
       "seasonsHeld": "Opcional. Vacío si están todas",
-      "locationDigital": "Lo digital no está en una balda: di dónde lo tienes."
+      "locationDigital": "Lo digital no está en una balda: di dónde lo tienes.",
+      "requires": "otra obra sin la que esta no sirve, como el juego base"
     },
     "otherFormatOnly": "Otro · es el único formato de «Otro»",
     "other": {
@@ -264,7 +266,9 @@
       "minAge": "{{age}}+",
       "seasons_one": "{{count}} temporada",
       "seasons_other": "{{count}} temporadas"
-    }
+    },
+    "requiresNotice": "Necesita **{{title}}**, que no tienes. Sin él no se puede usar.",
+    "seeWork": "Ver {{title}}"
   },
   "copies": {
     "empty": "Sin ejemplares: esta edición está en el catálogo, pero nadie la tiene.",
@@ -1103,5 +1107,64 @@
       }
     },
     "toggleAria": "Usar {{name}}"
+  },
+  "series": {
+    "new": "Nueva serie",
+    "empty": "Todavía no hay series.",
+    "newSeriesTitle": "Nueva serie",
+    "name": "Nombre",
+    "type": "Tipo de serie",
+    "ordered": "Con orden",
+    "unordered": "Sin orden",
+    "orderedHint": "Una saga: 1, 2, 3…",
+    "unorderedHint": "Una línea, como Catán",
+    "orderedKind": "Saga con orden",
+    "unorderedKind": "Línea sin orden",
+    "haveOf": "tienes {{have}} de {{total}}",
+    "missing_one": "{{count}} te falta",
+    "missing_other": "{{count}} te faltan",
+    "gaps_one": "hay un hueco sin apuntar",
+    "gaps_other": "hay {{count}} huecos sin apuntar",
+    "rename": "Renombrar",
+    "reorder": "Reordenar",
+    "reorderHint": "Arrastra o escribe el número",
+    "done": "Hecho",
+    "addWork": "Añadir obra",
+    "delete": "Eliminar serie",
+    "deleteConfirm": {
+      "title": "¿Eliminar «{{name}}»?",
+      "body": "Sus obras se quedan en el catálogo; solo se elimina la serie."
+    },
+    "gap": "Sin apuntar",
+    "gapHint": "Aquí falta el número {{n}}",
+    "addHere": "Apuntar aquí",
+    "position": "Número",
+    "positionOf": "Nº {{position}}",
+    "positionBetween": "Entre «{{prevTitle}}» ({{prevPos}}) y «{{nextTitle}}» ({{nextPos}})",
+    "positionAfter": "Después de «{{title}}» ({{pos}})",
+    "positionBefore": "Antes de «{{title}}» ({{pos}})",
+    "pickSeries": "Serie",
+    "addToSeries": "Añadir a una serie",
+    "createSeries": "Crear la serie «{{name}}»",
+    "addToNamed": "Añadir a {{name}}",
+    "createAndAdd": "Crear y añadir",
+    "status": {
+      "owned": "Lo tengo",
+      "missing": "Me falta"
+    },
+    "needs": "Necesita",
+    "neededBy": "Lo necesitan",
+    "list": {
+      "workCount_one": "{{count}} obra",
+      "workCount_other": "{{count}} obras"
+    },
+    "picker": {
+      "searchPlaceholder": "Busca una serie"
+    },
+    "workPicker": {
+      "title": "Añadir obra",
+      "placeholder": "Busca en el catálogo",
+      "alreadyIn": "Ya está en esta serie"
+    }
   }
 }

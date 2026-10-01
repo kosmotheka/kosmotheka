@@ -148,7 +148,8 @@
       "quantity": "Copies",
       "acquiredOn": "Purchase date",
       "location": "Location",
-      "changeCover": "Change cover"
+      "changeCover": "Change cover",
+      "requires": "Needs"
     },
     "units": {
       "minutes": "min",
@@ -180,7 +181,8 @@
       "barcode": "Optional",
       "barcodeVideogame": "Optional. Platform is set on each copy",
       "seasonsHeld": "Optional. Leave empty if you have them all",
-      "locationDigital": "Digital copies aren’t on a shelf: say where you have them."
+      "locationDigital": "Digital copies aren’t on a shelf: say where you have them.",
+      "requires": "another work this one doesn't work without, like a game's base set"
     },
     "otherFormatOnly": "Other · the only format for “Other”",
     "other": {
@@ -264,7 +266,9 @@
       "minAge": "{{age}}+",
       "seasons_one": "{{count}} season",
       "seasons_other": "{{count}} seasons"
-    }
+    },
+    "requiresNotice": "Needs **{{title}}**, which you don't have. Without it, you can't use this one.",
+    "seeWork": "See {{title}}"
   },
   "copies": {
     "empty": "No copies: this edition is in the catalog but nobody owns it.",
@@ -1103,5 +1107,64 @@
       }
     },
     "toggleAria": "Use {{name}}"
+  },
+  "series": {
+    "new": "New series",
+    "empty": "No series yet.",
+    "newSeriesTitle": "New series",
+    "name": "Name",
+    "type": "Series type",
+    "ordered": "Ordered",
+    "unordered": "Unordered",
+    "orderedHint": "A saga: 1, 2, 3…",
+    "unorderedHint": "A line, like Catan",
+    "orderedKind": "Ordered saga",
+    "unorderedKind": "Unordered line",
+    "haveOf": "you have {{have}} of {{total}}",
+    "missing_one": "{{count}} missing",
+    "missing_other": "{{count}} missing",
+    "gaps_one": "{{count}} gap not logged yet",
+    "gaps_other": "{{count}} gaps not logged yet",
+    "rename": "Rename",
+    "reorder": "Reorder",
+    "reorderHint": "Drag or type the number",
+    "done": "Done",
+    "addWork": "Add a work",
+    "delete": "Delete series",
+    "deleteConfirm": {
+      "title": "Delete “{{name}}”?",
+      "body": "Its works stay in the catalog; only the series is removed."
+    },
+    "gap": "Not logged",
+    "gapHint": "Number {{n}} is missing here",
+    "addHere": "Add one here",
+    "position": "Number",
+    "positionOf": "No. {{position}}",
+    "positionBetween": "Between “{{prevTitle}}” ({{prevPos}}) and “{{nextTitle}}” ({{nextPos}})",
+    "positionAfter": "After “{{title}}” ({{pos}})",
+    "positionBefore": "Before “{{title}}” ({{pos}})",
+    "pickSeries": "Series",
+    "addToSeries": "Add to a series",
+    "createSeries": "Create “{{name}}”",
+    "addToNamed": "Add to {{name}}",
+    "createAndAdd": "Create and add",
+    "status": {
+      "owned": "I have it",
+      "missing": "Missing"
+    },
+    "needs": "Needs",
+    "neededBy": "Needed by",
+    "list": {
+      "workCount_one": "{{count}} work",
+      "workCount_other": "{{count}} works"
+    },
+    "picker": {
+      "searchPlaceholder": "Search a series"
+    },
+    "workPicker": {
+      "title": "Add a work",
+      "placeholder": "Search the catalog",
+      "alreadyIn": "Already in this series"
+    }
   }
 }

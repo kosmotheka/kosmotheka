@@ -1,6 +1,17 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Cloud, ImagePlus, Info, Loader2, MapPin, Plus, Search, X } from "lucide-react";
+import {
+  Check,
+  Cloud,
+  ImagePlus,
+  Info,
+  Link as LinkIcon,
+  Loader2,
+  MapPin,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
@@ -10,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   type BookDetail,
+  type BookSummary,
   type ContributorRole,
   type CopyDetail,
   type CopyInput,
@@ -18,10 +30,15 @@ import {
   type Format,
   type Kind,
   type LookupResult,
+  type RelatedWork,
+  addRequirement,
   contributorRoles,
+  getBook,
   isCommandError,
   kinds,
+  listBooks,
   lookupIsbn,
+  removeRequirement,
 } from "@/lib/api";
 import {
   DIGITAL_FORMATS,
@@ -1053,6 +1070,139 @@ export function LookupStatus({
           {t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
         </p>
       ))}
+    </div>
+  );
+}
+
+/**
+ * «Necesita» (D61), in the edit form: another work this one does not work without, like an
+ * expansion's base game. Applied right away, like the marks the work page also saves on the
+ * spot, rather than deferred to the form's own «Guardar».
+ */
+export function RequiresField({
+  workId,
+  requires,
+  onChanged,
+}: {
+  workId: string;
+  requires: RelatedWork[];
+  onChanged: () => void;
+}) {
+  const { t } = useTranslation();
+  const [adding, setAdding] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<BookSummary[]>([]);
+
+  const requiredEditions = new Set(
+    requires.map((r) => r.editionId).filter((id): id is string => id !== null),
+  );
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (query.trim().length < 2) {
+        setResults([]);
+        return;
+      }
+      listBooks({ query: query.trim() })
+        .then(setResults)
+        .catch(() => setResults([]));
+    }, 300);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  const add = async (book: BookSummary) => {
+    const { workId: requiredWorkId } = await getBook(book.editionId);
+    await addRequirement(workId, requiredWorkId);
+    setAdding(false);
+    setQuery("");
+    onChanged();
+  };
+
+  const remove = async (requiredWorkId: string) => {
+    await removeRequirement(workId, requiredWorkId);
+    onChanged();
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="requires-add">
+        {t("form.fields.requires")}{" "}
+        <span className="font-normal text-muted-foreground">· {t("form.hints.requires")}</span>
+      </Label>
+      <div className="flex flex-wrap gap-1.5">
+        {requires.map((r) => (
+          <span
+            key={r.workId}
+            className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-sm"
+          >
+            <LinkIcon className="size-3.5 text-muted-foreground" />
+            {r.title}
+            {r.copies === 0 && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                {t("book.statusPill.missing")}
+              </span>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-5"
+              aria-label={t("form.people.remove", { name: r.title })}
+              onClick={() => void remove(r.workId)}
+            >
+              <X className="size-3" />
+            </Button>
+          </span>
+        ))}
+        {!adding && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => setAdding(true)}
+          >
+            <Plus className="size-3.5" /> {t("nav.add")}
+          </Button>
+        )}
+      </div>
+      {adding && (
+        <div className="flex flex-col gap-1 rounded-lg border p-2">
+          <Input
+            id="requires-add"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("series.workPicker.placeholder")}
+          />
+          <div className="flex flex-col">
+            {results
+              .filter((b) => !requiredEditions.has(b.editionId))
+              .map((book) => (
+                <button
+                  key={book.editionId}
+                  type="button"
+                  className="rounded-md p-1.5 text-left text-sm hover:bg-muted"
+                  onClick={() => void add(book)}
+                >
+                  {book.title}
+                </button>
+              ))}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            onClick={() => {
+              setAdding(false);
+              setQuery("");
+            }}
+          >
+            {t("form.cancel")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

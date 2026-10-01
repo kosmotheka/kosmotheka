@@ -11,10 +11,13 @@ import {
   ExternalLink,
   FolderInput,
   Layers,
+  Link as LinkIcon,
+  ListOrdered,
   Pencil,
   Plus,
   Send,
   Trash2,
+  TriangleAlert,
   Users,
   X,
 } from "lucide-react";
@@ -25,6 +28,7 @@ import {
   CopyFields,
   EditionFields,
   type EditionForm,
+  RequiresField,
   copyFormFrom,
   editionFormFrom,
   emptyCopyFormFor,
@@ -237,6 +241,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
       {book && (
         <div className={cn("flex flex-col gap-5 pb-8", desktop ? "px-5" : "px-4")}>
           <Hero book={book} desktop={desktop} />
+          <RequiresNotice book={book} />
           {book.copies.length === 0 && (
             <div className="flex flex-col gap-1.5">
               <Button onClick={startCopyForMissing}>
@@ -257,6 +262,8 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
             onNotice={onNotice}
             onChanged={changed}
           />
+          <SeriesSection book={book} />
+          <NeedsSection book={book} />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start border-b">
               <TabsTrigger value="copies" className="flex-none">
@@ -475,6 +482,120 @@ function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
   );
 }
 
+/** The amber notice when a required work (an expansion's base game) is not owned (D61). */
+function RequiresNotice({ book }: { book: BookDetail }) {
+  const { t } = useTranslation();
+  const missing = book.requires.find((r) => r.copies === 0);
+  if (!missing) return null;
+  const missingEditionId = missing.editionId;
+  return (
+    <div
+      role="status"
+      className="flex gap-2.5 rounded-xl bg-amber-500/10 p-3 text-[13.5px] leading-snug text-pretty"
+    >
+      <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+      <div className="flex flex-1 flex-col gap-2">
+        <span>
+          {t("book.requiresNotice", { title: missing.title })
+            .split("**")
+            .map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : <span key={i}>{part}</span>))}
+        </span>
+        {missingEditionId && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => openOverlay({ name: "book", editionId: missingEditionId })}
+          >
+            {t("book.seeWork", { title: missing.title })}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** «Series» (D61): which series this work belongs to and its number, plus adding to one. */
+function SeriesSection({ book }: { book: BookDetail }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-xs font-semibold text-muted-foreground">
+          {t("nav.series")}
+        </span>
+        <button
+          type="button"
+          className="text-xs font-medium text-primary hover:underline"
+          onClick={() =>
+            openOverlay({ name: "seriesPicker", workId: book.workId, workTitle: book.title })
+          }
+        >
+          {t("series.addToSeries")}
+        </button>
+      </div>
+      {book.series.map((s) => (
+        <button
+          key={s.seriesId}
+          type="button"
+          onClick={() => openOverlay({ name: "series", seriesId: s.seriesId })}
+          className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13.5px]"
+        >
+          {s.ordered ? (
+            <ListOrdered className="size-[15px] text-muted-foreground" />
+          ) : (
+            <Layers className="size-[15px] text-muted-foreground" />
+          )}
+          <span className="flex-1 font-medium">{s.name}</span>
+          <span className="text-muted-foreground">
+            {s.ordered && s.position !== null
+              ? t("series.positionOf", { position: s.position })
+              : t("series.unordered")}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** «Necesita» / «Lo necesitan» (D61): other works this one requires, or that require it. */
+function NeedsSection({ book }: { book: BookDetail }) {
+  const { t } = useTranslation();
+  if (book.requires.length === 0 && book.requiredBy.length === 0) return null;
+  const list = (title: string, items: typeof book.requires) => (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-muted-foreground">{title}</span>
+      {items.map((r) => {
+        const owned = r.copies > 0;
+        return (
+          <button
+            key={r.workId}
+            type="button"
+            disabled={!r.editionId}
+            onClick={() => r.editionId && openOverlay({ name: "book", editionId: r.editionId })}
+            className="flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-[13.5px]"
+          >
+            <LinkIcon className="size-[15px] text-muted-foreground" />
+            <span className="flex-1 font-medium">{r.title}</span>
+            <span
+              className={owned ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400"}
+            >
+              {t(owned ? "series.status.owned" : "series.status.missing")}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+  return (
+    <>
+      {book.requires.length > 0 && list(t("series.needs"), book.requires)}
+      {book.requiredBy.length > 0 && list(t("series.neededBy"), book.requiredBy)}
+    </>
+  );
+}
+
 /** The "Datos" rows for a work, per kind (Design's WorkDetail/DetailPanel lists). Rows with
  * no value are skipped rather than shown as "—", except book kept its earlier row set. */
 function datosRows(book: BookDetail, t: TFunction): [string, string | null][] {
@@ -609,6 +730,7 @@ function EditionSection({
           currentEditionId={book.editionId}
           onKindChange={(kind) => setKindChangePlan(planKindChange(book, kind))}
         />
+        <RequiresField workId={book.workId} requires={book.requires} onChanged={onSaved} />
         {errors.message && (
           <p className="text-sm text-destructive">
             {t("errors.internal", { message: errors.message })}

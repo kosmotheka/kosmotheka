@@ -38,7 +38,7 @@ export const mainNav: NavItem[] = [
 export const libraryNav: NavItem[] = [
   { id: "requests", icon: Inbox, label: "nav.requests", section: "requests" },
   { id: "people", icon: Users, label: "nav.people", section: "people" },
-  { id: "series", icon: ListOrdered, label: "nav.series", soon: true },
+  { id: "series", icon: ListOrdered, label: "nav.series", section: "series" },
   { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "backups" } },
   { id: "library", icon: SlidersHorizontal, label: "nav.librarySettings", section: "library" },
 ];

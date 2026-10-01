@@ -18,9 +18,12 @@ import {
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { PairDialog } from "@/components/pair-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
+import { NewSeriesDialog } from "@/components/new-series-dialog";
 import { RequestNotices } from "@/components/request-notices";
 import { RequestsContext, useRequestsState } from "@/components/requests-context";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { SeriesDetailView } from "@/components/series-detail";
+import { SeriesPickerDialog } from "@/components/series-picker-dialog";
 import { AppBar } from "@/components/shell/app-bar";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LibraryPicker } from "@/components/shell/library-picker";
@@ -36,7 +39,9 @@ import {
   type CreatedBook,
   type Holding,
   type LibrarySummary,
+  addToSeries,
   catalogOptions,
+  getBook,
   lanStatus,
   listBooks,
   listLibraries,
@@ -51,6 +56,7 @@ import { HelpPage } from "@/pages/help-page";
 import { LibraryPage } from "@/pages/library-page";
 import { PeoplePage } from "@/pages/people-page";
 import { RequestsPage } from "@/pages/requests-page";
+import { SeriesPage } from "@/pages/series-page";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -155,6 +161,15 @@ export default function App() {
     const message = t(result.existingEdition ? "catalog.addedCopy" : "catalog.added", { title });
     setNotice(result.coverFailed ? `${message} ${t("catalog.coverFailed")}` : message);
     reload();
+    // A series gap's «Apuntar aquí» (D61): the new work joins the series at that number,
+    // then the series page comes back instead of the catalog.
+    if (overlay?.name === "add" && overlay.intoSeries) {
+      const { seriesId, position } = overlay.intoSeries;
+      getBook(result.editionId)
+        .then((book) => addToSeries(seriesId, book.workId, position))
+        .then(() => openOverlay({ name: "series", seriesId }))
+        .catch(() => {});
+    }
   };
 
   const bookId = overlay?.name === "book" ? overlay.editionId : null;
@@ -203,6 +218,8 @@ export default function App() {
       <PeoplePage desktop={desktop} version={version} onNotice={setNotice} />
     ) : section === "requests" ? (
       <RequestsPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
+    ) : section === "series" ? (
+      <SeriesPage desktop={desktop} version={version} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} />
     ) : (
@@ -271,9 +288,9 @@ export default function App() {
             </div>
           ) : (
             <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-              {!["check", "library", "devices", "people", "requests"].includes(section) && (
-                <AppBar library={library} sync={sync} onSearch={focusSearch} />
-              )}
+              {!["check", "library", "devices", "people", "requests", "series"].includes(
+                section,
+              ) && <AppBar library={library} sync={sync} onSearch={focusSearch} />}
               <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
               <BottomNav section={section} />
               <NavDrawer open={overlay?.name === "drawer"} count={counts.catalog} sync={sync} />
@@ -377,6 +394,26 @@ export default function App() {
             onOpenChange={(open) => !open && closeOverlay()}
             onChanged={reload}
           />
+          <SeriesDetailView
+            seriesId={overlay?.name === "series" ? overlay.seriesId : null}
+            desktop={desktop}
+            onClose={closeOverlay}
+            onChanged={reload}
+          />
+          <NewSeriesDialog open={overlay?.name === "newSeries"} desktop={desktop} />
+          {overlay?.name === "seriesPicker" && (
+            <SeriesPickerDialog
+              open
+              desktop={desktop}
+              workId={overlay.workId}
+              workTitle={overlay.workTitle}
+              onClose={closeOverlay}
+              onAdded={() => {
+                closeOverlay();
+                reload();
+              }}
+            />
+          )}
           <PairDialog
             open={overlay?.name === "pair"}
             desktop={desktop}

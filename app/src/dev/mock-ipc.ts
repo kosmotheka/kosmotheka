@@ -15,8 +15,12 @@ import type {
   Mark,
   People,
   PersonMark,
+  RelatedWork,
   RequestSummary,
+  SeriesDetail,
+  SeriesEntry,
   Settings,
+  WorkSeries,
 } from "@/lib/api";
 
 // Mutable so the Providers screen can save keys and toggles across calls,
@@ -120,6 +124,20 @@ const books: BookSummary[] = [
   work(15, "book", "Hijos de Dune", ["Frank Herbert"], 1976, [], []),
   work(16, "boardgame", "Catán: Navegantes", [], 2015, [], [], "Devir"),
   work(17, "film", "Blade Runner", ["Ridley Scott"], 1982, [], []),
+  // Series and «necesita» (D61): Casa Capitular fills the Dune saga's position 6, leaving 5
+  // open as a gap; Imperium's expansion needs its base, which nobody has.
+  work(18, "book", "Casa Capitular: Dune", ["Frank Herbert"], 1985, ["hardcover"], ["Tersoal"]),
+  work(19, "boardgame", "Dune: Imperium", [], 2020, [], [], "Dire Wolf"),
+  work(
+    20,
+    "boardgame",
+    "Dune: Imperium – Ascenso de Ix",
+    [],
+    2022,
+    ["box"],
+    ["Tersoal"],
+    "Dire Wolf",
+  ),
 ];
 // Fundación keeps a pocket copy and an ISBN, for the change-of-kind screenshots
 // (book -> comic): the ISBN becomes a barcode and "Bolsillo" needs a new format.
@@ -139,6 +157,76 @@ function wishedByFor(editionId: string): string[] {
   const others = otherWishersByEdition[editionId] ?? [];
   return mine ? ["me", ...others] : others;
 }
+
+// Series and «necesita» (D61): an ordered Dune saga with a gap at 5, and an unordered
+// Catán line whose expansion needs the base (both already owned, unlike Imperium's).
+const DUNE_SERIES = "series-1";
+const CATAN_SERIES = "series-2";
+const workIdOf = (editionId: string) => `work-${editionId}`;
+const relatedWork = (b: BookSummary): RelatedWork => ({
+  workId: workIdOf(b.editionId),
+  editionId: b.editionId,
+  title: b.title,
+  copies: b.copyCount,
+});
+
+const seriesOfEdition: Record<string, WorkSeries[]> = {
+  [books[0].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 1 }],
+  [books[1].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 2 }],
+  [books[14].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 3 }],
+  [books[13].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 4 }],
+  [books[17].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 6 }],
+  [books[8].editionId]: [{ seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null }],
+  [books[15].editionId]: [
+    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null },
+  ],
+};
+
+const requiresOfEdition: Record<string, RelatedWork[]> = {
+  // Catán: Navegantes needs Catán (owned): no warning, just the link.
+  [books[15].editionId]: [relatedWork(books[8])],
+  // Imperium's expansion needs the base, which nobody owns: the amber notice shows.
+  [books[19].editionId]: [relatedWork(books[18])],
+};
+const requiredByOfEdition: Record<string, RelatedWork[]> = {
+  [books[8].editionId]: [relatedWork(books[15])],
+  [books[18].editionId]: [relatedWork(books[19])],
+};
+
+function seriesEntryOf(b: BookSummary, entryId: string, position: number | null): SeriesEntry {
+  return {
+    entryId,
+    workId: workIdOf(b.editionId),
+    editionId: b.editionId,
+    title: b.title,
+    kind: b.kind,
+    cover: b.cover,
+    position,
+    copies: b.copyCount,
+  };
+}
+
+const seriesById: Record<string, SeriesDetail> = {
+  [DUNE_SERIES]: {
+    id: DUNE_SERIES,
+    name: "Dune",
+    ordered: true,
+    entries: [
+      seriesEntryOf(books[0], "d1", 1),
+      seriesEntryOf(books[1], "d2", 2),
+      seriesEntryOf(books[14], "d3", 3),
+      seriesEntryOf(books[13], "d4", 4),
+      // Position 5 is left out on purpose: that is the gap.
+      seriesEntryOf(books[17], "d6", 6),
+    ],
+  },
+  [CATAN_SERIES]: {
+    id: CATAN_SERIES,
+    name: "Catán",
+    ordered: false,
+    entries: [seriesEntryOf(books[8], "c1", null), seriesEntryOf(books[15], "c2", null)],
+  },
+};
 
 const lan: LanStatus = {
   deviceId: "dev",
@@ -686,12 +774,9 @@ mockIPC((cmd, args) => {
         genres: found.kind === "book" ? ["fantasy", "science_fiction"] : [],
         tags: ["Favorite"],
         wishedBy: wishedByFor(found.editionId),
-        series:
-          found.kind === "book"
-            ? [{ seriesId: "series-1", name: "Dune", ordered: true, position: 1 }]
-            : [],
-        requires: [],
-        requiredBy: [],
+        series: seriesOfEdition[found.editionId] ?? [],
+        requires: requiresOfEdition[found.editionId] ?? [],
+        requiredBy: requiredByOfEdition[found.editionId] ?? [],
       };
     }
     case "create_book":
@@ -705,35 +790,17 @@ mockIPC((cmd, args) => {
     case "delete_book":
       return null;
     case "list_series":
-      return [{ id: "series-1", name: "Dune", ordered: true, works: 2, missing: 1 }];
-    case "get_series":
-      return {
-        id: "series-1",
-        name: "Dune",
-        ordered: true,
-        entries: [
-          {
-            entryId: "entry-1",
-            workId: `work-${books[0].editionId}`,
-            editionId: books[0].editionId,
-            title: books[0].title,
-            kind: books[0].kind,
-            cover: books[0].cover,
-            position: 1,
-            copies: books[0].copyCount,
-          },
-          {
-            entryId: "entry-2",
-            workId: `work-${books[1].editionId}`,
-            editionId: books[1].editionId,
-            title: books[1].title,
-            kind: books[1].kind,
-            cover: books[1].cover,
-            position: 2,
-            copies: 0,
-          },
-        ],
-      };
+      return Object.values(seriesById).map((s) => ({
+        id: s.id,
+        name: s.name,
+        ordered: s.ordered,
+        works: s.entries.length,
+        missing: s.entries.filter((e) => e.copies === 0).length,
+      }));
+    case "get_series": {
+      const id = (args as { id: string }).id;
+      return seriesById[id] ?? seriesById[DUNE_SERIES];
+    }
     case "create_series":
       return "series-new";
     case "update_series":

@@ -13,7 +13,15 @@ import { useSyncExternalStore } from "react";
 //   overlay closes without leaving a step behind.
 
 export type Section =
-  "catalog" | "check" | "missing" | "library" | "devices" | "people" | "requests" | "help";
+  | "catalog"
+  | "check"
+  | "missing"
+  | "library"
+  | "devices"
+  | "people"
+  | "requests"
+  | "series"
+  | "help";
 
 export type Overlay =
   | { name: "drawer" }
@@ -29,12 +37,18 @@ export type Overlay =
       prefill?: { isbn?: string; title?: string; author?: string };
       /** Opened from «Me falta»: the form saves with `addMissing`/`requestMissing`, no copy (D61). */
       missing?: boolean;
+      /** Opened from a series gap's «Apuntar aquí»: the new work joins the series at this
+       * position once created (D61). */
+      intoSeries?: { seriesId: string; position: number };
     }
   | { name: "book"; editionId: string }
   | { name: "newLibrary" }
   | { name: "deleteLibrary" }
   | { name: "leaveLibrary" }
-  | { name: "move"; editionId: string; title: string };
+  | { name: "move"; editionId: string; title: string }
+  | { name: "series"; seriesId: string }
+  | { name: "newSeries" }
+  | { name: "seriesPicker"; workId: string; workTitle: string };
 
 export interface Location {
   section: Section;
@@ -49,6 +63,7 @@ const SECTIONS: Record<string, Section> = {
   devices: "devices",
   people: "people",
   requests: "requests",
+  series: "series",
   help: "help",
 };
 const CHANGE = "kosmotheka:navigate";
