@@ -32,8 +32,10 @@ distrobox enter library-dev
 sudo apt-get update
 sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
   libssl-dev libayatana-appindicator3-dev librsvg2-dev pkg-config \
-  openjdk-17-jdk-headless unzip git
+  openjdk-17-jdk-headless unzip git xdg-utils
 ```
+
+`xdg-utils` solo hace falta para empaquetar el AppImage.
 
 ## 3. Variables de entorno solo para el contenedor
 
@@ -114,6 +116,15 @@ Si la primera compilación falla en `org.gradle.wrapper.Download`, puede que la 
 ```bash
 JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true npm run tauri android build -- --debug --apk --target aarch64
 ```
+
+## 9. Instaladores de escritorio
+
+```bash
+cd app
+npm run tauri build
+```
+
+Genera en `target/release/bundle/` el `.deb`, el `.rpm` y el AppImage de Linux. El de Windows no se puede compilar aquí: lo hace el CI de GitHub en cada push a `main` o en cada PR. Es un instalador NSIS (`Kosmotheka_<versión>_x64-setup.exe`) que se descarga en *Actions* › la ejecución › *Artifacts* › `kosmotheka-windows-x64-setup` y caduca a los 14 días. Si falta WebView2 (Windows 10 antiguos), el instalador lo descarga.
 
 ## Versiones instaladas (24/09/2026)
 

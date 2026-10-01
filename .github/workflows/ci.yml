@@ -94,13 +94,17 @@ jobs:
       - run: npm ci
         working-directory: app
       - run: npm run tauri build -- --no-bundle
+        if: runner.os == 'Linux'
         working-directory: app
-      # Portable executable for manual testing; needs the WebView2 runtime (built into Windows 10/11).
-      - name: Upload Windows executable
+      # NSIS installer for manual testing; it installs WebView2 if missing.
+      - run: npm run tauri build -- --bundles nsis
+        if: runner.os == 'Windows'
+        working-directory: app
+      - name: Upload Windows installer
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v7
         with:
-          name: kosmotheka-windows-x64
-          path: target/release/*.exe
+          name: kosmotheka-windows-x64-setup
+          path: target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
           retention-days: 14
