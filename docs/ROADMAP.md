@@ -95,7 +95,7 @@ Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios
 - [x] 5.8 Marcas por persona (D68, adelantadas de la Fase 6): estado con fecha, valoración y favorito; cada persona marca lo suyo y ve lo de los demás (28/09/2026).
 - [x] Fase cerrada por el maintainer el 28/09/2026. El plan pasa a [historico/plan-fase-5.md](historico/plan-fase-5.md).
 
-## Fase 6 — Catálogo general
+## Fase 6 — Catálogo general ✅
 
 Deja de estar centrado en libros.
 
@@ -109,8 +109,25 @@ Deja de estar centrado en libros.
 - **Géneros, temáticas y etiquetas.**
 - **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
 
-**Estado:**
-- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [plans/fase-6.md](plans/fase-6.md) (28/09/2026).
+**Estado:** hecha el 01/10/2026. Plan, decisiones y detalle de cada hito en [historico/plan-fase-6.md](historico/plan-fase-6.md); pruebas en pantalla en [testing/fase-6.md](testing/fase-6.md).
+- [x] 6.1 Tipos y formatos: ocho tipos, formatos de cada uno, papeles de las personas, datos propios por tipo, código de barras y notas.
+- [x] 6.2 Tipos en la interfaz: «¿Qué es?», un formulario por tipo, ficha de cada tipo, portadas con su forma, estados según el tipo y cambio de tipo con aviso. La plataforma del videojuego y las temporadas de una serie van en el ejemplar (D60, cambio del 29/09).
+- [x] 6.3 El alta empieza por buscar: título o código escaneado, resultados con su fuente, «¿Qué es?» para un código sin tipo y «Añadir a mano» siempre a la vista.
+- [x] 6.4 Proveedores sin clave (Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive), Ajustes › Proveedores de datos con fuentes que se apagan y clave propia para cualquiera que la pida (Google Books, GameUPC).
+- [x] 6.5 Me falta (una obra sin ejemplares) y «Lo deseo» (una marca de cada persona); fuera la lista de deseos de D36.
+- [x] 6.6 Series con orden o sin él, huecos, y la relación «necesita».
+- [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
+
+**Pendiente de pulir** (no bloquea; se decide tras probar con la familia):
+- Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
+- La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
+- Filtros: el género y la etiqueta activos se ven dos veces en la barra.
+- Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
+- Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
+- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (elegir una imagen del dispositivo) está desactivada porque el motor no la guarda todavía.
+- Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
+- Exportar e importar CSV: siguen siendo solo de libros.
+- Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
 
 ## Fase 7 — La nube
 

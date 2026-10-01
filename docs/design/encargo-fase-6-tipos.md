@@ -1,6 +1,6 @@
 # Encargo de diseño: tipos de obra en la interfaz (Fase 6, hito 6.2)
 
-> Primer encargo de la Fase 6 para Claude Design, 28/09/2026. Lo decidido está en D60 y en [plans/fase-6.md](../plans/fase-6.md). Escritorio y móvil, claro y oscuro.
+> Primer encargo de la Fase 6 para Claude Design, 28/09/2026. Lo decidido está en D60 y en [historico/plan-fase-6.md](../historico/plan-fase-6.md). Escritorio y móvil, claro y oscuro.
 
 ## Contexto
 

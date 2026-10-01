@@ -1,6 +1,6 @@
 # Plan de la Fase 6 — Catálogo general
 
-> Plan de trabajo mientras dure la fase. Se basa en D60, D61, D62 y D68 ([DECISIONS.md](../DECISIONS.md)), en el [ROADMAP](../ROADMAP.md) y en [research/proveedores.md](../research/proveedores.md). Al cerrar la fase pasa a `historico/`. Escrito el 28/09/2026: lo que no está en esas decisiones es **propuesta**, y hay [preguntas](#pendiente-de-decidir) que conviene hablar antes de construir.
+> Plan de trabajo mientras dure la fase. Se basa en D60, D61, D62 y D68 ([DECISIONS.md](../DECISIONS.md)), en el [ROADMAP](../ROADMAP.md) y en [research/proveedores.md](../research/proveedores.md). Escrito el 28/09/2026; la fase se cerró el 01/10/2026 y el plan pasó a `historico/`. Lo que queda por pulir está en el ROADMAP.
 
 **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
 
