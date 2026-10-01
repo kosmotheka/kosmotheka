@@ -47,57 +47,58 @@
     "other": "Otro"
   },
   "genres": {
-    "fantasy": "Fantasía",
+    "novel": "Novela",
     "science_fiction": "Ciencia ficción",
+    "fantasy": "Fantasía",
     "horror": "Terror",
-    "mystery": "Misterio",
-    "thriller": "Thriller",
-    "romance": "Romance",
-    "historical_fiction": "Novela histórica",
+    "mystery": "Misterio y policiaca",
+    "historical": "Histórica",
+    "romance": "Romántica",
     "adventure": "Aventuras",
-    "humor": "Humor",
     "poetry": "Poesía",
     "theatre": "Teatro",
     "essay": "Ensayo",
-    "biography": "Biografía",
-    "history": "Historia",
-    "science": "Ciencia",
-    "philosophy": "Filosofía",
-    "art": "Arte",
-    "cooking": "Cocina",
-    "travel": "Viajes",
-    "roleplaying": "Juego de rol",
-    "children": "Para peques",
+    "biography": "Biografía y memorias",
+    "popular_science": "Divulgación",
+    "children": "Infantil",
     "young_adult": "Juvenil",
+    "roleplaying": "Rol",
+    "cooking": "Cocina",
+    "art": "Arte y fotografía",
+    "travel": "Viajes",
+    "others": "Otros",
     "superheroes": "Superhéroes",
     "manga": "Manga",
-    "crime": "Crimen",
-    "slice_of_life": "Costumbrista",
+    "humor": "Humor",
+    "graphic_novel": "Novela gráfica",
+    "crime": "Policiaco",
     "strategy": "Estrategia",
     "family": "Familiar",
-    "party": "Fiesta",
+    "party": "Party",
     "cooperative": "Cooperativo",
     "abstract": "Abstracto",
+    "card_game": "Cartas",
+    "tile_placement": "Colocación de losetas",
+    "worker_placement": "Colocación de trabajadores",
+    "deck_building": "Construcción de mazos",
     "deduction": "Deducción",
     "wargame": "Wargame",
-    "card_game": "Cartas",
-    "dexterity": "Destreza",
-    "trivia": "Trivial",
     "action": "Acción",
     "animation": "Animación",
     "comedy": "Comedia",
+    "documentary": "Documental",
     "drama": "Drama",
+    "musical": "Musical",
+    "thriller": "Suspense",
     "war": "Bélica",
     "western": "Western",
-    "musical": "Musical",
-    "documentary": "Documental",
-    "simulation": "Simulación",
-    "sports": "Deportes",
-    "racing": "Carreras",
-    "puzzle": "Puzle",
     "platformer": "Plataformas",
-    "shooter": "Disparos",
+    "puzzle": "Puzles",
+    "racing": "Carreras",
+    "sports": "Deportes",
     "fighting": "Lucha",
+    "shooter": "Disparos",
+    "simulation": "Simulación",
     "rock": "Rock",
     "pop": "Pop",
     "jazz": "Jazz",
@@ -105,14 +106,25 @@
     "electronic": "Electrónica",
     "hip_hop": "Hip hop",
     "folk": "Folk",
-    "metal": "Metal",
-    "blues": "Blues",
-    "soul": "Soul",
-    "reggae": "Reggae",
-    "latin": "Latina",
     "flamenco": "Flamenco",
-    "soundtrack": "Banda sonora",
-    "world": "Música del mundo"
+    "blues": "Blues",
+    "soul": "Soul y funk",
+    "metal": "Metal",
+    "soundtrack": "Bandas sonoras"
+  },
+  "genresByKind": {
+    "comic": {
+      "historical": "Histórico"
+    },
+    "film": {
+      "crime": "Policiaca"
+    },
+    "tv_series": {
+      "crime": "Policiaca"
+    },
+    "videogame": {
+      "adventure": "Aventura"
+    }
   },
   "form": {
     "title": "Añadir a {{library}}",
@@ -149,7 +161,17 @@
       "acquiredOn": "Fecha de compra",
       "location": "Ubicación",
       "changeCover": "Cambiar portada",
-      "requires": "Necesita"
+      "requires": "Necesita",
+      "genres": "Géneros",
+      "genresHint": "· lista de {{kind}}",
+      "genresPlaceholder": "Elige uno o varios",
+      "removeGenre": "Quitar {{genre}}",
+      "tags": "Etiquetas",
+      "tagsHint": "· libres, de esta biblioteca",
+      "tagsPlaceholder": "Añadir etiqueta…"
+    },
+    "classification": {
+      "title": "Clasificación"
     },
     "units": {
       "minutes": "min",
@@ -350,7 +372,13 @@
       "mine": "Lo que deseo",
       "others": "Lo que desean otros"
     },
-    "wishCount": "{{count}} de {{total}} · {{label}}"
+    "wishCount": "{{count}} de {{total}} · {{label}}",
+    "genre": {
+      "chip": "Género"
+    },
+    "tag": {
+      "chip": "Etiqueta"
+    }
   },
   "data": {
     "title": "Copias de seguridad",
@@ -645,6 +673,24 @@
     "inThis": "En {{name}}",
     "inAll": "En todas",
     "opensThere": "Se abre en {{name}}"
+  },
+  "tags": {
+    "breadcrumb": "Ajustes de la biblioteca",
+    "title": "Etiquetas",
+    "hint": "Las crea cualquiera al escribirlas en una obra. Aquí se renombran o se borran para toda la biblioteca. Los géneros los trae la app y no se cambian.",
+    "worksCount_one": "{{count}} obra",
+    "worksCount_other": "{{count}} obras",
+    "renameAria": "Renombrar {{name}}",
+    "deleteAria": "Borrar {{name}}",
+    "mergeHint": "Ya existe «{{name}}»: se unirán las dos",
+    "merge": "Unir",
+    "deleteTitle": "¿Borrar «{{name}}»?",
+    "deleteBody_one": "Se quita de la {{count}} obra que la lleva. Las obras no se borran.",
+    "deleteBody_other": "Se quita de las {{count}} obras que la llevan. Las obras no se borran.",
+    "delete": "Borrar etiqueta",
+    "empty": "Todavía no hay etiquetas. Escribe una en una obra para crearla.",
+    "addPlaceholder": "Añadir etiqueta…",
+    "create": "Crear «{{name}}»"
   },
   "sharing": {
     "whatGoes": "Qué bibliotecas se comparten",

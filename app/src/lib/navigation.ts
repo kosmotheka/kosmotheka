@@ -17,6 +17,7 @@ export type Section =
   | "check"
   | "missing"
   | "library"
+  | "tags"
   | "devices"
   | "people"
   | "requests"
@@ -60,6 +61,7 @@ const SECTIONS: Record<string, Section> = {
   check: "check",
   missing: "missing",
   library: "library",
+  tags: "tags",
   devices: "devices",
   people: "people",
   requests: "requests",

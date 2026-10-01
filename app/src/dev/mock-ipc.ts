@@ -193,6 +193,190 @@ const requiredByOfEdition: Record<string, RelatedWork[]> = {
   [books[18].editionId]: [relatedWork(books[19])],
 };
 
+// Genres and tags (D70, 6.7): the closed list per kind, mirroring
+// crates/domain/src/genre.rs, and a small mutable tag store so rename/merge/delete
+// behave plausibly across the Tags page, the form and the catalog filters.
+const GENRES_BY_KIND: Record<Kind, string[]> = {
+  book: [
+    "novel",
+    "science_fiction",
+    "fantasy",
+    "horror",
+    "mystery",
+    "historical",
+    "romance",
+    "adventure",
+    "poetry",
+    "theatre",
+    "essay",
+    "biography",
+    "popular_science",
+    "children",
+    "young_adult",
+    "roleplaying",
+    "cooking",
+    "art",
+    "travel",
+    "others",
+  ],
+  comic: [
+    "superheroes",
+    "manga",
+    "science_fiction",
+    "fantasy",
+    "horror",
+    "humor",
+    "adventure",
+    "graphic_novel",
+    "crime",
+    "historical",
+    "children",
+    "others",
+  ],
+  boardgame: [
+    "strategy",
+    "family",
+    "party",
+    "cooperative",
+    "abstract",
+    "card_game",
+    "tile_placement",
+    "worker_placement",
+    "deck_building",
+    "deduction",
+    "wargame",
+    "children",
+    "roleplaying",
+    "others",
+  ],
+  film: [
+    "action",
+    "adventure",
+    "animation",
+    "science_fiction",
+    "comedy",
+    "documentary",
+    "drama",
+    "fantasy",
+    "musical",
+    "thriller",
+    "horror",
+    "romance",
+    "war",
+    "western",
+    "crime",
+    "children",
+    "others",
+  ],
+  tv_series: [
+    "action",
+    "adventure",
+    "animation",
+    "science_fiction",
+    "comedy",
+    "documentary",
+    "drama",
+    "fantasy",
+    "musical",
+    "thriller",
+    "horror",
+    "romance",
+    "war",
+    "western",
+    "crime",
+    "children",
+    "others",
+  ],
+  videogame: [
+    "action",
+    "adventure",
+    "roleplaying",
+    "strategy",
+    "platformer",
+    "puzzle",
+    "racing",
+    "sports",
+    "fighting",
+    "shooter",
+    "simulation",
+    "horror",
+    "party",
+    "others",
+  ],
+  music: [
+    "rock",
+    "pop",
+    "jazz",
+    "classical",
+    "electronic",
+    "hip_hop",
+    "folk",
+    "flamenco",
+    "blues",
+    "soul",
+    "metal",
+    "soundtrack",
+    "children",
+    "others",
+  ],
+  other: [],
+};
+
+const genresOfEdition: Record<string, string[]> = {
+  [books[0].editionId]: ["science_fiction"], // Dune (book)
+  [books[1].editionId]: ["science_fiction"], // El mesías de Dune
+  [books[2].editionId]: ["science_fiction"], // Fundación
+  [books[6].editionId]: ["roleplaying"], // Vampiro: la mascarada
+  [books[7].editionId]: ["science_fiction"], // Blade Runner 2049 (film)
+  [books[8].editionId]: ["strategy", "family"], // Catán (boardgame)
+  [books[13].editionId]: ["science_fiction"], // Dune: El emperador-dios
+  [books[14].editionId]: ["science_fiction"], // Hijos de Dune
+  [books[15].editionId]: ["strategy", "family"], // Catán: Navegantes
+  [books[16].editionId]: ["science_fiction"], // Blade Runner (film)
+  [books[17].editionId]: ["science_fiction"], // Casa Capitular: Dune
+};
+
+interface MockTag {
+  id: string;
+  name: string;
+}
+
+let mockTags: MockTag[] = [
+  { id: "tag-1", name: "clásicos" },
+  { id: "tag-2", name: "para Hugo" },
+  { id: "tag-3", name: "regalos" },
+];
+
+const workTagIds: Record<string, string[]> = {
+  [books[0].editionId]: ["tag-1"], // Dune
+  [books[7].editionId]: ["tag-1"], // Blade Runner 2049
+  [books[16].editionId]: ["tag-1"], // Blade Runner
+  [books[9].editionId]: ["tag-2"], // Zelda: Tears of the Kingdom
+  [books[10].editionId]: ["tag-2"], // Twin Peaks
+  [books[4].editionId]: ["tag-3"], // El nombre del viento
+};
+
+function tagWorksCount(id: string): number {
+  return Object.values(workTagIds).filter((ids) => ids.includes(id)).length;
+}
+
+function tagNamesOf(editionId: string): string[] {
+  const ids = workTagIds[editionId] ?? [];
+  return ids
+    .map((id) => mockTags.find((t) => t.id === id)?.name)
+    .filter((n): n is string => Boolean(n))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function findOrCreateTag(name: string): MockTag {
+  const trimmed = name.trim();
+  const existing = mockTags.find((t) => t.name.toLowerCase() === trimmed.toLowerCase());
+  if (existing) return existing;
+  const created = { id: `tag-${mockTags.length + 1}-${Date.now()}`, name: trimmed };
+  mockTags.push(created);
+  return created;
+}
+
 function seriesEntryOf(b: BookSummary, entryId: string, position: number | null): SeriesEntry {
   return {
     entryId,
@@ -549,6 +733,7 @@ mockIPC((cmd, args) => {
             myFavorite: mark?.favorite ?? false,
             myWished: mark?.wished ?? false,
             wishedBy,
+            tags: tagNamesOf(b.editionId),
           };
         })
         .filter(
@@ -558,7 +743,11 @@ mockIPC((cmd, args) => {
             (!filter.myStatuses?.length || filter.myStatuses.includes(b.myStatus ?? "none")) &&
             (!filter.myFavorites || b.myFavorite) &&
             (!filter.myWished || b.myWished) &&
-            (!filter.othersWished || b.wishedBy.some((name) => name !== "me")),
+            (!filter.othersWished || b.wishedBy.some((name) => name !== "me")) &&
+            (!filter.genres?.length ||
+              filter.genres.some((g) => (genresOfEdition[b.editionId] ?? []).includes(g))) &&
+            (!filter.tags?.length ||
+              filter.tags.some((id) => (workTagIds[b.editionId] ?? []).includes(id))),
         );
     }
     case "list_libraries":
@@ -771,8 +960,8 @@ mockIPC((cmd, args) => {
           };
         }),
         canDelete: !params.has("reader"),
-        genres: found.kind === "book" ? ["fantasy", "science_fiction"] : [],
-        tags: ["Favorite"],
+        genres: genresOfEdition[found.editionId] ?? [],
+        tags: tagNamesOf(found.editionId),
         wishedBy: wishedByFor(found.editionId),
         series: seriesOfEdition[found.editionId] ?? [],
         requires: requiresOfEdition[found.editionId] ?? [],
@@ -781,8 +970,15 @@ mockIPC((cmd, args) => {
     }
     case "create_book":
       return { editionId: "new-edition-id", existingEdition: false, coverFailed: false };
-    case "update_edition":
+    case "update_edition": {
+      const { editionId, edition } = args as {
+        editionId: string;
+        edition: { genres?: string[]; tags?: string[] };
+      };
+      genresOfEdition[editionId] = edition.genres ?? [];
+      workTagIds[editionId] = (edition.tags ?? []).map((name) => findOrCreateTag(name).id);
       return { coverFailed: false };
+    }
     case "add_copy":
       return "new-copy-id";
     case "update_copy":
@@ -814,15 +1010,38 @@ mockIPC((cmd, args) => {
     case "add_to_series":
       return "entry-new";
     case "list_tags":
-      return [
-        { id: "tag-1", name: "Favorite", works: 3 },
-        { id: "tag-2", name: "Gift", works: 1 },
-      ];
-    case "rename_tag":
-    case "delete_tag":
+      return mockTags
+        .map((t) => ({ id: t.id, name: t.name, works: tagWorksCount(t.id) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    case "rename_tag": {
+      const { id, name } = args as { id: string; name: string };
+      const trimmed = name.trim();
+      const target = mockTags.find(
+        (t) => t.id !== id && t.name.toLowerCase() === trimmed.toLowerCase(),
+      );
+      if (target) {
+        // Merge: move this tag's work links onto the existing one, then drop it.
+        for (const [editionId, ids] of Object.entries(workTagIds)) {
+          if (!ids.includes(id)) continue;
+          workTagIds[editionId] = Array.from(new Set([...ids.filter((i) => i !== id), target.id]));
+        }
+        mockTags = mockTags.filter((t) => t.id !== id);
+      } else {
+        const tag = mockTags.find((t) => t.id === id);
+        if (tag) tag.name = trimmed;
+      }
       return null;
+    }
+    case "delete_tag": {
+      const { id } = args as { id: string };
+      mockTags = mockTags.filter((t) => t.id !== id);
+      for (const editionId of Object.keys(workTagIds)) {
+        workTagIds[editionId] = workTagIds[editionId].filter((i) => i !== id);
+      }
+      return null;
+    }
     case "genres_of_kind":
-      return ["fantasy", "science_fiction", "adventure"];
+      return GENRES_BY_KIND[(args as { kind: Kind }).kind] ?? [];
     case "add_missing":
       return { editionId: "new-missing-edition-id", existingEdition: false, coverFailed: false };
     case "request_book":

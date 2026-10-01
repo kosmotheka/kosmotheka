@@ -77,17 +77,17 @@ enum CatalogEntity: string
 
     /** The closed list of genres shipped with the app, per kind (mirrors crates/domain/src/genre.rs). */
     public const array GENRES = [
-        'fantasy', 'science_fiction', 'horror', 'mystery', 'thriller', 'romance',
-        'historical_fiction', 'adventure', 'humor', 'poetry', 'theatre', 'essay',
-        'biography', 'history', 'science', 'philosophy', 'art', 'cooking', 'travel',
-        'roleplaying', 'children', 'young_adult', 'superheroes', 'manga', 'crime',
-        'slice_of_life', 'strategy', 'family', 'party', 'cooperative', 'abstract',
-        'deduction', 'wargame', 'card_game', 'dexterity', 'trivia', 'action',
-        'animation', 'comedy', 'drama', 'war', 'western', 'musical', 'documentary',
-        'simulation', 'sports', 'racing', 'puzzle', 'platformer', 'shooter',
-        'fighting', 'rock', 'pop', 'jazz', 'classical', 'electronic', 'hip_hop',
-        'folk', 'metal', 'blues', 'soul', 'reggae', 'latin', 'flamenco',
-        'soundtrack', 'world',
+        'novel', 'science_fiction', 'fantasy', 'horror', 'mystery', 'historical',
+        'romance', 'adventure', 'poetry', 'theatre', 'essay', 'biography',
+        'popular_science', 'children', 'young_adult', 'roleplaying', 'cooking',
+        'art', 'travel', 'others', 'superheroes', 'manga', 'humor', 'graphic_novel',
+        'crime', 'strategy', 'family', 'party', 'cooperative', 'abstract',
+        'card_game', 'tile_placement', 'worker_placement', 'deck_building',
+        'deduction', 'wargame', 'action', 'animation', 'comedy', 'documentary',
+        'drama', 'musical', 'thriller', 'war', 'western', 'platformer', 'puzzle',
+        'racing', 'sports', 'fighting', 'shooter', 'simulation', 'rock', 'pop',
+        'jazz', 'classical', 'electronic', 'hip_hop', 'folk', 'flamenco', 'blues',
+        'soul', 'metal', 'soundtrack',
     ];
 
     /**

@@ -318,6 +318,8 @@ function editionFormFromInput(book: NewBook): EditionForm {
     durationMinutes: book.durationMinutes?.toString() ?? "",
     minAge: book.minAge?.toString() ?? "",
     seasons: book.seasons?.toString() ?? "",
+    genres: book.genres ?? [],
+    tags: book.tags ?? [],
     notes: book.notes ?? "",
     coverUrl: book.coverUrl ?? "",
     cover: null,

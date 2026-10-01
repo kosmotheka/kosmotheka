@@ -1600,21 +1600,52 @@ pub fn rename_tag(conn: &mut Connection, library: &str, id: &str, name: &str) ->
 
     let tx = conn.transaction()?;
     ensure_exists(&tx, library, Entity::Tag, id)?;
-    let taken: bool = tx.query_row(
-        "SELECT EXISTS (SELECT 1 FROM tags WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
-                           AND id <> ?3)",
-        [library, trimmed, id],
-        |row| row.get(0),
-    )?;
-    if taken {
-        return Err(Error::Validation(vec![FieldError::new(
-            "name",
-            ErrorCode::NameInUse,
-        )]));
-    }
+    let existing_id: Option<String> = tx
+        .query_row(
+            "SELECT id FROM tags WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
+               AND id <> ?3",
+            [library, trimmed, id],
+            |row| row.get(0),
+        )
+        .optional()?;
 
     let mut plan = Plan::new(&tx, library);
-    plan.update_if_changed(Entity::Tag, id, json!({ "name": trimmed }))?;
+    match existing_id {
+        // Renaming to a name another tag already has merges them (Design: "Ya existe
+        // ...: se unirán las dos"): move this tag's work links onto the existing one,
+        // skipping works that already have it, then drop the now-empty tag.
+        Some(target_id) => {
+            let rows: Vec<(String, String)> = {
+                let mut statement = tx.prepare(
+                    "SELECT id, work_id FROM work_tags WHERE library_id = ?1 AND tag_id = ?2",
+                )?;
+                statement
+                    .query_map([library, id], |row| Ok((row.get(0)?, row.get(1)?)))?
+                    .collect::<rusqlite::Result<_>>()?
+            };
+            for (row_id, work_id) in rows {
+                let already_linked: bool = tx.query_row(
+                    "SELECT EXISTS (SELECT 1 FROM work_tags
+                       WHERE library_id = ?1 AND work_id = ?2 AND tag_id = ?3)",
+                    rusqlite::params![library, work_id, target_id],
+                    |row| row.get(0),
+                )?;
+                if already_linked {
+                    plan.changes.push(Change::delete(Entity::WorkTag, row_id));
+                } else {
+                    plan.changes.push(Change::update(
+                        Entity::WorkTag,
+                        row_id,
+                        json!({ "tag_id": target_id }),
+                    ));
+                }
+            }
+            plan.changes.push(Change::delete(Entity::Tag, id));
+        }
+        None => {
+            plan.update_if_changed(Entity::Tag, id, json!({ "name": trimmed }))?;
+        }
+    }
     plan.record("tag.rename")?;
     tx.commit()?;
     Ok(())
@@ -3294,19 +3325,32 @@ mod tests {
     }
 
     #[test]
-    fn renaming_a_tag_to_an_existing_name_is_rejected() {
+    fn renaming_a_tag_to_an_existing_name_merges_them() {
         let mut conn = db::open_in_memory().unwrap();
-        let book = ValidBook {
+        let a = ValidBook {
             edition: with_genres_and_tags("A", &[], &["favorite", "gift"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        create_book(&mut conn, LIB, &book, None).unwrap();
+        let b = ValidBook {
+            edition: with_genres_and_tags("B", &[], &["favorite"]),
+            copy: copy("Tersoal", Format::Hardcover),
+        };
+        let created_a = create_book(&mut conn, LIB, &a, None).unwrap();
+        create_book(&mut conn, LIB, &b, None).unwrap();
         let tags = list_tags(&conn, LIB).unwrap();
         let favorite = tags.iter().find(|t| t.name == "favorite").unwrap();
+        let gift = tags.iter().find(|t| t.name == "gift").unwrap();
 
-        let error = rename_tag(&mut conn, LIB, &favorite.id, "gift").unwrap_err();
-        assert!(
-            matches!(error, Error::Validation(errors) if errors[0].code == ErrorCode::NameInUse)
-        );
+        // Case-insensitive match, same as a plain rename.
+        rename_tag(&mut conn, LIB, &favorite.id, "GIFT").unwrap();
+
+        let remaining = list_tags(&conn, LIB).unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].id, gift.id);
+        assert_eq!(remaining[0].name, "gift");
+        // A had both tags: merging must not duplicate its link to "gift".
+        assert_eq!(remaining[0].works, 2);
+        let book_a = get_book(&conn, LIB, &created_a.edition_id).unwrap();
+        assert_eq!(book_a.tags, vec!["gift"]);
     }
 }

@@ -1,6 +1,15 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, History, LogOut, MonitorSmartphone, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  History,
+  LogOut,
+  MonitorSmartphone,
+  Plus,
+  Tag,
+  Trash2,
+} from "lucide-react";
 
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
@@ -13,7 +22,7 @@ import {
   renameLibrary,
   setSharing,
 } from "@/lib/api";
-import { leaveSection, openOverlay } from "@/lib/navigation";
+import { leaveSection, navigate, openOverlay } from "@/lib/navigation";
 
 /** Settings of the active library: name, who it is shared with, leave or delete it. */
 export function LibraryPage({ desktop }: { desktop: boolean }) {
@@ -106,12 +115,19 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
                 setError(null);
               }}
             />
-            <Button type="submit" variant="outline" className="h-11" disabled={name === library.name}>
+            <Button
+              type="submit"
+              variant="outline"
+              className="h-11"
+              disabled={name === library.name}
+            >
               {t("form.save")}
             </Button>
           </div>
           {error && <p className="text-[13px] text-destructive">{error}</p>}
-          {saved && !error && <p className="text-[13px] text-muted-foreground">{t("libraries.renamed")}</p>}
+          {saved && !error && (
+            <p className="text-[13px] text-muted-foreground">{t("libraries.renamed")}</p>
+          )}
         </form>
 
         <section className="flex flex-col gap-1">
@@ -125,7 +141,10 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
           </div>
           <div className="flex flex-col overflow-hidden rounded-2xl border">
             {devices.map((device) => (
-              <div key={device.deviceId} className="flex min-h-16 items-center gap-3 border-b px-3.5 py-2">
+              <div
+                key={device.deviceId}
+                className="flex min-h-16 items-center gap-3 border-b px-3.5 py-2"
+              >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
                   <MonitorSmartphone className="size-[19px]" />
                 </span>
@@ -180,6 +199,21 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
                   })}
             </span>
           )}
+        </section>
+
+        <section className="flex flex-col border-t pt-2">
+          <button
+            type="button"
+            className="flex min-h-14 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left hover:bg-muted"
+            onClick={() => navigate("tags")}
+          >
+            <Tag className="size-5 shrink-0" />
+            <span className="flex flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-medium">{t("tags.title")}</span>
+              <span className="text-[13px] text-muted-foreground">{t("tags.hint")}</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </button>
         </section>
 
         <section className="mt-2 flex flex-col border-t pt-2">

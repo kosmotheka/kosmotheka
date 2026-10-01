@@ -57,6 +57,7 @@ import { LibraryPage } from "@/pages/library-page";
 import { PeoplePage } from "@/pages/people-page";
 import { RequestsPage } from "@/pages/requests-page";
 import { SeriesPage } from "@/pages/series-page";
+import { TagsPage } from "@/pages/tags-page";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -197,6 +198,12 @@ export default function App() {
     setTimeout(() => document.getElementById("catalog-search")?.focus(), 50);
   };
 
+  /** A genre or tag chip on a work's page opens the catalog filtered by it (6.7). */
+  const filterAndShow = (patch: Partial<BookFilter>) => {
+    setFilter((f) => ({ ...f, ...patch }));
+    navigate("catalog");
+  };
+
   /** The desktop segmented control («Lo tengo · Me falta · Todo», D61). */
   const onViewChange = (next: Holding | undefined) => {
     if (next === "missing") {
@@ -212,6 +219,8 @@ export default function App() {
       <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
     ) : section === "library" ? (
       <LibraryPage desktop={desktop} />
+    ) : section === "tags" ? (
+      <TagsPage desktop={desktop} version={version} onChanged={reload} />
     ) : section === "devices" ? (
       <DevicesPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
     ) : section === "people" ? (
@@ -282,13 +291,14 @@ export default function App() {
                     onClose={closeOverlay}
                     onChanged={reload}
                     onNotice={setNotice}
+                    onFilter={filterAndShow}
                   />
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-              {!["check", "library", "devices", "people", "requests", "series"].includes(
+              {!["check", "library", "tags", "devices", "people", "requests", "series"].includes(
                 section,
               ) && <AppBar library={library} sync={sync} onSearch={focusSearch} />}
               <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
@@ -429,6 +439,7 @@ export default function App() {
               onClose={closeOverlay}
               onChanged={reload}
               onNotice={setNotice}
+              onFilter={filterAndShow}
             />
           )}
         </CatalogOptionsContext.Provider>

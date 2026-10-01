@@ -929,6 +929,43 @@ mod tests {
     }
 
     #[test]
+    fn a_tag_merge_from_renaming_converges_like_any_other_operation() {
+        let mut a = Device::new();
+        let mut b = Device::new();
+
+        let mut tagged = edition("Tagged", None);
+        tagged.tags = vec!["favorite".into(), "gift".into()];
+        let id = catalog::create_book(
+            &mut a.0,
+            LIB,
+            &ValidBook {
+                edition: tagged,
+                copy: book("Tagged", None, "Ana").copy,
+            },
+            None,
+        )
+        .unwrap()
+        .edition_id;
+        a.sync_with(&mut b);
+
+        let favorite_id = catalog::list_tags(&a.0, LIB)
+            .unwrap()
+            .into_iter()
+            .find(|t| t.name == "favorite")
+            .unwrap()
+            .id;
+        catalog::rename_tag(&mut a.0, LIB, &favorite_id, "gift").unwrap();
+        a.sync_with(&mut b);
+
+        for device in [&a, &b] {
+            let detail = catalog::get_book(&device.0, LIB, &id).unwrap();
+            assert_eq!(detail.tags, vec!["gift"]);
+            assert_eq!(catalog::list_tags(&device.0, LIB).unwrap().len(), 1);
+        }
+        assert_converged(&[&a, &b]);
+    }
+
+    #[test]
     fn the_same_book_added_on_both_devices_stays_duplicated() {
         let mut a = Device::new();
         let mut b = Device::new();

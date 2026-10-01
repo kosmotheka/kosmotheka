@@ -16,6 +16,7 @@ import {
   Pencil,
   Plus,
   Send,
+  Tag as TagIcon,
   Trash2,
   TriangleAlert,
   Users,
@@ -58,6 +59,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   type BookDetail,
+  type BookFilter,
   type ContributorRole,
   type CopyDetail,
   type Format,
@@ -69,11 +71,19 @@ import {
   requestDeleteCopy,
   externalLinks,
   getBook,
+  listTags,
   updateCopy,
   updateEdition,
 } from "@/lib/api";
 import { type KindChangePlan, planKindChange } from "@/lib/change-kind";
-import { KIND_ICONS, KIND_PEOPLE, copyIcon, copyWhatText, copyWhereText } from "@/lib/kinds";
+import {
+  KIND_ICONS,
+  KIND_PEOPLE,
+  copyIcon,
+  copyWhatText,
+  copyWhereText,
+  genreLabel,
+} from "@/lib/kinds";
 import { openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +94,8 @@ interface Props {
   /** Called after any change, so the catalog list can refresh. */
   onChanged: () => void;
   onNotice: (message: string) => void;
+  /** A genre or tag chip: opens the catalog filtered by it (6.7). */
+  onFilter: (patch: Partial<BookFilter>) => void;
 }
 
 type Tab = "copies" | "details" | "history";
@@ -92,7 +104,14 @@ type Tab = "copies" | "details" | "history";
  * A work's page: full screen on mobile, a panel beside the catalog on desktop.
  * Editing happens in place, in the "Details" and "Copies" tabs.
  */
-export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotice }: Props) {
+export function BookDetailView({
+  editionId,
+  desktop,
+  onClose,
+  onChanged,
+  onNotice,
+  onFilter,
+}: Props) {
   const { t } = useTranslation();
   const libraries = useLibraries();
   const library = useLibraryName()(libraries.active);
@@ -264,6 +283,7 @@ export function BookDetailView({ editionId, desktop, onClose, onChanged, onNotic
           />
           <SeriesSection book={book} />
           <NeedsSection book={book} />
+          <GenreTagChips book={book} onFilter={onFilter} />
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList variant="line" className="w-full justify-start border-b">
               <TabsTrigger value="copies" className="flex-none">
@@ -512,6 +532,61 @@ function RequiresNotice({ book }: { book: BookDetail }) {
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** «Géneros y etiquetas» chips (Design's WorkPanel): genres filled, tags dashed with an
+ * icon. Clicking either opens the catalog filtered by it (6.7). */
+function GenreTagChips({
+  book,
+  onFilter,
+}: {
+  book: BookDetail;
+  onFilter: (patch: Partial<BookFilter>) => void;
+}) {
+  const { t } = useTranslation();
+  const [tagIds, setTagIds] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    listTags()
+      .then((all) => {
+        const byName: Record<string, string> = {};
+        for (const tag of all) byName[tag.name.toLowerCase()] = tag.id;
+        setTagIds(byName);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (book.genres.length === 0 && book.tags.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {book.genres.map((genre) => (
+        <button
+          key={genre}
+          type="button"
+          className="flex h-[26px] items-center rounded-full bg-secondary px-2.5 text-[12.5px] font-medium"
+          onClick={() => onFilter({ kind: book.kind, genres: [genre] })}
+        >
+          {genreLabel(book.kind, genre, t)}
+        </button>
+      ))}
+      {book.tags.map((name) => {
+        const id = tagIds[name.toLowerCase()];
+        return (
+          <button
+            key={name}
+            type="button"
+            disabled={!id}
+            className="flex h-[26px] items-center gap-1 rounded-full border border-dashed border-border px-2.5 text-[12.5px] text-muted-foreground"
+            onClick={() => id && onFilter({ tags: [id] })}
+          >
+            <TagIcon className="size-3" />
+            {name}
+          </button>
+        );
+      })}
     </div>
   );
 }

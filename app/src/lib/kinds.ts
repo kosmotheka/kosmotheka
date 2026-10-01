@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import {
   Book,
   BookImage,
@@ -97,6 +98,15 @@ export const VIDEOGAME_PLATFORMS = ["Switch", "PS5", "PS4", "Xbox Series", "PC"]
  */
 export function statusKey(kind: Kind | null, status: MarkStatus) {
   return kind ? `marks.statusesByKind.${kind}.${status}` : `marks.statuses.${status}`;
+}
+
+/**
+ * A genre's label for one kind: a handful of genres read differently depending on the
+ * kind ("Histórica" for a book, "Histórico" for a comic). Falls back to the shared
+ * `genres.<key>` wording when `genresByKind` has no override for this kind.
+ */
+export function genreLabel(kind: Kind, key: string, t: TFunction): string {
+  return t([`genresByKind.${kind}.${key}`, `genres.${key}`]);
 }
 
 /** Formats with an icon of their own, instead of the cloud or the kind icon. */

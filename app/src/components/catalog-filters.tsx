@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Circle, Gift, Heart, SlidersHorizontal, X } from "lucide-react";
+import { Circle, Drama, Gift, Heart, SlidersHorizontal, Tag as TagIcon, X } from "lucide-react";
 
 import { useCatalogOptions } from "@/components/catalog-options";
 import { STATUS_ICONS } from "@/components/marks/marks-section";
@@ -27,11 +27,14 @@ import {
   type Format,
   type Kind,
   type MarkStatus,
+  type TagSummary,
   formats,
+  genresOfKind,
   kinds,
+  listTags,
   markStatuses,
 } from "@/lib/api";
-import { statusKey } from "@/lib/kinds";
+import { genreLabel, statusKey } from "@/lib/kinds";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +51,9 @@ export function isFiltering(filter: BookFilter) {
     filter.myStatuses?.length ||
     filter.myFavorites ||
     filter.myWished ||
-    filter.othersWished,
+    filter.othersWished ||
+    filter.genres?.length ||
+    filter.tags?.length,
   );
 }
 
@@ -70,6 +75,13 @@ export function FilterBar({
   desktop: boolean;
 }) {
   const { t } = useTranslation();
+  const [allTags, setAllTags] = useState<TagSummary[]>([]);
+  useEffect(() => {
+    listTags()
+      .then(setAllTags)
+      .catch(() => {});
+  }, []);
+
   const chips: { key: string; label: string; remove: () => BookFilter }[] = [];
   const without = (key: keyof BookFilter) => () => ({ ...filter, [key]: undefined });
   if (filter.format) {
@@ -97,6 +109,20 @@ export function FilterBar({
       key: "favorites",
       label: t("marks.filter.favorites"),
       remove: without("myFavorites"),
+    });
+  }
+  for (const genre of filter.genres ?? []) {
+    chips.push({
+      key: `genre-${genre}`,
+      label: filter.kind ? genreLabel(filter.kind, genre, t) : t(`genres.${genre}`),
+      remove: () => ({ ...filter, genres: filter.genres?.filter((g) => g !== genre) }),
+    });
+  }
+  for (const tagId of filter.tags ?? []) {
+    chips.push({
+      key: `tag-${tagId}`,
+      label: allTags.find((tag) => tag.id === tagId)?.name ?? tagId,
+      remove: () => ({ ...filter, tags: filter.tags?.filter((id) => id !== tagId) }),
     });
   }
 
@@ -167,6 +193,8 @@ export function FilterBar({
       {!desktop && filtersButton}
       {kindChips}
       {wishChip}
+      <GenreFilterChip filter={filter} onChange={onChange} />
+      <TagFilterChip filter={filter} onChange={onChange} allTags={allTags} />
       {desktop && filtersButton}
       {chips.map((chip) => (
         <Button
@@ -178,7 +206,145 @@ export function FilterBar({
           {chip.label} <X />
         </Button>
       ))}
+      {isFiltering({ ...filter, query: undefined }) && (
+        <Button
+          variant="link"
+          className="h-9 shrink-0 px-1.5"
+          onClick={() => onChange({ query: filter.query })}
+        >
+          {t("filters.clear")}
+        </Button>
+      )}
     </div>
+  );
+}
+
+/** «Género» (6.7): genres of the active kind chip, or every kind's genres grouped when
+ * no kind is active (Design's Catalog). */
+function GenreFilterChip({
+  filter,
+  onChange,
+}: {
+  filter: BookFilter;
+  onChange: (filter: BookFilter) => void;
+}) {
+  const { t } = useTranslation();
+  const [groups, setGroups] = useState<{ kind: Kind; genres: string[] }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const relevant = filter.kind ? [filter.kind] : kinds.filter((k) => k !== "other");
+    Promise.all(
+      relevant.map((kind) => genresOfKind(kind).then((genres) => ({ kind, genres }))),
+    ).then((loaded) => {
+      if (!cancelled) setGroups(loaded.filter((group) => group.genres.length > 0));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter.kind]);
+
+  if (groups.length === 0) return null;
+
+  const selected = filter.genres ?? [];
+  const on = selected.length > 0;
+  const toggle = (genre: string) =>
+    onChange({
+      ...filter,
+      genres: selected.includes(genre) ? selected.filter((g) => g !== genre) : [...selected, genre],
+    });
+  const label =
+    selected.length === 1
+      ? filter.kind
+        ? genreLabel(filter.kind, selected[0], t)
+        : t(`genres.${selected[0]}`)
+      : t("filters.genre.chip");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={on ? "default" : "outline"}
+          className="h-9 shrink-0 rounded-[10px]"
+          aria-pressed={on}
+        >
+          <Drama /> {label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 w-64">
+        {groups.map((group) => (
+          <div key={group.kind}>
+            {groups.length > 1 && (
+              <div className="px-1.5 pt-1.5 pb-1 text-xs font-semibold text-muted-foreground">
+                {t(`typesPlural.${group.kind}`)}
+              </div>
+            )}
+            {group.genres.map((genre) => (
+              <DropdownMenuCheckboxItem
+                key={`${group.kind}-${genre}`}
+                checked={selected.includes(genre)}
+                onSelect={(e) => e.preventDefault()}
+                onCheckedChange={() => toggle(genre)}
+              >
+                {genreLabel(group.kind, genre, t)}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** «Etiqueta» (6.7): every tag of this library, multi-select. */
+function TagFilterChip({
+  filter,
+  onChange,
+  allTags,
+}: {
+  filter: BookFilter;
+  onChange: (filter: BookFilter) => void;
+  allTags: TagSummary[];
+}) {
+  const { t } = useTranslation();
+  if (allTags.length === 0) return null;
+
+  const selected = filter.tags ?? [];
+  const on = selected.length > 0;
+  const toggle = (id: string) =>
+    onChange({
+      ...filter,
+      tags: selected.includes(id) ? selected.filter((t) => t !== id) : [...selected, id],
+    });
+  const label =
+    selected.length === 1
+      ? (allTags.find((tag) => tag.id === selected[0])?.name ?? t("filters.tag.chip"))
+      : t("filters.tag.chip");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={on ? "default" : "outline"}
+          className="h-9 shrink-0 rounded-[10px]"
+          aria-pressed={on}
+        >
+          <TagIcon /> {label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 w-56">
+        {allTags.map((tag) => (
+          <DropdownMenuCheckboxItem
+            key={tag.id}
+            checked={selected.includes(tag.id)}
+            onSelect={(e) => e.preventDefault()}
+            onCheckedChange={() => toggle(tag.id)}
+          >
+            {tag.name}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

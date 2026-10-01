@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Check,
+  ChevronDown,
   Cloud,
   ImagePlus,
   Info,
@@ -10,12 +11,19 @@ import {
   MapPin,
   Plus,
   Search,
+  Tag as TagIcon,
   X,
 } from "lucide-react";
 
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -31,12 +39,15 @@ import {
   type Kind,
   type LookupResult,
   type RelatedWork,
+  type TagSummary,
   addRequirement,
   contributorRoles,
+  genresOfKind,
   getBook,
   isCommandError,
   kinds,
   listBooks,
+  listTags,
   lookupIsbn,
   removeRequirement,
 } from "@/lib/api";
@@ -46,6 +57,7 @@ import {
   KIND_FORMATS,
   KIND_ICONS,
   VIDEOGAME_PLATFORMS,
+  genreLabel,
 } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +84,10 @@ export interface EditionForm {
   minAge: string;
   /** Total seasons of a TV series (not which ones a copy holds, see `CopyForm.seasons`). */
   seasons: string;
+  /** Genre keys of the work's kind (D70, 6.7). */
+  genres: string[];
+  /** Tag names, found or created by name (6.7). */
+  tags: string[];
   notes: string;
   /** Cover found online, downloaded when the form is saved. */
   coverUrl: string;
@@ -109,6 +125,8 @@ export const emptyEditionForm: EditionForm = {
   durationMinutes: "",
   minAge: "",
   seasons: "",
+  genres: [],
+  tags: [],
   notes: "",
   coverUrl: "",
   cover: null,
@@ -155,6 +173,8 @@ export function toEditionInput(form: EditionForm): EditionInput {
     durationMinutes: numberOrNull(form.durationMinutes),
     minAge: numberOrNull(form.minAge),
     seasons: numberOrNull(form.seasons),
+    genres: form.genres,
+    tags: form.tags,
     notes: orNull(form.notes),
     coverUrl: orNull(form.coverUrl),
     googleBooksId: form.googleBooksId,
@@ -196,6 +216,8 @@ export function editionFormFrom(book: BookDetail): EditionForm {
     durationMinutes: book.durationMinutes?.toString() ?? "",
     minAge: book.minAge?.toString() ?? "",
     seasons: book.seasons?.toString() ?? "",
+    genres: book.genres,
+    tags: book.tags,
     notes: book.notes ?? "",
     coverUrl: "",
     cover: book.cover,
@@ -425,6 +447,225 @@ function PeopleField({
         id={`${id}-suggestions`}
         values={suggestions.filter((s) => !values.includes(s))}
       />
+    </div>
+  );
+}
+
+/** Genres of the work's kind: a multi-select with removable chips over a two-column
+ * checkbox list (Design's FormClassify). Hidden when the kind has none ("Otro"). */
+function GenresField({
+  kind,
+  value,
+  onChange,
+}: {
+  kind: Kind;
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [options, setOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    genresOfKind(kind).then((loaded) => {
+      if (cancelled) return;
+      setOptions(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [kind]);
+
+  // A genre that does not belong to the new kind is dropped once its options arrive.
+  useEffect(() => {
+    if (options.length === 0) return;
+    const pruned = value.filter((genre) => options.includes(genre));
+    if (pruned.length !== value.length) onChange(pruned);
+    // Only re-run when the allowed set changes, not on every keystroke in `value`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options]);
+
+  if (options.length === 0) return null;
+
+  const toggle = (genre: string) =>
+    onChange(value.includes(genre) ? value.filter((g) => g !== genre) : [...value, genre]);
+
+  return (
+    <div className="space-y-2">
+      <Label>
+        {t("form.fields.genres")}{" "}
+        <span className="font-normal text-muted-foreground">
+          {t("form.fields.genresHint", { kind: t(`typesPlural.${kind}`) })}
+        </span>
+      </Label>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <div
+            role="button"
+            tabIndex={0}
+            className="flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5 text-left"
+          >
+            {value.length === 0 && (
+              <span className="text-[15px] text-muted-foreground">
+                {t("form.fields.genresPlaceholder")}
+              </span>
+            )}
+            {value.map((genre) => (
+              <span
+                key={genre}
+                className="flex h-7 items-center gap-1 rounded-full bg-secondary py-0 pr-1 pl-2.5 text-sm"
+              >
+                {genreLabel(kind, genre, t)}
+                <button
+                  type="button"
+                  aria-label={t("form.fields.removeGenre", { genre: genreLabel(kind, genre, t) })}
+                  className="flex size-5 items-center justify-center rounded-full hover:bg-foreground/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggle(genre);
+                  }}
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+            <ChevronDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="grid w-72 grid-cols-2 gap-x-1">
+          {options.map((genre) => (
+            <DropdownMenuCheckboxItem
+              key={genre}
+              checked={value.includes(genre)}
+              onSelect={(e) => e.preventDefault()}
+              onCheckedChange={() => toggle(genre)}
+            >
+              {genreLabel(kind, genre, t)}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+/** Tags: free words of this library, typed to find or create (Design's FormClassify). */
+function TagsField({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const { t } = useTranslation();
+  const [allTags, setAllTags] = useState<TagSummary[]>([]);
+  const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    listTags()
+      .then(setAllTags)
+      .catch(() => {});
+  }, []);
+
+  const add = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (!value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) {
+      onChange([...value, trimmed]);
+    }
+    setDraft("");
+    setOpen(false);
+  };
+  const remove = (name: string) => onChange(value.filter((v) => v !== name));
+
+  const query = draft.trim().toLowerCase();
+  const matches = query
+    ? allTags.filter(
+        (tag) =>
+          tag.name.toLowerCase().includes(query) &&
+          !value.some((v) => v.toLowerCase() === tag.name.toLowerCase()),
+      )
+    : [];
+  const exactMatch = allTags.some((tag) => tag.name.toLowerCase() === query);
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="tags-input">
+        {t("form.fields.tags")}{" "}
+        <span className="font-normal text-muted-foreground">{t("form.fields.tagsHint")}</span>
+      </Label>
+      <div className="relative">
+        <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5">
+          {value.map((name) => (
+            <span
+              key={name}
+              className="flex h-7 items-center gap-1 rounded-full border border-dashed border-border py-0 pr-1 pl-2.5 text-sm"
+            >
+              {name}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-5"
+                aria-label={t("form.people.remove", { name })}
+                onClick={() => remove(name)}
+              >
+                <X className="size-3" />
+              </Button>
+            </span>
+          ))}
+          <input
+            id="tags-input"
+            className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+            placeholder={t("form.fields.tagsPlaceholder")}
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 100)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                add(draft);
+              } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
+                onChange(value.slice(0, -1));
+              }
+            }}
+          />
+        </div>
+        {open && query && (
+          <div
+            role="listbox"
+            className="absolute top-full z-10 mt-1 w-full max-w-sm rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+          >
+            {matches.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                role="option"
+                className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-accent"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => add(tag.name)}
+              >
+                <TagIcon className="size-3.5 text-muted-foreground" />
+                <span className="flex-1 truncate">{tag.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("tags.worksCount", { count: tag.works })}
+                </span>
+              </button>
+            ))}
+            {!exactMatch && (
+              <button
+                type="button"
+                role="option"
+                className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-primary hover:bg-accent"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => add(draft)}
+              >
+                <Plus className="size-3.5" />
+                {t("tags.create", { name: draft.trim() })}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -784,6 +1025,12 @@ export function EditionFields({
           <span>{t("form.other.notice")}</span>
         </div>
       )}
+      <div className="flex items-center gap-2.5 pt-1">
+        <span className="text-sm font-semibold">{t("form.classification.title")}</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <GenresField kind={value.kind} value={value.genres} onChange={(v) => set("genres", v)} />
+      <TagsField value={value.tags} onChange={(v) => set("tags", v)} />
       <Field id="notes" label={t("form.fields.notes")}>
         <textarea
           id="notes"
