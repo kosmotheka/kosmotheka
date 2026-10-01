@@ -14,7 +14,7 @@
 | D06 | Servidor en Symfony | aceptada |
 | D07 | SQLite en el cliente, PostgreSQL en el servidor | aceptada |
 | D08 | Catálogos con herencia por tablas | aceptada |
-| D09 | Autenticación simple | aceptada (el alcance multibiblioteca lo amplía D38) |
+| D09 | Autenticación simple | aceptada (el alcance multibiblioteca lo amplía D38; Google, D77) |
 | D10 | Alojamiento en VPS | aceptada |
 | D11 | Licencia AGPL para todo; especificación con licencia permisiva | aceptada |
 | D12 | Documentación continua | aceptada |
@@ -44,7 +44,7 @@
 | D36 | Lista de deseos básica, sincronizada | reemplazada por D61 |
 | D37 | Reencontrar dispositivos buscando en la subred, no por mDNS | propuesta |
 | D38 | Un servidor aloja varias bibliotecas desde el principio | aceptada |
-| D39 | Biblioteca conectada a un servidor: sincroniza solo con él | abierta |
+| D39 | Biblioteca en la nube: sincroniza con la nube y por la red local | aceptada |
 | D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | reemplazada por D55 |
 | D41 | Filas del catálogo en el servidor: clave `(library_id, id)` | aceptada |
 | D42 | Registro abierto en el servidor | aceptada |
@@ -52,7 +52,7 @@
 | D44 | El lector escribe solo lo suyo: deseos y lecturas | reemplazada por D55 |
 | D45 | El editor solo borra lo que creó | aceptada |
 | D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | aceptada |
-| D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | aceptada |
+| D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | reemplazada por D73 |
 | D48 | Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo | aceptada |
 | D49 | Verificación obligatoria del email con un código en la app | aceptada |
 | D50 | Recuperar la contraseña con un código en la app; revoca los demás dispositivos | aceptada |
@@ -78,8 +78,13 @@
 | D70 | Nombre del proyecto: Kosmotheka | aceptada |
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
 | D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
-| D73 | Cómo se comprueban los permisos sin servidor | aceptada |
+| D73 | Cómo se comprueban los permisos, sin servidor y con él | aceptada |
 | D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | propuesta |
+| D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada |
+| D76 | La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos | aceptada |
+| D77 | Entrar con email o con Google | aceptada |
+| D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada |
+| D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 
 ---
 
@@ -150,6 +155,8 @@ Node se descartó porque no es «más abierto» que Symfony, que es software lib
 Se descartaron: tabla común + JSONB (consultas incómodas y mala portabilidad entre SQLite y PostgreSQL) y tablas totalmente separadas por tipo (duplican lo común).
 
 ## D09 · Autenticación simple — `aceptada`
+
+> Ampliada el 01/10/2026 por D77: además de email y contraseña, entrar con Google.
 
 Usuario y contraseña, sin diseñar aún el multiusuario público ni el login social. Solo aplica al modo conectado. La app necesitará un token de larga duración para sincronizar, en lugar de una cookie de sesión web. Se revisará cuando llegue la versión pública.
 
@@ -484,7 +491,20 @@ Concreta D13. El escritorio sirve por HTTPS con un certificado propio, y la huel
 
 En el servidor, todo dato pertenece a una **biblioteca**, y cada usuario es miembro de una o varias con un rol (administrador, editor, lector). Cuesta poco ahora (una columna y un filtro en cada consulta) y deja preparados el servicio público, las ludotecas y las asociaciones sin migraciones dolorosas. Matiza D09: la autenticación sigue siendo simple (usuario y contraseña, un token por dispositivo), pero el modelo de datos ya no es de una sola familia.
 
-## D39 · Biblioteca conectada a un servidor: sincroniza solo con él — `abierta`
+## D39 · Biblioteca en la nube: sincroniza con la nube y por la red local — `aceptada`
+
+> **Cerrada el 01/10/2026**, al preparar la Fase 7 ([plans/fase-7.md](plans/fase-7.md)). Sustituye a la versión de abajo («sincroniza solo con él»), que se conserva para saber de dónde viene.
+
+**Decisión:** una biblioteca que está en la nube **sigue sincronizándose también por la red local**, con los dispositivos con los que se comparte. La app tiene que funcionar sin cobertura y entre dispositivos, como siempre. Es lo que sale de no cambiar la forma de sincronizar (decisión del maintainer del mismo día): la nube es un sitio más que tiene la biblioteca (D57), y cada sitio juzga lo que recibe con las mismas reglas (D73).
+
+**Un cambio que llega por varios caminos no se aplica dos veces:**
+- cada operación tiene su id y la firma de su autor (D56): llegue por la nube, por otro dispositivo o por los dos, es la misma operación y nadie la puede alterar por el camino;
+- el vector de versiones (por biblioteca y por autor) evita reenviar lo que el otro ya tiene: si el móvil A sube un cambio a la nube y el móvil B lo baja, cuando B sincronice con la nube o con A no les manda nada;
+- si aun así llega dos veces (dos dispositivos que suben a la vez), la fusión ignora una operación ya conocida, y el resultado es el mismo gane quien gane la carrera.
+
+**Consecuencias:** sin trabajo nuevo en el protocolo; es lo que ya pasa con tres dispositivos por la red local. Si el VPS se cae, en casa se sigue sincronizando. La retirada de acceso (D71) llega por cualquiera de los dos caminos.
+
+**Versión anterior (25/09/2026, reabierta):**
 
 > **Reabierta** el 25/09/2026 en la [revisión del alcance](historico/revision-alcance.md): su motivo era que sin servidor no había permisos, y con D55 los dispositivos también los comprueban. Falta decidir si una biblioteca en la nube puede seguir sincronizándose por wifi.
 
@@ -592,7 +612,9 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - Sacar un libro de una biblioteca del servidor es un borrado allí, así que sigue D45.
 - Cambia el modelo de datos de la app (migración nueva) y el diseño (selector de biblioteca, «Mover a otra biblioteca»; ver `docs/design/brief.md`).
 
-## D47 · Cambio rechazado por el servidor: se corrige solo en ese dispositivo — `aceptada`
+## D47 · Cambio rechazado por el servidor: se corrige solo en ese dispositivo — `reemplazada por D73`
+
+> **Reemplazada el 01/10/2026 por D73**, al preparar la Fase 7: la nube juzga cada operación igual que cualquier dispositivo, así que lo no permitido pasa a petición en todos los sitios y el dispositivo del autor se corrige solo, al recalcular la biblioteca desde su registro. La nube nunca corrige a un dispositivo; solo rechaza lo inválido. Ver el añadido de D73.
 
 > Ampliada el 25/09/2026 por D55: lo rechazado no se descarta, pasa a petición; el dispositivo del autor lo deshace hasta que se apruebe. Vale igual entre dispositivos que con el servidor.
 
@@ -850,7 +872,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
   - **sobre qué:** la biblioteca, con su nombre en ese momento, para que se entienda aunque ya no exista.
 - **Lo ve el superadministrador** en el panel (D52). Los administradores de una biblioteca verán lo de la suya en su historial (Fase 5).
 - **En local**, sin nube, cada dispositivo **conserva la operación de borrado** de una biblioteca (quién, cuándo, qué biblioteca) aunque borre todo su contenido. Sin servidor no hay IP ni hora de confianza: es lo que hay, y basta para uso doméstico.
-- **Por concretar al construirlo (Fase 7):** cuánto tiempo se guarda (propuesta: un año) y cómo se explica en la política de privacidad. La IP es un dato personal: se guarda por seguridad, con un plazo y diciéndolo.
+- **Se guarda un año** (aceptado el 01/10/2026) y después se borra solo. La IP es un dato personal: se guarda por seguridad, con ese plazo, y la política de privacidad lo dice.
 
 **Consecuencias:** amplía D52 (su tabla de eventos para los KPI puede ser la misma) y D65. La parte local entra en la Fase 4, con el borrado de bibliotecas; la de la nube, en la Fase 7.
 
@@ -977,7 +999,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - En la Fase 8 del ROADMAP: la búsqueda de marcas y el registro del logo, junto al del nombre si lo hay.
 - Amplía D11 y D70.
 
-## D73 · Cómo se comprueban los permisos sin servidor — `aceptada`
+## D73 · Cómo se comprueban los permisos, sin servidor y con él — `aceptada`
 
 **Contexto:** D55 decide que cada dispositivo compruebe lo que recibe contra los roles, y que todos lleguen al mismo resultado sea cual sea el orden de llegada. Faltaban las reglas concretas. Se propusieron en el plan de la Fase 5 y en los casos en borrador `spec/conformance/draft/permissions.json` (reglas en su README), y el maintainer las aceptó el 27/09/2026.
 
@@ -1007,6 +1029,13 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **«Puede compartir» se comprueba en el dispositivo que comparte:** en una biblioteca con roles, solo quien administra o tiene «Puede compartir» la lleva a otro dispositivo; sin roles, cualquiera, como antes. Quien no puede no ve la opción (al emparejar ni en dispositivos, donde sale «En Familia no puedes compartir; pídeselo a quien la administra») y el motor lo rechaza igualmente (`people::may_share`). **Límite aceptado:** compartir no es una operación que juzguen los demás, sino entregar datos que el dispositivo ya tiene, así que una app modificada podría entregarlos igual. El dispositivo que los recibe no es de nadie: cuenta como lector, solo lee y pide, y quien administra lo ve «sin persona» y le puede retirar el acceso. Se descartó que los demás dispositivos rechacen a quien trajo alguien sin permiso: cambiaría el formato del alta y aun así no impediría la lectura.
 
 **Consecuencias:** los casos pasan de `draft/` a `conformance/` cuando se construyan (hitos 5.3 y 5.4 de `docs/historico/plan-fase-5.md`), con un tipo de campo booleano nuevo para `can_share`. Concreta D55 y D56.
+
+**Añadido al preparar la Fase 7 (01/10/2026): la nube juzga como un dispositivo más.** Sustituye a D47.
+- La nube aplica estas mismas reglas a cada operación que recibe: con el rol de su autor **en el momento de la operación**. Lo de un administrador se guarda y se aplica tal cual; lo de un lector, o lo que alguien hizo sin conexión después de perder el permiso, queda como petición, en la nube y en todos los dispositivos.
+- **La nube solo rechaza lo que rechazaría cualquier dispositivo:** una operación con formato o versión de esquema incorrectos, con una firma que no cuadra (alguien que se hace pasar por otro), o de un dispositivo al que se le retiró el acceso (D71). Lo rechazado no se reenvía.
+- **La nube nunca corrige a un dispositivo.** El caso que motivó D47 (un editor sin conexión borra un libro suyo mientras le bajan a lector) se resuelve solo: al llegarle el cambio de rol, más antiguo que su borrado, su dispositivo recalcula la biblioteca, el libro vuelve y el borrado queda como petición que se puede aceptar. Ninguna lápida se levanta por orden de nadie.
+- **Escenarios revisados con el maintainer:** administradora que edita sin cobertura (se aplica), lector que pide borrar (petición), editor que pierde el rol sin conexión (petición; su dispositivo se corrige al recalcular), app modificada que hace lo que su rol no permite (petición), operación falsificada (rechazada por la firma) y dispositivo retirado que sigue enviando (rechazado).
+- **Hora y zonas horarias:** la marca HLC son milisegundos desde 1970 en UTC, así que las zonas horarias no influyen; solo se pasan a hora local para mostrarlas. El límite que sigue es el de D55: un dispositivo con el reloj mal puesto, o manipulado, fecha mal sus cambios. Con cobertura, la nube no tiene prioridad sobre nadie: gana el cambio más reciente campo a campo, como siempre. La nube guarda además la hora real de llegada de cada operación (D66) y puede avisar al dispositivo cuyo reloj vaya muy desviado; no reescribe marcas, porque están firmadas y también viajan por la red local.
 
 ## D74 · Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos — `propuesta`
 
@@ -1040,3 +1069,98 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - Necesita el repositorio público (D03, D64): los *releases* de un repositorio privado no se pueden descargar sin cuenta.
 - Hoy el CI genera el instalador de Windows como artefacto de cada push (caduca a los 14 días); es solo para pruebas y no sustituye a los *releases*.
 - En la Fase 8 del ROADMAP: el workflow de publicación y la página de descargas.
+
+## D75 · Avisos al momento: Mercure con la app abierta, notificaciones push en Android — `aceptada`
+
+**Contexto:** al preparar la Fase 7 se propuso que la app abierta preguntara a la nube cada minuto si había algo nuevo. El maintainer lo descartó (01/10/2026): preguntar cada cierto tiempo sirve para probar, pero una app moderna recibe avisos del servidor, como WhatsApp o Telegram.
+
+**Decisión:**
+- **Con la app abierta** (escritorio y móvil), una conexión abierta con el servidor que avisa «hay algo nuevo en esta biblioteca», sin datos; la app entonces sincroniza por el protocolo de siempre (D39). En el servidor, **Mercure** (el estándar de Symfony; un contenedor más, porque PHP-FPM no mantiene conexiones abiertas). Hito 7.3.
+- **Con la app cerrada, en Android, notificaciones push** con FCM (Firebase Cloud Messaging), y UnifiedPush como alternativa sin Google. En la **Fase 8**, junto a Google Play. Tauri no tiene plugin oficial de push (el oficial solo hace notificaciones locales); hay varios de la comunidad.
+- **Avisos con la app cerrada, para empezar:** una petición nueva (para quien administra), una petición propia aceptada o rechazada, y alguien que acepta tu invitación. Los cambios normales del catálogo no avisan, solo se sincronizan. Se añadirán más si hacen falta.
+- **Lo que pasa por Google es genérico** («Tienes una petición nueva»), nunca el contenido de la biblioteca; se cuenta en la política de privacidad.
+- **En escritorio, con la app cerrada, nada:** sincroniza al abrirse.
+- **Red local:** tras un cambio, el dispositivo lo envía al momento a los emparejados que respondan.
+- **Siempre opcional** (D18): sin Mercure ni push (por ejemplo, un servidor propio que no los monte), la app sincroniza al abrirse, al volver a primer plano y tras cada cambio.
+
+**Opciones descartadas:** preguntar cada minuto (gasta batería y datos, y no avisa con la app cerrada); WebSockets servidos por PHP (PHP-FPM no está hecho para conexiones largas).
+
+**Consecuencias:** un servicio más en el `docker-compose` de producción (D48) y en la guía de autoalojamiento; en la app, un cliente en Rust que escucha y reconecta, un evento de Tauri que refresca la interfaz, un indicador de conexión y, en la Fase 8, el permiso de notificaciones de Android 13 y Ajustes de avisos. Amplía D39 y D57.
+
+## D76 · La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos — `aceptada`
+
+**Contexto:** con D73, un dispositivo tiene el rol de una persona solo cuando un administrador dice «este móvil es de Laura» desde otro dispositivo. Con cuenta (D57) eso falla en dos casos: el móvil nuevo de alguien, que no puede hacer nada hasta que lo vinculen a mano, y la administradora única que pierde su único móvil, que no podría recuperar el control con el email como promete D58. Acordado con el maintainer el 01/10/2026, al preparar la Fase 7.
+
+**Decisión:**
+- **Subir es por biblioteca.** Registrarse no sube nada: al iniciar sesión, la app pregunta qué bibliotecas subir (D54, nada sale sin decirlo). Subir es compartir, así que lo hace quien administra o tiene «Puede compartir» (D73); una biblioteca ajena en la que solo estás no se sube por estar tú en ella.
+- **El enlace entre cuenta y persona es automático cuando el dispositivo ya es de esa persona.** Si un dispositivo que inicia sesión ya es «de Sergio» en una biblioteca que está en la nube (lo decidió un administrador, D73), la cuenta queda enlazada con Sergio en esa biblioteca, sin invitación ni pregunta. Así, quien ya estaba en la familia por la red local entra en la nube con solo registrarse. Un dispositivo que no es de nadie no enlaza nada; uno que la biblioteca tiene como de otra persona hace que la app pregunte en lugar de enlazar.
+- **La nube vincula los dispositivos nuevos de una cuenta enlazada.** Al subir una biblioteca, la nube se registra en ella como un dispositivo más, con su clave, y quien administra le concede, con una operación firmada, un único poder: decir que un dispositivo de una cuenta enlazada es de esa persona. No cambia roles ni toca el catálogo. Es una casilla marcada por defecto al subir, que se puede quitar en los ajustes de la biblioteca; sin ella, cada dispositivo nuevo se vincula a mano, como hoy.
+- **Escenarios:** móvil nuevo (inicia sesión y recibe cada biblioteca de la nube en la que está su cuenta, con su rol); administradora única sin móvil (recupera el control con su email, D58); contraseña robada (el intruso entraría con ese rol: cambiar la contraseña cierra los demás dispositivos, D50, y un administrador quita el del intruso, D58); biblioteca que nunca se subió (nada cambia).
+- **Lo que concede, dicho claro:** la cuenta vale tanto como el rol de su persona. Es lo normal en un servicio con cuenta, y lo que dice D57: la identidad es la cuenta.
+- **Lo que no está en la nube no baja de la nube:** en un móvil nuevo vuelve por la red local, desde otro dispositivo que la tenga, o desde una copia.
+
+**Dónde se guarda el enlace** (acordado el mismo día):
+- **En el servidor**, con los usuarios al estilo de Symfony: el email y la contraseña (o Google, D77) solo existen en la nube, y una tabla suya dice «esta cuenta es esta persona en esta biblioteca». El rol no se copia ahí: se lee siempre de la persona, así que no hay dos verdades.
+- **Con la biblioteca viaja solo que la persona tiene cuenta**, en un campo nuevo de `member` (`account_id`) que solo usa la nube. Sirve para que cualquier dispositivo, también sin conexión o por la red local, sepa quién tiene cuenta (por ejemplo, para no invitar a quien ya está). El email no viaja nunca.
+- **Detalles, confirmados por el maintainer:** el valor es un id aleatorio de la cuenta, no un hash del email (un hash de email se adivina probando emails conocidos); solo lo escribe la nube, con su clave, al enlazar o desenlazar; y es solo informativo: quién puede entrar lo decide siempre la tabla del servidor, así que un valor falso no da nada.
+
+**Por concretar al construirlo (hito 7.5):** cómo se marca en `spec/` el poder de la nube (una regla nueva de permisos con sus casos de conformidad, en Rust y en PHP). El campo `account_id` cambia a la vez la migración, `schema.rs`, `spec/` y `CatalogEntity.php`.
+
+**Consecuencias:** cumple la recuperación con el email de D58. Amplía D57 y D73.
+
+## D77 · Entrar con email o con Google — `aceptada`
+
+**Contexto:** D09 decía usuario y contraseña, y D49 y D50 lo concretaron con códigos por email. El maintainer quiere que entrar sea fácil (01/10/2026): registrarse con un email o con Google. Ninguna red social más por ahora: cada una es otra app que dar de alta y configurar (Meta para Instagram, por ejemplo), y se pueden añadir después.
+
+**Decisión:**
+- **Dos formas de entrar:** email y contraseña (con el código de D49 y la recuperación de D50) o **«Continuar con Google»**.
+- **Desde una app nativa, por el navegador del sistema**, no dentro de la app: Google no deja iniciar sesión en vistas web incrustadas. La app abre el navegador en el servidor, que hace el OAuth con Google (en Symfony, `knpuniversity/oauth2-client-bundle`, con PKCE) y devuelve a la app un código de un solo uso, que la app cambia por el token de su dispositivo. En Android vuelve con un enlace a la app; en escritorio, igual o con una dirección local. Es el mismo camino en todas las plataformas.
+- **Misma persona, misma cuenta:** si Google confirma un email que ya tiene cuenta, se enlaza con ella en lugar de crear otra. Una cuenta solo de Google no tiene contraseña que recuperar.
+- **El servidor dice qué ofrece:** Google solo aparece si ese servidor lo tiene configurado. Quien monte el suyo sin Google sigue con email y contraseña.
+- **Otro servidor:** la app entra por defecto en el oficial, y un enlace discreto, «Otro servidor», deja escribir la dirección de uno propio (como hace Bitwarden). Es lo que hace verdad que el servidor se pueda alojar.
+- Iniciar sesión, con Google o sin él, sigue probando la clave del dispositivo (plan de la Fase 7) y queda en el registro de actividad (D66).
+
+**Consecuencias:** hay que crear un proyecto en Google Cloud con su pantalla de consentimiento y sus credenciales, como para FCM (D75); se apunta en [development/servicios-externos.md](development/servicios-externos.md) para hacerlo paso a paso cuando llegue. La política de privacidad dirá qué se recibe de Google (email y nombre). Amplía D09 y D49.
+
+## D78 · Desbloqueo con biometría y segundo factor, opcionales desde el principio — `aceptada`
+
+**Contexto:** con D76 la cuenta vale tanto como el rol de su persona, así que protegerla bien importa. El maintainer quiere biometría y segundo factor desde el principio (01/10/2026), si son fáciles de usar y de configurar, y siempre opcionales.
+
+**Decisión:**
+- **Desbloquear la app con la huella o la cara**, en el móvil. Es local: protege que alguien con tu móvil abra la app, y funciona **también sin cuenta**. Plugin oficial `biometric` de Tauri (Android; en escritorio no hay). Se activa en Ajustes; apagado por defecto.
+- **Segundo factor en la cuenta** con un código de una app de autenticación (TOTP: Google Authenticator, Aegis…), con `scheb/2fa-bundle` en Symfony, y **códigos de respaldo** para quien pierda el móvil. Cada usuario decide si lo activa. Como solo se inicia sesión una vez por dispositivo, molesta poco.
+- **Propuesta, a revisar al construirlo:** el segundo factor se pide al entrar con email y contraseña; al entrar con Google lo protege el segundo factor de Google.
+- **Quien aloja su servidor** decide si lo ofrece, con una variable de entorno; encendido por defecto.
+- **Sin respaldo ni autenticador**, el superadministrador puede quitar el segundo factor por consola (D51), y queda en el registro de actividad (D66).
+- **Llaves de acceso (passkeys), más adelante.** Tauri aún no tiene plugin oficial; si se construye la integración, la idea es publicarla como plugin libre de Tauri.
+
+**Consecuencias:** entra en el hito 7.1 de la Fase 7. Pantallas nuevas para Design: activar el segundo factor (QR y códigos de respaldo), pedir el código al entrar, y el desbloqueo con biometría. Amplía D49, D50 y D76.
+
+## D79 · Dominios: `.app` es lo que usa la app, `.com` es lo que se lee — `aceptada`
+
+**Contexto:** el proyecto tiene kosmotheka.com y kosmotheka.app, y hasta ahora `.app` redirigía a `.com`. La Fase 7 necesita una dirección para la API, otra para las invitaciones y un dominio que verifique los enlaces de Android (App Links), que también hacen falta para volver de Google a la app (D77). Acordado con el maintainer el 01/10/2026.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Un dominio principal (`.com`) y el otro redirige | Una sola web, una sola configuración | Mezcla en el mismo sitio lo que usa la app y lo que se lee |
+| **Separados por función** | El enlace `kosmotheka.app/i/…` ya dice que abre la app; la web de `.com` puede alojarse en cualquier sitio y no cae con el VPS; en `.app` no hay contenido que mantener | Algunas cosas se configuran dos veces: los dos dominios en Google (OAuth, Firebase y Search Console), dos certificados y dos DNS |
+
+**Decisión:** separados, con la regla «**`.app` es lo que usa la app, `.com` es lo que se lee**».
+
+| Dirección | Qué es |
+|---|---|
+| `api.kosmotheka.app` | El servidor de la app |
+| `kosmotheka.app/i/…` | Las invitaciones (D43) |
+| `kosmotheka.app/.well-known/assetlinks.json` | El fichero que verifica los enlaces de Android |
+| `kosmotheka.app` | Una página de instalación sencilla que remite al `.com` |
+| `kosmotheka.com` | Landing, documentación, descargas, políticas y contacto (Fase 8) |
+
+- La redirección de `.app` a `.com` desaparece. La política de privacidad vive solo en `.com`, y la página de instalación y la pantalla de consentimiento de Google enlazan allí.
+- Android comprueba los enlaces verificados en el dominio exacto y no sigue redirecciones: todos los enlaces que genere la app son de `kosmotheka.app`.
+
+**Quien aloje su servidor lo configura a su manera:** la dirección de la API es la que escribe en «Otro servidor» (D77), y la de las invitaciones, una variable de entorno del servidor; puede usar uno o dos dominios. **Límite:** los enlaces verificados de Android se declaran al compilar la app oficial, así que solo valen para `kosmotheka.app`. En un servidor propio, la página de la invitación abre la app con el esquema propio (`kosmotheka://`), que funciona con cualquier servidor, o deja copiar la invitación para pegarla en la app; y volver de Google usa también ese esquema, con el cliente OAuth que configure quien lo aloja.
+
+**Consecuencias:** se apunta en [development/servicios-externos.md](development/servicios-externos.md). Concreta D22 (la web pública va en `.com`) y D74 (la página de descargas, en `.com`).
+

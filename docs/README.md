@@ -10,10 +10,10 @@
 |---|---|
 | [ROADMAP.md](ROADMAP.md) | El plan: fases, qué se construye y cuándo está hecho |
 | [DECISIONS.md](DECISIONS.md) | Registro de decisiones: contexto, opciones, decisión y estado |
-| [plans/](plans/) | El plan de la fase en curso: [Fase 4](plans/fase-4.md) |
+| [plans/](plans/) | El plan de la fase en curso: [Fase 7](plans/fase-7.md) |
 | [architecture/](architecture/) | Cómo está construido: [modelo de datos](architecture/data-model.md), [operaciones](architecture/operations.md), [sincronización](architecture/sync.md) |
 | [design/](design/) | [Brief de diseño](design/brief.md), [catálogo de errores](design/errors.md) y [pantallas de Claude Design](design/screens/README.md) |
-| [development/](development/) | Entorno de desarrollo: [app](development/setup.md) y [servidor](development/server.md) |
+| [development/](development/) | Entorno de desarrollo: [app](development/setup.md), [servidor](development/server.md) y [servicios externos que hay que configurar](development/servicios-externos.md) |
 | [testing/](testing/) | Pruebas manuales: [hito 1](testing/hito-1.md) y [Fase 2](testing/fase-2.md) |
 | [research/](research/) | Investigación: [motores de sincronización](research/sync-engines.md), [Koillection](research/koillection.md), [nombre del proyecto](research/naming.md), [apps de referencia](research/referentes.md) y [proveedores de datos](research/proveedores.md) |
 
@@ -26,6 +26,7 @@ No se actualizan: explican de dónde viene lo que hay ahora.
 | [VISION.md](VISION.md) | Visión original (ideación del 24/09/2026) |
 | [historico/revision-alcance.md](historico/revision-alcance.md) | Debate del 25/09/2026 que replanteó el alcance: bibliotecas, personas y roles, nube, catálogos |
 | [historico/plan-servidor-2026-09.md](historico/plan-servidor-2026-09.md) | Plan del servidor anterior a esa revisión |
+| [historico/plan-fase-4.md](historico/plan-fase-4.md), [plan-fase-5.md](historico/plan-fase-5.md), [plan-fase-6.md](historico/plan-fase-6.md) | Planes de las fases ya cerradas |
 | [historico/brief-diseno-fases-1-2.md](historico/brief-diseno-fases-1-2.md) | Brief de diseño de la app de las fases 1 y 2 |
 
 ## Convenciones de la documentación

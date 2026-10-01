@@ -90,7 +90,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | dispositivo | `device` | |
 | biblioteca | `library` | On the server, the unit that owns data (D38) |
 | usuario (cuenta) | `user` | An account on the server |
-| membresía | `membership` | A user's role in a library. Keep it distinct from `member` |
+| membresía | `membership` | On the server, links a user (account) to a `member` of a library (D76). The role is always the member's, never copied here. Keep it distinct from `member` |
 | rol: administrador · editor · lector | `admin` · `editor` · `reader` | |
 | invitación | `invitation` | |
 | retirada de acceso | `revocation` | A device that may no longer receive a library (D71). Synced with the library |

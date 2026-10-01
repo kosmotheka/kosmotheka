@@ -14,10 +14,10 @@
 | 1 | Catálogo en el escritorio | Catalogar libros en el escritorio | ✅ |
 | 2 | Móvil y sincronización local | «¿Lo tengo ya?» en la tienda; sincronizar por wifi | ✅ en código, falta probar |
 | 3 | Diseño del nuevo modelo | Saber cómo se ve y se usa todo lo decidido, antes de construirlo | ✅ |
-| 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | En curso |
+| 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | ✅ |
 | 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | ✅ |
-| 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | |
-| 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | Hito 7.0 ✅ |
+| 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | ✅ |
+| 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | En curso |
 | 8 | Publicación | La app en la tienda de Android y una landing | |
 | 9 | Vida de la biblioteca | Préstamos, regalos, estadísticas | |
 | 10 | Herramientas de estantería | Inventario, foto de balda, IA | |
@@ -44,7 +44,7 @@ Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la 
 - [x] Ajustes, Compartir, Alta rápida y Copias de seguridad con el mismo patrón; Copias con su propia entrada en el menú; sección de Ayuda con sus primeros temas.
 - Lo que depende del modelo nuevo se hace en su fase, y sus pantallas se piden a Claude Design al empezarla: varias bibliotecas (fase 4); compartir con persona y rol, personas y permisos, peticiones y la campanita (fase 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6); cuenta y nube (fase 7).
 
-## Fase 4 — Bibliotecas
+## Fase 4 — Bibliotecas ✅
 
 La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza y tiene permisos.
 
@@ -62,13 +62,13 @@ La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza 
 
 **Estado:**
 - [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 13 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Revisado el 26/09/2026: el campo `library` y la biblioteca con solo nombre, aceptados; borrar y abandonar en [D65](DECISIONS.md). Queda por valorar mostrar quién creó cada biblioteca.
-- [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [plans/fase-4.md](plans/fase-4.md).
+- [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [historico/plan-fase-4.md](historico/plan-fase-4.md).
 - [x] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos de validación pasan de `draft/` a `conformance/` (26/09/2026). Los de fusión siguen en `draft/` hasta el hito 4.3.
 - [x] Tablas con `library_id`, migración y vector de versiones por biblioteca (26/09/2026). La migración deja antes una copia de la base de datos.
 - [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
 - [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
 - [x] Copias completas y por biblioteca (formato versión 3, D30).
-- [ ] Pendiente para cerrar la fase: las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md).
+- [x] Fase cerrada por el maintainer el 01/10/2026. Las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md) se hacen junto con las de las fases 5 y 6.
 - Guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30): aplazado el 28/09/2026, puede llevar trabajo.
 
 ## Fase 5 — Personas, roles y peticiones
@@ -133,22 +133,26 @@ Deja de estar centrado en libros.
 
 La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
+- **Plan de la fase:** [plans/fase-7.md](plans/fase-7.md), con hitos, propuestas y preguntas (01/10/2026).
 - **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
-- **Registro con email** y código en la app; recuperación con código.
+- **Registro con email** y código en la app, o con Google (D77); recuperación con código. Segundo factor opcional y desbloqueo con biometría (D78). La app entra en el servidor oficial o en otro.
+- **La cuenta en la biblioteca** (D76): se sube biblioteca a biblioteca; la cuenta se enlaza sola con su persona, y un móvil nuevo recibe sus bibliotecas con su rol.
 - Subir una biblioteca a la nube sin perder nada, historial incluido.
 - **Enlace para invitar a una biblioteca**, además del QR (D43, D67).
-- **Sincronizar a distancia** con los mismos roles y peticiones; el servidor comprueba y corrige.
+- **Sincronizar a distancia** con los mismos roles y peticiones; la nube juzga como un dispositivo más (D73) y la red local sigue funcionando a la vez (D39).
+- **Avisos al momento** con la app abierta (Mercure, D75), en lugar de preguntar cada cierto tiempo.
 - **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
 - Límites de peticiones y cuentas sin confirmar que caducan.
 - **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
-- Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D47, D48, D49 y D50.
+- Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación
 
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
+- **Notificaciones push en Android** con la app cerrada (D75): FCM, y UnifiedPush sin Google. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
 - **F-Droid:** estudiar cómo queda tras la verificación de desarrolladores de Google.
 - **Landing pública:** qué es, que es libre y sin registro, enlaces a la tienda y al código.
 - Sección de ayuda completa en la app; documentación para quien quiera montar su servidor.
@@ -192,8 +196,6 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 
 - Papelera para deshacer borrados.
 - Salida para el administrador único que pierde su único dispositivo.
-- Cuenta con contraseña o solo con código por email.
-- Si una biblioteca en la nube puede seguir sincronizándose por wifi (D39).
 - Campos personalizados por el usuario (solo si alguien los pide).
 
 ## Ideas para el futuro
@@ -209,6 +211,7 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **Base de datos colaborativa** (futuro lejano).
 - **Reconocer mejor los dispositivos «sin persona»** (27/09/2026): con muchos dispositivos y sin servidor pueden juntarse varios sin persona difíciles de distinguir. Ideas: en Android, usar como nombre por defecto el de los ajustes del móvil (el mismo que ve el Bluetooth del coche) o el modelo, en vez de «Kosmotheka»; enseñar el nombre al emparejar («Te verán como…», con «Cambiar»); y mostrar en la fila cuándo apareció y cuándo se sincronizó por última vez. Se dejó para más adelante para no añadir código nativo de Android por un detalle.
 - **Precio de compra** de cada ejemplar: fuera de la Fase 6 (28/09/2026); obligaría a elegir divisa, entre otras cosas.
+- **Llaves de acceso (passkeys)** para entrar sin contraseña (01/10/2026): Tauri no tiene plugin oficial; si se construye la integración, publicarla como plugin libre de Tauri. La biometría y el segundo factor entran ya en la Fase 7 (D78).
 - **Modelo de pago:** no se espera; la app es gratuita. Si llegara, sería un módulo aparte, fuera del repositorio público.
 
 ---

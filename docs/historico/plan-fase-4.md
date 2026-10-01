@@ -1,6 +1,6 @@
 # Plan de la Fase 4 — Bibliotecas
 
-> Plan de trabajo mientras dure la fase. Se basa en D46, D54 y D65 ([DECISIONS.md](../DECISIONS.md)) y en el [ROADMAP](../ROADMAP.md). Al cerrar la fase pasa a `historico/`.
+> Plan de trabajo mientras dure la fase. Se basa en D46, D54 y D65 ([DECISIONS.md](../DECISIONS.md)) y en el [ROADMAP](../ROADMAP.md). La fase se cerró el 01/10/2026 y el plan pasó a `historico/`; sus pruebas en pantalla se hacen junto con las de las fases 5 y 6.
 
 **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
 
