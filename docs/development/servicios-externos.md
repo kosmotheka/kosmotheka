@@ -4,7 +4,7 @@
 
 | Servicio | Para qué | Cuándo | Decisión | Estado |
 |---|---|---|---|---|
-| **Buzón en Zoho Mail** (plan gratuito), en `kosmotheka.com` | Dar de alta los demás servicios con una dirección del proyecto, y el contacto de la web y de Google Play | Antes del hito 7.1 | D80 | Pendiente; pasos en [correo.md](correo.md) |
+| **`info@kosmotheka.com`**: ImprovMX reenvía al buzón de Gmail del proyecto | Dar de alta los demás servicios con una dirección del proyecto, y el contacto de la web y de Google Play | Antes del hito 7.1 | D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Cuenta en X** con el nombre del proyecto | Reservar el nombre; no para iniciar sesión | Cuando haya correo propio | D70 | Pendiente |
 | **Google Cloud: proyecto, pantalla de consentimiento OAuth y credenciales** | «Continuar con Google» | Hito 7.1 | D77 | Pendiente |
 | **Brevo** y DNS del dominio (SPF, DKIM, DMARC) | Códigos de registro y de recuperación | Hito 7.1 | D49, D80 | Pendiente; pasos en [correo.md](correo.md) |

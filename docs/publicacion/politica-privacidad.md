@@ -54,4 +54,4 @@ Si la aplicación cambia lo que hace con los datos (por ejemplo, cuando exista l
 
 ## Contacto
 
-[correo de contacto]
+[privacy@kosmotheka.com](mailto:privacy@kosmotheka.com)

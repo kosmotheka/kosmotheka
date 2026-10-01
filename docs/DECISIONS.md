@@ -85,7 +85,7 @@
 | D77 | Entrar con email o con Google | aceptada |
 | D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada |
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
-| D80 | Correo: buzón en Zoho Mail gratis, envíos de la app con Brevo | aceptada |
+| D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
 
 ---
 
@@ -1165,26 +1165,31 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Consecuencias:** se apunta en [development/servicios-externos.md](development/servicios-externos.md). Concreta D22 (la web pública va en `.com`) y D74 (la página de descargas, en `.com`).
 
-## D80 · Correo: buzón en Zoho Mail gratis, envíos de la app con Brevo — `aceptada`
+## D80 · Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo — `aceptada`
 
-**Contexto:** hace falta una dirección del proyecto para dar de alta los servicios externos (Google Cloud, Firebase, Play…) y para que nos escriban desde la web y Google Play, y hay que poder responder. Además, el servidor envía los códigos de registro y de recuperación (D49, D50). Requisitos del maintainer (01/10/2026): sin coste, un buzón separado del correo personal con su propia app en el móvil, y el DNS se queda en el proveedor del VPS.
+> Revisada el 01/10/2026, el mismo día: la primera versión elegía el plan gratuito de Zoho Mail, pero Zoho no lo ofrece en nuestra región.
+
+**Contexto:** hace falta una dirección del proyecto para dar de alta los servicios externos (Google Cloud, Firebase, Play…) y para que nos escriban desde la web y Google Play, y hay que poder responder. Además, el servidor envía los códigos de registro y de recuperación (D49, D50). Requisitos del maintainer (01/10/2026): sin coste, responder con la dirección del dominio y el DNS se queda en el proveedor del VPS.
 
 **Opciones:**
 
 | Opción | A favor | En contra |
 |---|---|---|
 | Google Workspace | Lo más cómodo | Unos 5 € al mes |
-| Reenvío a Gmail (Cloudflare Email Routing o ImprovMX) y «Enviar como» | Gratis | Cloudflare exige mover el DNS; Gmail retira «Enviar como» para direcciones ajenas en enero de 2027; ata el proyecto al correo personal |
+| Zoho Mail gratis | Buzón real con app | No se ofrece en nuestra región |
+| Zoho Mail Lite | Buzón real con IMAP, un solo servicio | Unos 12 € al año |
 | Reenvío a la bandeja Conversations de Brevo | Gratis, con app | Es una bandeja de atención al cliente, no un buzón; si Brevo suspende la cuenta, se pierden a la vez el buzón y los envíos |
-| Buzón de pago barato (Purelymail, Migadu, mailbox.org) | IMAP estándar | Cuesta dinero; los más baratos son servicios pequeños o limitan los envíos |
+| Buzón de pago pequeño (Purelymail, Migadu) | IMAP estándar | Cuesta dinero; son servicios pequeños o limitan los envíos |
 | Servidor propio (Stalwart, docker-mailserver) | El buzón es nuestro | el proveedor del VPS bloquea el puerto 25 de salida, así que hace falta un relay igualmente; copias y mantenimiento a nuestro cargo |
-| **Zoho Mail gratis + Brevo** | Gratis; dos piezas independientes y cada una se cambia sin tocar la otra | El plan gratuito de Zoho no tiene IMAP ni SMTP (solo su web y su app) y admite un solo dominio |
+| Solo una cuenta de Gmail | Gratis, buen buzón | Se responde y se dan de alta los servicios con una dirección de Gmail; cambiar después obliga a tocar cada cuenta |
+| **Dominio por fuera, Gmail por dentro** | Gratis; todo sale con el dominio; cambiar el buzón es cambiar los MX | Tres piezas; responder como `info@` desde Gmail deja de funcionar en enero de 2027 |
 
-**Decisión:** Zoho Mail Forever Free para el buzón y Brevo para el correo que envía el servidor.
+**Decisión:** el dominio por fuera y Gmail por dentro.
 
-- **El buzón vive en `kosmotheka.com`**, el dominio «que se lee» (D79). Se lee y se responde desde la app de Zoho, que envía con sus propios servidores.
-- **El servidor envía con Brevo** a través de `symfony/mailer` (`MAILER_DSN`), desde una dirección que no admite respuestas. Si Brevo falla o suspende la cuenta, se cambia el DSN a otro proveedor (Resend, Mailjet, Amazon SES) y el buzón no se entera.
-- **Las cuentas de los servicios se dan de alta con la dirección del dominio**, que es del proyecto y no de una persona. La recuperación de la cuenta de Zoho apunta al correo personal, para que no dependa de sí misma.
-- **Plan B si falla Zoho** (el plan gratuito no está disponible en todos los centros de datos): Zoho Mail Lite (unos 1 € al mes), que no cambia nada más.
+- **`info@kosmotheka.com` es la dirección del proyecto** y vive en `kosmotheka.com`, el dominio «que se lee» (D79). **ImprovMX** (gratis) la reenvía al buzón de Gmail del proyecto.
+- **Todos los servicios se dan de alta con `info@kosmotheka.com`**, nunca con el Gmail, también la cuenta de Google para Google Cloud y Firebase (se puede crear una cuenta de Google con un email que no es de Gmail). Así cambiar el buzón solo toca el DNS.
+- **Se responde como `info@`** desde Gmail con «Enviar como», a través del SMTP de Brevo. Google lo retira para direcciones ajenas en **enero de 2027**: entonces el buzón pasa a Zoho Mail Lite o a lo que convenga, cambiando solo los MX, o se responde desde otra app de correo con esa identidad.
+- **El servidor envía con Brevo** a través de `symfony/mailer` (`MAILER_DSN`), desde `no-reply@kosmotheka.com`. Si Brevo falla o suspende la cuenta, se cambia el DSN a otro proveedor (Resend, Mailjet, Amazon SES); recibir no se ve afectado.
+- **No se envía con el SMTP de Gmail** desde el servidor: pide contraseñas de aplicación y saldría desde una dirección de Gmail.
 
-**Consecuencias:** el DNS de `kosmotheka.com` lleva los registros de Zoho y de Brevo (MX, un único SPF con los dos, DKIM de cada uno y DMARC). Los pasos están en [development/correo.md](development/correo.md), y la tabla de [development/servicios-externos.md](development/servicios-externos.md) queda actualizada. Quien aloje su servidor usa el proveedor que quiera con `MAILER_DSN` (D18). Resuelve lo que D49 y D50 dejaban pendiente.
+**Consecuencias:** el DNS de `kosmotheka.com` lleva los MX de ImprovMX, un único SPF con ImprovMX y Brevo, el DKIM de Brevo y DMARC. Los pasos están en [development/correo.md](development/correo.md), y la tabla de [development/servicios-externos.md](development/servicios-externos.md) queda actualizada. **Pendiente para enero de 2027:** decidir el buzón definitivo. Quien aloje su servidor usa el proveedor que quiera con `MAILER_DSN` (D18). Resuelve lo que D49 y D50 dejaban pendiente.
