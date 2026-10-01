@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\Device;
 use App\Entity\User;
 use App\Enum\EmailCodePurpose;
+use App\Repository\DeviceRepository;
 use App\Repository\EmailCodeRepository;
+use App\Tests\Support\DeviceAuthTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -14,14 +17,17 @@ use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Functional coverage of `/v1/account/*` (docs/architecture/accounts.md):
  * registration never reveals whether an email exists, codes expire, allow 5
- * wrong attempts, and are single use.
+ * wrong attempts, and are single use; plus the authenticated account and
+ * device endpoints added in milestone 7.1, part 2.
  */
 final class AccountControllerTest extends WebTestCase
 {
+    use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
     /**
@@ -34,6 +40,7 @@ final class AccountControllerTest extends WebTestCase
     {
         $client = self::createClient();
         self::getContainer()->get('cache.rate_limiter')->clear();
+        self::getContainer()->get('cache.auth_challenge')->clear();
 
         return $client;
     }
@@ -323,6 +330,117 @@ final class AccountControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
 
         return $email;
+    }
+
+    public function testShowReturnsTheAccount(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'show@example.com');
+
+        $client->request('GET', '/v1/account', server: $session['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        /** @var array<string, mixed> $body */
+        $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame('show@example.com', $body['email']);
+        self::assertSame('Ada', $body['name']);
+        self::assertSame('en', $body['locale']);
+        self::assertTrue($body['has_password']);
+    }
+
+    public function testUpdateChangesNameAndLocale(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'update@example.com');
+
+        $client->request('PATCH', '/v1/account', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['name' => 'New Name', 'locale' => 'es'], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        /** @var array<string, mixed> $body */
+        $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame('New Name', $body['name']);
+        self::assertSame('es', $body['locale']);
+
+        $user = $this->findUser('update@example.com');
+        self::assertNotNull($user);
+        self::assertSame('New Name', $user->getName());
+        self::assertSame('es', $user->getLocale());
+    }
+
+    public function testUpdateWithoutFieldsChangesNothing(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'update-nothing@example.com');
+
+        $client->request('PATCH', '/v1/account', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: '{}');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        /** @var array<string, mixed> $body */
+        $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame('Ada', $body['name']);
+        self::assertSame('en', $body['locale']);
+    }
+
+    public function testListDevicesMarksTheCurrentOne(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'devices-list@example.com';
+        $first = $this->signInNewDevice($client, $email, deviceName: 'Laptop');
+        $second = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $client->request('GET', '/v1/account/devices', server: $second['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        /** @var list<array{id: string, name: string, signed_in: bool, current: bool}> $devices */
+        $devices = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertCount(2, $devices);
+        $byId = array_combine(array_column($devices, 'id'), $devices);
+        self::assertFalse($byId[$first['device_id']]['current']);
+        self::assertTrue($byId[$second['device_id']]['current']);
+        self::assertTrue($byId[$first['device_id']]['signed_in']);
+    }
+
+    public function testRevokingAnotherOwnDeviceSignsItOut(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'revoke-own@example.com';
+        $first = $this->signInNewDevice($client, $email, deviceName: 'Laptop');
+        $second = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $client->request('DELETE', '/v1/account/devices/'.$first['device_id'], server: $second['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $client->request('GET', '/v1/account', server: $first['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"invalid_token"}', $client->getResponse()->getContent());
+
+        $device = self::getContainer()->get(DeviceRepository::class)->find($first['device_id']);
+        self::assertInstanceOf(Device::class, $device);
+        self::assertFalse($device->isSignedIn());
+    }
+
+    public function testRevokingSomeoneElsesDeviceFails(): void
+    {
+        $client = $this->createTestClient();
+        $owner = $this->signInNewDevice($client, 'device-owner@example.com');
+        $intruder = $this->signInNewDevice($client, 'device-intruder@example.com');
+
+        $client->request('DELETE', '/v1/account/devices/'.$owner['device_id'], server: $intruder['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        self::assertSame('{"error":"device_not_found"}', $client->getResponse()->getContent());
+    }
+
+    public function testRevokingAnUnknownDeviceFails(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'revoke-unknown@example.com');
+
+        $client->request('DELETE', '/v1/account/devices/'.Uuid::v4()->toRfc4122(), server: $session['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        self::assertSame('{"error":"device_not_found"}', $client->getResponse()->getContent());
     }
 
     private function findUser(string $email): ?User

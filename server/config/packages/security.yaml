@@ -20,6 +20,17 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        # Matched before "main" (first match wins): the account API, stateless,
+        # authenticated per request with a device token (milestone 7.1, part 2,
+        # docs/architecture/accounts.md), never a session.
+        api:
+            pattern: ^/v1
+            stateless: true
+            provider: users
+            custom_authenticators:
+                - App\Security\DeviceTokenAuthenticator
+            entry_point: App\Security\DeviceTokenAuthenticator
+            user_checker: App\Security\UserChecker
         main:
             lazy: true
             provider: users
@@ -30,8 +41,12 @@ security:
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
 
-    # Note: Only the *first* matching rule is applied
+    # Note: Only the *first* matching rule is applied. Keep this list easy to
+    # extend: part 3 of milestone 7.1 adds more public routes.
     access_control:
+        - { path: ^/v1/account/(register|confirm|code)$, roles: PUBLIC_ACCESS }
+        - { path: ^/v1/auth/(challenge|login)$, roles: PUBLIC_ACCESS }
+        - { path: ^/v1, roles: ROLE_USER }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
 

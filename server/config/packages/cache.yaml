@@ -15,5 +15,8 @@ framework:
         #app: cache.adapter.apcu
 
         # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # Login challenges (milestone 7.1, part 2): single-use, 5-minute
+            # TTL, kept apart from cache.rate_limiter so tests can clear one
+            # without clearing the other.
+            cache.auth_challenge: null

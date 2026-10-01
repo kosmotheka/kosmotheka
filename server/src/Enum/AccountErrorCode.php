@@ -15,4 +15,16 @@ enum AccountErrorCode: string
     case CodeExpired = 'code_expired';
     case TooManyAttempts = 'too_many_attempts';
     case TooManyRequests = 'too_many_requests';
+
+    // Milestone 7.1, part 2: device sign-in and the authenticated API.
+    case InvalidChallenge = 'invalid_challenge';
+    case InvalidDeviceProof = 'invalid_device_proof';
+    case InvalidCredentials = 'invalid_credentials';
+    case AccountNotConfirmed = 'account_not_confirmed';
+    case AccountBlocked = 'account_blocked';
+    case DeviceTaken = 'device_taken';
+    case DeviceKeyMismatch = 'device_key_mismatch';
+    case DeviceNotFound = 'device_not_found';
+    case InvalidToken = 'invalid_token';
+    case AuthenticationRequired = 'authentication_required';
 }

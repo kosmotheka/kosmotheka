@@ -7,11 +7,15 @@ namespace App\Controller;
 use App\Dto\ConfirmAccountRequest;
 use App\Dto\RegisterAccountRequest;
 use App\Dto\RequestEmailCodeRequest;
+use App\Dto\UpdateAccountRequest;
+use App\Entity\Device;
 use App\Entity\User;
 use App\Enum\EmailCodePurpose;
+use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
 use App\Security\AccountException;
 use App\Security\AccountMailer;
+use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
 use App\Security\RequestLimiter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,8 +26,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/** Account creation and email confirmation (D49). Thin: maps, calls services, returns JSON. */
+/**
+ * Account creation, email confirmation (D49) and the account resource itself
+ * once signed in (milestone 7.1, part 2). Thin: maps, calls services, returns JSON.
+ */
 #[Route('/v1/account')]
 final class AccountController extends AbstractController
 {
@@ -34,6 +42,8 @@ final class AccountController extends AbstractController
         private readonly EmailCodeIssuer $emailCodeIssuer,
         private readonly AccountMailer $accountMailer,
         private readonly RequestLimiter $requestLimiter,
+        private readonly CurrentDevice $currentDevice,
+        private readonly DeviceRepository $deviceRepository,
     ) {
     }
 
@@ -99,6 +109,86 @@ final class AccountController extends AbstractController
         }
 
         return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+    }
+
+    #[Route('', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function show(): JsonResponse
+    {
+        return new JsonResponse($this->accountPayload($this->currentUser()));
+    }
+
+    #[Route('', methods: ['PATCH'])]
+    #[IsGranted('ROLE_USER')]
+    public function update(#[MapRequestPayload] UpdateAccountRequest $payload): JsonResponse
+    {
+        $user = $this->currentUser();
+
+        if (null !== $payload->name) {
+            $user->setName($payload->name);
+        }
+        if (null !== $payload->locale) {
+            $user->setLocale($payload->locale);
+        }
+        $this->entityManager->flush();
+
+        return new JsonResponse($this->accountPayload($user));
+    }
+
+    #[Route('/devices', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function devices(): JsonResponse
+    {
+        $currentDeviceId = $this->currentDevice->get()->getId();
+        $devices = $this->deviceRepository->findBy(['user' => $this->currentUser()], ['createdAt' => 'ASC']);
+
+        return new JsonResponse(array_map(
+            static fn (Device $device): array => [
+                'id' => $device->getId(),
+                'name' => $device->getName(),
+                'created_at' => $device->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'last_seen_at' => $device->getLastSeenAt()?->format(\DateTimeInterface::ATOM),
+                'signed_in' => $device->isSignedIn(),
+                'current' => $device->getId() === $currentDeviceId,
+            ],
+            $devices,
+        ));
+    }
+
+    #[Route('/devices/{id}', methods: ['DELETE'])]
+    #[IsGranted('ROLE_USER')]
+    public function revokeDevice(string $id): Response
+    {
+        $device = $this->deviceRepository->find($id);
+        if (!$device instanceof Device || !$device->getUser()->getId()->equals($this->currentUser()->getId())) {
+            throw AccountException::deviceNotFound();
+        }
+
+        $device->setTokenHash(null);
+        $this->entityManager->flush();
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /** @return array{id: string, email: string, name: string, locale: string, has_password: bool, created_at: string} */
+    private function accountPayload(User $user): array
+    {
+        return [
+            'id' => $user->getId()->toRfc4122(),
+            'email' => $user->getEmail(),
+            'name' => $user->getName(),
+            'locale' => $user->getLocale(),
+            'has_password' => null !== $user->getPassword(),
+            'created_at' => $user->getCreatedAt()->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    private function currentUser(): User
+    {
+        $user = $this->getUser();
+        \assert($user instanceof User);
+
+        return $user;
     }
 
     private function normaliseEmail(string $email): string

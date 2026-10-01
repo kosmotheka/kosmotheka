@@ -54,7 +54,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 | Limitador | Límite | Clave |
 |---|---|---|
 | `registration` | 5 por hora | IP |
-| `login` | 10 cada 15 min | IP (hito 7.1, parte 2) |
+| `login` | 10 cada 15 min | IP |
 | `email_code` | 10 cada 15 min | IP |
 | `email_per_address` | 3 cada 15 min | dirección de correo normalizada |
 
@@ -64,9 +64,58 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 
 `symfony/mailer`, texto plano (sin Twig), asunto y cuerpo desde `translations/emails.{en,es}.yaml` en el idioma de la cuenta. En desarrollo lo captura Mailpit; en producción, Brevo (ver `docs/development/server.md`).
 
+## Dispositivos y su token (parte 2)
+
+Cada instalación de la app es un **dispositivo** (`App\Entity\Device`): su id es el mismo UUID que ya usa en sus HLCs (no lo genera el servidor), y tiene una clave pública Ed25519 (32 bytes, base64url sin relleno — el mismo formato que decodifica `App\Sync\OperationSignature`). El servidor guarda solo el **hash SHA-256** del token de sesión (`tokenHash`); `tokenHash = null` significa que el dispositivo está desconectado. **Un id de dispositivo queda ligado para siempre a la cuenta que lo registró primero**, y solo puede volver a iniciar sesión con esa cuenta y con la misma clave pública: así un id robado o reutilizado no puede «mudarse» de cuenta ni cambiar de clave en silencio.
+
+### El reto de inicio de sesión
+
+`POST /v1/auth/challenge` (sin cuerpo) → **200** `{"challenge": "<32 bytes aleatorios, base64url sin relleno>", "expires_at": "<ISO 8601 UTC>"}`. Válido **5 minutos**, de **un solo uso** (se consume tanto si se usa bien como si no). Se guarda en su propio pool de caché, `cache.auth_challenge` (`config/packages/cache.yaml`), aparte de `cache.rate_limiter`. Limitado por `login` (por IP).
+
+La app demuestra que tiene la clave privada firmando, con Ed25519, los bytes UTF-8 exactos de:
+
+```
+kosmotheka-login\n<challenge>\n<device_id>
+```
+
+(`App\Security\DeviceProof::MESSAGE_FORMAT`). La firma viaja en base64url sin relleno (64 bytes). `App\Security\DeviceProof::verify()` decodifica reto, clave pública y firma igual que `OperationSignature`, y lanza `invalid_device_proof` si no cuadra.
+
+### `POST /v1/auth/login`
+
+Cuerpo: `{email, password, device_id, device_name, public_key, challenge, signature}`. Limitado por `login` (por IP, consumido el primero). Comprobaciones, en este orden:
+
+1. Reto desconocido, caducado o ya usado → **400** `invalid_challenge` (se consume de todas formas).
+2. La firma no verifica con `public_key` → **400** `invalid_device_proof`.
+3. Credenciales: correo desconocido, cuenta sin contraseña o contraseña incorrecta → **401** `invalid_credentials`. Para un correo desconocido se ejecuta igualmente el hasher contra una contraseña ficticia, para que el tiempo de respuesta no revele si la cuenta existe. Si el hash necesita renovarse (`needsRehash`), se renueva (`UserRepository` implementa `PasswordUpgraderInterface`).
+4. Estado de la cuenta (`App\Security\UserChecker`, compartido con el firewall de abajo): sin confirmar → **403** `account_not_confirmed`; bloqueada → **403** `account_blocked`.
+5. El dispositivo: su id ya existe para **otra** cuenta → **409** `device_taken`; existe para esta cuenta con **otra** clave pública → **409** `device_key_mismatch`; si no, se crea (o se actualiza su nombre) y se emite un token **nuevo**, que invalida el anterior. Solo se guarda su hash; el token en claro se devuelve una vez, en la respuesta.
+
+Responde **200** `{"token": "<32 bytes aleatorios, base64url sin relleno>", "user": {id, email, name, locale}}`. Los campos mal formados (correo, `device_id` como UUID, `device_name` de 1 a 100 caracteres tras recortar, `public_key`/`challenge`/`signature` como cadenas no vacías de longitud razonable) dan **422**.
+
+`App\Security\UserChecker` lanza directamente `App\Security\AccountException` (no una excepción de autenticación de Symfony): tanto si lo llama el login a mano como si lo llama el firewall, el error de negocio sale siempre por el mismo camino, `App\EventListener\AccountExceptionListener`.
+
+### Autenticar una llamada a `/v1`
+
+Cada llamada autenticada lleva las cabeceras `X-Device-Id: <id>` y `Authorization: Bearer <token>`. El firewall `api` (`config/packages/security.yaml`, patrón `^/v1`, sin estado) usa `App\Security\DeviceTokenAuthenticator`: busca el dispositivo por `X-Device-Id`, compara el SHA-256 del token con `hash_equals` y autentica a su cuenta. Si falla (dispositivo desconocido, desconectado, o token equivocado) responde **401** `{"error":"invalid_token"}`. Una llamada sin ninguna credencial a una ruta protegida responde **401** `{"error":"authentication_required"}` (el mismo autenticador hace de punto de entrada). `App\Security\CurrentDevice` da a los controladores el dispositivo autenticado (se guarda como atributo de la petición, no en un servicio con estado, que no sería seguro de reutilizar entre peticiones de un mismo proceso PHP).
+
+Rutas públicas bajo `/v1` (lista fácil de ampliar en la parte 3): `/v1/account/(register|confirm|code)` y `/v1/auth/(challenge|login)`. El resto exige `ROLE_USER`.
+
+`lastSeenAt` del dispositivo se actualiza como mucho una vez por hora, para no escribir en cada llamada.
+
+### Endpoints autenticados
+
+Todos bajo `/v1`, requieren las cabeceras de arriba.
+
+| Endpoint | Responde |
+|---|---|
+| `GET /v1/account` | `{id, email, name, locale, has_password, created_at}` |
+| `PATCH /v1/account` `{name?, locale?}` | **200**, mismo cuerpo que el GET; los campos omitidos no cambian |
+| `POST /v1/auth/logout` | **204**; pone a `null` el token del dispositivo que llama |
+| `GET /v1/account/devices` | `[{id, name, created_at, last_seen_at, signed_in, current}]`, por `created_at` |
+| `DELETE /v1/account/devices/{id}` | **204**; desconecta ese dispositivo (token a `null`, la fila se conserva para que el id siga ligado a la cuenta). Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
+
 ## Pendiente
 
-- Inicio de sesión y tokens de dispositivo (hito 7.1, parte 2).
 - Recuperación de contraseña (`reset_password`, parte 3).
 - Borrado de cuenta.
 - Purga de cuentas sin confirmar a las 24 h.
