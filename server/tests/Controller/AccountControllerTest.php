@@ -443,6 +443,255 @@ final class AccountControllerTest extends WebTestCase
         self::assertSame('{"error":"device_not_found"}', $client->getResponse()->getContent());
     }
 
+    public function testForgotPasswordSendsAResetCodeForAConfirmedAccountWithAPassword(): void
+    {
+        $client = $this->createTestClient();
+        $email = $this->registerAndConfirm($client, 'forgot@example.com');
+
+        $this->forgotPassword($client, $email);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
+        self::assertSame('{}', $client->getResponse()->getContent());
+        // Each request reboots the kernel, which resets the message logger
+        // (docs/architecture/accounts.md), so only this request's own email
+        // is still there to check.
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertInstanceOf(Email::class, $message);
+        self::assertMatchesRegularExpression('/\d{6}/', (string) $message->getTextBody());
+    }
+
+    public function testForgotPasswordForAnUnconfirmedAccountSendsNothing(): void
+    {
+        $client = $this->createTestClient();
+        $this->register($client, 'forgot-unconfirmed@example.com', 'Ada', 'en');
+
+        $this->forgotPassword($client, 'forgot-unconfirmed@example.com');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
+        self::assertEmailCount(0);
+    }
+
+    public function testForgotPasswordForAnUnknownEmailSendsNothing(): void
+    {
+        $client = $this->createTestClient();
+
+        $this->forgotPassword($client, 'forgot-unknown@example.com');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
+        self::assertEmailCount(0);
+    }
+
+    public function testResetPasswordWithTheRightCodeChangesItAndKeepsOnlyTheCallingDeviceSignedIn(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'reset@example.com';
+        $first = $this->signInNewDevice($client, $email);
+        $second = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $code = $this->forgotPasswordAndGetCode($client, $email);
+        $this->resetPassword($client, $email, $code, 'a brand new password', $first['headers']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        self::assertEmailCount(1);
+
+        // The calling device (first) stays signed in; every other device (second) is signed out.
+        $client->request('GET', '/v1/account', server: $first['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $client->request('GET', '/v1/account', server: $second['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+
+        $third = $this->loginDevice($client, $email, 'a brand new password', Uuid::v4()->toRfc4122(), 'Third device');
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        self::assertNotSame('', $third['token']);
+    }
+
+    public function testResetPasswordWithNoDeviceHeadersSignsOutEveryDevice(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'reset-no-device@example.com';
+        $only = $this->signInNewDevice($client, $email);
+
+        $code = $this->forgotPasswordAndGetCode($client, $email);
+        $this->resetPassword($client, $email, $code, 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $client->request('GET', '/v1/account', server: $only['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    public function testResetPasswordWithABadDeviceTokenStillSucceeds(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'reset-bad-token@example.com';
+        $this->registerAndConfirmForLogin($client, $email, 'correct horse battery');
+
+        $code = $this->forgotPasswordAndGetCode($client, $email);
+        $this->resetPassword($client, $email, $code, 'a brand new password', [
+            'HTTP_X-Device-Id' => Uuid::v4()->toRfc4122(),
+            'HTTP_Authorization' => 'Bearer not-a-real-token',
+        ]);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+    }
+
+    public function testResetPasswordWithAWrongCodeFails(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'reset-wrong-code@example.com';
+        $this->registerAndConfirmForLogin($client, $email, 'correct horse battery');
+        $this->forgotPasswordAndGetCode($client, $email);
+
+        $this->resetPassword($client, $email, '000000', 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertSame('{"error":"invalid_code"}', $client->getResponse()->getContent());
+    }
+
+    public function testChangePasswordWithTheRightCurrentPasswordChangesItAndSignsOutOtherDevices(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'change@example.com';
+        $first = $this->signInNewDevice($client, $email);
+        $second = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $this->changePassword($client, $first['headers'], 'correct horse battery', 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        self::assertEmailCount(1);
+
+        $client->request('GET', '/v1/account', server: $first['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $client->request('GET', '/v1/account', server: $second['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    public function testChangePasswordWithAWrongCurrentPasswordFails(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'change-wrong@example.com');
+
+        $this->changePassword($client, $session['headers'], 'not the right password', 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"invalid_credentials"}', $client->getResponse()->getContent());
+    }
+
+    public function testChangePasswordForAnAccountWithoutAPasswordFails(): void
+    {
+        $client = $this->createTestClient();
+        $headers = $this->createPasswordlessDeviceSession('no-password-change@example.com');
+
+        $this->changePassword($client, $headers, 'whatever', 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+        self::assertSame('{"error":"no_password"}', $client->getResponse()->getContent());
+    }
+
+    public function testDeleteWithTheRightPasswordRemovesTheAccount(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'delete-me@example.com';
+        $session = $this->signInNewDevice($client, $email);
+
+        $client->request('DELETE', '/v1/account', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+        self::assertNull($this->findUser($email));
+
+        $client->request('GET', '/v1/account', server: $session['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    public function testDeleteWithAWrongPasswordFails(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'delete-wrong@example.com');
+
+        $client->request('DELETE', '/v1/account', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['password' => 'not the right password'], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"invalid_credentials"}', $client->getResponse()->getContent());
+
+        self::assertNotNull($this->findUser('delete-wrong@example.com'));
+    }
+
+    public function testDeleteForAnAccountWithoutAPasswordFails(): void
+    {
+        $client = $this->createTestClient();
+        $headers = $this->createPasswordlessDeviceSession('no-password-delete@example.com');
+
+        $client->request('DELETE', '/v1/account', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['password' => 'whatever'], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+        self::assertSame('{"error":"no_password"}', $client->getResponse()->getContent());
+    }
+
+    private function forgotPassword(KernelBrowser $client, string $email): void
+    {
+        $client->request('POST', '/v1/account/password/forgot', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['email' => $email], \JSON_THROW_ON_ERROR));
+    }
+
+    private function forgotPasswordAndGetCode(KernelBrowser $client, string $email): string
+    {
+        $this->forgotPassword($client, $email);
+
+        // Each request reboots the kernel and resets the message logger, so
+        // this request's email is always the only (and first) one there.
+        $message = self::getMailerMessage();
+        self::assertInstanceOf(Email::class, $message);
+        $body = (string) $message->getTextBody();
+        preg_match('/\d{6}/', $body, $matches);
+
+        return $matches[0];
+    }
+
+    /** @param array<string, string> $headers */
+    private function resetPassword(KernelBrowser $client, string $email, string $code, string $password, array $headers = []): void
+    {
+        $client->request('POST', '/v1/account/password/reset', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['email' => $email, 'code' => $code, 'password' => $password], \JSON_THROW_ON_ERROR));
+    }
+
+    /** @param array<string, string> $headers */
+    private function changePassword(KernelBrowser $client, array $headers, string $currentPassword, string $newPassword): void
+    {
+        $client->request('POST', '/v1/account/password', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['current_password' => $currentPassword, 'new_password' => $newPassword], \JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * A confirmed account with no password at all (the future Google-only
+     * case), signed in with a hand-crafted device so its no_password paths
+     * can be reached without going through /v1/auth/login, which always
+     * needs a password to check.
+     *
+     * @return array{HTTP_X-Device-Id: string, HTTP_Authorization: string}
+     */
+    private function createPasswordlessDeviceSession(string $email): array
+    {
+        $entityManager = $this->entityManager();
+        $user = new User($email, 'Ada', 'en');
+        $user->confirm(new \DateTimeImmutable());
+        $entityManager->persist($user);
+
+        $deviceId = Uuid::v4()->toRfc4122();
+        $token = bin2hex(random_bytes(16));
+        $device = new Device(
+            $deviceId,
+            $user,
+            'Test device',
+            sodium_bin2base64(random_bytes(32), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING),
+            hash('sha256', $token),
+        );
+        $entityManager->persist($device);
+        $entityManager->flush();
+
+        return [
+            'HTTP_X-Device-Id' => $deviceId,
+            'HTTP_Authorization' => 'Bearer '.$token,
+        ];
+    }
+
     private function findUser(string $email): ?User
     {
         return $this->entityManager()->getRepository(User::class)->findOneBy(['email' => $email]);

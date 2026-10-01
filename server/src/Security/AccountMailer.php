@@ -47,10 +47,23 @@ final readonly class AccountMailer
         $this->send($user, 'existing_account.subject', 'existing_account.body', []);
     }
 
-    /** @param array<string, string|int> $parameters */
-    private function send(User $user, string $subjectKey, string $bodyKey, array $parameters): void
+    /**
+     * Sent after a password change or reset (D50), whichever device triggered
+     * it. Not rate limited: the change already happened, so a 429 here would
+     * report a failure that did not occur, and only someone holding the
+     * password or a code can trigger it.
+     */
+    public function sendPasswordChangedNotice(User $user): void
     {
-        $this->requestLimiter->consumeEmailPerAddress($user->getEmail());
+        $this->send($user, 'password_changed.subject', 'password_changed.body', [], false);
+    }
+
+    /** @param array<string, string|int> $parameters */
+    private function send(User $user, string $subjectKey, string $bodyKey, array $parameters, bool $limited = true): void
+    {
+        if ($limited) {
+            $this->requestLimiter->consumeEmailPerAddress($user->getEmail());
+        }
 
         $locale = $user->getLocale();
         $subject = $this->translator->trans($subjectKey, [], 'emails', $locale);

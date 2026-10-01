@@ -141,6 +141,16 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->blockedAt instanceof \DateTimeImmutable;
     }
 
+    public function block(\DateTimeImmutable $at): void
+    {
+        $this->blockedAt = $at;
+    }
+
+    public function unblock(): void
+    {
+        $this->blockedAt = null;
+    }
+
     public function getUserIdentifier(): string
     {
         return $this->email;

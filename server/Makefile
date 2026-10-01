@@ -57,6 +57,10 @@ migrate: ## Applies pending migrations
 migration: ## Generates a migration from the entity diff
 	$(CONSOLE) doctrine:migrations:diff --no-interaction $(END)
 
+.PHONY: worker
+worker: ## Runs the scheduler worker (hourly account purge, D49); keep it running in dev
+	$(CONSOLE) messenger:consume scheduler_default -vv $(END)
+
 # ------------------------------------------------------------------ tests ---
 
 .PHONY: db-test

@@ -80,4 +80,10 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::DeviceNotFound, 404);
     }
+
+    /** The account has no password yet (a future Google-only account). */
+    public static function noPassword(): self
+    {
+        return new self(AccountErrorCode::NoPassword, 409);
+    }
 }

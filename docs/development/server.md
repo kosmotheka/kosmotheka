@@ -80,6 +80,14 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 | Tests | `make test` · `make test ARGS="--filter Conformance"` |
 | Comprobar todo sin tocar nada | `make check` |
 | Arreglar estilo y Rector | `make fix` |
+| Purgar cuentas sin confirmar y códigos caducados (D49) | `make console C="app:accounts:purge"` |
+| Trabajador que ejecuta la purga cada hora | `make worker` (o `make console C="messenger:consume scheduler_default -vv"`) |
+| Conceder/retirar `ROLE_SUPER_ADMIN` (D51) | `make console C="app:user:super-admin correo@ejemplo.com"` (`--revoke` para retirarlo) |
+| Bloquear/desbloquear una cuenta (D51) | `make console C="app:user:block correo@ejemplo.com"` (`--undo` para desbloquear) |
+
+### El worker de tareas programadas (hito 7.1, parte 3)
+
+`App\Scheduler\PurgeSchedule` (`symfony/scheduler`) programa la purga de cuentas cada hora, pero **no hace nada por sí solo**: solo se ejecuta mientras algo consume el transporte `scheduler_default`, que Symfony crea automáticamente a partir del atributo `#[AsSchedule]`. En desarrollo, eso significa tener `make worker` corriendo en una terminal aparte mientras se prueba la app; si no está corriendo, la purga simplemente no ocurre (y `app:accounts:purge` sigue estando ahí para lanzarla a mano). En producción (hito 7.9) este worker tendrá que ser un servicio del sistema (p. ej. systemd) que lo mantenga vivo y lo reinicie si cae.
 
 La CI ejecuta lo mismo que `make check`, sin Docker (trabajo *Server (PHP)* en `.github/workflows/ci.yml`).
 

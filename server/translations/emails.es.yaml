@@ -7,3 +7,6 @@ reset_password:
 existing_account:
     subject: 'Alguien ha intentado usar tu correo en Kosmotheka'
     body: 'Alguien ha intentado crear una cuenta de Kosmotheka con esta dirección, que ya tiene una. Si has sido tú, puedes iniciar sesión o recuperar tu contraseña. Si no has sido tú, puedes ignorar este correo.'
+password_changed:
+    subject: 'Se ha cambiado tu contraseña de Kosmotheka'
+    body: 'Se acaba de cambiar la contraseña de tu cuenta de Kosmotheka. Si has sido tú, puedes ignorar este correo. Si no has sido tú, tus otros dispositivos se han desconectado; contacta con nosotros si crees que tu cuenta se ha visto comprometida.'

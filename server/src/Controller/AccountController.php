@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\ChangePasswordRequest;
 use App\Dto\ConfirmAccountRequest;
+use App\Dto\DeleteAccountRequest;
+use App\Dto\ForgotPasswordRequest;
 use App\Dto\RegisterAccountRequest;
 use App\Dto\RequestEmailCodeRequest;
+use App\Dto\ResetPasswordRequest;
 use App\Dto\UpdateAccountRequest;
 use App\Entity\Device;
 use App\Entity\User;
@@ -111,6 +115,85 @@ final class AccountController extends AbstractController
         return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
     }
 
+    #[Route('/password/forgot', methods: ['POST'])]
+    public function forgotPassword(#[MapRequestPayload] ForgotPasswordRequest $payload, Request $request): JsonResponse
+    {
+        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
+
+        $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
+        if ($user instanceof User && $user->isConfirmed() && null !== $user->getPassword()) {
+            $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ResetPassword);
+        }
+
+        return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+    }
+
+    #[Route('/password/reset', methods: ['POST'])]
+    public function resetPassword(#[MapRequestPayload] ResetPasswordRequest $payload, Request $request): Response
+    {
+        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
+
+        $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
+        if (!$user instanceof User) {
+            throw AccountException::invalidCode();
+        }
+
+        $this->emailCodeIssuer->verify($user, EmailCodePurpose::ResetPassword, $payload->code);
+
+        $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
+        $this->deviceRepository->signOutAllExcept($user, $this->callingDeviceId($user));
+        $this->entityManager->flush();
+        $this->accountMailer->sendPasswordChangedNotice($user);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/password', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function changePassword(#[MapRequestPayload] ChangePasswordRequest $payload, Request $request): Response
+    {
+        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
+
+        $user = $this->currentUser();
+        if (null === $user->getPassword()) {
+            throw AccountException::noPassword();
+        }
+
+        if (!$this->passwordHasher->isPasswordValid($user, $payload->currentPassword)) {
+            throw AccountException::invalidCredentials();
+        }
+
+        $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
+        $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getId());
+        $this->entityManager->flush();
+        $this->accountMailer->sendPasswordChangedNotice($user);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('', methods: ['DELETE'])]
+    #[IsGranted('ROLE_USER')]
+    public function delete(#[MapRequestPayload] DeleteAccountRequest $payload, Request $request): Response
+    {
+        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
+
+        $user = $this->currentUser();
+        if (null === $user->getPassword()) {
+            throw AccountException::noPassword();
+        }
+
+        if (!$this->passwordHasher->isPasswordValid($user, $payload->password)) {
+            throw AccountException::invalidCredentials();
+        }
+
+        // Milestone 7.2 will also need to remove or reassign the member rows
+        // this account owns in its libraries before libraries exist here.
+        $this->entityManager->remove($user);
+        $this->entityManager->flush();
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
     #[Route('', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function show(): JsonResponse
@@ -194,5 +277,21 @@ final class AccountController extends AbstractController
     private function normaliseEmail(string $email): string
     {
         return mb_strtolower(trim($email));
+    }
+
+    /**
+     * The device id of this request's own device token, kept signed in by
+     * resetPassword(), but only when it belongs to the account being reset:
+     * the route is public, so a token for a different account must not
+     * protect anything of this one.
+     */
+    private function callingDeviceId(User $user): ?string
+    {
+        $device = $this->currentDevice->tryGet();
+        if (!$device instanceof Device || !$device->getUser()->getId()->equals($user->getId())) {
+            return null;
+        }
+
+        return $device->getId();
     }
 }

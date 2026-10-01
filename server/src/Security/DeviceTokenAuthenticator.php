@@ -28,11 +28,21 @@ use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface
  * The authenticated Device, not only its User, is stored as a request
  * attribute (App\Security\CurrentDevice reads it) because `/v1/account/
  * devices` and logout act on the calling device itself.
+ *
+ * `/v1/account/password/reset` (part 3) is public but still reads the
+ * calling device, when there is one, to leave it signed in. A bad or missing
+ * token there must not block the request the way it does everywhere else, so
+ * authentication failures on that route are swallowed: returning null from
+ * onAuthenticationFailure() leaves the request unauthenticated instead of
+ * short-circuiting it with a 401, and PUBLIC_ACCESS lets it through.
  */
 final class DeviceTokenAuthenticator extends AbstractAuthenticator implements AuthenticationEntryPointInterface
 {
     private const string BEARER_PREFIX = 'Bearer ';
     private const int LAST_SEEN_THROTTLE_SECONDS = 3600;
+
+    /** @var list<string> */
+    private const array OPTIONAL_AUTH_PATHS = ['/v1/account/password/reset'];
 
     public function __construct(
         private readonly DeviceRepository $deviceRepository,
@@ -73,8 +83,12 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
         return null;
     }
 
-    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): JsonResponse
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?JsonResponse
     {
+        if (\in_array($request->getPathInfo(), self::OPTIONAL_AUTH_PATHS, true)) {
+            return null;
+        }
+
         return new JsonResponse(['error' => AccountErrorCode::InvalidToken->value], Response::HTTP_UNAUTHORIZED);
     }
 

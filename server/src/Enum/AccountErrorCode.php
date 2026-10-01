@@ -27,4 +27,7 @@ enum AccountErrorCode: string
     case DeviceNotFound = 'device_not_found';
     case InvalidToken = 'invalid_token';
     case AuthenticationRequired = 'authentication_required';
+
+    // Milestone 7.1, part 3: password recovery and change, deleting the account.
+    case NoPassword = 'no_password';
 }

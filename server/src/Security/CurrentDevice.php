@@ -24,11 +24,22 @@ final readonly class CurrentDevice
 
     public function get(): Device
     {
-        $device = $this->requestStack->getCurrentRequest()?->attributes->get(self::ATTRIBUTE);
+        $device = $this->tryGet();
         if (!$device instanceof Device) {
             throw new \LogicException('CurrentDevice::get() called outside a device-authenticated request.');
         }
 
         return $device;
+    }
+
+    /**
+     * For a route where a device token is optional (part 3: resetting a
+     * forgotten password), null when the request carries none.
+     */
+    public function tryGet(): ?Device
+    {
+        $device = $this->requestStack->getCurrentRequest()?->attributes->get(self::ATTRIBUTE);
+
+        return $device instanceof Device ? $device : null;
     }
 }

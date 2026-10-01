@@ -7,3 +7,6 @@ reset_password:
 existing_account:
     subject: 'Someone tried to use your email on Kosmotheka'
     body: 'Someone tried to create a Kosmotheka account with this email address, which already has one. If it was you, you can sign in or recover your password. If it was not you, you can ignore this email.'
+password_changed:
+    subject: 'Your Kosmotheka password was changed'
+    body: 'The password of your Kosmotheka account was just changed. If it was you, you can ignore this email. If it was not you, your other devices have been signed out; contact us if you think your account was compromised.'
