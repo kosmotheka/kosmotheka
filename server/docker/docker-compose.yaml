@@ -8,7 +8,8 @@
 #  3. Its own ports and subnet, so it runs alongside every other project.
 #     Taken on this machine when this was written: subnets 172.152, .162, .169,
 #     .171, .172, .188, .189, .190, .192; ports 3001, 3307, 8080-8082, 8089,
-#     8099. Check again before changing them:
+#     8095, 8097, 8099 (8097 is Mailpit's web UI, milestone 7.1). Check again
+#     before changing them:
 #
 #         grep -rhoE 'subnet:\s*172\.[0-9]+\.' ~/Proyectos/personales/*/docker*/*.y*ml
 #         grep -oE '^17[0-9]\.[0-9]+\.' /etc/hosts
@@ -75,6 +76,18 @@ services:
         networks:
             default:
                 ipv4_address: 172.194.0.12
+
+    mailpit_kosmotheka:
+        container_name: mailpit_kosmotheka
+        # Pinned to a concrete release, not :latest, so an upgrade is deliberate.
+        image: axllent/mailpit:v1.27.5
+        ports:
+            # Web UI only; SMTP (1025) stays on the internal network, reached
+            # by MAILER_DSN in .env.local (docs/development/server.md).
+            - "8097:8025"
+        networks:
+            default:
+                ipv4_address: 172.194.0.13
 
 volumes:
     db_kosmotheka:

@@ -38,6 +38,7 @@ Elegidos para no chocar con otros proyectos Docker de la máquina (Riddle, rpgut
 | `db_kosmotheka` | PostgreSQL 18 | 5433 | 172.194.0.10 |
 | `php_kosmotheka` | PHP 8.5-FPM, Composer, Xdebug (puerto 9001) | — | 172.194.0.11 |
 | `nginx_kosmotheka` | nginx, delante de PHP | 8095 | 172.194.0.12 |
+| `mailpit_kosmotheka` | Mailpit: captura todo el correo en desarrollo | 8097 (web) | 172.194.0.13 |
 
 - Subred `172.194.0.0/24`; el proyecto Compose se llama `kosmotheka`.
 - El código de `server/` se monta en `/var/www/kosmotheka.local`; `spec/` se monta **en solo lectura** en `/var/www/spec`.
@@ -53,6 +54,20 @@ Elegidos para no chocar con otros proyectos Docker de la máquina (Riddle, rpgut
 `kosmotheka_test` y su usuario los crea `docker/postgres/init/01-test-database.sql` la **primera vez** que arranca el volumen. Si el volumen ya existía sin ella, bórralo (`docker volume rm kosmotheka_db_kosmotheka`, con los contenedores parados) o ejecuta ese SQL a mano.
 
 Como en Riddle, `.env` no lleva credenciales: las de desarrollo van en `.env.local`. `.env.test` sí se versiona, porque Symfony no carga `.env.local` en test y sin él un clon recién hecho no pasaría la suite; su usuario `test` solo existe dentro del contenedor y solo tiene acceso a `kosmotheka_test`. Las de producción irán en `.env.local` en el VPS, nunca en el repo.
+
+## Correo (hito 7.1)
+
+Las cuentas envían correo (código de confirmación, recuperación de contraseña; ver `docs/architecture/accounts.md`). El transporte lo fija `MAILER_DSN`:
+
+| Entorno | `MAILER_DSN` | Dónde se fija |
+|---|---|---|
+| dev | `smtp://mailpit_kosmotheka:1025` | `server/.env.local` (no versionado) |
+| test | `null://null` (no se envía nada; los tests leen `mailer.message_logger_listener`) | `server/.env.test` |
+| prod | `brevo+api://CLAVE@default` (`symfony/brevo-mailer`) | `.env.local` en el VPS |
+
+**Mailpit** (`mailpit_kosmotheka`, imagen `axllent/mailpit`, fijada a una versión concreta) captura todo el correo de desarrollo: su interfaz web está en <http://localhost:8097>. El puerto SMTP (1025) solo es accesible dentro de la red de Docker, no desde el equipo.
+
+`TRUSTED_PROXIES` (por defecto `127.0.0.1` en desarrollo) le dice a Symfony qué proxys delante del servidor son de confianza para leer `X-Forwarded-For` y `X-Forwarded-Proto`: en producción, nginx y quizá un CDN. Se usa para que los limitadores de peticiones por IP (`config/packages/rate_limiter.yaml`) vean la IP real del cliente.
 
 ## Comandos habituales
 

@@ -1,0 +1,9 @@
+confirm_email:
+    subject: 'Confirm your Kosmotheka account'
+    body: 'Your confirmation code is %code%. It expires in %minutes% minutes. If you did not ask for this, you can ignore this email.'
+reset_password:
+    subject: 'Reset your Kosmotheka password'
+    body: 'Your password reset code is %code%. It expires in %minutes% minutes. If you did not ask for this, you can ignore this email.'
+existing_account:
+    subject: 'Someone tried to use your email on Kosmotheka'
+    body: 'Someone tried to create a Kosmotheka account with this email address, which already has one. If it was you, you can sign in or recover your password. If it was not you, you can ignore this email.'

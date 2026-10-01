@@ -40,5 +40,9 @@
     </source>
 
     <extensions>
+        <!-- Wraps every test in a transaction that rolls back, so tests never
+             leak data to each other (contrib recipe, registered by hand: see
+             config/bundles.php). -->
+        <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension"/>
     </extensions>
 </phpunit>

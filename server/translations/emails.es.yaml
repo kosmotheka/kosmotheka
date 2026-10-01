@@ -1,0 +1,9 @@
+confirm_email:
+    subject: 'Confirma tu cuenta de Kosmotheka'
+    body: 'Tu código de confirmación es %code%. Caduca en %minutes% minutos. Si no has sido tú, puedes ignorar este correo.'
+reset_password:
+    subject: 'Recupera tu contraseña de Kosmotheka'
+    body: 'Tu código para restablecer la contraseña es %code%. Caduca en %minutes% minutos. Si no has sido tú, puedes ignorar este correo.'
+existing_account:
+    subject: 'Alguien ha intentado usar tu correo en Kosmotheka'
+    body: 'Alguien ha intentado crear una cuenta de Kosmotheka con esta dirección, que ya tiene una. Si has sido tú, puedes iniciar sesión o recuperar tu contraseña. Si no has sido tú, puedes ignorar este correo.'

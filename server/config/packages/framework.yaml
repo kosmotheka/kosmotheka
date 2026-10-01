@@ -5,6 +5,11 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # Production sits behind nginx and perhaps a CDN: trust their forwarded
+    # headers for the client IP and scheme (used by the per-IP rate limiters).
+    trusted_proxies: '%env(TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto']
+
     #esi: true
     #fragments: true
 

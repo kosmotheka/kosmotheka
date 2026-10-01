@@ -29,7 +29,8 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 | `Enum/` | Enums, even when a single class uses them |
 | `Dto/` | Transport objects and value objects: request payloads, responses, values passed between layers |
 | `Validator/` | Custom constraints and their validators (`ValidOperation`) |
-| `Security/` | Authenticators and voters (Phase 7) |
+| `Security/` | Account services (`EmailCodeIssuer`, `AccountMailer`, `RequestLimiter`), authenticators and voters (Phase 7) |
+| `EventListener/` | Kernel event listeners, e.g. `AccountExceptionListener` turning a business exception into its JSON response |
 | `Command/` | Console commands |
 | `Sync/` | Everything about applying operations from clients. Today: `OperationSignature` (checks the author's Ed25519 signature, port of `crates/domain/src/signature.rs`) and its exception. *Planned (Phase 7):* the engine that applies operations to the catalog tables, the port of `sync::merge` |
 
@@ -127,6 +128,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 - **The Serializer ignores `@param list<SomeDto>` unless both `phpstan/phpdoc-parser` and `phpdocumentor/type-resolver` are installed.** With only one of them, nested DTOs arrive as plain arrays and fail later with a `TypeError`. Both are installed; do not remove either.
 - **Clear the cache after `composer require`** when a new package changes how services are wired (`make cc`, or delete `var/cache/test` for the test environment).
 - **The LSP index goes stale after `composer require`.** Before "fixing" a suspicious "undefined type/method", check it against `vendor/`.
+- **`dama/doctrine-test-bundle`'s recipe is a contrib recipe**, skipped by Flex because `allow-contrib` is `false`. It is registered by hand in `config/bundles.php` (test env only) and in `phpunit.dist.xml` (`DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension`), the one deliberate exception to "let Flex do it".
 
 ## Discover, don't guess
 
