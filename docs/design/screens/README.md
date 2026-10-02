@@ -16,6 +16,7 @@ Descargadas el 25/09/2026 (y las de bibliotecas el 26/09/2026) del proyecto Libr
 | `desktop-types/` | Lo mismo en escritorio: «¿Qué es?» es una fila de ocho tipos en el diálogo de añadir y un desplegable al editar; la ficha va en el panel. El catálogo separa «Películas» y «Series» en dos chips |
 | `mobile-collections/` | Fases 6.3 a 6.7, móvil, claro y oscuro (descargadas el 29/09/2026, [encargo](../encargo-fase-6-segunda-tanda.md)). `MobileCollections` las reúne: proveedores por tipo en Ajustes, alta que empieza por buscar (título, código, «¿Qué es?», aviso de un tipo que busca poco), «Me falta» con los deseos como primer filtro y el botón «Apuntar», ficha de una obra que falta («Lo tengo» o «Pedir que se añada»), «Lo que desean otros», series con huecos (con orden, sin orden, reordenar), añadir a una serie, «necesita» en la expansión y en el juego base, géneros y etiquetas en el formulario, catálogo filtrado por género y etiqueta, y gestión de etiquetas |
 | `desktop-collections/` | Lo mismo en escritorio. «Lista de deseos» desaparece: «Me falta» es el catálogo con la vista «Me falta» puesta (conmutador «Lo tengo · Me falta · Todo»), y los deseos son un filtro que vale en cualquier vista. `Reference.dc.html` trae la **lista de géneros por tipo que propone Design** y los textos nuevos en español e inglés |
+| `cloud-account/` | Fase 7, móvil y escritorio, claro y oscuro (descargadas el 02/10/2026, [encargo](../encargo-fase-7-cuentas.md)). `CloudAccount` las reúne: la primera vez (sin cuenta es lo principal), Ajustes con y sin cuenta, iniciar sesión (Google, «Otro servidor»), crear cuenta y el código, segundo factor al entrar y con código de respaldo, recuperar la contraseña, la cuenta, activar el segundo factor y sus códigos, desbloqueo con huella, mis dispositivos con quitar y deshacer, borrar la cuenta, cerrar sesión frente a dejar el dispositivo a otra persona (D81), qué bibliotecas subir a la nube, la nube en Compartir (al día, sin conexión, sin subir), invitar con un enlace y abrirlo, y los errores. `Copy.dc.html` y `errors-fase-7.md` traen los textos en español e inglés (pasados a [errors.md](../errors.md)) |
 | `*-overview.png` | Captura de todas las pantallas de cada carpeta (las de bibliotecas, a mitad de tamaño) |
 
 - Cada `*.dc.html` es una pieza (pantalla o componente como `AppBar`, `BottomNav`, `Sidebar`, `Cover`). `MobileScreens.dc.html` y `DesktopScreens.dc.html` las reúnen todas.
@@ -24,4 +25,10 @@ Descargadas el 25/09/2026 (y las de bibliotecas el 26/09/2026) del proyecto Libr
 
 **Para verlas en local:** `ds-base.js` carga los estilos y componentes desde `../..`. Copia las carpetas a `ds-bundle/templates/mobile-screens` y `ds-bundle/templates/desktop-screens` (tras una sincronización con `/design-sync`) y sirve `ds-bundle/` con cualquier servidor estático.
 
-En las carpetas de bibliotecas, `ds-base.js` y `support.js` son copias de las de la primera descarga (el motor de Design no cambia) y `pair-qr.svg` es un QR de ejemplo sin los metadatos de procedencia que añade Design.
+En las carpetas de bibliotecas y en `cloud-account/`, `ds-base.js` y `support.js` son copias de las de la primera descarga (el motor de Design no cambia) y `pair-qr.svg` es un QR de ejemplo sin los metadatos de procedencia que añade Design.
+
+**Diferencias de `cloud-account/` con el servidor**, a resolver al construir la app:
+- Los códigos de respaldo de las muestras tienen 8 caracteres (`7KQ4-M2XD`); el servidor da 10 (`xxxxx-xxxxx`). Manda el servidor.
+- La cuenta muestra el email como editable, y el servidor aún no permite cambiarlo (pendiente en [architecture/accounts.md](../../architecture/accounts.md)).
+- «Puedes anularlo desde Personas» en una invitación necesita anular invitaciones en el hito 7.6.
+- `cloud-account/` no tiene captura `-overview.png`.

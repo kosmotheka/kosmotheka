@@ -88,6 +88,34 @@ Una pantalla de ayuda con comprobaciones, de la más probable a la menos. Cada u
 
 *(Detalles técnicos plegados, para copiar si hay que pedir ayuda: direcciones que se probaron, puerto, versión de la app.)*
 
+## Cuenta y nube (Fase 7)
+
+Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [original](screens/cloud-account/errors-fase-7.md)). La segunda columna es el código que devuelve el servidor ([architecture/accounts.md](../architecture/accounts.md)); la app lo traduce a este texto. Inglés en el original.
+
+| Código | Servidor | Nivel | Mensaje | Qué hacer |
+|---|---|---|---|---|
+| `code_incorrect` | `invalid_code` | error | Código incorrecto. | Usa el del último correo que te ha llegado. |
+| `code_expired` | `code_expired` | error | Este código ha caducado. | Los códigos valen 15 minutos. Pide otro y úsalo en cuanto llegue. **«Enviar otro código»** |
+| `code_attempts` | `too_many_attempts` | error | Demasiados intentos con este código. | Ya no sirve. Pide otro: llega en un momento. **«Pedir otro código»** |
+| `rate_limited` | `too_many_requests` (con `Retry-After`) | aviso | Demasiadas peticiones. | Espera {n} minutos e inténtalo de nuevo. |
+| `bad_credentials` | `invalid_credentials` | error | El email o la contraseña no son correctos. | Revisa cómo está escrito el email. Si no recuerdas la contraseña, pon una nueva. **«Recuperar la contraseña»** |
+| `email_unconfirmed` | `account_not_confirmed` | aviso | Falta confirmar tu email. | Al crear la cuenta te enviamos un código. Si no lo encuentras, pide otro. **«Enviar otro código»** |
+| `account_locked` | `account_blocked` | error | Esta cuenta está bloqueada. | Si crees que es un error, escribe a quien gestiona el servidor. |
+| `totp_incorrect` | `invalid_two_factor_code` (con el código de la app) | error | El código no es correcto. | Usa el que se ve ahora en la app: cambia cada 30 segundos. Comprueba que la hora del móvil sea automática. **«Usar un código de respaldo»** |
+| `backup_incorrect` | `invalid_two_factor_code` (con un código de respaldo) | error | Ese código de respaldo no vale. | Puede que ya lo usaras: cada uno vale una vez. Prueba con otro de la lista. |
+| `session_revoked` | `signed_out_password_changed` | info | Se ha cerrado la sesión. | La contraseña se cambió en otro dispositivo. No se pierde nada: los cambios sin subir se enviarán al volver a entrar. **«Iniciar sesión»** |
+| `device_removed` | `device_removed` | info | Este dispositivo se quitó de una cuenta. | Se quitó desde otro dispositivo y sus bibliotecas se han borrado. La app está lista para usar, con o sin cuenta. |
+| `cloud_offline` | (sin respuesta) | aviso | Sin conexión con la nube. | Todo sigue funcionando aquí y por la red de casa; los cambios se subirán cuando vuelva la conexión. |
+| `server_unavailable` | (sin respuesta o 5xx) | aviso | El servidor no responde. | Puede estar en mantenimiento, o la dirección no es correcta. Inténtalo en unos minutos. **«Reintentar»** |
+| `invite_invalid` | (hito 7.6) | error | Esta invitación ya no vale. | Ya se usó o han pasado más de 24 horas. Pide a {nombre} que te mande otra. |
+| `password_short` | 422 de validación | error | La contraseña necesita al menos 8 caracteres. | |
+
+- Inicio de sesión y códigos: en un bloque bajo los campos; el formulario no se cierra.
+- `session_revoked` y `device_removed`: pantalla propia al abrir la app.
+- `cloud_offline`: indicador discreto (barra superior en escritorio, cabecera de Compartir en móvil) y fila de la nube; nunca bloquea.
+- `invite_invalid`: pantalla propia al abrir el enlace.
+- El servidor no dice cuántos intentos quedan ni si un email ya tiene cuenta: crear cuenta siempre pasa a la pantalla del código, y si el email ya tenía cuenta le llega un correo avisando.
+
 ## Errores internos
 
 | Código | Nivel | Mensaje | Qué hacer |

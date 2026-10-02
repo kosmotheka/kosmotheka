@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Kosmotheka · cuenta, nube e invitar con un enlace (Fase 7)" description="Fase 7 en móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro: entrar o seguir sin cuenta, la cuenta y el segundo factor, mis dispositivos, cerrar sesión frente a dejar el dispositivo, la nube en cada biblioteca, invitar con un enlace, y errores con textos ES/EN." -->
+<helmet><script src="./ds-base.js"></script></helmet><div style="min-height:100vh;background:oklch(0.93 0 0);padding:40px;display:flex;flex-direction:column;gap:56px;font-family:var(--font-sans)"><header style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font:600 28px var(--font-sans);letter-spacing:-0.02em;color:oklch(0.2 0 0)">Kosmotheka · Fase 7 · la cuenta, la nube e invitar con un enlace</h1><p style="margin:0;font-size:14px;line-height:1.5;color:oklch(0.4 0 0);text-wrap:pretty">Sin cuenta es el estado normal: «Sin cuenta · en tus dispositivos» se lee como un estado, no como algo que falta, y la entrada a la cuenta está al lado, nunca delante. La nube aparece como un sitio más en «Compartir», con el mismo aspecto que un dispositivo. «Cerrar sesión» es neutro (no borra nada); «Dejar este dispositivo a otra persona» es rojo y vive en Ajustes › Este dispositivo, lejos de la cuenta.</p></header><sc-for list="{{ blocks }}" as="b" hint-placeholder-count="1"><section style="display:flex;flex-direction:column;gap:32px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">{{ b.name }}</h2><sc-for list="{{ b.groups }}" as="g" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">{{ g.title }}</h3><div style="display:flex;flex-wrap:wrap;gap:40px 28px"><sc-for list="{{ g.frames }}" as="f" hint-placeholder-count="4"><sc-if value="{{ b.mobile }}" hint-placeholder-val="{{ true }}"><div data-screen-label="{{ f.n }}" style="width:390px;display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);min-height:36px;text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ b.cls }}" style="width:390px;height:844px;border-radius:28px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.auth }}" hint-placeholder-val="{{ false }}"><dc-import name="Auth" shell="m" step="{{ f.step }}" error="{{ f.err }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.notice }}" hint-placeholder-val="{{ false }}"><dc-import name="Notice" shell="m" kind="{{ f.nk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pS }}" hint-placeholder-val="{{ false }}"><dc-import name="Settings" shell="m" acct="{{ f.acct }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pA }}" hint-placeholder-val="{{ false }}"><dc-import name="Account" shell="m" twofa="{{ f.twofaOn }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.twofa }}" hint-placeholder-val="{{ false }}"><dc-import name="TwoFactor" shell="m" step="{{ f.step }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pD }}" hint-placeholder-val="{{ false }}"><dc-import name="MyDevices" shell="m" undo="{{ f.undo }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pick }}" hint-placeholder-val="{{ false }}"><dc-import name="CloudPick" shell="m" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pSh }}" hint-placeholder-val="{{ false }}"><dc-import name="Sharing" shell="m" cloud="{{ f.cloud }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.invite }}" hint-placeholder-val="{{ false }}"><dc-import name="Invite" shell="m" step="{{ f.step }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.confirm }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:var(--scrim);display:flex;flex-direction:column;justify-content:flex-end"><div style="background:var(--popover);border-radius:28px 28px 0 0;padding:10px 24px 28px;display:flex;flex-direction:column;gap:14px"><div style="width:32px;height:4px;border-radius:2px;background:var(--muted-foreground);opacity:.4;margin:0 auto"></div><dc-import name="Confirm" kind="{{ f.ck }}" hint-size="100%,320px"></dc-import></div></div></sc-if></div></div></sc-if><sc-if value="{{ b.desktop }}" hint-placeholder-val="{{ false }}"><div data-screen-label="{{ f.n }}" style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ b.cls }}" style="width:1280px;height:800px;border-radius:12px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.full }}" hint-placeholder-val="{{ false }}"><div style="height:100%;background:var(--muted);display:flex;align-items:center;justify-content:center"><div style="width:520px;border-radius:20px;background:var(--background);box-shadow:0 0 0 1px var(--border),0 24px 48px -24px oklch(0 0 0 / 25%)"><dc-import name="Notice" shell="d" kind="{{ f.nk }}" hint-size="100%,520px"></dc-import></div></div></sc-if><sc-if value="{{ f.app }}" hint-placeholder-val="{{ true }}"><div style="height:100%;display:flex"><dc-import name="Sidebar" active="{{ f.side }}" account="{{ f.acc }}" hint-size="256px,100%"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column"><dc-import name="TopBar" cloud="{{ f.acc }}" hint-size="100%,56px"></dc-import><main style="flex:1;min-height:0;padding:0 16px;overflow:hidden"><sc-if value="{{ f.dS }}" hint-placeholder-val="{{ false }}"><dc-import name="Settings" shell="d" acct="{{ f.acct }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.dA }}" hint-placeholder-val="{{ false }}"><dc-import name="Account" shell="d" twofa="{{ f.twofaOn }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.dD }}" hint-placeholder-val="{{ false }}"><dc-import name="MyDevices" shell="d" undo="{{ f.undo }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.dSh }}" hint-placeholder-val="{{ false }}"><dc-import name="Sharing" shell="d" cloud="{{ f.cloud }}" hint-size="100%,100%"></dc-import></sc-if></main></div></div></sc-if><sc-if value="{{ f.dlg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center"><div style="width:460px;max-height:760px;overflow:hidden;border-radius:16px;background:var(--popover);box-shadow:0 24px 64px -16px oklch(0 0 0 / 40%)"><sc-if value="{{ f.confirm }}" hint-placeholder-val="{{ false }}"><div style="padding:24px"><dc-import name="Confirm" kind="{{ f.ck }}" hint-size="100%,300px"></dc-import></div></sc-if><sc-if value="{{ f.auth }}" hint-placeholder-val="{{ false }}"><dc-import name="Auth" shell="d" step="{{ f.step }}" error="{{ f.err }}" hint-size="100%,480px"></dc-import></sc-if><sc-if value="{{ f.twofa }}" hint-placeholder-val="{{ false }}"><dc-import name="TwoFactor" shell="d" step="{{ f.step }}" hint-size="100%,520px"></dc-import></sc-if><sc-if value="{{ f.pick }}" hint-placeholder-val="{{ false }}"><dc-import name="CloudPick" shell="d" hint-size="100%,600px"></dc-import></sc-if><sc-if value="{{ f.invite }}" hint-placeholder-val="{{ false }}"><dc-import name="Invite" shell="d" step="{{ f.step }}" hint-size="100%,560px"></dc-import></sc-if><sc-if value="{{ f.dNotice }}" hint-placeholder-val="{{ false }}"><dc-import name="Notice" shell="d" kind="{{ f.nk }}" hint-size="100%,480px"></dc-import></sc-if></div></div></sc-if></div></div></sc-if></sc-for></div></div></sc-for></section></sc-for><section style="display:flex;flex-direction:column;gap:14px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">Textos ES / EN</h2><div class="light" style="width:1280px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px oklch(0 0 0 / 10%)"><dc-import name="Copy" hint-size="1280px,1800px"></dc-import></div></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;móvil&quot;,&quot;escritorio&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;móvil&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;oscuro&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;claro&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.theme ?? 'claro', dv = this.props.device ?? 'móvil';
+    const PAGES = ['settings', 'account', 'devices', 'sharing'];
+    const groups = (mobile) => {
+      let n = 0;
+      const F = (kind, label, p = {}) => {
+        const o = { kind, label, step: '', err: '', nk: '', acct: 'in', twofaOn: false, undo: false, ck: '', cloud: 'on', page: 'settings', ...p };
+        const page = PAGES.includes(kind) ? kind : o.page;
+        const isPage = PAGES.includes(kind);
+        const full = kind === 'notice' && o.nk !== 'sessionClosed';
+        const acc = o.acc ?? (kind === 'auth' || (page === 'settings' && o.acct === 'none') ? 'none' : (page === 'sharing' && o.cloud === 'off' ? 'off' : 'on'));
+        return { ...o, n: String(++n).padStart(2, '0'),
+          auth: kind === 'auth', notice: kind === 'notice', twofa: kind === 'twofa', pick: kind === 'pick', invite: kind === 'invite', confirm: kind === 'confirm',
+          pS: kind === 'settings' || (kind === 'confirm' && page === 'settings'), pA: kind === 'account' || (kind === 'confirm' && page === 'account'), pD: kind === 'devices' || (kind === 'confirm' && page === 'devices'), pSh: kind === 'sharing' || (kind === 'confirm' && page === 'sharing'),
+          full, app: !full, dlg: !full && !isPage, dNotice: kind === 'notice' && !full,
+          dS: !full && page === 'settings', dA: !full && page === 'account', dD: !full && page === 'devices', dSh: !full && page === 'sharing',
+          side: page === 'sharing' ? 'share' : 'app', acc };
+      };
+      const none = { acct: 'none' };
+      const gs = [
+        { title: '1 · Entrar', frames: [
+          F('notice', 'Primera vez: empezar sin cuenta es lo principal; la cuenta, al lado e igual de visible', { nk: 'welcome' }),
+          F('settings', 'Ajustes sin cuenta: «Sin cuenta» se lee como un estado normal; entrar es opcional', none),
+          F('auth', 'Iniciar sesión: email y contraseña, o Google; servidor oficial, con «Otro servidor»', { step: 'signin', ...none }),
+          F('auth', 'Otro servidor: escribe su dirección; si no ofrece Google, el botón no aparece', { step: 'server', ...none }),
+          F('auth', 'Crear cuenta: nombre, email, contraseña (mínimo 8) e idioma', { step: 'signup', ...none }),
+          F('auth', 'El código de 6 cifras del correo: caduca a los 15 minutos; «Reenviar código»', { step: 'verify', ...none }),
+          F('auth', 'Con segundo factor: tras la contraseña, el código de la app', { step: 'totp', ...none }),
+          F('auth', '«Usar un código de respaldo»', { step: 'backup', ...none }),
+          F('auth', 'Recuperar la contraseña 1/3: email, y aviso de que se cerrará la sesión en los demás', { step: 'forgot', ...none }),
+          F('auth', 'Recuperar 2/3: el código', { step: 'recoverCode', ...none }),
+          F('auth', 'Recuperar 3/3: contraseña nueva; el aviso, ya con los nombres', { step: 'newPass', ...none }),
+          F('auth', 'Después: dónde se ha cerrado la sesión, y que no se pierde nada', { step: 'passChanged', ...none })
+        ] },
+        { title: '2 · La cuenta', frames: [
+          F('settings', 'Ajustes con cuenta: la cuenta arriba, con su estado de conexión', { acct: 'in' }),
+          F('account', 'Ajustes › Cuenta: datos, contraseña, segundo factor, dispositivos y cerrar sesión'),
+          F('twofa', 'Activar el segundo factor: QR, el secreto para copiar y el primer código', { step: 'setup', page: 'account' }),
+          F('twofa', 'Los 10 códigos de respaldo, una sola vez: copiar o guardar', { step: 'codes', page: 'account' }),
+          F('account', 'Con segundo factor: cuántos códigos quedan, códigos nuevos y desactivar', { twofaOn: true }),
+          F('confirm', 'Desactivar (y generar códigos nuevos): piden contraseña y código', { ck: 'twofaOff', page: 'account', twofaOn: true }),
+          ...(mobile ? [F('notice', 'Bloqueo al abrir con huella o cara (solo móvil, apagado por defecto, también sin cuenta)', { nk: 'lock' })] : []),
+          F('devices', 'Mis dispositivos: nombre, último uso y cuál es este'),
+          F('confirm', 'Quitar uno: borrará sus bibliotecas al conectarse; avisa de las que no están en la nube', { ck: 'removeDevice', page: 'devices' }),
+          F('devices', 'Mientras no se conecte, «Deshacer» en la propia lista', { undo: true }),
+          F('confirm', 'Borrar la cuenta: qué pasa con cada biblioteca, una copia antes y la contraseña', { ck: 'deleteAccount', page: 'account' })
+        ] },
+        { title: '3 · Cerrar sesión o dejar el dispositivo a otra persona', frames: [
+          F('confirm', 'Cerrar sesión: «soy yo y volveré»; neutro, no borra nada', { ck: 'signOut', page: 'account' }),
+          F('confirm', 'Dejar este dispositivo a otra persona: copia, qué se borra y confirmar; también sin cuenta', { ck: 'handOver', page: 'settings', acct: 'in' }),
+          F('notice', 'Quien abre una app quitada desde otro dispositivo: mensaje claro y app vacía', { nk: 'removed' })
+        ] },
+        { title: '4 · La nube en cada biblioteca', frames: [
+          F('pick', 'Al entrar: qué bibliotecas subir (solo las que puedes compartir) y la casilla, marcada', { page: 'settings', acct: 'in' }),
+          F('sharing', 'Compartir: la nube, un sitio más junto a los dispositivos; quién tiene cuenta, sin su email', { cloud: 'on' }),
+          F('sharing', 'Sin conexión con la nube: indicador discreto y cambios esperando; la campanita, como siempre', { cloud: 'off' }),
+          F('sharing', 'Una biblioteca que aún no está en la nube: «Subir»', { cloud: 'none' }),
+          F('confirm', 'Dejar de tenerla en la nube', { ck: 'stopCloud', page: 'sharing' })
+        ] },
+        { title: '5 · Invitar con un enlace', frames: [
+          F('invite', 'Para una persona nueva: nombre y rol', { step: 'new', page: 'sharing' }),
+          F('invite', 'Para alguien que ya está: así enlaza su cuenta', { step: 'existing', page: 'sharing' }),
+          F('invite', 'Enlace listo: el menú del sistema para mandarlo; el QR sigue ahí', { step: 'ready', page: 'sharing' }),
+          F('notice', 'Quien abre el enlace: qué biblioteca, quién invita y con qué rol', { nk: 'invite' }),
+          F('notice', 'Enlace usado o caducado: pedir otro', { nk: 'inviteBad' })
+        ] },
+        { title: '6 · Errores y estados', frames: [
+          F('auth', 'Email o contraseña incorrectos', { step: 'signin', err: 'credentials', ...none }),
+          F('auth', 'Cuenta sin confirmar', { step: 'signin', err: 'unconfirmed', ...none }),
+          F('auth', 'Cuenta bloqueada', { step: 'signin', err: 'locked', ...none }),
+          F('auth', 'Sin conexión con la nube', { step: 'signin', err: 'offline', ...none }),
+          F('auth', 'El servidor no responde', { step: 'server', err: 'server', ...none }),
+          F('auth', 'Código incorrecto', { step: 'verify', err: 'badCode', ...none }),
+          F('auth', 'Código caducado', { step: 'verify', err: 'expired', ...none }),
+          F('auth', 'Demasiados intentos: pedir otro código', { step: 'verify', err: 'tooMany', ...none }),
+          F('auth', 'Demasiadas peticiones: esperar', { step: 'verify', err: 'rate', ...none }),
+          F('auth', 'Código del segundo factor incorrecto', { step: 'totp', err: 'badTotp', ...none }),
+          F('notice', 'Sesión cerrada porque la contraseña cambió en otro dispositivo', { nk: 'sessionClosed', page: 'sharing', acc: 'off' })
+        ] }
+      ];
+      return gs;
+    };
+    const blocks = [];
+    const themes = [];
+    if (t !== 'oscuro') themes.push(['light', 'Claro']);
+    if (t !== 'claro') themes.push(['dark', 'Oscuro']);
+    const devs = [];
+    if (dv !== 'escritorio') devs.push([true, 'Móvil']);
+    if (dv !== 'móvil') devs.push([false, 'Escritorio']);
+    for (const [mobile, dn] of devs) for (const [cls, tn] of themes) blocks.push({ name: dn + ' · ' + tn, cls, mobile, desktop: !mobile, groups: groups(mobile) });
+    return { blocks };
+  }
+}
+</script>
+</body>
+</html>

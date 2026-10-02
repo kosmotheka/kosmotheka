@@ -222,3 +222,4 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 - Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).
+- Cambiar el email de la cuenta, con un código a la dirección nueva (las pantallas de Design ya lo muestran como editable).
