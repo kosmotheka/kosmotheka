@@ -227,12 +227,12 @@ El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la inte
 - **Reacción central:** tras cualquier llamada, `device_removed` reinicia el dispositivo; `signed_out_password_changed` e `invalid_token` olvidan la sesión, y la primera deja el aviso.
 - **Al abrir la app**, si hay sesión, se pide `GET /v1/account` en segundo plano: así se entera un dispositivo que se quitó mientras estaba cerrado.
 - **Reiniciar el dispositivo** (`device_reset.rs`, D81): borra el fichero de la base de datos con sus `-wal`, `-shm` y las copias `.bak` de antes de migrar, y abre uno nuevo (id y clave nuevos, sin bibliotecas); vacía las portadas; para el servidor de la red local y crea un certificado nuevo. Después la app emite el evento `device-reset` y la interfaz se recarga. Se hace sin reiniciar la aplicación, también en Android.
+- **Desbloqueo con huella o cara** (D78, `tauri-plugin-biometric`): solo en el móvil, apagado por defecto, también sin cuenta. Se guarda en `local_state` (`app_lock`). Activarlo pide la huella antes. La app se bloquea al abrirse y al volver tras más de 60 segundos fuera; si la huella falla, el PIN del móvil. Si el móvil ya no tiene huella ni cara configuradas, abre sin bloquear, para no dejar a nadie fuera de sus datos. Es un bloqueo de pantalla, no cifra los datos.
 - **Pantallas:** Ajustes (cuenta y «Este dispositivo»), iniciar sesión, crear cuenta, recuperar la contraseña, la cuenta, el segundo factor, mis dispositivos y los avisos, según [design/screens/cloud-account/](../design/screens/cloud-account/). El email se muestra pero no se edita (D77). Los códigos de respaldo solo se pueden copiar; guardarlos en un archivo, más adelante.
 
 ## Pendiente
 
 - La retirada en las bibliotecas al quitar un dispositivo (D81, hito 7.5).
-- Desbloqueo con biometría (D78).
 - Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).
