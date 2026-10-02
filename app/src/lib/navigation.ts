@@ -50,7 +50,12 @@ export type Overlay =
   | { name: "series"; seriesId: string }
   | { name: "newSeries" }
   | { name: "seriesPicker"; workId: string; workTitle: string }
-  | { name: "auth"; step?: "signin" | "signup" };
+  | { name: "auth"; step?: "signin" | "signup" }
+  | { name: "account" }
+  | { name: "accountDevices" }
+  // `codes` only when opened to show a fresh set of backup codes (regenerated from the
+  // account screen) instead of starting a new setup.
+  | { name: "twoFactor"; codes?: string[] };
 
 export interface Location {
   section: Section;

@@ -4,6 +4,8 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 
 import type {
+  AccountDetails,
+  AccountDevice,
   AccountStatus,
   AccountUser,
   BookFilter,
@@ -23,6 +25,7 @@ import type {
   SeriesDetail,
   SeriesEntry,
   Settings,
+  TwoFactorSetup,
   WorkSeries,
 } from "@/lib/api";
 
@@ -463,6 +466,65 @@ let mockAccount: AccountStatus = {
       ? (params.get("notice") as AccountStatus["notice"])
       : null,
 };
+
+// `?twofa` starts the second factor already on, with 8 of the 10 backup codes
+// left (one used); otherwise it starts off, as a fresh account would be.
+let mockAccountDetails: AccountDetails = {
+  id: "ana",
+  email: "ana.ruiz@correo.es",
+  name: "Ana Ruiz",
+  locale: "es",
+  hasPassword: true,
+  createdAt: "2026-01-15T10:00:00Z",
+  twoFactorEnabled: params.has("twofa"),
+  backupCodesLeft: params.has("twofa") ? 8 : 10,
+};
+
+const ACCOUNT_BACKUP_CODES = [
+  "7KQ4M-2XDH2",
+  "P9TA3-WLC9F",
+  "H2ME8-QZRK4",
+  "V6NBK-4JSQ2",
+  "D3XU7-FGYB1",
+  "R8CW2-HPN53",
+  "L5ZT9-MKE86",
+  "B4QJ6-VRA72",
+  "N7SD1-XWF94",
+  "F2GH5-TLB38",
+];
+
+let mockDevices: AccountDevice[] = [
+  {
+    id: "ana-phone",
+    name: "Móvil de Ana",
+    createdAt: "2026-01-15T10:00:00Z",
+    lastSeenAt: new Date().toISOString(),
+    signedIn: true,
+    removed: false,
+    canRestore: false,
+    current: true,
+  },
+  {
+    id: "laptop",
+    name: "Portátil",
+    createdAt: "2026-01-16T09:00:00Z",
+    lastSeenAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
+    signedIn: true,
+    removed: false,
+    canRestore: false,
+    current: false,
+  },
+  {
+    id: "kitchen-tablet",
+    name: "Tablet de la cocina",
+    createdAt: "2026-02-01T09:00:00Z",
+    lastSeenAt: new Date(Date.now() - 3 * 24 * 3600_000).toISOString(),
+    signedIn: true,
+    removed: false,
+    canRestore: false,
+    current: false,
+  },
+];
 
 const dev = (id: string, name: string, thisDevice = false) => ({ id, name, thisDevice });
 const people: People = {
@@ -1213,6 +1275,93 @@ mockIPC((cmd, args) => {
       mockAccount = { ...mockAccount, signedIn: false, user: null };
       return null;
     }
+
+    // Account screen, second factor, devices and handing the device away (hito 7.1) ---
+
+    case "get_account": {
+      if (!mockAccount.signedIn) throw { kind: "account", reason: "not_signed_in" };
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return mockAccountDetails;
+    }
+    case "update_account": {
+      if (!mockAccount.signedIn) throw { kind: "account", reason: "not_signed_in" };
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { name, locale } = args as { name: string | null; locale: string | null };
+      if (name) mockAccountDetails = { ...mockAccountDetails, name };
+      if (locale) mockAccountDetails = { ...mockAccountDetails, locale };
+      if (mockAccount.user && (name || locale)) {
+        mockAccount = {
+          ...mockAccount,
+          user: { ...mockAccount.user, name: name ?? mockAccount.user.name, locale: locale ?? mockAccount.user.locale },
+        };
+      }
+      return mockAccountDetails;
+    }
+    case "change_password": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { currentPassword } = args as { currentPassword: string };
+      if (currentPassword === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      return null;
+    }
+    case "delete_account": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { password } = args as { password: string };
+      if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      mockAccount = { ...mockAccount, signedIn: false, user: null };
+      return null;
+    }
+    case "account_devices": {
+      if (!mockAccount.signedIn) throw { kind: "account", reason: "not_signed_in" };
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return mockDevices;
+    }
+    case "remove_account_device": {
+      const { id } = args as { id: string };
+      mockDevices = mockDevices.map((d) => (d.id === id ? { ...d, removed: true, canRestore: true } : d));
+      return null;
+    }
+    case "restore_account_device": {
+      const { id } = args as { id: string };
+      const device = mockDevices.find((d) => d.id === id);
+      if (device && !device.canRestore) throw { kind: "account", reason: "device_already_reset" };
+      mockDevices = mockDevices.map((d) => (d.id === id ? { ...d, removed: false, canRestore: false } : d));
+      return null;
+    }
+    case "two_factor_setup": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const setup: TwoFactorSetup = {
+        secret: "JBSWY3DPEHPK3PXP",
+        otpauthUri:
+          "otpauth://totp/Kosmotheka:ana.ruiz%40correo.es?secret=JBSWY3DPEHPK3PXP&issuer=Kosmotheka",
+      };
+      return setup;
+    }
+    case "two_factor_enable": {
+      const { code } = args as { code: string };
+      if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
+      mockAccountDetails = { ...mockAccountDetails, twoFactorEnabled: true, backupCodesLeft: 10 };
+      return ACCOUNT_BACKUP_CODES;
+    }
+    case "two_factor_disable": {
+      const { password, code } = args as { password: string; code: string };
+      if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
+      mockAccountDetails = { ...mockAccountDetails, twoFactorEnabled: false, backupCodesLeft: 0 };
+      return null;
+    }
+    case "regenerate_backup_codes": {
+      const { password, code } = args as { password: string; code: string };
+      if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
+      mockAccountDetails = { ...mockAccountDetails, backupCodesLeft: 10 };
+      return ACCOUNT_BACKUP_CODES;
+    }
+    case "give_device_away":
+      // The real app reloads from the `device-reset` event Rust emits; the mock
+      // has no Rust side to emit it, so it reloads the page itself instead.
+      setTimeout(() => window.location.reload(), 50);
+      return null;
+
     default:
       return null;
   }

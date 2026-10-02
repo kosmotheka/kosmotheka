@@ -51,7 +51,9 @@ export function Sidebar({
       <button
         type="button"
         className="mb-2 flex items-center gap-2.5 rounded-lg border border-sidebar-border p-2.5 text-left hover:bg-sidebar-accent"
-        onClick={() => openOverlay({ name: "settings" })}
+        onClick={() =>
+          openOverlay(account.signedIn && account.user ? { name: "account" } : { name: "settings" })
+        }
       >
         {account.signedIn && account.user ? (
           <>

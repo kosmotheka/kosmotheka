@@ -1084,3 +1084,89 @@ export function forgotPassword(email: string): Promise<void> {
 export function resetPassword(email: string, code: string, password: string): Promise<void> {
   return invoke("reset_password", { email, code, password });
 }
+
+// --- Account screen, second factor, devices and handing the device away (hito 7.1) ---
+
+export interface AccountDetails {
+  id: string;
+  email: string;
+  name: string;
+  locale: string;
+  hasPassword: boolean;
+  createdAt: string;
+  twoFactorEnabled: boolean;
+  backupCodesLeft: number;
+}
+
+export function getAccount(): Promise<AccountDetails> {
+  return invoke<AccountDetails>("get_account");
+}
+
+/** Each field is only sent when changed; the others keep their current value. */
+export function updateAccount(fields: { name?: string; locale?: string }): Promise<AccountDetails> {
+  return invoke<AccountDetails>("update_account", {
+    name: fields.name ?? null,
+    locale: fields.locale ?? null,
+  });
+}
+
+export function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  return invoke("change_password", { currentPassword, newPassword });
+}
+
+export function deleteAccount(password: string): Promise<void> {
+  return invoke("delete_account", { password });
+}
+
+export interface AccountDevice {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+  signedIn: boolean;
+  removed: boolean;
+  /** `remove_account_device` just marked it removed; it has not reconnected yet. */
+  canRestore: boolean;
+  current: boolean;
+}
+
+export function accountDevices(): Promise<AccountDevice[]> {
+  return invoke<AccountDevice[]>("account_devices");
+}
+
+export function removeAccountDevice(id: string): Promise<void> {
+  return invoke("remove_account_device", { id });
+}
+
+/** Fails with `device_already_reset` once the device has reconnected: too late to undo. */
+export function restoreAccountDevice(id: string): Promise<void> {
+  return invoke("restore_account_device", { id });
+}
+
+export interface TwoFactorSetup {
+  secret: string;
+  otpauthUri: string;
+}
+
+export function twoFactorSetup(): Promise<TwoFactorSetup> {
+  return invoke<TwoFactorSetup>("two_factor_setup");
+}
+
+/** Returns the ten backup codes, shown only this once. */
+export function twoFactorEnable(code: string): Promise<string[]> {
+  return invoke<string[]>("two_factor_enable", { code });
+}
+
+export function twoFactorDisable(password: string, code: string): Promise<void> {
+  return invoke("two_factor_disable", { password, code });
+}
+
+/** Returns a fresh set of ten backup codes; the old ones stop working. */
+export function regenerateBackupCodes(password: string, code: string): Promise<string[]> {
+  return invoke<string[]>("regenerate_backup_codes", { password, code });
+}
+
+/** Resets this device (D81): wipes its libraries and, if there was one, its session. */
+export function giveDeviceAway(): Promise<void> {
+  return invoke("give_device_away");
+}

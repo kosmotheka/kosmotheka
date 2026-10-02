@@ -1,3 +1,5 @@
+import { isCommandError } from "@/lib/api";
+
 // Maps a server account error reason to its copy and severity (docs/design/errors.md,
 // "Cuenta y nube (Fase 7)"). One place for the mapping, so every auth screen shows the
 // same block instead of each re-deciding the color and wording.
@@ -16,6 +18,18 @@ export interface AccountErrorText {
 /** Minutes to show for `too_many_requests`, rounded up, at least 1. */
 export function retryAfterMinutes(retryAfterSeconds: number | null | undefined): number {
   return Math.max(1, Math.ceil((retryAfterSeconds ?? 0) / 60));
+}
+
+export interface AccountActionError {
+  reason: string;
+  retryAfter?: number | null;
+}
+
+/** The account screens (account, second factor, devices) all read a thrown
+ * command error the same way AuthDialog does. */
+export function accountErrorOf(e: unknown): AccountActionError {
+  if (isCommandError(e) && e.kind === "account") return { reason: e.reason, retryAfter: e.retryAfter };
+  return { reason: "internal" };
 }
 
 /**
@@ -118,6 +132,51 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         level: "info",
         titleKey: "accountErrors.signedOut.title",
         helpKey: "accountErrors.signedOut.help",
+      };
+    case "two_factor_unavailable":
+      return {
+        level: "error",
+        titleKey: "accountErrors.twoFactorUnavailable.title",
+        helpKey: "accountErrors.twoFactorUnavailable.help",
+      };
+    case "two_factor_already_enabled":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.twoFactorAlreadyEnabled.title",
+        helpKey: "accountErrors.twoFactorAlreadyEnabled.help",
+      };
+    case "two_factor_not_started":
+      return {
+        level: "error",
+        titleKey: "accountErrors.twoFactorNotStarted.title",
+        helpKey: "accountErrors.twoFactorNotStarted.help",
+      };
+    case "two_factor_not_enabled":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.twoFactorNotEnabled.title",
+        helpKey: "accountErrors.twoFactorNotEnabled.help",
+      };
+    case "device_not_found":
+      return { level: "info", titleKey: "accountErrors.deviceNotFound.title" };
+    case "device_already_reset":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.deviceAlreadyReset.title",
+        helpKey: "accountErrors.deviceAlreadyReset.help",
+      };
+    case "no_password":
+      return {
+        level: "error",
+        titleKey: "accountErrors.noPassword.title",
+        helpKey: "accountErrors.noPassword.help",
+      };
+    case "not_signed_in":
+      return {
+        level: "info",
+        titleKey: "accountErrors.notSignedIn.title",
+        helpKey: "accountErrors.notSignedIn.help",
+        actionKey: "accountErrors.notSignedIn.action",
       };
     default:
       return null;

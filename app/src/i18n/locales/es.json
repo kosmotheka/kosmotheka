@@ -1336,6 +1336,126 @@
       "otherDevicesWarning": "Al cambiarla se cerrará la sesión en tus otros dispositivos. No se borra nada: allí entrarás con la nueva.",
       "code": "Código de 6 cifras",
       "newPasswordLabel": "Contraseña nueva"
+    },
+    "screen": {
+      "title": "Cuenta",
+      "name": "Nombre",
+      "email": "Email",
+      "language": "Idioma",
+      "server": "Servidor",
+      "security": "Seguridad",
+      "changePassword": "Cambiar la contraseña",
+      "twoFactor": "Segundo factor",
+      "twoFactorOff": "Desactivado · un código del móvil al entrar",
+      "twoFactorOn": "Activado · quedan {{count}} de 10 códigos de respaldo",
+      "turnOn": "Activar",
+      "newCodes": "Códigos nuevos",
+      "turnOff": "Desactivar",
+      "myDevices": "Mis dispositivos",
+      "devicesCount": "{{count}} con esta cuenta",
+      "signOut": "Cerrar sesión",
+      "signOutHint": "Soy yo y volveré: no se borra nada.",
+      "deleteAccount": "Borrar la cuenta"
+    },
+    "editName": {
+      "title": "Nombre",
+      "label": "Nombre"
+    },
+    "editLanguage": {
+      "title": "Idioma"
+    },
+    "changePassword": {
+      "title": "Cambiar la contraseña",
+      "current": "Contraseña actual",
+      "new": "Contraseña nueva",
+      "warning": "Al cambiarla se cerrará la sesión en tus otros dispositivos. No se borra nada: allí entrarás con la nueva.",
+      "save": "Cambiar la contraseña",
+      "successTitle": "Contraseña cambiada",
+      "successBody": "Hemos cerrado la sesión en tus otros dispositivos. Allí entrarás con la nueva; lo que no se hubiera subido se enviará entonces."
+    },
+    "twoFactorSetup": {
+      "title": "Activar el segundo factor",
+      "sub": "Al entrar, además de la contraseña, se pedirá un código de tu app de autenticación.",
+      "step1": "1 · Escanéalo con la app",
+      "cantScan": "¿No puedes? Copia el secreto y pégalo en ella.",
+      "copySecret": "Copiar el secreto",
+      "step2": "2 · Escribe el primer código que te dé",
+      "enable": "Activar",
+      "stepLabel1": "Paso 1 de 2",
+      "stepLabel2": "Paso 2 de 2"
+    },
+    "twoFactorCodes": {
+      "enabled": "Segundo factor activado",
+      "title": "Guarda tus códigos de respaldo",
+      "sub": "Si pierdes el móvil, entrarás con uno de ellos. Cada uno vale una vez y",
+      "onceOnly": "solo los verás ahora.",
+      "copy": "Copiar",
+      "done": "Ya los he guardado",
+      "closeConfirm": {
+        "title": "¿Has guardado los códigos?",
+        "body": "No se volverán a mostrar.",
+        "back": "Volver",
+        "confirm": "Sí, cerrar"
+      }
+    },
+    "devices": {
+      "title": "Mis dispositivos",
+      "intro": "Los que han entrado con tu cuenta. Si quitas uno, cuando se conecte borrará sus bibliotecas.",
+      "current": "Este",
+      "nowCurrent": "Ahora · este dispositivo",
+      "never": "Nunca",
+      "remove": "Quitar",
+      "removedPending": "Quitado · se borrará al conectarse",
+      "removedFinal": "Quitado",
+      "undo": "Deshacer"
+    },
+    "confirm": {
+      "passwordLabel": "Contraseña",
+      "appCodeLabel": "Código de la app",
+      "backupFirst": "Guardar una copia antes",
+      "removeDevice": {
+        "title": "¿Quitar {{name}}?",
+        "body": "Saldrá de tu cuenta. Cuando se conecte, borrará de él todas sus bibliotecas y dejará de sincronizar.",
+        "warn": "Las bibliotecas que solo estén en ese dispositivo se perderán.",
+        "note": "Hasta que se conecte puedes deshacerlo desde la lista.",
+        "action": "Quitar"
+      },
+      "deleteAccount": {
+        "title": "¿Borrar tu cuenta?",
+        "body": "Se borra para siempre de {{host}} y se cierra la sesión en tus {{count}} dispositivos.",
+        "bodyNoCount": "Se borra para siempre de {{host}} y se cierra la sesión en tus otros dispositivos.",
+        "action": "Borrar la cuenta"
+      },
+      "handOver": {
+        "title": "¿Dejar este dispositivo a otra persona?",
+        "body": "La app quedará como recién instalada: se borran de aquí todas las bibliotecas y, si la hay, tu sesión.",
+        "note": "Lo que está en la nube o en tus otros dispositivos no se toca.",
+        "action": "Borrar y dejarlo"
+      },
+      "signOut": {
+        "title": "¿Cerrar sesión?",
+        "body": "Soy yo y volveré: no se borra nada. Tus bibliotecas siguen aquí y se comparten por la red de casa; lo que cambies se subirá al volver a entrar.",
+        "note": "¿Vas a dar el dispositivo a otra persona? Usa «Dejar este dispositivo a otra persona», en Ajustes.",
+        "action": "Cerrar sesión"
+      },
+      "twofaOff": {
+        "title": "¿Desactivar el segundo factor?",
+        "body": "Para entrar bastará con la contraseña. Los códigos de respaldo dejarán de valer.",
+        "note": "Para generar códigos nuevos se piden los mismos datos.",
+        "action": "Desactivar"
+      },
+      "twofaRegenerate": {
+        "title": "¿Generar códigos nuevos?",
+        "body": "Los 10 códigos actuales dejarán de valer; se te darán otros 10 nuevos.",
+        "note": "Para desactivar el segundo factor se piden los mismos datos.",
+        "action": "Códigos nuevos"
+      }
+    },
+    "thisDevice": {
+      "section": "Este dispositivo",
+      "name": "Nombre",
+      "handOver": "Dejar este dispositivo a otra persona",
+      "handOverHint": "Lo deja como recién instalado"
     }
   },
   "accountErrors": {
@@ -1406,6 +1526,38 @@
     "signedOut": {
       "title": "Se ha cerrado la sesión.",
       "help": "La contraseña se cambió en otro dispositivo."
+    },
+    "twoFactorUnavailable": {
+      "title": "El segundo factor no está disponible en este servidor.",
+      "help": "Puede haberse desactivado desde que abriste esta pantalla. Inténtalo más tarde."
+    },
+    "twoFactorAlreadyEnabled": {
+      "title": "El segundo factor ya estaba activado.",
+      "help": "Recarga la pantalla de cuenta para ver su estado actual."
+    },
+    "twoFactorNotStarted": {
+      "title": "No hay ninguna activación en curso.",
+      "help": "Vuelve a «Activar» para generar un código nuevo."
+    },
+    "twoFactorNotEnabled": {
+      "title": "El segundo factor no está activado.",
+      "help": "Recarga la pantalla de cuenta para ver su estado actual."
+    },
+    "deviceNotFound": {
+      "title": "Ese dispositivo ya no existe."
+    },
+    "deviceAlreadyReset": {
+      "title": "Demasiado tarde: ese dispositivo ya se conectó y se borró.",
+      "help": "No se puede deshacer una vez que el dispositivo se ha conectado."
+    },
+    "noPassword": {
+      "title": "Esta cuenta no tiene contraseña.",
+      "help": "Entraste con Google: aquí no se usa contraseña."
+    },
+    "notSignedIn": {
+      "title": "Se ha cerrado la sesión.",
+      "help": "Vuelve a entrar para continuar.",
+      "action": "Iniciar sesión"
     }
   }
 }

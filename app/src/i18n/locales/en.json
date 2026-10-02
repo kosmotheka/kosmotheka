@@ -1323,6 +1323,126 @@
       "otherDevicesWarning": "Changing it signs you out on your other devices. Nothing is deleted: sign in there with the new one.",
       "code": "6-digit code",
       "newPasswordLabel": "New password"
+    },
+    "screen": {
+      "title": "Account",
+      "name": "Name",
+      "email": "Email",
+      "language": "Language",
+      "server": "Server",
+      "security": "Security",
+      "changePassword": "Change password",
+      "twoFactor": "Second factor",
+      "twoFactorOff": "Off · a code from your phone when signing in",
+      "twoFactorOn": "On · {{count}} of 10 backup codes left",
+      "turnOn": "Turn on",
+      "newCodes": "New codes",
+      "turnOff": "Turn off",
+      "myDevices": "My devices",
+      "devicesCount": "{{count}} with this account",
+      "signOut": "Sign out",
+      "signOutHint": "It's me and I'll be back: nothing gets deleted.",
+      "deleteAccount": "Delete account"
+    },
+    "editName": {
+      "title": "Name",
+      "label": "Name"
+    },
+    "editLanguage": {
+      "title": "Language"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "warning": "Changing it signs you out on your other devices. Nothing is deleted: sign in there with the new one.",
+      "save": "Change password",
+      "successTitle": "Password changed",
+      "successBody": "We've signed you out on your other devices. You'll sign in there with the new one; anything not yet uploaded will send then."
+    },
+    "twoFactorSetup": {
+      "title": "Turn on the second factor",
+      "sub": "When signing in, besides the password, you'll be asked for a code from your authenticator app.",
+      "step1": "1 · Scan it with the app",
+      "cantScan": "Can't scan it? Copy the secret and paste it there.",
+      "copySecret": "Copy the secret",
+      "step2": "2 · Enter the first code it gives you",
+      "enable": "Turn on",
+      "stepLabel1": "Step 1 of 2",
+      "stepLabel2": "Step 2 of 2"
+    },
+    "twoFactorCodes": {
+      "enabled": "Second factor turned on",
+      "title": "Save your backup codes",
+      "sub": "If you lose your phone, you'll sign in with one of them. Each works once and",
+      "onceOnly": "you'll only see them now.",
+      "copy": "Copy",
+      "done": "I've saved them",
+      "closeConfirm": {
+        "title": "Have you saved the codes?",
+        "body": "They won't be shown again.",
+        "back": "Go back",
+        "confirm": "Yes, close"
+      }
+    },
+    "devices": {
+      "title": "My devices",
+      "intro": "The ones that have signed in with your account. If you remove one, it deletes its libraries once it connects.",
+      "current": "This one",
+      "nowCurrent": "Now · this device",
+      "never": "Never",
+      "remove": "Remove",
+      "removedPending": "Removed · will be wiped when it connects",
+      "removedFinal": "Removed",
+      "undo": "Undo"
+    },
+    "confirm": {
+      "passwordLabel": "Password",
+      "appCodeLabel": "Code from the app",
+      "backupFirst": "Save a backup first",
+      "removeDevice": {
+        "title": "Remove {{name}}?",
+        "body": "It will be signed out of your account. Once it connects, it wipes all of its libraries and stops syncing.",
+        "warn": "Libraries that only exist on that device will be lost.",
+        "note": "You can undo this from the list until it connects.",
+        "action": "Remove"
+      },
+      "deleteAccount": {
+        "title": "Delete your account?",
+        "body": "It's permanently deleted from {{host}} and your {{count}} devices are signed out.",
+        "bodyNoCount": "It's permanently deleted from {{host}} and your other devices are signed out.",
+        "action": "Delete account"
+      },
+      "handOver": {
+        "title": "Hand this device to someone else?",
+        "body": "The app will go back to how it was freshly installed: every library here is deleted, and your session too, if there was one.",
+        "note": "What's in the cloud or on your other devices isn't touched.",
+        "action": "Wipe and hand it over"
+      },
+      "signOut": {
+        "title": "Sign out?",
+        "body": "It's me and I'll be back: nothing is deleted. Your libraries stay here and keep sharing over your home network; anything you change will upload when you sign back in.",
+        "note": "Handing the device to someone else? Use \"Hand this device to someone else\" in Settings.",
+        "action": "Sign out"
+      },
+      "twofaOff": {
+        "title": "Turn off the second factor?",
+        "body": "Signing in will only need the password. The backup codes will stop working.",
+        "note": "Generating new codes asks for the same details.",
+        "action": "Turn off"
+      },
+      "twofaRegenerate": {
+        "title": "Generate new codes?",
+        "body": "The current 10 codes will stop working; you'll get 10 new ones.",
+        "note": "Turning off the second factor asks for the same details.",
+        "action": "New codes"
+      }
+    },
+    "thisDevice": {
+      "section": "This device",
+      "name": "Name",
+      "handOver": "Hand this device to someone else",
+      "handOverHint": "Resets it like a fresh install"
     }
   },
   "accountErrors": {
@@ -1393,6 +1513,38 @@
     "signedOut": {
       "title": "You've been signed out.",
       "help": "Your password was changed on another device."
+    },
+    "twoFactorUnavailable": {
+      "title": "The second factor isn't available on this server.",
+      "help": "It may have been turned off since you opened this screen. Try again later."
+    },
+    "twoFactorAlreadyEnabled": {
+      "title": "The second factor was already on.",
+      "help": "Reload the account screen to see its current state."
+    },
+    "twoFactorNotStarted": {
+      "title": "There's no setup in progress.",
+      "help": "Go back to \"Turn on\" to get a new code."
+    },
+    "twoFactorNotEnabled": {
+      "title": "The second factor isn't on.",
+      "help": "Reload the account screen to see its current state."
+    },
+    "deviceNotFound": {
+      "title": "That device no longer exists."
+    },
+    "deviceAlreadyReset": {
+      "title": "Too late: that device already connected and was wiped.",
+      "help": "It can't be undone once the device has connected."
+    },
+    "noPassword": {
+      "title": "This account has no password.",
+      "help": "You signed in with Google: no password is used here."
+    },
+    "notSignedIn": {
+      "title": "You've been signed out.",
+      "help": "Sign in again to continue.",
+      "action": "Sign in"
     }
   }
 }

@@ -3,8 +3,11 @@ import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { CircleCheck } from "lucide-react";
 
+import { AccountDialog } from "@/components/account/account-dialog";
 import { AccountNotice } from "@/components/account/account-notice";
 import { AuthDialog } from "@/components/account/auth-dialog";
+import { DevicesDialog as AccountDevicesDialog } from "@/components/account/devices-dialog";
+import { TwoFactorDialog } from "@/components/account/two-factor-dialog";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { AddSearch } from "@/components/add-search";
 import { BackupsDialog } from "@/components/backups-dialog";
@@ -410,6 +413,7 @@ export default function App() {
           )}
           <SettingsDialog
             open={overlay?.name === "settings"}
+            desktop={desktop}
             onOpenChange={(open) => !open && closeOverlay()}
           />
           <ProvidersDialog
@@ -457,6 +461,13 @@ export default function App() {
           <AuthDialog
             open={overlay?.name === "auth"}
             initialStep={overlay?.name === "auth" ? overlay.step : undefined}
+          />
+          <AccountDialog open={overlay?.name === "account"} desktop={desktop} />
+          <AccountDevicesDialog open={overlay?.name === "accountDevices"} desktop={desktop} />
+          <TwoFactorDialog
+            open={overlay?.name === "twoFactor"}
+            desktop={desktop}
+            codes={overlay?.name === "twoFactor" ? overlay.codes : undefined}
           />
           <AccountNotice libraries={allLibraries} />
           {!desktop && (
