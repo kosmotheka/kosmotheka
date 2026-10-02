@@ -60,4 +60,4 @@ Las páginas en móvil y escritorio, claro y oscuro, en los dos idiomas, y la li
 
 - Al descargarla, va en una carpeta propia del repositorio (por decidir: `web/` en la raíz), y sustituye a `docs/publicacion/provisional-pages/` en el servidor.
 - La política de privacidad se pega aparte desde [politica-privacidad.md](../publicacion/politica-privacidad.md).
-- Los usuarios de X y Bluesky del pie hay que confirmarlos.
+- Los usuarios de X (`@kosmotheka`) y Bluesky (`@kosmotheka.bsky.social`) están confirmados (02/10/2026).
