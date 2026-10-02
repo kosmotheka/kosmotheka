@@ -29,6 +29,6 @@ En las carpetas de bibliotecas y en `cloud-account/`, `ds-base.js` y `support.js
 
 **Diferencias de `cloud-account/` con el servidor**, a resolver al construir la app:
 - Los códigos de respaldo de las muestras tienen 8 caracteres (`7KQ4-M2XD`); el servidor da 10 (`xxxxx-xxxxx`). Manda el servidor.
-- La cuenta muestra el email como editable, y el servidor aún no permite cambiarlo (pendiente en [architecture/accounts.md](../../architecture/accounts.md)).
+- La cuenta muestra el email como editable, y el email no se cambia (D77): en la app va como texto, sin editar.
 - «Puedes anularlo desde Personas» en una invitación necesita anular invitaciones en el hito 7.6.
 - `cloud-account/` no tiene captura `-overview.png`.

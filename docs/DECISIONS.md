@@ -1121,6 +1121,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **El servidor dice qué ofrece:** Google solo aparece si ese servidor lo tiene configurado. Quien monte el suyo sin Google sigue con email y contraseña.
 - **Otro servidor:** la app entra por defecto en el oficial, y un enlace discreto, «Otro servidor», deja escribir la dirección de uno propio (como hace Bitwarden). Es lo que hace verdad que el servidor se pueda alojar.
 - Iniciar sesión, con Google o sin él, sigue probando la clave del dispositivo (plan de la Fase 7) y queda en el registro de actividad (D66).
+- **El email no se cambia** (02/10/2026): es lo que identifica la cuenta, también para enlazar con Google. Quien quiera pasar sus bibliotecas a otro email invita a ese email, lo hace administrador, y desde la cuenta nueva quita a la vieja (o la vieja se borra).
 
 **Consecuencias:** hay que crear un proyecto en Google Cloud con su pantalla de consentimiento y sus credenciales, como para FCM (D75); se apunta en [development/servicios-externos.md](development/servicios-externos.md) para hacerlo paso a paso cuando llegue. La política de privacidad dirá qué se recibe de Google (email y nombre). Amplía D09 y D49.
 

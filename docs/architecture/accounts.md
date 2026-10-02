@@ -112,7 +112,7 @@ Todos bajo `/v1`, requieren las cabeceras de arriba.
 | Endpoint | Responde |
 |---|---|
 | `GET /v1/account` | `{id, email, name, locale, has_password, created_at}` |
-| `PATCH /v1/account` `{name?, locale?}` | **200**, mismo cuerpo que el GET; los campos omitidos no cambian |
+| `PATCH /v1/account` `{name?, locale?}` | **200**, mismo cuerpo que el GET; los campos omitidos no cambian. El email no se cambia nunca (D77): para pasar a otro, se invita a ese email a las bibliotecas como administrador y la cuenta nueva quita a la vieja |
 | `POST /v1/account/password` `{current_password, new_password}` | **204** (ver «Contraseña olvidada y cambio de contraseña» abajo) |
 | `DELETE /v1/account` `{password}` | **204**; borra la cuenta (ver «Borrado de cuenta» abajo) |
 | `POST /v1/auth/logout` | **204**; pone a `null` el token del dispositivo que llama |
@@ -222,4 +222,3 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 - Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).
-- Cambiar el email de la cuenta, con un código a la dirección nueva (las pantallas de Design ya lo muestran como editable).
