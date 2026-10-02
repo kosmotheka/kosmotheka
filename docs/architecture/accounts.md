@@ -68,7 +68,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 
 Cada instalación de la app es un **dispositivo** (`App\Entity\Device`): su id es el mismo UUID que ya usa en sus HLCs (no lo genera el servidor), y tiene una clave pública Ed25519 (32 bytes, base64url sin relleno — el mismo formato que decodifica `App\Sync\OperationSignature`). El servidor guarda solo el **hash SHA-256** del token de sesión (`tokenHash`); `tokenHash = null` significa que el dispositivo está desconectado. **Un dispositivo es una instalación de la app, no un móvil**: restaurar el móvil o reinstalar la app crea un dispositivo nuevo. **Su id queda ligado para siempre a la cuenta que lo registró primero**, y solo puede volver a iniciar sesión con esa cuenta y con la misma clave pública: así un id robado o reutilizado no puede «mudarse» de cuenta ni cambiar de clave en silencio, y nadie puede firmar como otra persona. Para dar el móvil a otra persona, la app cambia de identidad (D81, abajo).
 
-Un dispositivo tiene tres estados: **con sesión**, **sesión cerrada** (`tokenHash = null`; la misma cuenta puede volver a entrar con él) y **quitado** (`removedAt`; D81). Un dispositivo quitado no vuelve a iniciar sesión con ninguna cuenta.
+Un dispositivo tiene tres estados: **con sesión**, **sesión cerrada** (`tokenHash = null`; la misma cuenta puede volver a entrar con él) y **quitado** (`removedAt`; D81). La identidad de un dispositivo quitado no vuelve a iniciar sesión con ninguna cuenta; la app, al saberlo, crea una identidad nueva, y con esa puede entrar cualquier cuenta o usarse sin cuenta.
 
 ### El reto de inicio de sesión
 
@@ -115,8 +115,9 @@ Todos bajo `/v1`, requieren las cabeceras de arriba.
 | `POST /v1/account/password` `{current_password, new_password}` | **204** (ver «Contraseña olvidada y cambio de contraseña» abajo) |
 | `DELETE /v1/account` `{password}` | **204**; borra la cuenta (ver «Borrado de cuenta» abajo) |
 | `POST /v1/auth/logout` | **204**; pone a `null` el token del dispositivo que llama |
-| `GET /v1/account/devices` | `[{id, name, created_at, last_seen_at, signed_in, removed, current}]`, por `created_at` |
-| `DELETE /v1/account/devices/{id}` | **204**; **quita** ese dispositivo (D81): token a `null` y `removedAt`, la fila se conserva para que el id siga ligado a la cuenta. Sirve también para el propio dispositivo: es lo que hace la app en «Dejar este dispositivo a otra persona». Quitarlo otra vez no cambia nada. Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
+| `GET /v1/account/devices` | `[{id, name, created_at, last_seen_at, signed_in, removed, can_restore, current}]`, por `created_at` |
+| `POST /v1/account/devices/{id}/restore` | **204**; deshace la retirada mientras la instalación no se haya enterado: sigue con su sesión como si nada. Si ya recibió `device_removed` (y por tanto ya borró sus bibliotecas) → **409** `device_already_reset`. Uno no quitado → **204** sin cambios; de otra cuenta o desconocido → **404** `device_not_found` |
+| `DELETE /v1/account/devices/{id}` | **204**; **quita** ese dispositivo (D81): marca `removedAt` y conserva la fila, para que el id siga ligado a la cuenta, y el hash del token, para poder deshacerlo. Sirve también para el propio dispositivo: es lo que hace la app en «Dejar este dispositivo a otra persona», y entonces no se puede deshacer. Quitarlo otra vez no cambia nada. Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
 
 ## Contraseña olvidada y cambio de contraseña (parte 3, D50)
 
@@ -172,7 +173,8 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 
 - **«Cerrar sesión»** (`POST /v1/auth/logout`): para la misma persona, que volverá a entrar. No borra nada en la app.
 - **«Dejar este dispositivo a otra persona»**: la app llama a `DELETE /v1/account/devices/{su propio id}`, borra todas sus bibliotecas y genera un id y una clave nuevos.
-- **Quitado desde otro dispositivo:** la próxima llamada de esa instalación recibe `device_removed`, y la app hace lo mismo que en el punto anterior.
+- **Quitado desde otro dispositivo:** la próxima llamada de esa instalación recibe `device_removed`, y la app hace lo mismo que en el punto anterior. El servidor apunta cuándo se lo dijo (`removalNoticedAt`); hasta entonces, la retirada se puede deshacer con `restore`, por si fue un error. Solo cuenta si se lo dice a la instalación de verdad: con su token, o al iniciar sesión con su clave. El id de un dispositivo lo ven todos los que comparten una biblioteca, y alguien que solo conoce el id no puede acabar con la posibilidad de deshacer.
+- La app, al quitar un dispositivo, avisa de lo que pasará, y de que se perderán las bibliotecas que ese dispositivo no tenga en la nube.
 - Retirarle el acceso en cada biblioteca compartida (D71) llega con el hito 7.5.
 
 ## Pendiente

@@ -134,8 +134,14 @@ final class AuthController extends AbstractController
         }
 
         // Before device_taken: a removed install must start again (D81),
-        // whichever account tries it.
+        // whichever account tries it. The proof was checked against this key,
+        // so a matching key means the install itself is being told.
         if ($device->isRemoved()) {
+            if (hash_equals($device->getPublicKey(), $publicKey)) {
+                $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+                $this->entityManager->flush();
+            }
+
             throw AccountException::deviceRemoved();
         }
 

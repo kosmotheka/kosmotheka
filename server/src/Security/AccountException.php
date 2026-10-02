@@ -81,6 +81,11 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::DeviceRemoved, 403);
     }
 
+    public static function deviceAlreadyReset(): self
+    {
+        return new self(AccountErrorCode::DeviceAlreadyReset, 409);
+    }
+
     public static function deviceNotFound(): self
     {
         return new self(AccountErrorCode::DeviceNotFound, 404);

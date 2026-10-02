@@ -233,6 +233,7 @@ final class AccountController extends AbstractController
                 'last_seen_at' => $device->getLastSeenAt()?->format(\DateTimeInterface::ATOM),
                 'signed_in' => $device->isSignedIn(),
                 'removed' => $device->isRemoved(),
+                'can_restore' => $device->canRestore(),
                 'current' => $device->getId() === $currentDeviceId,
             ],
             $devices,
@@ -252,7 +253,39 @@ final class AccountController extends AbstractController
             throw AccountException::deviceNotFound();
         }
 
-        $device->remove(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $device->remove($now);
+        // The calling install removing itself already knows: nothing to undo.
+        if ($device->getId() === $this->currentDevice->get()->getId()) {
+            $device->noticeRemoval($now);
+        }
+        $this->entityManager->flush();
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Undoes a removal made by mistake (D81), only while the install has not
+     * been told: once it has, it has wiped its libraries and started again.
+     */
+    #[Route('/devices/{id}/restore', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function restoreDevice(string $id): Response
+    {
+        $device = $this->deviceRepository->find($id);
+        if (!$device instanceof Device || !$device->getUser()->getId()->equals($this->currentUser()->getId())) {
+            throw AccountException::deviceNotFound();
+        }
+
+        if (!$device->isRemoved()) {
+            return new Response(status: Response::HTTP_NO_CONTENT);
+        }
+
+        if (!$device->canRestore()) {
+            throw AccountException::deviceAlreadyReset();
+        }
+
+        $device->restore();
         $this->entityManager->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);

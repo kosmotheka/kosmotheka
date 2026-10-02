@@ -65,13 +65,18 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
         }
 
         $device = $this->deviceRepository->find($deviceId);
-        if ($device instanceof Device && $device->isRemoved()) {
-            throw new DeviceRemovedException();
-        }
-
         $tokenHash = $device?->getTokenHash();
         if (!$device instanceof Device || null === $tokenHash || !hash_equals($tokenHash, hash('sha256', $token))) {
             throw new CustomUserMessageAuthenticationException('Unknown device, signed-out device or wrong token.');
+        }
+
+        // Only after the token matched: device ids are visible to everyone
+        // sharing a library, and telling a stranger would end the undo (D81).
+        if ($device->isRemoved()) {
+            $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+            $this->entityManager->flush();
+
+            throw new DeviceRemovedException();
         }
 
         $request->attributes->set(CurrentDevice::ATTRIBUTE, $device);

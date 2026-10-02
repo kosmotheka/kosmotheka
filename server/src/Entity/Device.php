@@ -10,8 +10,10 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * One app install (milestone 7.1, part 2): its id is the device id the Rust
  * app already uses in its HLCs, not generated here. `tokenHash` null means
- * signed out; `removedAt` means removed for good (D81): the install was handed
- * to someone else and must start again with a new identity. A device id is
+ * signed out; `removedAt` means removed (D81): the install was handed to
+ * someone else and must start again with a new identity. Until the install
+ * is told so (`removalNoticedAt`), the removal can be undone and the device
+ * carries on with its token, as if nothing had happened. A device id is
  * bound to its account forever, checked by App\Controller\AuthController
  * before a row is created.
  */
@@ -28,6 +30,10 @@ final class Device
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $removedAt = null;
+
+    /** When the install itself was first told it was removed; from then on it has wiped its data. */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $removalNoticedAt = null;
 
     public function __construct(
         #[ORM\Id]
@@ -85,7 +91,7 @@ final class Device
 
     public function isSignedIn(): bool
     {
-        return null !== $this->tokenHash;
+        return null !== $this->tokenHash && !$this->isRemoved();
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -108,10 +114,27 @@ final class Device
         return $this->removedAt instanceof \DateTimeImmutable;
     }
 
-    /** Signs the device out for good (D81): it can never sign in again. */
+    /**
+     * Removes the device (D81). The token hash is kept so an undo can give the
+     * install its session back, and so only the real install can be told.
+     */
     public function remove(\DateTimeImmutable $at): void
     {
-        $this->tokenHash = null;
         $this->removedAt ??= $at;
+    }
+
+    public function noticeRemoval(\DateTimeImmutable $at): void
+    {
+        $this->removalNoticedAt ??= $at;
+    }
+
+    public function canRestore(): bool
+    {
+        return $this->isRemoved() && !$this->removalNoticedAt instanceof \DateTimeImmutable;
+    }
+
+    public function restore(): void
+    {
+        $this->removedAt = null;
     }
 }

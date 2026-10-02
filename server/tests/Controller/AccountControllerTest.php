@@ -459,6 +459,57 @@ final class AccountControllerTest extends WebTestCase
         }
     }
 
+    public function testARemovalCanBeUndoneUntilTheDeviceIsTold(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'undo-removal@example.com';
+        $laptop = $this->signInNewDevice($client, $email, deviceName: 'Laptop');
+        $phone = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $client->request('DELETE', '/v1/account/devices/'.$laptop['device_id'], server: $phone['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        // A stranger who knows the id, without the token, does not end the undo.
+        $client->request('GET', '/v1/account', server: $this->deviceHeaders($laptop['device_id'], 'not-the-token'));
+        self::assertSame('{"error":"invalid_token"}', $client->getResponse()->getContent());
+
+        $client->request('POST', '/v1/account/devices/'.$laptop['device_id'].'/restore', server: $phone['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $client->request('GET', '/v1/account', server: $laptop['headers']);
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testARemovalCannotBeUndoneOnceTheDeviceWasTold(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'undo-too-late@example.com';
+        $laptop = $this->signInNewDevice($client, $email, deviceName: 'Laptop');
+        $phone = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $client->request('DELETE', '/v1/account/devices/'.$laptop['device_id'], server: $phone['headers']);
+        $client->request('GET', '/v1/account', server: $laptop['headers']);
+        self::assertSame('{"error":"device_removed"}', $client->getResponse()->getContent());
+
+        $client->request('POST', '/v1/account/devices/'.$laptop['device_id'].'/restore', server: $phone['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+        self::assertSame('{"error":"device_already_reset"}', $client->getResponse()->getContent());
+    }
+
+    public function testADeviceThatRemovesItselfCannotBeRestored(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'self-removal@example.com';
+        $laptop = $this->signInNewDevice($client, $email, deviceName: 'Laptop');
+        $phone = $this->loginDevice($client, $email, 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+
+        $client->request('DELETE', '/v1/account/devices/'.$laptop['device_id'], server: $laptop['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $client->request('POST', '/v1/account/devices/'.$laptop['device_id'].'/restore', server: $phone['headers']);
+        self::assertSame('{"error":"device_already_reset"}', $client->getResponse()->getContent());
+    }
+
     public function testRemovingSomeoneElsesDeviceFails(): void
     {
         $client = $this->createTestClient();

@@ -83,7 +83,7 @@
 | D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada |
 | D76 | La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos | aceptada |
 | D77 | Entrar con email o con Google | aceptada |
-| D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada |
+| D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada (revisada el 02/10/2026: `otphp` en lugar de `scheb/2fa-bundle`) |
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 | D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
@@ -1130,7 +1130,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Decisión:**
 - **Desbloquear la app con la huella o la cara**, en el móvil. Es local: protege que alguien con tu móvil abra la app, y funciona **también sin cuenta**. Plugin oficial `biometric` de Tauri (Android; en escritorio no hay). Se activa en Ajustes; apagado por defecto.
-- **Segundo factor en la cuenta** con un código de una app de autenticación (TOTP: Google Authenticator, Aegis…), con `scheb/2fa-bundle` en Symfony, y **códigos de respaldo** para quien pierda el móvil. Cada usuario decide si lo activa. Como solo se inicia sesión una vez por dispositivo, molesta poco.
+- **Segundo factor en la cuenta** con un código de una app de autenticación (TOTP: Google Authenticator, Aegis…) y **códigos de respaldo** para quien pierda el móvil. *Revisado el 02/10/2026:* primero decía `scheb/2fa-bundle`; se cambia por **`spomky-labs/otphp`** (la librería que ese bundle usa por debajo para TOTP) y un flujo propio. El bundle se apoya en el firewall y en la sesión, con un estado de «autenticado a medias»; la API no tiene sesión, solo un inicio de sesión que da un token, así que basta con un campo `totp_code` opcional en ese inicio de sesión. El mismo autor mantiene `web-auth/webauthn-lib`, útil para las llaves de acceso de más adelante. Cada usuario decide si lo activa. Como solo se inicia sesión una vez por dispositivo, molesta poco.
 - **Propuesta, a revisar al construirlo:** el segundo factor se pide al entrar con email y contraseña; al entrar con Google lo protege el segundo factor de Google.
 - **Quien aloja su servidor** decide si lo ofrece, con una variable de entorno; encendido por defecto.
 - **Sin respaldo ni autenticador**, el superadministrador puede quitar el segundo factor por consola (D51), y queda en el registro de actividad (D66).
@@ -1221,11 +1221,15 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
   Quien lo recibe entra con su cuenta, o sin cuenta, como un dispositivo nuevo: recibe las bibliotecas compartidas con su propio rol cuando lo vinculan o cuando la nube lo hace (D76). **Funciona también sin cuenta** (D57), que es el caso que ya existe hoy con la red local.
 - **Si el móvil ya se dio sin hacerlo**, se quita desde otro dispositivo de la misma cuenta, en la lista de dispositivos. El servidor distingue dos estados:
   - **sesión cerrada:** al volver a iniciar sesión con la misma cuenta sigue siendo el mismo dispositivo;
-  - **quitado:** la próxima vez que esa instalación hable con el servidor recibe el error `device_removed`, y la app hace lo mismo que «Dejar este dispositivo a otra persona» (sin la copia, porque ya no es de quien lo quitó). Ese id no puede volver a iniciar sesión.
+  - **quitado:** la próxima vez que esa instalación hable con el servidor recibe el error `device_removed`, y la app hace lo mismo que «Dejar este dispositivo a otra persona» (sin la copia, porque ya no es de quien lo quitó) y crea su identidad nueva. **Con ella puede entrar cualquier cuenta, o usarse sin cuenta**: lo único que no vuelve a entrar es la identidad vieja, que firmaría como su anterior dueño.
+- **Quitar uno por error** (aclarado con el maintainer el 02/10/2026): si se quita mi portátil sin querer, al conectarse borraría sus bibliotecas; las de la nube vuelven al entrar otra vez, pero las que solo estaban en él se perderían. Por eso:
+  - el aviso al quitarlo dice qué va a pasar, y si el dispositivo tiene bibliotecas que no están en la nube, que se perderán (lo sabe la app por las bibliotecas que ese dispositivo comparte con la nube);
+  - **se puede deshacer mientras ese dispositivo no se haya conectado**: hasta entonces no ha borrado nada, y al deshacerlo sigue como estaba, con su sesión. En cuanto se conecta y recibe `device_removed`, ya no se puede.
+  - No se ofrece hacer una copia en el dispositivo quitado: la haría quien lo tiene ahora, con los datos de otra persona.
 - **En las bibliotecas**, quitar un dispositivo es además **retirarle el acceso** (D71) en cada biblioteca compartida que tenga, para que tampoco reciba nada por la red local ni pueda cambiar nada. Sin cuenta, se hace como hasta ahora: retirando el acceso a ese dispositivo desde la biblioteca.
 
 **Consecuencias:**
-- **Servidor (hito 7.1):** el dispositivo tiene el estado «quitado», distinto de «sesión cerrada»; `DELETE /v1/account/devices/{id}` lo quita, y un token de un dispositivo quitado responde `device_removed`. Ver [architecture/accounts.md](architecture/accounts.md).
+- **Servidor (hito 7.1):** el dispositivo tiene el estado «quitado», distinto de «sesión cerrada»; `DELETE /v1/account/devices/{id}` lo quita, un token de un dispositivo quitado responde `device_removed`, y el servidor apunta cuándo se lo dijo por primera vez: hasta entonces, `POST /v1/account/devices/{id}/restore` lo deshace. Ver [architecture/accounts.md](architecture/accounts.md).
 - **App:** la acción de Ajustes, el borrado completo y la identidad nueva (un id y una clave nuevos en `local_state`) van con las pantallas de la cuenta (hito 7.1); la parte sin cuenta no depende de la nube y puede adelantarse. La retirada en las bibliotecas al quitar un dispositivo, con el hito 7.5. Pantallas nuevas para Design y textos en [design/errors.md](design/errors.md).
 - **Límite, como en D71:** lo que quien recibe el móvil haya visto o sacado antes de que se quite no se puede deshacer. La biometría (D78) protege el caso de un móvil que se da o se pierde sin hacer nada.
 - **Auditoría:** el caso entra en las costuras de compartir (`flows-sharing`).
