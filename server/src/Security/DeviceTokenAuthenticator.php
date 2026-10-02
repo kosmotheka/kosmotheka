@@ -65,6 +65,10 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
         }
 
         $device = $this->deviceRepository->find($deviceId);
+        if ($device instanceof Device && $device->isRemoved()) {
+            throw new DeviceRemovedException();
+        }
+
         $tokenHash = $device?->getTokenHash();
         if (!$device instanceof Device || null === $tokenHash || !hash_equals($tokenHash, hash('sha256', $token))) {
             throw new CustomUserMessageAuthenticationException('Unknown device, signed-out device or wrong token.');
@@ -89,7 +93,9 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
             return null;
         }
 
-        return new JsonResponse(['error' => AccountErrorCode::InvalidToken->value], Response::HTTP_UNAUTHORIZED);
+        $code = $exception instanceof DeviceRemovedException ? AccountErrorCode::DeviceRemoved : AccountErrorCode::InvalidToken;
+
+        return new JsonResponse(['error' => $code->value], Response::HTTP_UNAUTHORIZED);
     }
 
     /** No credentials at all on a protected route. */

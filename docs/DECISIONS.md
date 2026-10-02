@@ -86,6 +86,7 @@
 | D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada |
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 | D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
+| D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
 
 ---
 
@@ -1193,3 +1194,39 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **No se envía con el SMTP de Gmail** desde el servidor: pide contraseñas de aplicación y saldría desde una dirección de Gmail.
 
 **Consecuencias:** el DNS de `kosmotheka.com` lleva los MX de ImprovMX, un único SPF con ImprovMX y Brevo, el DKIM de Brevo y DMARC. Los pasos están en [development/correo.md](development/correo.md), y la tabla de [development/servicios-externos.md](development/servicios-externos.md) queda actualizada. **Pendiente para enero de 2027:** decidir el buzón definitivo. Quien aloje su servidor usa el proveedor que quiera con `MAILER_DSN` (D18). Resuelve lo que D49 y D50 dejaban pendiente.
+
+## D81 · Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero — `aceptada`
+
+**Contexto:** una costura que las fases 4 a 6 dejaron sin validar, vista al revisar las cuentas del hito 7.1 (02/10/2026). El caso típico: me compro un móvil nuevo y el viejo se lo doy a mi hijo, o a mi pareja, con la app instalada.
+
+- La identidad de un dispositivo es **de la instalación de la app**, no del móvil: la primera vez que se abre, la app genera su id (el de su `hlc`) y su clave Ed25519 (D56). Restaurar el móvil de fábrica o reinstalar la app ya crea un dispositivo nuevo; ese caso no da problemas.
+- Con la app tal cual, en cambio, quien recibe el móvil **sigue siendo yo** para las bibliotecas: cada biblioteca sabe de quién es ese dispositivo y le da el rol de esa persona (D73), y sus operaciones llevan mi firma. Iniciar sesión con otra cuenta no lo arregla: por la red local los demás dispositivos siguen viendo mi firma. Además, en el móvil siguen todas mis bibliotecas.
+- El servidor (hito 7.1) liga para siempre el id de un dispositivo a la cuenta que lo dio de alta, y solo con su clave. Es correcto y se mantiene: si otra cuenta pudiera reclamar ese id, podría firmar como yo. Lo que faltaba es que la app pueda **cambiar de identidad**.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Dejar que otra cuenta reclame el id en el servidor | Nada que hacer en la app | La clave sigue siendo la misma: firmaría como yo, por la red local y en la nube |
+| Cambiar de identidad en cada «Cerrar sesión» | Una sola acción | Quien cierra sesión y vuelve a entrar pierde su vínculo con su persona en las bibliotecas que no están en la nube |
+| **Dos acciones distintas, y quitar el dispositivo desde otro** | Cada caso hace lo que se espera; sirve también sin cuenta | Una opción más en Ajustes que hay que explicar bien |
+
+**Decisión** (maintainer, 02/10/2026):
+- **«Cerrar sesión»** es para la misma persona, que volverá a entrar: no borra nada ni cambia la identidad. Al volver a iniciar sesión con la misma cuenta sigue siendo el mismo dispositivo.
+- **«Dejar este dispositivo a otra persona»**, en Ajustes, deja la app como recién instalada:
+  1. ofrece hacer una copia antes (como D65) y avisa de lo que se borra;
+  2. si hay cuenta, cierra la sesión y avisa al servidor de que el dispositivo se ha quitado;
+  3. borra **todas** las bibliotecas del dispositivo, con su registro;
+  4. genera un id y una clave nuevos.
+  Quien lo recibe entra con su cuenta, o sin cuenta, como un dispositivo nuevo: recibe las bibliotecas compartidas con su propio rol cuando lo vinculan o cuando la nube lo hace (D76). **Funciona también sin cuenta** (D57), que es el caso que ya existe hoy con la red local.
+- **Si el móvil ya se dio sin hacerlo**, se quita desde otro dispositivo de la misma cuenta, en la lista de dispositivos. El servidor distingue dos estados:
+  - **sesión cerrada:** al volver a iniciar sesión con la misma cuenta sigue siendo el mismo dispositivo;
+  - **quitado:** la próxima vez que esa instalación hable con el servidor recibe el error `device_removed`, y la app hace lo mismo que «Dejar este dispositivo a otra persona» (sin la copia, porque ya no es de quien lo quitó). Ese id no puede volver a iniciar sesión.
+- **En las bibliotecas**, quitar un dispositivo es además **retirarle el acceso** (D71) en cada biblioteca compartida que tenga, para que tampoco reciba nada por la red local ni pueda cambiar nada. Sin cuenta, se hace como hasta ahora: retirando el acceso a ese dispositivo desde la biblioteca.
+
+**Consecuencias:**
+- **Servidor (hito 7.1):** el dispositivo tiene el estado «quitado», distinto de «sesión cerrada»; `DELETE /v1/account/devices/{id}` lo quita, y un token de un dispositivo quitado responde `device_removed`. Ver [architecture/accounts.md](architecture/accounts.md).
+- **App:** la acción de Ajustes, el borrado completo y la identidad nueva (un id y una clave nuevos en `local_state`) van con las pantallas de la cuenta (hito 7.1); la parte sin cuenta no depende de la nube y puede adelantarse. La retirada en las bibliotecas al quitar un dispositivo, con el hito 7.5. Pantallas nuevas para Design y textos en [design/errors.md](design/errors.md).
+- **Límite, como en D71:** lo que quien recibe el móvil haya visto o sacado antes de que se quite no se puede deshacer. La biometría (D78) protege el caso de un móvil que se da o se pierde sin hacer nada.
+- **Auditoría:** el caso entra en las costuras de compartir (`flows-sharing`).
+- Amplía D56, D57, D71, D73 y D76.

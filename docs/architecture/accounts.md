@@ -66,7 +66,9 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 
 ## Dispositivos y su token (parte 2)
 
-Cada instalación de la app es un **dispositivo** (`App\Entity\Device`): su id es el mismo UUID que ya usa en sus HLCs (no lo genera el servidor), y tiene una clave pública Ed25519 (32 bytes, base64url sin relleno — el mismo formato que decodifica `App\Sync\OperationSignature`). El servidor guarda solo el **hash SHA-256** del token de sesión (`tokenHash`); `tokenHash = null` significa que el dispositivo está desconectado. **Un id de dispositivo queda ligado para siempre a la cuenta que lo registró primero**, y solo puede volver a iniciar sesión con esa cuenta y con la misma clave pública: así un id robado o reutilizado no puede «mudarse» de cuenta ni cambiar de clave en silencio.
+Cada instalación de la app es un **dispositivo** (`App\Entity\Device`): su id es el mismo UUID que ya usa en sus HLCs (no lo genera el servidor), y tiene una clave pública Ed25519 (32 bytes, base64url sin relleno — el mismo formato que decodifica `App\Sync\OperationSignature`). El servidor guarda solo el **hash SHA-256** del token de sesión (`tokenHash`); `tokenHash = null` significa que el dispositivo está desconectado. **Un dispositivo es una instalación de la app, no un móvil**: restaurar el móvil o reinstalar la app crea un dispositivo nuevo. **Su id queda ligado para siempre a la cuenta que lo registró primero**, y solo puede volver a iniciar sesión con esa cuenta y con la misma clave pública: así un id robado o reutilizado no puede «mudarse» de cuenta ni cambiar de clave en silencio, y nadie puede firmar como otra persona. Para dar el móvil a otra persona, la app cambia de identidad (D81, abajo).
+
+Un dispositivo tiene tres estados: **con sesión**, **sesión cerrada** (`tokenHash = null`; la misma cuenta puede volver a entrar con él) y **quitado** (`removedAt`; D81). Un dispositivo quitado no vuelve a iniciar sesión con ninguna cuenta.
 
 ### El reto de inicio de sesión
 
@@ -88,7 +90,7 @@ Cuerpo: `{email, password, device_id, device_name, public_key, challenge, signat
 2. La firma no verifica con `public_key` → **400** `invalid_device_proof`.
 3. Credenciales: correo desconocido, cuenta sin contraseña o contraseña incorrecta → **401** `invalid_credentials`. Para un correo desconocido se ejecuta igualmente el hasher contra una contraseña ficticia, para que el tiempo de respuesta no revele si la cuenta existe. Si el hash necesita renovarse (`needsRehash`), se renueva (`UserRepository` implementa `PasswordUpgraderInterface`).
 4. Estado de la cuenta (`App\Security\UserChecker`, compartido con el firewall de abajo): sin confirmar → **403** `account_not_confirmed`; bloqueada → **403** `account_blocked`.
-5. El dispositivo: su id ya existe para **otra** cuenta → **409** `device_taken`; existe para esta cuenta con **otra** clave pública → **409** `device_key_mismatch`; si no, se crea (o se actualiza su nombre) y se emite un token **nuevo**, que invalida el anterior. Solo se guarda su hash; el token en claro se devuelve una vez, en la respuesta.
+5. El dispositivo: su id está quitado → **403** `device_removed`, con cualquier cuenta; ya existe para **otra** cuenta → **409** `device_taken`; existe para esta cuenta con **otra** clave pública → **409** `device_key_mismatch`; si no, se crea (o se actualiza su nombre) y se emite un token **nuevo**, que invalida el anterior. Solo se guarda su hash; el token en claro se devuelve una vez, en la respuesta.
 
 Responde **200** `{"token": "<32 bytes aleatorios, base64url sin relleno>", "user": {id, email, name, locale}}`. Los campos mal formados (correo, `device_id` como UUID, `device_name` de 1 a 100 caracteres tras recortar, `public_key`/`challenge`/`signature` como cadenas no vacías de longitud razonable) dan **422**.
 
@@ -96,7 +98,7 @@ Responde **200** `{"token": "<32 bytes aleatorios, base64url sin relleno>", "use
 
 ### Autenticar una llamada a `/v1`
 
-Cada llamada autenticada lleva las cabeceras `X-Device-Id: <id>` y `Authorization: Bearer <token>`. El firewall `api` (`config/packages/security.yaml`, patrón `^/v1`, sin estado) usa `App\Security\DeviceTokenAuthenticator`: busca el dispositivo por `X-Device-Id`, compara el SHA-256 del token con `hash_equals` y autentica a su cuenta. Si falla (dispositivo desconocido, desconectado, o token equivocado) responde **401** `{"error":"invalid_token"}`. Una llamada sin ninguna credencial a una ruta protegida responde **401** `{"error":"authentication_required"}` (el mismo autenticador hace de punto de entrada). `App\Security\CurrentDevice` da a los controladores el dispositivo autenticado (se guarda como atributo de la petición, no en un servicio con estado, que no sería seguro de reutilizar entre peticiones de un mismo proceso PHP).
+Cada llamada autenticada lleva las cabeceras `X-Device-Id: <id>` y `Authorization: Bearer <token>`. El firewall `api` (`config/packages/security.yaml`, patrón `^/v1`, sin estado) usa `App\Security\DeviceTokenAuthenticator`: busca el dispositivo por `X-Device-Id`, compara el SHA-256 del token con `hash_equals` y autentica a su cuenta. Si falla (dispositivo desconocido, desconectado, o token equivocado) responde **401** `{"error":"invalid_token"}`; si el dispositivo está quitado, **401** `{"error":"device_removed"}`, y la app empieza de cero (D81). Una llamada sin ninguna credencial a una ruta protegida responde **401** `{"error":"authentication_required"}` (el mismo autenticador hace de punto de entrada). `App\Security\CurrentDevice` da a los controladores el dispositivo autenticado (se guarda como atributo de la petición, no en un servicio con estado, que no sería seguro de reutilizar entre peticiones de un mismo proceso PHP).
 
 Rutas públicas bajo `/v1`: `/v1/account/(register|confirm|code)`, `/v1/account/password/(forgot|reset)`, `/v1/auth/(challenge|login)` y `/v1/server`. El resto exige `ROLE_USER`.
 
@@ -113,8 +115,8 @@ Todos bajo `/v1`, requieren las cabeceras de arriba.
 | `POST /v1/account/password` `{current_password, new_password}` | **204** (ver «Contraseña olvidada y cambio de contraseña» abajo) |
 | `DELETE /v1/account` `{password}` | **204**; borra la cuenta (ver «Borrado de cuenta» abajo) |
 | `POST /v1/auth/logout` | **204**; pone a `null` el token del dispositivo que llama |
-| `GET /v1/account/devices` | `[{id, name, created_at, last_seen_at, signed_in, current}]`, por `created_at` |
-| `DELETE /v1/account/devices/{id}` | **204**; desconecta ese dispositivo (token a `null`, la fila se conserva para que el id siga ligado a la cuenta). Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
+| `GET /v1/account/devices` | `[{id, name, created_at, last_seen_at, signed_in, removed, current}]`, por `created_at` |
+| `DELETE /v1/account/devices/{id}` | **204**; **quita** ese dispositivo (D81): token a `null` y `removedAt`, la fila se conserva para que el id siga ligado a la cuenta. Sirve también para el propio dispositivo: es lo que hace la app en «Dejar este dispositivo a otra persona». Quitarlo otra vez no cambia nada. Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
 
 ## Contraseña olvidada y cambio de contraseña (parte 3, D50)
 
@@ -164,8 +166,18 @@ Correo desconocido en cualquiera de los dos → mensaje de error y salida distin
 
 `GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": false}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` y `two_factor` viven como constantes en `App\Controller\ServerController`, el único sitio que hay que tocar cuando se construyan.
 
+## Dar el dispositivo a otra persona (D81)
+
+La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada biblioteca sabe de quién es ese dispositivo. Por eso la misma instalación nunca pasa de una cuenta a otra: quien recibe el móvil tiene que empezar con una identidad nueva.
+
+- **«Cerrar sesión»** (`POST /v1/auth/logout`): para la misma persona, que volverá a entrar. No borra nada en la app.
+- **«Dejar este dispositivo a otra persona»**: la app llama a `DELETE /v1/account/devices/{su propio id}`, borra todas sus bibliotecas y genera un id y una clave nuevos.
+- **Quitado desde otro dispositivo:** la próxima llamada de esa instalación recibe `device_removed`, y la app hace lo mismo que en el punto anterior.
+- Retirarle el acceso en cada biblioteca compartida (D71) llega con el hito 7.5.
+
 ## Pendiente
 
+- La parte de la app de D81 (borrar, identidad nueva y reaccionar a `device_removed`) y la retirada en las bibliotecas (hito 7.5).
 - Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`).
 - Segundo factor.
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).

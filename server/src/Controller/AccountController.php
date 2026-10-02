@@ -232,6 +232,7 @@ final class AccountController extends AbstractController
                 'created_at' => $device->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 'last_seen_at' => $device->getLastSeenAt()?->format(\DateTimeInterface::ATOM),
                 'signed_in' => $device->isSignedIn(),
+                'removed' => $device->isRemoved(),
                 'current' => $device->getId() === $currentDeviceId,
             ],
             $devices,
@@ -240,14 +241,18 @@ final class AccountController extends AbstractController
 
     #[Route('/devices/{id}', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
-    public function revokeDevice(string $id): Response
+    /**
+     * Removes a device for good (D81), the calling one included: that is how
+     * the app leaves an install to someone else. Removing it again is a no-op.
+     */
+    public function removeDevice(string $id): Response
     {
         $device = $this->deviceRepository->find($id);
         if (!$device instanceof Device || !$device->getUser()->getId()->equals($this->currentUser()->getId())) {
             throw AccountException::deviceNotFound();
         }
 
-        $device->setTokenHash(null);
+        $device->remove(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
         $this->entityManager->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);

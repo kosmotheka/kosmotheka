@@ -122,7 +122,7 @@ final class AuthController extends AbstractController
         password_verify($password, self::DUMMY_PASSWORD_HASH);
     }
 
-    /** @throws AccountException with device_taken or device_key_mismatch */
+    /** @throws AccountException with device_removed, device_taken or device_key_mismatch */
     private function signInDevice(User $user, string $deviceId, string $deviceName, string $publicKey): Device
     {
         $device = $this->deviceRepository->find($deviceId);
@@ -131,6 +131,12 @@ final class AuthController extends AbstractController
             $this->entityManager->persist($device);
 
             return $device;
+        }
+
+        // Before device_taken: a removed install must start again (D81),
+        // whichever account tries it.
+        if ($device->isRemoved()) {
+            throw AccountException::deviceRemoved();
         }
 
         if (!$device->getUser()->getId()->equals($user->getId())) {

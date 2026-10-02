@@ -400,7 +400,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertTrue($byId[$first['device_id']]['signed_in']);
     }
 
-    public function testRevokingAnotherOwnDeviceSignsItOut(): void
+    public function testRemovingAnotherOwnDeviceSignsItOutForGood(): void
     {
         $client = $this->createTestClient();
         $email = 'revoke-own@example.com';
@@ -413,14 +413,53 @@ final class AccountControllerTest extends WebTestCase
 
         $client->request('GET', '/v1/account', server: $first['headers']);
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
-        self::assertSame('{"error":"invalid_token"}', $client->getResponse()->getContent());
+        self::assertSame('{"error":"device_removed"}', $client->getResponse()->getContent());
 
         $device = self::getContainer()->get(DeviceRepository::class)->find($first['device_id']);
         self::assertInstanceOf(Device::class, $device);
         self::assertFalse($device->isSignedIn());
+        self::assertTrue($device->isRemoved());
+
+        $client->request('GET', '/v1/account/devices', server: $second['headers']);
+        $devices = json_decode($client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        $byId = array_combine(array_column($devices, 'id'), $devices);
+        self::assertTrue($byId[$first['device_id']]['removed']);
+        self::assertFalse($byId[$second['device_id']]['removed']);
     }
 
-    public function testRevokingSomeoneElsesDeviceFails(): void
+    public function testRemovingTheCallingDeviceLeavesItToSomeoneElse(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'leave-device@example.com');
+
+        $client->request('DELETE', '/v1/account/devices/'.$session['device_id'], server: $session['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $client->request('GET', '/v1/account', server: $session['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"device_removed"}', $client->getResponse()->getContent());
+    }
+
+    public function testARemovedDeviceCannotSignInAgainWithAnyAccount(): void
+    {
+        $client = $this->createTestClient();
+        $owner = $this->signInNewDevice($client, 'removed-owner@example.com');
+        $client->request('DELETE', '/v1/account/devices/'.$owner['device_id'], server: $owner['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $this->registerAndConfirmForLogin($client, 'removed-next@example.com', 'correct horse battery');
+
+        foreach (['removed-owner@example.com', 'removed-next@example.com'] as $email) {
+            $challenge = $this->requestChallenge($client)['challenge'];
+            $signature = $this->sign($challenge, $owner['device_id'], sodium_base642bin($owner['secret_key'], \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING));
+            $this->requestLogin($client, $email, 'correct horse battery', $owner['device_id'], 'Phone', $owner['public_key'], $challenge, $signature);
+
+            self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+            self::assertSame('{"error":"device_removed"}', $client->getResponse()->getContent());
+        }
+    }
+
+    public function testRemovingSomeoneElsesDeviceFails(): void
     {
         $client = $this->createTestClient();
         $owner = $this->signInNewDevice($client, 'device-owner@example.com');
@@ -432,7 +471,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertSame('{"error":"device_not_found"}', $client->getResponse()->getContent());
     }
 
-    public function testRevokingAnUnknownDeviceFails(): void
+    public function testRemovingAnUnknownDeviceFails(): void
     {
         $client = $this->createTestClient();
         $session = $this->signInNewDevice($client, 'revoke-unknown@example.com');

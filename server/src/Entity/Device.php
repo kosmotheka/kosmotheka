@@ -10,8 +10,10 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * One app install (milestone 7.1, part 2): its id is the device id the Rust
  * app already uses in its HLCs, not generated here. `tokenHash` null means
- * signed out. A device id is bound to its account forever, checked by
- * App\Controller\AuthController before a row is created.
+ * signed out; `removedAt` means removed for good (D81): the install was handed
+ * to someone else and must start again with a new identity. A device id is
+ * bound to its account forever, checked by App\Controller\AuthController
+ * before a row is created.
  */
 #[ORM\Entity(repositoryClass: DeviceRepository::class)]
 #[ORM\Table(name: 'device')]
@@ -23,6 +25,9 @@ final class Device
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $lastSeenAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $removedAt = null;
 
     public function __construct(
         #[ORM\Id]
@@ -96,5 +101,17 @@ final class Device
     public function touch(\DateTimeImmutable $at): void
     {
         $this->lastSeenAt = $at;
+    }
+
+    public function isRemoved(): bool
+    {
+        return $this->removedAt instanceof \DateTimeImmutable;
+    }
+
+    /** Signs the device out for good (D81): it can never sign in again. */
+    public function remove(\DateTimeImmutable $at): void
+    {
+        $this->tokenHash = null;
+        $this->removedAt ??= $at;
     }
 }

@@ -76,6 +76,11 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::DeviceKeyMismatch, 409);
     }
 
+    public static function deviceRemoved(): self
+    {
+        return new self(AccountErrorCode::DeviceRemoved, 403);
+    }
+
     public static function deviceNotFound(): self
     {
         return new self(AccountErrorCode::DeviceNotFound, 404);
