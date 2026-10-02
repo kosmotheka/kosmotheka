@@ -46,3 +46,13 @@ Sin servidor: la app **no recoge datos** y **no comparte datos**. Las búsquedas
 - Icono de 512 × 512 y gráfico destacado de 1024 × 500 (en `brand/`), al menos dos capturas de móvil.
 - Si la cuenta de desarrollador es personal y nueva: prueba cerrada con al menos 12 personas durante 14 días antes de producción.
 - Antes de la primera subida: confirmar el identificador de la app (no se puede cambiar después), crear la clave de subida fuera del repositorio y compilar el `.aab`.
+
+## La clave de subida (acordado el 02/10/2026; se hace en una sesión juntos)
+
+Con «Play App Signing», Google guarda la clave que firma la app instalada; el maintainer solo tiene la **clave de subida**, que demuestra que el `.aab` es suyo (si se pierde, Google permite cambiarla). La contraseña nunca debe estar al alcance del agente:
+
+- La clave (`.jks`) y el fichero con su contraseña viven **fuera del repositorio**, en una carpeta del maintainer (por ejemplo `~/.kosmotheka-release/`), y además se ignoran en `.gitignore` por si acaso.
+- El maintainer añade una regla de permisos de Claude Code que **prohíbe** leer esa carpeta.
+- La clave la crea el maintainer con `keytool`, escribiendo él la contraseña; la compilación de *release* también la lanza él, en su terminal. El agente prepara la configuración de Gradle, la orden exacta y la guía.
+- La contraseña, en el gestor de contraseñas; una copia del `.jks`, fuera del ordenador.
+- Identificador actual: `app.kosmotheka` (confirmarlo antes de la primera subida).

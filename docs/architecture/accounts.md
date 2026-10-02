@@ -216,9 +216,23 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 - La app, al quitar un dispositivo, avisa de lo que pasará, y de que se perderán las bibliotecas que ese dispositivo no tenga en la nube.
 - Retirarle el acceso en cada biblioteca compartida (D71) llega con el hito 7.5.
 
+## En la app (hito 7.1)
+
+El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la interfaz solo llama a comandos de Tauri.
+
+- **Qué guarda el dispositivo**, en `local_state` (nunca se sincroniza ni va en las copias): el servidor elegido (si no hay ninguno, el oficial, `https://api.kosmotheka.app`), el token, una copia del usuario, el último email usado (para rellenar el formulario) y un aviso pendiente (`device_removed` o `signed_out_password_changed`) que la interfaz muestra una vez.
+- **Otro servidor:** HTTPS siempre; HTTP solo en `localhost`, una IP privada, `10.0.2.2` (el emulador de Android) o en compilaciones de depuración. Para cambiar de servidor hay que cerrar sesión antes.
+- **Iniciar sesión** pide un reto nuevo en cada intento (también al reintentar con el código del segundo factor) y lo firma con la clave del dispositivo.
+- **Errores:** llegan a la interfaz como `{kind: "account", reason, retryAfter}`, con el código del servidor tal cual; la interfaz los traduce con [design/errors.md](../design/errors.md). Sin respuesta, o una respuesta que no se entiende, es `server_unavailable`.
+- **Reacción central:** tras cualquier llamada, `device_removed` reinicia el dispositivo; `signed_out_password_changed` e `invalid_token` olvidan la sesión, y la primera deja el aviso.
+- **Al abrir la app**, si hay sesión, se pide `GET /v1/account` en segundo plano: así se entera un dispositivo que se quitó mientras estaba cerrado.
+- **Reiniciar el dispositivo** (`device_reset.rs`, D81): borra el fichero de la base de datos con sus `-wal`, `-shm` y las copias `.bak` de antes de migrar, y abre uno nuevo (id y clave nuevos, sin bibliotecas); vacía las portadas; para el servidor de la red local y crea un certificado nuevo. Después la app emite el evento `device-reset` y la interfaz se recarga. Se hace sin reiniciar la aplicación, también en Android.
+- **Pantallas:** Ajustes (cuenta y «Este dispositivo»), iniciar sesión, crear cuenta, recuperar la contraseña, la cuenta, el segundo factor, mis dispositivos y los avisos, según [design/screens/cloud-account/](../design/screens/cloud-account/). El email se muestra pero no se edita (D77). Los códigos de respaldo solo se pueden copiar; guardarlos en un archivo, más adelante.
+
 ## Pendiente
 
-- La parte de la app de D81 (borrar, identidad nueva y reaccionar a `device_removed`) y la retirada en las bibliotecas (hito 7.5).
+- La retirada en las bibliotecas al quitar un dispositivo (D81, hito 7.5).
+- Desbloqueo con biometría (D78).
 - Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).
