@@ -281,7 +281,7 @@ export function useCommandErrors() {
         setMessage(String(error));
       } else if (error.kind === "validation") {
         setFieldErrors(error.errors);
-      } else if (error.kind === "backup" || error.kind === "sync") {
+      } else if (error.kind === "backup" || error.kind === "sync" || error.kind === "account") {
         setMessage(error.reason);
       } else if (error.kind === "permission") {
         setMessage(t(`people.errors.${error.reason}`));

@@ -4,6 +4,8 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 
 import type {
+  AccountStatus,
+  AccountUser,
   BookFilter,
   BookSummary,
   Candidate,
@@ -17,6 +19,7 @@ import type {
   PersonMark,
   RelatedWork,
   RequestSummary,
+  ServerInfo,
   SeriesDetail,
   SeriesEntry,
   Settings,
@@ -437,6 +440,30 @@ const lan: LanStatus = {
 
 // `?noroles` shows a library without roles yet; `?reader` sees it as Hugo.
 const params = new URLSearchParams(window.location.search);
+
+// `?welcome`: every library reports no works, so the first-run screen shows (D77).
+if (params.has("welcome")) {
+  for (const library of libraries) library.works = 0;
+}
+
+// Account (D77, D81, hito 7.1): `?account` starts signed in as "Ana Ruiz"; `?notice=…`
+// sets a background notice; `?offline` makes every account command fail as if the
+// cloud were unreachable.
+const offline = () => params.has("offline");
+let mockAccount: AccountStatus = {
+  server: "https://api.kosmotheka.app",
+  official: true,
+  signedIn: params.has("account"),
+  user: params.has("account")
+    ? { id: "ana", email: "ana.ruiz@correo.es", name: "Ana Ruiz", locale: "es" }
+    : null,
+  emailHint: params.has("account") ? "ana.ruiz@correo.es" : null,
+  notice:
+    params.get("notice") === "device_removed" || params.get("notice") === "signed_out_password_changed"
+      ? (params.get("notice") as AccountStatus["notice"])
+      : null,
+};
+
 const dev = (id: string, name: string, thisDevice = false) => ({ id, name, thisDevice });
 const people: People = {
   hasRoles: !params.has("noroles"),
@@ -1052,7 +1079,10 @@ mockIPC((cmd, args) => {
       return { requested: true };
     // `?notice` shows a change of this device that became a request on syncing.
     case "request_notices":
-      return params.has("notice")
+      // `?notice` (no value, or any value besides an account notice's) is this
+      // page's own flag; `?notice=device_removed`/`signed_out_password_changed`
+      // is the account notice instead (D77), set on `mockAccount` above.
+      return params.has("notice") && !mockAccount.notice
         ? [{ ...requests[1], mine: true, summary: summary("edit", "Dune") }]
         : [];
     case "dismiss_request_notices":
@@ -1111,6 +1141,78 @@ mockIPC((cmd, args) => {
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;
+    case "account_status":
+      return mockAccount;
+    case "dismiss_account_notice":
+      mockAccount = { ...mockAccount, notice: null };
+      return null;
+    case "set_account_server": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { url } = args as { url: string | null };
+      if (url === null) {
+        mockAccount = { ...mockAccount, server: "https://api.kosmotheka.app", official: true };
+        return null;
+      }
+      try {
+        new URL(url);
+      } catch {
+        throw { kind: "account", reason: "invalid_server" };
+      }
+      mockAccount = { ...mockAccount, server: url, official: false };
+      return null;
+    }
+    case "account_server_info": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const info: ServerInfo = {
+        name: "Kosmotheka",
+        apiVersion: 1,
+        registration: true,
+        signInWithGoogle: false,
+        twoFactor: true,
+      };
+      return info;
+    }
+    case "register_account":
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return null;
+    case "confirm_account_email": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { code } = args as { code: string };
+      if (code === "000000") throw { kind: "account", reason: "invalid_code" };
+      return null;
+    }
+    case "resend_account_code":
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return null;
+    case "sign_in": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { email, password, totpCode } = args as {
+        email: string;
+        password: string;
+        totpCode: string | null;
+      };
+      if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      if (email.startsWith("2fa@")) {
+        if (!totpCode) throw { kind: "account", reason: "two_factor_required" };
+        if (totpCode === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
+      }
+      const user: AccountUser = { id: "ana", email, name: "Ana Ruiz", locale: "es" };
+      mockAccount = { ...mockAccount, signedIn: true, user, emailHint: email, notice: null };
+      return user;
+    }
+    case "sign_out":
+      mockAccount = { ...mockAccount, signedIn: false, user: null };
+      return null;
+    case "forgot_password":
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return null;
+    case "reset_password": {
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      const { code } = args as { code: string };
+      if (code === "000000") throw { kind: "account", reason: "invalid_code" };
+      mockAccount = { ...mockAccount, signedIn: false, user: null };
+      return null;
+    }
     default:
       return null;
   }

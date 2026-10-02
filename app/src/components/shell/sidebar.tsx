@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { ChevronsUpDown, LibraryBig } from "lucide-react";
+import { ChevronsUpDown, Cloud, HardDrive, LibraryBig } from "lucide-react";
 
 import { MenuList } from "@/components/shell/menu-list";
 import { appNav, libraryNav, mainNav } from "@/components/shell/nav-items";
+import { useAccount } from "@/lib/account";
 import { type Section, openOverlay } from "@/lib/navigation";
 
 /** Desktop sidebar: library selector, the three destinations, then the menu. */
@@ -16,6 +17,7 @@ export function Sidebar({
   counts: { catalog: number; missing: number };
 }) {
   const { t } = useTranslation();
+  const account = useAccount();
   return (
     <aside
       aria-label={t("nav.menu")}
@@ -46,6 +48,32 @@ export function Sidebar({
       </div>
       <MenuList items={libraryNav} activeId={section} />
       <span className="flex-1" />
+      <button
+        type="button"
+        className="mb-2 flex items-center gap-2.5 rounded-lg border border-sidebar-border p-2.5 text-left hover:bg-sidebar-accent"
+        onClick={() => openOverlay({ name: "settings" })}
+      >
+        {account.signedIn && account.user ? (
+          <>
+            <Cloud className="size-[17px] shrink-0" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-[13px] font-medium">{account.user.name}</span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="size-1.5 shrink-0 rounded-full bg-success" />
+                {t("account.sidebar.connected")}
+              </span>
+            </span>
+          </>
+        ) : (
+          <>
+            <HardDrive className="size-[17px] shrink-0" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-[13px] font-medium">{t("account.sidebar.none")}</span>
+              <span className="text-xs text-muted-foreground">{t("account.sidebar.noneHint")}</span>
+            </span>
+          </>
+        )}
+      </button>
       <MenuList items={appNav} activeId={section} />
     </aside>
   );

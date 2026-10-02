@@ -49,7 +49,8 @@ export type Overlay =
   | { name: "move"; editionId: string; title: string }
   | { name: "series"; seriesId: string }
   | { name: "newSeries" }
-  | { name: "seriesPicker"; workId: string; workTitle: string };
+  | { name: "seriesPicker"; workId: string; workTitle: string }
+  | { name: "auth"; step?: "signin" | "signup" };
 
 export interface Location {
   section: Section;

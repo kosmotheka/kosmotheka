@@ -155,7 +155,8 @@ export type CommandError =
   | { kind: "backup"; reason: string }
   | { kind: "sync"; reason: string }
   | { kind: "permission"; reason: "not_allowed" | "last_admin" | "request_resolved" }
-  | { kind: "internal"; message: string };
+  | { kind: "internal"; message: string }
+  | { kind: "account"; reason: string; retryAfter?: number | null };
 
 export function isCommandError(value: unknown): value is CommandError {
   return typeof value === "object" && value !== null && "kind" in value;
@@ -999,4 +1000,87 @@ export function addRequirement(workId: string, requiredWorkId: string): Promise<
 
 export function removeRequirement(workId: string, requiredWorkId: string): Promise<void> {
   return invoke("remove_requirement", { workId, requiredWorkId });
+}
+
+// --- Account (D77, D81, hito 7.1), mirrors src-tauri/src/account/mod.rs -------
+
+export interface AccountUser {
+  id: string;
+  email: string;
+  name: string;
+  locale: string;
+}
+
+export interface AccountStatus {
+  server: string;
+  official: boolean;
+  signedIn: boolean;
+  user: AccountUser | null;
+  emailHint: string | null;
+  /** Something learnt in the background, shown once (D77). */
+  notice: "device_removed" | "signed_out_password_changed" | null;
+}
+
+export interface ServerInfo {
+  name: string;
+  apiVersion: number;
+  registration: boolean;
+  signInWithGoogle: boolean;
+  twoFactor: boolean;
+}
+
+/** Local only, no network: what the account screens show right away. */
+export function accountStatus(): Promise<AccountStatus> {
+  return invoke<AccountStatus>("account_status");
+}
+
+export function dismissAccountNotice(): Promise<void> {
+  return invoke("dismiss_account_notice");
+}
+
+/** `null` switches back to the official server. */
+export function setAccountServer(url: string | null): Promise<void> {
+  return invoke("set_account_server", { url });
+}
+
+export function accountServerInfo(): Promise<ServerInfo> {
+  return invoke<ServerInfo>("account_server_info");
+}
+
+export function registerAccount(
+  email: string,
+  password: string,
+  name: string,
+  locale: string,
+): Promise<void> {
+  return invoke("register_account", { email, password, name, locale });
+}
+
+export function confirmAccountEmail(email: string, code: string): Promise<void> {
+  return invoke("confirm_account_email", { email, code });
+}
+
+export function resendAccountCode(email: string): Promise<void> {
+  return invoke("resend_account_code", { email });
+}
+
+/** `two_factor_required`: ask for the code and call again with `totpCode` set. */
+export function signIn(
+  email: string,
+  password: string,
+  totpCode: string | null = null,
+): Promise<AccountUser> {
+  return invoke<AccountUser>("sign_in", { email, password, totpCode });
+}
+
+export function signOut(): Promise<void> {
+  return invoke("sign_out");
+}
+
+export function forgotPassword(email: string): Promise<void> {
+  return invoke("forgot_password", { email });
+}
+
+export function resetPassword(email: string, code: string, password: string): Promise<void> {
+  return invoke("reset_password", { email, code, password });
 }

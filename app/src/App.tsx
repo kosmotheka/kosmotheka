@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import { CircleCheck } from "lucide-react";
 
+import { AccountNotice } from "@/components/account/account-notice";
+import { AuthDialog } from "@/components/account/auth-dialog";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { AddSearch } from "@/components/add-search";
 import { BackupsDialog } from "@/components/backups-dialog";
@@ -47,6 +50,7 @@ import {
   listLibraries,
   setActiveLibrary,
 } from "@/lib/api";
+import { refreshAccount } from "@/lib/account";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
 import { syncDevice } from "@/lib/sync-errors";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
@@ -122,6 +126,24 @@ export default function App() {
 
   /** Reloads books, the missing list and suggestions after any change. */
   const reload = useCallback(() => setVersion((v) => v + 1), []);
+
+  useEffect(() => {
+    void refreshAccount();
+  }, []);
+
+  // The device was reset (D81): its identity is new, so the welcome flag from
+  // before no longer applies and a stale `?mock`-style view would be wrong.
+  useEffect(() => {
+    const unlisten = listen("device-reset", () => {
+      try {
+        localStorage.removeItem("kosmotheka.welcomeSeen");
+      } catch {
+        // Nothing to do: at worst the welcome screen shows again.
+      }
+      window.location.reload();
+    });
+    return () => void unlisten.then((stop) => stop());
+  }, []);
 
   // Quietly catch up with every reachable paired device when the app opens, and again
   // when it comes back to the foreground (a phone arriving home), at most once a minute.
@@ -432,6 +454,11 @@ export default function App() {
               reload();
             }}
           />
+          <AuthDialog
+            open={overlay?.name === "auth"}
+            initialStep={overlay?.name === "auth" ? overlay.step : undefined}
+          />
+          <AccountNotice libraries={allLibraries} />
           {!desktop && (
             <BookDetailView
               editionId={bookId}

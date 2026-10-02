@@ -1212,5 +1212,200 @@
       "placeholder": "Busca en el catálogo",
       "alreadyIn": "Ya está en esta serie"
     }
+  },
+  "account": {
+    "settings": {
+      "cloudAndAccount": "Cuenta y nube",
+      "noneTitle": "Sin cuenta",
+      "noneBody": "Tus bibliotecas están en tus dispositivos y se comparten por la red de casa.",
+      "signInOrCreate": "Iniciar sesión o crear cuenta",
+      "optionalHint": "Opcional: sincroniza también a distancia.",
+      "connected": "Conectada · {{host}}",
+      "signOut": "Cerrar sesión"
+    },
+    "sidebar": {
+      "none": "Sin cuenta",
+      "noneHint": "En tus dispositivos",
+      "connected": "Conectada"
+    },
+    "notice": {
+      "welcome": {
+        "title": "Tus bibliotecas, en tus dispositivos",
+        "body": "Funciona sin cuenta: guardas aquí lo que tienes y lo compartes con los de casa por la wifi. Con una cuenta, además se sincroniza a distancia.",
+        "start": "Empezar sin cuenta",
+        "signIn": "Iniciar sesión o crear cuenta",
+        "note": "Puedes cambiarlo cuando quieras en Ajustes."
+      },
+      "removed": {
+        "title": "Este dispositivo se quitó de una cuenta",
+        "body": "Se quitó desde otro dispositivo de la cuenta de otra persona, y sus bibliotecas se han borrado de aquí. La app está vacía y lista para usar, con o sin cuenta.",
+        "start": "Empezar sin cuenta",
+        "signIn": "Iniciar sesión o crear cuenta",
+        "note": "Si era tu cuenta, entra: lo que tenías en la nube volverá."
+      },
+      "sessionClosed": {
+        "title": "Se ha cerrado la sesión",
+        "body": "La contraseña de tu cuenta se cambió en otro dispositivo. No se pierde nada: tus bibliotecas siguen aquí y los cambios sin subir se enviarán al volver a entrar.",
+        "signIn": "Iniciar sesión",
+        "notNow": "Ahora no"
+      }
+    },
+    "auth": {
+      "steps": {
+        "signin": {
+          "title": "Iniciar sesión",
+          "sub": "Con una cuenta, tus bibliotecas se sincronizan también a distancia.",
+          "primary": "Iniciar sesión"
+        },
+        "server": {
+          "title": "Iniciar sesión",
+          "sub": "En un servidor propio, con la cuenta que te hayan creado allí.",
+          "primary": "Iniciar sesión"
+        },
+        "signup": {
+          "title": "Crear cuenta",
+          "sub": "Para sincronizar a distancia. Sin cuenta todo sigue funcionando igual.",
+          "primary": "Crear cuenta",
+          "stepLabel": "Paso 1 de 2"
+        },
+        "verify": {
+          "title": "Revisa tu correo",
+          "sub": "Hemos enviado un código de 6 cifras a {{email}}. Caduca en 15 minutos.",
+          "primary": "Confirmar",
+          "stepLabel": "Paso 2 de 2"
+        },
+        "totp": {
+          "title": "Código de verificación",
+          "sub": "Abre tu app de autenticación y escribe el código de Kosmotheka.",
+          "primary": "Entrar"
+        },
+        "backup": {
+          "title": "Código de respaldo",
+          "sub": "Uno de los 10 que guardaste al activar el segundo factor.",
+          "primary": "Entrar"
+        },
+        "forgot": {
+          "title": "Recuperar la contraseña",
+          "sub": "Te enviaremos un código para poner una nueva.",
+          "primary": "Enviar código",
+          "stepLabel": "Paso 1 de 3"
+        },
+        "recoverCode": {
+          "title": "Escribe el código",
+          "sub": "Lo hemos enviado a {{email}}. Caduca en 15 minutos.",
+          "primary": "Continuar",
+          "stepLabel": "Paso 2 de 3"
+        },
+        "newPass": {
+          "title": "Contraseña nueva",
+          "sub": "La usarás en todos tus dispositivos.",
+          "primary": "Cambiar la contraseña",
+          "stepLabel": "Paso 3 de 3"
+        },
+        "passChanged": {
+          "title": "Contraseña cambiada",
+          "sub": "Hemos cerrado la sesión en tus otros dispositivos. Allí entrarás con la nueva; lo que no se hubiera subido se enviará entonces.",
+          "primary": "Continuar"
+        }
+      },
+      "onServer": "En {{host}}",
+      "otherServer": "Otro servidor",
+      "useOfficial": "Usar el oficial",
+      "serverLabel": "Servidor",
+      "serverResponds": "Responde · solo con email y contraseña",
+      "email": "Email",
+      "password": "Contraseña",
+      "forgotPassword": "¿La has olvidado?",
+      "name": "Nombre",
+      "nameHint": "Así te verán en las bibliotecas que compartas.",
+      "passwordHint": "Mínimo 8 caracteres",
+      "language": "Idioma",
+      "footer": {
+        "signin": "¿No tienes cuenta?",
+        "signinLink": "Crear cuenta",
+        "signup": "¿Ya tienes cuenta?",
+        "signupLink": "Iniciar sesión"
+      },
+      "resend": "Reenviar código",
+      "resendIn": "Reenviar en {{time}}",
+      "changeEmail": "Cambiar el email",
+      "useBackupCode": "Usar un código de respaldo",
+      "useAuthApp": "Usar la app de autenticación",
+      "backupCodeLabel": "Código de respaldo",
+      "backupCodeHint": "Cada código vale una vez. Mayúsculas y guiones dan igual.",
+      "otherDevicesWarning": "Al cambiarla se cerrará la sesión en tus otros dispositivos. No se borra nada: allí entrarás con la nueva.",
+      "code": "Código de 6 cifras",
+      "newPasswordLabel": "Contraseña nueva"
+    }
+  },
+  "accountErrors": {
+    "invalidCode": {
+      "title": "Código incorrecto.",
+      "help": "Usa el del último correo que te ha llegado."
+    },
+    "codeExpired": {
+      "title": "Este código ha caducado.",
+      "help": "Los códigos valen 15 minutos. Pide otro y úsalo en cuanto llegue.",
+      "action": "Enviar otro código"
+    },
+    "tooManyAttempts": {
+      "title": "Demasiados intentos con este código.",
+      "help": "Ya no sirve. Pide otro: llega en un momento.",
+      "action": "Pedir otro código"
+    },
+    "tooManyRequests": {
+      "title": "Demasiadas peticiones.",
+      "help": "Espera {{minutes}} minutos e inténtalo de nuevo."
+    },
+    "invalidCredentials": {
+      "title": "El email o la contraseña no son correctos.",
+      "help": "Revisa cómo está escrito el email. Si no recuerdas la contraseña, pon una nueva.",
+      "action": "Recuperar la contraseña"
+    },
+    "accountNotConfirmed": {
+      "title": "Falta confirmar tu email.",
+      "help": "Al crear la cuenta te enviamos un código. Si no lo encuentras, pide otro.",
+      "action": "Enviar otro código"
+    },
+    "accountBlocked": {
+      "title": "Esta cuenta está bloqueada.",
+      "help": "Si crees que es un error, escribe a quien gestiona el servidor."
+    },
+    "invalidTotp": {
+      "title": "El código no es correcto.",
+      "help": "Usa el que se ve ahora en la app: cambia cada 30 segundos. Comprueba que la hora del móvil sea automática.",
+      "action": "Usar un código de respaldo"
+    },
+    "invalidBackupCode": {
+      "title": "Ese código de respaldo no vale.",
+      "help": "Puede que ya lo usaras: cada uno vale una vez. Prueba con otro de la lista."
+    },
+    "serverUnavailable": {
+      "title": "El servidor no responde.",
+      "help": "Puede estar en mantenimiento, o la dirección no es correcta. Inténtalo en unos minutos.",
+      "action": "Reintentar"
+    },
+    "passwordShort": {
+      "title": "La contraseña necesita al menos 8 caracteres."
+    },
+    "passwordLong": {
+      "title": "La contraseña es demasiado larga.",
+      "help": "Escribe como máximo 4096 caracteres."
+    },
+    "invalidInput": {
+      "title": "Estos datos no son válidos.",
+      "help": "Revisa los campos y vuelve a intentarlo."
+    },
+    "invalidServer": {
+      "title": "Esta dirección no es válida.",
+      "help": "Comprueba que sea la de un servidor Kosmotheka."
+    },
+    "deviceRemoved": {
+      "title": "Este dispositivo se quitó de una cuenta."
+    },
+    "signedOut": {
+      "title": "Se ha cerrado la sesión.",
+      "help": "La contraseña se cambió en otro dispositivo."
+    }
   }
 }

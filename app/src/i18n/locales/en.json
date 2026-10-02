@@ -1199,5 +1199,200 @@
       "placeholder": "Search the catalog",
       "alreadyIn": "Already in this series"
     }
+  },
+  "account": {
+    "settings": {
+      "cloudAndAccount": "Cloud and account",
+      "noneTitle": "No account",
+      "noneBody": "Your libraries are on your devices and shared over your home network.",
+      "signInOrCreate": "Sign in or create an account",
+      "optionalHint": "Optional: also syncs remotely.",
+      "connected": "Connected · {{host}}",
+      "signOut": "Sign out"
+    },
+    "sidebar": {
+      "none": "No account",
+      "noneHint": "On your devices",
+      "connected": "Connected"
+    },
+    "notice": {
+      "welcome": {
+        "title": "Your libraries, on your devices",
+        "body": "It works without an account: what you own stays here and you share it with your household over Wi-Fi. With an account, it also syncs remotely.",
+        "start": "Start without an account",
+        "signIn": "Sign in or create an account",
+        "note": "You can change this anytime in Settings."
+      },
+      "removed": {
+        "title": "This device was removed from an account",
+        "body": "It was removed from another device on someone else's account, and its libraries were deleted from here. The app is empty and ready to use, with or without an account.",
+        "start": "Start without an account",
+        "signIn": "Sign in or create an account",
+        "note": "If it was your account, sign in: what you had in the cloud will come back."
+      },
+      "sessionClosed": {
+        "title": "You've been signed out",
+        "body": "Your account's password was changed on another device. Nothing is lost: your libraries are still here, and unsent changes will upload when you sign back in.",
+        "signIn": "Sign in",
+        "notNow": "Not now"
+      }
+    },
+    "auth": {
+      "steps": {
+        "signin": {
+          "title": "Sign in",
+          "sub": "With an account, your libraries also sync remotely.",
+          "primary": "Sign in"
+        },
+        "server": {
+          "title": "Sign in",
+          "sub": "On your own server, with the account you were given there.",
+          "primary": "Sign in"
+        },
+        "signup": {
+          "title": "Create an account",
+          "sub": "To sync remotely. Without an account, everything still works the same.",
+          "primary": "Create account",
+          "stepLabel": "Step 1 of 2"
+        },
+        "verify": {
+          "title": "Check your email",
+          "sub": "We've sent a 6-digit code to {{email}}. It expires in 15 minutes.",
+          "primary": "Confirm",
+          "stepLabel": "Step 2 of 2"
+        },
+        "totp": {
+          "title": "Verification code",
+          "sub": "Open your authenticator app and enter Kosmotheka's code.",
+          "primary": "Sign in"
+        },
+        "backup": {
+          "title": "Backup code",
+          "sub": "One of the 10 you saved when you turned on two-factor authentication.",
+          "primary": "Sign in"
+        },
+        "forgot": {
+          "title": "Reset your password",
+          "sub": "We'll send you a code to set a new one.",
+          "primary": "Send code",
+          "stepLabel": "Step 1 of 3"
+        },
+        "recoverCode": {
+          "title": "Enter the code",
+          "sub": "We've sent it to {{email}}. It expires in 15 minutes.",
+          "primary": "Continue",
+          "stepLabel": "Step 2 of 3"
+        },
+        "newPass": {
+          "title": "New password",
+          "sub": "You'll use it on all your devices.",
+          "primary": "Change password",
+          "stepLabel": "Step 3 of 3"
+        },
+        "passChanged": {
+          "title": "Password changed",
+          "sub": "We've signed you out on your other devices. You'll sign in there with the new one; anything not yet uploaded will send then.",
+          "primary": "Continue"
+        }
+      },
+      "onServer": "On {{host}}",
+      "otherServer": "Other server",
+      "useOfficial": "Use the official one",
+      "serverLabel": "Server",
+      "serverResponds": "Responds · email and password only",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot it?",
+      "name": "Name",
+      "nameHint": "This is how you'll appear in the libraries you share.",
+      "passwordHint": "At least 8 characters",
+      "language": "Language",
+      "footer": {
+        "signin": "Don't have an account?",
+        "signinLink": "Create account",
+        "signup": "Already have an account?",
+        "signupLink": "Sign in"
+      },
+      "resend": "Resend code",
+      "resendIn": "Resend in {{time}}",
+      "changeEmail": "Change email",
+      "useBackupCode": "Use a backup code",
+      "useAuthApp": "Use the authenticator app",
+      "backupCodeLabel": "Backup code",
+      "backupCodeHint": "Each code works once. Capitalization and dashes don't matter.",
+      "otherDevicesWarning": "Changing it signs you out on your other devices. Nothing is deleted: sign in there with the new one.",
+      "code": "6-digit code",
+      "newPasswordLabel": "New password"
+    }
+  },
+  "accountErrors": {
+    "invalidCode": {
+      "title": "Incorrect code.",
+      "help": "Use the one in the latest email you received."
+    },
+    "codeExpired": {
+      "title": "This code has expired.",
+      "help": "Codes last 15 minutes. Ask for a new one and use it as soon as it arrives.",
+      "action": "Send another code"
+    },
+    "tooManyAttempts": {
+      "title": "Too many attempts with this code.",
+      "help": "It no longer works. Ask for a new one; it arrives in a moment.",
+      "action": "Get a new code"
+    },
+    "tooManyRequests": {
+      "title": "Too many requests.",
+      "help": "Wait {{minutes}} minutes and try again."
+    },
+    "invalidCredentials": {
+      "title": "The email or password is incorrect.",
+      "help": "Check how the email is spelled. If you don't remember your password, set a new one.",
+      "action": "Reset password"
+    },
+    "accountNotConfirmed": {
+      "title": "Your email isn't confirmed yet.",
+      "help": "We sent you a code when you created the account. If you can't find it, ask for another.",
+      "action": "Send another code"
+    },
+    "accountBlocked": {
+      "title": "This account is locked.",
+      "help": "If you think this is a mistake, contact whoever runs the server."
+    },
+    "invalidTotp": {
+      "title": "That code isn't right.",
+      "help": "Use the one showing now in the app; it changes every 30 seconds. Make sure your phone sets the time automatically.",
+      "action": "Use a backup code"
+    },
+    "invalidBackupCode": {
+      "title": "That backup code doesn't work.",
+      "help": "You may have used it already; each one works once. Try another from your list."
+    },
+    "serverUnavailable": {
+      "title": "The server isn't responding.",
+      "help": "It may be under maintenance, or the address is wrong. Try again in a few minutes.",
+      "action": "Retry"
+    },
+    "passwordShort": {
+      "title": "Your password needs at least 8 characters."
+    },
+    "passwordLong": {
+      "title": "That password is too long.",
+      "help": "Use at most 4096 characters."
+    },
+    "invalidInput": {
+      "title": "This information isn't valid.",
+      "help": "Check the fields and try again."
+    },
+    "invalidServer": {
+      "title": "This address isn't valid.",
+      "help": "Check that it's a Kosmotheka server's address."
+    },
+    "deviceRemoved": {
+      "title": "This device was removed from an account."
+    },
+    "signedOut": {
+      "title": "You've been signed out.",
+      "help": "Your password was changed on another device."
+    }
   }
 }
