@@ -317,7 +317,25 @@
     "title": "Settings",
     "description": "Stored only on this device: never synced or exported.",
     "providers": "Data providers",
-    "providersHelp": "Which catalogues the app searches, and your keys for the ones that need one."
+    "providersHelp": "Which catalogues the app searches, and your keys for the ones that need one.",
+    "security": {
+      "title": "Security",
+      "toggle": "Unlock with fingerprint or face",
+      "toggleHelp": "When the app opens. Works without an account too.",
+      "unavailable": "Set up a fingerprint or face in your phone's settings to use this."
+    }
+  },
+  "appLock": {
+    "reason": "Unlock Kosmotheka",
+    "title": "Unlock Kosmotheka",
+    "subtitle": "Use your fingerprint or face to continue.",
+    "cancel": "Cancel",
+    "screen": {
+      "title": "Kosmotheka is locked",
+      "body": "Use your fingerprint or face to get in.",
+      "unlock": "Unlock",
+      "useDevicePin": "Use your phone's PIN"
+    }
   },
   "burst": {
     "open": "Quick add",

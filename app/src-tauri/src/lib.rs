@@ -37,7 +37,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init());
     #[cfg(mobile)]
-    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
+    let builder = builder
+        .plugin(tauri_plugin_barcode_scanner::init())
+        .plugin(tauri_plugin_biometric::init());
     builder
         .setup(|app| {
             let data_dir = data_dir(app.path().app_data_dir()?)?;
@@ -107,6 +109,8 @@ pub fn run() {
             commands::forget_device,
             commands::check_isbn,
             commands::is_mobile,
+            commands::app_lock_enabled,
+            commands::set_app_lock,
             commands::list_libraries,
             commands::create_library,
             commands::rename_library,

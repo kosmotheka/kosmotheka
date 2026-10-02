@@ -635,6 +635,15 @@ export function isMobile(): Promise<boolean> {
   return mobile;
 }
 
+/** Whether the fingerprint/face lock is on (D78). Per-device, never synced. */
+export function appLockEnabled(): Promise<boolean> {
+  return invoke<boolean>("app_lock_enabled");
+}
+
+export function setAppLock(enabled: boolean): Promise<void> {
+  return invoke("set_app_lock", { enabled });
+}
+
 // --- Libraries -----------------------------------------------------------------
 
 export interface LibrarySummary {

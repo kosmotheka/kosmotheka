@@ -1,20 +1,32 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, HandHelping, HardDrive, LogIn, MonitorSmartphone } from "lucide-react";
+import {
+  ChevronRight,
+  Fingerprint,
+  HandHelping,
+  HardDrive,
+  LogIn,
+  MonitorSmartphone,
+} from "lucide-react";
 
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { supportedLanguages } from "@/i18n";
 import { useAccount } from "@/lib/account";
 import {
   type LibrarySummary,
+  appLockEnabled,
   giveDeviceAway,
+  isMobile,
   lanStatus,
   listLibraries,
+  setAppLock,
   setDeviceName,
 } from "@/lib/api";
+import { lockAvailable, unlock } from "@/lib/app-lock";
 import { openOverlay } from "@/lib/navigation";
 
 /** Each language in its own name, so it can be found whatever the current one. */
@@ -40,12 +52,33 @@ export function SettingsDialog({
   const [editingName, setEditingName] = useState(false);
   const [handingOver, setHandingOver] = useState(false);
 
+  const [mobile, setMobile] = useState(false);
+  const [lockOk, setLockOk] = useState(false);
+  const [lockOn, setLockOn] = useState(false);
+  const [lockBusy, setLockBusy] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     lanStatus()
       .then((status) => setDeviceNameState(status.deviceName))
       .catch(() => {});
+    void isMobile().then(setMobile);
+    void lockAvailable().then(setLockOk);
+    void appLockEnabled().then(setLockOn);
   }, [open]);
+
+  // Turning it on asks for a successful prompt first, so nobody locks themselves
+  // out; turning it off needs no prompt (D78).
+  const toggleLock = async (next: boolean) => {
+    if (next) {
+      setLockBusy(true);
+      const ok = await unlock(false);
+      setLockBusy(false);
+      if (!ok) return;
+    }
+    await setAppLock(next);
+    setLockOn(next);
+  };
 
   return (
     <>
@@ -132,6 +165,28 @@ export function SettingsDialog({
             </span>
             <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
           </button>
+
+          {mobile && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t("settings.security.title")}</p>
+              <div className="flex items-center gap-3 rounded-lg border p-3">
+                <Fingerprint className="size-[18px] shrink-0 text-muted-foreground" />
+                <span className="flex flex-1 flex-col gap-0.5">
+                  <span className="text-sm">{t("settings.security.toggle")}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {lockOk
+                      ? t("settings.security.toggleHelp")
+                      : t("settings.security.unavailable")}
+                  </span>
+                </span>
+                <Switch
+                  checked={lockOn}
+                  disabled={!lockOk || lockBusy}
+                  onCheckedChange={(checked) => void toggleLock(checked)}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <p className="text-sm font-medium">{t("account.thisDevice.section")}</p>

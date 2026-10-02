@@ -330,7 +330,25 @@
     "title": "Ajustes",
     "description": "Se guardan solo en este dispositivo: no se sincronizan ni se exportan.",
     "providers": "Proveedores de datos",
-    "providersHelp": "Dónde busca la app y tus claves para las que la necesitan."
+    "providersHelp": "Dónde busca la app y tus claves para las que la necesitan.",
+    "security": {
+      "title": "Seguridad",
+      "toggle": "Desbloquear con huella o cara",
+      "toggleHelp": "Al abrir la app. También sin cuenta.",
+      "unavailable": "Configura una huella o la cara en los ajustes del móvil para usarlo."
+    }
+  },
+  "appLock": {
+    "reason": "Desbloquear Kosmotheka",
+    "title": "Desbloquear Kosmotheka",
+    "subtitle": "Usa tu huella o tu cara para continuar.",
+    "cancel": "Cancelar",
+    "screen": {
+      "title": "Kosmotheka está bloqueada",
+      "body": "Usa tu huella o tu cara para entrar.",
+      "unlock": "Desbloquear",
+      "useDevicePin": "Usar el PIN del móvil"
+    }
   },
   "burst": {
     "open": "Alta rápida",

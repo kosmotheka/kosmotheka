@@ -788,6 +788,19 @@ pub fn is_mobile() -> bool {
     cfg!(mobile)
 }
 
+/// Whether the fingerprint/face lock is on (D78). Per-device, never synced.
+#[tauri::command]
+pub fn app_lock_enabled(database: State<'_, Database>) -> Result<bool> {
+    let conn = database.lock()?;
+    settings::app_lock(&conn)
+}
+
+#[tauri::command]
+pub fn set_app_lock(database: State<'_, Database>, enabled: bool) -> Result<()> {
+    let conn = database.lock()?;
+    settings::set_app_lock(&conn, enabled)
+}
+
 #[tauri::command]
 pub fn list_series(database: State<'_, Database>) -> Result<Vec<SeriesSummary>> {
     let conn = database.lock()?;

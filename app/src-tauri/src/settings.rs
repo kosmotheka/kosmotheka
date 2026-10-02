@@ -88,6 +88,17 @@ pub fn api_key(conn: &Connection, provider: &str) -> Result<Option<String>> {
     Ok(load(conn)?.api_keys.remove(provider))
 }
 
+const APP_LOCK_KEY: &str = "app_lock";
+
+/// Whether the fingerprint/face lock is on (D78). Off by default, like the key being absent.
+pub fn app_lock(conn: &Connection) -> Result<bool> {
+    Ok(read_state(conn, APP_LOCK_KEY)?.is_some())
+}
+
+pub fn set_app_lock(conn: &Connection, enabled: bool) -> Result<()> {
+    write_state(conn, APP_LOCK_KEY, enabled.then_some("1"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,6 +182,18 @@ mod tests {
             }
             other => panic!("expected a validation error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn app_lock_is_off_until_turned_on() {
+        let conn = db::open_in_memory().unwrap();
+        assert!(!app_lock(&conn).unwrap());
+
+        set_app_lock(&conn, true).unwrap();
+        assert!(app_lock(&conn).unwrap());
+
+        set_app_lock(&conn, false).unwrap();
+        assert!(!app_lock(&conn).unwrap());
     }
 
     #[test]

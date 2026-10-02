@@ -42,6 +42,7 @@ rand = "0.10.3"
 gethostname = "1.1.0"
 tower = { version = "0.5.3", default-features = false }
 
-# Camera barcode scanning exists only on phones (D35).
+# Camera barcode scanning and biometric unlock exist only on phones (D35, D78).
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-barcode-scanner = "2"
+tauri-plugin-biometric = "2"
