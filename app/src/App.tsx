@@ -11,6 +11,7 @@ import { TwoFactorDialog } from "@/components/account/two-factor-dialog";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { AddSearch } from "@/components/add-search";
 import { AppLockScreen } from "@/components/app-lock-screen";
+import { ScannerOverlay } from "@/components/scanner-overlay";
 import { BackupsDialog } from "@/components/backups-dialog";
 import { BookDetailView } from "@/components/book-detail";
 import { BurstDialog } from "@/components/burst-dialog";
@@ -294,6 +295,7 @@ export default function App() {
       <RequestsContext.Provider value={requests}>
         <CatalogOptionsContext.Provider value={options}>
           <AppLockScreen />
+          <ScannerOverlay />
           {desktop ? (
             <div className="flex h-dvh">
               <Sidebar section={section} library={library} counts={counts} />

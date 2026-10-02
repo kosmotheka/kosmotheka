@@ -644,6 +644,15 @@ export function setAppLock(enabled: boolean): Promise<void> {
   return invoke("set_app_lock", { enabled });
 }
 
+/** Minutes the app may stay in the background before it locks again (D78). */
+export function appLockAfter(): Promise<number> {
+  return invoke<number>("app_lock_after");
+}
+
+export function setAppLockAfter(minutes: number): Promise<void> {
+  return invoke("set_app_lock_after", { minutes });
+}
+
 // --- Libraries -----------------------------------------------------------------
 
 export interface LibrarySummary {

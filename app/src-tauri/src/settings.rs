@@ -99,6 +99,32 @@ pub fn set_app_lock(conn: &Connection, enabled: bool) -> Result<()> {
     write_state(conn, APP_LOCK_KEY, enabled.then_some("1"))
 }
 
+const APP_LOCK_AFTER_KEY: &str = "app_lock_after";
+
+/// The choices for how long the app may stay in the background before it locks
+/// again, in minutes: right away, 5 minutes, 1 hour, 12 hours or 1 day.
+pub const APP_LOCK_AFTER_CHOICES: [u32; 5] = [0, 5, 60, 720, 1440];
+const APP_LOCK_AFTER_DEFAULT: u32 = 60;
+
+/// Minutes in the background before the lock comes back. An unknown stored value
+/// (from a later version, say) falls back to the default instead of failing.
+pub fn app_lock_after(conn: &Connection) -> Result<u32> {
+    let stored = read_state(conn, APP_LOCK_AFTER_KEY)?.and_then(|value| value.parse().ok());
+    Ok(stored
+        .filter(|minutes| APP_LOCK_AFTER_CHOICES.contains(minutes))
+        .unwrap_or(APP_LOCK_AFTER_DEFAULT))
+}
+
+pub fn set_app_lock_after(conn: &Connection, minutes: u32) -> Result<()> {
+    if !APP_LOCK_AFTER_CHOICES.contains(&minutes) {
+        return Err(Error::Validation(vec![FieldError::new(
+            "minutes",
+            ErrorCode::OutOfRange,
+        )]));
+    }
+    write_state(conn, APP_LOCK_AFTER_KEY, Some(&minutes.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,6 +220,23 @@ mod tests {
 
         set_app_lock(&conn, false).unwrap();
         assert!(!app_lock(&conn).unwrap());
+    }
+
+    #[test]
+    fn app_lock_after_defaults_to_an_hour_and_only_takes_the_choices() {
+        let conn = db::open_in_memory().unwrap();
+        assert_eq!(app_lock_after(&conn).unwrap(), 60);
+
+        set_app_lock_after(&conn, 720).unwrap();
+        assert_eq!(app_lock_after(&conn).unwrap(), 720);
+        set_app_lock_after(&conn, 0).unwrap();
+        assert_eq!(app_lock_after(&conn).unwrap(), 0);
+
+        assert!(matches!(
+            set_app_lock_after(&conn, 30),
+            Err(Error::Validation(_))
+        ));
+        assert_eq!(app_lock_after(&conn).unwrap(), 0);
     }
 
     #[test]

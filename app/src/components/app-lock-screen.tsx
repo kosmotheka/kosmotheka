@@ -3,10 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Fingerprint, LibraryBig } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { appLockEnabled } from "@/lib/api";
+import { appLockAfter, appLockEnabled } from "@/lib/api";
 import { lockAvailable, unlock } from "@/lib/app-lock";
-
-const HIDDEN_THRESHOLD_MS = 60_000;
 
 /** `?lock` in the dev mock renders the screen straight away for screenshots. */
 function mockForced(): boolean {
@@ -65,10 +63,14 @@ export function AppLockScreen() {
       if (authenticating.current) return;
       const hiddenFor = hiddenAt.current ? Date.now() - hiddenAt.current : 0;
       hiddenAt.current = null;
-      if (hiddenFor <= HIDDEN_THRESHOLD_MS) return;
+      if (hiddenFor === 0) return;
       void (async () => {
-        const [enabled, available] = await Promise.all([appLockEnabled(), lockAvailable()]);
-        if (!enabled || !available) return;
+        const [enabled, available, minutes] = await Promise.all([
+          appLockEnabled(),
+          lockAvailable(),
+          appLockAfter(),
+        ]);
+        if (!enabled || !available || hiddenFor <= minutes * 60_000) return;
         setLocked(true);
         void attempt(false);
       })();

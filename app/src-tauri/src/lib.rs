@@ -111,6 +111,8 @@ pub fn run() {
             commands::is_mobile,
             commands::app_lock_enabled,
             commands::set_app_lock,
+            commands::app_lock_after,
+            commands::set_app_lock_after,
             commands::list_libraries,
             commands::create_library,
             commands::rename_library,

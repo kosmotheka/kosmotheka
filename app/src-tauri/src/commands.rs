@@ -801,6 +801,19 @@ pub fn set_app_lock(database: State<'_, Database>, enabled: bool) -> Result<()> 
     settings::set_app_lock(&conn, enabled)
 }
 
+/// Minutes the app may stay in the background before the lock comes back.
+#[tauri::command]
+pub fn app_lock_after(database: State<'_, Database>) -> Result<u32> {
+    let conn = database.lock()?;
+    settings::app_lock_after(&conn)
+}
+
+#[tauri::command]
+pub fn set_app_lock_after(database: State<'_, Database>, minutes: u32) -> Result<()> {
+    let conn = database.lock()?;
+    settings::set_app_lock_after(&conn, minutes)
+}
+
 #[tauri::command]
 pub fn list_series(database: State<'_, Database>) -> Result<Vec<SeriesSummary>> {
     let conn = database.lock()?;

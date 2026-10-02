@@ -331,10 +331,24 @@
     "description": "Se guardan solo en este dispositivo: no se sincronizan ni se exportan.",
     "providers": "Proveedores de datos",
     "providersHelp": "Dónde busca la app y tus claves para las que la necesitan.",
+    "theme": {
+      "title": "Apariencia",
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
     "security": {
       "title": "Seguridad",
       "toggle": "Desbloquear con huella o cara",
-      "toggleHelp": "Al abrir la app. También sin cuenta.",
+      "toggleHelp": "Al abrir la app y al volver tras el tiempo que elijas. También sin cuenta.",
+      "after": "Volver a pedirla tras estar fuera",
+      "afterChoice": {
+        "0": "Enseguida",
+        "5": "5 minutos",
+        "60": "1 hora",
+        "720": "12 horas",
+        "1440": "1 día"
+      },
       "unavailable": "Configura una huella o la cara en los ajustes del móvil para usarlo."
     }
   },
@@ -1577,5 +1591,10 @@
       "help": "Vuelve a entrar para continuar.",
       "action": "Iniciar sesión"
     }
+  },
+  "scanner": {
+    "close": "Cerrar la cámara",
+    "barcodeHint": "Apunta al código de barras",
+    "qrHint": "Apunta al código del otro dispositivo"
   }
 }

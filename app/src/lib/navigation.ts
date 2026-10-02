@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import type { AddBookPrefill } from "@/components/add-book-dialog";
+
 // Navigation lives in the browser history, so the Android back button (which
 // Tauri maps to "go back in the webview") and the desktop back gestures behave
 // as users expect: back closes the open menu, sheet or dialog first, then
@@ -35,7 +37,7 @@ export type Overlay =
   | { name: "burst" }
   | {
       name: "add";
-      prefill?: { isbn?: string; title?: string; author?: string };
+      prefill?: AddBookPrefill;
       /** Opened from «Me falta»: the form saves with `addMissing`/`requestMissing`, no copy (D61). */
       missing?: boolean;
       /** Opened from a series gap's «Apuntar aquí»: the new work joins the series at this

@@ -177,3 +177,13 @@
   background: color-mix(in oklch, var(--muted), var(--foreground) 14%);
   box-shadow: inset 0 -1px 0 var(--border);
 }
+
+/* While the camera scans (lib/scanner.ts), it is drawn behind the WebView: make
+   the page transparent and show only the scanner overlay. */
+html.scanning,
+html.scanning body {
+  background: transparent !important;
+}
+html.scanning body > :not(#scanner-overlay) {
+  visibility: hidden;
+}

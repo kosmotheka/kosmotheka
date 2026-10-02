@@ -18,16 +18,22 @@ import { supportedLanguages } from "@/i18n";
 import { useAccount } from "@/lib/account";
 import {
   type LibrarySummary,
+  appLockAfter,
   appLockEnabled,
   giveDeviceAway,
   isMobile,
   lanStatus,
   listLibraries,
   setAppLock,
+  setAppLockAfter,
   setDeviceName,
 } from "@/lib/api";
 import { lockAvailable, unlock } from "@/lib/app-lock";
 import { openOverlay } from "@/lib/navigation";
+import { setThemeChoice, themeChoice, themeChoices } from "@/lib/theme";
+
+/** Mirrors `settings::APP_LOCK_AFTER_CHOICES`, in minutes. */
+const LOCK_AFTER_CHOICES = [0, 5, 60, 720, 1440] as const;
 
 /** Each language in its own name, so it can be found whatever the current one. */
 const LANGUAGE_NAMES: Record<(typeof supportedLanguages)[number], string> = {
@@ -55,7 +61,9 @@ export function SettingsDialog({
   const [mobile, setMobile] = useState(false);
   const [lockOk, setLockOk] = useState(false);
   const [lockOn, setLockOn] = useState(false);
+  const [lockAfter, setLockAfterState] = useState(60);
   const [lockBusy, setLockBusy] = useState(false);
+  const [theme, setTheme] = useState(themeChoice);
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +73,7 @@ export function SettingsDialog({
     void isMobile().then(setMobile);
     void lockAvailable().then(setLockOk);
     void appLockEnabled().then(setLockOn);
+    void appLockAfter().then(setLockAfterState);
   }, [open]);
 
   // Turning it on asks for a successful prompt first, so nobody locks themselves
@@ -144,10 +153,31 @@ export function SettingsDialog({
                   key={language}
                   type="button"
                   size="sm"
-                  variant={i18n.resolvedLanguage === language ? "secondary" : "outline"}
+                  variant={i18n.resolvedLanguage === language ? "default" : "outline"}
+                  aria-pressed={i18n.resolvedLanguage === language}
                   onClick={() => void i18n.changeLanguage(language)}
                 >
                   {LANGUAGE_NAMES[language]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{t("settings.theme.title")}</p>
+            <div className="flex gap-2">
+              {themeChoices.map((choice) => (
+                <Button
+                  key={choice}
+                  type="button"
+                  size="sm"
+                  variant={theme === choice ? "default" : "outline"}
+                  aria-pressed={theme === choice}
+                  onClick={() => {
+                    setThemeChoice(choice);
+                    setTheme(choice);
+                  }}
+                >
+                  {t(`settings.theme.${choice}`)}
                 </Button>
               ))}
             </div>
@@ -185,6 +215,27 @@ export function SettingsDialog({
                   onCheckedChange={(checked) => void toggleLock(checked)}
                 />
               </div>
+              {lockOn && lockOk && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-sm text-muted-foreground">{t("settings.security.after")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {LOCK_AFTER_CHOICES.map((minutes) => (
+                      <Button
+                        key={minutes}
+                        type="button"
+                        size="sm"
+                        variant={lockAfter === minutes ? "default" : "outline"}
+                        aria-pressed={lockAfter === minutes}
+                        onClick={() =>
+                          void setAppLockAfter(minutes).then(() => setLockAfterState(minutes))
+                        }
+                      >
+                        {t(`settings.security.afterChoice.${minutes}`)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

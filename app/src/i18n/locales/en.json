@@ -318,10 +318,24 @@
     "description": "Stored only on this device: never synced or exported.",
     "providers": "Data providers",
     "providersHelp": "Which catalogues the app searches, and your keys for the ones that need one.",
+    "theme": {
+      "title": "Appearance",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "security": {
       "title": "Security",
       "toggle": "Unlock with fingerprint or face",
-      "toggleHelp": "When the app opens. Works without an account too.",
+      "toggleHelp": "When the app opens, and when you come back after the time you choose. Works without an account too.",
+      "after": "Ask again after the app has been away for",
+      "afterChoice": {
+        "0": "Right away",
+        "5": "5 minutes",
+        "60": "1 hour",
+        "720": "12 hours",
+        "1440": "1 day"
+      },
       "unavailable": "Set up a fingerprint or face in your phone's settings to use this."
     }
   },
@@ -1564,5 +1578,10 @@
       "help": "Sign in again to continue.",
       "action": "Sign in"
     }
+  },
+  "scanner": {
+    "close": "Close the camera",
+    "barcodeHint": "Point at the barcode",
+    "qrHint": "Point at the code on the other device"
   }
 }

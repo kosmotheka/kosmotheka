@@ -161,6 +161,7 @@ export function CheckPage({
         isbn: check.isbn13,
         title: online?.title ?? (wishTitle.trim() || undefined),
         author: online?.authors.join(", ") || undefined,
+        found: online ?? undefined,
       },
     });
 

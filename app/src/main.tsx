@@ -4,13 +4,9 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./i18n";
 import "./index.css";
+import { initTheme } from "./lib/theme";
 
-// shadcn/ui switches themes with a `dark` class; follow the OS preference.
-const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-const applyTheme = () =>
-  document.documentElement.classList.toggle("dark", darkQuery.matches);
-applyTheme();
-darkQuery.addEventListener("change", applyTheme);
+initTheme();
 
 // Preview with sample data in a plain browser: `npm run dev`, then open `/?mock`.
 if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("mock")) {

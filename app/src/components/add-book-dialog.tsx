@@ -9,6 +9,7 @@ import {
   CopyFields,
   EditionFields,
   KindGrid,
+  applyLookup,
   emptyCopyFormFor,
   emptyEditionForm,
   toCopyInput,
@@ -30,6 +31,7 @@ import {
   type ContributorRole,
   type CreatedBook,
   type Kind,
+  type LookupResult,
   type NewBook,
   addMissing,
   createBook,
@@ -42,6 +44,8 @@ export interface AddBookPrefill {
   isbn?: string;
   title?: string;
   author?: string;
+  /** Everything a lookup already found (such as «¿Lo tengo?»), cover included. */
+  found?: LookupResult;
 }
 
 interface Props {
@@ -68,12 +72,17 @@ interface Props {
 const initialEditionForm = (prefill?: AddBookPrefill, initial?: NewBook): EditionForm =>
   initial
     ? editionFormFromInput(initial)
-    : {
-        ...emptyEditionForm,
-        isbn: prefill?.isbn ?? "",
-        title: prefill?.title ?? "",
-        people: prefill?.author ? { author: [prefill.author] } : {},
-      };
+    : prefillForm(prefill);
+
+function prefillForm(prefill?: AddBookPrefill): EditionForm {
+  const form: EditionForm = {
+    ...emptyEditionForm,
+    isbn: prefill?.isbn ?? "",
+    title: prefill?.title ?? "",
+    people: prefill?.author ? { author: [prefill.author] } : {},
+  };
+  return prefill?.found ? applyLookup(form, prefill.found) : form;
+}
 
 export function AddBookDialog({
   open,
