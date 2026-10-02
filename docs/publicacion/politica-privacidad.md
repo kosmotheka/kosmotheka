@@ -8,7 +8,7 @@
 
 Política de privacidad de Kosmotheka
 
-Última actualización: [fecha]
+Última actualización: 2 de octubre de 2026
 
 Kosmotheka es una aplicación para catalogar lo que tiene una familia o un grupo: libros, cómics, juegos, películas, series, videojuegos, música y más. Está pensada para funcionar sin cuentas y sin servidores: tus datos son tuyos y se quedan en tus dispositivos.
 

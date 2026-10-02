@@ -42,7 +42,7 @@ Sin servidor: la app **no recoge datos** y **no comparte datos**. Las búsquedas
 
 ## Pendiente para publicar
 
-- URL de la política de privacidad: la web del proyecto (el maintainer prepara el servidor y los DNS). Hace falta una página provisional de «próximamente» y la política en HTML.
+- URL de la política de privacidad: `https://kosmotheka.com/es/privacidad.html`, en la web del proyecto ([web.md](web.md)).
 - Icono de 512 × 512 y gráfico destacado de 1024 × 500 (en `brand/`), al menos dos capturas de móvil.
 - Si la cuenta de desarrollador es personal y nueva: prueba cerrada con al menos 12 personas durante 14 días antes de producción.
 - Antes de la primera subida: confirmar el identificador de la app (no se puede cambiar después), crear la clave de subida fuera del repositorio y compilar el `.aab`.
