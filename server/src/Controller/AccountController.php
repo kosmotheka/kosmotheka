@@ -15,6 +15,7 @@ use App\Dto\UpdateAccountRequest;
 use App\Entity\Device;
 use App\Entity\User;
 use App\Enum\EmailCodePurpose;
+use App\Repository\BackupCodeRepository;
 use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
 use App\Security\AccountException;
@@ -48,6 +49,7 @@ final class AccountController extends AbstractController
         private readonly RequestLimiter $requestLimiter,
         private readonly CurrentDevice $currentDevice,
         private readonly DeviceRepository $deviceRepository,
+        private readonly BackupCodeRepository $backupCodeRepository,
     ) {
     }
 
@@ -291,7 +293,7 @@ final class AccountController extends AbstractController
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
-    /** @return array{id: string, email: string, name: string, locale: string, has_password: bool, created_at: string} */
+    /** @return array{id: string, email: string, name: string, locale: string, has_password: bool, created_at: string, two_factor_enabled: bool, backup_codes_left: int} */
     private function accountPayload(User $user): array
     {
         return [
@@ -301,6 +303,8 @@ final class AccountController extends AbstractController
             'locale' => $user->getLocale(),
             'has_password' => null !== $user->getPassword(),
             'created_at' => $user->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'two_factor_enabled' => $user->isTwoFactorEnabled(),
+            'backup_codes_left' => $this->backupCodeRepository->countUnusedByUser($user),
         ];
     }
 

@@ -67,6 +67,8 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 
 **Mailpit** (`mailpit_kosmotheka`, imagen `axllent/mailpit`, fijada a una versión concreta) captura todo el correo de desarrollo: su interfaz web está en <http://localhost:8097>. El puerto SMTP (1025) solo es accesible dentro de la red de Docker, no desde el equipo.
 
+`TWO_FACTOR_ENABLED` (por defecto `true` en `.env`) activa el alta de segundo factor (D78, `docs/architecture/accounts.md`) para cuentas nuevas; a `false` en un `.env.local`, `POST /v1/account/two-factor/setup` responde `two_factor_unavailable` y `GET /v1/server` anuncia `two_factor: false`. No afecta a una cuenta que ya lo tenga activado: se le sigue pidiendo al iniciar sesión.
+
 `TRUSTED_PROXIES` (por defecto `127.0.0.1` en desarrollo) le dice a Symfony qué proxys delante del servidor son de confianza para leer `X-Forwarded-For` y `X-Forwarded-Proto`: en producción, nginx y quizá un CDN. Se usa para que los limitadores de peticiones por IP (`config/packages/rate_limiter.yaml`) vean la IP real del cliente.
 
 ## Comandos habituales
@@ -84,6 +86,7 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 | Trabajador que ejecuta la purga cada hora | `make worker` (o `make console C="messenger:consume scheduler_default -vv"`) |
 | Conceder/retirar `ROLE_SUPER_ADMIN` (D51) | `make console C="app:user:super-admin correo@ejemplo.com"` (`--revoke` para retirarlo) |
 | Bloquear/desbloquear una cuenta (D51) | `make console C="app:user:block correo@ejemplo.com"` (`--undo` para desbloquear) |
+| Retirar el segundo factor de una cuenta (D78) | `make console C="app:user:two-factor-disable correo@ejemplo.com"` |
 
 ### El worker de tareas programadas (hito 7.1, parte 3)
 

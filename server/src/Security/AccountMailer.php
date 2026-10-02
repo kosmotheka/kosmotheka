@@ -58,6 +58,18 @@ final readonly class AccountMailer
         $this->send($user, 'password_changed.subject', 'password_changed.body', [], false);
     }
 
+    /** Sent when TOTP is enabled (D78). Not rate limited, like the other "something changed" notices. */
+    public function sendTwoFactorEnabledNotice(User $user): void
+    {
+        $this->send($user, 'two_factor_enabled.subject', 'two_factor_enabled.body', [], false);
+    }
+
+    /** Sent when the second factor is removed (D78), whether by the account or by the console command. */
+    public function sendTwoFactorDisabledNotice(User $user): void
+    {
+        $this->send($user, 'two_factor_disabled.subject', 'two_factor_disabled.body', [], false);
+    }
+
     /** @param array<string, string|int> $parameters */
     private function send(User $user, string $subjectKey, string $bodyKey, array $parameters, bool $limited = true): void
     {

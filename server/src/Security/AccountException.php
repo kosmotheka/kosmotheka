@@ -96,4 +96,37 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::NoPassword, 409);
     }
+
+    /** The server host has turned TWO_FACTOR_ENABLED off (D78). */
+    public static function twoFactorUnavailable(): self
+    {
+        return new self(AccountErrorCode::TwoFactorUnavailable, 409);
+    }
+
+    public static function twoFactorAlreadyEnabled(): self
+    {
+        return new self(AccountErrorCode::TwoFactorAlreadyEnabled, 409);
+    }
+
+    /** enable() called without a startSetup() first. */
+    public static function twoFactorNotStarted(): self
+    {
+        return new self(AccountErrorCode::TwoFactorNotStarted, 409);
+    }
+
+    public static function twoFactorNotEnabled(): self
+    {
+        return new self(AccountErrorCode::TwoFactorNotEnabled, 409);
+    }
+
+    public static function invalidTwoFactorCode(): self
+    {
+        return new self(AccountErrorCode::InvalidTwoFactorCode, 400);
+    }
+
+    /** Login with 2FA enabled and no totp_code: the app must ask for a new challenge before retrying. */
+    public static function twoFactorRequired(): self
+    {
+        return new self(AccountErrorCode::TwoFactorRequired, 401);
+    }
 }

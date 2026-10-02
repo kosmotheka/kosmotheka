@@ -23,6 +23,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
         private RateLimiterFactoryInterface $emailPerAddressLimiter,
+        #[Target('two_factor')]
+        private RateLimiterFactoryInterface $twoFactorLimiter,
     ) {
     }
 
@@ -48,6 +50,12 @@ final readonly class RequestLimiter
     public function consumeEmailPerAddress(string $normalisedEmail): void
     {
         $this->consume($this->emailPerAddressLimiter, $normalisedEmail);
+    }
+
+    /** @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeTwoFactor(string $userId): void
+    {
+        $this->consume($this->twoFactorLimiter, $userId);
     }
 
     private function consume(RateLimiterFactoryInterface $factory, string $key): void

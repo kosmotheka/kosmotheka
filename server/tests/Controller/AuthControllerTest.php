@@ -9,9 +9,11 @@ use App\Entity\User;
 use App\Repository\DeviceRepository;
 use App\Tests\Support\DeviceAuthTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
+use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
@@ -21,8 +23,14 @@ use Symfony\Component\Uid\Uuid;
  */
 final class AuthControllerTest extends WebTestCase
 {
+    use ClockSensitiveTrait;
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
+
+    private const string AT = '2026-01-02 12:00:00';
+    // One TOTP period later: enabling 2FA already consumes AT's timestep
+    // (anti-replay, D78), so logging in needs a code from a later one.
+    private const string LOGIN_AT = '2026-01-02 12:00:30';
 
     /** See AccountControllerTest::createTestClient() for why this happens here, not in setUp(). */
     private function createTestClient(): KernelBrowser
@@ -348,6 +356,152 @@ final class AuthControllerTest extends WebTestCase
         $client->request('GET', '/v1/account', server: $session['headers']);
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
+    }
+
+    public function testLoginWithTwoFactorEnabledAndNoCodeFails(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $email = 'totp-required@example.com';
+        $session = $this->signInNewDevice($client, $email);
+        $this->enableTwoFactor($client, $session['headers']);
+
+        $this->loginAgainWithTotp($client, $session, null);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"two_factor_required"}', $client->getResponse()->getContent());
+    }
+
+    public function testLoginWithAWrongTotpCodeFails(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $email = 'totp-wrong@example.com';
+        $session = $this->signInNewDevice($client, $email);
+        $this->enableTwoFactor($client, $session['headers']);
+
+        $this->loginAgainWithTotp($client, $session, '000000');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
+    }
+
+    public function testLoginWithTheRightTotpCodeSucceeds(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $email = 'totp-right@example.com';
+        $session = $this->signInNewDevice($client, $email);
+        $secret = $this->enableTwoFactor($client, $session['headers']);
+
+        self::mockTime(self::LOGIN_AT);
+        $this->loginAgainWithTotp($client, $session, TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::LOGIN_AT)->getTimestamp()));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+    }
+
+    public function testReplayingTheSameTotpCodeAtLoginFails(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $email = 'totp-replay@example.com';
+        $session = $this->signInNewDevice($client, $email);
+        $secret = $this->enableTwoFactor($client, $session['headers']);
+
+        self::mockTime(self::LOGIN_AT);
+        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::LOGIN_AT)->getTimestamp());
+
+        $this->loginAgainWithTotp($client, $session, $code);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+
+        $this->loginAgainWithTotp($client, $session, $code);
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
+    }
+
+    public function testLoggingInWithABackupCodeWorksOnceAndNotTwice(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $email = 'totp-backup-login@example.com';
+        $session = $this->signInNewDevice($client, $email);
+        $backupCodes = $this->enableTwoFactorForBackupCodes($client, $session['headers']);
+
+        $this->loginAgainWithTotp($client, $session, $backupCodes[0]);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+
+        $this->loginAgainWithTotp($client, $session, $backupCodes[0]);
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
+    }
+
+    /**
+     * @param array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string} $session
+     */
+    private function loginAgainWithTotp(KernelBrowser $client, array $session, ?string $totpCode): void
+    {
+        $challenge = $this->requestChallenge($client)['challenge'];
+        $signature = $this->sign($challenge, $session['device_id'], $this->decode($session['secret_key']));
+
+        $payload = [
+            'email' => $session['email'],
+            'password' => 'correct horse battery',
+            'device_id' => $session['device_id'],
+            'device_name' => 'Test device',
+            'public_key' => $session['public_key'],
+            'challenge' => $challenge,
+            'signature' => $signature,
+        ];
+        if (null !== $totpCode) {
+            $payload['totp_code'] = $totpCode;
+        }
+
+        $client->request('POST', '/v1/auth/login', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($payload, \JSON_THROW_ON_ERROR));
+    }
+
+    private function decode(string $base64url): string
+    {
+        return sodium_base642bin($base64url, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    }
+
+    /** @param array<string, string> $headers */
+    private function setupTwoFactor(KernelBrowser $client, array $headers): string
+    {
+        $client->request('POST', '/v1/account/two-factor/setup', server: $headers);
+
+        /** @var array{secret: string} $body */
+        $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+
+        return $body['secret'];
+    }
+
+    /**
+     * @param array<string, string> $headers
+     *
+     * @return list<string> the backup codes
+     */
+    private function enableTwoFactorForBackupCodes(KernelBrowser $client, array $headers): array
+    {
+        $secret = $this->setupTwoFactor($client, $headers);
+        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::AT)->getTimestamp());
+
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
+
+        /** @var array{backup_codes: list<string>} $body */
+        $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+
+        return $body['backup_codes'];
+    }
+
+    /** @param array<string, string> $headers */
+    private function enableTwoFactor(KernelBrowser $client, array $headers): string
+    {
+        $secret = $this->setupTwoFactor($client, $headers);
+        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::AT)->getTimestamp());
+
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
+
+        return $secret;
     }
 
     private function findUser(string $email): ?User

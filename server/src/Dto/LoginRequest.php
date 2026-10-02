@@ -35,6 +35,10 @@ final readonly class LoginRequest
         #[Assert\NotBlank]
         #[Assert\Length(max: 200)]
         public string $signature,
+        /** Required only when the account has 2FA enabled (D78). */
+        #[Assert\Length(max: 20)]
+        #[SerializedName('totp_code')]
+        public ?string $totpCode = null,
     ) {
     }
 }

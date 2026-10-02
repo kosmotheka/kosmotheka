@@ -14,6 +14,7 @@ use App\Security\CurrentDevice;
 use App\Security\DeviceProof;
 use App\Security\LoginChallengeIssuer;
 use App\Security\RequestLimiter;
+use App\Security\TwoFactor;
 use App\Security\UserChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -44,6 +45,7 @@ final class AuthController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestLimiter $requestLimiter,
         private readonly CurrentDevice $currentDevice,
+        private readonly TwoFactor $twoFactor,
     ) {
     }
 
@@ -75,6 +77,7 @@ final class AuthController extends AbstractController
         \assert($user instanceof User);
 
         $this->userChecker->checkPreAuth($user);
+        $this->checkTwoFactor($user, $payload->totpCode);
 
         $device = $this->signInDevice($user, $payload->deviceId, $payload->deviceName, $payload->publicKey);
         $token = $this->issueToken($device);
@@ -120,6 +123,26 @@ final class AuthController extends AbstractController
     private function hashDummyPassword(string $password): void
     {
         password_verify($password, self::DUMMY_PASSWORD_HASH);
+    }
+
+    /**
+     * D78: asked after credentials and account status, before the device
+     * itself. The challenge is already consumed by this point, so a wrong or
+     * missing code means the app has to request a new one before retrying.
+     *
+     * @throws AccountException with two_factor_required or invalid_two_factor_code
+     */
+    private function checkTwoFactor(User $user, ?string $totpCode): void
+    {
+        if (!$user->isTwoFactorEnabled()) {
+            return;
+        }
+
+        if (null === $totpCode) {
+            throw AccountException::twoFactorRequired();
+        }
+
+        $this->twoFactor->verify($user, $totpCode);
     }
 
     /** @throws AccountException with device_removed, device_taken or device_key_mismatch */

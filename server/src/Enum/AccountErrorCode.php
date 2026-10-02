@@ -32,4 +32,12 @@ enum AccountErrorCode: string
 
     // Milestone 7.1, part 3: password recovery and change, deleting the account.
     case NoPassword = 'no_password';
+
+    // Milestone 7.1, part 4: second factor (D78).
+    case TwoFactorUnavailable = 'two_factor_unavailable';
+    case TwoFactorAlreadyEnabled = 'two_factor_already_enabled';
+    case TwoFactorNotStarted = 'two_factor_not_started';
+    case TwoFactorNotEnabled = 'two_factor_not_enabled';
+    case InvalidTwoFactorCode = 'invalid_two_factor_code';
+    case TwoFactorRequired = 'two_factor_required';
 }

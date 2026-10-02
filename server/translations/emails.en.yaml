@@ -10,3 +10,9 @@ existing_account:
 password_changed:
     subject: 'Your Kosmotheka password was changed'
     body: 'The password of your Kosmotheka account was just changed. If it was you, you can ignore this email. If it was not you, your other devices have been signed out; contact us if you think your account was compromised.'
+two_factor_enabled:
+    subject: 'Second factor enabled on your Kosmotheka account'
+    body: 'A second factor (an authenticator app and backup codes) was just enabled on your Kosmotheka account. If it was not you, contact us: it means someone else may have access to your account.'
+two_factor_disabled:
+    subject: 'Second factor removed from your Kosmotheka account'
+    body: "Your Kosmotheka account's second factor was just removed; signing in now only needs your password again. If it was not you, contact us: it means someone else may have access to your account."

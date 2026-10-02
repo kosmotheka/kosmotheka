@@ -57,6 +57,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 | `login` | 10 cada 15 min | IP |
 | `email_code` | 10 cada 15 min | IP |
 | `email_per_address` | 3 cada 15 min | dirección de correo normalizada |
+| `two_factor` | 5 cada 15 min | cuenta: cada intento de código del segundo factor, al entrar o al activarlo, desactivarlo o regenerar los de respaldo. El de `login` es por IP, y desde muchas IP se podrían probar los 6 dígitos |
 
 `email_per_address` protege a terceros: sin él, registrar repetidamente con el correo de otra persona podría inundarle la bandeja de entrada. El aviso de contraseña cambiada no lo consume: el cambio ya se ha hecho (un 429 diría que falló), y solo puede provocarlo quien tiene la contraseña o un código.
 
@@ -154,6 +155,44 @@ Las bibliotecas todavía no existen en el servidor (hito 7.2): cuando existan, b
 
 `App\Security\AccountPurger` recibe la hora por `Symfony\Component\Clock\ClockInterface` en vez de llamar a `new \DateTimeImmutable()` directamente, para poder fijarla en los tests con `ClockSensitiveTrait`.
 
+## Segundo factor (D78)
+
+Segundo factor opcional por cuenta: TOTP (RFC 6238, app autenticadora) más diez códigos de reserva, con `spomky-labs/otphp` y un flujo propio — **no** `scheb/2fa-bundle`, que depende de sesión y de un estado de firewall «a medias autenticado», algo que esta API, sin estado, no tiene: el inicio de sesión devuelve siempre un token de dispositivo de una sola vez, nunca una sesión intermedia. El host del servidor puede desactivarlo con una variable de entorno (por defecto, activado); el super-administrador puede retirar el segundo factor de una cuenta desde la consola (para quien pierde el teléfono y los códigos de reserva a la vez). Solo se pide al iniciar sesión con correo y contraseña: el inicio de sesión con Google (futuro) usará el segundo factor de Google.
+
+### Datos
+
+`App\Entity\User` gana cuatro columnas: `totpSecret` (base32, solo cuando está activado), `totpPendingSecret` (base32, mientras se confirma el alta), `totpEnabledAt` y `totpLastTimestep` (anti-repetición: un código de un paso de tiempo igual o anterior al último aceptado se rechaza, aunque sea válido). `App\Entity\BackupCode` (tabla `backup_code`) guarda el HMAC-SHA256 (con `kernel.secret`, igual que los códigos de email) de cada uno de los **diez** códigos de reserva, y `usedAt` cuándo se gastó. Son diez caracteres de un alfabeto sin ambigüedad (sin `0`, `O`, `1`, `I`, `L`), que la app muestra como `xxxxx-xxxxx`; al comprobarlos da igual mayúsculas/minúsculas y el guion. Regenerarlos borra los diez anteriores.
+
+### `App\Security\TwoFactor`
+
+- `startSetup(user)`: genera un secreto nuevo en `totpPendingSecret` y devuelve `{secret, otpauth_uri}` (emisor `Kosmotheka`, etiqueta el correo de la cuenta; 6 cifras, 30 s, SHA1 — lo que todas las apps autenticadoras soportan). Ya activado → **409** `two_factor_already_enabled`; servidor con el segundo factor apagado → **409** `two_factor_unavailable`.
+- `enable(user, code)`: comprueba `code` contra el secreto pendiente, lo traslada a `totpSecret`, fija `totpEnabledAt` y emite los diez códigos de reserva, devueltos **en claro una sola vez**. Sin `startSetup` previo → **409** `two_factor_not_started`; código incorrecto → **400** `invalid_two_factor_code`.
+- `verify(user, code)`: acepta un código TOTP (ventana ±1 paso, con anti-repetición) o un código de reserva sin usar (lo marca usado). Si no cuadra ninguno de los dos → **400** `invalid_two_factor_code`.
+- `disable(user)` y `regenerateBackupCodes(user)`.
+
+La hora la da `Symfony\Component\Clock\ClockInterface`, no `new \DateTimeImmutable()` directamente, para poder fijarla en los tests (igual que `App\Security\AccountPurger`) y poder calcular con `otphp` el código válido en cada momento.
+
+### Endpoints
+
+Autenticados (`ROLE_USER`), bajo `/v1/account/two-factor`:
+
+| Endpoint | Responde |
+|---|---|
+| `POST /setup` | **200** `{secret, otpauth_uri}` |
+| `POST /enable` `{code}` | **200** `{backup_codes: [...]}`. Consume `login`. Envía el aviso «segundo factor activado» (sin límite de peticiones, como el de contraseña cambiada) |
+| `DELETE` `{password, code}` | **204**; `code` es un código TOTP o uno de reserva. Contraseña incorrecta → **401** `invalid_credentials`; sin segundo factor activado → **409** `two_factor_not_enabled`; código incorrecto → **400** `invalid_two_factor_code`. Consume `login`. Envía el aviso «segundo factor retirado» |
+| `POST /backup-codes` `{password, code}` | **200** `{backup_codes: [...]}`; mismas comprobaciones y orden que `DELETE`. Consume `login` |
+
+`GET /v1/account` gana `two_factor_enabled` y `backup_codes_left`.
+
+### En el inicio de sesión
+
+`POST /v1/auth/login` admite ahora `totp_code` (opcional). Tras las credenciales y el estado de la cuenta, y **antes** de tocar el dispositivo: si la cuenta tiene el segundo factor activado y falta `totp_code` → **401** `two_factor_required`; si no cuadra → **401** `invalid_two_factor_code`. El reto de inicio de sesión ya se ha consumido en ese punto (es de un solo uso), así que la app tiene que pedir uno **nuevo** antes de reintentar con el código. El segundo factor se sigue exigiendo al iniciar sesión aunque el host apague `TWO_FACTOR_ENABLED` más adelante: la variable solo oculta el alta para cuentas nuevas, nunca lo que ya tiene activado una cuenta existente.
+
+### Variable de entorno y consola
+
+`TWO_FACTOR_ENABLED` (por defecto `true`, en `.env`): si está a `false`, `POST /v1/account/two-factor/setup` responde `two_factor_unavailable` para cuentas nuevas, y `GET /v1/server` devuelve `two_factor: false`. `app:user:two-factor-disable <email>`: retira el secreto y los códigos de reserva de una cuenta (D78, para quien pierde el teléfono y los códigos a la vez); nunca expuesto por la API.
+
 ## Super-administrador y bloqueo (D51)
 
 Dos comandos de consola, nunca expuestos por la API:
@@ -165,7 +204,7 @@ Correo desconocido en cualquiera de los dos → mensaje de error y salida distin
 
 ## Qué ofrece el servidor (D77)
 
-`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": false}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` y `two_factor` viven como constantes en `App\Controller\ServerController`, el único sitio que hay que tocar cuando se construyan.
+`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": true}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` es una constante en `App\Controller\ServerController`, el único sitio que hay que tocar cuando se construya; `two_factor` lee `TWO_FACTOR_ENABLED` (D78, más abajo).
 
 ## Dar el dispositivo a otra persona (D81)
 
@@ -180,7 +219,6 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 ## Pendiente
 
 - La parte de la app de D81 (borrar, identidad nueva y reaccionar a `device_removed`) y la retirada en las bibliotecas (hito 7.5).
-- Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`).
-- Segundo factor.
+- Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).

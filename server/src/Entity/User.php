@@ -38,6 +38,21 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $blockedAt = null;
 
+    /** Base32 secret, set once TOTP is enabled (D78). */
+    #[ORM\Column(nullable: true)]
+    private ?string $totpSecret = null;
+
+    /** Base32 secret awaiting confirmation (`POST /v1/account/two-factor/setup`), until `enable()` moves it above. */
+    #[ORM\Column(nullable: true)]
+    private ?string $totpPendingSecret = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $totpEnabledAt = null;
+
+    /** Anti-replay: a code for a timestep at or before this one is rejected. */
+    #[ORM\Column(nullable: true)]
+    private ?int $totpLastTimestep = null;
+
     public function __construct(
         #[ORM\Column(length: 180)]
         private string $email,
@@ -154,5 +169,50 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return $this->email;
+    }
+
+    public function getTotpSecret(): ?string
+    {
+        return $this->totpSecret;
+    }
+
+    public function setTotpSecret(?string $totpSecret): void
+    {
+        $this->totpSecret = $totpSecret;
+    }
+
+    public function getTotpPendingSecret(): ?string
+    {
+        return $this->totpPendingSecret;
+    }
+
+    public function setTotpPendingSecret(?string $totpPendingSecret): void
+    {
+        $this->totpPendingSecret = $totpPendingSecret;
+    }
+
+    public function getTotpEnabledAt(): ?\DateTimeImmutable
+    {
+        return $this->totpEnabledAt;
+    }
+
+    public function setTotpEnabledAt(?\DateTimeImmutable $totpEnabledAt): void
+    {
+        $this->totpEnabledAt = $totpEnabledAt;
+    }
+
+    public function isTwoFactorEnabled(): bool
+    {
+        return null !== $this->totpSecret;
+    }
+
+    public function getTotpLastTimestep(): ?int
+    {
+        return $this->totpLastTimestep;
+    }
+
+    public function setTotpLastTimestep(?int $totpLastTimestep): void
+    {
+        $this->totpLastTimestep = $totpLastTimestep;
     }
 }
