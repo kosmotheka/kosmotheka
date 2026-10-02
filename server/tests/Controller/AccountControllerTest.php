@@ -590,6 +590,17 @@ final class AccountControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
         $client->request('GET', '/v1/account', server: $second['headers']);
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"signed_out_password_changed"}', $client->getResponse()->getContent());
+
+        // Signing in again on that same device clears the reason.
+        $challenge = $this->requestChallenge($client)['challenge'];
+        $signature = $this->sign($challenge, $second['device_id'], sodium_base642bin($second['secret_key'], \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING));
+        $this->requestLogin($client, $email, 'a brand new password', $second['device_id'], 'Phone', $second['public_key'], $challenge, $signature);
+        self::assertResponseIsSuccessful();
+        /** @var array{token: string} $again */
+        $again = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        $client->request('GET', '/v1/account', server: $this->deviceHeaders($second['device_id'], $again['token']));
+        self::assertResponseIsSuccessful();
 
         $third = $this->loginDevice($client, $email, 'a brand new password', Uuid::v4()->toRfc4122(), 'Third device');
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -609,6 +620,7 @@ final class AccountControllerTest extends WebTestCase
 
         $client->request('GET', '/v1/account', server: $only['headers']);
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"signed_out_password_changed"}', $client->getResponse()->getContent());
     }
 
     public function testResetPasswordWithABadDeviceTokenStillSucceeds(): void
@@ -655,6 +667,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
         $client->request('GET', '/v1/account', server: $second['headers']);
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"signed_out_password_changed"}', $client->getResponse()->getContent());
     }
 
     public function testChangePasswordWithAWrongCurrentPasswordFails(): void

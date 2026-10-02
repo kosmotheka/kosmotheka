@@ -7,6 +7,7 @@ namespace App\Security;
 use App\Entity\Device;
 use App\Entity\User;
 use App\Enum\AccountErrorCode;
+use App\Enum\SignOutReason;
 use App\Repository\DeviceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -79,6 +80,11 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
             throw new DeviceRemovedException();
         }
 
+        $reason = $device->getSignOutReason();
+        if ($reason instanceof SignOutReason) {
+            throw new SignedOutException($reason);
+        }
+
         $request->attributes->set(CurrentDevice::ATTRIBUTE, $device);
         $this->touchLastSeen($device);
 
@@ -98,7 +104,13 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
             return null;
         }
 
-        $code = $exception instanceof DeviceRemovedException ? AccountErrorCode::DeviceRemoved : AccountErrorCode::InvalidToken;
+        $code = match (true) {
+            $exception instanceof DeviceRemovedException => AccountErrorCode::DeviceRemoved,
+            $exception instanceof SignedOutException => match ($exception->reason) {
+                SignOutReason::PasswordChanged => AccountErrorCode::SignedOutPasswordChanged,
+            },
+            default => AccountErrorCode::InvalidToken,
+        };
 
         return new JsonResponse(['error' => $code->value], Response::HTTP_UNAUTHORIZED);
     }

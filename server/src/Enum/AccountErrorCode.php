@@ -26,6 +26,7 @@ enum AccountErrorCode: string
     case DeviceKeyMismatch = 'device_key_mismatch';
     case DeviceNotFound = 'device_not_found';
     case DeviceRemoved = 'device_removed';
+    case SignedOutPasswordChanged = 'signed_out_password_changed';
     case DeviceAlreadyReset = 'device_already_reset';
     case InvalidToken = 'invalid_token';
     case AuthenticationRequired = 'authentication_required';

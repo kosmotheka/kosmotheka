@@ -15,6 +15,7 @@ use App\Dto\UpdateAccountRequest;
 use App\Entity\Device;
 use App\Entity\User;
 use App\Enum\EmailCodePurpose;
+use App\Enum\SignOutReason;
 use App\Repository\BackupCodeRepository;
 use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
@@ -143,7 +144,7 @@ final class AccountController extends AbstractController
         $this->emailCodeIssuer->verify($user, EmailCodePurpose::ResetPassword, $payload->code);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
-        $this->deviceRepository->signOutAllExcept($user, $this->callingDeviceId($user));
+        $this->deviceRepository->signOutAllExcept($user, $this->callingDeviceId($user), SignOutReason::PasswordChanged);
         $this->entityManager->flush();
         $this->accountMailer->sendPasswordChangedNotice($user);
 
@@ -166,7 +167,7 @@ final class AccountController extends AbstractController
         }
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
-        $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getId());
+        $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getId(), SignOutReason::PasswordChanged);
         $this->entityManager->flush();
         $this->accountMailer->sendPasswordChangedNotice($user);
 

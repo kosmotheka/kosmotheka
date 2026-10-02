@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\SignOutReason;
 use App\Repository\DeviceRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -30,6 +31,13 @@ final class Device
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $removedAt = null;
+
+    /**
+     * Set when the server signs the device out for a reason the person must
+     * hear about. The token hash is kept so only the real install is told.
+     */
+    #[ORM\Column(length: 32, nullable: true, enumType: SignOutReason::class)]
+    private ?SignOutReason $signOutReason = null;
 
     /** When the install itself was first told it was removed; from then on it has wiped its data. */
     #[ORM\Column(nullable: true)]
@@ -87,11 +95,17 @@ final class Device
     public function setTokenHash(?string $tokenHash): void
     {
         $this->tokenHash = $tokenHash;
+        $this->signOutReason = null;
+    }
+
+    public function getSignOutReason(): ?SignOutReason
+    {
+        return $this->signOutReason;
     }
 
     public function isSignedIn(): bool
     {
-        return null !== $this->tokenHash && !$this->isRemoved();
+        return null !== $this->tokenHash && !$this->signOutReason instanceof SignOutReason && !$this->isRemoved();
     }
 
     public function getCreatedAt(): \DateTimeImmutable
