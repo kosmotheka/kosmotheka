@@ -21,5 +21,5 @@ No account needed · Sin cuenta ni nube
 ```
 
 - Cuando el repositorio sea público, la última línea puede pasar a «Free & open source · Libre y abierto».
-- Sitio web del perfil: `kosmotheka.com` cuando la web esté lista (D79).
+- Sitio web del perfil: `kosmotheka.com` (D79), puesto desde el principio con la página provisional.
 - Imágenes del perfil: el símbolo en blanco sobre añil (400 × 400) y la cabecera con el logotipo horizontal en blanco sobre añil (1500 × 500), sacadas de `brand/marca/simbolo-blanco.svg` y `brand/marca/horizontal-blanco.svg`.
