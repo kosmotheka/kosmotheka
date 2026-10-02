@@ -102,7 +102,7 @@ Propuestas para construirlo:
 
 ### 7.7 Registro de actividad
 
-- Tabla de solo añadir, sin claves foráneas hacia lo que registra, para que sobreviva a lo borrado (D66). Se llena con lo que hace la cuenta (inicio de sesión, cambio de contraseña o de email, borrar la cuenta) y con las operaciones que llegan con ciertos cambios (crear o borrar una biblioteca, roles, «Puede compartir», de quién es un dispositivo, retiradas), con la hora y la IP de cuando llegaron.
+- Tabla de solo añadir, sin claves foráneas hacia lo que registra, para que sobreviva a lo borrado (D66). Se llena con lo que hace la cuenta (inicio de sesión, cambio de contraseña, borrar la cuenta) y con las operaciones que llegan con ciertos cambios (crear o borrar una biblioteca, roles, «Puede compartir», de quién es un dispositivo, retiradas), con la hora y la IP de cuando llegaron.
 - **Se guarda un año** (D66), con purga automática. Se cuenta en la política de privacidad.
 - Es también la tabla de eventos para los KPI del panel futuro (D52).
 

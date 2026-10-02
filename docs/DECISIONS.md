@@ -867,7 +867,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Decisión:**
 - **En la nube, un registro de actividad aparte**, solo de añadir, que **sobrevive a lo que registra**: si se borra una biblioteca, su entrada sigue. Cada entrada guarda:
-  - **qué:** borrar o crear una biblioteca, salir o echar a alguien, cambiar un rol o el permiso de compartir, emparejar o revocar un dispositivo, iniciar sesión, cambiar el email o la contraseña, borrar una cuenta, y los accesos del superadministrador (D52);
+  - **qué:** borrar o crear una biblioteca, salir o echar a alguien, cambiar un rol o el permiso de compartir, emparejar o revocar un dispositivo, iniciar sesión, cambiar la contraseña, borrar una cuenta, y los accesos del superadministrador (D52);
   - **quién:** la cuenta y el dispositivo;
   - **cuándo:** la hora **del servidor**, no la del dispositivo;
   - **desde dónde:** la dirección IP y el agente (app y versión);
