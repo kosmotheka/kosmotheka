@@ -126,6 +126,14 @@ npm run tauri build
 
 Genera en `target/release/bundle/` el `.deb`, el `.rpm` y el AppImage de Linux. El de Windows no se puede compilar aquí: lo hace el CI de GitHub en cada push a `main` o en cada PR. Es un instalador NSIS (`Kosmotheka_<versión>_x64-setup.exe`) que se descarga en *Actions* › la ejecución › *Artifacts* › `kosmotheka-windows-x64-setup` y caduca a los 14 días. Si falta WebView2 (Windows 10 antiguos), el instalador lo descarga.
 
+**Solo funcionan en sistemas como el del contenedor o más nuevos.** `library-dev` es Ubuntu 24.04, así que estos instaladores no se instalan en el Ubuntu 20.04 de la máquina del maintainer (falta `libwebkit2gtk-4.1`, que Ubuntu nunca publicó para la 20.04, y su glibc es más antigua). Los de publicar se compilarán en Ubuntu 22.04 en el CI, y la 20.04 tendrá la Snap Store (D74). Para probar la compilación de *release* aquí, se ejecuta dentro del contenedor, con los mismos datos que la de desarrollo:
+
+```bash
+distrobox enter library-dev -- ~/Proyectos/personales/library/target/release/kosmotheka
+```
+
+Un lanzador en el menú hace lo mismo: `~/.local/share/applications/kosmotheka-dev.desktop` («Kosmotheka (contenedor)»), fuera del repositorio. Abre lo último que se compiló con `npm run tauri build`.
+
 ## Versiones instaladas (24/09/2026)
 
 | Herramienta | Versión |

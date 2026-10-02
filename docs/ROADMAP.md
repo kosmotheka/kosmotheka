@@ -160,8 +160,9 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Documentación pública:** antes de escribirla, revisar la de proyectos open source famosos y bien estructurados para inspirarse. Dos públicos: quien usa la app y quien quiere colaborar. Entre otras cosas, explicar bien el motor de sincronización local-first (operaciones, reloj, fusión campo a campo, firmas y permisos) y compararlo con otros enfoques (WebRTC con relé, sincronizar ficheros, servidor central).
 - **Marca (D72, propuesta):** buscar que el logo esté libre (TMview, WIPO Global Brand Database, búsqueda inversa; clases de Niza 9 y 42) y registrarlo como marca figurativa, junto al nombre si se registra. Antes de abrir el repositorio: exclusión de la marca en LICENSE y README, y un TRADEMARKS.md.
 - **Publicar versiones (D74, propuesta):** un workflow que, al subir una etiqueta, crea un *release* en borrador en GitHub con los instaladores de Linux y Windows (nombres sin versión, para enlazar siempre a la última) y sube el `.aab` firmado a la pista de prueba de Google Play. La primera subida a Play es a mano; las claves, en los secretos de GitHub y con copia fuera del repositorio.
-- **Página de descargas** en la landing: Linux, Windows y Google Play, enlace a las versiones anteriores y, si es Symfony, rutas `/download/{plataforma}` que redirigen a GitHub.
-- Por estudiar: actualizaciones automáticas de escritorio (plugin `updater` de Tauri), firma de código en Windows y Flathub.
+- **Linux para todos (D74):** el `.deb`, `.rpm` y AppImage, compilados en Ubuntu 22.04 en el CI (valen de la 22.04 en adelante); la **Snap Store** para Ubuntu 20.04 y cualquier Ubuntu, con un clic desde el centro de software; después Flathub.
+- **Página de descargas** en la landing: Linux, Windows y Google Play, qué sistemas admite cada fichero, enlace a las versiones anteriores y, si es Symfony, rutas `/download/{plataforma}` que redirigen a GitHub.
+- Por estudiar: actualizaciones automáticas de escritorio (plugin `updater` de Tauri) y firma de código en Windows.
 - **Hecho cuando:** cualquiera puede instalarla desde la tienda.
 
 ## Fase 9 — Vida de la biblioteca

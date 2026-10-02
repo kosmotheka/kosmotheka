@@ -1061,16 +1061,24 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
    - Con **Play App Signing**, Google guarda la clave que firma la app; nosotros solo la de subida, que Google puede cambiar si se pierde. Aun así, la clave de subida va con copia de seguridad fuera del repositorio.
    - El `versionCode` de Android sale de la versión de `tauri.conf.json`, así que cada versión publicada tiene que subir de número.
 
+5. **Linux, compilado en la versión más antigua que se soporta** (añadido el 02/10/2026, al ver que la compilación hecha en el contenedor de desarrollo, Ubuntu 24.04, no se instala en el Ubuntu 20.04 del maintainer). Lo compilado en una versión de Ubuntu funciona en las posteriores, nunca en las anteriores (por la versión de glibc). Así:
+   - **`.deb`, `.rpm` y AppImage, compilados en Ubuntu 22.04** en el CI (`ubuntu-22.04`), nunca en la máquina de desarrollo. Valen para Ubuntu 22.04 y 24.04, Debian 12, Linux Mint 21 y 22 y parecidas.
+   - **Ubuntu 20.04 no puede tener `.deb`:** Tauri 2 necesita WebKitGTK 4.1, que Ubuntu nunca publicó para la 20.04. Le llega con la **Snap Store**, que lleva WebKit dentro: en Ubuntu aparece en el centro de software, se instala con un clic y se actualiza sola. Snapcraft puede compilarla desde GitHub, sin instalar nada en la máquina del maintainer; necesita el repositorio público.
+   - **Flathub**, después, para el resto de distribuciones (Fedora, Arch…), con la misma idea.
+   - **La página de descargas dice qué sistemas admite cada fichero** (por ejemplo «Ubuntu 22.04 o posterior, Debian 12…»), y recomienda la tienda (Snap Store, Flathub) cuando la haya, porque es lo más fácil para quien instala.
+   - Todo sale del mismo workflow, como artefactos del *release*: todas las versiones descargables en el mismo sitio.
+
 **Por estudiar cuando llegue:**
 - **Actualizaciones automáticas en escritorio** con el plugin `updater` de Tauri: lee un `latest.json` del mismo *release*. Los ficheros van firmados con otra clave propia, también fuera del repositorio.
 - **Firma de código en Windows:** sin ella, SmartScreen avisa al instalar («Windows protegió su PC»). Los certificados cuestan dinero; hay opciones gratuitas para open source (SignPath Foundation).
-- **Flathub** como canal más para Linux, y F-Droid para Android (ya en la Fase 8).
+- F-Droid para Android (ya en la Fase 8).
 
 **Consecuencias:**
 - Concreta la página de descargas de D22, que sigue abierta en si la landing va en Symfony o estática; esta propuesta sirve para las dos.
 - Necesita el repositorio público (D03, D64): los *releases* de un repositorio privado no se pueden descargar sin cuenta.
 - Hoy el CI genera el instalador de Windows como artefacto de cada push (caduca a los 14 días); es solo para pruebas y no sustituye a los *releases*.
 - En la Fase 8 del ROADMAP: el workflow de publicación y la página de descargas.
+- Mientras tanto, en la máquina del maintainer (Ubuntu 20.04) la app se ejecuta dentro del contenedor `library-dev`; ver [development/setup.md](development/setup.md).
 
 ## D75 · Avisos al momento: Mercure con la app abierta, notificaciones push en Android — `aceptada`
 
