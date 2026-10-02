@@ -13,8 +13,30 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// The Google Play upload key lives outside the repository, so its passwords can
+// never be committed (docs/publicacion/firma-android.md). Without it, release
+// builds come out unsigned.
+val keystoreProperties = Properties().apply {
+    val path = System.getenv("KOSMOTHEKA_KEYSTORE_PROPERTIES")
+        ?: "${System.getProperty("user.home")}/.kosmotheka-release/keystore.properties"
+    val propFile = file(path)
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+
 android {
     compileSdk = 36
+    if (keystoreProperties.getProperty("storeFile") != null) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
     namespace = "app.kosmotheka"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
@@ -37,6 +59,7 @@ android {
             }
         }
         getByName("release") {
+            signingConfigs.findByName("upload")?.let { signingConfig = it }
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

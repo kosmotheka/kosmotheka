@@ -56,3 +56,4 @@ Con «Play App Signing», Google guarda la clave que firma la app instalada; el 
 - La clave la crea el maintainer con `keytool`, escribiendo él la contraseña; la compilación de *release* también la lanza él, en su terminal. El agente prepara la configuración de Gradle, la orden exacta y la guía.
 - La contraseña, en el gestor de contraseñas; una copia del `.jks`, fuera del ordenador.
 - Identificador actual: `app.kosmotheka` (confirmarlo antes de la primera subida).
+- Pasos concretos: [firma-android.md](firma-android.md).

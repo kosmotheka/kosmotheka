@@ -9,6 +9,10 @@ dist/
 .env
 .env.*
 !.env.example
+# Android signing keys (they live in ~/.kosmotheka-release/; see docs/publicacion/firma-android.md)
+*.jks
+*.keystore
+keystore.properties
 
 # Local databases
 *.sqlite
