@@ -43,23 +43,24 @@ const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 #[derive(Clone)]
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
+    /// `None` for an in-memory database (tests): there is no file to reset.
+    path: Option<PathBuf>,
 }
 
 impl Database {
     pub fn open(path: PathBuf) -> Result<Self> {
-        let mut conn = Connection::open(&path)?;
-        conn.pragma_update(None, "journal_mode", "WAL")?;
-        copy_before_migrating(&conn, &path)?;
-        migrate(&mut conn)?;
-        ops::ensure_device_id(&conn)?;
-        search::ensure_current(&conn)?;
-        sync::ensure_baseline(&mut conn)?;
-        Ok(Self::from_connection(conn))
+        let conn = open_file(&path)?;
+        Ok(Self {
+            conn: Arc::new(Mutex::new(conn)),
+            path: Some(path),
+        })
     }
 
+    #[cfg(test)]
     fn from_connection(conn: Connection) -> Self {
         Self {
             conn: Arc::new(Mutex::new(conn)),
+            path: None,
         }
     }
 
@@ -71,6 +72,81 @@ impl Database {
     pub fn lock(&self) -> Result<MutexGuard<'_, Connection>> {
         self.conn.lock().map_err(|_| Error::LockPoisoned)
     }
+
+    /// Leaves the database as if just installed (D81, device reset): a fresh file
+    /// (new device id, new signing key, no libraries), and the old one, its `-wal`
+    /// and `-shm` siblings and any pre-migration `.bak` copy deleted, since they
+    /// hold the previous owner's data. An in-memory database is simply replaced.
+    pub fn reset(&self) -> Result<()> {
+        let mut guard = self.conn.lock().map_err(|_| Error::LockPoisoned)?;
+        // Drop the file connection first: on every OS, a file can only be deleted
+        // once nothing has it open.
+        *guard = Connection::open_in_memory()?;
+        let fresh = match &self.path {
+            Some(path) => {
+                delete_if_exists(path)?;
+                delete_if_exists(&wal_path(path))?;
+                delete_if_exists(&shm_path(path))?;
+                delete_bak_siblings(path)?;
+                open_file(path)?
+            }
+            None => open_in_memory()?,
+        };
+        *guard = fresh;
+        Ok(())
+    }
+}
+
+fn wal_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push("-wal");
+    PathBuf::from(name)
+}
+
+fn shm_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push("-shm");
+    PathBuf::from(name)
+}
+
+fn delete_if_exists(path: &Path) -> Result<()> {
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+/// Removes every `.bak` copy `copy_before_migrating` left next to `path`.
+fn delete_bak_siblings(path: &Path) -> Result<()> {
+    let Some(dir) = path.parent() else {
+        return Ok(());
+    };
+    let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+        return Ok(());
+    };
+    let prefix = format!("{file_name}.");
+    for entry in std::fs::read_dir(dir)?.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if name.starts_with(&prefix) && name.ends_with(".bak") {
+            delete_if_exists(&entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+/// Opens (creating if needed) and fully initialises a file-backed database: the
+/// same steps `Database::open` and `Database::reset` both need.
+fn open_file(path: &Path) -> Result<Connection> {
+    let mut conn = Connection::open(path)?;
+    conn.pragma_update(None, "journal_mode", "WAL")?;
+    copy_before_migrating(&conn, path)?;
+    migrate(&mut conn)?;
+    ops::ensure_device_id(&conn)?;
+    search::ensure_current(&conn)?;
+    sync::ensure_baseline(&mut conn)?;
+    Ok(conn)
 }
 
 /// Before migrations touch an existing database, a copy of it is left next to it
@@ -102,7 +178,8 @@ fn migrate(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
+/// Also used by `Database::reset` for an in-memory database (tests only reach
+/// that path, but the function itself is not test-only).
 pub fn open_in_memory() -> Result<Connection> {
     let mut conn = Connection::open_in_memory()?;
     migrate(&mut conn)?;

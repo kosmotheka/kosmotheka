@@ -1,3 +1,4 @@
+mod account;
 mod backup;
 mod catalog;
 mod commands;
@@ -5,6 +6,7 @@ mod covers;
 mod csv_io;
 mod data_folder;
 mod db;
+mod device_reset;
 mod error;
 mod lan;
 mod libraries;
@@ -21,8 +23,10 @@ mod sync;
 
 use tauri::Manager;
 
+use crate::account::ResetDeps;
 use crate::covers::Covers;
 use crate::db::Database;
+use crate::device_reset::DataDir;
 use crate::lan::identity::Identity;
 use crate::lan::service::LanService;
 use crate::metadata::Lookup;
@@ -40,13 +44,25 @@ pub fn run() {
             std::fs::create_dir_all(&data_dir)?;
             let database = Database::open(data_dir.join(data_folder::DATABASE_FILE))?;
             let lan = LanService::new(database.clone(), Identity::load_or_create(&data_dir)?);
-            app.manage(database);
-            app.manage(Covers::new(data_dir.join("covers"))?);
+            let covers = Covers::new(data_dir.join("covers"))?;
+            app.manage(database.clone());
+            app.manage(covers.clone());
             app.manage(Lookup::new()?);
             app.manage(lan.clone());
+            app.manage(DataDir(data_dir.clone()));
+            app.manage(ResetDeps::new(covers, lan.clone(), DataDir(data_dir)));
             // Devices paired earlier can sync as soon as the app is open.
+            let start_lan = lan.clone();
             tauri::async_runtime::spawn(async move {
-                let _ = lan.start_if_paired().await;
+                let _ = start_lan.start_if_paired().await;
+            });
+            // A device removed from its account while this app was closed learns it
+            // in the background, as soon as it is open again (D81).
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let reset = handle.state::<ResetDeps>();
+                let result = account::refresh_account_on_start(&database, reset.context()).await;
+                commands::emit_if_reset(&handle, &result);
             });
             Ok(())
         })
@@ -132,7 +148,30 @@ pub fn run() {
             commands::remove_from_series,
             commands::reorder_series,
             commands::add_requirement,
-            commands::remove_requirement
+            commands::remove_requirement,
+            commands::account_status,
+            commands::dismiss_account_notice,
+            commands::set_account_server,
+            commands::account_server_info,
+            commands::register_account,
+            commands::confirm_account_email,
+            commands::resend_account_code,
+            commands::sign_in,
+            commands::sign_out,
+            commands::forgot_password,
+            commands::reset_password,
+            commands::get_account,
+            commands::update_account,
+            commands::change_password,
+            commands::delete_account,
+            commands::account_devices,
+            commands::remove_account_device,
+            commands::restore_account_device,
+            commands::two_factor_setup,
+            commands::two_factor_enable,
+            commands::two_factor_disable,
+            commands::regenerate_backup_codes,
+            commands::give_device_away
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

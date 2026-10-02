@@ -38,6 +38,11 @@ impl DeviceKey {
     pub fn sign(&self, operation: &Operation) -> String {
         URL_SAFE_NO_PAD.encode(self.0.sign(&canonical_bytes(operation)).to_bytes())
     }
+
+    /// Signs an arbitrary message (for example a login challenge), not an operation.
+    pub fn sign_bytes(&self, message: &[u8]) -> String {
+        URL_SAFE_NO_PAD.encode(self.0.sign(message).to_bytes())
+    }
 }
 
 /// Checks the operation's signature against the author's public key.
@@ -181,6 +186,28 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn sign_bytes_verifies_with_the_public_key() {
+        let device = DeviceKey::from_seed([9; 32]);
+        let message = b"kosmotheka-login\nchallenge\ndevice-id";
+        let signature = device.sign_bytes(message);
+        let key: [u8; 32] = URL_SAFE_NO_PAD
+            .decode(device.public_key())
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let key = VerifyingKey::from_bytes(&key).unwrap();
+        let signature_bytes: [u8; 64] = URL_SAFE_NO_PAD
+            .decode(signature)
+            .unwrap()
+            .try_into()
+            .unwrap();
+        assert!(
+            key.verify_strict(message, &Signature::from_bytes(&signature_bytes))
+                .is_ok()
+        );
     }
 
     #[test]

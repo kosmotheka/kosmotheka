@@ -1,7 +1,8 @@
 //! Glue between the app and LAN sync: owns the identity, the pairing window and the
 //! running server, which starts only when needed (paired clients or pairing open).
 
-use std::sync::{Arc, Mutex};
+use std::path::Path;
+use std::sync::{Arc, Mutex, RwLock};
 
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -20,7 +21,9 @@ use crate::ops;
 #[derive(Clone)]
 pub struct LanService {
     database: Database,
-    identity: Arc<Identity>,
+    // A reset (D81) replaces the identity entirely: read it into a local `Arc`
+    // before any `.await`, never hold the lock across one.
+    identity: Arc<RwLock<Arc<Identity>>>,
     pairing: Arc<Mutex<Option<PairingWindow>>>,
     server: Arc<tokio::sync::Mutex<Option<RunningServer>>>,
 }
@@ -51,10 +54,18 @@ impl LanService {
     pub fn new(database: Database, identity: Identity) -> Self {
         Self {
             database,
-            identity: Arc::new(identity),
+            identity: Arc::new(RwLock::new(Arc::new(identity))),
             pairing: Arc::new(Mutex::new(None)),
             server: Arc::new(tokio::sync::Mutex::new(None)),
         }
+    }
+
+    fn identity(&self) -> Result<Arc<Identity>> {
+        Ok(self
+            .identity
+            .read()
+            .map_err(|_| Error::LockPoisoned)?
+            .clone())
     }
 
     /// At startup: serve only if some device already syncs with this one.
@@ -83,7 +94,7 @@ impl LanService {
             database: self.database.clone(),
             pairing: self.pairing.clone(),
         };
-        let running = server::start(listener, self.identity.server_config()?, state)?;
+        let running = server::start(listener, self.identity()?.server_config()?, state)?;
         let port = running.address.port();
         store_port(&*self.database.lock()?, port)?;
         *server = Some(running);
@@ -105,7 +116,7 @@ impl LanService {
             device_id: ops::device_id(&conn)?,
             name: device_name(&conn)?,
             addresses,
-            fingerprint: self.identity.fingerprint().to_owned(),
+            fingerprint: self.identity()?.fingerprint().to_owned(),
             token,
         };
         Ok(PairingInfo {
@@ -137,6 +148,18 @@ impl LanService {
             servers: list_devices(&conn, "known_servers")?,
             clients: list_devices(&conn, "known_clients")?,
         })
+    }
+
+    /// Part of the device reset (D81): stops serving, closes any open pairing
+    /// window and replaces the TLS identity, so this installation presents a new
+    /// fingerprint to anyone it pairs with from now on.
+    pub async fn reset(&self, data_dir: &Path) -> Result<()> {
+        *self.server.lock().await = None;
+        self.close_pairing()?;
+        Identity::forget(data_dir)?;
+        let identity = Identity::load_or_create(data_dir)?;
+        *self.identity.write().map_err(|_| Error::LockPoisoned)? = Arc::new(identity);
+        Ok(())
     }
 }
 
@@ -172,5 +195,22 @@ mod tests {
         assert!(after.serving_port.is_some());
         assert_eq!(after.clients.len(), 1);
         assert!(after.clients[0].last_sync_at.is_some());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn reset_gives_a_new_fingerprint() {
+        let dir = std::env::temp_dir().join(format!("library-lan-reset-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let identity = Identity::load_or_create(&dir).unwrap();
+        let before = identity.fingerprint().to_owned();
+        let service = LanService::new(Database::in_memory(), identity);
+
+        service.reset(&dir).await.unwrap();
+
+        let after = service.identity().unwrap().fingerprint().to_owned();
+        assert_ne!(before, after);
+        let reloaded = Identity::load_or_create(&dir).unwrap();
+        assert_eq!(after, reloaded.fingerprint(), "the new identity was stored");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

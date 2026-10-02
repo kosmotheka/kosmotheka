@@ -2,9 +2,13 @@ use std::path::Path;
 
 use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 use url::Url;
 
+use crate::account::{
+    self, AccountDetails, AccountDevice, AccountStatus, AccountUser, ResetDeps, ServerInfo,
+    TwoFactorSetup,
+};
 use crate::backup::{self, BackupSummary, RestoreSummary};
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
@@ -889,4 +893,248 @@ pub fn remove_requirement(
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     series::remove_requirement(&mut conn, &library, &work_id, &required_work_id)
+}
+
+// --- Account (D77, D81, hito 7.1) ------------------------------------------
+
+/// Emits `device-reset` (no payload) so the UI reloads, once the reset has
+/// actually happened: either this call always resets (`give_device_away`), or it
+/// resets only when the server answered `device_removed` (every other call here).
+pub fn emit_if_reset<T>(app: &AppHandle, result: &Result<T>) {
+    if matches!(result, Err(Error::Account { code, .. }) if code == "device_removed") {
+        let _ = app.emit("device-reset", ());
+    }
+}
+
+#[tauri::command]
+pub fn account_status(database: State<'_, Database>) -> Result<AccountStatus> {
+    account::account_status(&database)
+}
+
+#[tauri::command]
+pub fn dismiss_account_notice(database: State<'_, Database>) -> Result<()> {
+    account::dismiss_account_notice(&database)
+}
+
+#[tauri::command]
+pub fn set_account_server(database: State<'_, Database>, url: Option<String>) -> Result<()> {
+    account::set_server(&database, url)
+}
+
+#[tauri::command]
+pub async fn account_server_info(database: State<'_, Database>) -> Result<ServerInfo> {
+    account::server_info(&database).await
+}
+
+#[tauri::command]
+pub async fn register_account(
+    database: State<'_, Database>,
+    email: String,
+    password: String,
+    name: String,
+    locale: String,
+) -> Result<()> {
+    account::register(&database, &email, &password, &name, &locale).await
+}
+
+#[tauri::command]
+pub async fn confirm_account_email(
+    database: State<'_, Database>,
+    email: String,
+    code: String,
+) -> Result<()> {
+    account::confirm_email(&database, &email, &code).await
+}
+
+#[tauri::command]
+pub async fn resend_account_code(database: State<'_, Database>, email: String) -> Result<()> {
+    account::resend_code(&database, &email).await
+}
+
+#[tauri::command]
+pub async fn sign_in(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    email: String,
+    password: String,
+    totp_code: Option<String>,
+) -> Result<AccountUser> {
+    let result = account::sign_in(&database, reset.context(), &email, &password, totp_code).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn sign_out(database: State<'_, Database>) -> Result<()> {
+    account::sign_out(&database).await
+}
+
+#[tauri::command]
+pub async fn forgot_password(database: State<'_, Database>, email: String) -> Result<()> {
+    account::forgot_password(&database, &email).await
+}
+
+#[tauri::command]
+pub async fn reset_password(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    email: String,
+    code: String,
+    password: String,
+) -> Result<()> {
+    let result =
+        account::reset_password(&database, reset.context(), &email, &code, &password).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn get_account(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<AccountDetails> {
+    let result = account::get_account(&database, reset.context()).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn update_account(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    name: Option<String>,
+    locale: Option<String>,
+) -> Result<AccountDetails> {
+    let result = account::update_account(&database, reset.context(), name, locale).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn change_password(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    current_password: String,
+    new_password: String,
+) -> Result<()> {
+    let result =
+        account::change_password(&database, reset.context(), &current_password, &new_password)
+            .await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn delete_account(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    password: String,
+) -> Result<()> {
+    let result = account::delete_account(&database, reset.context(), &password).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn account_devices(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<Vec<AccountDevice>> {
+    let result = account::account_devices(&database, reset.context()).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn remove_account_device(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    id: String,
+) -> Result<()> {
+    let result = account::remove_account_device(&database, reset.context(), &id).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn restore_account_device(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    id: String,
+) -> Result<()> {
+    let result = account::restore_account_device(&database, reset.context(), &id).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn two_factor_setup(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<TwoFactorSetup> {
+    let result = account::two_factor_setup(&database, reset.context()).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn two_factor_enable(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    code: String,
+) -> Result<Vec<String>> {
+    let result = account::two_factor_enable(&database, reset.context(), &code).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn two_factor_disable(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    password: String,
+    code: String,
+) -> Result<()> {
+    let result = account::two_factor_disable(&database, reset.context(), &password, &code).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn regenerate_backup_codes(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    password: String,
+    code: String,
+) -> Result<Vec<String>> {
+    let result =
+        account::regenerate_backup_codes(&database, reset.context(), &password, &code).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+/// "Dejar este dispositivo a otra persona" (D81): this always resets the device,
+/// whether or not the server could be told, so the UI reloads unconditionally.
+#[tauri::command]
+pub async fn give_device_away(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<()> {
+    let result = account::give_device_away(&database, reset.context()).await;
+    let _ = app.emit("device-reset", ());
+    result
 }

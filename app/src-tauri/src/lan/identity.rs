@@ -33,6 +33,19 @@ impl Identity {
         Ok(identity)
     }
 
+    /// Deletes the stored certificate and key (D81, device reset): the next
+    /// `load_or_create` for `dir` generates a fresh identity instead of reusing this one.
+    pub fn forget(dir: &Path) -> Result<()> {
+        for file in [CERT_FILE, KEY_FILE] {
+            match std::fs::remove_file(dir.join(file)) {
+                Ok(()) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+            }
+        }
+        Ok(())
+    }
+
     pub fn generate() -> Result<Self> {
         let key = rcgen::KeyPair::generate().map_err(|_| Error::Tls("key generation"))?;
         let params = rcgen::CertificateParams::new(vec!["kosmotheka.local".to_owned()])

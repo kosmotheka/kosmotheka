@@ -11,6 +11,7 @@ use crate::error::{Error, Result};
 
 pub const MAX_COVER_BYTES: usize = 5 * 1024 * 1024;
 
+#[derive(Clone)]
 pub struct Covers {
     dir: PathBuf,
 }

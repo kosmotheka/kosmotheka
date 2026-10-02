@@ -57,6 +57,22 @@ pub enum Error {
     /// Taking the library to another device needs «Can share» or administrator (D73).
     #[error("you may not share this library")]
     CannotShare,
+    /// The sync server rejected an account call: the code is whatever it sent (an
+    /// unknown service, so it stays a string), `retry_after` only set for 429s.
+    #[error("account error: {code}")]
+    Account {
+        code: String,
+        retry_after: Option<u64>,
+    },
+}
+
+impl Error {
+    pub fn account(code: &str) -> Self {
+        Error::Account {
+            code: code.to_owned(),
+            retry_after: None,
+        }
+    }
 }
 
 /// Shape of an error as the UI receives it.
@@ -79,6 +95,11 @@ enum ErrorPayload<'a> {
     Internal {
         message: String,
     },
+    Account {
+        reason: &'a str,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after: Option<u64>,
+    },
 }
 
 // Tauri sends command errors to the UI as JSON, so they must be serializable.
@@ -99,6 +120,10 @@ impl Serialize for Error {
             },
             Error::CannotShare => ErrorPayload::Permission {
                 reason: "cannot_share",
+            },
+            Error::Account { code, retry_after } => ErrorPayload::Account {
+                reason: code,
+                retry_after: *retry_after,
             },
             other => ErrorPayload::Internal {
                 message: other.to_string(),
