@@ -124,8 +124,10 @@ Deja de estar centrado en libros.
 - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
 - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
 - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
-- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (elegir una imagen del dispositivo) está desactivada porque el motor no la guarda todavía.
+- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (foto con la cámara o imagen del dispositivo) está desactivada porque el motor no la guarda ni la transmite todavía: ver D82 (abierta), propuesta para un hito propio después de la 7.2.
 - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
+- Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
+- Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
 - Exportar e importar CSV: siguen siendo solo de libros.
 - Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
 

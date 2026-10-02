@@ -87,6 +87,8 @@
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 | D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
+| D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | abierta |
+| D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
 
 ---
 
@@ -1243,3 +1245,71 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Límite, como en D71:** lo que quien recibe el móvil haya visto o sacado antes de que se quite no se puede deshacer. La biometría (D78) protege el caso de un móvil que se da o se pierde sin hacer nada.
 - **Auditoría:** el caso entra en las costuras de compartir (`flows-sharing`).
 - Amplía D56, D57, D71, D73 y D76.
+
+## D82 · Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos — `abierta`
+
+**Contexto** (maintainer, 03/10/2026, probando la versión de Google Play):
+- Quiere **sacar una foto a la portada** con el móvil, o elegir una imagen del dispositivo. Hoy está desactivado: D27 solo guarda portadas **descargadas** de los servidores conocidos (Open Library y Google Books), y dejó pendiente la portada propia.
+- La cámara no es el problema: el WebView de Android de Tauri ya abre la cámara desde un `<input type="file" accept="image/*" capture>`.
+- **El problema es el transporte.** La portada es un fichero `covers/<sha256>.<ext>` y la operación solo lleva su nombre (D27). Hoy la sincronización (red local y nube) mueve operaciones, no ficheros: un dispositivo que recibe la edición conoce el nombre de la portada, pero no tiene el fichero. Una portada descargada se podría volver a bajar de su URL; una foto propia no está en ninguna URL.
+- De paso: algunas portadas encontradas se ven **muy pequeñas** (la miniatura de Google Books), y al pulsar «Lo he comprado» en «¿Lo tengo?» la portada encontrada no pasaba al formulario (arreglado el 03/10/2026).
+
+**Preguntas a decidir:**
+
+1. **Cómo viaja una imagen.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Dentro de la operación (base64) | Nada nuevo en el protocolo | Operaciones enormes que se guardan para siempre en el historial y se reenvían en cada sincronización; rompe el límite de tamaño de las operaciones |
+| Volver a descargarla de su URL en cada dispositivo | Simple | No sirve para fotos propias; depende de que el proveedor siga ahí |
+| **Ficheros aparte, pedidos por su hash después de sincronizar** | Las operaciones siguen pequeñas; el hash ya identifica el contenido (D27) y sirve de comprobación; dos dispositivos con la misma portada no la piden | Un canal nuevo en la red local y almacenamiento de ficheros en el servidor |
+
+   Propuesta: **ficheros aparte por hash**. Tras sincronizar operaciones, cada lado pide las portadas que le falten.
+   - **Red local:** un endpoint del servidor de la red local que entrega una portada por su hash, solo a dispositivos emparejados y solo si pertenece a una biblioteca que ese dispositivo puede recibir (D71).
+   - **Nube:** el servidor guarda las portadas por hash, con un límite por biblioteca. Las sube quien tiene la portada; las baja quien la necesita.
+   - **Al recibir:** se recalcula el hash y se rechaza si no coincide, igual que al restaurar una copia (D30); solo imágenes, con tamaño máximo.
+
+2. **Tamaño y privacidad de las fotos.** Propuesta: en el dispositivo, antes de guardarla, **reducir** a unos 1000 px por el lado largo, **recomprimir** (unos 100 a 200 KB) y **quitar los metadatos EXIF**, que en una foto del móvil pueden llevar la ubicación de casa.
+
+3. **Quién la cambia.** Cambiar la portada es editar la edición: quien puede editar lo hace; quien solo consulta lo pide (D55).
+
+4. **Portadas grandes de los proveedores:** pedir a Google Books una imagen mayor que la miniatura cuando la hay.
+
+5. **Limpieza:** las portadas que ya no usa ningún libro se quedan en disco (pendiente desde D27); con ficheros que viajan conviene limpiarlas.
+
+**Consecuencias:**
+- La spec no cambia: el campo `cover` ya existe. Cambian el protocolo de la red local (un endpoint nuevo) y el servidor (almacenamiento de ficheros y su API), y la copia de seguridad sigue igual (ya lleva las portadas).
+- **Cuándo:** propuesta de hacerlo en su propio hito, **después de la 7.2**, para no mezclarlo con las cuentas. Tiene que estar antes de que la nube sincronice catálogos, para que no se diseñe dos veces.
+- Amplía D27.
+
+## D83 · Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE — `aceptada` (la BNE, por investigar)
+
+**Contexto** (03/10/2026, probando la versión de Google Play). *Inferno* de Dan Brown (Planeta, 9788408176039) no rellenó nada: Open Library e Inventaire no lo tienen, y Google Books respondió **429, «cuota diaria agotada»**. Es lo que ya vio D26: sin clave, todas las peticiones anónimas del mundo comparten una cuota que se agota a menudo. Para el público de ahora (libros en español), la fuente que mejor los cubre falla justo para quien no pone clave, que es casi todo el mundo. El aviso de la app se fue tan rápido que no dio tiempo a leerlo.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Una clave de Kosmotheka dentro de la app | Funciona para todos sin hacer nada | En escritorio no se puede atar a la app: cualquiera la saca del binario y gasta la cuota de todos |
+| Consultar siempre a través de nuestro servidor | La clave no sale del servidor; caché por ISBN | Usar el servidor sin cuenta contradice que sin cuenta no se hace nada en el servidor (D18, D57) |
+| **Clave propia siempre; el servidor solo para quien tiene cuenta, avisando; y más fuentes abiertas** | Respeta el modo sin cuenta; quien tiene cuenta lo tiene resuelto | Sin cuenta ni clave, Google sigue fallando a menudo: hacen falta otras fuentes |
+
+**Decisión** (maintainer, 03/10/2026):
+- **No hay clave de Kosmotheka en la app.**
+- **Sin cuenta, nada pasa por el servidor**, tampoco las búsquedas.
+- **Con cuenta**, las búsquedas de Google Books pueden ir por el servidor, que pone su clave y guarda una caché por código. **Se avisa** de ello en Proveedores (qué se envía: el código o el título buscado, nada más) y se puede apagar.
+- **Clave propia, siempre**: en Ajustes › Proveedores, como ahora, y tiene preferencia. Con un **botón de ayuda** que explica cómo conseguirla y enlaza a la página de Google Cloud donde se crea.
+- **Biblioteca Nacional de España (BNE)**, si se consigue hacer funcionar: abierta, sin clave y muy buena en lo publicado en España, que es el público de ahora. Hay que investigar su API (datos.bne.es o el catálogo); la primera prueba no respondió como se esperaba.
+- **Más adelante, otras bibliotecas por idioma** como fuentes adicionales: de momento solo para inglés.
+
+**Que la lista no crezca sin control.** Una fuente nueva entra solo si cumple todo esto:
+1. **cubre algo que las demás no**, medido con una lista fija de códigos de prueba por idioma y tipo (como `tests/fixtures/`): qué porcentaje encuentra cada fuente y cuánto añade sobre las que ya hay;
+2. es **abierta o gratuita** y sus condiciones permiten usarla desde una app;
+3. responde en un tiempo razonable y tiene una API estable;
+4. alguien la mantiene: cada fuente es código, pruebas y respuestas grabadas que se rompen cuando cambian.
+
+   Las fuentes se **eligen por idioma**: por defecto, las del idioma de la app y del dispositivo, y en Proveedores se encienden o apagan las demás. Así la lista puede ser larga sin que cada búsqueda consulte todas. Cuando el servidor busque para quien tiene cuenta, puede añadir fuentes sin actualizar la app.
+
+**Consecuencias:**
+- **Aviso de fallo visible:** el aviso de un proveedor que falla no puede desaparecer antes de leerlo. Debe quedarse junto al resultado («Google Books no ha respondido: cuota agotada. Pon tu clave en Proveedores»), con enlace a Proveedores.
+- **Servidor:** un endpoint de búsqueda para cuentas, con caché y límite por cuenta; entra con la nube (fase 7), después de la 7.2.
+- **BNE:** investigación y proveedor en su propio paso, con respuestas grabadas como los demás (D18).
+- Amplía D26.
