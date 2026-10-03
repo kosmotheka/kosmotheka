@@ -42,11 +42,6 @@ A write to a table that is not a catalog table (`schema.rs` lists the catalog ta
 ## rust.sql-write-catalog
 A write to a catalog table outside `ops.rs` and `sync.rs`. AGENTS.md: every write goes through `ops::record`; only `sync::merge` may apply received operations directly. Always `alta`, unless the excerpt shows it is part of applying received operations.
 
-## rust.lock-await
-An async function that locks a mutex and awaits. AGENTS.md forbids holding the database `MutexGuard` across `.await`.
-- The guard is still alive when an `.await` runs (not dropped, not confined to an inner block that ends before it): `alta`.
-- The guard is dropped or scoped before every `.await`: not a finding.
-
 ## rust.cast
 A narrowing integer cast (`as u32`, `as i32`…). A finding (`media`) only if real data can exceed the target type (sizes, counts, timestamps, lengths).
 

@@ -46,6 +46,7 @@ El coordinador trabaja con esfuerzo medio. Para analizar un informe con calma pu
 
 - Como mucho 2 revisiones, solo una con el modelo principal, y 3 paquetes de triaje.
 - Con «presupuesto alto», el doble.
+- Si quieres medir el consumo, pide lanzarla **por oleadas**: primero los scripts, luego los agentes ligeros y al final el del modelo principal, parando entre una y otra. La primera auditoría (03/10/2026) gastó unos 190.000 tokens en 7 agentes: unos 63.000 el modelo de amenazas con el modelo principal y entre 11.000 y 46.000 cada uno de los demás.
 - La primera pasada revisa el modelo de amenazas y la cadena de suministro y tria los tres grupos de candidatos de más riesgo. El resto queda como «Pendiente» y va entrando en las pasadas siguientes.
 
 ## Temas y rotación

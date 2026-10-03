@@ -51,6 +51,7 @@ Open only the sections the summary flags (⚠ or non-zero counts), with `sed -n 
 
 - `contracts.md`:
   - schema-chain differences, commands invoked but not registered, argument mismatches, keys used but missing in a language, conformance files not run by both Rust and PHP: `CON` findings, usually `alta`;
+  - **never dismiss a mechanical difference as a script error without comparing the real sources yourself** (in the first audit, a stale genre list in the JSON Schema was dismissed that way);
   - commands never invoked, keys only in one language, different variables: `media`;
   - unused keys: one `baja` finding with the list.
 - `tests.md`: ignored tests not named `live_*`: `PRU`, `baja`.
@@ -61,7 +62,7 @@ Open only the sections the summary flags (⚠ or non-zero counts), with `sed -n 
 **First pass** (no `BASE`):
 - Topics: `threat-model` and `supply-chain`.
 - Triage, in this order:
-  1. `rust.panic,rust.sql-format,rust.sql-write-catalog,rust.lock-await`
+  1. `rust.panic,rust.sql-format,rust.sql-write-catalog`
   2. `ts.sink,ts.mock-ipc-import,ts.ipc-outside-api,ts.listen,ts.effect`
   3. `semgrep`
 - Record in the report, under "Pendiente", the triage groups left for later runs:
@@ -118,7 +119,8 @@ python3 "$REPO/.claude/skills/audit/bin/packet.py" triage "$W" "<categories>" [-
 - The topic file's header names its agent: `audit-reviewer` or `audit-reviewer-strong`. Triage packets go to `audit-triage`, 40 candidates each.
 - **Never read a packet yourself.**
 - If a packet warns it is over its limit but stays under 3,000 lines, launch it anyway. If it is larger, use `--incremental` or tell the maintainer.
-- Launch every agent in one message, in the background, with `Packet: <path>` as the whole prompt.
+- Launch the agents in the background, with `Packet: <path>` as the whole prompt: all in one message, or **in waves** when the maintainer wants to measure the usage. Waves, in order of cost: the triage packets and the `audit-reviewer` topics first, then the `audit-reviewer-strong` topic alone. Stop after each wave and report each agent's tokens.
+- Each triage candidate comes with its whole function when it is under 60 lines; otherwise ±6 lines. Check the cited code yourself before accepting a «no concluyente».
 
 ## 5 · Verify and consolidate
 

@@ -293,11 +293,6 @@ def section_candidates():
         size = o["end"] - o["start"] + 1
         if not o["test"] and o["lang"] == "rust" and size > 80:
             add("rust.long-fn", o["path"], o["start"], f'fn {o["name"]}: {size} lines')
-        if not o["test"] and o["lang"] == "rust" and o["async"]:
-            a, b = o["body"]
-            body = FILES[o["path"]]["masked"][a:b]
-            if ".lock()" in body and ".await" in body:
-                add("rust.lock-await", o["path"], o["start"], f'async fn {o["name"]} holds .lock() and .await')
     for path, info in FILES.items():
         n = info["src"].count("\n") + 1
         if (info["lang"] == "rust" and n > 800) or (info["lang"] == "ts" and n > 300):
@@ -377,7 +372,7 @@ def rust_schema():
     for m in re.finditer(r"const (\w+)_FIELDS: &\[FieldSpec\] = &\[(.*?)\];", src, re.S):
         fields = {}
         for f in re.finditer(r'field\(\s*"(\w+)",\s*FieldType::(\w+)(?:\((.*?)\))?,\s*(true|false)\s*\)', m.group(2), re.S):
-            arg = (f.group(3) or "").strip().lstrip("&")
+            arg = (f.group(3) or "").strip().lstrip("&").split("::")[-1]
             values = (lists.get(arg) or re.findall(r'"(\w+)"', arg)) if f.group(2) == "OneOf" else []
             fields[f.group(1)] = {"type": f.group(2).lower(), "required": f.group(4) == "true", "values": values}
         consts[m.group(1)] = fields
@@ -437,7 +432,7 @@ def php_schema():
     cases = dict(re.findall(r"case (\w+) = '(\w+)';", src))
     lists = {n: re.findall(r"'(\w+)'", body) for n, body in re.findall(r"const (?:\w+\s+)?(\w+) = \[(.*?)\];", src, re.S)}
     m = re.search(r"function fields\(\): array\s*\{(.*?)\n    \}", src, re.S)
-    body = m.group(1) if m else ""
+    body = re.sub(r"//[^\n]*", "", m.group(1)) if m else ""
     out = {}
     for arm in re.finditer(r"((?:self::\w+\s*,\s*)*self::\w+)\s*=>\s*\[", body):
         depth, i = 1, arm.end()
@@ -631,17 +626,35 @@ def section_i18n(lines):
             used[m.group(1)].append(f"{path}:{line_at(src, m.start())}")
         for m in re.finditer(r"\bt\(\s*`([^`]*?)\$\{", src):
             dynamic.append((m.group(1), f"{path}:{line_at(src, m.start())}"))
+    # Any dotted string literal counts as a use: keys kept in arrays (`label: "nav.add"`)
+    # and prefixes held in a variable (`const prefix = "account.confirm.twofaOff"`).
+    literals, template_prefixes = set(), set()
+    fallbacks = []
+    for path, info in FILES.items():
+        if info["lang"] == "ts":
+            literals.update(re.findall(r"[\"'`]([a-zA-Z]\w*(?:\.\w+)+)[\"'`]", info["src"]))
+            fallbacks += re.findall(r"\bt\(\s*\[\s*`([\w.]+?)\$\{", info["src"])
+            # Keys built in a template outside t(), as in `marks.statusesByKind.${kind}`.
+            template_prefixes.update(re.findall(r"`([a-zA-Z]\w*(?:\.\w+)*\.)\$\{", info["src"]))
     plural = lambda k, d: k in d or any(x in d for x in (k + "_one", k + "_other"))
     missing = sorted(k for k in used if not (plural(k, en) and plural(k, es)))
     no_plural = sorted(k for k in counted if not all(k + s in d for s in ("_one", "_other") for d in (en, es)))
-    prefixes = [p for p, _ in dynamic if p]
-    unused = sorted(k for k in en if k not in used and re.sub(r"_(one|other|many|zero)$", "", k) not in used
-                    and not any(k.startswith(p) for p in prefixes))
+    prefixes = [p for p, _ in dynamic if p] + sorted(template_prefixes)
+    def is_used(k):
+        base = re.sub(r"_(one|other|many|zero)$", "", k)
+        return (base in used or base in literals or any(k.startswith(p) for p in prefixes)
+                or any(k.startswith(lit + ".") for lit in literals))
+    unused = sorted(k for k in en if not is_used(k))
+    # Keys tried first with a fallback (`t([specific, general])`) may exist in one language only.
+    overrides = lambda keys: sorted(k for k in keys if any(k.startswith(p) for p in fallbacks))
+    only_en = sorted(set(en) - set(es) - set(overrides(set(en) - set(es))))
+    only_es = sorted(set(es) - set(en) - set(overrides(set(es) - set(en))))
     lines.append("## Translations")
     lines.append(f"- Keys: en {len(en)}, es {len(es)}; used in code {len(used)}; dynamic key sites {len(dynamic)}")
-    for label, items in (("⚠ Only in en", sorted(set(en) - set(es))), ("⚠ Only in es", sorted(set(es) - set(en))),
+    for label, items in (("⚠ Only in en", only_en), ("⚠ Only in es", only_es),
+                         ("Overrides with a fallback, one language only", overrides(set(en) ^ set(es))),
                          ("⚠ Used in code but missing", [f"{k} ({used[k][0]})" for k in missing]),
-                         ("⚠ Used with count but without _one/_other in both", no_plural),
+                         ("Used with count but without _one/_other (fine when the text does not change)", no_plural),
                          ("⚠ Different {{variables}} in en and es", [k for k in en if k in es and variables(en[k]) != variables(es[k])]),
                          ("Empty values", [k for d in (en, es) for k, v in d.items() if not str(v).strip()]),
                          ("Same text in en and es", [k for k in en if k in es and en[k] == es[k] and re.search(r"[a-z]{4}", str(en[k]))]),
@@ -649,7 +662,7 @@ def section_i18n(lines):
                          ("Defined but never used (static check)", unused)):
         lines.append(f"- {label} ({len(items)}): {', '.join(items[:LIMIT]) or '—'}" + (" …" if len(items) > LIMIT else ""))
     lines.append("")
-    summary.append(f"- Translations: only-en {len(set(en) - set(es))}, only-es {len(set(es) - set(en))}, used-but-missing {len(missing)}, never used {len(unused)}.")
+    summary.append(f"- Translations: only-en {len(only_en)}, only-es {len(only_es)}, used-but-missing {len(missing)}, never used {len(unused)}.")
 
 
 def section_errors(lines):

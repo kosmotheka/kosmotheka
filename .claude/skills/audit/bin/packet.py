@@ -218,6 +218,17 @@ def review(work, topic_path, incremental):
         print(f"WARNING: {len(lines)} lines is over max_lines {limit}; split the topic or narrow its code list")
 
 
+def enclosing(rows, rel, ln, context, whole=60):
+    """The whole function around a candidate when it is short, so the agent sees every
+    caller-visible line; otherwise the lines around it."""
+    inner = [r for r in rows if r["path"] == rel and r["start"] <= ln <= r["end"]]
+    if inner:
+        f = min(inner, key=lambda r: r["end"] - r["start"])
+        if f["end"] - f["start"] < whole:
+            return f["start"], f["end"]
+    return ln - context, ln + context
+
+
 def triage(work, categories, limit, context, incremental):
     patterns = categories.split(",")
     changed = set(read(work / "tools/changed.txt").split()) if incremental else None
@@ -239,6 +250,7 @@ def triage(work, categories, limit, context, incremental):
         if cats & set(re.split(r"[\s·,]+", block.split("\n", 1)[0])):
             specific += ("## " + block).rstrip().split("\n") + [""]
     name = re.sub(r"[^a-z0-9]+", "-", categories.lower()).strip("-")
+    rows = outline(work)
     chunks = [cands[i:i + limit] for i in range(0, len(cands), limit)]
     for k, chunk in enumerate(chunks, 1):
         lines = [f"# Paquete de triaje · {categories} · {commit(work)} · parte {k} de {len(chunks)}", "",
@@ -246,7 +258,8 @@ def triage(work, categories, limit, context, incremental):
         lines += common + ["", "## Reglas de estas categorías", ""] + specific + ["## Candidatos", ""]
         for n, (cat, rel, ln) in enumerate(chunk, 1):
             src = read(work / "src" / rel).split("\n")
-            lines += [f"#### [{n}] {cat} · {rel}:{ln}"] + excerpt(src, ln - context, ln + context, rel)[1:]
+            a, b = enclosing(rows, rel, ln, context)
+            lines += [f"#### [{n}] {cat} · {rel}:{ln}"] + excerpt(src, a, b, rel)[1:]
         emit(work, f"triage-{name}-{k}", lines)
 
 
