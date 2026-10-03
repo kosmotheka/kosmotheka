@@ -16,7 +16,11 @@ import {
 import { closeOverlay } from "@/lib/navigation";
 
 /** "Hace 2 horas" / "Hace 3 días", or the special case for right now. */
-function relativeSeen(lastSeenAt: string | null, locale: string, t: (key: string) => string): string {
+function relativeSeen(
+  lastSeenAt: string | null,
+  locale: string,
+  t: (key: string) => string,
+): string {
   if (!lastSeenAt) return t("account.devices.never");
   const diffMs = Date.now() - Date.parse(lastSeenAt);
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
@@ -85,9 +89,15 @@ export function DevicesDialog({ open, desktop }: { open: boolean; desktop: boole
       >
         <div className="flex flex-col gap-3.5">
           {loadError && (
-            <AuthErrorBlock reason={loadError.reason} retryAfter={loadError.retryAfter} onAction={load} />
+            <AuthErrorBlock
+              reason={loadError.reason}
+              retryAfter={loadError.retryAfter}
+              onAction={load}
+            />
           )}
-          {undoError && <AuthErrorBlock reason={undoError.reason} retryAfter={undoError.retryAfter} />}
+          {undoError && (
+            <AuthErrorBlock reason={undoError.reason} retryAfter={undoError.retryAfter} />
+          )}
           <p className="text-sm text-pretty text-muted-foreground">{t("account.devices.intro")}</p>
           <div className="flex flex-col rounded-2xl border">
             {(devices ?? []).map((device) => (
@@ -124,7 +134,11 @@ export function DevicesDialog({ open, desktop }: { open: boolean; desktop: boole
                   </span>
                   <span className="text-[13px] text-pretty text-muted-foreground">
                     {device.removed
-                      ? t(device.canRestore ? "account.devices.removedPending" : "account.devices.removedFinal")
+                      ? t(
+                          device.canRestore
+                            ? "account.devices.removedPending"
+                            : "account.devices.removedFinal",
+                        )
                       : device.current
                         ? t("account.devices.nowCurrent")
                         : relativeSeen(device.lastSeenAt, locale, t)}
@@ -136,7 +150,11 @@ export function DevicesDialog({ open, desktop }: { open: boolean; desktop: boole
                   </Button>
                 )}
                 {device.removed && device.canRestore && (
-                  <Button variant="ghost" className="text-primary" onClick={() => void undo(device)}>
+                  <Button
+                    variant="ghost"
+                    className="text-primary"
+                    onClick={() => void undo(device)}
+                  >
                     <Undo2 /> {t("account.devices.undo")}
                   </Button>
                 )}

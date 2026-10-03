@@ -41,7 +41,8 @@ interface ActionError {
 }
 
 function errorOf(e: unknown): ActionError {
-  if (isCommandError(e) && e.kind === "account") return { reason: e.reason, retryAfter: e.retryAfter };
+  if (isCommandError(e) && e.kind === "account")
+    return { reason: e.reason, retryAfter: e.retryAfter };
   return { reason: "internal" };
 }
 
@@ -107,7 +108,9 @@ export function AuthDialog({
     return () => clearInterval(timer);
   }, [resendAt]);
 
-  const resendLeft = resendAt ? Math.max(0, Math.ceil((resendAt + RESEND_SECONDS * 1000 - now) / 1000)) : 0;
+  const resendLeft = resendAt
+    ? Math.max(0, Math.ceil((resendAt + RESEND_SECONDS * 1000 - now) / 1000))
+    : 0;
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -291,7 +294,11 @@ export function AuthDialog({
           <label className="flex flex-col gap-1.5">
             <span className="flex items-center justify-between text-sm font-medium">
               {t("account.auth.serverLabel")}
-              <button type="button" className="font-medium text-primary" onClick={() => void chooseOfficialServer()}>
+              <button
+                type="button"
+                className="font-medium text-primary"
+                onClick={() => void chooseOfficialServer()}
+              >
                 {t("account.auth.useOfficial")}
               </button>
             </span>
@@ -324,7 +331,11 @@ export function AuthDialog({
     footer = (
       <span className="pt-1 text-center text-sm text-muted-foreground">
         {t("account.auth.footer.signin")}{" "}
-        <button type="button" className="font-semibold text-primary" onClick={() => setStep("signup")}>
+        <button
+          type="button"
+          className="font-semibold text-primary"
+          onClick={() => setStep("signup")}
+        >
           {t("account.auth.footer.signinLink")}
         </button>
       </span>
@@ -362,7 +373,11 @@ export function AuthDialog({
     footer = (
       <span className="pt-1 text-center text-sm text-muted-foreground">
         {t("account.auth.footer.signup")}{" "}
-        <button type="button" className="font-semibold text-primary" onClick={() => setStep("signin")}>
+        <button
+          type="button"
+          className="font-semibold text-primary"
+          onClick={() => setStep("signin")}
+        >
           {t("account.auth.footer.signupLink")}
         </button>
       </span>
@@ -378,7 +393,11 @@ export function AuthDialog({
               {t("account.auth.resendIn", { time: resendTime })}
             </span>
           ) : (
-            <button type="button" className="font-medium text-primary" onClick={() => void resend()}>
+            <button
+              type="button"
+              className="font-medium text-primary"
+              onClick={() => void resend()}
+            >
               {t("account.auth.resend")}
             </button>
           )}
@@ -423,7 +442,9 @@ export function AuthDialog({
                 disabled={busy}
                 className="font-mono"
               />
-              <span className="text-[13px] text-muted-foreground">{t("account.auth.backupCodeHint")}</span>
+              <span className="text-[13px] text-muted-foreground">
+                {t("account.auth.backupCodeHint")}
+              </span>
             </>,
           )}
           <button

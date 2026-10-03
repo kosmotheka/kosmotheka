@@ -49,7 +49,9 @@ export function AuthErrorBlock({
         <strong className="font-semibold">
           {info ? t(info.titleKey, { minutes }) : t("errors.internal", { message: reason })}
         </strong>
-        {info?.helpKey && <span className="text-muted-foreground">{t(info.helpKey, { minutes })}</span>}
+        {info?.helpKey && (
+          <span className="text-muted-foreground">{t(info.helpKey, { minutes })}</span>
+        )}
         {info?.actionKey && onAction && (
           <button
             type="button"

@@ -106,8 +106,14 @@ export function TwoFactorDialog({
       <ResponsiveDialog
         open={open}
         onOpenChange={(next) => !next && requestClose()}
-        title={t(step === "setup" ? "account.twoFactorSetup.title" : "account.twoFactorCodes.title")}
-        description={t(step === "setup" ? "account.twoFactorSetup.stepLabel1" : "account.twoFactorSetup.stepLabel2")}
+        title={t(
+          step === "setup" ? "account.twoFactorSetup.title" : "account.twoFactorCodes.title",
+        )}
+        description={t(
+          step === "setup"
+            ? "account.twoFactorSetup.stepLabel1"
+            : "account.twoFactorSetup.stepLabel2",
+        )}
       >
         {step === "setup" ? (
           <div className="flex flex-col gap-5">
@@ -150,7 +156,11 @@ export function TwoFactorDialog({
               <CodeInput value={code} onChange={setCode} disabled={busy} invalid={Boolean(error)} />
             </div>
             {error && <AuthErrorBlock reason={error.reason} retryAfter={error.retryAfter} />}
-            <Button className="h-12" disabled={busy || code.length !== 6} onClick={() => void enable()}>
+            <Button
+              className="h-12"
+              disabled={busy || code.length !== 6}
+              onClick={() => void enable()}
+            >
               {t("account.twoFactorSetup.enable")}
             </Button>
           </div>

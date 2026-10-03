@@ -1,6 +1,13 @@
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronRight, KeyRound, LogOut, MonitorSmartphone, ShieldCheck } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  KeyRound,
+  LogOut,
+  MonitorSmartphone,
+  ShieldCheck,
+} from "lucide-react";
 
 import { AuthErrorBlock } from "@/components/account/auth-error-block";
 import { CodeInput } from "@/components/account/code-input";
@@ -176,10 +183,8 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
           <section className="flex flex-col rounded-2xl border">
             {fieldRow(t("account.screen.name"), name, () => setEditingName(true))}
             {fieldRow(t("account.screen.email"), email)}
-            {fieldRow(
-              t("account.screen.language"),
-              locale === "es" ? "Español" : "English",
-              () => setEditingLanguage(true),
+            {fieldRow(t("account.screen.language"), locale === "es" ? "Español" : "English", () =>
+              setEditingLanguage(true),
             )}
             <div className="flex min-h-[50px] items-center gap-3 px-4">
               <span className="w-20 shrink-0 text-sm text-muted-foreground">
@@ -227,7 +232,11 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
                 </div>
                 {details?.twoFactorEnabled && (
                   <div className="flex gap-2 pl-[30px]">
-                    <Button variant="outline" size="sm" onClick={() => setTwofaAction("regenerate")}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTwofaAction("regenerate")}
+                    >
                       {t("account.screen.newCodes")}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setTwofaAction("disable")}>
@@ -567,11 +576,7 @@ function DeleteAccountConfirm({
             ? t("account.confirm.deleteAccount.body", { host, count: deviceCount })
             : t("account.confirm.deleteAccount.bodyNoCount", { host })}
         </p>
-        <Button
-          variant="outline"
-          className="h-11"
-          onClick={() => openOverlay({ name: "backups" })}
-        >
+        <Button variant="outline" className="h-11" onClick={() => openOverlay({ name: "backups" })}>
           {t("account.confirm.backupFirst")}
         </Button>
         <Field id="delete-account-password" label={t("account.confirm.passwordLabel")}>
@@ -631,7 +636,8 @@ function TwofaOffConfirm({
     setSeeded(false);
   }
 
-  const prefix = action === "regenerate" ? "account.confirm.twofaRegenerate" : "account.confirm.twofaOff";
+  const prefix =
+    action === "regenerate" ? "account.confirm.twofaRegenerate" : "account.confirm.twofaOff";
   const titleKey = `${prefix}.title`;
   const bodyKey = `${prefix}.body`;
   const noteKey = `${prefix}.note`;
