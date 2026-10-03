@@ -467,7 +467,8 @@ let mockAccount: AccountStatus = {
     : null,
   emailHint: params.has("account") ? "ana.ruiz@correo.es" : null,
   notice:
-    params.get("notice") === "device_removed" || params.get("notice") === "signed_out_password_changed"
+    params.get("notice") === "device_removed" ||
+    params.get("notice") === "signed_out_password_changed"
       ? (params.get("notice") as AccountStatus["notice"])
       : null,
 };
@@ -1321,7 +1322,11 @@ mockIPC((cmd, args) => {
       if (mockAccount.user && (name || locale)) {
         mockAccount = {
           ...mockAccount,
-          user: { ...mockAccount.user, name: name ?? mockAccount.user.name, locale: locale ?? mockAccount.user.locale },
+          user: {
+            ...mockAccount.user,
+            name: name ?? mockAccount.user.name,
+            locale: locale ?? mockAccount.user.locale,
+          },
         };
       }
       return mockAccountDetails;
@@ -1346,14 +1351,18 @@ mockIPC((cmd, args) => {
     }
     case "remove_account_device": {
       const { id } = args as { id: string };
-      mockDevices = mockDevices.map((d) => (d.id === id ? { ...d, removed: true, canRestore: true } : d));
+      mockDevices = mockDevices.map((d) =>
+        d.id === id ? { ...d, removed: true, canRestore: true } : d,
+      );
       return null;
     }
     case "restore_account_device": {
       const { id } = args as { id: string };
       const device = mockDevices.find((d) => d.id === id);
       if (device && !device.canRestore) throw { kind: "account", reason: "device_already_reset" };
-      mockDevices = mockDevices.map((d) => (d.id === id ? { ...d, removed: false, canRestore: false } : d));
+      mockDevices = mockDevices.map((d) =>
+        d.id === id ? { ...d, removed: false, canRestore: false } : d,
+      );
       return null;
     }
     case "two_factor_setup": {
