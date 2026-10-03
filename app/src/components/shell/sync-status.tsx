@@ -5,10 +5,7 @@ import { lanStatus } from "@/lib/api";
 import { navigate } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-type Status =
-  | { kind: "local" }
-  | { kind: "synced"; at: Date; now: number }
-  | { kind: "never" };
+type Status = { kind: "local" } | { kind: "synced"; at: Date; now: number } | { kind: "never" };
 
 /** Recent enough to call it "up to date". */
 const FRESH_MS = 10 * 60 * 1000;
