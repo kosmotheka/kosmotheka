@@ -94,7 +94,7 @@ async fn send(
     Err(map_response_error(status, retry_after.as_deref(), &body))
 }
 
-async fn send_json<T: for<'de> Deserialize<'de>>(
+pub(crate) async fn send_json<T: for<'de> Deserialize<'de>>(
     client: &reqwest::Client,
     method: Method,
     url: &str,

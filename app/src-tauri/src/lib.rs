@@ -1,6 +1,7 @@
 mod account;
 mod backup;
 mod catalog;
+mod cloud;
 mod commands;
 mod covers;
 mod csv_io;
@@ -179,7 +180,10 @@ pub fn run() {
             commands::two_factor_enable,
             commands::two_factor_disable,
             commands::regenerate_backup_codes,
-            commands::give_device_away
+            commands::give_device_away,
+            commands::cloud_status,
+            commands::upload_to_cloud,
+            commands::sync_cloud
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

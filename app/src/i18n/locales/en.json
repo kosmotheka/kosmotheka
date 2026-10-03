@@ -1593,6 +1593,25 @@
       "help": "Remove it from your account on another device, in Account › My devices, and sign in here again."
     }
   },
+  "cloud": {
+    "errors": {
+      "unknown": "Something went wrong with the cloud. Try again.",
+      "not_found": "That library is not in your cloud account any more.",
+      "schema_version": "The app and the server run different versions. Update the app.",
+      "not_signed_in": "Sign in to your account to use the cloud.",
+      "unsigned_history": "This library has changes from before signing existed, so it cannot go to the cloud. Duplicate it as a new library and upload that one.",
+      "already_linked": "This library is already in a cloud."
+    },
+    "outcome": {
+      "synced": "Up to date",
+      "downloaded": "Downloaded from the cloud",
+      "library_conflict": "This device already has a different library with the same id. Nothing was merged.",
+      "not_linked": "The cloud offered a library that was not properly linked. It was ignored.",
+      "missing_in_cloud": "This library is no longer in your cloud account.",
+      "other_server": "This library is in a cloud on another server.",
+      "deleted_here": "You deleted this library on this device, so it was not downloaded again."
+    }
+  },
   "scanner": {
     "close": "Close the camera",
     "barcodeHint": "Point at the barcode",

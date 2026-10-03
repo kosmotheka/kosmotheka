@@ -196,7 +196,7 @@ impl From<client::TwoFactorSetupWire> for TwoFactorSetup {
 
 // --- Local state ---------------------------------------------------------
 
-fn server(conn: &Connection) -> Result<String> {
+pub(crate) fn server(conn: &Connection) -> Result<String> {
     Ok(read_state(conn, ACCOUNT_SERVER)?.unwrap_or_else(|| OFFICIAL_SERVER.to_owned()))
 }
 
@@ -204,7 +204,7 @@ fn cached_user(conn: &Connection) -> Result<Option<AccountUser>> {
     Ok(read_state(conn, ACCOUNT_USER)?.and_then(|raw| serde_json::from_str(&raw).ok()))
 }
 
-fn is_signed_in(conn: &Connection) -> Result<bool> {
+pub(crate) fn is_signed_in(conn: &Connection) -> Result<bool> {
     Ok(read_state(conn, ACCOUNT_TOKEN)?.is_some())
 }
 
@@ -303,7 +303,7 @@ pub fn set_server(database: &Database, url: Option<String>) -> Result<()> {
     }
 }
 
-fn authed_context(database: &Database) -> Result<(String, String, String)> {
+pub(crate) fn authed_context(database: &Database) -> Result<(String, String, String)> {
     let conn = database.lock()?;
     let token = read_state(&conn, ACCOUNT_TOKEN)?.ok_or_else(|| Error::account("not_signed_in"))?;
     Ok((server(&conn)?, ops::device_id(&conn)?, token))
@@ -322,7 +322,7 @@ fn optional_auth(database: &Database) -> Result<(String, Option<(String, String)
 /// Central reaction to the special 401 codes an authenticated call (or a login)
 /// can answer with (D81, D50): resets the device, clears a session the server
 /// ended, or just clears a dead token. Always hands the original error back.
-async fn react_to_account_error<T>(
+pub(crate) async fn react_to_account_error<T>(
     database: &Database,
     reset: ResetContext<'_>,
     result: Result<T>,

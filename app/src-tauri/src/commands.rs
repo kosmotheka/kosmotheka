@@ -13,6 +13,7 @@ use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
     IsbnCheck, TagSummary,
 };
+use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
 use crate::db::Database;
@@ -1180,5 +1181,46 @@ pub async fn give_device_away(
 ) -> Result<()> {
     let result = account::give_device_away(&database, reset.context()).await;
     let _ = app.emit("device-reset", ());
+    result
+}
+
+// --- The cloud (D84, hito 7.2) ----------------------------------------------
+
+/// Local only: for each library, whether it is in the cloud and whether it could go.
+#[tauri::command]
+pub fn cloud_status(database: State<'_, Database>) -> Result<Vec<LibraryCloudStatus>> {
+    cloud::status(&database)
+}
+
+/// Takes a library to the cloud of this account (needs «Can share», D73).
+#[tauri::command]
+pub async fn upload_to_cloud(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    library_id: String,
+) -> Result<LibraryReport> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => cloud::upload(&database, &api, &library_id).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+/// Syncs every library of the account with the cloud, one report per library.
+#[tauri::command]
+pub async fn sync_cloud(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<Vec<LibraryReport>> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => cloud::sync_all(&database, &api).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
     result
 }

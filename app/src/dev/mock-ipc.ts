@@ -1403,6 +1403,32 @@ mockIPC((cmd, args) => {
       mockAccountDetails = { ...mockAccountDetails, backupCodesLeft: 10 };
       return ACCOUNT_BACKUP_CODES;
     }
+    case "cloud_status":
+      return libraries.map((library) => ({
+        library: library.id,
+        cloudLibrary: null,
+        cloudServer: null,
+        linkedHere: false,
+        signedIn: mockAccount.signedIn,
+        mayShare: true,
+        unsignedHistory: false,
+        canUpload: mockAccount.signedIn,
+      }));
+    case "upload_to_cloud": {
+      if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
+      const { libraryId } = args as { libraryId: string };
+      return {
+        library: libraryId,
+        cloudLibrary: crypto.randomUUID(),
+        outcome: "synced",
+        received: 0,
+        sent: 12,
+        rejected: 0,
+      };
+    }
+    case "sync_cloud":
+      if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
+      return [];
     case "give_device_away":
       // The real app reloads from the `device-reset` event Rust emits; the mock
       // has no Rust side to emit it, so it reloads the page itself instead.

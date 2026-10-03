@@ -1607,6 +1607,25 @@
       "help": "Quítalo de tu cuenta desde otro dispositivo, en Cuenta › Mis dispositivos, y vuelve a entrar aquí."
     }
   },
+  "cloud": {
+    "errors": {
+      "unknown": "Algo ha fallado con la nube. Prueba otra vez.",
+      "not_found": "Esa biblioteca ya no está en tu cuenta de la nube.",
+      "schema_version": "La app y el servidor tienen versiones distintas. Actualiza la app.",
+      "not_signed_in": "Inicia sesión en tu cuenta para usar la nube.",
+      "unsigned_history": "Esta biblioteca tiene cambios de antes de que existieran las firmas, así que no puede subir a la nube. Duplícala como nueva y sube esa.",
+      "already_linked": "Esta biblioteca ya está en una nube."
+    },
+    "outcome": {
+      "synced": "Al día",
+      "downloaded": "Descargada de la nube",
+      "library_conflict": "Este dispositivo ya tiene otra biblioteca con el mismo id. No se mezcló nada.",
+      "not_linked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró.",
+      "missing_in_cloud": "Esta biblioteca ya no está en tu cuenta de la nube.",
+      "other_server": "Esta biblioteca está en una nube de otro servidor.",
+      "deleted_here": "Borraste esta biblioteca en este dispositivo, así que no se descargó otra vez."
+    }
+  },
   "scanner": {
     "close": "Cerrar la cámara",
     "barcodeHint": "Apunta al código de barras",

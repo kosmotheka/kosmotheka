@@ -81,3 +81,67 @@ Otros tests: `testUploadingALibraryLinksItAndStoresItsHistory`, `testALinkLateIn
 - `src/Sync/`: `CloudLibraryAccess` (la puerta), `CloudLibraryCreator`, `CloudPull`, `CloudPush` (las reglas), `OperationReader` (estructura), `SchemaVersion` (lee `spec/sync.json`), `OperationRejectedException`.
 - `src/Dto/`: `PullRequest` (con `#[MapRequestPayload]`), `PushRequest` (no: ver su comentario), `PushedOperation`, `PushResult`.
 - `src/Entity/` y `src/Repository/`: las cuatro tablas. Los códigos de error nuevos (`not_found`, `schema_version`, `invalid_request`) están en `AccountErrorCode` y `AccountException`.
+
+## En la app
+
+El cliente de la nube está en `app/src-tauri/src/cloud/`. Habla con las rutas de arriba y reutiliza lo de la red local sin cambiarlo: `sync::version_vectors`, `operations_since` y `merge` (que juzga firmas y permisos), `people::ensure_may_share` y `ops::record`.
+
+- `cloud/client.rs`: `HttpCloud`, sobre el cliente de cuentas (`account::client`: mismo `reqwest`, mismas cabeceras del dispositivo). Crea `C`, lista las de la cuenta, `pull` y `push` (lotes de 1000). Un `404 not_found` y un `409 schema_version` pasan a errores de tipo `cloud`; el resto (sesión cerrada, dispositivo quitado, sin conexión) conserva la traducción de la cuenta.
+- `cloud/mod.rs`: el trait `CloudApi` (crear, listar, `pull`, `push`) y la lógica: `upload`, `sync_library`, `sync_all` y `status`. Los tests la ejecutan contra una nube en memoria (`cloud/tests.rs`), sin red.
+- Comandos de Tauri: `upload_to_cloud(library_id)`, `sync_cloud()` (un informe por biblioteca) y `cloud_status()` (solo local: por biblioteca, si está enlazada, a qué `C`, y si podría subir). Los envoltorios están en `app/src/lib/api.ts`.
+- Los errores propios son de tipo `cloud`: `not_found`, `schema_version`, `not_signed_in`, `unsigned_history`, `already_linked`. Textos en `cloud.errors.*` (`en` y `es`).
+- El bloqueo de la base de datos nunca se mantiene a través de una llamada de red: se lee lo necesario, se suelta, se espera y se vuelve a bloquear para fusionar.
+
+### Dónde vive el enlace
+
+En la propia fila de la biblioteca: `libraries.cloud_library_id` y `libraries.cloud_server` (migración 0027). Solo los escribe la operación firmada `library.cloud` (D84, punto 3), que viaja con el registro y se aplica con las reglas de siempre. Nunca se rellenan con una tabla local ni con un valor que diga el servidor: lo que cuenta es lo que el registro fusionado aplicó. El cliente solo sincroniza una biblioteca si su fila dice `C` **y** el servidor de la cuenta actual.
+
+### `upload(biblioteca)`
+
+Falla con un error y sin cambiar nada si no se cumple una comprobación, en este orden:
+
+1. Sesión iniciada (`HttpCloud::connect`: `not_signed_in`).
+2. Este dispositivo puede compartirla (`people::ensure_may_share`: `CannotShare`).
+3. Ninguna operación replicable sin firma (`unsigned_history`; la interfaz propondrá «Duplicar como nueva», D58).
+4. No está enlazada a ninguna nube (`already_linked`).
+5. El enlace lo permitirían los roles (`ops::would_allow`: con roles, solo administra): se mira antes de crear `C` para no dejar una `C` huérfana.
+
+Después: crea `C` en el servidor, registra con `ops::record` la operación `library.cloud` (un cambio de la fila `library` con `cloud_library_id` y `cloud_server`; se vuelve a comprobar que nadie la enlazó mientras tanto) y llama a `sync_library`, que envía todo el registro, el enlace incluido.
+
+### `sync_library(biblioteca)`
+
+Una sesión, como `lan::client::sync_once`: `pull` con el vector del dispositivo para esa biblioteca; **se queda solo con las operaciones cuya `library` sea esa** (las demás se descartan y cuentan como rechazadas: el servidor no es de fiar para decir de qué biblioteca es una operación); `sync::merge`; y `push` de lo que a `C` le falta según el vector que devolvió (`operations_since`). El informe dice recibidas, enviadas y rechazadas (las descartadas, las que `merge` rechazó y las que rechazó la nube).
+
+### `sync_all()`
+
+Lista las `C` de la cuenta y, para cada una:
+
+| Caso | Qué hace | Resultado |
+|---|---|---|
+| Una biblioteca local está enlazada a esa `C` en este servidor | `sync_library` | `synced` |
+| Ninguna biblioteca local tiene el id local de `C` | La descarga: `pull` con vector vacío, solo las operaciones de ese id local, `merge`. Si la fila de la biblioteca no acaba diciendo `C` y este servidor, borra lo fusionado | `downloaded`, o `not_linked` |
+| Hay una biblioteca local con ese id local, pero su registro aún no la enlazó a `C` | Trae de `C` solo la operación de enlace **escrita por un dispositivo ya registrado en esa biblioteca** y la fusiona, juzgada como cualquier otra (firma y permisos; `adopt_link`). Si queda enlazada a `C` (otro dispositivo de la familia la subió antes de que este se enterase por la red local), sincroniza; un enlace de un lector queda en petición y no enlaza | `synced` (test `a_family_device_that_got_the_library_over_the_lan_before_the_upload_joins_it`) |
+| Lo mismo, pero ningún dispositivo de esa biblioteca la enlazó a `C` (el caso de Tanaka y Jhonny: dos instalaciones con el id fijo), o la enlazó un lector | **No fusiona nada más** | `library_conflict` (tests `a_library_with_the_same_local_id_that_was_never_linked_is_not_merged` y `a_link_signed_by_a_reader_of_the_family_is_not_adopted`) |
+| Este dispositivo conoce ese id local pero ya no tiene la biblioteca (la borró o la dejó) | No la vuelve a bajar sola | `deleted_here` |
+| `C` aún no tiene enlace en el servidor (creada y sin subir) | Nada | (sin informe) |
+| Biblioteca local enlazada a una `C` que la cuenta ya no lista | Nada | `missing_in_cloud` |
+| Biblioteca local enlazada a una nube de otro servidor | Nada, ni una llamada | `other_server` |
+
+### Qué test cubre cada regla (`cloud/tests.rs`)
+
+| Regla | Test |
+|---|---|
+| Subir: el enlace está en el registro, la fila enlazada y la nube tiene todo el registro | `uploading_links_the_library_and_sends_its_whole_log` |
+| No se sube dos veces | `uploading_twice_is_refused` |
+| Historia sin firmar: rechazada, nada creado en la nube, nada registrado | `an_unsigned_history_is_not_uploaded` |
+| Un lector no sube; la administradora sí | `a_reader_cannot_upload_but_the_administrator_can` |
+| Un segundo dispositivo de la cuenta la descarga y converge, en los dos sentidos | `a_second_device_of_the_account_downloads_the_library_and_converges` |
+| Mismo id local sin enlazar: no se fusiona nada | `a_library_with_the_same_local_id_that_was_never_linked_is_not_merged` |
+| Operaciones de otra biblioteca que manda la nube: descartadas (al sincronizar y al descargar) | `operations_of_another_library_from_the_cloud_are_dropped` |
+| Una biblioteca que llega sin su enlace se borra otra vez | `a_library_that_arrives_without_its_link_is_removed_again` |
+| Nube y red local a la vez (D39), en los dos órdenes: mismo estado, sin duplicados ni pérdidas | `a_week_offline_syncs_with_the_cloud_and_then_a_lan_peer`, `a_week_offline_syncs_with_a_lan_peer_and_then_the_cloud` |
+| Otro servidor: se salta sin llamar | `a_library_linked_to_another_server_is_skipped` |
+| `C` que la cuenta ya no lista | `a_library_the_account_no_longer_lists_is_skipped_and_reported` |
+| Códigos de error del servidor | `cloud/client.rs`: `the_servers_own_codes_become_cloud_errors`, `other_errors_keep_the_account_mapping` |
+
+La nube de los tests (`FakeCloud`) solo hace cumplir lo que el cliente necesita probar: acceso por cuenta, operaciones únicas por `C` y una `C` que solo admite el id local de su enlace. No comprueba firmas: de eso se encarga el `merge` del cliente.

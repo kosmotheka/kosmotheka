@@ -1202,3 +1202,90 @@ export function regenerateBackupCodes(password: string, code: string): Promise<s
 export function giveDeviceAway(): Promise<void> {
   return invoke("give_device_away");
 }
+
+// --- The cloud (D84, hito 7.2) ---
+
+/**
+ * `CommandError` has no `cloud` variant yet: the screens that read it arrive with the cloud UI.
+ * @public
+ */
+export interface CloudCommandError {
+  kind: "cloud";
+  reason: CloudErrorReason;
+}
+
+/** @public */
+export type CloudErrorReason =
+  "not_found" | "schema_version" | "not_signed_in" | "unsigned_history" | "already_linked";
+
+/** @public */
+export type CloudOutcome =
+  | "synced"
+  | "downloaded"
+  | "library_conflict"
+  | "not_linked"
+  | "missing_in_cloud"
+  | "other_server"
+  | "deleted_here";
+
+/**
+ * What a cloud sync did to one library.
+ * @public
+ */
+export interface CloudLibraryReport {
+  library: string;
+  cloudLibrary: string | null;
+  outcome: CloudOutcome;
+  received: number;
+  sent: number;
+  /** Operations dropped: from another library, invalid, or refused by the cloud. */
+  rejected: number;
+}
+
+/** @public */
+export interface LibraryCloudStatus {
+  library: string;
+  cloudLibrary: string | null;
+  cloudServer: string | null;
+  /** Linked to a cloud library on the account's current server. */
+  linkedHere: boolean;
+  signedIn: boolean;
+  mayShare: boolean;
+  /** Its log has operations without a signature: «Duplicate as new» instead (D58). */
+  unsignedHistory: boolean;
+  canUpload: boolean;
+}
+
+/**
+ * Local only, no network.
+ * @public
+ */
+export function cloudStatus(): Promise<LibraryCloudStatus[]> {
+  return invoke<LibraryCloudStatus[]>("cloud_status");
+}
+
+/**
+ * Takes a library to the cloud of this account.
+ * @public
+ */
+export function uploadToCloud(libraryId: string): Promise<CloudLibraryReport> {
+  return invoke<CloudLibraryReport>("upload_to_cloud", { libraryId });
+}
+
+/**
+ * One report per library of the account.
+ * @public
+ */
+export function syncCloud(): Promise<CloudLibraryReport[]> {
+  return invoke<CloudLibraryReport[]>("sync_cloud");
+}
+
+/**
+ * Translation key for a failed cloud command.
+ * @public
+ */
+export function cloudErrorKey(error: unknown): string {
+  const cloud = error as Partial<CloudCommandError> | null;
+  if (cloud?.kind === "cloud" && cloud.reason) return `cloud.errors.${cloud.reason}`;
+  return "cloud.errors.unknown";
+}

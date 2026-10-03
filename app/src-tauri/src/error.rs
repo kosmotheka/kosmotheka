@@ -57,6 +57,10 @@ pub enum Error {
     /// Taking the library to another device needs «Can share» or administrator (D73).
     #[error("you may not share this library")]
     CannotShare,
+    /// Cloud sync failures (D84), as codes the UI translates: not_found, schema_version,
+    /// not_signed_in, unsigned_history, already_linked.
+    #[error("cloud sync failed: {0}")]
+    Cloud(&'static str),
     /// The sync server rejected an account call: the code is whatever it sent (an
     /// unknown service, so it stays a string), `retry_after` only set for 429s.
     #[error("account error: {code}")]
@@ -92,6 +96,9 @@ enum ErrorPayload<'a> {
     Permission {
         reason: &'static str,
     },
+    Cloud {
+        reason: &'static str,
+    },
     Internal {
         message: String,
     },
@@ -121,6 +128,7 @@ impl Serialize for Error {
             Error::CannotShare => ErrorPayload::Permission {
                 reason: "cannot_share",
             },
+            Error::Cloud(reason) => ErrorPayload::Cloud { reason },
             Error::Account { code, retry_after } => ErrorPayload::Account {
                 reason: code,
                 retry_after: *retry_after,
