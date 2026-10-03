@@ -42,21 +42,25 @@ pub trait LibraryView {
     /// Whether `hlc` falls inside a honoured antedating fence of `device` (D84):
     /// after the newest operation of the device the administrator knew, and before
     /// the operation that took its power away. Such an operation cannot be honest.
+    /// Also after a revocation of `device` still in force at `hlc` (D71): a revoked
+    /// device writes nothing, even through a device that has not heard of it yet.
     fn fenced(&self, device: &str, hlc: &str) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
 /// one change not allowed makes the whole operation a request.
 pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
-    if !view.has_roles() {
+    let author = operation.hlc.device.as_str();
+    // A fenced author is judged as nobody's, with or without roles: its date cannot
+    // be trusted, or its access was withdrawn (D71, D84).
+    let fenced = view.fenced(author, &operation.hlc.to_string());
+    if !view.has_roles() && !fenced {
         return true;
     }
-    let author = operation.hlc.device.as_str();
     // Without a signature nobody can tell who wrote it: it counts as a reader's,
     // and as nobody's in particular, like a device that belongs to no person.
-    // A fenced author is judged the same way: its date cannot be trusted (D84).
     let role = match operation.signature {
-        Some(_) if !view.fenced(author, &operation.hlc.to_string()) => view.role_of_device(author),
+        Some(_) if !fenced => view.role_of_device(author),
         _ => None,
     };
     operation

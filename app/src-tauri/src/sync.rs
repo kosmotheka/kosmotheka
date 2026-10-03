@@ -306,9 +306,9 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         report.received += 1;
     }
 
-    // Something older arrived where roles decide: judge the whole library again.
+    // Something older arrived where the order decides: judge the whole library again.
     for library in &arrived_late {
-        if permissions::has_roles(tx, library)? {
+        if permissions::judged_by_order(tx, library)? {
             permissions::rebuild(tx, library)?;
         }
     }
@@ -1545,6 +1545,88 @@ mod tests {
         assert_eq!(report.requests, 1);
         assert!(!laptop.titles().contains(&"Backdated".to_owned()));
         assert_converged(&[&laptop]);
+    }
+
+    /// The id of the work titled `title` in the default library.
+    fn work_titled(device: &Device, title: &str) -> String {
+        device
+            .0
+            .query_row(
+                "SELECT id FROM works WHERE library_id = ?1 AND title = ?2",
+                [LIB, title],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    fn work_title(device: &Device, work: &str) -> String {
+        device
+            .0
+            .query_row(
+                "SELECT title FROM works WHERE library_id = ?1 AND id = ?2",
+                [LIB, work],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    /// The phone, revoked on the laptop but not told yet, edits a title; a tablet
+    /// that has not heard of the revocation either passes the edit on. `roles`
+    /// says whether the library has roles (the phone is then an editor).
+    fn edit_relayed_after_revocation(roles: bool) -> (Device, Device, Device, String) {
+        let (mut laptop, mut phone) = if roles {
+            let (mut laptop, mut phone) = laptop_admin_phone_reader();
+            let hugo = phone_person(&laptop, &phone);
+            crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+            phone.pull_from(&laptop);
+            (laptop, phone)
+        } else {
+            let mut laptop = Device::new();
+            let mut phone = Device::new();
+            laptop.add("Dune", None, "Tersoal");
+            phone.add("Tehanu", None, "Hugo");
+            laptop.sync_with(&mut phone);
+            (laptop, phone)
+        };
+        let mut tablet = Device::new();
+        tablet.pull_from(&laptop);
+        tablet.pull_from(&phone);
+        let work = work_titled(&laptop, "Dune");
+
+        crate::libraries::revoke_access(&mut laptop.0, LIB, &device_id_of(&phone)).unwrap();
+        let tx = phone.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            LIB,
+            "book.edit",
+            vec![Change::update(
+                Entity::Work,
+                &work,
+                json!({ "title": "After the revocation" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        tablet.pull_from(&phone);
+        laptop.pull_from(&tablet);
+        tablet.pull_from(&laptop);
+        (laptop, phone, tablet, work)
+    }
+
+    #[test]
+    fn a_revoked_device_s_edit_relayed_by_a_third_device_does_not_apply() {
+        let (laptop, _phone, tablet, work) = edit_relayed_after_revocation(true);
+        assert_eq!(work_title(&laptop, &work), "Dune");
+        assert_eq!(work_title(&tablet, &work), "Dune");
+        assert_converged(&[&laptop, &tablet]);
+    }
+
+    #[test]
+    fn without_roles_a_revoked_device_s_relayed_edit_does_not_apply_either() {
+        let (laptop, _phone, tablet, work) = edit_relayed_after_revocation(false);
+        assert_eq!(work_title(&laptop, &work), "Dune");
+        assert_eq!(work_title(&tablet, &work), "Dune");
+        assert_converged(&[&laptop, &tablet]);
     }
 
     #[test]

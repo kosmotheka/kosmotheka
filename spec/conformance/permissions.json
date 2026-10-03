@@ -4048,5 +4048,135 @@
         "01997c7e-0000-7000-8000-000000000008"
       ]
     }
+  },
+  {
+    "name": "a revoked device writes nothing after its revocation, even without roles",
+    "note": "D71, D84 (SEG-015): what the device signs after a revocation still in force becomes a request, whichever device passes it on and in whatever order it arrives. What it signed before stays.",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000401",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000402",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000403",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000004a1",
+            "action": "create",
+            "fields": {
+              "name": "Before"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000404",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "library.revoke",
+        "changes": [
+          {
+            "entity": "revocation",
+            "id": "01997c7e-0000-7000-8000-0000000004b1",
+            "action": "create",
+            "fields": {
+              "device_id": "01997c7e-0000-7000-8000-0000000000fc",
+              "device_name": "tablet"
+            }
+          }
+        ]
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000405",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200040-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000004a2",
+            "action": "create",
+            "fields": {
+              "name": "After"
+            }
+          }
+        ]
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      [
+        0,
+        1,
+        2,
+        4,
+        3
+      ],
+      [
+        0,
+        1,
+        4,
+        2,
+        3
+      ],
+      [
+        0,
+        1,
+        3,
+        4,
+        2
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000401",
+        "01997c7e-0000-7000-8000-000000000402",
+        "01997c7e-0000-7000-8000-000000000403",
+        "01997c7e-0000-7000-8000-000000000404"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000405"
+      ]
+    }
   }
 ]

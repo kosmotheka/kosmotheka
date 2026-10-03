@@ -97,7 +97,12 @@ impl LibraryView for SqlView<'_> {
             .query_row(
                 "SELECT EXISTS (SELECT 1 FROM device_fences
                   WHERE library_id = ?1 AND device_id = ?2
-                    AND after_hlc < ?3 AND ?3 < until_hlc)",
+                    AND after_hlc < ?3 AND ?3 < until_hlc)
+                     OR EXISTS (SELECT 1 FROM revocations r
+                                  JOIN field_versions v
+                                    ON v.library_id = r.library_id AND v.entity = 'revocations'
+                                   AND v.entity_id = r.id AND v.field = 'device_id'
+                                 WHERE r.library_id = ?1 AND r.device_id = ?2 AND v.hlc < ?3)",
                 [self.library, device, hlc],
                 |row| row.get(0),
             )
@@ -123,6 +128,18 @@ impl SqlView<'_> {
         one == other
             || (self.member_of(one).is_some() && self.member_of(one) == self.member_of(other))
     }
+}
+
+/// Whether operations of the library must be judged again when something arrives
+/// late: roles, fences or revocations depend on the order of the log (D73, D84).
+pub fn judged_by_order(conn: &Connection, library: &str) -> Result<bool> {
+    Ok(has_roles(conn, library)?
+        || conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM device_fences WHERE library_id = ?1)
+                 OR EXISTS (SELECT 1 FROM revocations WHERE library_id = ?1)",
+            [library],
+            |row| row.get(0),
+        )?)
 }
 
 pub fn has_roles(conn: &Connection, library: &str) -> Result<bool> {
