@@ -73,6 +73,12 @@ db-test: ## Migrates the test database (idempotent)
 test: ## Runs the suite (usage: make test ARGS="--filter testAppliesAnOperation")
 	$(PHP) php bin/phpunit $(ARGS) $(END)
 
+# --------------------------------------------------------------- fixtures ---
+
+.PHONY: fixtures
+fixtures: migrate ## Vacía la base de DESARROLLO y la llena con los escenarios (docs/development/fixtures.md)
+	$(CONSOLE) doctrine:fixtures:load --no-interaction $(END)
+
 # ---------------------------------------------------------------- quality ---
 
 .PHONY: phpstan

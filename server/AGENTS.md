@@ -34,6 +34,7 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 | `Command/` | Console commands |
 | `Scheduler/` | Scheduled tasks (`symfony/scheduler`): an `#[AsSchedule]` provider, and the message + `#[AsMessageHandler]` it dispatches, when the job is small enough not to need its own `Message/`/`MessageHandler/` split. Today: `PurgeSchedule` runs `App\Security\AccountPurger` hourly (D49) |
 | `Sync/` | Everything about applying operations from clients. Today: `OperationSignature` (checks the author's Ed25519 signature, port of `crates/domain/src/signature.rs`) and its exception. *Planned (Phase 7):* the engine that applies operations to the catalog tables, the port of `sync::merge` |
+| `DataFixtures/` | Dev and test only (`make fixtures`, docs/development/fixtures.md): the scenario catalogue of the cloud, loaded through the real services, and `SigningDevice`, which builds and signs operations for the fixtures and the tests alike |
 
 `Enum/`, `Dto/`, `Repository/` and `Validator/` are standard Symfony convention and are used without asking. If something fits no folder and is not a plain utility, **ask before inventing a category**. An engine folder like `Sync/` is legitimate (Riddle has `Generator/`), but it gets documented here and in `docs/architecture/` when it is created.
 

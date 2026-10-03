@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\DataFixtures\SigningDevice;
 use App\Sync\OperationSignature;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\Spec;
-use App\Tests\Support\TestDevice;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
@@ -38,8 +38,8 @@ final class CloudSyncControllerTest extends WebTestCase
     /** @var array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string} */
     private array $jhonnySession;
 
-    private TestDevice $laptop;
-    private TestDevice $jhonny;
+    private SigningDevice $laptop;
+    private SigningDevice $jhonny;
 
     protected function setUp(): void
     {
@@ -50,8 +50,8 @@ final class CloudSyncControllerTest extends WebTestCase
 
         $this->familySession = $this->signInNewDevice($this->client, 'family@example.com');
         $this->jhonnySession = $this->signInNewDevice($this->client, 'jhonny@example.com');
-        $this->laptop = TestDevice::fromSession($this->familySession);
-        $this->jhonny = TestDevice::fromSession($this->jhonnySession);
+        $this->laptop = SigningDevice::fromSession($this->familySession);
+        $this->jhonny = SigningDevice::fromSession($this->jhonnySession);
     }
 
     // ------------------------------------------------------------ normal ---
@@ -146,7 +146,7 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testAnAuthorAbsentFromTheVectorComesInFull(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $phone = TestDevice::generate();
+        $phone = SigningDevice::generate();
         $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 10), $phone->publisher(self::LOCAL, self::T + 11)]);
 
         $response = $this->pull($this->familySession, $cloud, [$this->laptop->id => $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body'])[3]]);
@@ -363,8 +363,8 @@ final class CloudSyncControllerTest extends WebTestCase
     /** Battery 6. */
     public function testSomebodyElsesKeyForADeviceIdIsRefused(): void
     {
-        $phone = TestDevice::generate();
-        $impostor = TestDevice::generate($phone->id);
+        $phone = SigningDevice::generate();
+        $impostor = SigningDevice::generate($phone->id);
         $familyCloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $jhonnyCloud = $this->uploadedLibrary($this->jhonnySession, $this->jhonny);
 
@@ -459,7 +459,7 @@ final class CloudSyncControllerTest extends WebTestCase
      *
      * @return list<array<string, mixed>>
      */
-    private function upload(TestDevice $device, string $cloud): array
+    private function upload(SigningDevice $device, string $cloud): array
     {
         return [
             $device->registration(self::LOCAL, self::T),
@@ -472,7 +472,7 @@ final class CloudSyncControllerTest extends WebTestCase
     /**
      * @param array{headers: array<string, string>} $session
      */
-    private function uploadedLibrary(array $session, TestDevice $device): string
+    private function uploadedLibrary(array $session, SigningDevice $device): string
     {
         $cloud = $this->createCloudLibrary($session);
         $response = $this->push($session, $cloud, $this->upload($device, $cloud));

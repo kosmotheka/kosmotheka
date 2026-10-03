@@ -9,4 +9,5 @@ return [
     // Contrib recipe, skipped by Flex because allow-contrib is false
     // (composer.json): registered here by hand, test env only.
     DAMA\DoctrineTestBundle\DAMADoctrineTestBundle::class => ['test' => true],
+    Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class => ['dev' => true, 'test' => true],
 ];

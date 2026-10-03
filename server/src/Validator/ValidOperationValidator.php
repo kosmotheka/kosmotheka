@@ -26,7 +26,7 @@ final class ValidOperationValidator extends ConstraintValidator
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
     private const string INTENT = '/^[a-z_]+(\.[a-z_]+)+$/';
     /** Fixed namespace of mark ids (spec/README.md). Never change it. */
-    private const string MARK_NAMESPACE = '7b2f0c1e-4d8a-4f3e-9c61-2a5d8e0b4f17';
+    public const string MARK_NAMESPACE = '7b2f0c1e-4d8a-4f3e-9c61-2a5d8e0b4f17';
 
     public function validate(mixed $value, Constraint $constraint): void
     {
@@ -123,7 +123,7 @@ final class ValidOperationValidator extends ConstraintValidator
             $member = $fields['member_id'] ?? null;
             $work = $fields['work_id'] ?? null;
             if (!\is_string($member) || !\is_string($work)
-                || strtolower($change->id) !== $this->markId($member, $work)) {
+                || strtolower($change->id) !== self::markId($member, $work)) {
                 return $this->report(OperationErrorCode::WrongId, "$path.id");
             }
         }
@@ -134,7 +134,7 @@ final class ValidOperationValidator extends ConstraintValidator
     /**
      * The id of a person's mark on a work: UUID v5 of both, as spec/README.md fixes.
      */
-    private function markId(string $member, string $work): string
+    public static function markId(string $member, string $work): string
     {
         return Uuid::v5(Uuid::fromString(self::MARK_NAMESPACE), strtolower("$member:$work"))->toRfc4122();
     }

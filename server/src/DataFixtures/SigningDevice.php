@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Support;
+namespace App\DataFixtures;
 
 use App\Sync\OperationSignature;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A signing device for the cloud tests: builds operations the way the app does
- * and signs them with the same canonical bytes as App\Sync\OperationSignature.
- * Time is the wall-clock part of the HLC, so a test controls the order.
+ * A device that builds operations the way the app does and signs them with the
+ * same canonical bytes as App\Sync\OperationSignature. Fixtures and tests share
+ * it, so both sign the same way. Time is the wall-clock part of the HLC, so the
+ * caller controls the order.
+ *
+ * Only for dev and test: nothing in production builds operations.
  */
-final readonly class TestDevice
+final readonly class SigningDevice
 {
     public const string SERVER = 'https://kosmotheka.test';
 
@@ -26,13 +29,15 @@ final readonly class TestDevice
     /** A device with a fresh key; with an id of its own choosing, a stranger claiming someone else's id. */
     public static function generate(?string $id = null): self
     {
-        $keyPair = sodium_crypto_sign_keypair();
+        return self::fromKeyPair($id ?? Uuid::v4()->toRfc4122(), sodium_crypto_sign_keypair());
+    }
 
-        return new self(
-            $id ?? Uuid::v4()->toRfc4122(),
-            self::encode(sodium_crypto_sign_publickey($keyPair)),
-            sodium_crypto_sign_secretkey($keyPair),
-        );
+    /** The same id and key on every call: the key pair comes from a fixed 32-byte seed. */
+    public static function fromSeed(string $id, string $seedName): self
+    {
+        $seed = hash('sha256', 'kosmotheka fixtures: '.$seedName, true);
+
+        return self::fromKeyPair($id, sodium_crypto_sign_seed_keypair($seed));
     }
 
     /**
@@ -50,14 +55,14 @@ final readonly class TestDevice
     /**
      * @return array<string, mixed>
      */
-    public function registration(string $library, int $time): array
+    public function registration(string $library, int $time, string $name = 'Test device', ?string $memberId = null, ?string $operationId = null): array
     {
         return $this->sign($library, $time, 'device.register', [[
             'entity' => 'device',
             'id' => $this->id,
             'action' => 'create',
-            'fields' => ['public_key' => $this->publicKey, 'name' => 'Test device'],
-        ]]);
+            'fields' => ['public_key' => $this->publicKey, 'name' => $name] + (null === $memberId ? [] : ['member_id' => $memberId]),
+        ]], $operationId);
     }
 
     /**
@@ -65,14 +70,14 @@ final readonly class TestDevice
      *
      * @return array<string, mixed>
      */
-    public function link(string $library, string $cloudLibraryId, int $time): array
+    public function link(string $library, string $cloudLibraryId, int $time, ?string $operationId = null): array
     {
         return $this->sign($library, $time, 'library.link', [[
             'entity' => 'library',
             'id' => $library,
             'action' => 'update',
             'fields' => ['cloud_library_id' => $cloudLibraryId, 'cloud_server' => self::SERVER],
-        ]]);
+        ]], $operationId);
     }
 
     /**
@@ -90,13 +95,14 @@ final readonly class TestDevice
 
     /**
      * @param list<array<string, mixed>> $changes
+     * @param string|null                $id      the operation's id; a fresh one when null
      *
      * @return array<string, mixed>
      */
-    public function sign(string $library, int $time, string $intent, array $changes): array
+    public function sign(string $library, int $time, string $intent, array $changes, ?string $id = null): array
     {
         $operation = [
-            'id' => Uuid::v7()->toRfc4122(),
+            'id' => $id ?? Uuid::v7()->toRfc4122(),
             'library' => $library,
             'hlc' => \sprintf('%016d-%08x-%s', $time, 0, $this->id),
             'intent' => $intent,
@@ -116,6 +122,13 @@ final readonly class TestDevice
         $canonical = new OperationSignature()->canonical($decoded);
 
         return self::encode(sodium_crypto_sign_detached($canonical, $this->secretKey));
+    }
+
+    private static function fromKeyPair(string $id, string $keyPair): self
+    {
+        \assert('' !== $keyPair);
+
+        return new self($id, self::encode(sodium_crypto_sign_publickey($keyPair)), sodium_crypto_sign_secretkey($keyPair));
     }
 
     private static function encode(string $bytes): string
