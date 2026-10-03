@@ -236,7 +236,6 @@
   },
   "history": {
     "title": "Historial",
-    "show": "Ver el historial de «{{title}}»",
     "empty": "No hay cambios registrados. Los libros añadidos antes de existir el historial no lo tienen.",
     "intents": {
       "book_add": "Libro añadido",
@@ -268,9 +267,6 @@
     "panelLabel": "Ficha: {{title}}",
     "close": "Cerrar ficha",
     "back": "Atrás",
-    "owned_one": "Lo tienes",
-    "owned_other": "Lo tienes · {{count}}",
-    "noCopies": "Sin ejemplares",
     "statusPill": {
       "missing": "Me falta · sin ejemplares",
       "owned_one": "Lo tienes · {{count}} ejemplar",
@@ -365,7 +361,6 @@
     }
   },
   "burst": {
-    "open": "Alta rápida",
     "title": "Alta rápida",
     "description": "Escribe o escanea ISBN uno tras otro. Los libros encontrados se guardan al momento con los datos de ejemplar de abajo; nada se duplica.",
     "add": "Añadir",
@@ -492,11 +487,6 @@
     "ownerFootnote": "Cambiar de quién es un dispositivo cambia también sus permisos: pasa a tener los de su nueva persona.",
     "ownerReadOnly": "De quién es cada dispositivo lo decide quien administra {{library}}."
   },
-  "tabs": {
-    "catalog": "Catálogo",
-    "wishes_one": "Deseos ({{count}})",
-    "wishes_other": "Deseos ({{count}})"
-  },
   "check": {
     "description": "Escribe o escanea el ISBN. Funciona sin conexión.",
     "scan": "Escanear código de barras",
@@ -537,7 +527,6 @@
     "searchIn": "Buscar en {{library}}",
     "changeLibrary": "Cambiar de biblioteca",
     "libraries": "Tus bibliotecas",
-    "library": "Biblioteca",
     "myLibrary": "Mi biblioteca",
     "newLibrary": "Nueva biblioteca",
     "newLibraryHint": "O únete a una con su QR",
@@ -732,7 +721,6 @@
     "deleteBody_other": "Se quita de las {{count}} obras que la llevan. Las obras no se borran.",
     "delete": "Borrar etiqueta",
     "empty": "Todavía no hay etiquetas. Escribe una en una obra para crearla.",
-    "addPlaceholder": "Añadir etiqueta…",
     "create": "Crear «{{name}}»"
   },
   "sharing": {
@@ -1263,8 +1251,7 @@
       "noneBody": "Tus bibliotecas están en tus dispositivos y se comparten por la red de casa.",
       "signInOrCreate": "Iniciar sesión o crear cuenta",
       "optionalHint": "Opcional: sincroniza también a distancia.",
-      "connected": "Conectada · {{host}}",
-      "signOut": "Cerrar sesión"
+      "connected": "Conectada · {{host}}"
     },
     "sidebar": {
       "none": "Sin cuenta",

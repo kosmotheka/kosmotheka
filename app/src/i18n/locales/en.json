@@ -112,7 +112,6 @@
     "metal": "Metal",
     "soundtrack": "Soundtrack"
   },
-  "genresByKind": {},
   "form": {
     "title": "Add to {{library}}",
     "missingTitle": "Add to Missing in {{library}}",
@@ -223,7 +222,6 @@
   },
   "history": {
     "title": "History",
-    "show": "Show history of “{{title}}”",
     "empty": "No recorded changes. Books added before change history existed have none.",
     "intents": {
       "book_add": "Book added",
@@ -255,9 +253,6 @@
     "panelLabel": "Details: {{title}}",
     "close": "Close details",
     "back": "Back",
-    "owned_one": "You have it",
-    "owned_other": "You have it · {{count}}",
-    "noCopies": "No copies",
     "statusPill": {
       "missing": "Missing · no copies",
       "owned_one": "You have it · {{count}} copy",
@@ -352,7 +347,6 @@
     }
   },
   "burst": {
-    "open": "Quick add",
     "title": "Quick add",
     "description": "Type or scan ISBNs one after another. Found books are saved at once with the copy details below; nothing is duplicated.",
     "add": "Add",
@@ -479,11 +473,6 @@
     "ownerFootnote": "Changing whose a device is also changes its permissions: it gets those of its new person.",
     "ownerReadOnly": "Whose each device is is up to the administrators of {{library}}."
   },
-  "tabs": {
-    "catalog": "Catalog",
-    "wishes_one": "Wishlist ({{count}})",
-    "wishes_other": "Wishlist ({{count}})"
-  },
   "check": {
     "description": "Type or scan the ISBN. Works offline.",
     "scan": "Scan barcode",
@@ -524,7 +513,6 @@
     "searchIn": "Search in {{library}}",
     "changeLibrary": "Change library",
     "libraries": "Your libraries",
-    "library": "Library",
     "myLibrary": "My library",
     "newLibrary": "New library",
     "newLibraryHint": "Or join one with its QR code",
@@ -719,7 +707,6 @@
     "deleteBody_other": "It is removed from the {{count}} works that have it. Works are not deleted.",
     "delete": "Delete tag",
     "empty": "No tags yet. Type one on a work to create it.",
-    "addPlaceholder": "Add a tag…",
     "create": "Create “{{name}}”"
   },
   "sharing": {
@@ -1250,8 +1237,7 @@
       "noneBody": "Your libraries are on your devices and shared over your home network.",
       "signInOrCreate": "Sign in or create an account",
       "optionalHint": "Optional: also syncs remotely.",
-      "connected": "Connected · {{host}}",
-      "signOut": "Sign out"
+      "connected": "Connected · {{host}}"
     },
     "sidebar": {
       "none": "No account",

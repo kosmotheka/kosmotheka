@@ -7,7 +7,7 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | CAL-001 | descartado | baja | Parámetro `only` siempre vacío (falso: `notices` le pasa un filtro) | `requests.rs:91` | coordinador | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-001 | abierto | media | `library-merge.json` solo lo ejecuta Rust | `spec/conformance/library-merge.json` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | CON-002 | resuelto | media | `duplicate_library` registrado y sin pantalla | `lib.rs:149` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| CON-003 | abierto | baja | 177 traducciones sin uso aparente | `app/src/i18n/locales` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
+| CON-003 | resuelto | baja | 177 traducciones sin uso aparente (solo 9 de verdad; el resto, claves dinámicas) | `app/src/i18n/locales` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | COS-001 | resuelto | baja | Búsquedas que no descartan respuestas viejas | `book-form.tsx:1347`, `series-work-picker.tsx:51`, `tags-page.tsx:31` | triaje ts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | PRU-001 | resuelto | baja | Test ignorado que no se llama `live_*` | `signature.rs` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-001 | resuelto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
