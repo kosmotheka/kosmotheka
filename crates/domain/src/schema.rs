@@ -126,7 +126,11 @@ const WORK_FIELDS: &[FieldSpec] = &[
     field("kind", FieldType::OneOf(KINDS), true),
     field("title", FieldType::Text, true),
 ];
-const LIBRARY_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const LIBRARY_FIELDS: &[FieldSpec] = &[
+    field("name", FieldType::Text, true),
+    field("cloud_library_id", FieldType::Text, false),
+    field("cloud_server", FieldType::Text, false),
+];
 const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),

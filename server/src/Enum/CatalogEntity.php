@@ -102,7 +102,8 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
-            self::Library, self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
+            self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text()],
+            self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
             self::Member => [
                 'name' => $text(true),
                 'role' => new FieldSpec(FieldType::OneOf, false, self::ROLES),

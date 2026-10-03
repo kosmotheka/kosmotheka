@@ -135,6 +135,18 @@ Propuestas para construirlo:
 - **Actualizar:** un script que hace una copia, baja la versión nueva, aplica las migraciones y recarga PHP-FPM, con forma de volver atrás.
 - **Guía para quien monte su servidor**, en `docs/`: requisitos, variables, correo, proxy con HTTPS, copias y actualización.
 
+### 7.2 · Detalles cerrados al aceptar D84 (03/10/2026)
+
+**Condiciones del maintainer:** fixtures que simulen todos los casos, normales y costuras, para ver la base de datos (primero la del servidor; las bases SQLite de la app, cuando exista el cliente de la nube), y el código del servidor revisado por él **todo junto al final** de 7.2.
+
+- **La operación de enlace** es un cambio en la fila `library` con dos campos nuevos, `cloud_library_id` y `cloud_server`. Cambiar la biblioteca ya es cosa de administradores (D73), así que el enlace de un lector queda en petición sin reglas nuevas.
+- **Dos subidas a la vez (D84, costura 8):** gana el enlace con el HLC **más reciente**, porque es la regla normal de fusión campo a campo (D32) y todos los dispositivos ya la aplican igual. D84 decía «el más antiguo»; lo que importa es que sea determinista, y así no hace falta una regla aparte. La `C` que pierde se borra.
+- **Versión del esquema** en `spec/sync.json` (`schemaVersion`). Un test de Rust comprueba que coincide con las migraciones de la app, y el servidor la lee de ahí.
+- **Enlazar en el servidor:** una `C` recién creada no acepta nada hasta recibir su operación de enlace (con `cloud_library_id` igual a `C`), firmada por un dispositivo de la cuenta dueña: la firma se comprueba con la clave de ese dispositivo en la cuenta. El `push` de la subida la procesa primero. Desde entonces, `C` solo acepta operaciones de ese id local.
+- **Claves de firma por `C`:** salen de las filas `device` que se registran en el registro de `C` (D56); una clave distinta para un dispositivo ya registrado se rechaza, como en la app.
+- **Retiradas en la nube:** hasta 7.5 solo reciben los dispositivos de la cuenta dueña, así que la nube aún no lee retiradas del registro. Leerlas exige juzgar quién puede retirar, que llega con el motor de permisos de 7.4; entonces se añade, con su test hostil.
+- **Rutas:** `POST /v1/cloud/libraries` (crear `C`), `GET /v1/cloud/libraries` (las de la cuenta, para que un dispositivo nuevo sepa cuáles hay), `POST /v1/cloud/libraries/{C}/pull` y `/push`. Sin acceso, `404`.
+
 ## Batería de acceso
 
 Añadida el 03/10/2026 (D84). La primera línea de defensa son estos tests; la auditoría `library-access` es la segunda. Cada test se escribe antes que su arreglo, se ve fallar y después pasar. Toda regla nueva sobre quién recibe una biblioteca añade aquí su caso hostil ([AGENTS.md](../../AGENTS.md)).

@@ -36,6 +36,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0024_edition_notes.sql")),
     M::up(include_str!("../migrations/0025_drop_wishes.sql")),
     M::up(include_str!("../migrations/0026_device_fences.sql")),
+    M::up(include_str!("../migrations/0027_library_cloud.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -196,6 +197,18 @@ pub fn open_in_memory() -> Result<Connection> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_spec_has_the_same_schema_version_as_the_migrations() {
+        // The server reads spec/sync.json to know which devices it may sync with (D31, D84).
+        let spec: serde_json::Value =
+            serde_json::from_str(include_str!("../../../spec/sync.json")).unwrap();
+        let conn = open_in_memory().unwrap();
+        assert_eq!(
+            spec["schemaVersion"].as_i64(),
+            Some(crate::ops::schema_version(&conn).unwrap())
+        );
+    }
 
     #[test]
     fn migrations_are_valid() {

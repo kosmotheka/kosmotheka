@@ -229,7 +229,6 @@
             "properties": {
               "entity": {
                 "enum": [
-                  "library",
                   "person",
                   "publisher",
                   "tag"
@@ -244,6 +243,45 @@
                 "properties": {
                   "name": {
                     "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "library"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "cloud_library_id": {
+                    "description": "The library's own id in the cloud it is linked to (D84), set by the signed link operation of an administrator. Null when it is in no cloud.",
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cloud_server": {
+                    "description": "Base URL of the server that holds cloud_library_id (D84).",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 }
               }
