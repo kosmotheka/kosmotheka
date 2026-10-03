@@ -742,7 +742,7 @@ def read_values(spec):
             if info["lang"] == "rust":
                 m = re.search(rf"const {rest}: &\[&str\] = &\[(.*?)\];", info["src"], re.S)
             elif info["lang"] == "ts":
-                m = re.search(rf"export const {rest} = \[(.*?)\] as const", info["src"], re.S)
+                m = re.search(rf"(?:export )?const {rest} = \[(.*?)\] as const", info["src"], re.S)
             else:
                 m = None
             if m:
@@ -750,7 +750,7 @@ def read_values(spec):
         return None
     if kind == "type":
         for path, info in FILES.items():
-            m = info["lang"] == "ts" and re.search(rf"export type {rest} =(.*?);", info["src"], re.S)
+            m = info["lang"] == "ts" and re.search(rf"(?:export )?type {rest} =(.*?);", info["src"], re.S)
             if m:
                 return re.findall(r"\"(\w+)\"", m.group(1))
         return None
@@ -798,7 +798,7 @@ def section_lists(lines):
                     issues.append(f"cannot read TS `{item['ts']}`")
                 else:
                     extra = sorted(set(ts) - set(values) - set(item.get("ts_extra", [])))
-                    missing = sorted(set(values) - set(ts))
+                    missing = sorted(set(values) - set(ts) - set(item.get("internal", [])))
                     if missing:
                         issues.append(f"missing in TS: {', '.join(missing)}")
                     if extra and not item["ts"].startswith("switch:"):
@@ -856,7 +856,7 @@ def section_structs(lines):
     ts = {}
     for path, info in FILES.items():
         if info["lang"] == "ts" and path.startswith("app/src/lib/"):
-            for m in re.finditer(r"export interface (\w+)(?: extends [\w, ]+)? \{", info["src"]):
+            for m in re.finditer(r"^(?:export )?interface (\w+)(?: extends [\w, ]+)? \{", info["src"], re.M):
                 end = block_end(info["masked"], m.end() - 1)
                 body = re.sub(r"/\*.*?\*/|//[^\n]*", "", info["src"][m.end():end or m.end()], flags=re.S)
                 depth, own = 0, set()
