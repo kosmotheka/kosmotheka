@@ -349,7 +349,7 @@ fn read_covers(
         let Some(extension) = cover_extension(&name) else {
             continue;
         };
-        if entry.size() as usize > MAX_COVER_BYTES {
+        if entry.size() > MAX_COVER_BYTES as u64 {
             continue;
         }
         let mut bytes = Vec::new();
@@ -404,7 +404,7 @@ fn count(conn: &Connection, library: &str, entity: Entity) -> Result<usize> {
         [library],
         |r| r.get(0),
     )?;
-    Ok(n as usize)
+    Ok(usize::try_from(n).unwrap_or_default())
 }
 
 fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {

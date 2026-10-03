@@ -14,3 +14,13 @@ lto = true
 opt-level = "s"
 panic = "abort"
 strip = true
+
+# Clippy's defaults, plus the pedantic lints that can hide a real bug: numbers
+# cut or sign-flipped by `as`, extensions compared case-sensitively, time going
+# below zero. CI runs clippy with -D warnings, so these fail the build.
+[workspace.lints.clippy]
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_sign_loss = "warn"
+case_sensitive_file_extension_comparisons = "warn"
+unchecked_time_subtraction = "warn"

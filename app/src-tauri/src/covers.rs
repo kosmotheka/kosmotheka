@@ -39,7 +39,7 @@ impl Covers {
         let extension = extension_for(&content_type).ok_or(Error::CoverRejected("not an image"))?;
         if response
             .content_length()
-            .is_some_and(|length| length as usize > MAX_COVER_BYTES)
+            .is_some_and(|length| length > MAX_COVER_BYTES as u64)
         {
             return Err(Error::CoverRejected("too large"));
         }

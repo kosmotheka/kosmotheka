@@ -622,7 +622,11 @@ mod live {
             .unwrap();
 
         println!("stored as {name}");
-        assert!(name.ends_with(".jpg"));
+        assert!(
+            std::path::Path::new(&name)
+                .extension()
+                .is_some_and(|ext| ext == "jpg")
+        );
         assert!(covers.dir().join(&name).metadata().unwrap().len() > 10_000);
     }
 

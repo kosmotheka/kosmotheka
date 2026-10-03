@@ -129,7 +129,10 @@ fn delete_bak_siblings(path: &Path) -> Result<()> {
     for entry in std::fs::read_dir(dir)?.flatten() {
         let name = entry.file_name();
         let Some(name) = name.to_str() else { continue };
-        if name.starts_with(&prefix) && name.ends_with(".bak") {
+        let is_bak = Path::new(name)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("bak"));
+        if name.starts_with(&prefix) && is_bak {
             delete_if_exists(&entry.path())?;
         }
     }
@@ -153,7 +156,7 @@ fn open_file(path: &Path) -> Result<Connection> {
 /// (`library.sqlite3.v8.bak`), so a failed update can be undone by putting it back.
 fn copy_before_migrating(conn: &Connection, path: &Path) -> Result<()> {
     let current: i64 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
-    if current == 0 || current >= MIGRATIONS_SLICE.len() as i64 {
+    if current == 0 || current >= i64::try_from(MIGRATIONS_SLICE.len()).unwrap_or(i64::MAX) {
         return Ok(());
     }
     let mut copy = path.as_os_str().to_owned();

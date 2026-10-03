@@ -95,7 +95,7 @@ fn candidate_from_doc(doc: &Value) -> Candidate {
     candidate.published_year = doc
         .get("first_publish_year")
         .and_then(Value::as_i64)
-        .map(|y| y as i32);
+        .and_then(|y| i32::try_from(y).ok());
     candidate.publisher = doc
         .get("publisher")
         .and_then(Value::as_array)

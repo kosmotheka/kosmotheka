@@ -523,7 +523,9 @@ pub fn write_state(conn: &Connection, key: &str, value: Option<&str>) -> Result<
 fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_millis() as u64)
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 /// Parses a stored operation's `changes` column, skipping any change whose entity

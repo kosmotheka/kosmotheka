@@ -84,7 +84,7 @@ mod tests {
         assert!(window.accepts("secret"));
         assert!(!window.accepts("other"));
         let expired = PairingWindow {
-            expires: Instant::now() - Duration::from_secs(1),
+            expires: Instant::now().checked_sub(Duration::from_secs(1)).unwrap(),
             ..window
         };
         assert!(!expired.accepts("secret"));

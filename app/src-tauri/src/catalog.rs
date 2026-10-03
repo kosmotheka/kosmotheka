@@ -450,7 +450,7 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
             CopyInput {
                 owner: copy.owner,
                 format: copy.format,
-                quantity: copy.quantity as u32,
+                quantity: u32::try_from(copy.quantity).unwrap_or_default(),
                 location: copy.location,
                 acquired_on: copy.acquired_on,
                 platform: copy.platform,
@@ -715,7 +715,7 @@ impl<'a> Plan<'a> {
         }
 
         for (position, name) in names.iter().enumerate() {
-            let position = position as i64;
+            let position = i64::try_from(position).unwrap_or(i64::MAX);
             let person_id = self.find_or_create(Entity::Person, name)?;
             match current.remove(&person_id) {
                 Some((_, old_position)) if old_position == position => {}
