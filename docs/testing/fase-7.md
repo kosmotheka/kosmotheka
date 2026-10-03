@@ -4,7 +4,7 @@
 
 ## Antes de empezar
 
-- **Datos de antes del 27/09:** desde el 03/10/2026 toda operación va firmada (D56) y la nube no acepta historia sin firmar. Si tu instalación es anterior, sus bibliotecas no se podrán subir tal cual: la app ofrecerá «Duplicar como nueva». Para estas pruebas, mejor empezar con carpetas de datos nuevas.
+- **Datos de antes del 04/10/2026:** desde el 03/10 toda operación va firmada (D56) y desde el 04/10 cada una encadena la anterior de su autor (D87). La historia anterior no viaja: la app ofrecerá «Duplicar como nueva». Para estas pruebas, empieza con carpetas de datos nuevas (o con `make app-fixtures`).
 - **Servidor:** `cd server && make up && make migrate`. La API queda en `http://localhost:8095` y el correo en Mailpit (`docs/development/server.md`).
 - **App:** `cd app && npm run tauri dev`. Cada instancia extra se abre con su propia carpeta: `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b target/debug/kosmotheka` (ver `fase-2.md`).
 - **Iniciar sesión contra el servidor local:** en la cuenta, «Iniciar sesión» → «Otro servidor» → `http://localhost:8095`.
