@@ -41,4 +41,9 @@ enum AccountErrorCode: string
     case TwoFactorNotEnabled = 'two_factor_not_enabled';
     case InvalidTwoFactorCode = 'invalid_two_factor_code';
     case TwoFactorRequired = 'two_factor_required';
+
+    // Milestone 7.2: the cloud routes (docs/architecture/cloud.md).
+    case NotFound = 'not_found';
+    case SchemaVersion = 'schema_version';
+    case InvalidRequest = 'invalid_request';
 }

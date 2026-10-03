@@ -25,13 +25,16 @@ final readonly class OperationPayload
      */
     public const array SERIALIZATION_CONTEXT = [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false];
 
+    /** Time, counter and device: `0001727222222222-00000003-<device id>`. */
+    public const string HLC_PATTERN = '/^[0-9]{16}-[0-9a-f]{8}-.+$/';
+
     /**
      * @param list<ChangePayload> $changes
      */
     public function __construct(
         public string $id,
         public string $library,
-        #[Assert\Regex('/^[0-9]{16}-[0-9a-f]{8}-.+$/', message: 'Not a hybrid logical clock timestamp.')]
+        #[Assert\Regex(self::HLC_PATTERN, message: 'Not a hybrid logical clock timestamp.')]
         public string $hlc,
         public string $intent,
         public array $changes,

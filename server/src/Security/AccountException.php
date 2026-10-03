@@ -129,4 +129,22 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::TwoFactorRequired, 401);
     }
+
+    /** A cloud library the account cannot reach: the same answer as one that does not exist (D84). */
+    public static function notFound(): self
+    {
+        return new self(AccountErrorCode::NotFound, 404);
+    }
+
+    /** The client and the server are on different database versions and must not sync (D31). */
+    public static function schemaVersionMismatch(): self
+    {
+        return new self(AccountErrorCode::SchemaVersion, 409);
+    }
+
+    /** A body that is not JSON of the expected shape, where the Serializer cannot be used. */
+    public static function invalidRequest(): self
+    {
+        return new self(AccountErrorCode::InvalidRequest, 400);
+    }
 }

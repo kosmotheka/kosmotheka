@@ -1360,6 +1360,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   - **Coste aceptado:** una edición honrada hecha sin conexión justo antes de enterarse de la bajada queda como petición, y quien administra la acepta. Nadie pierde nada.
 - **Retirada a través de un tercero (SEG-015, arreglado el 03/10/2026):** retirar el acceso solo cortaba el intercambio directo; lo que el dispositivo retirado firmaba después llegaba a todos a través de otro que aún no lo sabía, y se aplicaba. Ahora una retirada en vigor es una marca abierta: lo que ese dispositivo firme después pasa a petición, con roles y sin ellos, hasta que se le devuelva el acceso.
 
+**Operaciones sin firma en la nube (decidido el 03/10/2026):** la nube rechaza las operaciones sin firma, y la app no sube una biblioteca con historia sin firmar: propone «Duplicar como nueva» (D58). Aceptarlas habría sido coherente con D73, pero una biblioteca subida con huecos dejaría distintas para siempre las copias de quien solo sincroniza con la nube; los datos de antes de las firmas son de prueba y pueden perderse.
+
 **Pendiente hasta 7.4:**
 - **Un lector con una app modificada** puede subir una copia a su propia cuenta. No obtiene nada que no tuviera (D73), y nadie de su familia se conecta a esa copia (punto 3), pero hasta 7.4 el servidor no sabe de roles para impedirlo (SEG-013).
 
