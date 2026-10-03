@@ -14,6 +14,18 @@ pub struct Hlc {
     pub device: String,
 }
 
+/// How far ahead of this device's clock a received timestamp may be. Beyond it the
+/// sender's clock is wrong, and taking its time would let it win every field it
+/// touches and drag this clock along for good (DAT-005).
+pub const MAX_CLOCK_DRIFT_MILLIS: u64 = 60 * 60 * 1000;
+
+impl Hlc {
+    /// Whether this timestamp is further ahead of `now_millis` than any honest clock.
+    pub fn is_ahead_of(&self, now_millis: u64) -> bool {
+        self.millis > now_millis.saturating_add(MAX_CLOCK_DRIFT_MILLIS)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 #[error("malformed HLC timestamp")]
 pub struct HlcParseError;
@@ -39,10 +51,9 @@ impl HlcClock {
     /// moved, the counter keeps timestamps strictly increasing.
     pub fn tick(&mut self, now_millis: u64) -> Hlc {
         if now_millis > self.last_millis {
-            self.last_millis = now_millis;
-            self.last_counter = 0;
+            self.set(now_millis, None);
         } else {
-            self.last_counter += 1;
+            self.set(self.last_millis, Some(self.last_counter));
         }
         self.current()
     }
@@ -51,18 +62,28 @@ impl HlcClock {
     /// timestamp and the remote one, so causality is preserved across devices.
     pub fn receive(&mut self, remote: &Hlc, now_millis: u64) -> Hlc {
         let millis = now_millis.max(self.last_millis).max(remote.millis);
-        let counter = if millis == self.last_millis && millis == remote.millis {
-            self.last_counter.max(remote.counter) + 1
+        let after = if millis == self.last_millis && millis == remote.millis {
+            Some(self.last_counter.max(remote.counter))
         } else if millis == self.last_millis {
-            self.last_counter + 1
+            Some(self.last_counter)
         } else if millis == remote.millis {
-            remote.counter + 1
+            Some(remote.counter)
         } else {
-            0
+            None
         };
-        self.last_millis = millis;
-        self.last_counter = counter;
+        self.set(millis, after);
         self.current()
+    }
+
+    /// Moves to `millis`, with the counter just past `after`. A full counter moves
+    /// on to the next millisecond instead of wrapping to 0, which would go
+    /// backwards (SEG-020).
+    fn set(&mut self, millis: u64, after: Option<u32>) {
+        (self.last_millis, self.last_counter) = match after.map(|c| c.checked_add(1)) {
+            None => (millis, 0),
+            Some(Some(counter)) => (millis, counter),
+            Some(None) => (millis + 1, 0),
+        };
     }
 
     fn current(&self) -> Hlc {
@@ -159,6 +180,49 @@ mod tests {
             clock.tick(160) > after,
             "later local events stay after the remote one"
         );
+    }
+
+    #[test]
+    fn a_full_counter_moves_on_to_the_next_millisecond() {
+        let last = Hlc {
+            millis: 1_000,
+            counter: u32::MAX,
+            device: "a".into(),
+        };
+        let mut clock = HlcClock::new("a", Some(&last));
+
+        let next = clock.tick(500);
+
+        assert!(next > last);
+        assert_eq!((next.millis, next.counter), (1_001, 0));
+    }
+
+    #[test]
+    fn receiving_a_full_counter_stays_ahead_of_it() {
+        let mut clock = HlcClock::new("a", None);
+        let remote = Hlc {
+            millis: 2_000,
+            counter: u32::MAX,
+            device: "b".into(),
+        };
+
+        let next = clock.receive(&remote, 1_000);
+
+        assert!(next > remote);
+        assert_eq!((next.millis, next.counter), (2_001, 0));
+    }
+
+    #[test]
+    fn a_timestamp_more_than_the_allowed_drift_ahead_is_from_the_future() {
+        let now = 10_000_000;
+        let at = |millis| Hlc {
+            millis,
+            counter: 0,
+            device: "b".into(),
+        };
+
+        assert!(!at(now + MAX_CLOCK_DRIFT_MILLIS).is_ahead_of(now));
+        assert!(at(now + MAX_CLOCK_DRIFT_MILLIS + 1).is_ahead_of(now));
     }
 
     #[test]

@@ -266,9 +266,11 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         // must stay below it so the next sync sends it again (DAT-004).
         let author = (operation.library.clone(), operation.hlc.device.clone());
         // An older version is history from before an update (D31); a newer one
-        // may mean something this app does not know.
+        // may mean something this app does not know. A clock far ahead waits until
+        // ours catches up, rather than winning every field it touches (DAT-005).
         if held_back.contains(&author)
             || schema_version > local_schema
+            || operation.hlc.is_ahead_of(now_millis())
             || operation.validate().is_err()
             || !signature_holds(tx, &operation)?
         {
@@ -1157,6 +1159,28 @@ mod tests {
 
         assert_eq!(b.titles().len(), 2);
         assert_converged(&[&a, &b]);
+    }
+
+    #[test]
+    fn an_operation_from_a_clock_far_ahead_waits_and_does_not_drag_the_clock() {
+        let mut a = Device::new();
+        let mut b = Device::empty_for(&a);
+        b.pull_from(&a);
+        // A's clock says two hours from now: its operations carry that time, signed.
+        let ahead = Hlc {
+            millis: now_millis() + 2 * 60 * 60 * 1000,
+            counter: 0,
+            device: ops::device_id(&a.0).unwrap(),
+        };
+        ops::set_last_hlc(&a.0, &ahead).unwrap();
+        a.add("Tomorrow", None, "Ana");
+
+        let report = b.pull_from(&a);
+
+        assert!(report.rejected >= 1);
+        assert!(b.titles().is_empty());
+        let clock = ops::last_hlc(&b.0).unwrap().unwrap();
+        assert!(!clock.is_ahead_of(now_millis()) && clock.millis < ahead.millis);
     }
 
     #[test]

@@ -17,7 +17,7 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | DAT-002 | resuelto | crítica | `adopt_link` salta las operaciones intermedias del autor del enlace | `cloud/mod.rs:418-449` | library-access | 2026-10-03 | | 2026-10-03 |
 | DAT-003 | resuelto | crítica | Tras actualizar la app, las operaciones de la versión anterior se rechazan siempre | `sync.rs:264`, `ops.rs:351` | sync-convergence | 2026-10-03 | | 2026-10-03 |
 | DAT-004 | resuelto | media | En la app, una operación rechazada deja un hueco que el vector nunca vuelve a pedir | `sync.rs:264-269` | sync-convergence | 2026-10-03 | | 2026-10-03 |
-| DAT-005 | abierto | media | El HLC no limita el desfase de reloj de otro dispositivo | `crates/domain/src/hlc.rs:52` | sync-convergence | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| DAT-005 | resuelto | media | El HLC no limita el desfase de reloj de otro dispositivo | `crates/domain/src/hlc.rs:52` | sync-convergence | 2026-10-03 | | 2026-10-04 |
 | DAT-006 | abierto | media | Un borrado que choca con una clave foránea sin cascada se descarta sin lápida | `sync.rs:458-461`, `0009_libraries.sql:83` | sync-convergence | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
 | PRU-001 | resuelto | baja | Test ignorado que no se llama `live_*` | `signature.rs` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-001 | resuelto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
@@ -39,5 +39,5 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | SEG-017 | resuelto | alta | Una biblioteca que se dejó o se retiró vuelve a bajar sola de la nube | `cloud/mod.rs:375-378`, `libraries.rs:341-351` | library-access | 2026-10-03 | | 2026-10-03 |
 | SEG-018 | abierto | alta | Una operación nueva firmada por debajo de la marca de una valla se juzga con el rol antiguo | `permissions.rs:95-110` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
 | SEG-019 | abierto | media | El servidor registra la clave de un dispositivo en `C` con la primera operación que llega | `server/src/Sync/CloudPush.php:170-182` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
-| SEG-020 | abierto | media | El contador `u32` del HLC desborda con una operación remota | `crates/domain/src/hlc.rs:45-59` | sync-convergence | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| SEG-020 | resuelto | media | El contador `u32` del HLC desborda con una operación remota | `crates/domain/src/hlc.rs:45-59` | sync-convergence | 2026-10-03 | | 2026-10-04 |
 | SEG-021 | abierto | baja | `isLink` del servidor no exige que el cambio sea de la fila de la propia biblioteca | `server/src/Sync/CloudPush.php:210-221` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
