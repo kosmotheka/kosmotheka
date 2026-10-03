@@ -25,13 +25,13 @@ Todo lo que sigue ocurre **biblioteca a biblioteca** (D46, D54):
 **Cada dispositivo elige lo que envía.** Al emparejar, los dos marcan qué bibliotecas comparten con el otro, y se puede cambiar después en «Compartir y dispositivos». Nada sale sin marcarlo.
 
 **La oferta.** En cada sincronización, las claves de los vectores que manda cada lado son su oferta: las bibliotecas que comparte con el otro. Al recibirla, cada dispositivo concilia (`lan::reconcile`):
-- **Una biblioteca que no tiene** la acepta: la añade a `library_peers` y la recibe entera. Si la acepta el cliente, hace una segunda vuelta en la misma sincronización para traerla.
+- **Una biblioteca que nunca tuvo** la acepta: la añade a `library_peers` y la recibe entera. Si la acepta el cliente, hace una segunda vuelta en la misma sincronización para traerla. Una biblioteca **borrada** cuenta como tenida: conserva su registro y su borrado (D65, D66), y aceptarla sola llevaría ese borrado a quien nunca la compartió con este dispositivo (SEG-010, `libraries::library_known`).
 - **Una biblioteca que ya tiene** no la acepta por su cuenta: compartir lo propio es siempre una decisión de ese dispositivo. Por eso «Mi biblioteca» (el mismo id en todos, D46) solo se une si **los dos** la marcan.
 - Una biblioteca viaja solo cuando **los dos lados** la comparten.
 
 **Retirar el acceso** (desmarcar en «Qué va a…» o «Dejar de compartir» en los ajustes de la biblioteca):
 - Se registra una operación `library.revoke` que crea una fila `revocation` (dispositivo y su nombre) en esa biblioteca. Viaja a todos los que la comparten, y **ninguno** vuelve a compartirla con ese dispositivo: la retirada gana sobre la lista local de cada uno.
-- Cada sincronización lleva unos **avisos** (`SharingNotices`): `revoked`, las bibliotecas a las que el otro ya no tiene acceso. Al recibirlo, el afectado **borra la biblioteca** (contenido y registro, como al salir) y lo cuenta en el informe (`removed`). Solo lo acepta de un dispositivo con el que compartía esa biblioteca.
+- Cada sincronización lleva unos **avisos** (`SharingNotices`): `revoked`, las bibliotecas a las que el otro ya no tiene acceso, y `proofs`, las operaciones firmadas que crearon esas retiradas. Al recibirlo, el afectado fusiona esas operaciones y las juzga como cualquier otra (firma y permisos, D73); solo si queda una retirada que le nombra **borra la biblioteca** (contenido y registro, como al salir) y lo cuenta en el informe (`removed`). Un aviso sin retirada válida no borra nada (SEG-011): un compañero con una app modificada no puede hacer que otro pierda una biblioteca. Además, solo lo acepta de un dispositivo con el que compartía esa biblioteca.
 - Sus cambios que no llegaron antes de la retirada se descartan: ya no se comparte con él.
 - **Devolver el acceso** (`library.grant`) borra la fila de retirada y vuelve a compartir: la biblioteca llega entera otra vez.
 

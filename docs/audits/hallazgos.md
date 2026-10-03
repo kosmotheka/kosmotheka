@@ -21,8 +21,8 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | SEG-007 | resuelto | baja | En Windows la clave TLS se escribe sin permisos propios | `lan/identity.rs:109-112` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-008 | abierto | baja | Dependencias con avisos sin parche, fuera del uso de la app | `Cargo.lock`, `package-lock.json` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-009 | resuelto | baja | Dockerfiles de desarrollo como root o con `sudo` | `server/docker/*/Dockerfile` | supply-chain | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| SEG-010 | abierto | crítica | Una biblioteca borrada se acepta sola y su borrado arrasa la del otro | `lan/mod.rs:454-462` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
-| SEG-011 | abierto | alta | Un aviso `revoked` falso hace borrar una biblioteca entera | `lan/mod.rs:430-435` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-010 | resuelto | crítica | Una biblioteca borrada se acepta sola y su borrado arrasa la del otro | `lan/mod.rs:454-462` | library-access | 2026-10-03 | 2026-10-03 | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-011 | resuelto | alta | Un aviso `revoked` falso hace borrar una biblioteca entera | `lan/mod.rs:430-435` | library-access | 2026-10-03 | 2026-10-03 | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-012 | abierto | alta | El plan de la nube no dice de quién es un id de biblioteca | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-013 | abierto | alta | «Puede compartir» al subir a la nube solo lo comprueba la app | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-014 | abierto | media | Quien perdió un rol puede antedatar operaciones firmadas a antes de perderlo | `sync.rs` (`merge_in`), `permissions.rs` | coordinador (test `a_demoted_editor_cannot_backdate_a_change`) | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |

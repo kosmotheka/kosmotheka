@@ -24,6 +24,7 @@ use super::{
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
+use crate::libraries;
 use crate::ops;
 use crate::sync;
 
@@ -248,12 +249,12 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
         let offered: Vec<String> = pulled.vectors.keys().cloned().collect();
         let shared = reconcile(&mut conn, device_id, &offered, &pulled.notices)?;
         let taken_up = shared.iter().any(|library| !before.contains(library));
-        let removed: Vec<String> = pulled
-            .notices
-            .revoked
-            .into_iter()
-            .filter(|library| before.contains(library))
-            .collect();
+        let mut removed = Vec::new();
+        for library in &pulled.notices.revoked {
+            if before.contains(library) && !libraries::library_exists(&conn, library)? {
+                removed.push(library.clone());
+            }
+        }
         let received = sync::merge(
             &mut conn,
             only_shared_operations(pulled.operations, &shared),
@@ -376,7 +377,7 @@ mod tests {
     use crate::lan::identity::Identity;
     use crate::lan::pairing::PairingWindow;
     use crate::lan::server::{self, RunningServer, ServerState};
-    use crate::lan::{list_devices, random_secret};
+    use crate::lan::{SharingNotices, list_devices, random_secret};
     use crate::libraries;
     use crate::ops::DEFAULT_LIBRARY_ID;
 
@@ -720,6 +721,102 @@ mod tests {
 
         assert_eq!(report.removed, vec![club.clone()]);
         assert!(!has_library(&phone, &club));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_deleted_library_is_not_taken_up_when_offered() {
+        // SEG-010: the desk deleted its default library long ago; its log keeps the
+        // delete. The phone shares its own default library, which has the same fixed
+        // id, and the desk shares nothing. Nothing may move, and above all the
+        // desk's delete must never reach the phone.
+        let (desk, club) = desk_with_club().await;
+        libraries::set_active_library(&desk.database.lock().unwrap(), &club).unwrap();
+        libraries::delete_library(&mut desk.database.lock().unwrap(), DEFAULT_LIBRARY_ID).unwrap();
+        let phone = Database::in_memory();
+        add(&phone, "Phone's own");
+
+        let code = open_pairing_for(&desk, vec![]);
+        let server = pair(&phone, &code, &default()).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(titles(&phone), vec!["Phone's own"]);
+        assert!(!has_library(&desk.database, DEFAULT_LIBRARY_ID));
+        assert!(
+            shared_libraries(&desk.database.lock().unwrap(), &id_of(&phone))
+                .unwrap()
+                .is_empty(),
+            "the desk did not choose to share it"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_forged_revocation_notice_removes_nothing() {
+        // SEG-011: a paired phone that only reads sends, with a modified app, a
+        // notice saying the desk lost access to the club. No signed revocation
+        // backs it, so the desk keeps the library and its log.
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        crate::people::start_roles(&mut desk.database.lock().unwrap(), &club, "Ana", &[]).unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        // First a bare notice, then one with a revocation the phone signed itself,
+        // which a reader may not make.
+        let desk_id = id_of(&desk.database);
+        let mut own_proof = kosmotheka_domain::Operation {
+            id: ops::new_id(),
+            library: club.clone(),
+            hlc: ops::last_hlc(&phone.lock().unwrap()).unwrap().unwrap(),
+            intent: "library.revoke".into(),
+            changes: vec![kosmotheka_domain::Change::create(
+                kosmotheka_domain::Entity::Revocation,
+                ops::new_id(),
+                serde_json::json!({ "device_id": desk_id, "device_name": "Desk" }),
+            )],
+            signature: None,
+        };
+        own_proof.hlc.millis += 1;
+        own_proof.signature = Some(
+            ops::signing_key(&phone.lock().unwrap())
+                .unwrap()
+                .sign(&own_proof),
+        );
+        let client = pinned_client(&server.fingerprint).unwrap();
+        let phone_id = id_of(&phone);
+        for proofs in [vec![], vec![own_proof]] {
+            let forged = {
+                let conn = phone.lock().unwrap();
+                PullRequest {
+                    schema_version: ops::schema_version(&conn).unwrap(),
+                    vectors: sync::version_vectors(&conn, std::slice::from_ref(&club)).unwrap(),
+                    notices: SharingNotices {
+                        revoked: vec![club.clone()],
+                        left: vec![],
+                        proofs: proofs
+                            .into_iter()
+                            .map(|operation| sync::SyncOperation {
+                                schema_version: ops::schema_version(&conn).unwrap(),
+                                operation,
+                            })
+                            .collect(),
+                    },
+                }
+            };
+            let _: (PullResponse, String) = post(
+                &client,
+                &server.addresses,
+                "/v1/sync/pull",
+                Some((phone_id.as_str(), server.secret.as_str())),
+                &forged,
+            )
+            .await
+            .unwrap();
+        }
+
+        assert!(has_library(&desk.database, &club));
+        assert_eq!(titles_in(&desk.database, &club), vec!["Club book"]);
     }
 
     #[tokio::test(flavor = "multi_thread")]

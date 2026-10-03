@@ -9,7 +9,7 @@ pub mod service;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use kosmotheka_domain::{Change, Entity};
+use kosmotheka_domain::{Action, Change, Entity};
 use rand::RngExt;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
@@ -76,10 +76,16 @@ pub struct PullResponse {
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SharingNotices {
-    /// Libraries the receiver no longer has access to: it removes them.
+    /// Libraries the receiver no longer has access to: it removes them, but only
+    /// once `proofs` show it (SEG-011).
     pub revoked: Vec<String>,
     /// Libraries the sender left: the receiver stops offering them.
     pub left: Vec<String>,
+    /// The signed operations that created the revocations behind `revoked`. The
+    /// receiver merges them and judges them like any other operation: a notice
+    /// nobody allowed to revoke has signed removes nothing.
+    #[serde(default)]
+    pub proofs: Vec<SyncOperation>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -398,7 +404,8 @@ pub fn revocations_of(conn: &Connection, library: &str, device_id: &str) -> Resu
         .collect::<rusqlite::Result<_>>()?)
 }
 
-/// What this device has to tell `peer`: where it lost access, and what this device left.
+/// What this device has to tell `peer`: where it lost access, with the operations
+/// that say so, and what this device left.
 pub fn notices_for(conn: &Connection, peer: &str) -> Result<SharingNotices> {
     let list = |sql: &str| -> Result<Vec<String>> {
         Ok(conn
@@ -406,20 +413,42 @@ pub fn notices_for(conn: &Connection, peer: &str) -> Result<SharingNotices> {
             .query_map([peer], |row| row.get(0))?
             .collect::<rusqlite::Result<_>>()?)
     };
+    let revoked = list(
+        "SELECT DISTINCT library_id FROM revocations WHERE device_id = ?1 ORDER BY library_id",
+    )?;
+    let mut proofs = Vec::new();
+    for library in &revoked {
+        let vectors = LibraryVectors::from([(library.clone(), Default::default())]);
+        proofs.extend(
+            crate::sync::operations_since(conn, &vectors)?
+                .into_iter()
+                .filter(|synced| revokes(&synced.operation.changes, peer)),
+        );
+    }
     Ok(SharingNotices {
-        revoked: list(
-            "SELECT DISTINCT library_id FROM revocations WHERE device_id = ?1 ORDER BY library_id",
-        )?,
+        revoked,
         left: list(
             "SELECT library_id FROM leave_notices WHERE device_id = ?1 ORDER BY library_id",
         )?,
+        proofs,
+    })
+}
+
+/// Whether the changes create a revocation for `device`.
+fn revokes(changes: &[Change], device: &str) -> bool {
+    changes.iter().any(|change| {
+        change.entity == Entity::Revocation
+            && change.action == Action::Create
+            && change.fields.get("device_id").and_then(|v| v.as_str()) == Some(device)
     })
 }
 
 /// Agrees with `peer` on which libraries both share, from what it offers and its
 /// notices, and returns them. A library travels only when both sides share it.
-/// An offer is taken up only for a library this device does not have: sharing one
-/// of its own is always this device's choice ("nothing leaves without saying").
+/// An offer is taken up only for a library this device never had: sharing one of
+/// its own is always this device's choice ("nothing leaves without saying"), and a
+/// deleted one keeps its log and its delete, which must not reach anyone it was
+/// never shared with (SEG-010).
 pub fn reconcile(
     conn: &mut Connection,
     peer: &str,
@@ -427,9 +456,22 @@ pub fn reconcile(
     notices: &SharingNotices,
 ) -> Result<Vec<String>> {
     let shared = shared_libraries(conn, peer)?;
+    let me = ops::device_id(conn)?;
     for library in &notices.revoked {
-        // Only the peers it was shared with can take a library away.
-        if shared.contains(library) {
+        // Only the peers it was shared with can take a library away, and only with
+        // a revocation this device accepts once merged: signed by someone allowed
+        // to make it (SEG-011). A bare notice removes nothing.
+        if !shared.contains(library) {
+            continue;
+        }
+        let proofs: Vec<SyncOperation> = notices
+            .proofs
+            .iter()
+            .filter(|p| &p.operation.library == library && revokes(&p.operation.changes, &me))
+            .cloned()
+            .collect();
+        crate::sync::merge(conn, proofs)?;
+        if !revocations_of(conn, library, &me)?.is_empty() {
             libraries::remove_revoked(conn, library, peer)?;
         }
     }
@@ -455,7 +497,7 @@ pub fn reconcile(
         if shared.contains(library)
             || pending.contains(library)
             || notices.revoked.contains(library)
-            || libraries::library_exists(conn, library)?
+            || libraries::library_known(conn, library)?
         {
             continue;
         }

@@ -319,6 +319,17 @@ fn fall_back_from(tx: &Transaction<'_>, gone: &str) -> Result<String> {
     Ok(next)
 }
 
+/// Whether this device has or had the library: its row, or anything in its log.
+/// Deleting a library keeps its log, delete included (D65, D66).
+pub fn library_known(conn: &Connection, id: &str) -> Result<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM libraries WHERE id = ?1)
+             OR EXISTS (SELECT 1 FROM operations WHERE library_id = ?1)",
+        [id],
+        |row| row.get(0),
+    )?)
+}
+
 pub fn library_exists(conn: &Connection, id: &str) -> Result<bool> {
     Ok(conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM libraries WHERE id = ?1)",

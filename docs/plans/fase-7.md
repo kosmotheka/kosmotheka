@@ -143,8 +143,8 @@ Añadida el 03/10/2026 (D84). La primera línea de defensa son estos tests; la a
 
 | Test | Qué comprueba | Estado |
 |---|---|---|
-| `a_deleted_library_is_not_taken_up_when_offered` | SEG-010: quien borró una biblioteca no la acepta sola cuando otro le ofrece el mismo id, y su borrado no llega al otro | ❌ falla (el móvil pierde sus libros) |
-| `a_forged_revocation_notice_removes_nothing` | SEG-011: un aviso de retirada sin la retirada firmada no borra nada | ❌ falla (el escritorio pierde la biblioteca) |
+| `a_deleted_library_is_not_taken_up_when_offered` | SEG-010: quien borró una biblioteca no la acepta sola cuando otro le ofrece el mismo id, y su borrado no llega al otro | ✅ arreglado (`libraries::library_known`) |
+| `a_forged_revocation_notice_removes_nothing` | SEG-011: un aviso de retirada sin la retirada firmada no borra nada | ✅ arreglado (el aviso lleva la retirada firmada y se juzga) |
 | `a_library_both_have_travels_only_if_both_share_it` | El id fijo solo se funde si los dos lados lo marcan | ✅ |
 | `only_the_chosen_libraries_travel` | Nada sale sin marcarlo | ✅ |
 | `a_revoked_device_is_refused_its_old_offer` | Un retirado no vuelve a meter cambios | ✅ |
@@ -199,5 +199,5 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 - [x] D78 aceptada (biometría y segundo factor, opcionales, en 7.1); «Otro servidor» en D77 y un año para el registro de actividad en D66 (01/10/2026).
 - [x] D75 aceptada: avisos al momento con Mercure en esta fase; con la app cerrada, FCM en la Fase 8 (01/10/2026).
 - [x] Auditoría especial `library-access` (03/10/2026): SEG-010 a SEG-013 y DAT-001; D84 propuesta; 7.2 rehecho y 7.A añadido ([informe](../audits/2026-10-03-2.md)).
-- [ ] 7.A Acceso seguro: tests de SEG-010, SEG-011 y SEG-014 (antedatar) escritos y en rojo (03/10/2026); faltan sus arreglos (SEG-014 necesita antes una decisión), el test del retirado a través de un tercero y la revisión de ids de dispositivo de 7.1.
+- [ ] 7.A Acceso seguro: SEG-010 y SEG-011 arreglados, con sus tests vistos en rojo y después en verde (03/10/2026). SEG-014 (antedatar): test en rojo, sin commit, a la espera de decidir cómo acotarlo. Faltan el test del retirado a través de un tercero y la revisión de ids de dispositivo de 7.1.
 - [ ] 7.1 Cuentas. **Servidor, parte básica hecha (02/10/2026):** correo (Mailpit en desarrollo, Brevo en producción), límites de peticiones, registro con código, inicio de sesión del dispositivo con reto firmado y token, cuenta y dispositivos, recuperar y cambiar la contraseña, borrar la cuenta, purga cada hora y comandos de consola; ver [architecture/accounts.md](../architecture/accounts.md). Después (02/10/2026): dispositivo quitado y deshacer (D81) y segundo factor con `otphp` (D78 revisada). **App (02/10/2026):** cliente de la cuenta en Rust, reinicio del dispositivo (D81) y las pantallas de Design (ver [architecture/accounts.md](../architecture/accounts.md), «En la app»). Desbloqueo con huella o cara (D78). Falta: Google y la prueba en pantalla contra el servidor; encargo de pantallas en [design/encargo-fase-7-cuentas.md](../design/encargo-fase-7-cuentas.md).
