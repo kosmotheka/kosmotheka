@@ -35,7 +35,8 @@ use crate::metadata::Lookup;
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init());
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init());
     #[cfg(mobile)]
     let builder = builder
         .plugin(tauri_plugin_barcode_scanner::init())
@@ -46,6 +47,8 @@ pub fn run() {
             std::fs::create_dir_all(&data_dir)?;
             let database = Database::open(data_dir.join(data_folder::DATABASE_FILE))?;
             let lan = LanService::new(database.clone(), Identity::load_or_create(&data_dir)?);
+            // Not worth failing the start over: the next rename tries again.
+            let _ = lan::refresh_device_name(&mut *database.lock()?);
             let covers = Covers::new(data_dir.join("covers"))?;
             app.manage(database.clone());
             app.manage(covers.clone());

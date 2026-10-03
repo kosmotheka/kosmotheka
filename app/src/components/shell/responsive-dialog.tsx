@@ -65,7 +65,7 @@ export function ResponsiveDialog({
           </Button>
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         </header>
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-1 pb-10">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-1 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
           <DialogDescription className={description ? undefined : "sr-only"}>
             {description ?? title}
           </DialogDescription>

@@ -4,9 +4,7 @@
 //! operation.
 
 use std::collections::BTreeMap;
-use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
 
 use kosmotheka_domain::{Change, Entity};
 use rusqlite::{Connection, Transaction};
@@ -127,7 +125,7 @@ pub fn export(
     conn: &Connection,
     ids: &[String],
     covers: &Covers,
-    path: &Path,
+    mut out: impl Write,
 ) -> Result<BackupSummary> {
     let mut summary = BackupSummary::default();
     let mut backed_up = Vec::new();
@@ -161,7 +159,9 @@ pub fn export(
         entities: None,
     };
 
-    let mut zip = ZipWriter::new(File::create(path)?);
+    // Built in memory and written at once: a file picked on Android may be a stream
+    // (a cloud folder, say) that cannot seek, and ZIP writing needs to.
+    let mut zip = ZipWriter::new(std::io::Cursor::new(Vec::new()));
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
     zip.start_file(DATA_FILE, options)?;
     zip.write_all(&serde_json::to_vec_pretty(&backup)?)?;
@@ -182,7 +182,8 @@ pub fn export(
             summary.covers += 1;
         }
     }
-    zip.finish()?;
+    out.write_all(&zip.finish()?.into_inner())?;
+    out.flush()?;
     Ok(summary)
 }
 
@@ -195,10 +196,13 @@ pub fn restore(
     conn: &mut Connection,
     active: &str,
     covers: &Covers,
-    path: &Path,
+    mut input: impl Read,
 ) -> Result<RestoreSummary> {
-    let mut archive =
-        ZipArchive::new(File::open(path)?).map_err(|_| Error::BadBackup("not_a_backup"))?;
+    // Read whole for the same reason as `export`: reading a ZIP needs to seek.
+    let mut bytes = Vec::new();
+    input.read_to_end(&mut bytes)?;
+    let mut archive = ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|_| Error::BadBackup("not_a_backup"))?;
     let backup: BackupFile = {
         let mut data = String::new();
         archive
@@ -333,7 +337,9 @@ fn restored(conn: &Connection, id: &str, name: String) -> Result<RestoredLibrary
 
 /// Cover entries whose name is exactly `<sha256>.<known extension>`. Paths inside the
 /// zip are never used to build file paths, so a crafted archive cannot write elsewhere.
-fn read_covers(archive: &mut ZipArchive<File>) -> Result<Vec<(String, &'static str, Vec<u8>)>> {
+fn read_covers(
+    archive: &mut ZipArchive<std::io::Cursor<Vec<u8>>>,
+) -> Result<Vec<(String, &'static str, Vec<u8>)>> {
     let mut found = Vec::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index)?;
@@ -412,6 +418,8 @@ fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+
     use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook};
     use rusqlite::OptionalExtension;
 
@@ -524,11 +532,18 @@ mod tests {
         .unwrap();
         let file = dir.join("backup.zip");
 
-        let exported = export(&source, &[LIB.to_owned()], &source_covers, &file).unwrap();
+        let exported = export(
+            &source,
+            &[LIB.to_owned()],
+            &source_covers,
+            File::create(&file).unwrap(),
+        )
+        .unwrap();
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
-        let restored = restore(&mut target, LIB, &target_covers, &file).unwrap();
+        let restored =
+            restore(&mut target, LIB, &target_covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(
             exported,
@@ -588,9 +603,15 @@ mod tests {
         catalog::create_book(&mut source, &club, &book("Club book", None), None).unwrap();
         let file = dir.join("device.zip");
 
-        let exported = export(&source, &all_libraries(&source).unwrap(), &covers, &file).unwrap();
+        let exported = export(
+            &source,
+            &all_libraries(&source).unwrap(),
+            &covers,
+            File::create(&file).unwrap(),
+        )
+        .unwrap();
         let mut target = db::open_in_memory().unwrap();
-        let restored = restore(&mut target, LIB, &covers, &file).unwrap();
+        let restored = restore(&mut target, LIB, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!((exported.libraries, exported.books), (2, 2));
         assert_eq!(restored.restored.len(), 2);
@@ -608,9 +629,15 @@ mod tests {
         let mut conn = db::open_in_memory().unwrap();
         catalog::create_book(&mut conn, LIB, &book("A", None), None).unwrap();
         let file = dir.join("backup.zip");
-        export(&conn, &[LIB.to_owned()], &covers, &file).unwrap();
+        export(
+            &conn,
+            &[LIB.to_owned()],
+            &covers,
+            File::create(&file).unwrap(),
+        )
+        .unwrap();
 
-        let summary = restore(&mut conn, LIB, &covers, &file).unwrap();
+        let summary = restore(&mut conn, LIB, &covers, File::open(&file).unwrap()).unwrap();
 
         assert!(summary.restored.is_empty());
         assert_eq!(summary.skipped, vec![String::new()]);
@@ -625,10 +652,16 @@ mod tests {
         let club = libraries::create_library(&mut conn, "Club").unwrap();
         catalog::create_book(&mut conn, &club, &book("Club book", None), None).unwrap();
         let file = dir.join("club.zip");
-        export(&conn, std::slice::from_ref(&club), &covers, &file).unwrap();
+        export(
+            &conn,
+            std::slice::from_ref(&club),
+            &covers,
+            File::create(&file).unwrap(),
+        )
+        .unwrap();
         libraries::delete_library(&mut conn, &club).unwrap();
 
-        let summary = restore(&mut conn, LIB, &covers, &file).unwrap();
+        let summary = restore(&mut conn, LIB, &covers, File::open(&file).unwrap()).unwrap();
 
         let back = &summary.restored[0];
         assert_ne!(back.id, club, "the deletion still holds for the old id");
@@ -643,11 +676,11 @@ mod tests {
         let mut source = db::open_in_memory().unwrap();
         let club = libraries::create_library(&mut source, "Club").unwrap();
         let file = dir.join("club.zip");
-        export(&source, &[club], &covers, &file).unwrap();
+        export(&source, &[club], &covers, File::create(&file).unwrap()).unwrap();
         let mut target = db::open_in_memory().unwrap();
         libraries::create_library(&mut target, "club").unwrap();
 
-        let summary = restore(&mut target, LIB, &covers, &file).unwrap();
+        let summary = restore(&mut target, LIB, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(summary.restored[0].name, "Club (2)");
     }
@@ -682,7 +715,7 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, &file).unwrap();
+        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert_eq!(titles(&target, &other), vec!["Old backup"]);
@@ -762,7 +795,7 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, &file).unwrap();
+        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert_eq!(titles(&target, &other), vec!["Hollow Knight"]);
@@ -812,7 +845,7 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, &file).unwrap();
+        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert!(titles(&target, &other).is_empty());
@@ -827,7 +860,7 @@ mod tests {
         let mut conn = db::open_in_memory().unwrap();
 
         assert!(matches!(
-            restore(&mut conn, LIB, &covers, &file),
+            restore(&mut conn, LIB, &covers, File::open(&file).unwrap()),
             Err(Error::BadBackup("not_a_backup"))
         ));
     }

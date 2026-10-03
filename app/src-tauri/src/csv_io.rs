@@ -1,8 +1,6 @@
 //! CSV export and import, one row per copy, for spreadsheets and other apps (D30).
 //! Several authors share one cell, separated by semicolons.
 
-use std::path::Path;
-
 use kosmotheka_domain::{CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
@@ -55,7 +53,7 @@ pub struct RejectedRow {
 
 /// Returns the number of data rows written. Editions without copies get one row
 /// with the copy columns empty.
-pub fn export(conn: &Connection, library: &str, path: &Path) -> Result<usize> {
+pub fn export(conn: &Connection, library: &str, mut out: impl std::io::Write) -> Result<usize> {
     let mut statement = conn.prepare(
         "SELECT e.title, coalesce(e.subtitle, ''),
                 coalesce((SELECT group_concat(p.name, '; ' ORDER BY wc.position)
@@ -100,9 +98,8 @@ pub fn export(conn: &Connection, library: &str, path: &Path) -> Result<usize> {
     })?;
 
     // A byte order mark lets spreadsheet apps detect UTF-8 (accents, ñ).
-    let mut file = std::fs::File::create(path)?;
-    std::io::Write::write_all(&mut file, b"\xEF\xBB\xBF")?;
-    let mut writer = csv::Writer::from_writer(file);
+    std::io::Write::write_all(&mut out, b"\xEF\xBB\xBF")?;
+    let mut writer = csv::Writer::from_writer(out);
     let mut written = 0;
     for row in rows {
         writer.serialize(row?)?;
@@ -114,8 +111,13 @@ pub fn export(conn: &Connection, library: &str, path: &Path) -> Result<usize> {
 
 /// Adds every valid row as a book (or as a copy, if its ISBN is already catalogued).
 /// Invalid rows are reported and skipped; the rest are still imported.
-pub fn import(conn: &mut Connection, library: &str, path: &Path) -> Result<CsvImportSummary> {
-    let content = std::fs::read_to_string(path)?;
+pub fn import(
+    conn: &mut Connection,
+    library: &str,
+    mut input: impl std::io::Read,
+) -> Result<CsvImportSummary> {
+    let mut content = String::new();
+    input.read_to_string(&mut content)?;
     let content = content.strip_prefix('\u{feff}').unwrap_or(&content);
     let mut reader = csv::ReaderBuilder::new()
         .trim(csv::Trim::All)
@@ -231,7 +233,7 @@ mod tests {
              Good Omens,Terry Pratchett; Neil Gaiman,,,,,,,\n",
         )
         .unwrap();
-        let imported = import(&mut source, LIB, &path).unwrap();
+        let imported = import(&mut source, LIB, std::fs::File::open(&path).unwrap()).unwrap();
         assert_eq!(
             imported,
             CsvImportSummary {
@@ -241,14 +243,14 @@ mod tests {
             }
         );
 
-        export(&source, LIB, &path).unwrap();
+        export(&source, LIB, std::fs::File::create(&path).unwrap()).unwrap();
         let exported = std::fs::read_to_string(&path).unwrap();
         assert!(exported.starts_with('\u{feff}'));
         assert!(exported.contains("\"Salón, balda 2\""));
         assert!(exported.contains("Terry Pratchett; Neil Gaiman"));
 
         let mut target = db::open_in_memory().unwrap();
-        let reimported = import(&mut target, LIB, &path).unwrap();
+        let reimported = import(&mut target, LIB, std::fs::File::open(&path).unwrap()).unwrap();
         assert_eq!(reimported, imported);
         let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
         assert_eq!(books[1].authors, vec!["Terry Pratchett", "Neil Gaiman"]);
@@ -270,7 +272,7 @@ mod tests {
         )
         .unwrap();
 
-        let summary = import(&mut conn, LIB, &path).unwrap();
+        let summary = import(&mut conn, LIB, std::fs::File::open(&path).unwrap()).unwrap();
 
         assert_eq!(summary.books_created, 1);
         let lines: Vec<usize> = summary.rejected.iter().map(|r| r.line).collect();

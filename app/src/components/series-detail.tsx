@@ -342,7 +342,9 @@ export function SeriesDetailView({
             <ArrowLeft className="size-[22px]" />
           </Button>
         </header>
-        <div className="flex-1 overflow-y-auto px-4 pb-8">{body}</div>
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+          {body}
+        </div>
       </ScreenDialogContent>
     </Dialog>
   );

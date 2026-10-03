@@ -1,8 +1,7 @@
-use std::path::Path;
-
 use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
+use tauri_plugin_fs::{FilePath, FsExt, OpenOptions};
 use url::Url;
 
 use crate::account::{
@@ -409,8 +408,22 @@ pub fn covers_dir(covers: State<'_, Covers>) -> String {
 
 // Paths come from the file dialogs the user just answered.
 
+/// Opens a file the user just picked. On Android it is a `content://` URI that
+/// only Android can open, so the fs plugin asks it for the file.
+fn open_picked(app: &AppHandle, path: &str, write: bool) -> Result<std::fs::File> {
+    let Ok(path) = path.parse::<FilePath>();
+    let mut options = OpenOptions::new();
+    if write {
+        options.write(true).create(true).truncate(true);
+    } else {
+        options.read(true);
+    }
+    Ok(app.fs().open(path, options)?)
+}
+
 #[tauri::command]
 pub fn export_backup(
+    app: AppHandle,
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
@@ -421,48 +434,52 @@ pub fn export_backup(
         Some(library) => library,
         None => ops::active_library(&conn)?,
     };
-    backup::export(&conn, &[library], &covers, Path::new(&path))
+    let file = open_picked(&app, &path, true)?;
+    backup::export(&conn, &[library], &covers, file)
 }
 
 /// Every library on this device in one file (milestone 4.6).
 #[tauri::command]
 pub fn export_device_backup(
+    app: AppHandle,
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
 ) -> Result<BackupSummary> {
     let conn = database.lock()?;
-    backup::export(
-        &conn,
-        &backup::all_libraries(&conn)?,
-        &covers,
-        Path::new(&path),
-    )
+    let file = open_picked(&app, &path, true)?;
+    backup::export(&conn, &backup::all_libraries(&conn)?, &covers, file)
 }
 
 #[tauri::command]
 pub fn restore_backup(
+    app: AppHandle,
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
 ) -> Result<RestoreSummary> {
     let mut conn = database.lock()?;
     let active = ops::active_library(&conn)?;
-    backup::restore(&mut conn, &active, &covers, Path::new(&path))
+    let file = open_picked(&app, &path, false)?;
+    backup::restore(&mut conn, &active, &covers, file)
 }
 
 #[tauri::command]
-pub fn export_csv(database: State<'_, Database>, path: String) -> Result<usize> {
+pub fn export_csv(app: AppHandle, database: State<'_, Database>, path: String) -> Result<usize> {
     let conn = database.lock()?;
     let library = ops::active_library(&conn)?;
-    csv_io::export(&conn, &library, Path::new(&path))
+    csv_io::export(&conn, &library, open_picked(&app, &path, true)?)
 }
 
 #[tauri::command]
-pub fn import_csv(database: State<'_, Database>, path: String) -> Result<CsvImportSummary> {
+pub fn import_csv(
+    app: AppHandle,
+    database: State<'_, Database>,
+    path: String,
+) -> Result<CsvImportSummary> {
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
-    csv_io::import(&mut conn, &library, Path::new(&path))
+    csv_io::import(&mut conn, &library, open_picked(&app, &path, false)?)
 }
 
 // --- LAN sync ---------------------------------------------------------------
@@ -474,7 +491,8 @@ pub async fn lan_status(lan: State<'_, LanService>) -> Result<LanStatus> {
 
 #[tauri::command]
 pub fn set_device_name(database: State<'_, Database>, name: String) -> Result<()> {
-    lan::set_device_name(&*database.lock()?, &name)
+    let mut conn = database.lock()?;
+    lan::set_device_name(&mut conn, &name)
 }
 
 #[tauri::command]

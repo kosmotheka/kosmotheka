@@ -407,7 +407,7 @@ export function BookDetailView({
           )}
           {moreMenu}
         </header>
-        <div className="flex-1 overflow-y-auto">{body}</div>
+        <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">{body}</div>
       </ScreenDialogContent>
     </Dialog>
   );

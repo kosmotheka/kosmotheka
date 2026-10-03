@@ -9,9 +9,11 @@ pub mod service;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use kosmotheka_domain::{Change, Entity};
 use rand::RngExt;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use crate::error::Result;
@@ -134,9 +136,39 @@ pub fn device_name(conn: &Connection) -> Result<String> {
     })
 }
 
-pub fn set_device_name(conn: &Connection, name: &str) -> Result<()> {
+/// Renames this device here and in every library it is registered in, so the
+/// other devices (and «Personas y permisos») see the new name after a sync.
+/// Every device may rename itself, so this never becomes a request (D73).
+pub fn set_device_name(conn: &mut Connection, name: &str) -> Result<()> {
+    let tx = conn.transaction()?;
     let name = name.trim();
-    write_state(conn, DEVICE_NAME_KEY, (!name.is_empty()).then_some(name))
+    write_state(&tx, DEVICE_NAME_KEY, (!name.is_empty()).then_some(name))?;
+    publish_device_name(&tx)?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Brings this device's name up to date in the libraries that still show an old
+/// one: run on start, for renames made before they travelled to the libraries.
+pub fn refresh_device_name(conn: &mut Connection) -> Result<()> {
+    let tx = conn.transaction()?;
+    publish_device_name(&tx)?;
+    tx.commit()?;
+    Ok(())
+}
+
+fn publish_device_name(tx: &Transaction<'_>) -> Result<()> {
+    let shown = device_name(tx)?;
+    let me = ops::device_id(tx)?;
+    let stale: Vec<String> = tx
+        .prepare("SELECT library_id FROM devices WHERE id = ?1 AND name IS NOT ?2")?
+        .query_map(params![me, shown], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    for library in stale {
+        let rename = Change::update(Entity::Device, &me, json!({ "name": shown }));
+        ops::record(tx, &library, "device.rename", vec![rename])?;
+    }
+    Ok(())
 }
 
 /// The port this device listens on, kept stable so paired devices find it again.
@@ -523,6 +555,41 @@ mod tests {
                 signature: None,
             },
         }
+    }
+
+    #[test]
+    fn renaming_the_device_renames_it_in_every_library() {
+        let mut conn = crate::db::open_in_memory().unwrap();
+        let family = libraries::create_library(&mut conn, "Family").unwrap();
+        let rpg = libraries::create_library(&mut conn, "RPG").unwrap();
+        let me = ops::device_id(&conn).unwrap();
+
+        set_device_name(&mut conn, "  Kitchen tablet ").unwrap();
+
+        assert_eq!(device_name(&conn).unwrap(), "Kitchen tablet");
+        for library in [&family, &rpg] {
+            let name: String = conn
+                .query_row(
+                    "SELECT name FROM devices WHERE library_id = ?1 AND id = ?2",
+                    [library, &me],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert_eq!(name, "Kitchen tablet");
+        }
+
+        // The same name again changes nothing, so it records nothing.
+        let count = |conn: &Connection| -> i64 {
+            conn.query_row(
+                "SELECT COUNT(*) FROM operations WHERE intent = 'device.rename'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap()
+        };
+        let before = count(&conn);
+        set_device_name(&mut conn, "Kitchen tablet").unwrap();
+        assert_eq!(count(&conn), before);
     }
 
     #[test]

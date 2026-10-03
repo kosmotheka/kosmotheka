@@ -31,7 +31,7 @@ export function NavDrawer({
       <SheetContent
         side="left"
         showCloseButton={false}
-        className="w-[316px] gap-0 rounded-r-[20px] bg-sidebar px-3 pt-[max(2.75rem,env(safe-area-inset-top))] pb-5 text-sidebar-foreground"
+        className="w-[316px] gap-0 rounded-r-[20px] bg-sidebar px-3 pt-[max(2.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] text-sidebar-foreground"
       >
         <SheetTitle className="px-4 pt-2 pb-4 text-xl font-semibold tracking-tight">
           {t("app.title")}
