@@ -50,12 +50,17 @@ export function AddToSeriesWorkDialog({
 
   useEffect(() => {
     if (!open || query.trim().length < 2) return;
+    // An answer to an older query can arrive after the newer one: drop it.
+    let current = true;
     const id = setTimeout(() => {
       listBooks({ query: query.trim() })
-        .then(setResults)
-        .catch(() => setResults([]));
+        .then((found) => current && setResults(found))
+        .catch(() => current && setResults([]));
     }, 300);
-    return () => clearTimeout(id);
+    return () => {
+      current = false;
+      clearTimeout(id);
+    };
   }, [open, query]);
 
   const add = async () => {

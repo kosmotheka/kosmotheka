@@ -1345,16 +1345,21 @@ export function RequiresField({
   );
 
   useEffect(() => {
+    // An answer to an older query can arrive after the newer one: drop it.
+    let current = true;
     const id = setTimeout(() => {
       if (query.trim().length < 2) {
         setResults([]);
         return;
       }
       listBooks({ query: query.trim() })
-        .then(setResults)
-        .catch(() => setResults([]));
+        .then((found) => current && setResults(found))
+        .catch(() => current && setResults([]));
     }, 300);
-    return () => clearTimeout(id);
+    return () => {
+      current = false;
+      clearTimeout(id);
+    };
   }, [query]);
 
   const add = async (book: BookSummary) => {

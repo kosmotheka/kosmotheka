@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Pencil, Tag, Trash2 } from "lucide-react";
 
@@ -24,10 +24,14 @@ export function TagsPage({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const reload = () =>
+  // Only the latest load counts: switching libraries can leave an older one in flight.
+  const latest = useRef(0);
+  const reload = () => {
+    const request = ++latest.current;
     listTags()
-      .then(setTags)
+      .then((found) => request === latest.current && setTags(found))
       .catch(() => {});
+  };
   useEffect(() => {
     reload();
   }, [version]);
