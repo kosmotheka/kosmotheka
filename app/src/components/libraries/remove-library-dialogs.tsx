@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Archive, CircleCheck, LogOut, MonitorSmartphone, Trash2 } from "lucide-react";
+import { Archive, CircleCheck, Copy, LogOut, MonitorSmartphone, Trash2 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   type KnownDevice,
   deleteLibrary,
+  duplicateLibrary,
   exportBackup,
+  isCommandError,
   leaveLibrary,
   libraryDevices,
 } from "@/lib/api";
@@ -245,6 +248,113 @@ export function LeaveLibraryDialog({
             {t("libraries.goToDelete")}
           </Button>
         )}
+      </div>
+    </SheetOrDialog>
+  );
+}
+
+/**
+ * The last resort of D58: when nobody can administer a library (its only
+ * administrator lost their only device), anyone who has it copies the catalogue
+ * into a new one they administer, and the others join that one.
+ */
+export function DuplicateLibraryDialog({
+  open,
+  desktop,
+  onDone,
+}: {
+  open: boolean;
+  desktop: boolean;
+  /** Called with the new library's name. */
+  onDone: (name: string) => void;
+}) {
+  const { t } = useTranslation();
+  const libraries = useLibraries();
+  const nameOf = useLibraryName();
+  const library = libraries.active;
+  const [name, setName] = useState("");
+  const [shownId, setShownId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Each time it opens, start from "<name> (copy)".
+  const openedFor = open && library ? library.id : null;
+  if (openedFor !== shownId) {
+    setShownId(openedFor);
+    if (library) setName(t("libraries.duplicateName", { name: nameOf(library) }));
+    setError(null);
+  }
+
+  if (!library) return null;
+  const from = nameOf(library);
+
+  const duplicate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await duplicateLibrary(library.id, name);
+      libraries.reload();
+      onDone(name.trim());
+      closeOverlay();
+      navigate("catalog");
+    } catch (e) {
+      const code = isCommandError(e) && e.kind === "validation" ? e.errors[0]?.code : null;
+      setError(
+        code === "name_in_use"
+          ? t("libraries.nameInUse", { name: name.trim() })
+          : code
+            ? t(`errors.${code}`)
+            : String(e),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SheetOrDialog
+      open={open}
+      desktop={desktop}
+      onClose={closeOverlay}
+      title={t("libraries.duplicateTitle", { name: from })}
+      description={t("libraries.duplicateHint")}
+      icon={
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <Copy className="size-[21px]" />
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-2.5 text-[15px] leading-normal text-pretty">
+        <p>{t("libraries.duplicateWhen", { name: from })}</p>
+        <p>{t("libraries.duplicateWhat")}</p>
+        <p className="text-[13px] text-muted-foreground">{t("libraries.duplicateAfter")}</p>
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="duplicate-name" className="text-[13px] font-medium text-muted-foreground">
+          {t("libraries.duplicateNewName")}
+        </label>
+        <Input
+          id="duplicate-name"
+          className="h-11"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError(null);
+          }}
+        />
+        {error && <p className="text-[13px] text-destructive">{error}</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <Button variant="outline" className="h-12" onClick={closeOverlay}>
+          {t("form.cancel")}
+        </Button>
+        <Button
+          className="h-12"
+          disabled={busy || name.trim() === ""}
+          onClick={() => void duplicate()}
+        >
+          {t("libraries.duplicateAction")}
+        </Button>
       </div>
     </SheetOrDialog>
   );

@@ -704,7 +704,17 @@
     "searchWhere": "Dónde buscar",
     "inThis": "En {{name}}",
     "inAll": "En todas",
-    "opensThere": "Se abre en {{name}}"
+    "opensThere": "Se abre en {{name}}",
+    "duplicate": "Duplicar como biblioteca nueva",
+    "duplicateHint": "Si ya nadie puede administrar esta biblioteca.",
+    "duplicateTitle": "¿Duplicar {{name}}?",
+    "duplicateWhen": "Es el último recurso cuando nadie puede administrar {{name}}: por ejemplo, si su única persona administradora perdió su único dispositivo.",
+    "duplicateWhat": "Se crea una biblioteca nueva con todo el catálogo, sus personas y sus marcas, y la administras tú. No se copian los roles, los dispositivos con los que se comparte ni el historial.",
+    "duplicateAfter": "Los demás se unen a la nueva emparejándose otra vez. La original no cambia: puedes salir de ella cuando quieras.",
+    "duplicateNewName": "Nombre de la biblioteca nueva",
+    "duplicateName": "{{name}} (copia)",
+    "duplicateAction": "Duplicar",
+    "duplicated": "Creada {{name}}. Ya es la que usas."
   },
   "tags": {
     "breadcrumb": "Ajustes de la biblioteca",

@@ -688,6 +688,15 @@ export function deleteLibrary(id: string): Promise<string> {
   return invoke<string>("delete_library", { id });
 }
 
+/**
+ * Copies its catalogue into a new library this device administers, without roles,
+ * devices or history: the last resort when nobody can administer it (D58).
+ * Returns the new library's id, which becomes the active one.
+ */
+export function duplicateLibrary(id: string, name: string): Promise<string> {
+  return invoke<string>("duplicate_library", { id, name });
+}
+
 /** Removes it from this device only. Returns the library now active. */
 export function leaveLibrary(id: string): Promise<string> {
   return invoke<string>("leave_library", { id });

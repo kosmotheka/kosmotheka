@@ -21,6 +21,7 @@ import { MoveBookDialog } from "@/components/libraries/move-book-dialog";
 import { NewLibraryDialog } from "@/components/libraries/new-library-dialog";
 import {
   DeleteLibraryDialog,
+  DuplicateLibraryDialog,
   LeaveLibraryDialog,
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
@@ -354,6 +355,11 @@ export default function App() {
                 }),
               )
             }
+          />
+          <DuplicateLibraryDialog
+            open={overlay?.name === "duplicateLibrary"}
+            desktop={desktop}
+            onDone={(name) => setNotice(t("libraries.duplicated", { name }))}
           />
           <LeaveLibraryDialog
             open={overlay?.name === "leaveLibrary"}

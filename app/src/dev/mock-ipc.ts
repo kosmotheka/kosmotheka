@@ -846,6 +846,21 @@ mockIPC((cmd, args) => {
     }
     case "list_libraries":
       return libraries;
+    case "duplicate_library": {
+      const { id: fromId, name } = args as { id: string; name: string };
+      const id = crypto.randomUUID();
+      for (const library of libraries) library.active = false;
+      const from = libraries.find((library) => library.id === fromId);
+      libraries.push({
+        id,
+        name,
+        works: from?.works ?? 0,
+        active: true,
+        created: { device: null, at: Date.now() },
+        canShare: true,
+      });
+      return id;
+    }
     case "library_devices":
       return lan.servers;
     case "sharing_overview":

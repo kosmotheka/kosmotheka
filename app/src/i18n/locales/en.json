@@ -691,7 +691,17 @@
     "searchWhere": "Where to search",
     "inThis": "In {{name}}",
     "inAll": "In all",
-    "opensThere": "Opens in {{name}}"
+    "opensThere": "Opens in {{name}}",
+    "duplicate": "Duplicate as a new library",
+    "duplicateHint": "If nobody can administer this library any more.",
+    "duplicateTitle": "Duplicate {{name}}?",
+    "duplicateWhen": "This is the last resort when nobody can administer {{name}}: for example, when its only administrator lost their only device.",
+    "duplicateWhat": "A new library is created with the whole catalogue, its people and their marks, and you administer it. Roles, the devices it is shared with and its history are not copied.",
+    "duplicateAfter": "The others join the new one by pairing again. The original does not change: you can leave it whenever you like.",
+    "duplicateNewName": "Name of the new library",
+    "duplicateName": "{{name}} (copy)",
+    "duplicateAction": "Duplicate",
+    "duplicated": "Created {{name}}. It is the one you are using now."
   },
   "tags": {
     "breadcrumb": "Library settings",

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ChevronRight,
+  Copy,
   History,
   LogOut,
   MonitorSmartphone,
@@ -13,6 +14,7 @@ import {
 
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { useRequests } from "@/components/requests-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,6 +38,9 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   const [saved, setSaved] = useState(false);
   const [devices, setDevices] = useState<KnownDevice[]>([]);
   const [devicesVersion, setDevicesVersion] = useState(0);
+  // Only where it is the way out: a library with roles this device cannot administer.
+  const { hasRoles, myRole } = useRequests();
+  const mayDuplicate = hasRoles && myRole !== "admin";
 
   // Another library became active: start from its name.
   if (library && shownId !== library.id) {
@@ -217,6 +222,21 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
         </section>
 
         <section className="mt-2 flex flex-col border-t pt-2">
+          {mayDuplicate && (
+            <button
+              type="button"
+              className="flex min-h-16 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left hover:bg-muted"
+              onClick={() => openOverlay({ name: "duplicateLibrary" })}
+            >
+              <Copy className="size-5 shrink-0" />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[15px] font-medium">{t("libraries.duplicate")}</span>
+                <span className="text-[13px] text-muted-foreground">
+                  {t("libraries.duplicateHint")}
+                </span>
+              </span>
+            </button>
+          )}
           <button
             type="button"
             className="flex min-h-16 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left hover:bg-muted"
