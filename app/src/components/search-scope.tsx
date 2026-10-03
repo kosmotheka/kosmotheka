@@ -24,9 +24,7 @@ export function SearchScope({
       className={cn(
         "flex items-center justify-center truncate px-2.5",
         compact ? "h-[26px] rounded-[5px] text-xs" : "h-10 rounded-[10px] text-sm",
-        everywhere === value
-          ? "bg-background font-semibold shadow-sm"
-          : "text-muted-foreground",
+        everywhere === value ? "bg-background font-semibold shadow-sm" : "text-muted-foreground",
       )}
       onClick={() => onChange(value)}
     >

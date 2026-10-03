@@ -70,9 +70,7 @@ interface Props {
 }
 
 const initialEditionForm = (prefill?: AddBookPrefill, initial?: NewBook): EditionForm =>
-  initial
-    ? editionFormFromInput(initial)
-    : prefillForm(prefill);
+  initial ? editionFormFromInput(initial) : prefillForm(prefill);
 
 function prefillForm(prefill?: AddBookPrefill): EditionForm {
   const form: EditionForm = {
@@ -234,7 +232,9 @@ export function AddBookDialog({
                 </Button>
               </header>
               <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
-              <div className="flex-1 space-y-6 overflow-y-auto px-4 pt-2 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">{fields}</div>
+              <div className="flex-1 space-y-6 overflow-y-auto px-4 pt-2 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+                {fields}
+              </div>
             </form>
             {pickingKind && (
               <div className="absolute inset-0 z-10 flex flex-col justify-end bg-black/10">

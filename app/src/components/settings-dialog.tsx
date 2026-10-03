@@ -131,11 +131,7 @@ export function SettingsDialog({
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openOverlay({ name: "auth" })}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => openOverlay({ name: "auth" })}>
                     <LogIn /> {t("account.settings.signInOrCreate")}
                   </Button>
                   <span className="text-sm text-muted-foreground">
@@ -284,11 +280,7 @@ export function SettingsDialog({
         onSaved={setDeviceNameState}
       />
 
-      <HandOverConfirm
-        open={handingOver}
-        desktop={desktop}
-        onClose={() => setHandingOver(false)}
-      />
+      <HandOverConfirm open={handingOver} desktop={desktop} onClose={() => setHandingOver(false)} />
     </>
   );
 }

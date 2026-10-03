@@ -4,13 +4,7 @@ import { useTranslation } from "react-i18next";
 import { type HistoryEntry, bookHistory } from "@/lib/api";
 
 /** `version` changes whenever the book changes, so the list reloads. */
-export function HistoryList({
-  editionId,
-  version,
-}: {
-  editionId: string;
-  version: number;
-}) {
+export function HistoryList({ editionId, version }: { editionId: string; version: number }) {
   const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +31,7 @@ export function HistoryList({
     });
 
   if (error) {
-    return (
-      <p className="text-sm text-destructive">
-        {t("errors.internal", { message: error })}
-      </p>
-    );
+    return <p className="text-sm text-destructive">{t("errors.internal", { message: error })}</p>;
   }
   if (entries === null) return null;
   if (entries.length === 0) {
@@ -52,9 +42,7 @@ export function HistoryList({
       {entries.map((entry) => (
         <li key={entry.operationId}>
           <p className="text-sm font-medium">{describe(entry.intent)}</p>
-          <p className="text-xs text-muted-foreground">
-            {format(entry.timestamp)}
-          </p>
+          <p className="text-xs text-muted-foreground">{format(entry.timestamp)}</p>
         </li>
       ))}
     </ol>

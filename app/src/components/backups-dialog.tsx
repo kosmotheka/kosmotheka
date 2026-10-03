@@ -180,9 +180,7 @@ export function BackupsDialog({
           {rejected.map((row) => (
             <li key={row.line}>
               {t("data.rejectedLine", { line: row.line })}{" "}
-              {row.errors
-                .map((e) => `${e.field}: ${t(`errors.${e.code}`)}`)
-                .join(" · ")}
+              {row.errors.map((e) => `${e.field}: ${t(`errors.${e.code}`)}`).join(" · ")}
             </li>
           ))}
         </ul>

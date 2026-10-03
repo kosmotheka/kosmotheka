@@ -1272,13 +1272,7 @@ function useIsbnLookup() {
   return { loading, result, error, run };
 }
 
-function LookupStatus({
-  lookup,
-  currentEditionId,
-}: {
-  lookup: Lookup;
-  currentEditionId?: string;
-}) {
+function LookupStatus({ lookup, currentEditionId }: { lookup: Lookup; currentEditionId?: string }) {
   const { t } = useTranslation();
   const { result, error } = lookup;
   if (error) return <p className="text-sm text-destructive">{t(error)}</p>;
