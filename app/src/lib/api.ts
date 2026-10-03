@@ -510,18 +510,29 @@ export interface RestoreSummary {
   covers: number;
 }
 
-/** Backs up the active library, or `library` if given. */
-export function exportBackup(path: string, library?: string): Promise<BackupSummary> {
-  return invoke<BackupSummary>("export_backup", { path, library });
+/**
+ * Backs up the active library, or `library` if given. With a `passphrase` the file is
+ * encrypted (D86); without one it is a plain zip anyone can read.
+ */
+export function exportBackup(
+  path: string,
+  library?: string,
+  passphrase?: string,
+): Promise<BackupSummary> {
+  return invoke<BackupSummary>("export_backup", { path, library, passphrase });
 }
 
 /** Backs up every library on this device in one file. */
-export function exportDeviceBackup(path: string): Promise<BackupSummary> {
-  return invoke<BackupSummary>("export_device_backup", { path });
+export function exportDeviceBackup(path: string, passphrase?: string): Promise<BackupSummary> {
+  return invoke<BackupSummary>("export_device_backup", { path, passphrase });
 }
 
-export function restoreBackup(path: string): Promise<RestoreSummary> {
-  return invoke<RestoreSummary>("restore_backup", { path });
+/**
+ * Fails with the backup reason `passphrase_needed` for an encrypted file given no
+ * passphrase, and `wrong_passphrase` for a wrong one; either way nothing is restored.
+ */
+export function restoreBackup(path: string, passphrase?: string): Promise<RestoreSummary> {
+  return invoke<RestoreSummary>("restore_backup", { path, passphrase });
 }
 
 export function exportCsv(path: string): Promise<number> {

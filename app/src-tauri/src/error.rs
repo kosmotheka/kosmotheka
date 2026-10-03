@@ -25,7 +25,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("cover rejected: {0}")]
     CoverRejected(&'static str),
-    /// The reason is a code the UI translates: not_a_backup, unreadable, other_version, not_empty.
+    /// The reason is a code the UI translates: not_a_backup, unreadable, other_version, not_empty,
+    /// passphrase_needed, wrong_passphrase, passphrase_empty (D86).
     #[error("backup rejected: {0}")]
     BadBackup(&'static str),
     #[error(transparent)]

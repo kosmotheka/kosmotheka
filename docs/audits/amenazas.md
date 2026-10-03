@@ -94,6 +94,7 @@ Revisado en la auditoría del 2026-10-03 (2), tema `library-access`. Quién pued
 - Un dispositivo dado a otra persona (D81) empieza con identidad nueva: nadie le reconoce con la antigua.
 - Un dispositivo retirado no escribe en ningún sitio después de la retirada, aunque lo suyo llegue a través de otro que aún no lo sabe (SEG-015).
 - En la nube, un dispositivo es su id junto con su clave: conocer el id de un móvil ajeno no permite ocuparlo (SEG-016).
+- Ninguna copia de seguridad, cifrada o no, lleva la clave de firma, el token de la cuenta, los secretos de emparejamiento ni la identidad TLS (test `no_backup_carries_a_secret`), y por defecto van cifradas con contraseña en formato `age` (D86).
 - La app funciona entera sin servidor ni cuenta; nada de la nube planificada bloquea la red local.
 
 **Límites conocidos:**

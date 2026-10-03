@@ -50,10 +50,13 @@ Son **avisos**, nunca errores: el alta sigue siendo posible a mano.
 
 | Código | Nivel | Mensaje | Qué hacer |
 |---|---|---|---|
-| `not_a_backup` | error | Este fichero no es una copia de seguridad de la app. | Elige un `.zip` creado con «Guardar copia». Un CSV se carga con «Importar CSV». |
+| `not_a_backup` | error | Este fichero no es una copia de seguridad de la app. | Elige un `.zip` o `.age` creado con «Guardar copia». Un CSV se carga con «Importar CSV». |
 | `unreadable` | error | La copia está dañada y no se puede leer. | Prueba con otra copia más antigua. Si la has pasado por correo o por la nube, descárgala de nuevo. |
 | `other_version` | error | Esta copia se hizo con otra versión de la app. | Actualiza la app a la última versión en este dispositivo e inténtalo de nuevo. |
 | `not_empty` | error | Solo se puede restaurar en un catálogo vacío. | Restaurar reemplazaría lo que tienes. Si quieres **juntar** catálogos, empareja los dispositivos en «Dispositivos». Si de verdad quieres restaurar, hazlo en una instalación nueva. |
+| `passphrase_needed` | error | Esta copia está protegida: escribe su contraseña. | La copia es un fichero cifrado (D86); la pantalla pide la contraseña. |
+| `wrong_passphrase` | error | Contraseña incorrecta. No se ha restaurado nada. | Prueba otra vez. Si la has perdido, la copia no se puede abrir: no hay forma de recuperarla. |
+| `passphrase_empty` | error | Escribe una contraseña para la copia. | O desmarca «Proteger con contraseña» sabiendo que la copia quedará legible para quien la encuentre. |
 | (filas rechazadas en CSV) | aviso | Importados {n} libros; {m} filas no se pudieron importar. | Revisa las líneas indicadas (cada una dice qué campo falla), corrígelas en la hoja de cálculo e importa solo esas filas de nuevo. |
 | `invalid_format` (CSV) | — | Formato desconocido en la línea {n}. | Usa: hardcover, paperback, pocket, ebook, audiobook u other (o déjalo vacío). |
 

@@ -410,7 +410,7 @@
   },
   "data": {
     "title": "Copias de seguridad",
-    "description": "Un .zip con los libros y las portadas. Se restaura en cualquier dispositivo.",
+    "description": "Un fichero con los libros y sus portadas, protegido con contraseña. Se restaura en cualquier dispositivo.",
     "restore": "Restaurar copia",
     "exportCsv": "Exportar CSV",
     "importCsv": "Importar CSV",
@@ -424,7 +424,10 @@
       "not_a_backup": "Este fichero no es una copia de seguridad de esta app.",
       "unreadable": "La copia está dañada y no se puede leer.",
       "other_version": "Esta copia se hizo con otra versión de la app.",
-      "not_empty": "Esta copia es de una versión anterior y solo se restaura sobre una biblioteca vacía. Crea una biblioteca nueva, ábrela y restáurala ahí."
+      "not_empty": "Esta copia es de una versión anterior y solo se restaura sobre una biblioteca vacía. Crea una biblioteca nueva, ábrela y restáurala ahí.",
+      "passphrase_needed": "Esta copia está protegida: escribe su contraseña.",
+      "wrong_passphrase": "Contraseña incorrecta. No se ha restaurado nada.",
+      "passphrase_empty": "Escribe una contraseña para la copia."
     },
     "csvTitle": "Hoja de cálculo de {{name}}",
     "csvDescription": "Una fila por ejemplar, para Excel u otras apps.",
@@ -437,7 +440,18 @@
     "skippedLibrary": "{{name}}: ya estaba en este dispositivo, no se ha tocado.",
     "restoredCovers_one": "{{count}} portada restaurada.",
     "restoredCovers_other": "{{count}} portadas restauradas.",
-    "restoreNothing": "La copia no tenía ninguna biblioteca."
+    "restoreNothing": "La copia no tenía ninguna biblioteca.",
+    "encryptedBackupFile": "Copia cifrada de Kosmotheka",
+    "protect": "Proteger con contraseña",
+    "passphrase": "Contraseña",
+    "passphraseConfirm": "Repite la contraseña",
+    "passphraseShort": "Al menos {{min}} caracteres.",
+    "passphraseMismatch": "Las contraseñas no coinciden.",
+    "protectHint": "Sin esta contraseña la copia no se puede abrir, y la app no la guarda en ningún sitio: apúntala o usa un gestor de contraseñas.",
+    "unprotectedWarning": "Sin contraseña, quien encuentre la copia podrá leerla: nombres, lo que tenéis y quién ha prestado qué.",
+    "encryptedFile": "Esta copia está protegida. Escribe su contraseña para restaurarla.",
+    "unlockRestore": "Desbloquear y restaurar",
+    "csvReadable": "Un CSV no está protegido: cualquiera puede leerlo."
   },
   "devices": {
     "title": "Compartir y dispositivos",
@@ -592,9 +606,10 @@
       "backups": {
         "title": "Copias de seguridad",
         "steps": [
-          "En «Copias de seguridad», «Guardar copia» crea un .zip con todo, portadas incluidas.",
-          "Guárdalo donde quieras: una carpeta, Google Drive, un pendrive.",
-          "Para recuperarlo, «Restaurar copia» en un catálogo vacío."
+          "En «Copias de seguridad», «Guardar copia» crea un fichero con todo, portadas incluidas. Por defecto va protegido con contraseña.",
+          "Sin la contraseña nadie puede abrirlo, y la app no la guarda: apúntala.",
+          "Guarda el fichero donde quieras: una carpeta, Google Drive, un pendrive.",
+          "Para recuperarlo, «Restaurar copia» y escribe la contraseña."
         ]
       },
       "lost": {

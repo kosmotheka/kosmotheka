@@ -884,6 +884,27 @@ mockIPC((cmd, args) => {
     }
     case "list_libraries":
       return libraries;
+    // Backups (D86). The file pickers answer with fixed paths: a path containing
+    // "encrypted" stands for a protected backup whose password is "mock".
+    case "plugin:dialog|save":
+      return "/mock/kosmotheka-backup";
+    case "plugin:dialog|open":
+      return "/mock/kosmotheka-encrypted.age";
+    case "export_backup":
+    case "export_device_backup": {
+      if ((args as { passphrase?: string }).passphrase === "") {
+        throw { kind: "backup", reason: "passphrase_empty" };
+      }
+      return { libraries: libraries.length, books: 12, copies: 14, covers: 3 };
+    }
+    case "restore_backup": {
+      const { path, passphrase } = args as { path: string; passphrase?: string };
+      if (path.includes("encrypted")) {
+        if (!passphrase) throw { kind: "backup", reason: "passphrase_needed" };
+        if (passphrase !== "mock") throw { kind: "backup", reason: "wrong_passphrase" };
+      }
+      return { restored: [], skipped: [], covers: 0 };
+    }
     case "duplicate_library": {
       const { id: fromId, name } = args as { id: string; name: string };
       const id = crypto.randomUUID();

@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
 
+use age::secrecy::SecretString;
 use kosmotheka_domain::{Change, Entity};
 use rusqlite::{Connection, Transaction};
 use serde::{Deserialize, Serialize};
@@ -56,6 +57,8 @@ const SINGLE_LIBRARY_VERSION: u32 = 2;
 const OLDEST_RESTORABLE_SCHEMA: i64 = 9;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
+/// How every `age` file starts (D86); a plain backup is a zip and starts with `PK`.
+const AGE_HEADER: &[u8] = b"age-encryption.org/v1";
 
 pub(crate) type Rows = BTreeMap<String, Vec<Map<String, Value>>>;
 
@@ -121,12 +124,18 @@ pub fn all_libraries(conn: &Connection) -> Result<Vec<String>> {
         .collect::<rusqlite::Result<_>>()?)
 }
 
+/// With a passphrase the bytes written are the zip encrypted as an `age` file (D86),
+/// which the `age` tool opens without this app; without one, the plain zip.
 pub fn export(
     conn: &Connection,
     ids: &[String],
     covers: &Covers,
     mut out: impl Write,
+    passphrase: Option<&str>,
 ) -> Result<BackupSummary> {
+    if passphrase == Some("") {
+        return Err(Error::BadBackup("passphrase_empty"));
+    }
     let mut summary = BackupSummary::default();
     let mut backed_up = Vec::new();
     for id in ids {
@@ -182,7 +191,16 @@ pub fn export(
             summary.covers += 1;
         }
     }
-    out.write_all(&zip.finish()?.into_inner())?;
+    let zip = zip.finish()?.into_inner();
+    let bytes = match passphrase {
+        Some(passphrase) => age::encrypt(
+            &age::scrypt::Recipient::new(SecretString::from(passphrase.to_owned())),
+            &zip,
+        )
+        .map_err(|_| Error::BadBackup("unreadable"))?,
+        None => zip,
+    };
+    out.write_all(&bytes)?;
     out.flush()?;
     Ok(summary)
 }
@@ -191,16 +209,34 @@ pub fn export(
 /// device that pairs again merges with the other copies instead of duplicating them.
 /// It gets a new id if it was deleted here, and is skipped if this device already has
 /// it with content: merging two catalogues is what sync does. A version 2 backup,
-/// which has no id, goes into `active` if that is empty.
+/// which has no id, goes into `active` if that is empty. An encrypted backup needs its
+/// passphrase; it is decrypted before anything is written (D86).
 pub fn restore(
     conn: &mut Connection,
     active: &str,
     covers: &Covers,
     mut input: impl Read,
+    passphrase: Option<&str>,
 ) -> Result<RestoreSummary> {
     // Read whole for the same reason as `export`: reading a ZIP needs to seek.
     let mut bytes = Vec::new();
     input.read_to_end(&mut bytes)?;
+    if bytes.starts_with(AGE_HEADER) {
+        let passphrase = passphrase
+            .filter(|passphrase| !passphrase.is_empty())
+            .ok_or(Error::BadBackup("passphrase_needed"))?;
+        bytes = age::decrypt(
+            &age::scrypt::Identity::new(SecretString::from(passphrase.to_owned())),
+            &bytes,
+        )
+        .map_err(|error| match error {
+            age::DecryptError::DecryptionFailed
+            | age::DecryptError::NoMatchingKeys
+            | age::DecryptError::KeyDecryptionFailed
+            | age::DecryptError::InvalidMac => Error::BadBackup("wrong_passphrase"),
+            _ => Error::BadBackup("unreadable"),
+        })?;
+    }
     let mut archive = ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|_| Error::BadBackup("not_a_backup"))?;
     let backup: BackupFile = {
@@ -551,14 +587,21 @@ mod tests {
             std::slice::from_ref(&lib),
             &source_covers,
             File::create(&file).unwrap(),
+            None,
         )
         .unwrap();
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();
-        let restored =
-            restore(&mut target, &to, &target_covers, File::open(&file).unwrap()).unwrap();
+        let restored = restore(
+            &mut target,
+            &to,
+            &target_covers,
+            File::open(&file).unwrap(),
+            None,
+        )
+        .unwrap();
 
         assert_eq!(
             exported,
@@ -628,11 +671,13 @@ mod tests {
             &all_libraries(&source).unwrap(),
             &covers,
             File::create(&file).unwrap(),
+            None,
         )
         .unwrap();
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();
-        let restored = restore(&mut target, &to, &covers, File::open(&file).unwrap()).unwrap();
+        let restored =
+            restore(&mut target, &to, &covers, File::open(&file).unwrap(), None).unwrap();
 
         assert_eq!((exported.libraries, exported.books), (2, 2));
         assert_eq!(restored.restored.len(), 2);
@@ -656,10 +701,11 @@ mod tests {
             std::slice::from_ref(&lib),
             &covers,
             File::create(&file).unwrap(),
+            None,
         )
         .unwrap();
 
-        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap(), None).unwrap();
 
         assert!(summary.restored.is_empty());
         assert_eq!(summary.skipped, vec![String::new()]);
@@ -680,11 +726,12 @@ mod tests {
             std::slice::from_ref(&club),
             &covers,
             File::create(&file).unwrap(),
+            None,
         )
         .unwrap();
         libraries::delete_library(&mut conn, &club).unwrap();
 
-        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap(), None).unwrap();
 
         let back = &summary.restored[0];
         assert_ne!(back.id, club, "the deletion still holds for the old id");
@@ -699,12 +746,19 @@ mod tests {
         let mut source = db::open_in_memory().unwrap();
         let club = libraries::create_library(&mut source, "Club").unwrap();
         let file = dir.join("club.zip");
-        export(&source, &[club], &covers, File::create(&file).unwrap()).unwrap();
+        export(
+            &source,
+            &[club],
+            &covers,
+            File::create(&file).unwrap(),
+            None,
+        )
+        .unwrap();
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();
         libraries::create_library(&mut target, "club").unwrap();
 
-        let summary = restore(&mut target, &to, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut target, &to, &covers, File::open(&file).unwrap(), None).unwrap();
 
         assert_eq!(summary.restored[0].name, "Club (2)");
     }
@@ -740,7 +794,14 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(
+            &mut target,
+            &other,
+            &covers,
+            File::open(&file).unwrap(),
+            None,
+        )
+        .unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert_eq!(titles(&target, &other), vec!["Old backup"]);
@@ -820,7 +881,14 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(
+            &mut target,
+            &other,
+            &covers,
+            File::open(&file).unwrap(),
+            None,
+        )
+        .unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert_eq!(titles(&target, &other), vec!["Hollow Knight"]);
@@ -870,7 +938,14 @@ mod tests {
         let mut target = db::open_in_memory().unwrap();
         let other = libraries::create_library(&mut target, "Other").unwrap();
 
-        let summary = restore(&mut target, &other, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(
+            &mut target,
+            &other,
+            &covers,
+            File::open(&file).unwrap(),
+            None,
+        )
+        .unwrap();
 
         assert_eq!(summary.restored[0].id, other);
         assert!(titles(&target, &other).is_empty());
@@ -886,7 +961,7 @@ mod tests {
         let lib = ops::active_library(&conn).unwrap();
 
         assert!(matches!(
-            restore(&mut conn, &lib, &covers, File::open(&file).unwrap()),
+            restore(&mut conn, &lib, &covers, File::open(&file).unwrap(), None),
             Err(Error::BadBackup("not_a_backup"))
         ));
     }
@@ -899,5 +974,260 @@ mod tests {
         assert_eq!(cover_extension(&format!("{hash}.exe")), None);
         assert_eq!(cover_extension(&format!("../{hash}.jpg")), None);
         assert_eq!(cover_extension(&format!("{}.jpg", "A".repeat(64))), None);
+    }
+
+    const PASSPHRASE: &str = "correct horse battery staple";
+
+    /// A library with one book, exported to `file` (encrypted when `passphrase` is set).
+    fn export_one_book(
+        dir: &std::path::Path,
+        file: &str,
+        passphrase: Option<&str>,
+    ) -> std::path::PathBuf {
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        catalog::create_book(&mut conn, &lib, &book("A Wizard of Earthsea", None), None).unwrap();
+        let path = dir.join(file);
+        export(
+            &conn,
+            std::slice::from_ref(&lib),
+            &covers,
+            File::create(&path).unwrap(),
+            passphrase,
+        )
+        .unwrap();
+        path
+    }
+
+    fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+        !needle.is_empty() && haystack.windows(needle.len()).any(|w| w == needle)
+    }
+
+    #[test]
+    fn no_backup_carries_a_secret() {
+        use crate::account::{self, AccountUser};
+        use crate::lan::{self, KnownServer, identity::Identity};
+        use base64::Engine;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
+        let dir = temp("no-secrets");
+        let data_dir = dir.join("data");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        catalog::create_book(&mut conn, &lib, &book("A Wizard of Earthsea", None), None).unwrap();
+
+        // Everything that identifies or authenticates this device.
+        ops::signing_key(&conn).unwrap();
+        let seed_b64 = ops::read_state(&conn, "signing_seed").unwrap().unwrap();
+        let seed = URL_SAFE_NO_PAD.decode(&seed_b64).unwrap();
+        let token = "tok-7f3a9c1e5b2d4a8f90c6e1d3b5a7f2c4";
+        let user = AccountUser {
+            id: "u1".into(),
+            email: "reader@example.org".into(),
+            name: "Reader".into(),
+            locale: "en".into(),
+        };
+        account::store_session(&conn, token, &user, &user.email).unwrap();
+        let server_secret = "pairing-secret-of-the-server-0123456789";
+        lan::save_server(
+            &conn,
+            &KnownServer {
+                device_id: "phone".into(),
+                name: "Phone".into(),
+                addresses: vec![],
+                fingerprint: "ff".repeat(32),
+                secret: server_secret.into(),
+            },
+        )
+        .unwrap();
+        let client_secret = "pairing-secret-of-the-client-9876543210";
+        lan::save_client(&conn, "tablet", "Tablet", client_secret).unwrap();
+        let client_hash = lan::hash_secret(client_secret);
+        Identity::load_or_create(&data_dir).unwrap();
+        let tls_key = std::fs::read(data_dir.join("sync-key.der")).unwrap();
+
+        let mut secrets: Vec<(&str, Vec<u8>)> = vec![
+            ("signing seed", seed.clone()),
+            (
+                "signing seed (hex)",
+                seed.iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+                    .into_bytes(),
+            ),
+            ("signing seed (base64url)", seed_b64.into_bytes()),
+            ("account token", token.into()),
+            ("server pairing secret", server_secret.into()),
+            ("client pairing secret", client_secret.into()),
+            ("client secret hash", client_hash.into_bytes()),
+            ("TLS key", tls_key.clone()),
+            (
+                "TLS key (hex)",
+                tls_key
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+                    .into_bytes(),
+            ),
+            (
+                "TLS key (base64)",
+                base64::engine::general_purpose::STANDARD
+                    .encode(&tls_key)
+                    .into_bytes(),
+            ),
+        ];
+        secrets.push(("account email", user.email.clone().into_bytes()));
+
+        for passphrase in [None, Some(PASSPHRASE)] {
+            let mut out = Vec::new();
+            export(
+                &conn,
+                std::slice::from_ref(&lib),
+                &covers,
+                &mut out,
+                passphrase,
+            )
+            .unwrap();
+            // The zip itself, and every file inside it once decrypted.
+            let zip_bytes = match passphrase {
+                Some(passphrase) => age::decrypt(
+                    &age::scrypt::Identity::new(SecretString::from(passphrase.to_owned())),
+                    &out,
+                )
+                .unwrap(),
+                None => out.clone(),
+            };
+            let mut files = vec![out, zip_bytes.clone()];
+            let mut archive = ZipArchive::new(std::io::Cursor::new(zip_bytes)).unwrap();
+            for index in 0..archive.len() {
+                let mut content = Vec::new();
+                archive
+                    .by_index(index)
+                    .unwrap()
+                    .read_to_end(&mut content)
+                    .unwrap();
+                files.push(content);
+            }
+            for (what, secret) in &secrets {
+                for file in &files {
+                    assert!(
+                        !contains(file, secret),
+                        "{what} found in a backup (passphrase: {})",
+                        passphrase.is_some()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn an_encrypted_backup_is_an_age_file_that_restores_with_its_passphrase() {
+        let dir = temp("encrypted-round-trip");
+        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let bytes = std::fs::read(&file).unwrap();
+        assert!(bytes.starts_with(b"age-encryption.org/v1"));
+        assert!(
+            !contains(&bytes, b"Earthsea"),
+            "the catalogue is not readable"
+        );
+
+        let covers = Covers::new(dir.join("target-covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let summary = restore(
+            &mut target,
+            &to,
+            &covers,
+            File::open(&file).unwrap(),
+            Some(PASSPHRASE),
+        )
+        .unwrap();
+
+        assert_eq!(summary.restored.len(), 1);
+        assert_eq!(summary.restored[0].books, 1);
+        assert_eq!(
+            titles(&target, &summary.restored[0].id),
+            vec!["A Wizard of Earthsea"]
+        );
+    }
+
+    #[test]
+    fn a_wrong_passphrase_restores_nothing() {
+        let dir = temp("wrong-passphrase");
+        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let covers = Covers::new(dir.join("target-covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let libraries_before = all_libraries(&target).unwrap();
+
+        let result = restore(
+            &mut target,
+            &to,
+            &covers,
+            File::open(&file).unwrap(),
+            Some("not the passphrase"),
+        );
+
+        assert!(matches!(result, Err(Error::BadBackup("wrong_passphrase"))));
+        assert_eq!(all_libraries(&target).unwrap(), libraries_before);
+        assert!(titles(&target, &to).is_empty());
+    }
+
+    #[test]
+    fn an_encrypted_backup_asks_for_its_passphrase() {
+        let dir = temp("passphrase-needed");
+        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let covers = Covers::new(dir.join("target-covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+
+        for passphrase in [None, Some("")] {
+            let result = restore(
+                &mut target,
+                &to,
+                &covers,
+                File::open(&file).unwrap(),
+                passphrase,
+            );
+            assert!(matches!(result, Err(Error::BadBackup("passphrase_needed"))));
+        }
+        assert!(titles(&target, &to).is_empty());
+    }
+
+    #[test]
+    fn a_plain_backup_still_restores_and_ignores_a_passphrase() {
+        let dir = temp("plain-with-passphrase");
+        let file = export_one_book(&dir, "backup.zip", None);
+        assert!(std::fs::read(&file).unwrap().starts_with(b"PK"));
+        let covers = Covers::new(dir.join("target-covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+
+        let summary = restore(
+            &mut target,
+            &to,
+            &covers,
+            File::open(&file).unwrap(),
+            Some("unneeded"),
+        )
+        .unwrap();
+
+        assert_eq!(summary.restored[0].books, 1);
+    }
+
+    #[test]
+    fn an_empty_passphrase_is_refused_when_exporting() {
+        let conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let dir = temp("empty-passphrase");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut out = Vec::new();
+
+        let result = export(&conn, &[lib], &covers, &mut out, Some(""));
+
+        assert!(matches!(result, Err(Error::BadBackup("passphrase_empty"))));
+        assert!(out.is_empty());
     }
 }

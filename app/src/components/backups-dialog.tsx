@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Download, FileSpreadsheet, FileUp, HardDrive, Upload } from "lucide-react";
+import {
+  Download,
+  FileSpreadsheet,
+  FileUp,
+  HardDrive,
+  Lock,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   type CsvImportSummary,
   type RestoreSummary,
@@ -18,6 +28,8 @@ import {
 } from "@/lib/api";
 
 const today = () => new Date().toISOString().slice(0, 10);
+/** Same minimum as an account password. */
+const MIN_PASSPHRASE = 8;
 const slug = (name: string) => name.toLocaleLowerCase().replace(/\s+/g, "-");
 
 /** Backups and CSV files. Every action asks for a file first; cancelling does nothing. */
@@ -36,6 +48,13 @@ export function BackupsDialog({
   const [message, setMessage] = useState<string | null>(null);
   const [rejected, setRejected] = useState<CsvImportSummary["rejected"]>([]);
   const [restored, setRestored] = useState<RestoreSummary | null>(null);
+  // Encrypted backups are the default (D86); turning it off is a deliberate choice.
+  const [protect, setProtect] = useState(true);
+  const [passphrase, setPassphrase] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  // The encrypted file picked for restoring, while we wait for its password.
+  const [locked, setLocked] = useState<string | null>(null);
+  const [unlockPassphrase, setUnlockPassphrase] = useState("");
   const libraries = useLibraries();
   const nameOf = useLibraryName();
   const library = nameOf(libraries.active);
@@ -62,30 +81,70 @@ export function BackupsDialog({
     }
   };
 
+  const passphraseOk = passphrase.length >= MIN_PASSPHRASE && passphrase === confirmation;
+  const canBackup = !protect || passphraseOk;
   const zip = [{ name: t("data.backupFile"), extensions: ["zip"] }];
+  const age = [{ name: t("data.encryptedBackupFile"), extensions: ["age"] }];
   const csv = [{ name: "CSV", extensions: ["csv"] }];
 
   const backup = () =>
     run(async () => {
-      const path = await save({ defaultPath: `${slug(library)}-${today()}.zip`, filters: zip });
+      const path = await save({
+        defaultPath: `${slug(library)}-${today()}${protect ? ".kosmotheka.age" : ".zip"}`,
+        filters: protect ? age : zip,
+      });
       if (!path) return null;
-      return t("data.backupDone", { ...(await exportBackup(path)) });
+      return t("data.backupDone", {
+        ...(await exportBackup(path, undefined, protect ? passphrase : undefined)),
+      });
     });
 
   const backupDevice = () =>
     run(async () => {
-      const path = await save({ defaultPath: `kosmotheka-${today()}.zip`, filters: zip });
+      const path = await save({
+        defaultPath: `kosmotheka-${today()}${protect ? ".kosmotheka.age" : ".zip"}`,
+        filters: protect ? age : zip,
+      });
       if (!path) return null;
-      return t("data.deviceBackupDone", { ...(await exportDeviceBackup(path)) });
+      return t("data.deviceBackupDone", {
+        ...(await exportDeviceBackup(path, protect ? passphrase : undefined)),
+      });
     });
 
   const restore = () =>
     run(async () => {
-      const path = await open({ multiple: false, directory: false, filters: zip });
+      const path = await open({
+        multiple: false,
+        directory: false,
+        filters: [...zip, ...age],
+      });
       if (!path) return null;
-      const summary = await restoreBackup(path);
+      setLocked(null);
+      setUnlockPassphrase("");
+      try {
+        const summary = await restoreBackup(path);
+        onChanged();
+        setRestored(summary);
+      } catch (e) {
+        // An encrypted file: ask for its password instead of failing.
+        if (isCommandError(e) && e.kind === "backup" && e.reason === "passphrase_needed") {
+          setLocked(path);
+          return null;
+        }
+        throw e;
+      }
+      return null;
+    });
+
+  // A wrong password keeps the file waiting so it can be tried again.
+  const unlock = () =>
+    run(async () => {
+      if (!locked) return null;
+      const summary = await restoreBackup(locked, unlockPassphrase);
       onChanged();
       setRestored(summary);
+      setLocked(null);
+      setUnlockPassphrase("");
       return null;
     });
 
@@ -117,15 +176,63 @@ export function BackupsDialog({
       title={t("data.title")}
       description={t("data.description")}
     >
+      <section className="flex flex-col gap-3">
+        <label className="flex items-center gap-2.5">
+          <Lock className="size-[15px]" />
+          <span className="flex-1 text-sm font-medium">{t("data.protect")}</span>
+          <Switch
+            checked={protect}
+            aria-label={t("data.protect")}
+            disabled={busy}
+            onCheckedChange={setProtect}
+          />
+        </label>
+        {protect ? (
+          <>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              aria-label={t("data.passphrase")}
+              placeholder={t("data.passphrase")}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              disabled={busy}
+            />
+            <Input
+              type="password"
+              autoComplete="new-password"
+              aria-label={t("data.passphraseConfirm")}
+              placeholder={t("data.passphraseConfirm")}
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+              disabled={busy}
+            />
+            {passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE && (
+              <p className="text-[13px] text-destructive">
+                {t("data.passphraseShort", { min: MIN_PASSPHRASE })}
+              </p>
+            )}
+            {confirmation.length > 0 && passphrase !== confirmation && (
+              <p className="text-[13px] text-destructive">{t("data.passphraseMismatch")}</p>
+            )}
+            <p className="text-[13px] text-pretty text-muted-foreground">{t("data.protectHint")}</p>
+          </>
+        ) : (
+          <p className="flex gap-2 text-[13px] text-pretty text-destructive">
+            <TriangleAlert className="mt-0.5 size-[14px] shrink-0" />
+            {t("data.unprotectedWarning")}
+          </p>
+        )}
+      </section>
       <div className="grid gap-2">
-        <Button className="h-12" disabled={busy} onClick={() => void backup()}>
+        <Button className="h-12" disabled={busy || !canBackup} onClick={() => void backup()}>
           <Download /> {t("data.backupOf", { name: library })}
         </Button>
         {several && (
           <Button
             variant="outline"
             className="h-12"
-            disabled={busy}
+            disabled={busy || !canBackup}
             onClick={() => void backupDevice()}
           >
             <HardDrive /> {t("data.backupDevice", { count: libraries.all.length })}
@@ -136,6 +243,30 @@ export function BackupsDialog({
         </Button>
         <p className="text-[13px] text-pretty text-muted-foreground">{t("data.restoreHint")}</p>
       </div>
+      {locked && (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void unlock();
+          }}
+        >
+          <p className="text-sm">{t("data.encryptedFile")}</p>
+          <Input
+            type="password"
+            autoComplete="off"
+            autoFocus
+            aria-label={t("data.passphrase")}
+            placeholder={t("data.passphrase")}
+            value={unlockPassphrase}
+            onChange={(e) => setUnlockPassphrase(e.target.value)}
+            disabled={busy}
+          />
+          <Button type="submit" disabled={busy || unlockPassphrase.length === 0}>
+            <Upload /> {t("data.unlockRestore")}
+          </Button>
+        </form>
+      )}
       {message && <p className="text-sm">{message}</p>}
       {restored && (
         <div className="space-y-1 text-sm">
@@ -166,6 +297,7 @@ export function BackupsDialog({
       <section className="mt-2 flex flex-col gap-2 border-t pt-5">
         <h3 className="text-sm font-medium">{t("data.csvTitle", { name: library })}</h3>
         <p className="text-sm text-muted-foreground">{t("data.csvDescription")}</p>
+        <p className="text-[13px] text-muted-foreground">{t("data.csvReadable")}</p>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" disabled={busy} onClick={() => void fromCsv()}>
             <FileUp /> {t("data.importCsv")}

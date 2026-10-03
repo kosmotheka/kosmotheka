@@ -85,6 +85,21 @@ La biblioteca activa es la guardada si aún existe y, si no, la primera por nomb
 
 **Cambio de identificador (D70):** la carpeta de datos se llama como el identificador de la app, que pasó de `com.tersoal.library` a `app.kosmotheka` (`~/.local/share/app.kosmotheka/` en Linux, `%APPDATA%\app.kosmotheka\` en Windows). Mientras la carpeta nueva no tenga base de datos, la app **copia** la antigua (base de datos con `VACUUM INTO`, portadas e identidad de sincronización, con sus permisos) y la deja intacta: volver a la versión anterior la encuentra como estaba. Los datos de la vista web (cachés, almacenamiento local) no se copian. En Android el identificador nuevo es otra app y no puede leer la antigua: los datos se recuperan sincronizando o con una copia de seguridad.
 
+## Copias de seguridad (D30, D86)
+
+Una copia es un zip con `backup.json` (catálogo de cada biblioteca e historial de operaciones) y `covers/`. **Nunca lleva secretos**: ni la semilla de la clave de firma, ni el token y la sesión de la cuenta, ni los secretos de emparejamiento (`known_servers`, `known_clients`), ni la identidad TLS; esos viven en `local_state`, en esas tablas y en la carpeta de datos, y la exportación no los lee. Lo garantiza el test `no_backup_carries_a_secret`, que exporta una copia sin cifrar y otra cifrada y busca cada secreto en sus bytes y en cada fichero de dentro.
+
+Por defecto la copia va **cifrada con contraseña** (D86): el fichero es un fichero [`age`](https://age-encryption.org) (scrypt y ChaCha20-Poly1305, crate `age`) cuyo contenido es el zip de siempre. Empieza por `age-encryption.org/v1`; al restaurar, la app detecta esa cabecera y pide la contraseña. Una contraseña equivocada (`wrong_passphrase`) o ausente (`passphrase_needed`) no escribe nada. Una copia sin cifrar (zip) se sigue restaurando igual.
+
+**Abrir una copia sin la app:**
+
+```bash
+age -d backup.kosmotheka.age > backup.zip   # pide la contraseña
+unzip backup.zip
+```
+
+**La app no guarda la contraseña en ningún sitio. Si se pierde, la copia no se puede abrir** (ni con la app ni con `age`): hay que avisarlo antes de crearla. Exportar a CSV no se cifra.
+
 ## Ficheros fuera de la base de datos
 
 - `covers/`: portadas, con nombre `<sha256>.<ext>` (D27). Una portada que ya no usa ningún libro se queda en disco; limpiarlas es una tarea pendiente.

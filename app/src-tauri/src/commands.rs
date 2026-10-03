@@ -429,6 +429,7 @@ pub fn export_backup(
     covers: State<'_, Covers>,
     path: String,
     library: Option<String>,
+    passphrase: Option<String>,
 ) -> Result<BackupSummary> {
     let conn = database.lock()?;
     let library = match library {
@@ -436,7 +437,7 @@ pub fn export_backup(
         None => ops::active_library(&conn)?,
     };
     let file = open_picked(&app, &path, true)?;
-    backup::export(&conn, &[library], &covers, file)
+    backup::export(&conn, &[library], &covers, file, passphrase.as_deref())
 }
 
 /// Every library on this device in one file (milestone 4.6).
@@ -446,10 +447,17 @@ pub fn export_device_backup(
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
+    passphrase: Option<String>,
 ) -> Result<BackupSummary> {
     let conn = database.lock()?;
     let file = open_picked(&app, &path, true)?;
-    backup::export(&conn, &backup::all_libraries(&conn)?, &covers, file)
+    backup::export(
+        &conn,
+        &backup::all_libraries(&conn)?,
+        &covers,
+        file,
+        passphrase.as_deref(),
+    )
 }
 
 #[tauri::command]
@@ -458,11 +466,12 @@ pub fn restore_backup(
     database: State<'_, Database>,
     covers: State<'_, Covers>,
     path: String,
+    passphrase: Option<String>,
 ) -> Result<RestoreSummary> {
     let mut conn = database.lock()?;
     let active = ops::active_library(&conn)?;
     let file = open_picked(&app, &path, false)?;
-    backup::restore(&mut conn, &active, &covers, file)
+    backup::restore(&mut conn, &active, &covers, file, passphrase.as_deref())
 }
 
 #[tauri::command]
