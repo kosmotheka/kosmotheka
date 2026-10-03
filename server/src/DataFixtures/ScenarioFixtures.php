@@ -44,6 +44,7 @@ final class ScenarioFixtures extends Fixture
         private readonly SchemaVersion $schemaVersion,
         private readonly Connection $connection,
         private readonly ScenarioReport $report,
+        private readonly CastFile $castFile,
     ) {
     }
 
@@ -74,6 +75,8 @@ final class ScenarioFixtures extends Fixture
         $this->jhonnyCannotReachTheGarcias($jhonny, $garcia->library);
         $this->jhonnyPushesWithoutALink($jhonny);
         $this->nothingForeignGetsIntoTheGarcias($garcia->library);
+
+        $this->report->add('Cast for the app', 'written to server/var/fixtures/'.basename($this->castFile->write()).' (make app-fixtures turns it into one app data folder per device)');
     }
 
     // ------------------------------------------------------------ normal ---
@@ -103,10 +106,15 @@ final class ScenarioFixtures extends Fixture
             // Lucía is a child with no account and no device: she is only a row here.
             $this->operation($laptop, $local, 4, 'member.add', [$this->create('member', 'lucia', ['name' => 'Lucía'])]),
             $this->operation($phone, $local, 5, 'device.register', [
-                $this->create('device', 'ana-phone', ['public_key' => $phone->publicKey, 'name' => "Ana's phone", 'member_id' => $member('ana')], $phone->id),
+                $this->create('device', 'ana-phone', ['public_key' => $phone->publicKey, 'name' => "Ana's phone"], $phone->id),
             ]),
             $this->operation($hugosPhone, $local, 6, 'device.register', [
-                $this->create('device', 'hugo-phone', ['public_key' => $hugosPhone->publicKey, 'name' => "Hugo's phone", 'member_id' => $member('hugo')], $hugosPhone->id),
+                $this->create('device', 'hugo-phone', ['public_key' => $hugosPhone->publicKey, 'name' => "Hugo's phone"], $hugosPhone->id),
+            ]),
+            // A device registers itself; saying whose it is, once roles are on, is the administrator's (D73).
+            $this->operation($laptop, $local, 7, 'device.assign', [
+                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => $member('ana')]],
+                ['entity' => 'device', 'id' => $hugosPhone->id, 'action' => 'update', 'fields' => ['member_id' => $member('hugo')]],
             ]),
             $this->operation($laptop, $local, 10, 'book.add', $this->book('cien-anos', 'Cien años de soledad', 'Gabriel García Márquez', '9780060883287', $member('ana'), 'Salón')),
             $this->operation($laptop, $local, 11, 'book.add', $this->book('principito', 'El principito', 'Antoine de Saint-Exupéry', '9780156012195', $member('lucia'), 'Cuarto de Lucía')),

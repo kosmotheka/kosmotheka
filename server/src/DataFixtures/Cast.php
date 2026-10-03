@@ -89,4 +89,22 @@ final class Cast
     {
         return SigningDevice::fromSeed(self::anaLaptop()->id, 'jhonny as ana laptop');
     }
+
+    /**
+     * Every device of the cast that holds a session, by the name its data folder
+     * gets in the app (docs/development/fixtures.md): who it belongs to and its key.
+     *
+     * @return array<string, array{character: string, email: string, device: SigningDevice}>
+     */
+    public static function devices(): array
+    {
+        return [
+            'ana-laptop' => ['character' => 'Ana', 'email' => self::ANA, 'device' => self::anaLaptop()],
+            'ana-phone' => ['character' => 'Ana', 'email' => self::ANA, 'device' => self::anaPhone()],
+            'hugo-phone' => ['character' => 'Hugo', 'email' => self::HUGO, 'device' => self::hugoPhone()],
+            'kenji-laptop' => ['character' => 'Kenji', 'email' => self::KENJI, 'device' => self::kenjiLaptop()],
+            'jhonny-phone' => ['character' => 'Jhonny', 'email' => self::JHONNY, 'device' => self::jhonnyPhone()],
+            'jhonny-as-ana-phone' => ['character' => 'Jhonny', 'email' => self::JHONNY, 'device' => self::jhonnyAsAnaPhone()],
+        ];
+    }
 }

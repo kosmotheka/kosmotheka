@@ -177,6 +177,18 @@ pub fn ensure_registered(tx: &Transaction<'_>, library: &str) -> Result<()> {
     Ok(())
 }
 
+/// Gives this database a chosen identity instead of a random one. `pub` for
+/// `examples/fixture_devices.rs`, so a fixture device signs as the one the server
+/// already knows; call it before anything is recorded.
+pub fn set_identity(conn: &Connection, device_id: &str, signing_seed: [u8; 32]) -> Result<()> {
+    write_state(conn, DEVICE_ID_KEY, Some(device_id))?;
+    write_state(
+        conn,
+        SIGNING_SEED_KEY,
+        Some(&URL_SAFE_NO_PAD.encode(signing_seed)),
+    )
+}
+
 /// This device's signing key (D56), made the first time it is needed. It stays in
 /// this database and never goes into a backup (D58).
 pub fn signing_key(conn: &Connection) -> Result<DeviceKey> {

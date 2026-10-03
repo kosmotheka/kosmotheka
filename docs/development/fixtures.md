@@ -45,7 +45,7 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | Escenario | Dónde mirar | Qué se ve y qué demuestra |
 |---|---|---|
 | **Ana sube «Biblioteca García»** | `cloud_library` (la fila de Ana: `local_library_id` = el id García) y `membership` | La biblioteca ya está enlazada y Ana es su única membresía |
-| | `cloud_operation` de esa biblioteca: 12 filas (14 con las dos de abajo) | La historia entera: registro de dispositivos, creación, tres miembros con sus roles, dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. `body` es la operación tal como llegó, firma incluida |
+| | `cloud_operation` de esa biblioteca: 13 filas (15 con las dos de abajo) | La historia entera: registro de dispositivos (cada uno el suyo) y la asignación de los móviles a Ana y a Hugo por el portátil de Ana, que administra; creación, tres miembros con sus roles, dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. `body` es la operación tal como llegó, firma incluida |
 | | `cloud_operation` con `body @> '{"changes":[{"entity":"mark"}]}'` y `…"change_request"…` | Una marca de Hugo y una solicitud suya: las firmó el móvil de Hugo y llegaron a la nube por Ana |
 | | `cloud_device_key` de esa biblioteca: 3 filas | Las claves de portátil de Ana, móvil de Ana y móvil de Hugo, registradas al verse su primera operación |
 | **Lucía no tiene cuenta** | `user`: nadie se llama Lucía; `device`: ningún dispositivo suyo | Un hijo no aparece en la tabla de acceso |
@@ -59,7 +59,7 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | Costura | Dónde mirar | Qué demuestra |
 |---|---|---|
 | **2 · Mismo id local, dos bibliotecas** | `cloud_library` con `local_library_id = '00000000-0000-7000-8000-000000000001'`: **dos filas**, dueños Kenji y Jhonny. Y con el id García: otras dos (Ana y Jhonny) | Dos desconocidos con el id fijo no se funden: cada uno tiene su `C` y su historia (5 operaciones frente a 2) |
-| **1 · Ids de operación robados** | `SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1`: **12 filas** | El mismo `operation_id` está en la biblioteca de Ana y en la de Jhonny (que las subió con los ids de ella): la clave es `(cloud_library_id, operation_id)`, así que Jhonny no pudo «ocupar» los ids de la familia ni estorbarla |
+| **1 · Ids de operación robados** | `SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1`: **13 filas** | El mismo `operation_id` está en la biblioteca de Ana y en la de Jhonny (que las subió con los ids de ella): la clave es `(cloud_library_id, operation_id)`, así que Jhonny no pudo «ocupar» los ids de la familia ni estorbarla |
 | **6 · Un dispositivo es su id junto con su clave** (SEG-016) | `device WHERE device_id = '<id del móvil de Ana>'`: **dos filas**, una de Ana y otra de Jhonny, con `public_key` distinta | Quien inicia sesión con el id público de otro dispositivo, pero con su propia clave, no se lo quita: tiene una fila aparte |
 | **4 · Claves de firma dentro de cada `C`** | `cloud_device_key WHERE device_id = '<id del portátil de Ana>'`: **tres filas** (biblioteca de Ana, copia de Jhonny de la García, biblioteca por defecto de Jhonny) | En la de Ana la clave es la de Ana; en la biblioteca por defecto de Jhonny, el mismo id lleva la clave de Jhonny. Una clave registrada en su `C` no vale en otra |
 | **7 · No rechazar por el orden de llegada** (DAT-001) | `cloud_operation` de Ana con autor el móvil de Ana: HLC `…+2900 min` y `…+3000 min`, la antigua con `received_at` posterior | Una operación más antigua que otra de su autor, llegada después, se guarda |
@@ -85,8 +85,58 @@ Cada uno se ejecuta en la carga **y la carga se detiene si alguno entra**: que `
 | `device` | 6 |
 | `cloud_library` | 5 (Ana, Kenji, tres de Jhonny) |
 | `membership` | 5 (una por biblioteca) |
-| `cloud_operation` | 34 (García 14, Tanaka 5, Jhonny 13 + 2) |
+| `cloud_operation` | 36 (García 15, Tanaka 5, Jhonny 14 + 2) |
 | `cloud_device_key` | 8 |
+
+## Abrir los dispositivos en la app
+
+Las fixtures del servidor también sirven para ver **el otro lado de la historia**: abrir en la app de escritorio el dispositivo de cada personaje, ya con la sesión iniciada en el servidor de desarrollo.
+
+```bash
+cd server
+make up              # si los contenedores no están arriba
+make app-fixtures    # = make fixtures + el ejemplo de Rust, dentro de library-dev
+```
+
+El servidor es la única fuente del reparto: al final de `make fixtures` escribe `server/var/fixtures/cast.json` (ignorado por git; lleva el token y la semilla de firma de cada dispositivo, que son de cuentas de prueba) y lo anuncia en el resumen («Cast for the app»). `make app-fixtures` pasa ese fichero a `app/src-tauri/examples/fixture_devices.rs`, que para cada dispositivo:
+
+1. crea una carpeta de datos que la app abre tal cual (la misma base `library.sqlite3` y las mismas migraciones);
+2. fija en `local_state` el id y la semilla de firma **antes de registrar nada**, así sus operaciones llevan la misma identidad que en el servidor;
+3. deja la sesión iniciada (servidor `http://localhost:8095`, token, usuario, correo);
+4. ejecuta el `cloud::sync_all` de verdad y escribe lo que informó: la biblioteca que se descargó o el motivo por el que no.
+
+Sin `make`, son los mismos dos pasos: `make fixtures` y, desde la raíz del repo, `distrobox enter library-dev -- bash -ic 'cargo run -p kosmotheka --example fixture_devices -- server/var/fixtures/cast.json /tmp/kosmotheka-fixtures'`. Las carpetas se rehacen desde cero cada vez (`make app-fixtures` borra `/tmp/kosmotheka-fixtures/` antes), y como cada carga cambia los id de nube, hay que repetir los dos pasos juntos.
+
+| Carpeta (`/tmp/kosmotheka-fixtures/…`) | Dispositivo |
+|---|---|
+| `ana-laptop`, `ana-phone` | Ana |
+| `hugo-phone` | Hugo |
+| `kenji-laptop` | Kenji |
+| `jhonny-phone` | Jhonny |
+| `jhonny-as-ana-phone` | Jhonny con el id del móvil de Ana y su propia clave (SEG-016) |
+
+Para abrir uno (con la app compilada en debug, por ejemplo tras `cd app && npm run tauri dev`; ver [fase-2.md](../testing/fase-2.md) para la carpeta de datos propia):
+
+```bash
+KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-fixtures/ana-laptop target/debug/kosmotheka
+```
+
+### Qué ves en cada uno y por qué
+
+Esto es lo que informó el ejemplo en la última ejecución; las fixtures son deterministas salvo los id de nube.
+
+| Dispositivo | `sync_all` | Qué ves |
+|---|---|---|
+| `ana-laptop`, `ana-phone` | `Downloaded`: recibe 10 operaciones y **rechaza 4** | «Biblioteca García», ya enlazada a su biblioteca de nube, con los dos libros (*Cien años de soledad* y *El principito*) y los tres miembros. No aparecen la marca ni la solicitud de Hugo ni lo que añadió el móvil de Ana más tarde (*Rayuela* y el cambio de ubicación): ver «Lo que la app rechaza» |
+| `hugo-phone` | sin bibliotecas | Sesión iniciada y solo «Mi biblioteca» vacía. Hasta el hito 7.5 solo la cuenta dueña recibe la biblioteca por la nube (no tiene membresía) |
+| `kenji-laptop` | `LibraryConflict` | Su biblioteca de nube **no baja**. La app trae siempre «Mi biblioteca» con el id fijo `00000000-0000-7000-8000-000000000001`, que es justo el id local de la de Kenji: ya existe aquí y nada de su propio registro la enlaza a esa nube, así que no se mezcla (D84) |
+| `jhonny-phone`, `jhonny-as-ana-phone` | `NotLinked` para la copia que hizo de la García y `LibraryConflict` para la del id por defecto | No baja nada: la copia de la García su enlace nombra la nube de Ana, no la de Jhonny (se retira lo que se había fusionado), y la del id por defecto choca igual que la de Kenji |
+
+El enlace de las fixtures nombra el servidor `http://localhost:8095` (`SigningDevice::SERVER`): la app solo confía en un enlace que nombra el servidor con el que habla.
+
+### Lo que la app rechaza (hallazgo, sin resolver)
+
+En los dos dispositivos de Ana llegan las 15 operaciones y no se rechaza ninguna. La marca de Hugo se aplica (cada persona lleva las suyas, D68) y su petición queda como petición, porque Hugo lee. Una primera versión de las fixtures hacía que cada móvil dijera en su propio registro de quién era; eso es cosa de quien administra (D73), así que los dispositivos lo dejaban en petición y luego rechazaban lo que firmaban esos móviles. Se corrigió el 03/10/2026: el servidor lo guardaba porque hasta 7.4 no juzga permisos, y fue la app, al abrir los dispositivos, la que lo descubrió.
 
 ## Cuando cambian las reglas
 

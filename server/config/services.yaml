@@ -7,6 +7,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # Where the fixtures write the cast for the app (docs/development/fixtures.md).
+    app.fixtures_cast_file: '%kernel.project_dir%/var/fixtures/cast.json'
 
 services:
     # default configuration for services in *this* file
@@ -29,7 +31,7 @@ services:
         bind:
             $secret: '%kernel.secret%'
 
-when@dev: &fixtures
+when@dev:
     services:
         _defaults:
             autowire: true
@@ -37,4 +39,12 @@ when@dev: &fixtures
         App\DataFixtures\:
             resource: '../src/DataFixtures/'
 
-when@test: *fixtures
+when@test:
+    parameters:
+        app.fixtures_cast_file: '%kernel.project_dir%/var/fixtures/cast.test.json'
+    services:
+        _defaults:
+            autowire: true
+            autoconfigure: true
+        App\DataFixtures\:
+            resource: '../src/DataFixtures/'

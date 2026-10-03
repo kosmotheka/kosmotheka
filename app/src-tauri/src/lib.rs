@@ -1,19 +1,21 @@
-mod account;
+// The modules below are `pub` only so `examples/fixture_devices.rs` can reuse them
+// (examples link the library like any other crate); the app itself never needs it.
+pub mod account;
 mod backup;
 mod catalog;
-mod cloud;
+pub mod cloud;
 mod commands;
 mod covers;
 mod csv_io;
-mod data_folder;
-mod db;
+pub mod data_folder;
+pub mod db;
 mod device_reset;
-mod error;
+pub mod error;
 mod lan;
 mod libraries;
 mod marks;
 mod metadata;
-mod ops;
+pub mod ops;
 mod people;
 mod permissions;
 mod requests;

@@ -26,7 +26,7 @@ use crate::{device_reset, lan};
 
 pub const OFFICIAL_SERVER: &str = "https://api.kosmotheka.app";
 
-const ACCOUNT_SERVER: &str = "account_server";
+pub const ACCOUNT_SERVER: &str = "account_server";
 const ACCOUNT_TOKEN: &str = "account_token";
 const ACCOUNT_USER: &str = "account_user";
 const ACCOUNT_EMAIL: &str = "account_email";
@@ -208,7 +208,14 @@ pub(crate) fn is_signed_in(conn: &Connection) -> Result<bool> {
     Ok(read_state(conn, ACCOUNT_TOKEN)?.is_some())
 }
 
-fn store_session(conn: &Connection, token: &str, user: &AccountUser, email: &str) -> Result<()> {
+/// `pub` for `examples/fixture_devices.rs`, which signs a fixture device in without
+/// the login screen.
+pub fn store_session(
+    conn: &Connection,
+    token: &str,
+    user: &AccountUser,
+    email: &str,
+) -> Result<()> {
     write_state(conn, ACCOUNT_TOKEN, Some(token))?;
     write_state(conn, ACCOUNT_USER, Some(&serde_json::to_string(user)?))?;
     write_state(conn, ACCOUNT_EMAIL, Some(email))?;

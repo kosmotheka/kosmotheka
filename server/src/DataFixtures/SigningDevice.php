@@ -17,12 +17,15 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class SigningDevice
 {
-    public const string SERVER = 'https://kosmotheka.test';
+    /** The server the link operations name: the one the app of the fixture devices talks to, or it would not trust the link (D84). */
+    public const string SERVER = CastFile::SERVER_URL;
 
     private function __construct(
         public string $id,
         public string $publicKey,
         private string $secretKey,
+        /** The 32-byte seed of the key, hex; null when the key did not come from a seed. */
+        public ?string $seed = null,
     ) {
     }
 
@@ -37,7 +40,7 @@ final readonly class SigningDevice
     {
         $seed = hash('sha256', 'kosmotheka fixtures: '.$seedName, true);
 
-        return self::fromKeyPair($id, sodium_crypto_sign_seed_keypair($seed));
+        return self::fromKeyPair($id, sodium_crypto_sign_seed_keypair($seed), bin2hex($seed));
     }
 
     /**
@@ -124,11 +127,11 @@ final readonly class SigningDevice
         return self::encode(sodium_crypto_sign_detached($canonical, $this->secretKey));
     }
 
-    private static function fromKeyPair(string $id, string $keyPair): self
+    private static function fromKeyPair(string $id, string $keyPair, ?string $seed = null): self
     {
         \assert('' !== $keyPair);
 
-        return new self($id, self::encode(sodium_crypto_sign_publickey($keyPair)), sodium_crypto_sign_secretkey($keyPair));
+        return new self($id, self::encode(sodium_crypto_sign_publickey($keyPair)), sodium_crypto_sign_secretkey($keyPair), $seed);
     }
 
     private static function encode(string $bytes): string

@@ -116,3 +116,13 @@ fix: cs rector ## Applies style and Rector, then verifies
 help: ## Shows this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+
+# Escribe las bases de datos de la app para cada personaje: el servidor lo da
+# todo (server/var/fixtures/cast.json) y el ejemplo de Rust lo vuelca en carpetas
+# de datos que la app abre tal cual (docs/development/fixtures.md).
+FIXTURE_DEVICES := /tmp/kosmotheka-fixtures
+
+.PHONY: app-fixtures
+app-fixtures: fixtures ## Carga las fixtures y crea las carpetas de datos de la app de cada personaje (en /tmp/kosmotheka-fixtures)
+	rm -rf $(FIXTURE_DEVICES)
+	distrobox enter library-dev -- bash -ic 'cd $(CURDIR)/.. && cargo run -p kosmotheka --example fixture_devices -- $(CURDIR)/var/fixtures/cast.json $(FIXTURE_DEVICES)'

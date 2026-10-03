@@ -44,6 +44,30 @@ final class ScenarioFixturesTest extends WebTestCase
         );
     }
 
+    public function testTheCastIsWrittenForTheApp(): void
+    {
+        $file = self::getContainer()->getParameter('app.fixtures_cast_file');
+        self::assertFileExists($file);
+        /** @var array{devices: list<array{folder: string, email: string, deviceId: string, signingSeed: string, token: string, server: string, user: array{id: string}}>} $cast */
+        $cast = json_decode((string) file_get_contents($file), true, flags: \JSON_THROW_ON_ERROR);
+
+        self::assertSame(array_keys(Cast::devices()), array_column($cast['devices'], 'folder'));
+        foreach ($cast['devices'] as $entry) {
+            $expected = Cast::devices()[$entry['folder']];
+            $device = $expected['device'];
+            self::assertSame($expected['email'], $entry['email']);
+            self::assertSame($device->id, $entry['deviceId']);
+            self::assertSame($device->seed, $entry['signingSeed']);
+            self::assertSame(64, \strlen($entry['signingSeed']));
+            self::assertSame(Cast::token($device), $entry['token']);
+            self::assertSame('http://localhost:8095', $entry['server']);
+            self::assertSame(
+                $this->connection->fetchOne('SELECT id FROM "user" WHERE email = :email', ['email' => $expected['email']]),
+                $entry['user']['id'],
+            );
+        }
+    }
+
     public function testAnaUploadsBibliotecaGarciaWithItsHistory(): void
     {
         $garcia = $this->cloudLibrariesOf(Cast::GARCIA_LOCAL);
@@ -51,8 +75,8 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertCount(2, $garcia, 'The Garcías\' own copy and the one Jhonny made of its ids.');
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         self::assertContains($ana, $garcia);
-        // 12 of the upload and 2 of the phone, the older one included.
-        self::assertSame(14, $this->operationsIn($ana));
+        // 13 of the upload and 2 of the phone, the older one included.
+        self::assertSame(15, $this->operationsIn($ana));
         // Three authors registered their keys: the laptop, the phone and Hugo's phone.
         self::assertSame(3, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
         // Hugo's mark and request, and Ana's roles, are in the history as operations.
@@ -102,12 +126,12 @@ final class ScenarioFixturesTest extends WebTestCase
 
         $shared = $this->connection->fetchFirstColumn('SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1');
 
-        self::assertCount(12, $shared);
-        self::assertSame(12, $this->scalar(
+        self::assertCount(13, $shared);
+        self::assertSame(13, $this->scalar(
             'SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = :library AND operation_id IN (SELECT operation_id FROM cloud_operation WHERE cloud_library_id = :ana)',
             ['library' => $jhonnys, 'ana' => $ana],
         ));
-        self::assertSame(14, $this->operationsIn($ana));
+        self::assertSame(15, $this->operationsIn($ana));
     }
 
     public function testTwoDeviceRowsShareAnId(): void
@@ -168,11 +192,11 @@ final class ScenarioFixturesTest extends WebTestCase
 
         self::assertCount(1, $unlinked, 'Jhonny\'s library with no link: created, never filled.');
         self::assertSame(0, $this->operationsIn($unlinked[0]));
-        self::assertSame(14, $this->operationsIn($ana));
+        self::assertSame(15, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
         // 14 + 5 + 13 + 2: nothing of another local id, unsigned or forged got in.
-        self::assertSame(34, $this->rowsIn('cloud_operation'));
+        self::assertSame(36, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void
