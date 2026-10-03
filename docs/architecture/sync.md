@@ -91,6 +91,10 @@ Al recibir operaciones, el reloj HLC local salta por delante de las marcas recib
 
 Nada de esto rompe una sincronización: un cambio que no se puede aplicar se salta y se cuenta, pero la operación queda registrada y se sigue reenviando a otros dispositivos.
 
+### Límite conocido: borrar un padre que tiene hijos sin cascada (DAT-006)
+
+Algunas claves foráneas no tienen `ON DELETE CASCADE`: `editions.work_id`, y las referencias a `publisher`, `member` (dueño) y `person`. Si un dispositivo borra la fila padre mientras otro le crea un hijo, el borrado choca con la clave foránea, `apply_change` lo deshace sin lápida y el resultado depende del orden de llegada. **Hoy no se alcanza desde la app**: añadir una edición crea siempre su obra, y no hay forma de borrar una persona, una editorial ni un miembro. **Antes de construir** «añadir una edición a una obra existente», «quitar un miembro», o borrar personas o editoriales, hay que arreglarlo (cascada o `SET NULL`, o que el borrado gane con su lápida) con un test de los dos órdenes y `assert_converged` (auditoría 2026-10-03-3).
+
 ## Duplicados (D33)
 
 Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma editorial, el mismo propietario o el mismo ISBN, al sincronizar **se conservan los dos**. Rechazar uno perdería datos; fusionarlos automáticamente podría fusionar cosas distintas. Por eso:

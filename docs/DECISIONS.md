@@ -92,6 +92,7 @@
 | D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
 | D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada (cambiar `age` por RustCrypto, pendiente) |
+| D87 | Cada operación encadena la anterior de su autor | aceptada |
 
 ---
 
@@ -1418,3 +1419,30 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - **Un test garantiza** que ninguna copia, cifrada o no, contiene la clave de firma, el token de la cuenta, los secretos de emparejamiento ni la identidad TLS.
 
 **Consecuencias:** cambia el formato de las copias (una copia cifrada es un fichero `age` que contiene el zip de siempre); las copias antiguas sin cifrar se siguen restaurando. Exportar a CSV sigue siendo legible: es para llevarse los datos a otra herramienta, y la pantalla lo avisa.
+
+## D87 · Cada operación encadena la anterior de su autor — `aceptada`
+
+> Aceptada por el maintainer el 04/10/2026 («si eso ofrece seguridad y no rompe nada, adelante»), al estudiar SEG-018 en la auditoría 2026-10-03-3.
+
+**Contexto:** la sincronización por vectores guarda de cada autor solo su operación más alta y da por hecho que tiene todas las anteriores. En la auditoría 2026-10-03-3 aparecieron cuatro caminos que dejaban un hueco por debajo sin que nadie lo viera (DAT-001 a DAT-004), y SEG-018: quien pierde un rol puede firmar con una app modificada una operación nueva con fecha anterior a la marca de su valla (D84), y se juzga con el rol antiguo. La primera regla que se propuso («una operación por debajo de lo que ya tengo de su autor es falsa») no sirve: cada dispositivo la juzgaría según lo que tuviera al recibirla, y las copias divergirían.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A · Aceptar SEG-018 como riesgo | Coste cero | Los huecos siguen siendo invisibles |
+| B · Encadenar las operaciones de cada autor | Cierra SEG-018 con una regla que depende solo del registro; cada dispositivo sabe cuándo le falta una operación | Cambia el formato de las operaciones en `spec/`, Rust y PHP |
+
+**Decisión: B.**
+- Cada operación lleva `previous`, firmado con el resto: el id de la operación anterior del mismo dispositivo en la misma biblioteca, o `null` si es la primera.
+- **Al recibir**, una operación cuya anterior no se conoce espera, y con ella las siguientes de su autor; no se salta nunca. La nube hace lo mismo al recibir un `push`.
+- **Las vallas apuntan a una operación, no a una fecha.** Al quitar un rol o retirar el acceso, la marca (`trusted_through`) es el id de la última operación del dispositivo que tenía el administrador. Mientras dure la valla, solo cuentan como suyas de antes la operación marcada y sus anteriores en la cadena; cualquier otra fechada dentro de la valla es una petición. Una retirada es una valla sin final (SEG-015). La regla depende solo del contenido del registro, así que todos los dispositivos llegan al mismo resultado al recalcular.
+- **Sin excepciones para historia antigua:** una operación sin `previous` no es válida. Las bibliotecas de prueba anteriores se recuperan con «Duplicar como nueva» (D58), como la historia sin firmar.
+
+**Consecuencias:**
+- Sube la versión del formato (`schemaVersion`); D31 sigue igual.
+- `trusted_until` (una fecha) pasa a `trusted_through` (un id de operación) en `device`, con su migración, `schema.rs`, `spec/` y `CatalogEntity.php`.
+- **Límite que queda:** un editor con una app modificada puede bifurcar su propia cadena (dos operaciones con la misma anterior) y que solo la reciban los dispositivos que iban por detrás. La cadena lo hace detectable, pero no se resuelve aquí; queda en el modelo de amenazas como riesgo aceptado (solo un miembro con permiso de edición, y solo con lo que ya podía hacer).
+- Una entidad que se quite del esquema en el futuro no puede dejar operaciones sin enviar en medio de una cadena (como pasó con `wish`, D61): habrá que convertirlas, no saltarlas.
+- Glosario: «operación anterior del autor» = `previous`.
+

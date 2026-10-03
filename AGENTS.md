@@ -87,6 +87,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | estado · valoración · favorito | `status` · `rating` · `favorite` | Fields of a `mark` |
 | lo deseo (marca de una persona) | `wished` | Field of a `mark` (D61) |
 | operación · cambio · intención | `operation` · `change` · `intent` | D25 |
+| operación anterior (del mismo autor) | `previous` | Field of an operation: the id of its author's previous operation in that library, or null (D87) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |
