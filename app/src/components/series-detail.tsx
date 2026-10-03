@@ -154,6 +154,7 @@ export function SeriesDetailView({
   const rowView = (row: Row) => {
     if (!row.entry) {
       // A gap: nothing catalogued for this number yet.
+      const gapPosition = row.position;
       return (
         <div
           key={`gap-${row.position}`}
@@ -170,8 +171,8 @@ export function SeriesDetailView({
               {t("series.gapHint", { n: row.position })}
             </span>
           </div>
-          {!reorder && row.position !== null && (
-            <Button variant="outline" size="sm" onClick={() => openGap(row.position!)}>
+          {!reorder && gapPosition !== null && (
+            <Button variant="outline" size="sm" onClick={() => openGap(gapPosition)}>
               {t("series.addHere")}
             </Button>
           )}

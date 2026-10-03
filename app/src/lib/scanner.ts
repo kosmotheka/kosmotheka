@@ -50,9 +50,10 @@ async function scan(
 
   // Same state as the entry below, so the open dialog stays open under the camera.
   window.history.pushState({ ...window.history.state, scanner: true }, "");
-  let poppedByBack = false;
+  // An object, not a `let`: TypeScript cannot see the listener change a local.
+  const back = { popped: false };
   const onBack = () => {
-    poppedByBack = true;
+    back.popped = true;
     void cancelScan();
   };
   window.addEventListener("popstate", onBack, { once: true });
@@ -66,7 +67,7 @@ async function scan(
     setTarget(null);
     window.removeEventListener("popstate", onBack);
     // Drop our entry before the caller navigates, so its next step lands on top.
-    if (!poppedByBack) {
+    if (!back.popped) {
       await new Promise<void>((resolve) => {
         window.addEventListener("popstate", () => resolve(), { once: true });
         window.history.back();

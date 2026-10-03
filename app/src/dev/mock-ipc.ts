@@ -150,18 +150,25 @@ const books: BookSummary[] = [
     "Dire Wolf",
   ),
 ];
+
+/** A fixture book by its index: the fixtures are fixed, so a miss is a typo here. */
+function bookAt(index: number): BookSummary {
+  const book = books[index];
+  if (!book) throw new Error(`mock: no book at ${index}`);
+  return book;
+}
 // Fundación keeps a pocket copy and an ISBN, for the change-of-kind screenshots
 // (book -> comic): the ISBN becomes a barcode and "Bolsillo" needs a new format.
-books[2] = { ...books[2], isbn13: "9788497596824" };
+books[2] = { ...bookAt(2), isbn13: "9788497596824" };
 // Dune shows a filled ISBN row on its own work page.
-books[0] = { ...books[0], isbn13: "9788497596848" };
+books[0] = { ...bookAt(0), isbn13: "9788497596848" };
 
 // Who else wishes a missing work (D61); this device's own wish is a mark, set below
 // so toggling "Lo deseo" on the work page stays consistent with the catalog rows.
 const otherWishersByEdition: Record<string, string[]> = {
-  [books[13].editionId]: ["Hugo"],
-  [books[15].editionId]: ["Laura"],
-  [books[16].editionId]: ["Laura"],
+  [bookAt(13).editionId]: ["Hugo"],
+  [bookAt(15).editionId]: ["Laura"],
+  [bookAt(16).editionId]: ["Laura"],
 };
 function wishedByFor(editionId: string): string[] {
   const mine = myMarks.get(`work-${editionId}`)?.wished ?? false;
@@ -182,26 +189,28 @@ const relatedWork = (b: BookSummary): RelatedWork => ({
 });
 
 const seriesOfEdition: Record<string, WorkSeries[]> = {
-  [books[0].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 1 }],
-  [books[1].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 2 }],
-  [books[14].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 3 }],
-  [books[13].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 4 }],
-  [books[17].editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 6 }],
-  [books[8].editionId]: [{ seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null }],
-  [books[15].editionId]: [
+  [bookAt(0).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 1 }],
+  [bookAt(1).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 2 }],
+  [bookAt(14).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 3 }],
+  [bookAt(13).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 4 }],
+  [bookAt(17).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 6 }],
+  [bookAt(8).editionId]: [
+    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null },
+  ],
+  [bookAt(15).editionId]: [
     { seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null },
   ],
 };
 
 const requiresOfEdition: Record<string, RelatedWork[]> = {
   // Catán: Navegantes needs Catán (owned): no warning, just the link.
-  [books[15].editionId]: [relatedWork(books[8])],
+  [bookAt(15).editionId]: [relatedWork(bookAt(8))],
   // Imperium's expansion needs the base, which nobody owns: the amber notice shows.
-  [books[19].editionId]: [relatedWork(books[18])],
+  [bookAt(19).editionId]: [relatedWork(bookAt(18))],
 };
 const requiredByOfEdition: Record<string, RelatedWork[]> = {
-  [books[8].editionId]: [relatedWork(books[15])],
-  [books[18].editionId]: [relatedWork(books[19])],
+  [bookAt(8).editionId]: [relatedWork(bookAt(15))],
+  [bookAt(18).editionId]: [relatedWork(bookAt(19))],
 };
 
 // Genres and tags (D70, 6.7): the closed list per kind, mirroring
@@ -334,17 +343,17 @@ const GENRES_BY_KIND: Record<Kind, string[]> = {
 };
 
 const genresOfEdition: Record<string, string[]> = {
-  [books[0].editionId]: ["science_fiction"], // Dune (book)
-  [books[1].editionId]: ["science_fiction"], // El mesías de Dune
-  [books[2].editionId]: ["science_fiction"], // Fundación
-  [books[6].editionId]: ["roleplaying"], // Vampiro: la mascarada
-  [books[7].editionId]: ["science_fiction"], // Blade Runner 2049 (film)
-  [books[8].editionId]: ["strategy", "family"], // Catán (boardgame)
-  [books[13].editionId]: ["science_fiction"], // Dune: El emperador-dios
-  [books[14].editionId]: ["science_fiction"], // Hijos de Dune
-  [books[15].editionId]: ["strategy", "family"], // Catán: Navegantes
-  [books[16].editionId]: ["science_fiction"], // Blade Runner (film)
-  [books[17].editionId]: ["science_fiction"], // Casa Capitular: Dune
+  [bookAt(0).editionId]: ["science_fiction"], // Dune (book)
+  [bookAt(1).editionId]: ["science_fiction"], // El mesías de Dune
+  [bookAt(2).editionId]: ["science_fiction"], // Fundación
+  [bookAt(6).editionId]: ["roleplaying"], // Vampiro: la mascarada
+  [bookAt(7).editionId]: ["science_fiction"], // Blade Runner 2049 (film)
+  [bookAt(8).editionId]: ["strategy", "family"], // Catán (boardgame)
+  [bookAt(13).editionId]: ["science_fiction"], // Dune: El emperador-dios
+  [bookAt(14).editionId]: ["science_fiction"], // Hijos de Dune
+  [bookAt(15).editionId]: ["strategy", "family"], // Catán: Navegantes
+  [bookAt(16).editionId]: ["science_fiction"], // Blade Runner (film)
+  [bookAt(17).editionId]: ["science_fiction"], // Casa Capitular: Dune
 };
 
 interface MockTag {
@@ -359,12 +368,12 @@ let mockTags: MockTag[] = [
 ];
 
 const workTagIds: Record<string, string[]> = {
-  [books[0].editionId]: ["tag-1"], // Dune
-  [books[7].editionId]: ["tag-1"], // Blade Runner 2049
-  [books[16].editionId]: ["tag-1"], // Blade Runner
-  [books[9].editionId]: ["tag-2"], // Zelda: Tears of the Kingdom
-  [books[10].editionId]: ["tag-2"], // Twin Peaks
-  [books[4].editionId]: ["tag-3"], // El nombre del viento
+  [bookAt(0).editionId]: ["tag-1"], // Dune
+  [bookAt(7).editionId]: ["tag-1"], // Blade Runner 2049
+  [bookAt(16).editionId]: ["tag-1"], // Blade Runner
+  [bookAt(9).editionId]: ["tag-2"], // Zelda: Tears of the Kingdom
+  [bookAt(10).editionId]: ["tag-2"], // Twin Peaks
+  [bookAt(4).editionId]: ["tag-3"], // El nombre del viento
 };
 
 function tagWorksCount(id: string): number {
@@ -407,19 +416,19 @@ const seriesById: Record<string, SeriesDetail> = {
     name: "Dune",
     ordered: true,
     entries: [
-      seriesEntryOf(books[0], "d1", 1),
-      seriesEntryOf(books[1], "d2", 2),
-      seriesEntryOf(books[14], "d3", 3),
-      seriesEntryOf(books[13], "d4", 4),
+      seriesEntryOf(bookAt(0), "d1", 1),
+      seriesEntryOf(bookAt(1), "d2", 2),
+      seriesEntryOf(bookAt(14), "d3", 3),
+      seriesEntryOf(bookAt(13), "d4", 4),
       // Position 5 is left out on purpose: that is the gap.
-      seriesEntryOf(books[17], "d6", 6),
+      seriesEntryOf(bookAt(17), "d6", 6),
     ],
   },
   [CATAN_SERIES]: {
     id: CATAN_SERIES,
     name: "Catán",
     ordered: false,
-    entries: [seriesEntryOf(books[8], "c1", null), seriesEntryOf(books[15], "c2", null)],
+    entries: [seriesEntryOf(bookAt(8), "c1", null), seriesEntryOf(bookAt(15), "c2", null)],
   },
 };
 
@@ -690,14 +699,14 @@ let claimed = !params.has("who") && !params.has("locked");
 const myMarks = new Map<string, Mark>();
 // One missing work already wished by "me", so the wish colour and «Lo desea…»
 // wording both show without having to click anything first (D61).
-myMarks.set(`work-${books[13].editionId}`, {
+myMarks.set(`work-${bookAt(13).editionId}`, {
   status: null,
   statusOn: null,
   rating: null,
   favorite: false,
   wished: true,
 });
-myMarks.set(`work-${books[15].editionId}`, {
+myMarks.set(`work-${bookAt(15).editionId}`, {
   status: null,
   statusOn: null,
   rating: null,
@@ -767,8 +776,8 @@ function mockCandidates(kind: Kind, query: string): Candidate[] {
         // No cover: a remote one here made the placeholder flaky in screenshots
         // (still loading, not yet erroring, when the shot was taken).
         coverUrl: null,
-        // Same edition already in the catalog (books[0], "Dune"), to show "Ya está".
-        existingEditionId: books[0].editionId,
+        // Same edition already in the catalog (bookAt(0), "Dune"), to show "Ya está".
+        existingEditionId: bookAt(0).editionId,
       }),
       candidate({
         source: "inventaire",
@@ -920,19 +929,19 @@ mockIPC((cmd, args) => {
     case "app_lock_enabled":
       return mockAppLock;
     case "set_app_lock":
-      mockAppLock = Boolean((args as { enabled: boolean }).enabled);
+      mockAppLock = (args as { enabled: boolean }).enabled;
       return null;
     case "app_lock_after":
       return mockAppLockAfter;
     case "set_app_lock_after":
-      mockAppLockAfter = Number((args as { minutes: number }).minutes);
+      mockAppLockAfter = (args as { minutes: number }).minutes;
       return null;
     // Any ISBN starting with 97884 is "not owned"; lookups always fail, as if offline.
     case "check_isbn": {
-      const isbn = String((args as { isbn: string }).isbn).replace(/\D/g, "");
+      const isbn = (args as { isbn: string }).isbn.replace(/\D/g, "");
       return isbn.startsWith("97884")
         ? { isbn13: isbn, books: [] }
-        : { isbn13: isbn, books: [books[0]] };
+        : { isbn13: isbn, books: [bookAt(0)] };
     }
     case "lookup_isbn":
       throw new Error("offline");
@@ -954,7 +963,7 @@ mockIPC((cmd, args) => {
           kind: "book",
           candidates,
           warnings: [],
-          existingEditionId: candidates[0].existingEditionId,
+          existingEditionId: candidates[0]?.existingEditionId ?? null,
         };
       }
       if (digits === "5099902988371") {
@@ -991,7 +1000,7 @@ mockIPC((cmd, args) => {
       return null;
     case "get_book": {
       const id = (args as { editionId: string }).editionId;
-      const found = books.find((b) => b.editionId === id) ?? books[0];
+      const found = books.find((b) => b.editionId === id) ?? bookAt(0);
       // Plausible per-kind extras (D68-ish), so every kind's edit and copy forms have
       // something to show; kinds without a field keep it null, as the engine would.
       const KIND_EXTRAS: Partial<
@@ -1049,7 +1058,7 @@ mockIPC((cmd, args) => {
         openLibraryId: null,
         barcode: extras.barcode ?? null,
         notes:
-          found.editionId === books[0].editionId
+          found.editionId === bookAt(0).editionId
             ? "Completo, con la caja original. Falta una vela."
             : null,
         contributors: extras.contributors ?? [],
@@ -1155,12 +1164,12 @@ mockIPC((cmd, args) => {
       const { id } = args as { id: string };
       mockTags = mockTags.filter((t) => t.id !== id);
       for (const editionId of Object.keys(workTagIds)) {
-        workTagIds[editionId] = workTagIds[editionId].filter((i) => i !== id);
+        workTagIds[editionId] = (workTagIds[editionId] ?? []).filter((i) => i !== id);
       }
       return null;
     }
     case "genres_of_kind":
-      return GENRES_BY_KIND[(args as { kind: Kind }).kind] ?? [];
+      return GENRES_BY_KIND[(args as { kind: Kind }).kind];
     case "add_missing":
       return { editionId: "new-missing-edition-id", existingEdition: false, coverFailed: false };
     case "request_book":

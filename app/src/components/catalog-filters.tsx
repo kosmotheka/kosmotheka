@@ -254,7 +254,7 @@ function GenreFilterChip({
       genres: selected.includes(genre) ? selected.filter((g) => g !== genre) : [...selected, genre],
     });
   const label =
-    selected.length === 1
+    selected.length === 1 && selected[0] !== undefined
       ? filter.kind
         ? genreLabel(filter.kind, selected[0], t)
         : t(`genres.${selected[0]}`)

@@ -37,7 +37,8 @@ export function WhoDialog({
     claimCandidates()
       .then((loaded) => {
         setCandidates(loaded);
-        if (loaded.length > 0) setPick(loaded[0].id);
+        const [firstCandidate] = loaded;
+        if (firstCandidate) setPick(firstCandidate.id);
       })
       .catch(() => setCandidates([]));
   }, []);

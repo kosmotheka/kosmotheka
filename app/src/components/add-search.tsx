@@ -385,7 +385,7 @@ export function AddSearch({
             ? `${candidate.durationMinutes} ${t("form.units.minutes")}`
             : null,
         ]
-          .filter((part) => part !== null && part !== undefined && part !== "")
+          .filter((part) => part !== null && part !== "")
           .join(" · ");
         return (
           <button

@@ -29,7 +29,8 @@ export const KIND_ICONS: Record<Kind, LucideIcon> = {
 };
 
 /** Formats offered per kind, in the order the form and filters show them. */
-export const KIND_FORMATS: Record<Kind, Format[]> = {
+/** Every kind offers at least one format: the first is its default. */
+export const KIND_FORMATS: Record<Kind, readonly [Format, ...Format[]]> = {
   book: ["hardcover", "paperback", "pocket", "ebook", "pdf", "audiobook"],
   comic: ["hardcover", "paperback", "single_issue", "digital"],
   boardgame: ["box", "digital"],

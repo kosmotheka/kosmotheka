@@ -74,7 +74,7 @@ export function AuthDialog({
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [language, setLanguage] = useState<(typeof supportedLanguages)[number]>(
-    (i18n.resolvedLanguage as (typeof supportedLanguages)[number]) ?? "en",
+    (i18n.resolvedLanguage ?? "en") as (typeof supportedLanguages)[number],
   );
   const [serverUrl, setServerUrl] = useState("");
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
@@ -508,7 +508,8 @@ export function AuthDialog({
     else if (step === "forgot") void doForgot();
     else if (step === "recoverCode") doRecoverCode();
     else if (step === "newPass") void doNewPass();
-    else if (step === "passChanged") {
+    else {
+      // "passChanged", the last step: back to signing in.
       setStep("signin");
       setPassword("");
       setError(null);

@@ -148,19 +148,20 @@ export function DevicesPage({
 
   // Whose each device is, in the active library, once it has roles (D73).
   const owners = people?.hasRoles ? people : null;
-  const owner = (device: Device) => (
-    <OwnerCell
-      people={owners!}
-      deviceId={device.deviceId}
-      compact={!desktop}
-      onAssign={(person) =>
-        void act(`owner-${device.deviceId}`, async () => {
-          await assignDevice(device.deviceId, person.id);
-          return t("devices.ownerChanged", { device: device.name, person: person.name });
-        })
-      }
-    />
-  );
+  const owner = (device: Device) =>
+    owners && (
+      <OwnerCell
+        people={owners}
+        deviceId={device.deviceId}
+        compact={!desktop}
+        onAssign={(person) =>
+          void act(`owner-${device.deviceId}`, async () => {
+            await assignDevice(device.deviceId, person.id);
+            return t("devices.ownerChanged", { device: device.name, person: person.name });
+          })
+        }
+      />
+    );
 
   const header = desktop ? (
     <div className="flex items-start justify-between gap-4">

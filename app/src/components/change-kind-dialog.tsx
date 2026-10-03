@@ -19,7 +19,7 @@ type Translate = ReturnType<typeof useTranslation>["t"];
 
 function joinWithAnd(items: string[], t: Translate): string {
   if (items.length <= 1) return items[0] ?? "";
-  return items.slice(0, -1).join(", ") + t("changeKind.and") + items[items.length - 1];
+  return items.slice(0, -1).join(", ") + t("changeKind.and") + (items.at(-1) ?? "");
 }
 
 /** The label/value pair a kept or lost item reads as, e.g. "editorial (Devir)". */

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleAlert } from "lucide-react";
 
@@ -38,7 +38,7 @@ export function NewLibraryDialog({
     closeOverlay();
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: SubmitEvent) => {
     event.preventDefault();
     setSaving(true);
     try {

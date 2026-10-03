@@ -98,7 +98,7 @@ export function PeoplePage({
           {people?.hasRoles ? t("people.subtitle", { library }) : library}
         </p>
       </div>
-      {isAdmin && people?.hasRoles && (
+      {isAdmin && people.hasRoles && (
         <Button onClick={() => openOverlay({ name: "pair" })}>
           <QrCode /> {t("people.giveAccess")}
         </Button>

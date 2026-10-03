@@ -58,7 +58,12 @@ export function OwnerStep({
     setBusy(true);
     setError(null);
     try {
-      const roles = Object.fromEntries(missing.map((id) => [id, chosen[id]]));
+      const roles = Object.fromEntries(
+        missing.flatMap((id) => {
+          const role = chosen[id];
+          return role ? [[id, role] as const] : [];
+        }),
+      );
       await giveAccess(deviceId, { id: isNew ? null : pick, name }, roles, canShare);
       onDone(t("pair.owner.done", { device: deviceName, person: name }));
     } catch (e) {

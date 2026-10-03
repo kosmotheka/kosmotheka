@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type SubmitEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Layers, ListOrdered, Plus } from "lucide-react";
 
@@ -99,14 +99,14 @@ export function SeriesPickerDialog({
     }
   };
 
-  const submitPosition = (event: FormEvent) => {
+  const submitPosition = (event: SubmitEvent) => {
     event.preventDefault();
     if (step.kind !== "position") return;
     const n = Number(position);
     void add(step.series.id, Number.isFinite(n) && n > 0 ? n : null);
   };
 
-  const submitNew = async (event: FormEvent) => {
+  const submitNew = async (event: SubmitEvent) => {
     event.preventDefault();
     if (!query.trim()) return;
     setSaving(true);

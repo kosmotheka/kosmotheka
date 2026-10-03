@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bookmark,
@@ -123,7 +123,7 @@ export function CheckPage({
     else setTimeout(() => input.current?.focus(), 0);
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: SubmitEvent) => {
     event.preventDefault();
     if (isbn.trim()) void run(isbn.trim());
   };
@@ -266,7 +266,10 @@ export function CheckPage({
               <Button
                 variant="outline"
                 className={big}
-                onClick={() => onOpenBook(check.books[0].libraryId, check.books[0].editionId)}
+                onClick={() => {
+                  const [book] = check.books;
+                  if (book) onOpenBook(book.libraryId, book.editionId);
+                }}
               >
                 {t("check.openBook")}
               </Button>

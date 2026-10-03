@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, X } from "lucide-react";
 
@@ -130,7 +130,7 @@ export function AddBookDialog({
     onOpenChange(next);
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: SubmitEvent) => {
     event.preventDefault();
     setSaving(true);
     errors.clear();

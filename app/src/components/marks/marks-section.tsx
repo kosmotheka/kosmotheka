@@ -343,6 +343,7 @@ function Others({
 }) {
   const { t } = useTranslation();
   const first = others[0];
+  if (!first) return null;
   if (!expanded) {
     return (
       <button
@@ -431,7 +432,7 @@ function today() {
 }
 
 function parse(date: string) {
-  const [y, m, d] = date.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = date.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 

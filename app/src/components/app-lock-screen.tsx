@@ -36,12 +36,13 @@ export function AppLockScreen() {
   // On start: lock only if the setting is on AND biometrics still work. If they
   // no longer do, the user would be shut out of their own data, so open normally.
   useEffect(() => {
-    let cancelled = false;
+    // An object, not a `let`: TypeScript cannot see the cleanup change a local across the await.
+    const run = { cancelled: false };
     void (async () => {
       const [enabled, available] = await Promise.all([appLockEnabled(), lockAvailable()]).catch(
-        () => [false, false],
+        (): [boolean, boolean] => [false, false],
       );
-      if (cancelled) return;
+      if (run.cancelled) return;
       if (!enabled || !available) {
         setLocked((current) => current ?? false);
         return;
@@ -50,7 +51,7 @@ export function AppLockScreen() {
       void attempt(false);
     })();
     return () => {
-      cancelled = true;
+      run.cancelled = true;
     };
   }, []);
 

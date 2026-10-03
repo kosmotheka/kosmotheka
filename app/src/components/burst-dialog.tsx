@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from "react";
+import { type SubmitEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleAlert, CircleCheck, CircleHelp, Copy as CopyIcon, Loader2 } from "lucide-react";
 
@@ -126,7 +126,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
     running.current = false;
   };
 
-  const enqueue = (event: FormEvent) => {
+  const enqueue = (event: SubmitEvent) => {
     event.preventDefault();
     const value = isbn.trim();
     if (!value) return;

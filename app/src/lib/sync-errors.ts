@@ -9,9 +9,8 @@ let errors: Readonly<Record<string, string>> = {};
 const listeners = new Set<() => void>();
 
 function set(deviceId: string, reason: string | null) {
-  const next = { ...errors };
-  if (reason === null) delete next[deviceId];
-  else next[deviceId] = reason;
+  const next = Object.fromEntries(Object.entries(errors).filter(([id]) => id !== deviceId));
+  if (reason !== null) next[deviceId] = reason;
   errors = next;
   listeners.forEach((listener) => listener());
 }

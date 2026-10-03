@@ -60,7 +60,7 @@ function mapCopyFormat(from: Format, toKind: Kind): Format | null {
     return targets.includes("other") ? "other" : null;
   }
   if (from === "other") {
-    return targets[0] ?? null;
+    return targets[0];
   }
   return null;
 }
@@ -89,9 +89,9 @@ export function planKindChange(book: BookDetail, toKind: Kind): KindChangePlan {
     if (names.length > 0) roleNames.set(role, names);
   }
   if (roleNames.size > 0) {
-    const newRoles = KIND_PEOPLE[toKind];
-    if (newRoles.length > 0) {
-      const targetRole = newRoles[0].role;
+    const [target] = KIND_PEOPLE[toKind];
+    if (target) {
+      const targetRole = target.role;
       const allNames = [...roleNames.values()].flat();
       formPatch.people = { [targetRole]: allNames };
       kept.push({ field: "people", role: targetRole, names: allNames });

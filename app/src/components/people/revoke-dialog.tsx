@@ -113,7 +113,7 @@ export function RevokeDialog({
         </p>
         <p className="text-[13px] text-muted-foreground">
           {t("people.revoke.after")}
-          {others.length > 0 &&
+          {others[0] &&
             ` ${t("people.revoke.stays", { person: person.name, device: others[0].name })}`}
         </p>
       </div>

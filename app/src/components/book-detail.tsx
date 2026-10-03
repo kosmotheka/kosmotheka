@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type SubmitEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
@@ -767,7 +767,7 @@ function EditionSection({
   const desktop = useDesktop();
   const errors = useCommandErrors();
 
-  const save = async (event: FormEvent) => {
+  const save = async (event: SubmitEvent) => {
     event.preventDefault();
     if (!form) return;
     setSaving(true);
@@ -898,7 +898,7 @@ function CopiesSection({
   // A reader has no other way to add a copy (D73): the "new copy" form always asks.
   const askingNew = editing === "new" && reader;
 
-  const save = async (event: FormEvent) => {
+  const save = async (event: SubmitEvent) => {
     event.preventDefault();
     if (!editing) return;
     setSaving(true);

@@ -23,7 +23,7 @@ export function RequestNotices({ version, desktop }: { version: number; desktop:
   useEffect(() => {
     let cancelled = false;
     requestNotices()
-      .then((loaded) => !cancelled && setNotices(loaded ?? []))
+      .then((loaded) => !cancelled && setNotices(loaded))
       .catch(() => {});
     return () => {
       cancelled = true;

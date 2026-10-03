@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListOrdered, Layers } from "lucide-react";
 
@@ -22,7 +22,7 @@ export function NewSeriesDialog({ open, desktop }: { open: boolean; desktop: boo
     setSaving(false);
   };
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: SubmitEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
     setSaving(true);
