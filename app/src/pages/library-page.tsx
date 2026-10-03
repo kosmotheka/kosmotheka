@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ChevronRight,
+  Cloud,
   Copy,
   History,
   LogOut,
@@ -12,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { CloudStateLine, useCloudRows } from "@/components/cloud/cloud-state";
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
@@ -41,6 +43,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   // Only where it is the way out: a library with roles this device cannot administer.
   const { hasRoles, myRole } = useRequests();
   const mayDuplicate = hasRoles && myRole !== "admin";
+  const cloudRow = useCloudRows().find((row) => row.library.id === library?.id);
 
   // Another library became active: start from its name.
   if (library && shownId !== library.id) {
@@ -205,6 +208,33 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
             </span>
           )}
         </section>
+
+        {cloudRow && (
+          <section className="flex flex-col gap-1">
+            <span className="pb-1.5 text-[13px] font-medium text-muted-foreground">
+              {t("cloud.library.title")}
+            </span>
+            <div className="flex min-h-16 items-center gap-3 rounded-2xl border px-3.5 py-2">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                <Cloud className="size-[19px]" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[15px] font-medium">{t("cloud.sharing.title")}</span>
+                <CloudStateLine row={cloudRow} />
+              </span>
+              {(cloudRow.kind === "notUploaded" || cloudRow.kind === "unsigned") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => openOverlay({ name: "cloudPick" })}
+                >
+                  {t(cloudRow.kind === "unsigned" ? "cloud.row.fix" : "cloud.row.upload")}
+                </Button>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="flex flex-col border-t pt-2">
           <button

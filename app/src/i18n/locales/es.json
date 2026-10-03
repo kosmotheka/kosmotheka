@@ -555,7 +555,8 @@
     "upToDate": "Al día",
     "lastSync": "Sincronizado {{when}}",
     "never": "Aún sin sincronizar",
-    "label": "Estado de sincronización: {{status}}. Abrir dispositivos"
+    "label": "Estado de sincronización: {{status}}. Abrir dispositivos",
+    "offline": "Sin conexión con la nube"
   },
   "help": {
     "title": "Ayuda",
@@ -1614,16 +1615,74 @@
       "schema_version": "La app y el servidor tienen versiones distintas. Actualiza la app.",
       "not_signed_in": "Inicia sesión en tu cuenta para usar la nube.",
       "unsigned_history": "Esta biblioteca tiene cambios de antes de que existieran las firmas, así que no puede subir a la nube. Duplícala como nueva y sube esa.",
-      "already_linked": "Esta biblioteca ya está en una nube."
+      "already_linked": "Esta biblioteca ya está en una nube.",
+      "offline": "Sin conexión con la nube."
     },
     "outcome": {
       "synced": "Al día",
       "downloaded": "Descargada de la nube",
-      "library_conflict": "Este dispositivo ya tiene otra biblioteca con el mismo id. No se mezcló nada.",
+      "library_conflict": "Este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se mezcló nada.",
       "not_linked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró.",
       "missing_in_cloud": "Esta biblioteca ya no está en tu cuenta de la nube.",
       "other_server": "Esta biblioteca está en una nube de otro servidor.",
       "deleted_here": "Borraste esta biblioteca en este dispositivo, así que no se descargó otra vez."
+    },
+    "notice": {
+      "downloaded": "{{name}} ha bajado de tu nube.",
+      "libraryConflict": "«{{name}}» no se ha bajado de la nube: este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se ha mezclado nada.",
+      "missingInCloud": "{{name}} ya no está en tu cuenta de la nube. Sigue en este dispositivo.",
+      "deletedHere": "Borraste en este dispositivo una biblioteca que sigue en tu nube. No se descargó otra vez.",
+      "notLinked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró."
+    },
+    "pick": {
+      "title": "¿Qué bibliotecas subes a la nube?",
+      "signedInAs": "Has entrado como {{name}}",
+      "intro": "Solo las que puedes compartir. Las demás siguen como hasta ahora, por la red de casa.",
+      "signedOut": "Inicia sesión en tu cuenta para subir bibliotecas a la nube.",
+      "inCloud": "ya está en la nube",
+      "otherServer": "En una nube de otro servidor",
+      "locked": "Eres lector: la sube quien administra.",
+      "unsigned": "Tiene cambios de antes de que existieran las firmas y no puede subir tal cual. Una copia sí.",
+      "duplicate": "Duplicar como nueva",
+      "duplicated": "Creada «{{name}}». Está marcada, así que ya puedes subirla.",
+      "duplicateFailed": "No se pudo hacer la copia. No ha cambiado nada.",
+      "upload_one": "Subir {{count}} biblioteca",
+      "upload_other": "Subir {{count}} bibliotecas",
+      "uploading": "Subiendo…",
+      "notNow": "Ahora no",
+      "finish": "Hecho",
+      "later": "Puedes subir más después, desde la biblioteca o desde tu cuenta.",
+      "done_one": "{{count}} biblioteca ya está en la nube.",
+      "done_other": "{{count}} bibliotecas ya están en la nube."
+    },
+    "row": {
+      "upToDate": "Al día · {{when}}",
+      "linked": "En la nube",
+      "syncing": "Sincronizando…",
+      "offline": "Sin conexión",
+      "offlineSince": "Sin conexión · última sincronización {{when}}",
+      "error": "No se pudo sincronizar",
+      "missing": "Ya no está en tu cuenta de la nube",
+      "otherServer": "En una nube de otro servidor",
+      "conflict": "No se mezcló con otra biblioteca de este dispositivo",
+      "notUploaded": "No está en la nube",
+      "unsigned": "Hace falta una copia para subirla",
+      "locked": "Solo la sube quien la administra",
+      "upload": "Subir",
+      "fix": "Duplicar como nueva"
+    },
+    "sharing": {
+      "title": "Nube",
+      "hint": "Tu cuenta guarda una copia, y tus dispositivos se sincronizan desde cualquier sitio.",
+      "offlineHelp": "Todo sigue funcionando aquí y por la red de casa; los cambios se subirán cuando vuelva la conexión.",
+      "synced": "Nube sincronizada: recibidos {{received}} cambios, enviados {{sent}}."
+    },
+    "library": {
+      "title": "Dónde está"
+    },
+    "account": {
+      "title": "Bibliotecas en la nube",
+      "count": "{{inCloud}} de {{total}} en la nube"
     }
   },
   "scanner": {

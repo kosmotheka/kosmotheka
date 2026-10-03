@@ -8,6 +8,7 @@ import { AccountNotice } from "@/components/account/account-notice";
 import { AuthDialog } from "@/components/account/auth-dialog";
 import { DevicesDialog as AccountDevicesDialog } from "@/components/account/devices-dialog";
 import { TwoFactorDialog } from "@/components/account/two-factor-dialog";
+import { CloudPickDialog } from "@/components/cloud/cloud-pick-dialog";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { AddSearch } from "@/components/add-search";
 import { AppLockScreen } from "@/components/app-lock-screen";
@@ -56,7 +57,8 @@ import {
   listLibraries,
   setActiveLibrary,
 } from "@/lib/api";
-import { refreshAccount } from "@/lib/account";
+import { refreshAccount, useAccount } from "@/lib/account";
+import { cloudNotices, refreshCloudStatus, runCloudSync } from "@/lib/cloud";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
 import { syncDevice } from "@/lib/sync-errors";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
@@ -92,6 +94,7 @@ export default function App() {
   const [searching, setSearching] = useState(false);
   const [everywhere, setEverywhere] = useState(false);
   const [allLibraries, setAllLibraries] = useState<LibrarySummary[]>([]);
+  const account = useAccount();
   const sync = useSyncStatus(version);
   const requests = useRequestsState(version);
 
@@ -151,8 +154,35 @@ export default function App() {
     return () => void unlisten.then((stop) => stop());
   }, []);
 
-  // Quietly catch up with every reachable paired device when the app opens, and again
-  // when it comes back to the foreground (a phone arriving home), at most once a minute.
+  // The cloud link of each library, local and instant: rows and the sync indicator read it.
+  useEffect(() => {
+    void refreshCloudStatus();
+  }, [account.signedIn, version]);
+
+  // Syncs the cloud and tells what is worth telling: a library that came down, one that was
+  // not mixed with another, one the cloud lost (D84). A failure only updates the indicator.
+  const syncTheCloud = useCallback(
+    async (minAgeMs: number): Promise<string[]> => {
+      const reports = await runCloudSync(minAgeMs);
+      if (!reports || reports.length === 0) return [];
+      const libraries = await listLibraries().catch(() => []);
+      return cloudNotices(reports, libraries, t, true);
+    },
+    [t],
+  );
+
+  // Signing in on this device pulls the account's libraries now, not at the next minute.
+  useEffect(() => {
+    if (!account.signedIn) return;
+    void syncTheCloud(60_000).then((messages) => {
+      if (messages.length > 0) setNotice(messages.join(" "));
+      reload();
+    });
+  }, [account.signedIn, syncTheCloud, reload]);
+
+  // Quietly catch up with every reachable paired device and the cloud when the app opens,
+  // and again when it comes back to the foreground (a phone arriving home), at most once a
+  // minute. The LAN goes first and a cloud failure never gets in its way.
   useEffect(() => {
     let last = 0;
     let running = false;
@@ -160,14 +190,20 @@ export default function App() {
       if (running || Date.now() - last < 60_000) return;
       running = true;
       last = Date.now();
-      const status = await lanStatus().catch(() => null);
       let removed = 0;
-      for (const device of status?.servers ?? []) {
-        const report = await syncDevice(device.deviceId).catch(() => null);
-        removed += report?.removed.length ?? 0;
+      let messages: string[];
+      try {
+        const status = await lanStatus().catch(() => null);
+        for (const device of status?.servers ?? []) {
+          const report = await syncDevice(device.deviceId).catch(() => null);
+          removed += report?.removed.length ?? 0;
+        }
+        messages = await syncTheCloud(0);
+      } finally {
+        running = false;
       }
-      running = false;
-      if (removed > 0) setNotice(t("sharing.removed", { count: removed }));
+      if (removed > 0) messages.unshift(t("sharing.removed", { count: removed }));
+      if (messages.length > 0) setNotice(messages.join(" "));
       // Reload even without changes: the sync indicator shows the new time.
       reload();
     };
@@ -177,7 +213,7 @@ export default function App() {
     void syncAll();
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [reload, t]);
+  }, [reload, syncTheCloud, t]);
 
   const books = state.status === "ready" ? state.books : [];
   const filtering = isFiltering(activeFilter);
@@ -478,6 +514,10 @@ export default function App() {
           />
           <AccountDialog open={overlay?.name === "account"} desktop={desktop} />
           <AccountDevicesDialog open={overlay?.name === "accountDevices"} desktop={desktop} />
+          <CloudPickDialog
+            open={overlay?.name === "cloudPick"}
+            onDone={(count) => setNotice(t("cloud.pick.done", { count }))}
+          />
           <TwoFactorDialog
             open={overlay?.name === "twoFactor"}
             desktop={desktop}

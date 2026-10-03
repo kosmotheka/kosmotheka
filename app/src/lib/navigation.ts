@@ -56,6 +56,7 @@ export type Overlay =
   | { name: "auth"; step?: "signin" | "signup" }
   | { name: "account" }
   | { name: "accountDevices" }
+  | { name: "cloudPick" }
   // `codes` only when opened to show a fresh set of backup codes (regenerated from the
   // account screen) instead of starting a new setup.
   | { name: "twoFactor"; codes?: string[] };

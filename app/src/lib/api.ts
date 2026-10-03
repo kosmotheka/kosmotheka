@@ -159,7 +159,8 @@ export type CommandError =
       reason: "not_allowed" | "last_admin" | "request_resolved" | "cannot_share";
     }
   | { kind: "internal"; message: string }
-  | { kind: "account"; reason: string; retryAfter?: number | null };
+  | { kind: "account"; reason: string; retryAfter?: number | null }
+  | { kind: "cloud"; reason: CloudErrorReason };
 
 export function isCommandError(value: unknown): value is CommandError {
   return typeof value === "object" && value !== null && "kind" in value;
@@ -1205,20 +1206,9 @@ export function giveDeviceAway(): Promise<void> {
 
 // --- The cloud (D84, hito 7.2) ---
 
-/**
- * `CommandError` has no `cloud` variant yet: the screens that read it arrive with the cloud UI.
- * @public
- */
-export interface CloudCommandError {
-  kind: "cloud";
-  reason: CloudErrorReason;
-}
-
-/** @public */
-export type CloudErrorReason =
+type CloudErrorReason =
   "not_found" | "schema_version" | "not_signed_in" | "unsigned_history" | "already_linked";
 
-/** @public */
 export type CloudOutcome =
   | "synced"
   | "downloaded"
@@ -1228,10 +1218,7 @@ export type CloudOutcome =
   | "other_server"
   | "deleted_here";
 
-/**
- * What a cloud sync did to one library.
- * @public
- */
+/** What a cloud sync did to one library. */
 export interface CloudLibraryReport {
   library: string;
   cloudLibrary: string | null;
@@ -1242,7 +1229,6 @@ export interface CloudLibraryReport {
   rejected: number;
 }
 
-/** @public */
 export interface LibraryCloudStatus {
   library: string;
   cloudLibrary: string | null;
@@ -1256,36 +1242,29 @@ export interface LibraryCloudStatus {
   canUpload: boolean;
 }
 
-/**
- * Local only, no network.
- * @public
- */
+/** Local only, no network. */
 export function cloudStatus(): Promise<LibraryCloudStatus[]> {
   return invoke<LibraryCloudStatus[]>("cloud_status");
 }
 
-/**
- * Takes a library to the cloud of this account.
- * @public
- */
+/** Takes a library to the cloud of this account. */
 export function uploadToCloud(libraryId: string): Promise<CloudLibraryReport> {
   return invoke<CloudLibraryReport>("upload_to_cloud", { libraryId });
 }
 
-/**
- * One report per library of the account.
- * @public
- */
+/** One report per library of the account. */
 export function syncCloud(): Promise<CloudLibraryReport[]> {
   return invoke<CloudLibraryReport[]>("sync_cloud");
 }
 
-/**
- * Translation key for a failed cloud command.
- * @public
- */
+/** The cloud commands also fail with the account's errors: no connection is one of them. */
+export function isCloudOffline(error: unknown): boolean {
+  return isCommandError(error) && error.kind === "account" && error.reason === "server_unavailable";
+}
+
+/** Translation key for a failed cloud command. */
 export function cloudErrorKey(error: unknown): string {
-  const cloud = error as Partial<CloudCommandError> | null;
-  if (cloud?.kind === "cloud" && cloud.reason) return `cloud.errors.${cloud.reason}`;
+  if (isCommandError(error) && error.kind === "cloud") return `cloud.errors.${error.reason}`;
+  if (isCloudOffline(error)) return "cloud.errors.offline";
   return "cloud.errors.unknown";
 }

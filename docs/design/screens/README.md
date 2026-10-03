@@ -32,3 +32,6 @@ En las carpetas de bibliotecas y en `cloud-account/`, `ds-base.js` y `support.js
 - La cuenta muestra el email como editable, y el email no se cambia (D77): en la app va como texto, sin editar.
 - «Puedes anularlo desde Personas» en una invitación necesita anular invitaciones en el hito 7.6.
 - `cloud-account/` no tiene captura `-overview.png`.
+- `CloudPick`: «La nube puede dar acceso a mis dispositivos nuevos» es un interruptor en el diseño que llega con la casilla de D76 (hito 7.5); hasta entonces no se muestra, para no prometer lo que aún no hace. «Puedes subir o quitar cada una cuando quieras» queda en «Puedes subir más después»: quitar una biblioteca de la nube aún no existe. Una biblioteca con historia sin firmar sale con la explicación y «Duplicar como nueva» (D58), y la copia queda marcada para subirla.
+- `Sharing`: el diseño muestra una sola nube con «Al día · siempre encendida» y «12 cambios esperando». La app pone una fila por biblioteca; el momento de la última sincronización es el de esta sesión (Rust no lo guarda) y no se sabe cuántos cambios esperan, así que sin conexión dice solo «Sin conexión · última sincronización …».
+- `Settings`: el acceso a subir bibliotecas está en la cuenta («Bibliotecas en la nube»), en Compartir y en los ajustes de cada biblioteca, no en una pantalla propia de Ajustes.

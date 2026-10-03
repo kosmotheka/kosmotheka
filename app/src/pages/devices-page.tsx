@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { Field } from "@/components/book-form";
+import { CloudSharingSection } from "@/components/cloud/cloud-section";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ShareTargetsDialog } from "@/components/libraries/share-targets-dialog";
 import { CannotShare, Tick } from "@/components/libraries/library-checklist";
@@ -374,6 +375,7 @@ export function DevicesPage({
       {header}
       <div className="flex w-full max-w-4xl flex-col gap-4">
         {locked.length > 0 && <CannotShare libraries={locked} />}
+        <CloudSharingSection onChanged={onChanged} onNotice={onNotice} />
         {body}
         {devices && devices.length > 0 && (
           <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">

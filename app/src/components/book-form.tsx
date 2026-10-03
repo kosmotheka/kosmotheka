@@ -285,6 +285,8 @@ export function useCommandErrors() {
         setMessage(error.reason);
       } else if (error.kind === "permission") {
         setMessage(t(`people.errors.${error.reason}`));
+      } else if (error.kind === "cloud") {
+        setMessage(t(`cloud.errors.${error.reason}`));
       } else {
         setMessage(error.message);
       }

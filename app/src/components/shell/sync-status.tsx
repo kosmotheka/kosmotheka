@@ -2,54 +2,68 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { lanStatus } from "@/lib/api";
+import { useCloud } from "@/lib/cloud";
 import { navigate } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-type Status = { kind: "local" } | { kind: "synced"; at: Date; now: number } | { kind: "never" };
+type Status =
+  | { kind: "local" }
+  | { kind: "synced"; at: Date; now: number }
+  | { kind: "never" }
+  | { kind: "offline" };
 
 /** Recent enough to call it "up to date". */
 const FRESH_MS = 10 * 60 * 1000;
 
-/** Sync state with the paired devices; `version` reloads it after a sync. */
+/**
+ * Sync state with the paired devices and the cloud; `version` reloads it after a sync.
+ * Not reaching the cloud shows as «offline» but never hides that the LAN works.
+ */
 export function useSyncStatus(version: number): Status | null {
-  const [status, setStatus] = useState<Status | null>(null);
+  const cloud = useCloud();
+  const [lan, setLan] = useState<{ count: number; times: number[] } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   // "Synced 5 minutes ago" has to keep moving while the app stays open.
   useEffect(() => {
-    const timer = setInterval(
-      () => setStatus((s) => (s?.kind === "synced" ? { ...s, now: Date.now() } : s)),
-      60_000,
-    );
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
   useEffect(() => {
     let cancelled = false;
     lanStatus()
-      .then((lan) => {
+      .then((status) => {
         if (cancelled) return;
-        const devices = [...lan.servers, ...lan.clients];
-        if (devices.length === 0) return setStatus({ kind: "local" });
+        const devices = [...status.servers, ...status.clients];
         const times = devices
           .map((d) => d.lastSyncAt)
           .filter((at): at is string => at !== null)
           .map((at) => new Date(at).getTime());
-        setStatus(
-          times.length
-            ? { kind: "synced", at: new Date(Math.max(...times)), now: Date.now() }
-            : { kind: "never" },
-        );
+        setLan({ count: devices.length, times });
       })
-      .catch(() => !cancelled && setStatus(null));
+      .catch(() => !cancelled && setLan(null));
     return () => {
       cancelled = true;
     };
   }, [version]);
-  return status;
+
+  if (!lan) return null;
+  const linked = cloud.status.filter((s) => s.linkedHere && s.signedIn);
+  if (cloud.offline && linked.length > 0) return { kind: "offline" };
+  if (lan.count + linked.length === 0) return { kind: "local" };
+  const times = [
+    ...lan.times,
+    ...linked.map((s) => cloud.syncedAt[s.library]).filter((at): at is number => Boolean(at)),
+  ];
+  return times.length
+    ? { kind: "synced", at: new Date(Math.max(...times)), now }
+    : { kind: "never" };
 }
 
 function useLabel(status: Status | null) {
   const { t, i18n } = useTranslation();
   if (!status) return null;
   if (status.kind === "local") return { text: t("sync.local"), tone: "muted" as const };
+  if (status.kind === "offline") return { text: t("sync.offline"), tone: "warning" as const };
   if (status.kind === "never") return { text: t("sync.never"), tone: "warning" as const };
   const age = status.now - status.at.getTime();
   if (age < FRESH_MS) return { text: t("sync.upToDate"), tone: "success" as const };

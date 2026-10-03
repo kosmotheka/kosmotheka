@@ -541,7 +541,8 @@
     "upToDate": "Up to date",
     "lastSync": "Synced {{when}}",
     "never": "Not synced yet",
-    "label": "Sync status: {{status}}. Open devices"
+    "label": "Sync status: {{status}}. Open devices",
+    "offline": "Not connected to the cloud"
   },
   "help": {
     "title": "Help",
@@ -1600,16 +1601,74 @@
       "schema_version": "The app and the server run different versions. Update the app.",
       "not_signed_in": "Sign in to your account to use the cloud.",
       "unsigned_history": "This library has changes from before signing existed, so it cannot go to the cloud. Duplicate it as a new library and upload that one.",
-      "already_linked": "This library is already in a cloud."
+      "already_linked": "This library is already in a cloud.",
+      "offline": "Not connected to the cloud."
     },
     "outcome": {
       "synced": "Up to date",
       "downloaded": "Downloaded from the cloud",
-      "library_conflict": "This device already has a different library with the same id. Nothing was merged.",
+      "library_conflict": "This device already has a different library that the app identifies the same way. Nothing was merged.",
       "not_linked": "The cloud offered a library that was not properly linked. It was ignored.",
       "missing_in_cloud": "This library is no longer in your cloud account.",
       "other_server": "This library is in a cloud on another server.",
       "deleted_here": "You deleted this library on this device, so it was not downloaded again."
+    },
+    "notice": {
+      "downloaded": "{{name}} came down from your cloud.",
+      "libraryConflict": "«{{name}}» was not brought down from the cloud: this device already has a different library that the app identifies the same way. Nothing was mixed.",
+      "missingInCloud": "{{name}} is no longer in your cloud account. It stays on this device.",
+      "deletedHere": "You deleted a library on this device that is still in your cloud. It was not downloaded again.",
+      "notLinked": "The cloud offered a library that was not properly linked. It was ignored."
+    },
+    "pick": {
+      "title": "Which libraries do you want in the cloud?",
+      "signedInAs": "Signed in as {{name}}",
+      "intro": "Only the ones you can share. The rest keep working as before, over your home network.",
+      "signedOut": "Sign in to your account to take libraries to the cloud.",
+      "inCloud": "already in the cloud",
+      "otherServer": "In a cloud on another server",
+      "locked": "You are a reader: whoever administers it uploads it.",
+      "unsigned": "It has changes from before signing existed, so it cannot go up as it is. A copy can.",
+      "duplicate": "Duplicate as new",
+      "duplicated": "Created “{{name}}”. It is ticked, so you can upload it now.",
+      "duplicateFailed": "The copy could not be made. Nothing changed.",
+      "upload_one": "Upload {{count}} library",
+      "upload_other": "Upload {{count}} libraries",
+      "uploading": "Uploading…",
+      "notNow": "Not now",
+      "finish": "Done",
+      "later": "You can upload more later, from the library or from your account.",
+      "done_one": "{{count}} library is now in the cloud.",
+      "done_other": "{{count}} libraries are now in the cloud."
+    },
+    "row": {
+      "upToDate": "Up to date · {{when}}",
+      "linked": "In the cloud",
+      "syncing": "Syncing…",
+      "offline": "Offline",
+      "offlineSince": "Offline · last synced {{when}}",
+      "error": "Could not sync",
+      "missing": "No longer in your cloud account",
+      "otherServer": "In a cloud on another server",
+      "conflict": "Not mixed with another library on this device",
+      "notUploaded": "Not in the cloud",
+      "unsigned": "Needs a copy to go up",
+      "locked": "Only whoever administers it can upload it",
+      "upload": "Upload",
+      "fix": "Duplicate as new"
+    },
+    "sharing": {
+      "title": "Cloud",
+      "hint": "Your account keeps a copy, so your devices sync from anywhere.",
+      "offlineHelp": "Everything still works here and on your home network; changes will upload once you are back online.",
+      "synced": "Cloud synced: received {{received}} changes, sent {{sent}}."
+    },
+    "library": {
+      "title": "Where it is"
+    },
+    "account": {
+      "title": "Libraries in the cloud",
+      "count": "{{inCloud}} of {{total}} in the cloud"
     }
   },
   "scanner": {

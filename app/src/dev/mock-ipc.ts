@@ -61,6 +61,34 @@ const libraries: LibrarySummary[] = [
   },
 ];
 
+// Cloud (D84, hito 7.2), with `?account`: `?cloud` adds a library with unsigned history and one
+// this device may not share, and starts Casa already in the cloud. `?cloud=offline`,
+// `conflict`, `missing` and `deleted` make the sync report that instead of «synced».
+const RECIPES = "01997c7e-0000-7000-8000-00000000ec1e";
+const GAMES = "01997c7e-0000-7000-8000-00000000ba5e";
+const cloudMode = new URLSearchParams(window.location.search).get("cloud");
+if (cloudMode !== null) {
+  libraries.push(
+    {
+      id: RECIPES,
+      name: "Recetas de la abuela",
+      works: 31,
+      active: false,
+      created: null,
+      canShare: true,
+    },
+    {
+      id: GAMES,
+      name: "Videojuegos de Hugo",
+      works: 12,
+      active: false,
+      created: null,
+      canShare: false,
+    },
+  );
+}
+const cloudLinked = new Set<string>(cloudMode !== null ? [HOME] : []);
+
 const work = (
   n: number,
   kind: Kind,
@@ -1404,31 +1432,54 @@ mockIPC((cmd, args) => {
       return ACCOUNT_BACKUP_CODES;
     }
     case "cloud_status":
-      return libraries.map((library) => ({
-        library: library.id,
-        cloudLibrary: null,
-        cloudServer: null,
-        linkedHere: false,
-        signedIn: mockAccount.signedIn,
-        mayShare: true,
-        unsignedHistory: false,
-        canUpload: mockAccount.signedIn,
-      }));
+      return libraries.map((library) => {
+        const linked = cloudLinked.has(library.id);
+        const unsigned = cloudMode !== null && library.id === RECIPES;
+        return {
+          library: library.id,
+          cloudLibrary: linked ? `cloud-${library.id}` : null,
+          cloudServer: linked ? "https://api.kosmotheka.app" : null,
+          linkedHere: linked,
+          signedIn: mockAccount.signedIn,
+          mayShare: library.canShare,
+          unsignedHistory: unsigned,
+          canUpload: mockAccount.signedIn && library.canShare && !unsigned && !linked,
+        };
+      });
     case "upload_to_cloud": {
       if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
       const { libraryId } = args as { libraryId: string };
+      if (cloudMode !== null && libraryId === RECIPES) {
+        throw { kind: "cloud", reason: "unsigned_history" };
+      }
+      cloudLinked.add(libraryId);
       return {
         library: libraryId,
-        cloudLibrary: crypto.randomUUID(),
+        cloudLibrary: `cloud-${libraryId}`,
         outcome: "synced",
         received: 0,
         sent: 12,
         rejected: 0,
       };
     }
-    case "sync_cloud":
+    case "sync_cloud": {
       if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
-      return [];
+      if (cloudMode === "offline") throw { kind: "account", reason: "server_unavailable" };
+      const report = (library: string, outcome: string) => ({
+        library,
+        cloudLibrary: outcome === "synced" ? `cloud-${library}` : null,
+        outcome,
+        received: 0,
+        sent: 0,
+        rejected: 0,
+      });
+      const reports = [...cloudLinked].map((id) =>
+        report(id, cloudMode === "missing" && id === HOME ? "missing_in_cloud" : "synced"),
+      );
+      if (cloudMode === "conflict") reports.push(report(CLUB, "library_conflict"));
+      if (cloudMode === "deleted") reports.push(report("deleted-library", "deleted_here"));
+      return reports;
+    }
     case "give_device_away":
       // The real app reloads from the `device-reset` event Rust emits; the mock
       // has no Rust side to emit it, so it reloads the page itself instead.

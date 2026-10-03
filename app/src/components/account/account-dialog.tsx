@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Check,
   ChevronRight,
+  Cloud,
   KeyRound,
   LogOut,
   MonitorSmartphone,
@@ -13,6 +14,7 @@ import { AuthErrorBlock } from "@/components/account/auth-error-block";
 import { CodeInput } from "@/components/account/code-input";
 import { EditFieldDialog } from "@/components/account/edit-field-dialog";
 import { Field } from "@/components/book-form";
+import { useCloudRows } from "@/components/cloud/cloud-state";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +51,7 @@ type TwofaAction = "disable" | "regenerate";
 export function AccountDialog({ open, desktop }: { open: boolean; desktop: boolean }) {
   const { t, i18n } = useTranslation();
   const account = useAccount();
+  const cloudRows = useCloudRows();
 
   const [details, setDetails] = useState<AccountDetails | null>(null);
   const [loadError, setLoadError] = useState<AccountActionError | null>(null);
@@ -259,6 +262,26 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
               {deviceCount !== null && (
                 <span className="text-[13px] text-muted-foreground">
                   {t("account.screen.devicesCount", { count: deviceCount })}
+                </span>
+              )}
+            </span>
+            <ChevronRight className="size-[18px] shrink-0 text-muted-foreground" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openOverlay({ name: "cloudPick" })}
+            className="flex min-h-14 items-center gap-3 rounded-2xl border px-4 text-left hover:bg-accent/50"
+          >
+            <Cloud className="size-[18px] shrink-0" />
+            <span className="flex flex-1 flex-col gap-0.5">
+              <span className="text-[15px]">{t("cloud.account.title")}</span>
+              {cloudRows.length > 0 && (
+                <span className="text-[13px] text-muted-foreground">
+                  {t("cloud.account.count", {
+                    inCloud: cloudRows.filter((r) => r.status.linkedHere).length,
+                    total: cloudRows.length,
+                  })}
                 </span>
               )}
             </span>
