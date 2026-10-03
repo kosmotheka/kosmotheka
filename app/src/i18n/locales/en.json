@@ -218,7 +218,8 @@
     "invalid_barcode": "This barcode is not valid.",
     "barcode_in_use": "Another edition already has this barcode.",
     "invalid_genre": "Not a known genre for this type.",
-    "self_reference": "A work cannot require itself."
+    "self_reference": "A work cannot require itself.",
+    "name_in_use": "That name is already in use."
   },
   "history": {
     "title": "History",
@@ -1189,8 +1190,6 @@
     "gaps_one": "{{count}} gap not logged yet",
     "gaps_other": "{{count}} gaps not logged yet",
     "rename": "Rename",
-    "reorder": "Reorder",
-    "reorderHint": "Drag or type the number",
     "done": "Done",
     "addWork": "Add a work",
     "delete": "Delete series",
@@ -1228,6 +1227,16 @@
       "title": "Add a work",
       "placeholder": "Search the catalog",
       "alreadyIn": "Already in this series"
+    },
+    "edit": "Edit",
+    "editHint": "Type each work's number; you can leave gaps",
+    "editHintUnordered": "Take out the works that do not belong here",
+    "positionInvalid": "Every work needs a whole number from 1 up.",
+    "removeWork": "Take {{title}} out of the series",
+    "removeConfirm": {
+      "title": "Take {{title}} out?",
+      "body": "It leaves {{name}} but stays in the catalogue.",
+      "action": "Take out"
     }
   },
   "account": {
@@ -1574,6 +1583,14 @@
       "title": "You've been signed out.",
       "help": "Sign in again to continue.",
       "action": "Sign in"
+    },
+    "deviceTaken": {
+      "title": "This device is signed in to another account.",
+      "help": "To use it with this one, first leave it to another person in Settings › This device: it starts afresh, as if just installed."
+    },
+    "deviceKeyMismatch": {
+      "title": "Your account knows this device with another key.",
+      "help": "Remove it from your account on another device, in Account › My devices, and sign in here again."
     }
   },
   "scanner": {

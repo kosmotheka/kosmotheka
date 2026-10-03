@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, ArrowUpDown, Check, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { AddToSeriesWorkDialog } from "@/components/series-work-picker";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -15,6 +15,7 @@ import {
   type SeriesEntry,
   deleteSeries,
   getSeries,
+  removeFromSeries,
   reorderSeries,
   updateSeries,
 } from "@/lib/api";
@@ -52,6 +53,7 @@ export function SeriesDetailView({
   const [detail, setDetail] = useState<SeriesDetail | null>(null);
   const [reorder, setReorder] = useState(false);
   const [positions, setPositions] = useState<Record<string, string>>({});
+  const [positionError, setPositionError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [addingWork, setAddingWork] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -103,18 +105,31 @@ export function SeriesDetailView({
     setReorder(true);
   };
 
+  // The numbers are kept as typed: a gap (1, 2, 5) is volumes not catalogued yet (D61).
   const finishReorder = async () => {
     if (!shown) return;
-    const ordered = [...shown.entries].sort((a, b) => {
-      const pa = Number(positions[a.entryId] ?? a.position ?? 0);
-      const pb = Number(positions[b.entryId] ?? b.position ?? 0);
-      return pa - pb;
+    if (!shown.ordered) {
+      setReorder(false);
+      return;
+    }
+    const typed = shown.entries.map((e) => {
+      const text = (positions[e.entryId] ?? "").trim();
+      return { workId: e.workId, position: text === "" ? null : Number(text) };
     });
-    await reorderSeries(
-      shown.id,
-      ordered.map((e) => e.workId),
-    );
+    // An ordered series shows only numbered works, so every one needs its number.
+    if (typed.some((p) => p.position === null || !Number.isInteger(p.position) || p.position < 1)) {
+      setPositionError(t("series.positionInvalid"));
+      return;
+    }
+    setPositionError(null);
+    await reorderSeries(shown.id, typed);
     setReorder(false);
+    changed();
+  };
+
+  const removeWork = async (workId: string) => {
+    if (!shown) return;
+    await removeFromSeries(shown.id, workId);
     changed();
   };
 
@@ -144,7 +159,6 @@ export function SeriesDetailView({
           key={`gap-${row.position}`}
           className="flex items-center gap-3.5 rounded-xl border border-dashed bg-muted px-3 py-2"
         >
-          {reorder && <GripVertical className="size-4 shrink-0 text-muted-foreground" />}
           {shown?.ordered && (
             <span className="flex h-[30px] w-[34px] shrink-0 items-center justify-center rounded-md border font-mono text-sm font-semibold">
               {row.position}
@@ -174,7 +188,6 @@ export function SeriesDetailView({
           !owned && "border-dashed bg-muted",
         )}
       >
-        {reorder && <GripVertical className="size-4 shrink-0 text-muted-foreground" />}
         {shown?.ordered &&
           (reorder ? (
             <Input
@@ -214,6 +227,24 @@ export function SeriesDetailView({
             {t("series.status.owned")}
           </Button>
         )}
+        {reorder && (
+          <ConfirmButton
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0"
+                aria-label={t("series.removeWork", { title: entry.title })}
+              >
+                <X />
+              </Button>
+            }
+            title={t("series.removeConfirm.title", { title: entry.title })}
+            description={t("series.removeConfirm.body", { name: shown?.name ?? "" })}
+            confirmLabel={t("series.removeConfirm.action")}
+            onConfirm={() => void removeWork(entry.workId)}
+          />
+        )}
       </div>
     );
   };
@@ -234,7 +265,7 @@ export function SeriesDetailView({
       {reorder ? (
         <div className="flex items-center gap-2.5">
           <span className="hidden text-[13px] text-muted-foreground sm:inline">
-            {t("series.reorderHint")}
+            {t(shown.ordered ? "series.editHint" : "series.editHintUnordered")}
           </span>
           <Button size="sm" onClick={() => void finishReorder()}>
             <Check /> {t("series.done")}
@@ -245,9 +276,9 @@ export function SeriesDetailView({
           <Button variant="outline" size="sm" onClick={() => setRenaming(true)}>
             <Pencil /> {t("series.rename")}
           </Button>
-          {shown.ordered && (
+          {shown.entries.length > 0 && (
             <Button variant="outline" size="sm" onClick={startReorder}>
-              <ArrowUpDown /> {t("series.reorder")}
+              <ListChecks /> {t("series.edit")}
             </Button>
           )}
           <Button size="sm" onClick={() => setAddingWork(true)}>
@@ -261,6 +292,7 @@ export function SeriesDetailView({
   const body = (
     <div className="flex flex-col gap-4">
       {header}
+      {reorder && positionError && <p className="text-[13px] text-destructive">{positionError}</p>}
       <div className="flex flex-col gap-1.5">{rows.map(rowView)}</div>
       {shown && !reorder && (
         <button

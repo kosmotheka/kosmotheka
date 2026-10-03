@@ -16,7 +16,7 @@ export type ChangeKindItem =
   | { field: "minAge"; age: number }
   | { field: "seasons"; count: number };
 
-export interface CopyKindPlan {
+interface CopyKindPlan {
   copyId: string;
   from: Format;
   /** `null`: no automatic equivalent: the person must pick one. */
@@ -46,7 +46,7 @@ function isValidIsbn13(code: string): boolean {
 }
 
 /** The copy format an automatic equivalent maps to, or `null` when the person must pick one. */
-export function mapCopyFormat(from: Format, toKind: Kind): Format | null {
+function mapCopyFormat(from: Format, toKind: Kind): Format | null {
   const targets = KIND_FORMATS[toKind];
   if (toKind === "other") return "other";
   if (targets.includes(from)) return from;

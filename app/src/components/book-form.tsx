@@ -134,7 +134,7 @@ export const emptyEditionForm: EditionForm = {
   openLibraryId: null,
 };
 
-export const emptyCopyForm: CopyForm = {
+const emptyCopyForm: CopyForm = {
   owner: "",
   format: "paperback",
   quantity: "1",
@@ -1244,7 +1244,7 @@ export function CopyFields({
 
 type Lookup = ReturnType<typeof useIsbnLookup>;
 
-export function useIsbnLookup() {
+function useIsbnLookup() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LookupResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1272,7 +1272,7 @@ export function useIsbnLookup() {
   return { loading, result, error, run };
 }
 
-export function LookupStatus({
+function LookupStatus({
   lookup,
   currentEditionId,
 }: {

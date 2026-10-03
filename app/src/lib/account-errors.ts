@@ -4,7 +4,7 @@ import { isCommandError } from "@/lib/api";
 // "Cuenta y nube (Fase 7)"). One place for the mapping, so every auth screen shows the
 // same block instead of each re-deciding the color and wording.
 
-export type AccountErrorLevel = "error" | "warning" | "info";
+type AccountErrorLevel = "error" | "warning" | "info";
 
 export interface AccountErrorText {
   level: AccountErrorLevel;
@@ -127,6 +127,18 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
       };
     case "device_removed":
       return { level: "info", titleKey: "accountErrors.deviceRemoved.title" };
+    case "device_taken":
+      return {
+        level: "error",
+        titleKey: "accountErrors.deviceTaken.title",
+        helpKey: "accountErrors.deviceTaken.help",
+      };
+    case "device_key_mismatch":
+      return {
+        level: "error",
+        titleKey: "accountErrors.deviceKeyMismatch.title",
+        helpKey: "accountErrors.deviceKeyMismatch.help",
+      };
     case "signed_out_password_changed":
       return {
         level: "info",

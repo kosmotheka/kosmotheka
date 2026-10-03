@@ -47,7 +47,7 @@ export const contributorRoles = [
 ] as const;
 export type ContributorRole = (typeof contributorRoles)[number];
 
-export interface ContributorInput {
+interface ContributorInput {
   name: string;
   role: ContributorRole;
 }
@@ -129,7 +129,7 @@ export interface BookSummary {
   tags: string[];
 }
 
-export type FieldErrorCode =
+type FieldErrorCode =
   | "required"
   | "out_of_range"
   | "invalid_date"
@@ -154,7 +154,10 @@ export type CommandError =
   | { kind: "validation"; errors: FieldError[] }
   | { kind: "backup"; reason: string }
   | { kind: "sync"; reason: string }
-  | { kind: "permission"; reason: "not_allowed" | "last_admin" | "request_resolved" }
+  | {
+      kind: "permission";
+      reason: "not_allowed" | "last_admin" | "request_resolved" | "cannot_share";
+    }
   | { kind: "internal"; message: string }
   | { kind: "account"; reason: string; retryAfter?: number | null };
 
@@ -167,8 +170,7 @@ export function createBook(book: NewBook): Promise<CreatedBook> {
 }
 
 /** Whether a work's edition has copies (D61): `missing` is catalogued without owning it yet. */
-export const holdings = ["owned", "missing"] as const;
-export type Holding = (typeof holdings)[number];
+export type Holding = "owned" | "missing";
 
 export interface BookFilter {
   query?: string;
@@ -234,7 +236,7 @@ export interface CopyDetail {
   canDelete: boolean;
 }
 
-export interface ContributorDetail {
+interface ContributorDetail {
   name: string;
   role: ContributorRole;
 }
@@ -407,7 +409,7 @@ export function lookupIsbn(isbn: string): Promise<LookupResult> {
   return invoke<LookupResult>("lookup_isbn", { isbn });
 }
 
-export interface CandidateContributor {
+interface CandidateContributor {
   name: string;
   role: ContributorRole;
 }
@@ -1009,16 +1011,19 @@ export function addToSeries(
   return invoke<string>("add_to_series", { seriesId, workId, position });
 }
 
-export function setSeriesEntryPosition(entryId: string, position: number | null): Promise<void> {
-  return invoke("set_series_entry_position", { entryId, position });
-}
-
 export function removeFromSeries(seriesId: string, workId: string): Promise<void> {
   return invoke("remove_from_series", { seriesId, workId });
 }
 
-export function reorderSeries(seriesId: string, workIds: string[]): Promise<void> {
-  return invoke("reorder_series", { seriesId, workIds });
+export interface WorkPosition {
+  workId: string;
+  /** Need not be consecutive: a gap is a volume not catalogued yet (D61). */
+  position: number | null;
+}
+
+/** Sets the number of each work in an ordered series, in one operation. */
+export function reorderSeries(seriesId: string, positions: WorkPosition[]): Promise<void> {
+  return invoke("reorder_series", { seriesId, positions });
 }
 
 export function addRequirement(workId: string, requiredWorkId: string): Promise<void> {

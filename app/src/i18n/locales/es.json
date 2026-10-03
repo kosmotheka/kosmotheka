@@ -232,7 +232,8 @@
     "invalid_barcode": "El código de barras no es válido.",
     "invalid_genre": "No es un género conocido para este tipo.",
     "barcode_in_use": "Ya hay otra edición con este código de barras.",
-    "self_reference": "Una obra no puede necesitarse a sí misma."
+    "self_reference": "Una obra no puede necesitarse a sí misma.",
+    "name_in_use": "Ese nombre ya está en uso."
   },
   "history": {
     "title": "Historial",
@@ -1203,8 +1204,6 @@
     "gaps_one": "hay un hueco sin apuntar",
     "gaps_other": "hay {{count}} huecos sin apuntar",
     "rename": "Renombrar",
-    "reorder": "Reordenar",
-    "reorderHint": "Arrastra o escribe el número",
     "done": "Hecho",
     "addWork": "Añadir obra",
     "delete": "Eliminar serie",
@@ -1242,6 +1241,16 @@
       "title": "Añadir obra",
       "placeholder": "Busca en el catálogo",
       "alreadyIn": "Ya está en esta serie"
+    },
+    "edit": "Editar",
+    "editHint": "Escribe el número de cada obra; puedes dejar huecos",
+    "editHintUnordered": "Quita las obras que no son de esta serie",
+    "positionInvalid": "Cada obra necesita un número entero, desde el 1.",
+    "removeWork": "Quitar {{title}} de la serie",
+    "removeConfirm": {
+      "title": "¿Quitar {{title}}?",
+      "body": "Sale de {{name}}, pero sigue en el catálogo.",
+      "action": "Quitar"
     }
   },
   "account": {
@@ -1588,6 +1597,14 @@
       "title": "Se ha cerrado la sesión.",
       "help": "Vuelve a entrar para continuar.",
       "action": "Iniciar sesión"
+    },
+    "deviceTaken": {
+      "title": "Este dispositivo tiene la sesión iniciada en otra cuenta.",
+      "help": "Para usarlo con esta, déjalo antes a otra persona en Ajustes › Este dispositivo: queda como recién instalado."
+    },
+    "deviceKeyMismatch": {
+      "title": "Tu cuenta conoce este dispositivo con otra clave.",
+      "help": "Quítalo de tu cuenta desde otro dispositivo, en Cuenta › Mis dispositivos, y vuelve a entrar aquí."
     }
   },
   "scanner": {

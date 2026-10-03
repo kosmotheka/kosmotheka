@@ -1,5 +1,5 @@
 use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_fs::{FilePath, FsExt, OpenOptions};
 use url::Url;
@@ -885,17 +885,6 @@ pub fn add_to_series(
 }
 
 #[tauri::command]
-pub fn set_series_entry_position(
-    database: State<'_, Database>,
-    entry_id: String,
-    position: Option<i64>,
-) -> Result<()> {
-    let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    series::set_position(&mut conn, &library, &entry_id, position)
-}
-
-#[tauri::command]
 pub fn remove_from_series(
     database: State<'_, Database>,
     series_id: String,
@@ -906,15 +895,26 @@ pub fn remove_from_series(
     series::remove_from_series(&mut conn, &library, &series_id, &work_id)
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkPosition {
+    pub work_id: String,
+    pub position: Option<i64>,
+}
+
 #[tauri::command]
 pub fn reorder_series(
     database: State<'_, Database>,
     series_id: String,
-    work_ids: Vec<String>,
+    positions: Vec<WorkPosition>,
 ) -> Result<()> {
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
-    series::reorder(&mut conn, &library, &series_id, &work_ids)
+    let positions: Vec<(String, Option<i64>)> = positions
+        .into_iter()
+        .map(|p| (p.work_id, p.position))
+        .collect();
+    series::reorder(&mut conn, &library, &series_id, &positions)
 }
 
 #[tauri::command]

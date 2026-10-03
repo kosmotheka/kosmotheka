@@ -1120,7 +1120,6 @@ mockIPC((cmd, args) => {
       return "series-new";
     case "update_series":
     case "delete_series":
-    case "set_series_entry_position":
     case "remove_from_series":
     case "reorder_series":
     case "add_requirement":

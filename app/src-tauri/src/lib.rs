@@ -153,7 +153,6 @@ pub fn run() {
             commands::update_series,
             commands::delete_series,
             commands::add_to_series,
-            commands::set_series_entry_position,
             commands::remove_from_series,
             commands::reorder_series,
             commands::add_requirement,

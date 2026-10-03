@@ -231,28 +231,6 @@ pub fn add_to_series(
     Ok(id)
 }
 
-pub fn set_position(
-    conn: &mut Connection,
-    library: &str,
-    entry_id: &str,
-    position: Option<i64>,
-) -> Result<()> {
-    let tx = conn.transaction()?;
-    catalog::ensure_exists(&tx, library, Entity::SeriesEntry, entry_id)?;
-    ops::record(
-        &tx,
-        library,
-        "series.entry_position",
-        vec![Change::update(
-            Entity::SeriesEntry,
-            entry_id,
-            json!({ "position": position }),
-        )],
-    )?;
-    tx.commit()?;
-    Ok(())
-}
-
 /// Deletes every entry of the pair (no unique constraint: two devices may have
 /// added the same one offline).
 pub fn remove_from_series(
@@ -281,20 +259,26 @@ pub fn remove_from_series(
     Ok(())
 }
 
-/// Positions `work_ids` 1..n in that order, as one operation with only the
-/// entries whose position changed. Every row of a work with duplicate entries
-/// (converged offline additions) is kept in step.
+/// Sets the number of each listed work, as one operation with only the entries
+/// whose number changed. Numbers need not be consecutive: a gap is a volume not
+/// catalogued yet (D61). `None` takes the work off the numbering. Every row of a
+/// work with duplicate entries (converged offline additions) is kept in step.
 pub fn reorder(
     conn: &mut Connection,
     library: &str,
     series_id: &str,
-    work_ids: &[String],
+    positions: &[(String, Option<i64>)],
 ) -> Result<()> {
+    if positions.iter().any(|(_, p)| p.is_some_and(|p| p < 1)) {
+        return Err(Error::Validation(vec![FieldError::new(
+            "position",
+            ErrorCode::OutOfRange,
+        )]));
+    }
     let tx = conn.transaction()?;
     catalog::ensure_exists(&tx, library, Entity::Series, series_id)?;
     let mut changes = Vec::new();
-    for (index, work_id) in work_ids.iter().enumerate() {
-        let position = (index + 1) as i64;
+    for (work_id, position) in positions {
         let rows: Vec<(String, Option<i64>)> = tx
             .prepare(
                 "SELECT id, position FROM series_entries
@@ -305,7 +289,7 @@ pub fn reorder(
             })?
             .collect::<rusqlite::Result<_>>()?;
         for (entry_id, current) in rows {
-            if current != Some(position) {
+            if current != *position {
                 changes.push(Change::update(
                     Entity::SeriesEntry,
                     entry_id,
@@ -583,7 +567,11 @@ mod tests {
             &mut conn,
             LIB,
             &series_id,
-            &[w1.clone(), w3.clone(), w2.clone()],
+            &[
+                (w1.clone(), Some(1)),
+                (w3.clone(), Some(2)),
+                (w2.clone(), Some(3)),
+            ],
         )
         .unwrap();
         let intent_count_after: i64 = conn
@@ -600,6 +588,35 @@ mod tests {
             .unwrap();
         let changes: Vec<Change> = serde_json::from_str(&changes).unwrap();
         assert_eq!(changes.len(), 2);
+    }
+
+    #[test]
+    fn reorder_keeps_the_numbers_typed_gaps_included() {
+        let mut conn = db::open_in_memory().unwrap();
+        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let w1 = add_work(&mut conn, "Dune");
+        let w2 = add_work(&mut conn, "Dune Messiah");
+        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, LIB, &series_id, &w2, None).unwrap();
+
+        // Volumes 2 to 4 are not catalogued yet: the second book is number 5.
+        reorder(
+            &mut conn,
+            LIB,
+            &series_id,
+            &[(w1.clone(), Some(1)), (w2.clone(), Some(5))],
+        )
+        .unwrap();
+        let positions: Vec<Option<i64>> = get_series(&conn, LIB, &series_id)
+            .unwrap()
+            .entries
+            .iter()
+            .map(|e| e.position)
+            .collect();
+        assert_eq!(positions, vec![Some(1), Some(5)]);
+
+        let zero = reorder(&mut conn, LIB, &series_id, &[(w1, Some(0))]);
+        assert!(matches!(zero, Err(Error::Validation(_))));
     }
 
     #[test]
