@@ -218,4 +218,38 @@ mod tests {
     fn other_has_none() {
         assert!(genres_of("other").is_empty());
     }
+
+    #[test]
+    fn the_spec_lists_the_same_genres() {
+        let schema: serde_json::Value =
+            serde_json::from_str(include_str!("../../../spec/operation.schema.json")).unwrap();
+        let mut found = None;
+        find_genre_enum(&schema, &mut found);
+        let spec: Vec<&str> = found
+            .expect("work_genre.genre enum in the spec")
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(spec, GENRES);
+    }
+
+    fn find_genre_enum<'a>(
+        value: &'a serde_json::Value,
+        found: &mut Option<&'a Vec<serde_json::Value>>,
+    ) {
+        match value {
+            serde_json::Value::Object(map) => {
+                if let Some(list) = map
+                    .get("genre")
+                    .and_then(|g| g.get("enum"))
+                    .and_then(|e| e.as_array())
+                {
+                    *found = Some(list);
+                }
+                map.values().for_each(|v| find_genre_enum(v, found));
+            }
+            serde_json::Value::Array(items) => items.iter().for_each(|v| find_genre_enum(v, found)),
+            _ => {}
+        }
+    }
 }

@@ -65,6 +65,16 @@ final class ValidOperationValidatorTest extends KernelTestCase
         );
     }
 
+    public function testGenresMatchTheSchema(): void
+    {
+        $json = json_encode(Spec::json('operation.schema.json'), \JSON_THROW_ON_ERROR);
+
+        self::assertStringContainsString(
+            '"enum":'.json_encode(CatalogEntity::GENRES, \JSON_THROW_ON_ERROR),
+            $json,
+        );
+    }
+
     /**
      * @return iterable<string, array{array<mixed>}>
      */
