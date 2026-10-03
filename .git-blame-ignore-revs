@@ -1,0 +1,10 @@
+# Formatting-only commits: git blame skips them (GitHub reads this file; locally:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs).
+d4e34fd843eadd7ae31350ee03d98d632d2edc93 # Format app/src/components with Prettier
+6de48cc4ff1f6ce1578e7f7ab8381ba25e990b16 # Format app/src/components/shell with Prettier
+40667f39fcee95fddf07bc649c4cb0b7135a63f4 # Format app/src/components/people with Prettier
+47f0e165989b78a49a28f2b394d58f3de8685208 # Format app/src/components/libraries with Prettier
+bd567218858f0f4b7f3b3239c613f16d0aa15576 # Format app/src/components/account with Prettier
+67e4b7647345cd486dfc2a27a039e7cf4ca70c4c # Format app/src/pages with Prettier
+599b8a2a37d4707ea93f55f28d113badad9da3d7 # Format app/src/dev with Prettier
+b32f0b97bfa71fbdac4a50260f57ca43198d2531 # Format app/src/lib with Prettier
