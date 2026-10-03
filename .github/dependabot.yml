@@ -1,0 +1,32 @@
+# Weekly update PRs, grouped per ecosystem so they do not flood the queue. Actions
+# are pinned by commit, and Dependabot moves the pin and its version comment.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /app
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+  - package-ecosystem: composer
+    directory: /server
+    schedule:
+      interval: weekly
+    groups:
+      composer:
+        patterns: ["*"]
