@@ -18,9 +18,11 @@ export function HelpPage({ desktop }: { desktop: boolean }) {
               <ChevronDown className="size-5 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <ol className="flex list-decimal flex-col gap-2 pr-4 pb-4 pl-9 text-sm md:pr-1 md:pl-6">
-              {(t(`help.topics.${topic}.steps`, { returnObjects: true }) as string[]).map((step) => (
-                <li key={step}>{step}</li>
-              ))}
+              {(t(`help.topics.${topic}.steps`, { returnObjects: true }) as string[]).map(
+                (step) => (
+                  <li key={step}>{step}</li>
+                ),
+              )}
             </ol>
           </details>
         ))}

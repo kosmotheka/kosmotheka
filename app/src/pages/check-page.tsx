@@ -251,9 +251,7 @@ export function CheckPage({
                 <div className="flex gap-3 rounded-2xl border p-3.5">
                   <LibraryBig className="size-5 shrink-0 text-muted-foreground" />
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[15px] font-semibold">
-                      {libraryName(book.libraryId)}
-                    </span>
+                    <span className="text-[15px] font-semibold">{libraryName(book.libraryId)}</span>
                     <span className="text-[13px]">
                       {book.formats.map((format) => t(`formats.${format}`)).join(" · ")}
                     </span>
@@ -303,9 +301,7 @@ export function CheckPage({
             <div className="flex items-center gap-3.5 rounded-[14px] border p-3">
               <Cover url={online?.coverUrl} alt="" className="h-[60px] w-10 rounded-md" />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="font-mono text-xs text-muted-foreground">
-                  ISBN {check.isbn13}
-                </span>
+                <span className="font-mono text-xs text-muted-foreground">ISBN {check.isbn13}</span>
                 {online?.authors.length ? (
                   <span className="text-[13px] text-muted-foreground">
                     {online.authors.join(", ")}
@@ -368,7 +364,11 @@ function Verdict({ tone, title, detail }: { tone: "yes" | "no"; title: string; d
             : "flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-foreground"
         }
       >
-        {yes ? <Check className="size-7" strokeWidth={3} /> : <X className="size-[26px]" strokeWidth={2.5} />}
+        {yes ? (
+          <Check className="size-7" strokeWidth={3} />
+        ) : (
+          <X className="size-[26px]" strokeWidth={2.5} />
+        )}
       </span>
       <span className="flex flex-col gap-0.5">
         <span className="text-2xl font-bold tracking-tight">{title}</span>

@@ -18,13 +18,7 @@ import {
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { ActivateDialog } from "@/components/people/activate-dialog";
 import { PersonSheet } from "@/components/people/person-sheet";
-import {
-  Avatar,
-  DeviceChip,
-  RoleLegend,
-  RoleMenu,
-  Switch,
-} from "@/components/people/role-parts";
+import { Avatar, DeviceChip, RoleLegend, RoleMenu, Switch } from "@/components/people/role-parts";
 import { RevokeDialog } from "@/components/people/revoke-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,9 +59,7 @@ export function PeoplePage({
   const [reloads, setReloads] = useState(0);
   const [activating, setActivating] = useState(false);
   const [sheet, setSheet] = useState<Person | null>(null);
-  const [revoking, setRevoking] = useState<{ person: Person; device?: PersonDevice } | null>(
-    null,
-  );
+  const [revoking, setRevoking] = useState<{ person: Person; device?: PersonDevice } | null>(null);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
@@ -178,7 +170,10 @@ export function PeoplePage({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {others.map((person) => (
-              <DropdownMenuItem key={person.id} onSelect={() => void changeRole(person, "admin", true)}>
+              <DropdownMenuItem
+                key={person.id}
+                onSelect={() => void changeRole(person, "admin", true)}
+              >
                 {person.name}
               </DropdownMenuItem>
             ))}
@@ -204,7 +199,11 @@ export function PeoplePage({
     isAdmin && person.devices.some((d) => !d.thisDevice) ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={t("people.more", { person: person.name })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("people.more", { person: person.name })}
+          >
             <Ellipsis />
           </Button>
         </DropdownMenuTrigger>
