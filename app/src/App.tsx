@@ -244,7 +244,11 @@ export default function App() {
 
   const page =
     section === "check" ? (
-      <CheckPage desktop={desktop} onChanged={reload} onOpenBook={openBookIn} />
+      <CheckPage
+        desktop={desktop}
+        onChanged={reload}
+        onOpenBook={(libraryId, editionId) => void openBookIn(libraryId, editionId)}
+      />
     ) : section === "library" ? (
       <LibraryPage desktop={desktop} />
     ) : section === "tags" ? (
@@ -272,7 +276,7 @@ export default function App() {
         everywhere={searchEverywhere}
         onEverywhereChange={setEverywhere}
         nameOfLibrary={nameOfId}
-        onOpenBook={openBookIn}
+        onOpenBook={(libraryId, editionId) => void openBookIn(libraryId, editionId)}
         selectedId={desktop ? bookId : null}
         holding={holding}
         onViewChange={onViewChange}

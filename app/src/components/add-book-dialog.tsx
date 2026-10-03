@@ -214,7 +214,11 @@ export function AddBookDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <ScreenDialogContent>
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
+            <form
+              onSubmit={(e) => void submit(e)}
+              noValidate
+              className="flex min-h-0 flex-1 flex-col"
+            >
               <header className="flex h-16 shrink-0 items-center gap-1 px-1">
                 <Button
                   type="button"
@@ -270,7 +274,7 @@ export function AddBookDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <form onSubmit={submit} noValidate className="space-y-6">
+        <form onSubmit={(e) => void submit(e)} noValidate className="space-y-6">
           <DialogHeader>
             {onBack && (
               <Button

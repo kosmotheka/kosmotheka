@@ -797,7 +797,7 @@ function EditionSection({
 
   if (form) {
     return (
-      <form onSubmit={save} noValidate className="space-y-4">
+      <form onSubmit={(e) => void save(e)} noValidate className="space-y-4">
         <EditionFields
           value={form}
           onChange={onFormChange}
@@ -937,7 +937,7 @@ function CopiesSection({
   };
 
   const editor = (
-    <form onSubmit={save} noValidate className="space-y-4 rounded-xl border p-4">
+    <form onSubmit={(e) => void save(e)} noValidate className="space-y-4 rounded-xl border p-4">
       <CopyFields
         value={form}
         onChange={setForm}

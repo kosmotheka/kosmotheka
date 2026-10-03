@@ -220,7 +220,12 @@ export function RequestsPage({
         {mine.length === 0 ? (
           <EmptyList text={t("requests.noneMine")} />
         ) : (
-          <MyRequests requests={mine} desktop={desktop} busy={busy} onWithdraw={withdraw} />
+          <MyRequests
+            requests={mine}
+            desktop={desktop}
+            busy={busy}
+            onWithdraw={(r) => void withdraw(r)}
+          />
         )}
       </div>,
     );

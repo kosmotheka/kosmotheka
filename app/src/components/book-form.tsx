@@ -467,10 +467,12 @@ function GenresField({
 
   useEffect(() => {
     let cancelled = false;
-    genresOfKind(kind).then((loaded) => {
-      if (cancelled) return;
-      setOptions(loaded);
-    });
+    genresOfKind(kind)
+      .then((loaded) => {
+        if (cancelled) return;
+        setOptions(loaded);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

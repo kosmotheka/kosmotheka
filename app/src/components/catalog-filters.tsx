@@ -234,11 +234,11 @@ function GenreFilterChip({
   useEffect(() => {
     let cancelled = false;
     const relevant = filter.kind ? [filter.kind] : kinds.filter((k) => k !== "other");
-    Promise.all(
-      relevant.map((kind) => genresOfKind(kind).then((genres) => ({ kind, genres }))),
-    ).then((loaded) => {
-      if (!cancelled) setGroups(loaded.filter((group) => group.genres.length > 0));
-    });
+    Promise.all(relevant.map((kind) => genresOfKind(kind).then((genres) => ({ kind, genres }))))
+      .then((loaded) => {
+        if (!cancelled) setGroups(loaded.filter((group) => group.genres.length > 0));
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
