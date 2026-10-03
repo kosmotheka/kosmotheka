@@ -798,8 +798,8 @@ def section_tests():
         total += len(names)
         lines.append(f"- `{path}` ({len(names)}): {', '.join(names)}")
     ignored = [n for names in per.values() for n in names if n.endswith("(ignored)")]
-    bad = [n for n in ignored if not n.startswith("live_")]
-    lines.append(f"- Ignored: {', '.join(ignored) or '—'}; ⚠ ignored but not named live_*: {', '.join(bad) or '—'}")
+    bad = [n for n in ignored if not n.startswith(("live_", "print_"))]
+    lines.append(f"- Ignored: {', '.join(ignored) or '—'}; ⚠ ignored but not named live_* or print_*: {', '.join(bad) or '—'}")
     net = []
     for path, info in FILES.items():
         if info["lang"] != "rust":

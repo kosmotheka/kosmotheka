@@ -6,7 +6,7 @@
 
 | Ruta | Qué es |
 |---|---|
-| `docker/` | Docker Compose del servidor: PHP-FPM, nginx y PostgreSQL |
+| `docker/` | Docker Compose del servidor: PHP-FPM, nginx y PostgreSQL. **Solo para desarrollo:** nginx corre como root y el contenedor de PHP da `sudo` sin contraseña; un servidor real necesita sus propias imágenes (pendiente de la guía de instalación) |
 | `src/` | Código, en carpetas por rol (`Dto/`, `Enum/`, `Validator/`…); ver las convenciones en `server/AGENTS.md` |
 | `tests/` | PHPUnit, espejo de `src/`; `tests/Validator/` ejecuta los casos de conformidad de `spec/` |
 | `Makefile` | Todos los comandos (`make help`) |

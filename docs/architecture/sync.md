@@ -98,7 +98,7 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Quién sirve y quién se conecta.** El dispositivo que muestra el código de emparejamiento **sirve**; el que lo introduce **se conecta**. Normalmente sirve el escritorio y se conecta el móvil, pero funciona en cualquier sentido (dos escritorios, por ejemplo).
 
-**Identidad.** Cada dispositivo genera la primera vez un certificado propio (ECDSA P-256) y lo guarda en su carpeta de datos (`sync-cert.der` y `sync-key.der`, esta última legible solo por el usuario). Su huella SHA-256 es lo que el otro dispositivo fija.
+**Identidad.** Cada dispositivo genera la primera vez un certificado propio (ECDSA P-256) y lo guarda en su carpeta de datos (`sync-cert.der` y `sync-key.der`; en Linux, macOS y Android la clave se escribe con permisos `0600`, legible solo por el usuario; en Windows hereda los permisos de la carpeta de datos, que en `%APPDATA%` ya son solo del usuario). Su huella SHA-256 es lo que el otro dispositivo fija.
 
 **Código de emparejamiento** (`KOSMOTHEKA1:` + JSON en base64url, también como QR): identificador y nombre del dispositivo, sus direcciones `ip:puerto` en la red local, la huella del certificado y un **secreto de un solo uso** que caduca a los 10 minutos.
 

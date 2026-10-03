@@ -60,7 +60,7 @@ Each part keeps its own tooling: the app and crates build in the `library-dev` D
 - Adding a field or entity also means updating `server/src/Enum/CatalogEntity.php`, the PHP mirror of `schema.rs`.
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
-- Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`.
+- Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`. The only other ignored tests are fixture generators, named `print_*`, run by hand when a format changes.
 - **No user-facing string is hard-coded**: use i18n keys and add both `en` and `es` translations.
 - **Never commit secrets** (API keys, passwords, tokens). The repository will become public, so its history must be clean.
 
