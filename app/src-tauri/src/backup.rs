@@ -57,7 +57,7 @@ const OLDEST_RESTORABLE_SCHEMA: i64 = 9;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
 
-type Rows = BTreeMap<String, Vec<Map<String, Value>>>;
+pub(crate) type Rows = BTreeMap<String, Vec<Map<String, Value>>>;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -314,15 +314,29 @@ fn record_rows_as(tx: &Transaction<'_>, library: &str, rows: &Rows, intent: &str
 /// its history: the last resort when its only administrator lost their only device
 /// (D58). Returns the new library's id.
 pub fn duplicate(conn: &mut Connection, from: &str, name: &str) -> Result<String> {
+    let rows = read_library(conn, from)?;
+    let tx = conn.transaction()?;
+    let to = copy_as_new(&tx, &rows, name)?;
+    tx.commit()?;
+    Ok(to)
+}
+
+pub(crate) fn read_library(conn: &Connection, library: &str) -> Result<Rows> {
     let mut rows = Rows::new();
     for entity in CONTENTS {
-        rows.insert(entity.table().to_owned(), entity_rows(conn, from, entity)?);
+        rows.insert(
+            entity.table().to_owned(),
+            entity_rows(conn, library, entity)?,
+        );
     }
-    let tx = conn.transaction()?;
-    let to = place_library(&tx, None, name)?;
-    record_rows_as(&tx, &to, &rows, "library.duplicate")?;
-    ops::set_active_library(&tx, &to)?;
-    tx.commit()?;
+    Ok(rows)
+}
+
+/// Records `rows` as a new library with a random id and makes it the active one.
+pub(crate) fn copy_as_new(tx: &Transaction<'_>, rows: &Rows, name: &str) -> Result<String> {
+    let to = place_library(tx, None, name)?;
+    record_rows_as(tx, &to, rows, "library.duplicate")?;
+    ops::set_active_library(tx, &to)?;
     Ok(to)
 }
 
@@ -428,7 +442,6 @@ mod tests {
     use crate::db;
     use crate::libraries;
     use crate::marks::{self, Mark};
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
     use crate::people::PersonPick;
 
     fn temp(name: &str) -> std::path::PathBuf {
@@ -496,33 +509,34 @@ mod tests {
         let source_covers = Covers::new(dir.join("source-covers")).unwrap();
         let cover = source_covers.store(b"fake image", "jpg").unwrap();
         let mut source = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&source).unwrap();
         catalog::create_book(
             &mut source,
-            LIB,
+            &lib,
             &book("A Wizard of Earthsea", Some("9780306406157")),
             Some(&cover),
         )
         .unwrap();
-        catalog::create_book(&mut source, LIB, &book("The Dispossessed", None), None).unwrap();
+        catalog::create_book(&mut source, &lib, &book("The Dispossessed", None), None).unwrap();
         marks::claim_person(
             &mut source,
-            LIB,
+            &lib,
             &PersonPick {
                 id: None,
                 name: "Tersoal".into(),
             },
         )
         .unwrap();
-        let earthsea_edition = catalog::list_books(&source, LIB, &BookFilter::default()).unwrap()
+        let earthsea_edition = catalog::list_books(&source, &lib, &BookFilter::default()).unwrap()
             [0]
         .edition_id
         .clone();
-        let earthsea_work = catalog::get_book(&source, LIB, &earthsea_edition)
+        let earthsea_work = catalog::get_book(&source, &lib, &earthsea_edition)
             .unwrap()
             .work_id;
         marks::set_mark(
             &mut source,
-            LIB,
+            &lib,
             &earthsea_work,
             &Mark {
                 status: Some("finished".into()),
@@ -534,7 +548,7 @@ mod tests {
 
         let exported = export(
             &source,
-            &[LIB.to_owned()],
+            std::slice::from_ref(&lib),
             &source_covers,
             File::create(&file).unwrap(),
         )
@@ -542,8 +556,9 @@ mod tests {
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
         let restored =
-            restore(&mut target, LIB, &target_covers, File::open(&file).unwrap()).unwrap();
+            restore(&mut target, &to, &target_covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(
             exported,
@@ -556,7 +571,7 @@ mod tests {
         );
         assert_eq!(restored.restored.len(), 1);
         assert_eq!(
-            restored.restored[0].id, LIB,
+            restored.restored[0].id, lib,
             "same id, so it merges on sync"
         );
         assert_eq!(
@@ -564,7 +579,7 @@ mod tests {
             (2, 2)
         );
         assert_eq!(restored.covers, 1);
-        let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
+        let books = catalog::list_books(&target, &lib, &BookFilter::default()).unwrap();
         assert_eq!(books.len(), 2);
         assert_eq!(books[0].title, "A Wizard of Earthsea");
         assert_eq!(books[0].authors, vec!["Ursula K. Le Guin"]);
@@ -576,17 +591,21 @@ mod tests {
             query: Some("earthsea".into()),
             ..BookFilter::default()
         };
-        assert_eq!(catalog::list_books(&target, LIB, &filter).unwrap().len(), 1);
+        assert_eq!(
+            catalog::list_books(&target, &lib, &filter).unwrap().len(),
+            1
+        );
         let intent: String = target
             .query_row(
-                "SELECT intent FROM operations WHERE intent <> 'device.register'",
-                [],
+                "SELECT intent FROM operations
+                  WHERE library_id = ?1 AND intent NOT IN ('device.register', 'library.create')",
+                [&lib],
                 |r| r.get(0),
             )
             .unwrap();
         assert_eq!(intent, "backup.restore");
         assert_eq!(
-            mark_status(&target, LIB, &earthsea_work),
+            mark_status(&target, &lib, &earthsea_work),
             Some("finished".into()),
             "a mark survives the backup and the restore"
         );
@@ -597,8 +616,9 @@ mod tests {
         let dir = temp("device");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut source = db::open_in_memory().unwrap();
-        libraries::rename_library(&mut source, LIB, "Casa").unwrap();
-        catalog::create_book(&mut source, LIB, &book("Home book", None), None).unwrap();
+        let lib = ops::active_library(&source).unwrap();
+        libraries::rename_library(&mut source, &lib, "Casa").unwrap();
+        catalog::create_book(&mut source, &lib, &book("Home book", None), None).unwrap();
         let club = libraries::create_library(&mut source, "Club").unwrap();
         catalog::create_book(&mut source, &club, &book("Club book", None), None).unwrap();
         let file = dir.join("device.zip");
@@ -611,14 +631,15 @@ mod tests {
         )
         .unwrap();
         let mut target = db::open_in_memory().unwrap();
-        let restored = restore(&mut target, LIB, &covers, File::open(&file).unwrap()).unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let restored = restore(&mut target, &to, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!((exported.libraries, exported.books), (2, 2));
         assert_eq!(restored.restored.len(), 2);
         assert!(restored.skipped.is_empty());
-        assert_eq!(name_of(&target, LIB), "Casa");
+        assert_eq!(name_of(&target, &lib), "Casa");
         assert_eq!(name_of(&target, &club), "Club");
-        assert_eq!(titles(&target, LIB), vec!["Home book"]);
+        assert_eq!(titles(&target, &lib), vec!["Home book"]);
         assert_eq!(titles(&target, &club), vec!["Club book"]);
     }
 
@@ -627,21 +648,22 @@ mod tests {
         let dir = temp("nonempty");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut conn = db::open_in_memory().unwrap();
-        catalog::create_book(&mut conn, LIB, &book("A", None), None).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        catalog::create_book(&mut conn, &lib, &book("A", None), None).unwrap();
         let file = dir.join("backup.zip");
         export(
             &conn,
-            &[LIB.to_owned()],
+            std::slice::from_ref(&lib),
             &covers,
             File::create(&file).unwrap(),
         )
         .unwrap();
 
-        let summary = restore(&mut conn, LIB, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap()).unwrap();
 
         assert!(summary.restored.is_empty());
         assert_eq!(summary.skipped, vec![String::new()]);
-        assert_eq!(titles(&conn, LIB), vec!["A"], "nothing duplicated");
+        assert_eq!(titles(&conn, &lib), vec!["A"], "nothing duplicated");
     }
 
     #[test]
@@ -649,6 +671,7 @@ mod tests {
         let dir = temp("deleted");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let club = libraries::create_library(&mut conn, "Club").unwrap();
         catalog::create_book(&mut conn, &club, &book("Club book", None), None).unwrap();
         let file = dir.join("club.zip");
@@ -661,7 +684,7 @@ mod tests {
         .unwrap();
         libraries::delete_library(&mut conn, &club).unwrap();
 
-        let summary = restore(&mut conn, LIB, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut conn, &lib, &covers, File::open(&file).unwrap()).unwrap();
 
         let back = &summary.restored[0];
         assert_ne!(back.id, club, "the deletion still holds for the old id");
@@ -678,9 +701,10 @@ mod tests {
         let file = dir.join("club.zip");
         export(&source, &[club], &covers, File::create(&file).unwrap()).unwrap();
         let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
         libraries::create_library(&mut target, "club").unwrap();
 
-        let summary = restore(&mut target, LIB, &covers, File::open(&file).unwrap()).unwrap();
+        let summary = restore(&mut target, &to, &covers, File::open(&file).unwrap()).unwrap();
 
         assert_eq!(summary.restored[0].name, "Club (2)");
     }
@@ -690,12 +714,13 @@ mod tests {
         let dir = temp("v2");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut source = db::open_in_memory().unwrap();
-        catalog::create_book(&mut source, LIB, &book("Old backup", None), None).unwrap();
+        let lib = ops::active_library(&source).unwrap();
+        catalog::create_book(&mut source, &lib, &book("Old backup", None), None).unwrap();
         let mut entities = Rows::new();
         for entity in CONTENTS {
             entities.insert(
                 entity.table().to_owned(),
-                entity_rows(&source, LIB, entity).unwrap(),
+                entity_rows(&source, &lib, entity).unwrap(),
             );
         }
         let old = json!({
@@ -858,9 +883,10 @@ mod tests {
         std::fs::write(&file, b"hello").unwrap();
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
 
         assert!(matches!(
-            restore(&mut conn, LIB, &covers, File::open(&file).unwrap()),
+            restore(&mut conn, &lib, &covers, File::open(&file).unwrap()),
             Err(Error::BadBackup("not_a_backup"))
         ));
     }

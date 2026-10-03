@@ -215,7 +215,7 @@ mod tests {
     use super::*;
     use crate::catalog::BookFilter;
     use crate::db;
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
+    use crate::ops;
 
     fn temp_file(name: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!("library-csv-{name}-{}.csv", std::process::id()))
@@ -224,6 +224,7 @@ mod tests {
     #[test]
     fn exported_csv_imports_back_into_the_same_catalogue() {
         let mut source = db::open_in_memory().unwrap();
+        let from = ops::active_library(&source).unwrap();
         let path = temp_file("roundtrip");
         std::fs::write(
             &path,
@@ -233,7 +234,7 @@ mod tests {
              Good Omens,Terry Pratchett; Neil Gaiman,,,,,,,\n",
         )
         .unwrap();
-        let imported = import(&mut source, LIB, std::fs::File::open(&path).unwrap()).unwrap();
+        let imported = import(&mut source, &from, std::fs::File::open(&path).unwrap()).unwrap();
         assert_eq!(
             imported,
             CsvImportSummary {
@@ -243,16 +244,17 @@ mod tests {
             }
         );
 
-        export(&source, LIB, std::fs::File::create(&path).unwrap()).unwrap();
+        export(&source, &from, std::fs::File::create(&path).unwrap()).unwrap();
         let exported = std::fs::read_to_string(&path).unwrap();
         assert!(exported.starts_with('\u{feff}'));
         assert!(exported.contains("\"Salón, balda 2\""));
         assert!(exported.contains("Terry Pratchett; Neil Gaiman"));
 
         let mut target = db::open_in_memory().unwrap();
-        let reimported = import(&mut target, LIB, std::fs::File::open(&path).unwrap()).unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let reimported = import(&mut target, &to, std::fs::File::open(&path).unwrap()).unwrap();
         assert_eq!(reimported, imported);
-        let books = catalog::list_books(&target, LIB, &BookFilter::default()).unwrap();
+        let books = catalog::list_books(&target, &to, &BookFilter::default()).unwrap();
         assert_eq!(books[1].authors, vec!["Terry Pratchett", "Neil Gaiman"]);
         assert_eq!(books[0].copy_count, 2);
         assert_eq!(books[0].formats, vec![Format::Hardcover, Format::Ebook]);
@@ -261,6 +263,7 @@ mod tests {
     #[test]
     fn invalid_rows_are_reported_and_the_rest_imported() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let path = temp_file("invalid");
         std::fs::write(
             &path,
@@ -272,7 +275,7 @@ mod tests {
         )
         .unwrap();
 
-        let summary = import(&mut conn, LIB, std::fs::File::open(&path).unwrap()).unwrap();
+        let summary = import(&mut conn, &lib, std::fs::File::open(&path).unwrap()).unwrap();
 
         assert_eq!(summary.books_created, 1);
         let lines: Vec<usize> = summary.rejected.iter().map(|r| r.line).collect();

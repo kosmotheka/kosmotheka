@@ -90,6 +90,7 @@
 | D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | abierta |
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
 | D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
+| D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
 
 ---
 
@@ -607,7 +608,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - **`library_id` en todas las tablas** locales, con clave `(library_id, id)`, igual que en el servidor (D41): cada consulta filtra por biblioteca sin joins y cliente y servidor se parecen.
 - **Wifi: se elige por biblioteca.** El emparejamiento sigue siendo entre dispositivos, pero para cada dispositivo emparejado se elige qué bibliotecas locales se comparten con él. Al emparejar desde una biblioteca, esa queda marcada; las demás no se envían hasta marcarlas. Nada sale sin que el usuario lo diga.
 - **Mover un libro crea ids nuevos** en el destino, y la app guarda de dónde vino. Se puede mover de ida y vuelta, porque las lápidas del origen (D32) no afectan a ids nuevos. El historial anterior se queda en la biblioteca de origen.
-- **Migración con continuidad** (cambiado el 26/09/2026; antes era «sin continuidad»): al actualizar, cada dispositivo pasa sus datos a una biblioteca con **el mismo id fijo en todos los dispositivos**. Los que ya se sincronizaban tienen las mismas filas con los mismos ids, así que al volver a emparejar se funden sin duplicados. Riesgo aceptado: dos instalaciones que nunca se sincronizaron juntarían sus catálogos si se emparejan y comparten esa biblioteca; hoy solo hay una en uso.
+- ~~**Migración con continuidad** (cambiado el 26/09/2026; antes era «sin continuidad»): al actualizar, cada dispositivo pasa sus datos a una biblioteca con **el mismo id fijo en todos los dispositivos**. Los que ya se sincronizaban tienen las mismas filas con los mismos ids, así que al volver a emparejar se funden sin duplicados. Riesgo aceptado: dos instalaciones que nunca se sincronizaron juntarían sus catálogos si se emparejan y comparten esa biblioteca; hoy solo hay una en uso.~~ **Reemplazado el 03/10/2026 por D85:** toda biblioteca nace con id aleatorio.
 - **Interfaz: una biblioteca a la vez, con selector.** Catálogo, deseos y altas son de la biblioteca activa; el buscador tiene la opción «en todas» y «¿Lo tengo?» mira siempre en todas.
 - **Copias: las dos cosas.** Una copia completa del dispositivo, con todas las bibliotecas, y además exportar e importar una biblioteca suelta (copia o CSV), para compartirla o restaurarla sin tocar las demás. Una biblioteca suelta se puede restaurar si no existe ya en el dispositivo.
 - **Miembro y usuario, enlace opcional.** Un miembro (dueño de ejemplares) puede enlazarse con un usuario de esa biblioteca, o no (un niño sin cuenta). Sirve para «mis libros» y, en la Fase 4, para asociar las lecturas a la persona. En una biblioteca local no hay enlace. Los permisos sobre «lo suyo» siguen basándose en quién creó la fila (D44, D45).
@@ -1374,3 +1375,19 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - **D46:** no cambia.
 - **Plan de la Fase 7:** 7.2 se rehace con este modelo; antes van los arreglos de la red local (SEG-010, SEG-011) y la batería de acceso.
 - **Pruebas:** toda regla de quién recibe una biblioteca tiene su test del caso hostil, en Rust, en PHP o en los dos ([AGENTS.md](../AGENTS.md)). La auditoría es la segunda línea, no la primera; el tema `library-access` vuelve tras 7.2, 7.5 y 7.6, y `threat-model` se rehace al aceptar esta decisión.
+
+## D85 · Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio — `aceptada`
+
+> Aceptada por el maintainer el 03/10/2026. Reemplaza el punto «Migración con continuidad» de D46.
+
+**Contexto:** D46 dio a la primera biblioteca un id fijo igual en todas las instalaciones (`00000000-0000-7000-8000-000000000001`), para que las que ya se sincronizaban antes de existir las bibliotecas se fundieran sin duplicados. Ese id ha estado detrás de todo lo que salió el 03/10/2026: la fusión entre desconocidos en la nube (resuelta por la puerta de D84), SEG-010, y, ya con D84 construida, que el móvil nuevo de alguien no pudiera bajar su propia «Mi biblioteca», porque ese móvil nace con otra vacía con el mismo id y D84, con razón, no las mezcla. D84 es la seguridad y se queda; el id fijo era un problema de uso para la gente honrada. La opción de quitarlo se descartó al preparar D84 por no perder datos de las familias; el mismo día el maintainer dijo que los datos de ahora son de prueba y pueden perderse, y con eso desaparece el motivo.
+
+**Decisión:**
+- **Ninguna biblioteca tiene un id fijo.** La primera se crea al primer arranque con id aleatorio y su operación `library.create` firmada, como cualquier otra, así que viaja igual que las demás. La biblioteca activa por defecto es la primera que haya.
+- **Instalaciones existentes, una sola vez al actualizar:** si su biblioteca con el id fijo está vacía, se quita y se crea la primera como en una instalación nueva; si tiene datos, se duplica como nueva (D58: los datos se conservan con operaciones firmadas, el historial no) y la vieja se quita de ese dispositivo. Los dispositivos que la compartían por la red local la vuelven a compartir.
+- **Se quedan las defensas generales**, que no dependían del id fijo: nunca fusionar una biblioteca que tu registro no enlazó (D84), SEG-010 y la puerta de la nube. Protegen igual contra un id repetido a propósito.
+
+**Consecuencias:**
+- D46: su punto «Migración con continuidad» queda reemplazado; el resto sigue.
+- D84: deja de necesitar el caso especial del id fijo; sus costuras y tests siguen valiendo para cualquier id repetido.
+- Los tests que simulaban «una biblioteca compartida» usando el mismo id fijo en dos dispositivos crean la biblioteca en uno y la reciben en el otro, como en la realidad.

@@ -1681,7 +1681,6 @@ mod tests {
 
     use super::*;
     use crate::db;
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn edition(title: &str, isbn: Option<&str>, authors: &[&str]) -> ValidEdition {
         EditionInput {
@@ -1718,11 +1717,13 @@ mod tests {
     }
 
     fn intents(conn: &Connection) -> Vec<String> {
+        let lib = ops::active_library(conn).unwrap();
         ids(
             conn,
             "SELECT intent FROM operations
-              WHERE library_id = ?1 AND ?2 = ?2 AND intent <> 'device.register' ORDER BY hlc",
-            LIB,
+              WHERE library_id = ?1 AND ?2 = ?2
+                AND intent NOT IN ('device.register', 'library.create') ORDER BY hlc",
+            &lib,
             "",
         )
         .unwrap()
@@ -1742,6 +1743,7 @@ mod tests {
     #[test]
     fn creates_work_edition_and_copy() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = new_book(
             "El nombre del viento",
             Some("0306406152"),
@@ -1749,8 +1751,8 @@ mod tests {
             Format::Hardcover,
         );
 
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
-        let books = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
+        let books = list_books(&conn, &lib, &BookFilter::default()).unwrap();
 
         assert!(!created.existing_edition);
         assert_eq!(books.len(), 1);
@@ -1764,9 +1766,10 @@ mod tests {
     #[test]
     fn check_isbn_finds_books_in_any_format() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Owned", Some("9780306406157"), "Ana", Format::Ebook),
             None,
         )
@@ -1785,9 +1788,10 @@ mod tests {
     #[test]
     fn same_isbn_adds_a_copy_to_the_existing_edition() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
@@ -1795,12 +1799,12 @@ mod tests {
 
         let second = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("0-306-40615-2"), "tersoal", Format::Ebook),
             None,
         )
         .unwrap();
-        let books = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let books = list_books(&conn, &lib, &BookFilter::default()).unwrap();
 
         assert!(second.existing_edition);
         assert_eq!(books.len(), 1);
@@ -1815,10 +1819,11 @@ mod tests {
     #[test]
     fn creates_a_missing_work_with_no_copy() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
 
-        let created = create_missing(&mut conn, LIB, &missing, None).unwrap();
-        let books = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let created = create_missing(&mut conn, &lib, &missing, None).unwrap();
+        let books = list_books(&conn, &lib, &BookFilter::default()).unwrap();
 
         assert!(!created.existing_edition);
         assert_eq!(books.len(), 1);
@@ -1830,10 +1835,11 @@ mod tests {
     #[test]
     fn creating_the_same_missing_work_twice_returns_the_existing_edition() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
-        let first = create_missing(&mut conn, LIB, &missing, None).unwrap();
+        let first = create_missing(&mut conn, &lib, &missing, None).unwrap();
 
-        let second = create_missing(&mut conn, LIB, &missing, None).unwrap();
+        let second = create_missing(&mut conn, &lib, &missing, None).unwrap();
 
         assert!(second.existing_edition);
         assert_eq!(second.edition_id, first.edition_id);
@@ -1847,16 +1853,17 @@ mod tests {
     #[test]
     fn holding_filters_owned_and_missing_works() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Owned", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
         create_missing(
             &mut conn,
-            LIB,
+            &lib,
             &edition("Missing", Some("9780765350374"), &["Someone"]),
             None,
         )
@@ -1864,7 +1871,7 @@ mod tests {
 
         let owned = list_books(
             &conn,
-            LIB,
+            &lib,
             &BookFilter {
                 holding: Some(Holding::Owned),
                 ..Default::default()
@@ -1873,14 +1880,14 @@ mod tests {
         .unwrap();
         let missing = list_books(
             &conn,
-            LIB,
+            &lib,
             &BookFilter {
                 holding: Some(Holding::Missing),
                 ..Default::default()
             },
         )
         .unwrap();
-        let everything = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let everything = list_books(&conn, &lib, &BookFilter::default()).unwrap();
 
         assert_eq!(
             owned.iter().map(|b| &b.title).collect::<Vec<_>>(),
@@ -1896,9 +1903,10 @@ mod tests {
     #[test]
     fn adding_and_removing_the_last_copy_moves_between_holdings() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_missing(
             &mut conn,
-            LIB,
+            &lib,
             &edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]),
             None,
         )
@@ -1906,14 +1914,14 @@ mod tests {
 
         let copy_id = add_copy(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &copy("Tersoal", Format::Paperback),
         )
         .unwrap();
         let owned = list_books(
             &conn,
-            LIB,
+            &lib,
             &BookFilter {
                 holding: Some(Holding::Owned),
                 ..Default::default()
@@ -1922,10 +1930,10 @@ mod tests {
         .unwrap();
         assert_eq!(owned.len(), 1, "adding a copy makes it owned");
 
-        delete_copy(&mut conn, LIB, &copy_id).unwrap();
+        delete_copy(&mut conn, &lib, &copy_id).unwrap();
         let missing = list_books(
             &conn,
-            LIB,
+            &lib,
             &BookFilter {
                 holding: Some(Holding::Missing),
                 ..Default::default()
@@ -1942,12 +1950,13 @@ mod tests {
     #[test]
     fn a_reader_can_only_request_a_missing_work() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let device = ops::device_id(&conn).unwrap();
         let (admin, reader) = (ops::new_id(), ops::new_id());
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.roles",
             vec![
                 Change::create(
@@ -1967,19 +1976,19 @@ mod tests {
         tx.commit().unwrap();
 
         let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
-        let refused = create_missing(&mut conn, LIB, &missing, None);
+        let refused = create_missing(&mut conn, &lib, &missing, None);
         assert!(matches!(refused, Err(Error::NotAllowed)), "{refused:?}");
         assert!(
-            list_books(&conn, LIB, &BookFilter::default())
+            list_books(&conn, &lib, &BookFilter::default())
                 .unwrap()
                 .is_empty()
         );
 
         let (_, requested) =
-            ops::as_request(None, || create_missing(&mut conn, LIB, &missing, None)).unwrap();
+            ops::as_request(None, || create_missing(&mut conn, &lib, &missing, None)).unwrap();
         assert!(requested);
         assert!(
-            list_books(&conn, LIB, &BookFilter::default())
+            list_books(&conn, &lib, &BookFilter::default())
                 .unwrap()
                 .is_empty(),
             "kept as a request, no work created"
@@ -1989,8 +1998,9 @@ mod tests {
     #[test]
     fn a_reader_asks_to_add_a_copy_of_a_missing_work_an_editor_adds_it_directly() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let missing = edition("Elantris", Some("9780765350374"), &["Brandon Sanderson"]);
-        let edition_id = create_missing(&mut conn, LIB, &missing, None)
+        let edition_id = create_missing(&mut conn, &lib, &missing, None)
             .unwrap()
             .edition_id;
 
@@ -1999,7 +2009,7 @@ mod tests {
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.roles",
             vec![
                 Change::create(
@@ -2019,14 +2029,17 @@ mod tests {
         tx.commit().unwrap();
 
         let new_copy = copy("Hugo", Format::Paperback);
-        let refused = add_copy(&mut conn, LIB, &edition_id, &new_copy);
+        let refused = add_copy(&mut conn, &lib, &edition_id, &new_copy);
         assert!(matches!(refused, Err(Error::NotAllowed)), "{refused:?}");
 
         let (_, requested) =
-            ops::as_request(None, || add_copy(&mut conn, LIB, &edition_id, &new_copy)).unwrap();
+            ops::as_request(None, || add_copy(&mut conn, &lib, &edition_id, &new_copy)).unwrap();
         assert!(requested);
         assert!(
-            get_book(&conn, LIB, &edition_id).unwrap().copies.is_empty(),
+            get_book(&conn, &lib, &edition_id)
+                .unwrap()
+                .copies
+                .is_empty(),
             "kept as a request, no copy added"
         );
 
@@ -2035,33 +2048,34 @@ mod tests {
         // here, not how he came to have it.
         conn.execute(
             "UPDATE members SET role = 'editor' WHERE library_id = ?1 AND id = ?2",
-            rusqlite::params![LIB, &reader],
+            rusqlite::params![lib, &reader],
         )
         .unwrap();
-        add_copy(&mut conn, LIB, &edition_id, &new_copy).unwrap();
-        assert_eq!(get_book(&conn, LIB, &edition_id).unwrap().copies.len(), 1);
+        add_copy(&mut conn, &lib, &edition_id, &new_copy).unwrap();
+        assert_eq!(get_book(&conn, &lib, &edition_id).unwrap().copies.len(), 1);
     }
 
     #[test]
     fn books_without_isbn_are_never_merged() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("B", None, "Tersoal", Format::Paperback),
             None,
         )
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("B", None, "Tersoal", Format::Paperback),
             None,
         )
         .unwrap();
 
         assert_eq!(
-            list_books(&conn, LIB, &BookFilter::default())
+            list_books(&conn, &lib, &BookFilter::default())
                 .unwrap()
                 .len(),
             2
@@ -2071,29 +2085,30 @@ mod tests {
     #[test]
     fn every_write_is_logged_and_history_follows_the_edition() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Ebook),
             None,
         )
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Other", None, "Tersoal", Format::Ebook),
             None,
         )
         .unwrap();
 
-        let history = book_history(&conn, LIB, &created.edition_id).unwrap();
+        let history = book_history(&conn, &lib, &created.edition_id).unwrap();
 
         let intents: Vec<&str> = history.iter().map(|entry| entry.intent.as_str()).collect();
         assert_eq!(intents, vec!["book.add", "copy.add"]);
@@ -2103,22 +2118,23 @@ mod tests {
     #[test]
     fn get_book_returns_edition_and_copies() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
         add_copy(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &copy("Ana", Format::Ebook),
         )
         .unwrap();
 
-        let book = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let book = get_book(&conn, &lib, &created.edition_id).unwrap();
 
         assert_eq!(book.title, "A");
         assert_eq!(book.language.as_deref(), Some("es"));
@@ -2132,6 +2148,7 @@ mod tests {
     #[test]
     fn a_video_game_with_two_copies_on_different_platforms_round_trips() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let game = EditionInput {
             title: "Hollow Knight".to_owned(),
             kind: Kind::Videogame,
@@ -2152,7 +2169,7 @@ mod tests {
         .unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: game,
                 copy: switch_copy,
@@ -2171,9 +2188,9 @@ mod tests {
         }
         .validate()
         .unwrap();
-        add_copy(&mut conn, LIB, &created.edition_id, &wiiu_copy).unwrap();
+        add_copy(&mut conn, &lib, &created.edition_id, &wiiu_copy).unwrap();
 
-        let book = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let book = get_book(&conn, &lib, &created.edition_id).unwrap();
 
         assert_eq!(book.copies.len(), 2);
         assert_eq!(book.copies[0].platform.as_deref(), Some("Nintendo Switch"));
@@ -2185,6 +2202,7 @@ mod tests {
     #[test]
     fn a_series_copy_with_the_seasons_it_holds_round_trips() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let series = EditionInput {
             title: "The Wire".to_owned(),
             kind: Kind::TvSeries,
@@ -2206,7 +2224,7 @@ mod tests {
         .unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: series,
                 copy: dvd_copy,
@@ -2215,7 +2233,7 @@ mod tests {
         )
         .unwrap();
 
-        let book = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let book = get_book(&conn, &lib, &created.edition_id).unwrap();
 
         assert_eq!(book.seasons, Some(5));
         assert_eq!(book.copies[0].seasons.as_deref(), Some("1–2"));
@@ -2224,9 +2242,10 @@ mod tests {
     #[test]
     fn editing_records_only_changed_fields() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -2234,7 +2253,7 @@ mod tests {
         let mut edited = edition("A", None, &["Patrick Rothfuss"]);
         edited.published_year = Some(2011);
 
-        update_edition(&mut conn, LIB, &created.edition_id, &edited, None).unwrap();
+        update_edition(&mut conn, &lib, &created.edition_id, &edited, None).unwrap();
 
         let changes = last_changes(&conn);
         assert_eq!(changes.len(), 1);
@@ -2244,7 +2263,7 @@ mod tests {
             json!({ "published_year": 2011 })
         );
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id)
+            get_book(&conn, &lib, &created.edition_id)
                 .unwrap()
                 .published_year,
             Some(2011)
@@ -2254,21 +2273,22 @@ mod tests {
     #[test]
     fn notes_round_trip_and_can_be_cleared() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let mut book = new_book("A", None, "Tersoal", Format::Hardcover);
         book.edition.notes = Some("Falta una vela.".into());
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id).unwrap().notes,
+            get_book(&conn, &lib, &created.edition_id).unwrap().notes,
             Some("Falta una vela.".into())
         );
 
         let mut cleared = edition("A", None, &["Patrick Rothfuss"]);
         cleared.notes = None;
-        update_edition(&mut conn, LIB, &created.edition_id, &cleared, None).unwrap();
+        update_edition(&mut conn, &lib, &created.edition_id, &cleared, None).unwrap();
 
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id).unwrap().notes,
+            get_book(&conn, &lib, &created.edition_id).unwrap().notes,
             None
         );
     }
@@ -2276,9 +2296,10 @@ mod tests {
     #[test]
     fn editing_without_changes_records_nothing() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -2286,7 +2307,7 @@ mod tests {
 
         update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &edition("A", None, &["Patrick Rothfuss"]),
             None,
@@ -2299,9 +2320,10 @@ mod tests {
     #[test]
     fn editing_the_title_of_a_single_edition_renames_its_work() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Old", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -2309,7 +2331,7 @@ mod tests {
 
         update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &edition("New", None, &["Patrick Rothfuss"]),
             None,
@@ -2325,13 +2347,14 @@ mod tests {
     #[test]
     fn editing_authors_adds_reorders_and_removes() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let mut book = new_book("A", None, "Tersoal", Format::Hardcover);
         book.edition.authors = vec!["Ana".into(), "Bea".into(), "Carla".into()];
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &edition("A", None, &["Carla", "Ana", "Dora"]),
             None,
@@ -2339,7 +2362,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id).unwrap().authors,
+            get_book(&conn, &lib, &created.edition_id).unwrap().authors,
             vec!["Carla", "Ana", "Dora"]
         );
         let people: i64 = conn
@@ -2351,16 +2374,17 @@ mod tests {
     #[test]
     fn isbn_of_another_edition_is_rejected() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
         let second = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("B", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -2368,7 +2392,7 @@ mod tests {
 
         let error = update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &second.edition_id,
             &edition("B", Some("9780306406157"), &[]),
             None,
@@ -2383,28 +2407,29 @@ mod tests {
     #[test]
     fn copies_can_be_edited_and_removed() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", None, "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
-        let copy_id = get_book(&conn, LIB, &created.edition_id).unwrap().copies[0]
+        let copy_id = get_book(&conn, &lib, &created.edition_id).unwrap().copies[0]
             .id
             .clone();
 
         let mut moved = copy("Tersoal", Format::Hardcover);
         moved.location = Some("Salón, balda 2".into());
-        update_copy(&mut conn, LIB, &copy_id, &moved).unwrap();
+        update_copy(&mut conn, &lib, &copy_id, &moved).unwrap();
         assert_eq!(
             Value::Object(last_changes(&conn)[0].fields.clone()),
             json!({ "location": "Salón, balda 2" })
         );
 
-        delete_copy(&mut conn, LIB, &copy_id).unwrap();
+        delete_copy(&mut conn, &lib, &copy_id).unwrap();
         assert!(
-            get_book(&conn, LIB, &created.edition_id)
+            get_book(&conn, &lib, &created.edition_id)
                 .unwrap()
                 .copies
                 .is_empty()
@@ -2415,22 +2440,23 @@ mod tests {
     #[test]
     fn deleting_a_book_removes_everything_but_people_and_members() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
         .unwrap();
         add_copy(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &copy("Ana", Format::Ebook),
         )
         .unwrap();
 
-        delete_book(&mut conn, LIB, &created.edition_id).unwrap();
+        delete_book(&mut conn, &lib, &created.edition_id).unwrap();
 
         let count = |table: &str| -> i64 {
             conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
@@ -2450,7 +2476,7 @@ mod tests {
         // The same ISBN can be catalogued again.
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
@@ -2460,17 +2486,18 @@ mod tests {
     #[test]
     fn missing_rows_are_reported() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let unknown = new_id();
         assert!(matches!(
-            delete_book(&mut conn, LIB, &unknown),
+            delete_book(&mut conn, &lib, &unknown),
             Err(Error::MissingRow { .. })
         ));
         assert!(matches!(
-            delete_copy(&mut conn, LIB, &unknown),
+            delete_copy(&mut conn, &lib, &unknown),
             Err(Error::MissingRow { .. })
         ));
         assert!(matches!(
-            get_book(&conn, LIB, &unknown),
+            get_book(&conn, &lib, &unknown),
             Err(Error::MissingRow { .. })
         ));
     }
@@ -2478,9 +2505,10 @@ mod tests {
     #[test]
     fn edition_matching_candidate_checks_isbn_then_barcode() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
@@ -2495,25 +2523,25 @@ mod tests {
             .unwrap(),
             copy: copy("Tersoal", Format::Box),
         };
-        create_book(&mut conn, LIB, &with_barcode, None).unwrap();
+        create_book(&mut conn, &lib, &with_barcode, None).unwrap();
 
         // Same ISBN in another format ("0-306-...") still matches.
         assert!(
-            edition_matching_candidate(&conn, LIB, Some("0-306-40615-2"), None)
+            edition_matching_candidate(&conn, &lib, Some("0-306-40615-2"), None)
                 .unwrap()
                 .is_some()
         );
         assert!(
-            edition_matching_candidate(&conn, LIB, None, Some("4006381333931"))
+            edition_matching_candidate(&conn, &lib, None, Some("4006381333931"))
                 .unwrap()
                 .is_some()
         );
         assert_eq!(
-            edition_matching_candidate(&conn, LIB, Some("9780000000002"), None).unwrap(),
+            edition_matching_candidate(&conn, &lib, Some("9780000000002"), None).unwrap(),
             None
         );
         assert_eq!(
-            edition_matching_candidate(&conn, LIB, None, None).unwrap(),
+            edition_matching_candidate(&conn, &lib, None, None).unwrap(),
             None
         );
     }
@@ -2528,11 +2556,12 @@ mod tests {
     }
 
     fn search(conn: &Connection, query: &str) -> Vec<String> {
+        let lib = ops::active_library(conn).unwrap();
         let filter = BookFilter {
             query: Some(query.into()),
             ..BookFilter::default()
         };
-        list_books(conn, LIB, &filter)
+        list_books(conn, &lib, &filter)
             .unwrap()
             .into_iter()
             .map(|b| b.title)
@@ -2542,6 +2571,7 @@ mod tests {
     #[test]
     fn search_ignores_accents_and_case_and_matches_prefixes() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let mut book = new_book(
             "El señor de los anillos",
             None,
@@ -2550,10 +2580,10 @@ mod tests {
         );
         book.edition.authors = vec!["J. R. R. Tolkien".into()];
         book.edition.publisher = Some("Minotauro".into());
-        create_book(&mut conn, LIB, &book, None).unwrap();
+        create_book(&mut conn, &lib, &book, None).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Dune", None, "Tersoal", Format::Paperback),
             None,
         )
@@ -2576,9 +2606,10 @@ mod tests {
     #[test]
     fn search_finds_isbn_in_either_format() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", Some("9780306406157"), "Tersoal", Format::Hardcover),
             None,
         )
@@ -2591,9 +2622,10 @@ mod tests {
     #[test]
     fn index_follows_edits_renames_and_deletions() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Old title", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -2601,7 +2633,7 @@ mod tests {
 
         update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &edition("New title", None, &["Ursula"]),
             None,
@@ -2619,7 +2651,7 @@ mod tests {
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "person.rename",
             vec![Change::update(
                 Entity::Person,
@@ -2631,7 +2663,7 @@ mod tests {
         tx.commit().unwrap();
         assert_eq!(search(&conn, "guin"), vec!["New title"]);
 
-        delete_book(&mut conn, LIB, &created.edition_id).unwrap();
+        delete_book(&mut conn, &lib, &created.edition_id).unwrap();
         assert!(search(&conn, "new").is_empty());
         let rows: i64 = conn
             .query_row("SELECT count(*) FROM search_index", [], |r| r.get(0))
@@ -2642,19 +2674,20 @@ mod tests {
     #[test]
     fn copy_filters_need_one_copy_matching_all_of_them() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let mut a = new_book("A", None, "Ana", Format::Hardcover);
         a.copy.location = Some("Salón".into());
-        create_book(&mut conn, LIB, &a, None).unwrap();
+        create_book(&mut conn, &lib, &a, None).unwrap();
         let b = create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("B", None, "Ana", Format::Ebook),
             None,
         )
         .unwrap();
         add_copy(
             &mut conn,
-            LIB,
+            &lib,
             &b.edition_id,
             &copy("Bea", Format::Hardcover),
         )
@@ -2662,7 +2695,7 @@ mod tests {
         let ana = "ana".to_owned();
 
         let titles = |filter: BookFilter| -> Vec<String> {
-            list_books(&conn, LIB, &filter)
+            list_books(&conn, &lib, &filter)
                 .unwrap()
                 .into_iter()
                 .map(|b| b.title)
@@ -2706,24 +2739,25 @@ mod tests {
         use crate::people::PersonPick;
 
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Dune", None, "Ana", Format::Hardcover),
             None,
         )
         .unwrap();
-        let edition_id = list_books(&conn, LIB, &BookFilter::default())
+        let edition_id = list_books(&conn, &lib, &BookFilter::default())
             .unwrap()
             .into_iter()
             .find(|b| b.title == "Dune")
             .unwrap()
             .edition_id;
-        let work_id = get_book(&conn, LIB, &edition_id).unwrap().work_id;
+        let work_id = get_book(&conn, &lib, &edition_id).unwrap().work_id;
 
         marks::claim_person(
             &mut conn,
-            LIB,
+            &lib,
             &PersonPick {
                 id: None,
                 name: "Tersoal".into(),
@@ -2732,7 +2766,7 @@ mod tests {
         .unwrap();
         marks::set_mark(
             &mut conn,
-            LIB,
+            &lib,
             &work_id,
             &Mark {
                 wished: true,
@@ -2745,7 +2779,7 @@ mod tests {
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -2756,7 +2790,7 @@ mod tests {
         .unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "mark.set",
             vec![Change::create(
                 Entity::Mark,
@@ -2767,13 +2801,13 @@ mod tests {
         .unwrap();
         tx.commit().unwrap();
 
-        let summary = list_books(&conn, LIB, &BookFilter::default())
+        let summary = list_books(&conn, &lib, &BookFilter::default())
             .unwrap()
             .into_iter()
             .find(|b| b.title == "Dune")
             .unwrap();
         assert_eq!(summary.wished_by, vec!["me", "Bea"]);
-        let detail = get_book(&conn, LIB, &edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &edition_id).unwrap();
         assert_eq!(detail.wished_by, vec!["me", "Bea"]);
     }
 
@@ -2783,34 +2817,36 @@ mod tests {
         use crate::people::PersonPick;
 
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Dune", None, "Ana", Format::Hardcover),
             None,
         )
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("Wingspan", None, "Ana", Format::Hardcover),
             None,
         )
         .unwrap();
         fn work(conn: &Connection, title: &str) -> String {
-            let edition = list_books(conn, LIB, &BookFilter::default())
+            let lib = ops::active_library(conn).unwrap();
+            let edition = list_books(conn, &lib, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .find(|b| b.title == title)
                 .unwrap()
                 .edition_id;
-            get_book(conn, LIB, &edition).unwrap().work_id
+            get_book(conn, &lib, &edition).unwrap().work_id
         }
         let dune = work(&conn, "Dune");
 
         marks::claim_person(
             &mut conn,
-            LIB,
+            &lib,
             &PersonPick {
                 id: None,
                 name: "Tersoal".into(),
@@ -2819,7 +2855,7 @@ mod tests {
         .unwrap();
         marks::set_mark(
             &mut conn,
-            LIB,
+            &lib,
             &dune,
             &Mark {
                 wished: true,
@@ -2829,7 +2865,8 @@ mod tests {
         .unwrap();
 
         fn titles(conn: &Connection, filter: BookFilter) -> Vec<String> {
-            list_books(conn, LIB, &filter)
+            let lib = ops::active_library(conn).unwrap();
+            list_books(conn, &lib, &filter)
                 .unwrap()
                 .into_iter()
                 .map(|b| b.title)
@@ -2857,7 +2894,7 @@ mod tests {
             "the only wish is mine"
         );
         assert!(
-            list_books(&conn, LIB, &BookFilter::default())
+            list_books(&conn, &lib, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .find(|b| b.title == "Dune")
@@ -2871,7 +2908,7 @@ mod tests {
         let bea = new_id();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "person.claim",
             vec![kosmotheka_domain::Change::create(
                 kosmotheka_domain::Entity::Member,
@@ -2882,7 +2919,7 @@ mod tests {
         .unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "mark.set",
             vec![kosmotheka_domain::Change::create(
                 kosmotheka_domain::Entity::Mark,
@@ -2919,16 +2956,17 @@ mod tests {
     #[test]
     fn publishers_are_a_shared_catalogue() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         for (title, publisher) in [("A", "Minotauro"), ("B", "minotauro")] {
             let mut book = new_book(title, None, "Tersoal", Format::Paperback);
             book.edition.publisher = Some(publisher.into());
-            create_book(&mut conn, LIB, &book, None).unwrap();
+            create_book(&mut conn, &lib, &book, None).unwrap();
         }
 
-        let options = catalog_options(&conn, LIB).unwrap();
+        let options = catalog_options(&conn, &lib).unwrap();
 
         assert_eq!(options.publishers, vec!["Minotauro"]);
-        let books = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let books = list_books(&conn, &lib, &BookFilter::default()).unwrap();
         assert!(
             books
                 .iter()
@@ -2958,13 +2996,14 @@ mod tests {
     #[test]
     fn a_boardgame_with_designer_barcode_and_details_round_trips() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
-        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &created.edition_id).unwrap();
 
         assert_eq!(detail.kind, Kind::Boardgame);
         assert_eq!(detail.barcode.as_deref(), Some("4006381333931"));
@@ -2984,22 +3023,23 @@ mod tests {
     #[test]
     fn the_same_barcode_adds_a_copy_to_the_existing_edition() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         let second = ValidBook {
             edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
             copy: copy("Laura", Format::Box),
         };
-        let result = create_book(&mut conn, LIB, &second, None).unwrap();
+        let result = create_book(&mut conn, &lib, &second, None).unwrap();
 
         assert!(result.existing_edition);
         assert_eq!(result.edition_id, created.edition_id);
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id)
+            get_book(&conn, &lib, &created.edition_id)
                 .unwrap()
                 .copies
                 .len(),
@@ -3010,11 +3050,12 @@ mod tests {
     #[test]
     fn editing_players_updates_only_that_field() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: boardgame("Wingspan", None, "Elizabeth Hargrave"),
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         let mut edited = boardgame("Wingspan", None, "Elizabeth Hargrave");
         edited.details = kosmotheka_domain::KindDetails::Boardgame {
@@ -3024,7 +3065,7 @@ mod tests {
             min_age: Some(10),
         };
 
-        update_edition(&mut conn, LIB, &created.edition_id, &edited, None).unwrap();
+        update_edition(&mut conn, &lib, &created.edition_id, &edited, None).unwrap();
 
         let changes = last_changes(&conn);
         assert_eq!(changes.len(), 1);
@@ -3034,7 +3075,7 @@ mod tests {
             json!({ "players_max": 7 })
         );
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id)
+            get_book(&conn, &lib, &created.edition_id)
                 .unwrap()
                 .players_max,
             Some(7)
@@ -3044,11 +3085,12 @@ mod tests {
     #[test]
     fn changing_the_kind_moves_the_details_to_the_new_kinds_table() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: boardgame("Dune", None, "Someone"),
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         let film = EditionInput {
             title: "Dune".to_owned(),
@@ -3058,7 +3100,7 @@ mod tests {
         }
         .validate()
         .unwrap();
-        update_edition(&mut conn, LIB, &created.edition_id, &film, None).unwrap();
+        update_edition(&mut conn, &lib, &created.edition_id, &film, None).unwrap();
 
         let count = |table: &str| -> i64 {
             conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
@@ -3066,7 +3108,7 @@ mod tests {
         };
         assert_eq!(count("boardgame_details"), 0);
         assert_eq!(count("film_details"), 1);
-        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &created.edition_id).unwrap();
         assert_eq!(detail.kind, Kind::Film);
         assert_eq!(detail.duration_minutes, Some(155));
     }
@@ -3074,9 +3116,10 @@ mod tests {
     #[test]
     fn book_filter_by_kind_returns_only_that_kind() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: boardgame("Wingspan", None, "Elizabeth Hargrave"),
                 copy: copy("Tersoal", Format::Box),
@@ -3086,7 +3129,7 @@ mod tests {
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &new_book("A", None, "Tersoal", Format::Hardcover),
             None,
         )
@@ -3094,7 +3137,7 @@ mod tests {
 
         let titles: Vec<String> = list_books(
             &conn,
-            LIB,
+            &lib,
             &BookFilter {
                 kind: Some(Kind::Boardgame),
                 ..Default::default()
@@ -3110,15 +3153,16 @@ mod tests {
     #[test]
     fn moving_a_boardgame_keeps_kind_designer_barcode_and_details() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: boardgame("Wingspan", Some("4006381333931"), "Elizabeth Hargrave"),
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         let other_library = crate::libraries::create_library(&mut conn, "Other").unwrap();
 
-        let new_edition = move_book(&mut conn, LIB, &created.edition_id, &other_library).unwrap();
+        let new_edition = move_book(&mut conn, &lib, &created.edition_id, &other_library).unwrap();
 
         let detail = get_book(&conn, &other_library, &new_edition).unwrap();
         assert_eq!(detail.kind, Kind::Boardgame);
@@ -3148,17 +3192,18 @@ mod tests {
     #[test]
     fn genres_and_tags_are_saved_and_read_back() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: with_genres_and_tags("A", &["fantasy", "adventure"], &["favorite", "gift"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
-        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &created.edition_id).unwrap();
         assert_eq!(detail.genres, vec!["adventure", "fantasy"]);
         assert_eq!(detail.tags, vec!["favorite", "gift"]);
 
-        let summary = list_books(&conn, LIB, &BookFilter::default()).unwrap();
+        let summary = list_books(&conn, &lib, &BookFilter::default()).unwrap();
         assert_eq!(summary[0].tags, vec!["favorite", "gift"]);
     }
 
@@ -3178,6 +3223,7 @@ mod tests {
     #[test]
     fn a_genre_of_another_kind_is_dropped_when_saved() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let edition = EditionInput {
             title: "Wingspan".to_owned(),
             kind: Kind::Boardgame,
@@ -3191,31 +3237,32 @@ mod tests {
             edition,
             copy: copy("Tersoal", Format::Box),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
-        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &created.edition_id).unwrap();
         assert_eq!(detail.genres, vec!["strategy"]);
     }
 
     #[test]
     fn updating_genres_and_tags_removes_and_adds() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: with_genres_and_tags("A", &["fantasy"], &["favorite"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
 
         update_edition(
             &mut conn,
-            LIB,
+            &lib,
             &created.edition_id,
             &with_genres_and_tags("A", &["horror"], &["gift"]),
             None,
         )
         .unwrap();
 
-        let detail = get_book(&conn, LIB, &created.edition_id).unwrap();
+        let detail = get_book(&conn, &lib, &created.edition_id).unwrap();
         assert_eq!(detail.genres, vec!["horror"]);
         assert_eq!(detail.tags, vec!["gift"]);
     }
@@ -3223,21 +3270,22 @@ mod tests {
     #[test]
     fn the_same_tag_name_reuses_the_tag() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         for title in ["A", "B"] {
             let book = ValidBook {
                 edition: with_genres_and_tags(title, &[], &["Favorite"]),
                 copy: copy("Tersoal", Format::Hardcover),
             };
-            create_book(&mut conn, LIB, &book, None).unwrap();
+            create_book(&mut conn, &lib, &book, None).unwrap();
         }
         // A second spelling reuses the same row case-insensitively.
         let book = ValidBook {
             edition: with_genres_and_tags("C", &[], &["favorite"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        create_book(&mut conn, LIB, &book, None).unwrap();
+        create_book(&mut conn, &lib, &book, None).unwrap();
 
-        let tags = list_tags(&conn, LIB).unwrap();
+        let tags = list_tags(&conn, &lib).unwrap();
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].name, "Favorite");
         assert_eq!(tags[0].works, 3);
@@ -3246,9 +3294,10 @@ mod tests {
     #[test]
     fn filters_by_genre_and_by_tag() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: with_genres_and_tags("A", &["fantasy"], &["favorite"]),
                 copy: copy("Tersoal", Format::Hardcover),
@@ -3258,7 +3307,7 @@ mod tests {
         .unwrap();
         create_book(
             &mut conn,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: with_genres_and_tags("B", &["horror"], &["gift"]),
                 copy: copy("Tersoal", Format::Hardcover),
@@ -3268,7 +3317,7 @@ mod tests {
         .unwrap();
 
         let titles = |filter: BookFilter| -> Vec<String> {
-            list_books(&conn, LIB, &filter)
+            list_books(&conn, &lib, &filter)
                 .unwrap()
                 .into_iter()
                 .map(|b| b.title)
@@ -3281,7 +3330,7 @@ mod tests {
             }),
             vec!["A"]
         );
-        let gift_tag = list_tags(&conn, LIB)
+        let gift_tag = list_tags(&conn, &lib)
             .unwrap()
             .into_iter()
             .find(|t| t.name == "gift")
@@ -3299,27 +3348,28 @@ mod tests {
     #[test]
     fn renaming_and_deleting_a_tag() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let book = ValidBook {
             edition: with_genres_and_tags("A", &[], &["favorite"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        let created = create_book(&mut conn, LIB, &book, None).unwrap();
-        let tag_id = list_tags(&conn, LIB).unwrap()[0].id.clone();
+        let created = create_book(&mut conn, &lib, &book, None).unwrap();
+        let tag_id = list_tags(&conn, &lib).unwrap()[0].id.clone();
 
-        rename_tag(&mut conn, LIB, &tag_id, "  Top pick  ").unwrap();
-        assert_eq!(list_tags(&conn, LIB).unwrap()[0].name, "Top pick");
+        rename_tag(&mut conn, &lib, &tag_id, "  Top pick  ").unwrap();
+        assert_eq!(list_tags(&conn, &lib).unwrap()[0].name, "Top pick");
 
-        delete_tag(&mut conn, LIB, &tag_id).unwrap();
-        assert!(list_tags(&conn, LIB).unwrap().is_empty());
+        delete_tag(&mut conn, &lib, &tag_id).unwrap();
+        assert!(list_tags(&conn, &lib).unwrap().is_empty());
         assert!(
-            get_book(&conn, LIB, &created.edition_id)
+            get_book(&conn, &lib, &created.edition_id)
                 .unwrap()
                 .tags
                 .is_empty()
         );
         // The work itself stays.
         assert_eq!(
-            get_book(&conn, LIB, &created.edition_id).unwrap().title,
+            get_book(&conn, &lib, &created.edition_id).unwrap().title,
             "A"
         );
     }
@@ -3327,6 +3377,7 @@ mod tests {
     #[test]
     fn renaming_a_tag_to_an_existing_name_merges_them() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let a = ValidBook {
             edition: with_genres_and_tags("A", &[], &["favorite", "gift"]),
             copy: copy("Tersoal", Format::Hardcover),
@@ -3335,22 +3386,22 @@ mod tests {
             edition: with_genres_and_tags("B", &[], &["favorite"]),
             copy: copy("Tersoal", Format::Hardcover),
         };
-        let created_a = create_book(&mut conn, LIB, &a, None).unwrap();
-        create_book(&mut conn, LIB, &b, None).unwrap();
-        let tags = list_tags(&conn, LIB).unwrap();
+        let created_a = create_book(&mut conn, &lib, &a, None).unwrap();
+        create_book(&mut conn, &lib, &b, None).unwrap();
+        let tags = list_tags(&conn, &lib).unwrap();
         let favorite = tags.iter().find(|t| t.name == "favorite").unwrap();
         let gift = tags.iter().find(|t| t.name == "gift").unwrap();
 
         // Case-insensitive match, same as a plain rename.
-        rename_tag(&mut conn, LIB, &favorite.id, "GIFT").unwrap();
+        rename_tag(&mut conn, &lib, &favorite.id, "GIFT").unwrap();
 
-        let remaining = list_tags(&conn, LIB).unwrap();
+        let remaining = list_tags(&conn, &lib).unwrap();
         assert_eq!(remaining.len(), 1);
         assert_eq!(remaining[0].id, gift.id);
         assert_eq!(remaining[0].name, "gift");
         // A had both tags: merging must not duplicate its link to "gift".
         assert_eq!(remaining[0].works, 2);
-        let book_a = get_book(&conn, LIB, &created_a.edition_id).unwrap();
+        let book_a = get_book(&conn, &lib, &created_a.edition_id).unwrap();
         assert_eq!(book_a.tags, vec!["gift"]);
     }
 }

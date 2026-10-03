@@ -9,7 +9,6 @@ use serde_json::{Map, Value, json};
 
 use super::*;
 use crate::catalog;
-use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
 // --- The fake cloud --------------------------------------------------------
 
@@ -226,6 +225,21 @@ fn add(device: &Database, library: &str, title: &str) {
     catalog::create_book(&mut device.lock().unwrap(), library, &edition(title), None).unwrap();
 }
 
+/// The library a fresh device was born with (D85): random id, nothing in it yet.
+fn first_library(device: &Database) -> String {
+    ops::active_library(&device.lock().unwrap()).unwrap()
+}
+
+/// Creates a library with a known id on this device. Two devices that never synced
+/// having the same id stands for a copied or hostile one: libraries are otherwise
+/// created with a random id on one device and travel to the others.
+fn create_with_id(device: &Database, id: &str) {
+    let mut conn = device.lock().unwrap();
+    let tx = conn.transaction().unwrap();
+    libraries::create_with_id(&tx, id, "").unwrap();
+    tx.commit().unwrap();
+}
+
 /// A device with a new library of its own (random id) holding one book.
 fn device_with_family() -> (Database, String) {
     let device = Database::in_memory();
@@ -380,13 +394,16 @@ async fn an_unsigned_history_is_not_uploaded() {
     assert_eq!(link(&ana, &library), (None, None));
 }
 
-/// The laptop is Tersoal's (administrator), the phone Hugo's (reader), in the default library.
-fn laptop_admin_phone_reader() -> (Database, Database) {
+/// The laptop is Tersoal's (administrator), the phone Hugo's (reader), in the
+/// laptop's first library, which the phone receives over the LAN.
+fn laptop_admin_phone_reader() -> (Database, Database, String) {
     let laptop = Database::in_memory();
     let phone = Database::in_memory();
-    add(&laptop, LIB, "Dune");
-    add(&phone, LIB, "Tehanu");
-    lan_sync(&laptop, &phone, LIB);
+    let lib = first_library(&laptop);
+    add(&laptop, &lib, "Dune");
+    lan_sync(&laptop, &phone, &lib);
+    add(&phone, &lib, "Tehanu");
+    lan_sync(&laptop, &phone, &lib);
     let laptop_id = ops::device_id(&laptop.lock().unwrap()).unwrap();
     let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
     let (admin, reader) = (ops::new_id(), ops::new_id());
@@ -395,7 +412,7 @@ fn laptop_admin_phone_reader() -> (Database, Database) {
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.roles",
             vec![
                 Change::create(
@@ -415,24 +432,24 @@ fn laptop_admin_phone_reader() -> (Database, Database) {
         .unwrap();
         tx.commit().unwrap();
     }
-    lan_sync(&laptop, &phone, LIB);
-    (laptop, phone)
+    lan_sync(&laptop, &phone, &lib);
+    (laptop, phone, lib)
 }
 
 #[tokio::test]
 async fn a_reader_cannot_upload_but_the_administrator_can() {
     let cloud = FakeCloud::default();
-    let (laptop, phone) = laptop_admin_phone_reader();
-    let before = log_ids(&phone, LIB);
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let before = log_ids(&phone, &lib);
 
-    let error = unwrap_err(upload(&phone, &cloud.api("hugo"), LIB).await);
+    let error = unwrap_err(upload(&phone, &cloud.api("hugo"), &lib).await);
 
     assert!(matches!(error, Error::CannotShare), "{error:?}");
     assert_eq!(cloud.created(), 0);
-    assert_eq!(log_ids(&phone, LIB), before);
-    assert_eq!(link(&phone, LIB), (None, None));
+    assert_eq!(log_ids(&phone, &lib), before);
+    assert_eq!(link(&phone, &lib), (None, None));
 
-    upload(&laptop, &cloud.api("tersoal"), LIB).await.unwrap();
+    upload(&laptop, &cloud.api("tersoal"), &lib).await.unwrap();
     assert_eq!(cloud.created(), 1);
 }
 
@@ -464,15 +481,21 @@ async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
 
 #[tokio::test]
 async fn a_library_with_the_same_local_id_that_was_never_linked_is_not_merged() {
-    // Two installs share the fixed default id (D46). One uploads it; the other, in
-    // the same account, has its own library under that id and never linked it.
+    // Two installs have a library under the same id (made on purpose: it stands for
+    // a copied or hostile id, since a random one never repeats). One uploads it; the
+    // other, in the same account, never linked its own.
+    let repeated = ops::new_id();
     let cloud = FakeCloud::default();
     let tanakas = Database::in_memory();
-    add(&tanakas, LIB, "Dune");
-    upload(&tanakas, &cloud.api("ana"), LIB).await.unwrap();
+    create_with_id(&tanakas, &repeated);
+    add(&tanakas, &repeated, "Dune");
+    upload(&tanakas, &cloud.api("ana"), &repeated)
+        .await
+        .unwrap();
     let jhonny = Database::in_memory();
-    add(&jhonny, LIB, "The Hobbit");
-    let (state_before, log_before) = (state(&jhonny, LIB), log_ids(&jhonny, LIB));
+    create_with_id(&jhonny, &repeated);
+    add(&jhonny, &repeated, "The Hobbit");
+    let (state_before, log_before) = (state(&jhonny, &repeated), log_ids(&jhonny, &repeated));
     let (_, pushes_before) = cloud.calls();
 
     let reports = sync_all(&jhonny, &cloud.api("ana")).await.unwrap();
@@ -480,10 +503,37 @@ async fn a_library_with_the_same_local_id_that_was_never_linked_is_not_merged() 
     assert_eq!(reports.len(), 1);
     assert_eq!(reports[0].outcome, Outcome::LibraryConflict);
     assert_eq!((reports[0].received, reports[0].sent), (0, 0));
-    assert_eq!(state(&jhonny, LIB), state_before);
-    assert_eq!(log_ids(&jhonny, LIB), log_before);
-    assert_eq!(link(&jhonny, LIB), (None, None));
+    assert_eq!(state(&jhonny, &repeated), state_before);
+    assert_eq!(log_ids(&jhonny, &repeated), log_before);
+    assert_eq!(link(&jhonny, &repeated), (None, None));
     assert_eq!(cloud.calls().1, pushes_before);
+}
+
+#[tokio::test]
+async fn a_new_device_of_the_account_downloads_its_first_library() {
+    // D85: Kenji's laptop uploads the library it was born with. His new phone was
+    // born with another one, of another id, so nothing clashes: it gets his.
+    let cloud = FakeCloud::default();
+    let laptop = Database::in_memory();
+    let library = first_library(&laptop);
+    add(&laptop, &library, "Dune");
+    upload(&laptop, &cloud.api("kenji"), &library)
+        .await
+        .unwrap();
+    let phone = Database::in_memory();
+    assert_ne!(first_library(&phone), library);
+
+    let reports = sync_all(&phone, &cloud.api("kenji")).await.unwrap();
+
+    assert_eq!(reports.len(), 1);
+    assert_eq!(reports[0].outcome, Outcome::Downloaded);
+    assert!(
+        reports
+            .iter()
+            .all(|report| report.outcome != Outcome::LibraryConflict)
+    );
+    assert_converged(&[&laptop, &phone], &library);
+    assert_eq!(link(&phone, &library), link(&laptop, &library));
 }
 
 #[tokio::test]
@@ -514,7 +564,7 @@ async fn a_link_signed_by_a_reader_of_the_family_is_not_adopted() {
     // library of his own; his device is registered in the library, but a link is
     // for administrators (D73), so the laptop keeps it as a request, unlinked.
     let cloud = FakeCloud::default();
-    let (laptop, phone) = laptop_admin_phone_reader();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
     let api = cloud.api("ana");
     let hugos = api.create_library().await.unwrap();
     cloud
@@ -524,17 +574,17 @@ async fn a_link_signed_by_a_reader_of_the_family_is_not_adopted() {
         .libraries
         .get_mut(&hugos)
         .unwrap()
-        .local = Some(LIB.into());
+        .local = Some(lib.clone());
     ops::as_request(None, || {
         let mut conn = phone.lock().unwrap();
         let tx = conn.transaction()?;
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "library.cloud",
             vec![Change::update(
                 Entity::Library,
-                LIB,
+                &lib,
                 json!({ "cloud_library_id": hugos, "cloud_server": api.server() }),
             )],
         )?;
@@ -544,18 +594,18 @@ async fn a_link_signed_by_a_reader_of_the_family_is_not_adopted() {
     .unwrap();
     let everything = sync::operations_since(
         &phone.lock().unwrap(),
-        &LibraryVectors::from([(LIB.to_owned(), VersionVector::new())]),
+        &LibraryVectors::from([(lib.clone(), VersionVector::new())]),
     )
     .unwrap();
     cloud.inject(&hugos, everything);
-    let state_before = state(&laptop, LIB);
+    let state_before = state(&laptop, &lib);
 
     let reports = sync_all(&laptop, &api).await.unwrap();
 
     assert_eq!(reports.len(), 1);
     assert_eq!(reports[0].outcome, Outcome::LibraryConflict);
-    assert_eq!(link(&laptop, LIB), (None, None));
-    assert_eq!(state(&laptop, LIB), state_before);
+    assert_eq!(link(&laptop, &lib), (None, None));
+    assert_eq!(state(&laptop, &lib), state_before);
 }
 
 #[tokio::test]

@@ -34,8 +34,8 @@
 
 ### Desconocidos (D84)
 
-- [ ] **El mismo id, sin mezclar.** Dos carpetas nuevas con cuentas distintas (Kenji y otra): cada una añade un libro en «Mi biblioteca» y la sube. *Esperado:* dos filas en `cloud_library` con el mismo `local_library_id`; cada dispositivo ve solo sus libros.
-- [ ] **Misma cuenta, otra biblioteca con el mismo id.** Con la cuenta de Kenji, abre otra carpeta nueva, añade un libro en su «Mi biblioteca» (sin subirla) y sincroniza. *Esperado:* el aviso «… no se ha bajado de la nube: este dispositivo ya tiene otra biblioteca distinta…»; su libro sigue y no aparece ninguno de Kenji.
+- [ ] **El móvil nuevo de la misma cuenta (D85).** Con la cuenta de Kenji, A sube su primera biblioteca. Abre una carpeta nueva (su primera biblioteca tiene otro id, aleatorio), inicia sesión con Kenji y sincroniza. *Esperado:* baja la biblioteca de Kenji con sus libros, sin aviso de conflicto, y la suya vacía sigue ahí.
+- [ ] **Un id repetido, sin mezclar.** Desde la app ya no se puede provocar (cada biblioteca nace con id aleatorio, D85): lo cubren los tests (`a_library_with_the_same_local_id_that_was_never_linked_is_not_merged`) y las fixtures del servidor, que usan a propósito un id que dos desconocidos comparten.
 - [ ] **Lo que no se ve en pantalla** (Jhonny con los ids de otros, firmas falsas, un id de dispositivo ajeno): lo prueban los tests hostiles y se ve en la base tras `make fixtures` (`docs/development/fixtures.md`).
 
 ### Avisos

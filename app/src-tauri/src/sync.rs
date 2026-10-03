@@ -148,7 +148,7 @@ pub fn ensure_baseline(conn: &mut Connection) -> Result<()> {
                 changes.push(Change::create(entity, id, Value::Object(row)));
             }
         }
-        // Every device has the default library row; alone it is not worth a baseline.
+        // A library row alone is not worth a baseline.
         if changes
             .iter()
             .any(|change| change.entity != Entity::Library)
@@ -545,25 +545,59 @@ mod tests {
     use super::*;
     use crate::catalog::{self, BookFilter};
     use crate::db;
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
     use crate::series;
 
-    /// A simulated device: its own database, as a phone or a laptop would have.
-    struct Device(Connection);
+    /// A simulated device: its own database, as a phone or a laptop would have, and
+    /// the library it works in (`.1`). A library is born on one device and reaches
+    /// the others by syncing (D85): `new` is the device it is born on, `sharing`
+    /// and `empty_for` are devices without one of their own.
+    struct Device(Connection, String);
 
     impl Device {
+        /// A device on its first start: it has a library of its own.
         fn new() -> Self {
-            Device(db::open_in_memory().unwrap())
+            let conn = db::open_in_memory().unwrap();
+            let library = ops::active_library(&conn).unwrap();
+            Device(conn, library)
+        }
+
+        /// A device with no library at all and nothing in its log.
+        fn blank() -> Self {
+            let mut device = Device::new();
+            let tx = device.0.transaction().unwrap();
+            ops::delete_library(&tx, &device.1).unwrap();
+            tx.execute("DELETE FROM operations", []).unwrap();
+            ops::forget_active_library(&tx).unwrap();
+            tx.commit().unwrap();
+            device.1.clear();
+            device
+        }
+
+        /// A blank device that will work in the library `origin` works in, once it
+        /// arrives.
+        fn empty_for(origin: &Device) -> Self {
+            let mut device = Device::blank();
+            device.1 = origin.1.clone();
+            device
+        }
+
+        /// `empty_for`, with the library already received: `origin` as it is now.
+        fn sharing(origin: &Device) -> Self {
+            let mut device = Device::empty_for(origin);
+            let mine = version_vectors(&device.0, std::slice::from_ref(&origin.1)).unwrap();
+            let missing = operations_since(&origin.0, &mine).unwrap();
+            merge(&mut device.0, missing).unwrap();
+            device
         }
 
         fn add(&mut self, title: &str, isbn: Option<&str>, owner: &str) -> String {
-            catalog::create_book(&mut self.0, LIB, &book(title, isbn, owner), None)
+            catalog::create_book(&mut self.0, &self.1, &book(title, isbn, owner), None)
                 .unwrap()
                 .edition_id
         }
 
         fn titles(&self) -> Vec<String> {
-            catalog::list_books(&self.0, LIB, &BookFilter::default())
+            catalog::list_books(&self.0, &self.1, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .map(|b| b.title)
@@ -665,9 +699,9 @@ mod tests {
             .unwrap()
     }
 
-    /// Vectors of a device that has nothing of the default library yet.
-    fn everything() -> LibraryVectors {
-        LibraryVectors::from([(LIB.to_owned(), VersionVector::new())])
+    /// Vectors of a device that has nothing of `library` yet.
+    fn everything(library: &str) -> LibraryVectors {
+        LibraryVectors::from([(library.to_owned(), VersionVector::new())])
     }
 
     fn assert_converged(devices: &[&Device]) {
@@ -713,7 +747,7 @@ mod tests {
             .0
             .prepare("SELECT id, public_key FROM devices WHERE library_id = ?1 ORDER BY id")
             .unwrap()
-            .query_map([LIB], |row| Ok((row.get(0)?, row.get(1)?)))
+            .query_map([&device.1], |row| Ok((row.get(0)?, row.get(1)?)))
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap()
@@ -722,8 +756,8 @@ mod tests {
     #[test]
     fn signed_operations_are_checked_even_through_a_third_device() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
-        let mut tablet = Device::new();
+        let mut phone = Device::sharing(&laptop);
+        let mut tablet = Device::empty_for(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
 
         phone.pull_from(&laptop);
@@ -731,8 +765,8 @@ mod tests {
         // the key that came inside the library.
         let report = tablet.pull_from(&phone);
 
-        // The laptop's key registration and its book.
-        assert_eq!((report.received, report.rejected), (2, 0));
+        // The laptop's key registration, the library it created and its book.
+        assert_eq!((report.received, report.rejected), (3, 0));
         assert_converged(&[&laptop, &phone, &tablet]);
         let laptop_key = ops::signing_key(&laptop.0).unwrap().public_key();
         assert_eq!(
@@ -749,8 +783,8 @@ mod tests {
     #[test]
     fn an_operation_changed_on_the_way_is_refused() {
         let mut laptop = Device::new();
+        let mut phone = Device::empty_for(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
-        let mut phone = Device::new();
         let mut operations = everything_from(&laptop);
         let book = operations
             .iter_mut()
@@ -761,16 +795,16 @@ mod tests {
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        // The laptop's registration arrives; its book, changed, does not.
-        assert_eq!((report.received, report.rejected), (1, 1));
+        // The laptop's registration and its library arrive; its book, changed, does not.
+        assert_eq!((report.received, report.rejected), (2, 1));
         assert!(phone.titles().is_empty());
     }
 
     #[test]
     fn nobody_can_sign_in_the_name_of_another_device() {
         let mut laptop = Device::new();
+        let mut phone = Device::sharing(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
-        let mut phone = Device::new();
         phone.pull_from(&laptop);
         // An impostor makes an operation that claims to be the laptop's.
         let impostor = kosmotheka_domain::DeviceKey::from_seed([9; 32]);
@@ -799,8 +833,9 @@ mod tests {
     #[test]
     fn a_device_key_cannot_be_replaced() {
         let mut laptop = Device::new();
+        let lib = laptop.1.clone();
         laptop.add("A Wizard of Earthsea", None, "Ana");
-        let mut phone = Device::new();
+        let mut phone = Device::sharing(&laptop);
         phone.pull_from(&laptop);
         let laptop_id = device_id_of(&laptop);
         // The phone, legitimately signing its own operation, tries to swap the laptop's key.
@@ -811,11 +846,11 @@ mod tests {
         );
         let result = {
             let tx = phone.0.transaction().unwrap();
-            let op = ops::record(&tx, LIB, "device.swap", vec![swap]).unwrap();
+            let op = ops::record(&tx, &lib, "device.swap", vec![swap]).unwrap();
             tx.rollback().unwrap();
             op
         };
-        let mut other = Device::new();
+        let mut other = Device::sharing(&laptop);
         other.pull_from(&laptop);
 
         let schema_version = ops::schema_version(&other.0).unwrap();
@@ -837,8 +872,8 @@ mod tests {
     fn an_unsigned_operation_is_refused() {
         // D56: every operation is signed; nobody can tell who wrote one that is not.
         let mut laptop = Device::new();
+        let mut phone = Device::empty_for(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
-        let mut phone = Device::new();
         let mut operations = everything_from(&laptop);
         for op in &mut operations {
             if op.operation.intent != "device.register" {
@@ -848,14 +883,16 @@ mod tests {
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        assert_eq!((report.received, report.rejected), (1, 1));
+        // The registration is accepted (it is how a key becomes known); the library and
+        // the book, unsigned, are not.
+        assert_eq!((report.received, report.rejected), (1, 2));
         assert!(phone.titles().is_empty());
     }
 
     #[test]
     fn books_added_offline_on_two_devices_end_up_on_both() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let mut phone = Device::sharing(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
         phone.add("The Dispossessed", None, "Bea");
 
@@ -871,7 +908,7 @@ mod tests {
     #[test]
     fn syncing_again_changes_nothing() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let mut b = Device::sharing(&a);
         a.add("A", None, "Ana");
         a.sync_with(&mut b);
 
@@ -884,13 +921,14 @@ mod tests {
     #[test]
     fn later_edit_of_the_same_field_wins_everywhere() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         let id = a.add("Draft", None, "Ana");
         a.sync_with(&mut b);
 
-        catalog::update_edition(&mut a.0, LIB, &id, &edition("From A", None), None).unwrap();
+        catalog::update_edition(&mut a.0, &lib, &id, &edition("From A", None), None).unwrap();
         std::thread::sleep(std::time::Duration::from_millis(5));
-        catalog::update_edition(&mut b.0, LIB, &id, &edition("From B", None), None).unwrap();
+        catalog::update_edition(&mut b.0, &lib, &id, &edition("From B", None), None).unwrap();
         a.sync_with(&mut b);
 
         assert_eq!(a.titles(), vec!["From B"]);
@@ -900,19 +938,20 @@ mod tests {
     #[test]
     fn edits_of_different_fields_are_both_kept() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         let id = a.add("Book", None, "Ana");
         a.sync_with(&mut b);
 
         let mut year = edition("Book", None);
         year.published_year = Some(1968);
-        catalog::update_edition(&mut a.0, LIB, &id, &year, None).unwrap();
+        catalog::update_edition(&mut a.0, &lib, &id, &year, None).unwrap();
         let mut language = edition("Book", None);
         language.language = Some("en".into());
-        catalog::update_edition(&mut b.0, LIB, &id, &language, None).unwrap();
+        catalog::update_edition(&mut b.0, &lib, &id, &language, None).unwrap();
         a.sync_with(&mut b);
 
-        let detail = catalog::get_book(&a.0, LIB, &id).unwrap();
+        let detail = catalog::get_book(&a.0, &lib, &id).unwrap();
         assert_eq!(detail.published_year, Some(1968));
         assert_eq!(detail.language.as_deref(), Some("en"));
         assert_converged(&[&a, &b]);
@@ -921,14 +960,15 @@ mod tests {
     #[test]
     fn a_delete_beats_a_concurrent_edit() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         let id = a.add("Doomed", None, "Ana");
         a.sync_with(&mut b);
 
-        catalog::delete_book(&mut a.0, LIB, &id).unwrap();
+        catalog::delete_book(&mut a.0, &lib, &id).unwrap();
         std::thread::sleep(std::time::Duration::from_millis(5));
-        catalog::update_edition(&mut b.0, LIB, &id, &edition("Edited later", None), None).unwrap();
-        catalog::add_copy(&mut b.0, LIB, &id, &book("x", None, "Bea").copy).unwrap();
+        catalog::update_edition(&mut b.0, &lib, &id, &edition("Edited later", None), None).unwrap();
+        catalog::add_copy(&mut b.0, &lib, &id, &book("x", None, "Bea").copy).unwrap();
         a.sync_with(&mut b);
 
         assert!(a.titles().is_empty());
@@ -939,13 +979,14 @@ mod tests {
     #[test]
     fn a_tag_merge_from_renaming_converges_like_any_other_operation() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
 
         let mut tagged = edition("Tagged", None);
         tagged.tags = vec!["favorite".into(), "gift".into()];
         let id = catalog::create_book(
             &mut a.0,
-            LIB,
+            &lib,
             &ValidBook {
                 edition: tagged,
                 copy: book("Tagged", None, "Ana").copy,
@@ -956,19 +997,19 @@ mod tests {
         .edition_id;
         a.sync_with(&mut b);
 
-        let favorite_id = catalog::list_tags(&a.0, LIB)
+        let favorite_id = catalog::list_tags(&a.0, &lib)
             .unwrap()
             .into_iter()
             .find(|t| t.name == "favorite")
             .unwrap()
             .id;
-        catalog::rename_tag(&mut a.0, LIB, &favorite_id, "gift").unwrap();
+        catalog::rename_tag(&mut a.0, &lib, &favorite_id, "gift").unwrap();
         a.sync_with(&mut b);
 
         for device in [&a, &b] {
-            let detail = catalog::get_book(&device.0, LIB, &id).unwrap();
+            let detail = catalog::get_book(&device.0, &lib, &id).unwrap();
             assert_eq!(detail.tags, vec!["gift"]);
-            assert_eq!(catalog::list_tags(&device.0, LIB).unwrap().len(), 1);
+            assert_eq!(catalog::list_tags(&device.0, &lib).unwrap().len(), 1);
         }
         assert_converged(&[&a, &b]);
     }
@@ -976,14 +1017,15 @@ mod tests {
     #[test]
     fn the_same_book_added_on_both_devices_stays_duplicated() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         a.add("Same", Some("9780306406157"), "Ana");
         b.add("Same", Some("9780306406157"), "Ana");
 
         a.sync_with(&mut b);
 
         assert_eq!(a.titles(), vec!["Same", "Same"]);
-        let options = catalog::catalog_options(&a.0, LIB).unwrap();
+        let options = catalog::catalog_options(&a.0, &lib).unwrap();
         assert_eq!(
             options.authors,
             vec!["Ursula K. Le Guin"],
@@ -995,8 +1037,8 @@ mod tests {
     #[test]
     fn operations_travel_through_a_third_device() {
         let mut a = Device::new();
-        let mut b = Device::new();
-        let mut c = Device::new();
+        let mut b = Device::sharing(&a);
+        let mut c = Device::sharing(&a);
         a.add("From A", None, "Ana");
         c.add("From C", None, "Carla");
 
@@ -1011,53 +1053,58 @@ mod tests {
     #[test]
     fn rows_from_before_the_operation_log_travel_in_the_baseline() {
         let mut a = Device::new();
-        a.0.execute_batch(
+        let mut b = Device::sharing(&a);
+        a.0.execute_batch(&format!(
             "INSERT INTO works (library_id, id, kind, title)
-             VALUES ('00000000-0000-7000-8000-000000000001', '01997c7e-0000-7000-8000-000000000001', 'book', 'Old');
+             VALUES ('{lib}', '01997c7e-0000-7000-8000-000000000001', 'book', 'Old');
              INSERT INTO editions (library_id, id, work_id, title)
-             VALUES ('00000000-0000-7000-8000-000000000001', '01997c7e-0000-7000-8000-000000000002',
+             VALUES ('{lib}', '01997c7e-0000-7000-8000-000000000002',
                      '01997c7e-0000-7000-8000-000000000001', 'Old');",
-        )
+            lib = a.1
+        ))
         .unwrap();
         a.0.execute("DELETE FROM local_state WHERE key = ?1", [BASELINE_KEY])
             .unwrap();
         ensure_baseline(&mut a.0).unwrap();
-        let mut b = Device::new();
 
         b.pull_from(&a);
 
         assert_eq!(b.titles(), vec!["Old"]);
-        let intent: String =
+        let baselines: i64 =
             a.0.query_row(
-                "SELECT intent FROM operations WHERE replicable = 1 AND intent <> 'device.register'",
+                "SELECT count(*) FROM operations WHERE replicable = 1 AND intent = 'sync.baseline'",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(intent, "sync.baseline");
+        assert_eq!(baselines, 1);
     }
 
     #[test]
     fn history_from_before_sync_is_not_replicated() {
         let mut a = Device::new();
+        let lib = a.1.clone();
         a.add("A", None, "Ana");
         a.0.execute("UPDATE operations SET replicable = 0", [])
             .unwrap();
-        let b = Device::new();
+        let b = Device::sharing(&a);
 
         assert!(
-            operations_since(&a.0, &version_vectors(&b.0, &[LIB.to_owned()]).unwrap())
-                .unwrap()
-                .is_empty()
+            operations_since(
+                &a.0,
+                &version_vectors(&b.0, std::slice::from_ref(&lib)).unwrap()
+            )
+            .unwrap()
+            .is_empty()
         );
     }
 
     #[test]
     fn operations_from_another_schema_version_are_rejected() {
         let mut a = Device::new();
+        let mut b = Device::empty_for(&a);
         a.add("A", None, "Ana");
-        let mut b = Device::new();
-        let mut incoming = operations_since(&a.0, &everything()).unwrap();
+        let mut incoming = operations_since(&a.0, &everything(&a.1)).unwrap();
         for op in &mut incoming {
             op.schema_version -= 1;
         }
@@ -1072,9 +1119,9 @@ mod tests {
     #[test]
     fn receiving_moves_the_local_clock_past_remote_timestamps() {
         let mut a = Device::new();
+        let mut b = Device::empty_for(&a);
         a.add("A", None, "Ana");
-        let mut b = Device::new();
-        let incoming = operations_since(&a.0, &everything()).unwrap();
+        let incoming = operations_since(&a.0, &everything(&a.1)).unwrap();
         let remote = incoming[0].operation.hlc.clone();
 
         merge(&mut b.0, incoming).unwrap();
@@ -1093,7 +1140,8 @@ mod tests {
     #[test]
     fn synced_books_are_searchable() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         a.add("Tehanu", None, "Ana");
 
         b.pull_from(&a);
@@ -1102,24 +1150,25 @@ mod tests {
             query: Some("tehanu".into()),
             ..BookFilter::default()
         };
-        assert_eq!(catalog::list_books(&b.0, LIB, &filter).unwrap().len(), 1);
+        assert_eq!(catalog::list_books(&b.0, &lib, &filter).unwrap().len(), 1);
     }
 
     #[test]
     fn missing_works_noted_on_the_phone_reach_the_desktop() {
         let mut desk = Device::new();
-        let mut phone = Device::new();
+        let lib = desk.1.clone();
+        let mut phone = Device::sharing(&desk);
         let missing = kosmotheka_domain::EditionInput {
             title: "Tehanu".into(),
             ..Default::default()
         }
         .validate()
         .unwrap();
-        catalog::create_missing(&mut phone.0, LIB, &missing, None).unwrap();
+        catalog::create_missing(&mut phone.0, &lib, &missing, None).unwrap();
 
         desk.sync_with(&mut phone);
 
-        let titles: Vec<String> = catalog::list_books(&desk.0, LIB, &BookFilter::default())
+        let titles: Vec<String> = catalog::list_books(&desk.0, &lib, &BookFilter::default())
             .unwrap()
             .into_iter()
             .map(|b| b.title)
@@ -1135,7 +1184,7 @@ mod tests {
     #[test]
     fn an_operation_with_an_unknown_entity_is_not_sent_but_the_rest_still_converges() {
         let mut desk = Device::new();
-        let mut phone = Device::new();
+        let mut phone = Device::sharing(&desk);
         phone.add("Tehanu", None, "Ana");
 
         let phone_id = device_id_of(&phone);
@@ -1179,12 +1228,13 @@ mod tests {
     #[test]
     fn a_board_game_and_its_details_converge_field_by_field() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         let (work, edition) = (ops::new_id(), ops::new_id());
         let tx = a.0.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "book.add",
             vec![
                 Change::create(
@@ -1214,7 +1264,7 @@ mod tests {
             let tx = device.0.transaction().unwrap();
             ops::record(
                 &tx,
-                LIB,
+                &lib,
                 "book.edit",
                 vec![Change::update(
                     Entity::BoardgameDetails,
@@ -1241,16 +1291,17 @@ mod tests {
     #[test]
     fn deleting_a_library_empties_it_on_every_device() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let lib = a.1.clone();
+        let mut b = Device::sharing(&a);
         a.add("Doomed", None, "Ana");
         a.sync_with(&mut b);
 
         let tx = a.0.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "library.delete",
-            vec![Change::delete(Entity::Library, LIB)],
+            vec![Change::delete(Entity::Library, &lib)],
         )
         .unwrap();
         tx.commit().unwrap();
@@ -1273,7 +1324,7 @@ mod tests {
     #[test]
     fn a_new_library_and_its_books_reach_the_other_device() {
         let mut a = Device::new();
-        let mut b = Device::new();
+        let mut b = Device::sharing(&a);
         let rol = crate::libraries::create_library(&mut a.0, "Rol").unwrap();
         catalog::create_book(&mut a.0, &rol, &book("Earthsea", None, "Ana"), None).unwrap();
         a.sync_with(&mut b);
@@ -1319,7 +1370,8 @@ mod tests {
     #[test]
     fn a_reader_cannot_write_on_their_own_device_either() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         // Both register their keys by writing something before roles exist.
         laptop.add("Dune", None, "Tersoal");
         phone.add("Tehanu", None, "Hugo");
@@ -1329,7 +1381,7 @@ mod tests {
         let tx = laptop.0.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.roles",
             vec![
                 Change::create(
@@ -1351,7 +1403,7 @@ mod tests {
         phone.pull_from(&laptop);
 
         let refused =
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None);
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspan", None, "Hugo"), None);
 
         assert!(
             matches!(refused, Err(crate::error::Error::NotAllowed)),
@@ -1365,7 +1417,8 @@ mod tests {
     /// A library where the laptop is Tersoal's (admin) and the phone Hugo's (reader).
     fn laptop_admin_phone_reader() -> (Device, Device) {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         laptop.add("Dune", None, "Tersoal");
         phone.add("Tehanu", None, "Hugo");
         laptop.sync_with(&mut phone);
@@ -1374,7 +1427,7 @@ mod tests {
         let tx = laptop.0.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "member.roles",
             vec![
                 Change::create(
@@ -1403,23 +1456,24 @@ mod tests {
         // sets the HLC. Hugo is an editor; the laptop lowers him to reader. His
         // phone, with a modified app, then signs an edit dated just before that.
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let hugo = phone_person(&laptop, &phone);
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
         phone.pull_from(&laptop);
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("reader"), false).unwrap();
         let lowered = ops::last_hlc(&laptop.0).unwrap().unwrap();
         let work: String = laptop
             .0
             .query_row(
                 "SELECT id FROM works WHERE library_id = ?1 AND title = 'Dune'",
-                [LIB],
+                [&lib],
                 |row| row.get(0),
             )
             .unwrap();
 
         let mut backdated = Operation {
             id: ops::new_id(),
-            library: LIB.to_owned(),
+            library: lib.clone(),
             hlc: kosmotheka_domain::Hlc {
                 millis: lowered.millis - 1,
                 counter: 0,
@@ -1447,7 +1501,7 @@ mod tests {
             .0
             .query_row(
                 "SELECT title FROM works WHERE library_id = ?1 AND id = ?2",
-                [LIB, &work],
+                [&lib, &work],
                 |row| row.get(0),
             )
             .unwrap();
@@ -1467,7 +1521,7 @@ mod tests {
             .query_row(
                 "SELECT status FROM operations
                   WHERE library_id = ?1 AND changes LIKE ?2 AND intent <> 'device.register'",
-                params![LIB, format!("%\"{title}\"%")],
+                params![device.1, format!("%\"{title}\"%")],
                 |row| row.get(0),
             )
             .unwrap()
@@ -1478,12 +1532,13 @@ mod tests {
         // The honest case the fence costs (D84): Hugo's phone edits offline, the
         // laptop lowers him without having seen that edit, and then they sync.
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let hugo = phone_person(&laptop, &phone);
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
         phone.pull_from(&laptop);
         phone.add("Made offline", None, "Hugo");
         std::thread::sleep(std::time::Duration::from_millis(5));
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("reader"), false).unwrap();
 
         laptop.sync_with(&mut phone);
 
@@ -1503,23 +1558,24 @@ mod tests {
     fn a_revoked_device_cannot_backdate_a_change_either() {
         // The revocation carries a fence like a demotion does (D71, D84).
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let hugo = phone_person(&laptop, &phone);
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
         phone.pull_from(&laptop);
         let phone_id = device_id_of(&phone);
-        crate::libraries::revoke_access(&mut laptop.0, LIB, &phone_id).unwrap();
+        crate::libraries::revoke_access(&mut laptop.0, &lib, &phone_id).unwrap();
         let revoked = ops::last_hlc(&laptop.0).unwrap().unwrap();
         let work: String = laptop
             .0
             .query_row(
                 "SELECT id FROM works WHERE library_id = ?1 AND title = 'Dune'",
-                [LIB],
+                [&lib],
                 |row| row.get(0),
             )
             .unwrap();
         let mut backdated = Operation {
             id: ops::new_id(),
-            library: LIB.to_owned(),
+            library: lib.clone(),
             hlc: kosmotheka_domain::Hlc {
                 millis: revoked.millis - 1,
                 counter: 0,
@@ -1555,7 +1611,7 @@ mod tests {
             .0
             .query_row(
                 "SELECT id FROM works WHERE library_id = ?1 AND title = ?2",
-                [LIB, title],
+                [&device.1, title],
                 |row| row.get(0),
             )
             .unwrap()
@@ -1566,7 +1622,7 @@ mod tests {
             .0
             .query_row(
                 "SELECT title FROM works WHERE library_id = ?1 AND id = ?2",
-                [LIB, work],
+                [&device.1, work],
                 |row| row.get(0),
             )
             .unwrap()
@@ -1579,27 +1635,29 @@ mod tests {
         let (mut laptop, mut phone) = if roles {
             let (mut laptop, mut phone) = laptop_admin_phone_reader();
             let hugo = phone_person(&laptop, &phone);
-            crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+            crate::people::set_role(&mut laptop.0, &laptop.1, &hugo, Some("editor"), false)
+                .unwrap();
             phone.pull_from(&laptop);
             (laptop, phone)
         } else {
             let mut laptop = Device::new();
-            let mut phone = Device::new();
+            let mut phone = Device::sharing(&laptop);
             laptop.add("Dune", None, "Tersoal");
             phone.add("Tehanu", None, "Hugo");
             laptop.sync_with(&mut phone);
             (laptop, phone)
         };
-        let mut tablet = Device::new();
+        let lib = laptop.1.clone();
+        let mut tablet = Device::sharing(&laptop);
         tablet.pull_from(&laptop);
         tablet.pull_from(&phone);
         let work = work_titled(&laptop, "Dune");
 
-        crate::libraries::revoke_access(&mut laptop.0, LIB, &device_id_of(&phone)).unwrap();
+        crate::libraries::revoke_access(&mut laptop.0, &lib, &device_id_of(&phone)).unwrap();
         let tx = phone.0.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            &lib,
             "book.edit",
             vec![Change::update(
                 Entity::Work,
@@ -1634,9 +1692,10 @@ mod tests {
     #[test]
     fn a_reader_asks_and_an_administrator_accepts_on_another_device() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
 
         ops::as_request(None, || {
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
         assert!(
@@ -1644,20 +1703,20 @@ mod tests {
             "asked, not added"
         );
         laptop.pull_from(&phone);
-        let pending = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        let pending = crate::requests::list_requests(&laptop.0, &lib).unwrap();
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0].status, crate::requests::RequestStatus::Pending);
         assert_eq!(pending[0].person.as_deref(), Some("Hugo"));
 
-        crate::requests::accept(&mut laptop.0, LIB, &pending[0].id).unwrap();
+        crate::requests::accept(&mut laptop.0, &lib, &pending[0].id).unwrap();
         phone.sync_with(&mut laptop);
 
         assert!(laptop.titles().contains(&"Wingspan".to_owned()));
         assert!(phone.titles().contains(&"Wingspan".to_owned()));
-        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        let seen = crate::requests::list_requests(&phone.0, &lib).unwrap();
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
         assert!(matches!(
-            crate::requests::reject(&mut laptop.0, LIB, &pending[0].id),
+            crate::requests::reject(&mut laptop.0, &lib, &pending[0].id),
             Err(crate::error::Error::RequestResolved)
         ));
         assert_converged(&[&laptop, &phone]);
@@ -1666,20 +1725,21 @@ mod tests {
     #[test]
     fn a_rejected_request_changes_nothing() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         ops::as_request(None, || {
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
         laptop.pull_from(&phone);
-        let id = crate::requests::list_requests(&laptop.0, LIB).unwrap()[0]
+        let id = crate::requests::list_requests(&laptop.0, &lib).unwrap()[0]
             .id
             .clone();
 
-        crate::requests::reject(&mut laptop.0, LIB, &id).unwrap();
+        crate::requests::reject(&mut laptop.0, &lib, &id).unwrap();
         phone.sync_with(&mut laptop);
 
         assert!(!laptop.titles().contains(&"Wingspan".to_owned()));
-        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        let seen = crate::requests::list_requests(&phone.0, &lib).unwrap();
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Rejected);
         assert_converged(&[&laptop, &phone]);
     }
@@ -1687,12 +1747,13 @@ mod tests {
     #[test]
     fn a_request_carries_its_note_and_says_who_resolved_it() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         ops::as_request(Some("  Me lo regaló la abuela "), || {
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
         laptop.pull_from(&phone);
-        let pending = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        let pending = crate::requests::list_requests(&laptop.0, &lib).unwrap();
         assert_eq!(pending[0].note.as_deref(), Some("Me lo regaló la abuela"));
         assert!(
             pending[0]
@@ -1703,10 +1764,10 @@ mod tests {
         );
         assert!(!pending[0].mine);
 
-        crate::requests::accept(&mut laptop.0, LIB, &pending[0].id).unwrap();
+        crate::requests::accept(&mut laptop.0, &lib, &pending[0].id).unwrap();
         phone.sync_with(&mut laptop);
 
-        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        let seen = crate::requests::list_requests(&phone.0, &lib).unwrap();
         assert!(seen[0].mine);
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
         assert_eq!(seen[0].resolved_by.as_deref(), Some("Tersoal"));
@@ -1718,21 +1779,22 @@ mod tests {
     #[test]
     fn an_administrator_corrects_a_book_request_before_accepting_it() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         ops::as_request(None, || {
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspam", None, "Hugo"), None)
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspam", None, "Hugo"), None)
         })
         .unwrap();
         laptop.pull_from(&phone);
-        let request = &crate::requests::list_requests(&laptop.0, LIB).unwrap()[0];
+        let request = &crate::requests::list_requests(&laptop.0, &lib).unwrap()[0];
         assert_eq!(request.summary.action, "add_book");
         assert_eq!(request.summary.title.as_deref(), Some("Wingspam"));
         assert!(request.applies && request.editable);
-        let draft = crate::requests::requested_book(&laptop.0, LIB, &request.id).unwrap();
+        let draft = crate::requests::requested_book(&laptop.0, &lib, &request.id).unwrap();
         assert_eq!(draft.copy.owner.as_deref(), Some("Hugo"));
 
         catalog::create_book_accepting(
             &mut laptop.0,
-            LIB,
+            &lib,
             &book("Wingspan", None, "Hugo"),
             None,
             Some(&request.id),
@@ -1742,7 +1804,7 @@ mod tests {
 
         assert!(phone.titles().contains(&"Wingspan".to_owned()));
         assert!(!phone.titles().contains(&"Wingspam".to_owned()));
-        let seen = crate::requests::list_requests(&phone.0, LIB).unwrap();
+        let seen = crate::requests::list_requests(&phone.0, &lib).unwrap();
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Accepted);
         assert_converged(&[&laptop, &phone]);
     }
@@ -1751,25 +1813,28 @@ mod tests {
     fn one_person_marking_on_two_devices_offline_ends_with_one_merged_mark() {
         use crate::marks::{self, Mark};
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         laptop.add("Dune", None, "Tersoal");
         let hugo = crate::people::PersonPick {
             id: None,
             name: "Hugo".into(),
         };
-        marks::claim_person(&mut laptop.0, LIB, &hugo).unwrap();
+        marks::claim_person(&mut laptop.0, &lib, &hugo).unwrap();
         laptop.sync_with(&mut phone);
-        let member = marks::my_member(&laptop.0, LIB).unwrap();
+        let member = marks::my_member(&laptop.0, &lib).unwrap();
         let same = crate::people::PersonPick {
             id: member,
             name: "Hugo".into(),
         };
-        marks::claim_person(&mut phone.0, LIB, &same).unwrap();
+        marks::claim_person(&mut phone.0, &lib, &same).unwrap();
         let work = |device: &Device| {
-            let edition = catalog::list_books(&device.0, LIB, &BookFilter::default()).unwrap()[0]
+            let edition = catalog::list_books(&device.0, &lib, &BookFilter::default()).unwrap()[0]
                 .edition_id
                 .clone();
-            catalog::get_book(&device.0, LIB, &edition).unwrap().work_id
+            catalog::get_book(&device.0, &lib, &edition)
+                .unwrap()
+                .work_id
         };
         let dune = work(&laptop);
 
@@ -1778,26 +1843,26 @@ mod tests {
             status_on: Some("2026-03-14".into()),
             ..Mark::default()
         };
-        marks::set_mark(&mut laptop.0, LIB, &dune, &finished).unwrap();
+        marks::set_mark(&mut laptop.0, &lib, &dune, &finished).unwrap();
         let loved = Mark {
             rating: Some(5),
             favorite: true,
             wished: true,
             ..Mark::default()
         };
-        marks::set_mark(&mut phone.0, LIB, &dune, &loved).unwrap();
+        marks::set_mark(&mut phone.0, &lib, &dune, &loved).unwrap();
         laptop.sync_with(&mut phone);
         laptop.sync_with(&mut phone);
 
         assert_converged(&[&laptop, &phone]);
-        let seen = marks::work_marks(&phone.0, LIB, &dune).unwrap();
+        let seen = marks::work_marks(&phone.0, &lib, &dune).unwrap();
         assert!(seen.others.is_empty(), "one row, not two");
         let mine = seen.mine.unwrap();
         assert_eq!(mine.status.as_deref(), Some("finished"));
         assert!(mine.favorite, "both devices' changes are there");
         assert!(mine.wished, "wished travels like favorite");
         assert!(
-            marks::work_marks(&laptop.0, LIB, &dune)
+            marks::work_marks(&laptop.0, &lib, &dune)
                 .unwrap()
                 .mine
                 .unwrap()
@@ -1810,7 +1875,7 @@ mod tests {
                 my_favorites: favorites,
                 ..BookFilter::default()
             };
-            catalog::list_books(&phone.0, LIB, &filter).unwrap()
+            catalog::list_books(&phone.0, &lib, &filter).unwrap()
         };
         assert_eq!(listed(&[], false)[0].my_status.as_deref(), Some("finished"));
         assert_eq!(listed(&["finished", "pending"], false).len(), 1);
@@ -1818,23 +1883,23 @@ mod tests {
         assert_eq!(listed(&[], true).len(), 1);
 
         // Emptied and marked again: an emptied mark is never a tombstone.
-        marks::set_mark(&mut phone.0, LIB, &dune, &Mark::default()).unwrap();
-        marks::set_mark(&mut phone.0, LIB, &dune, &finished).unwrap();
+        marks::set_mark(&mut phone.0, &lib, &dune, &Mark::default()).unwrap();
+        marks::set_mark(&mut phone.0, &lib, &dune, &finished).unwrap();
         laptop.sync_with(&mut phone);
-        let again = marks::work_marks(&laptop.0, LIB, &dune)
+        let again = marks::work_marks(&laptop.0, &lib, &dune)
             .unwrap()
             .mine
             .unwrap();
         assert_eq!(again.status.as_deref(), Some("finished"));
         assert!(!again.favorite);
 
-        let edition = catalog::list_books(&laptop.0, LIB, &BookFilter::default()).unwrap()[0]
+        let edition = catalog::list_books(&laptop.0, &lib, &BookFilter::default()).unwrap()[0]
             .edition_id
             .clone();
-        catalog::delete_book(&mut laptop.0, LIB, &edition).unwrap();
+        catalog::delete_book(&mut laptop.0, &lib, &edition).unwrap();
         laptop.sync_with(&mut phone);
         assert!(
-            marks::work_marks(&phone.0, LIB, &dune)
+            marks::work_marks(&phone.0, &lib, &dune)
                 .unwrap()
                 .mine
                 .is_none()
@@ -1845,14 +1910,15 @@ mod tests {
     #[test]
     fn the_book_says_what_each_device_may_delete_and_asking_says_what_happened() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let dune = |device: &Device| {
-            let edition = catalog::list_books(&device.0, LIB, &BookFilter::default())
+            let edition = catalog::list_books(&device.0, &lib, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .find(|b| b.title == "Dune")
                 .unwrap()
                 .edition_id;
-            catalog::get_book(&device.0, LIB, &edition).unwrap()
+            catalog::get_book(&device.0, &lib, &edition).unwrap()
         };
 
         let on_phone = dune(&phone);
@@ -1863,13 +1929,13 @@ mod tests {
         assert!(on_laptop.copies[0].can_delete);
 
         let (_, requested) = ops::as_request(None, || {
-            catalog::delete_copy(&mut phone.0, LIB, &on_phone.copies[0].id)
+            catalog::delete_copy(&mut phone.0, &lib, &on_phone.copies[0].id)
         })
         .unwrap();
         assert!(requested, "a reader's delete becomes a request");
         assert!(phone.titles().contains(&"Dune".to_owned()));
         let (_, requested) = ops::as_request(None, || {
-            catalog::create_book(&mut laptop.0, LIB, &book("Solaris", None, "Tersoal"), None)
+            catalog::create_book(&mut laptop.0, &lib, &book("Solaris", None, "Tersoal"), None)
         })
         .unwrap();
         assert!(!requested, "what the administrator may do is just done");
@@ -1880,8 +1946,9 @@ mod tests {
     #[test]
     fn a_request_on_a_deleted_book_no_longer_applies() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let dune = |device: &Device| {
-            catalog::list_books(&device.0, LIB, &BookFilter::default())
+            catalog::list_books(&device.0, &lib, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .find(|b| b.title == "Dune")
@@ -1889,38 +1956,39 @@ mod tests {
                 .edition_id
         };
         let edition = dune(&phone);
-        ops::as_request(None, || catalog::delete_book(&mut phone.0, LIB, &edition)).unwrap();
+        ops::as_request(None, || catalog::delete_book(&mut phone.0, &lib, &edition)).unwrap();
         laptop.pull_from(&phone);
-        let request = crate::requests::list_requests(&laptop.0, LIB).unwrap()[0].clone();
+        let request = crate::requests::list_requests(&laptop.0, &lib).unwrap()[0].clone();
         assert_eq!(request.summary.action, "delete_book");
         assert_eq!(request.summary.title.as_deref(), Some("Dune"));
         assert!(request.applies);
 
         let on_laptop = dune(&laptop);
-        catalog::delete_book(&mut laptop.0, LIB, &on_laptop).unwrap();
+        catalog::delete_book(&mut laptop.0, &lib, &on_laptop).unwrap();
 
-        let request = &crate::requests::list_requests(&laptop.0, LIB).unwrap()[0];
+        let request = &crate::requests::list_requests(&laptop.0, &lib).unwrap()[0];
         assert!(!request.applies);
     }
 
     #[test]
     fn whoever_asked_withdraws_and_it_can_no_longer_be_accepted() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         ops::as_request(None, || {
-            catalog::create_book(&mut phone.0, LIB, &book("Wingspan", None, "Hugo"), None)
+            catalog::create_book(&mut phone.0, &lib, &book("Wingspan", None, "Hugo"), None)
         })
         .unwrap();
-        let id = crate::requests::list_requests(&phone.0, LIB).unwrap()[0]
+        let id = crate::requests::list_requests(&phone.0, &lib).unwrap()[0]
             .id
             .clone();
 
-        crate::requests::withdraw(&mut phone.0, LIB, &id).unwrap();
+        crate::requests::withdraw(&mut phone.0, &lib, &id).unwrap();
         laptop.pull_from(&phone);
 
-        let seen = crate::requests::list_requests(&laptop.0, LIB).unwrap();
+        let seen = crate::requests::list_requests(&laptop.0, &lib).unwrap();
         assert_eq!(seen[0].status, crate::requests::RequestStatus::Withdrawn);
         assert!(matches!(
-            crate::requests::accept(&mut laptop.0, LIB, &id),
+            crate::requests::accept(&mut laptop.0, &lib, &id),
             Err(crate::error::Error::RequestResolved)
         ));
         assert_converged(&[&laptop, &phone]);
@@ -1929,26 +1997,27 @@ mod tests {
     #[test]
     fn nobody_withdraws_someone_else_s_request() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         laptop.add("Solaris", None, "Tersoal");
         phone.pull_from(&laptop);
         let tersoal_s = ops::as_request(None, || {
-            let edition = catalog::list_books(&phone.0, LIB, &BookFilter::default())
+            let edition = catalog::list_books(&phone.0, &lib, &BookFilter::default())
                 .unwrap()
                 .into_iter()
                 .find(|b| b.title == "Solaris")
                 .unwrap()
                 .edition_id;
-            catalog::delete_book(&mut phone.0, LIB, &edition)
+            catalog::delete_book(&mut phone.0, &lib, &edition)
         });
         assert!(tersoal_s.is_ok(), "the phone asks to delete it");
-        let mut tablet = Device::new();
+        let mut tablet = Device::sharing(&laptop);
         tablet.pull_from(&laptop);
         tablet.pull_from(&phone);
-        let id = crate::requests::list_requests(&tablet.0, LIB).unwrap()[0]
+        let id = crate::requests::list_requests(&tablet.0, &lib).unwrap()[0]
             .id
             .clone();
 
-        let result = crate::requests::withdraw(&mut tablet.0, LIB, &id);
+        let result = crate::requests::withdraw(&mut tablet.0, &lib, &id);
 
         assert!(
             matches!(result, Err(crate::error::Error::NotAllowed)),
@@ -1959,22 +2028,23 @@ mod tests {
     #[test]
     fn my_offline_change_that_becomes_a_request_is_noticed_once() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
         let hugo = phone_person(&laptop, &phone);
         // Hugo becomes an editor, and the phone learns it.
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
         phone.pull_from(&laptop);
         // Offline, the laptop takes it back first; the phone keeps editing.
-        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("reader"), false).unwrap();
         phone.add("Wingspan", None, "Hugo");
         assert!(phone.titles().contains(&"Wingspan".to_owned()));
 
         phone.pull_from(&laptop);
 
         assert!(!phone.titles().contains(&"Wingspan".to_owned()));
-        let notices = crate::requests::notices(&phone.0, LIB).unwrap();
+        let notices = crate::requests::notices(&phone.0, &lib).unwrap();
         assert_eq!(notices.len(), 1);
-        crate::requests::dismiss_notices(&phone.0, LIB).unwrap();
-        assert!(crate::requests::notices(&phone.0, LIB).unwrap().is_empty());
+        crate::requests::dismiss_notices(&phone.0, &lib).unwrap();
+        assert!(crate::requests::notices(&phone.0, &lib).unwrap().is_empty());
     }
 
     fn phone_person(laptop: &Device, phone: &Device) -> String {
@@ -1982,7 +2052,7 @@ mod tests {
             .0
             .query_row(
                 "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-                [LIB, &device_id_of(phone)],
+                [&laptop.1, &device_id_of(phone)],
                 |row| row.get(0),
             )
             .unwrap()
@@ -2015,7 +2085,7 @@ mod tests {
 
         for case in &cases {
             for order in &case.deliveries {
-                let mut device = Device::new();
+                let mut device = Device::blank();
                 let schema_version = ops::schema_version(&device.0).unwrap();
                 for &index in order {
                     let mut fields = case.operations[index].clone();
@@ -2087,7 +2157,7 @@ mod tests {
                 .map(|op| (op.library.clone(), op.hlc.device.clone()))
                 .collect();
             for order in &case.deliveries {
-                let mut device = Device::new();
+                let mut device = Device::blank();
                 let schema_version = ops::schema_version(&device.0).unwrap();
                 for (counter, (library, author)) in (0u32..).zip(&authors) {
                     let mut register = Operation {
@@ -2117,8 +2187,8 @@ mod tests {
                     )
                     .unwrap();
                 }
-                // Only rows the case creates count: every device has the default
-                // library, and the registrations above are the runner's (skipped below).
+                // Only rows the case creates count: the registrations above are the
+                // runner's (skipped below).
                 let before = state(&device.0);
                 for &index in order {
                     let mut operation = case.operations[index].clone();
@@ -2190,11 +2260,11 @@ mod tests {
         }
     }
 
-    fn add_genre(conn: &mut Connection, work_id: &str, genre: &str) {
+    fn add_genre(conn: &mut Connection, library: &str, work_id: &str, genre: &str) {
         let tx = conn.transaction().unwrap();
         ops::record(
             &tx,
-            LIB,
+            library,
             "work.genre_add",
             vec![Change::create(
                 Entity::WorkGenre,
@@ -2206,14 +2276,14 @@ mod tests {
         tx.commit().unwrap();
     }
 
-    fn remove_genre(conn: &mut Connection, work_id: &str, genre: &str) {
+    fn remove_genre(conn: &mut Connection, library: &str, work_id: &str, genre: &str) {
         let tx = conn.transaction().unwrap();
         let rows: Vec<String> = tx
             .prepare(
                 "SELECT id FROM work_genres WHERE library_id = ?1 AND work_id = ?2 AND genre = ?3",
             )
             .unwrap()
-            .query_map(params![LIB, work_id, genre], |row| row.get(0))
+            .query_map(params![library, work_id, genre], |row| row.get(0))
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap();
@@ -2221,16 +2291,16 @@ mod tests {
             .into_iter()
             .map(|id| Change::delete(Entity::WorkGenre, id))
             .collect();
-        ops::record(&tx, LIB, "work.genre_remove", changes).unwrap();
+        ops::record(&tx, library, "work.genre_remove", changes).unwrap();
         tx.commit().unwrap();
     }
 
-    fn genres_of_work(conn: &Connection, work_id: &str) -> Vec<String> {
+    fn genres_of_work(conn: &Connection, library: &str, work_id: &str) -> Vec<String> {
         conn.prepare(
             "SELECT DISTINCT genre FROM work_genres WHERE library_id = ?1 AND work_id = ?2",
         )
         .unwrap()
-        .query_map(params![LIB, work_id], |row| row.get(0))
+        .query_map(params![library, work_id], |row| row.get(0))
         .unwrap()
         .collect::<rusqlite::Result<_>>()
         .unwrap()
@@ -2242,52 +2312,54 @@ mod tests {
     #[test]
     fn duplicate_genre_added_offline_converges() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         let edition_id = laptop.add("Dune", None, "Ana");
-        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+        let work_id = catalog::get_book(&laptop.0, &lib, &edition_id)
             .unwrap()
             .work_id;
         phone.pull_from(&laptop);
 
-        add_genre(&mut laptop.0, &work_id, "science_fiction");
-        add_genre(&mut phone.0, &work_id, "science_fiction");
+        add_genre(&mut laptop.0, &lib, &work_id, "science_fiction");
+        add_genre(&mut phone.0, &lib, &work_id, "science_fiction");
         laptop.sync_with(&mut phone);
 
         assert_eq!(
-            genres_of_work(&laptop.0, &work_id),
+            genres_of_work(&laptop.0, &lib, &work_id),
             vec!["science_fiction".to_owned()]
         );
         assert_eq!(
-            genres_of_work(&phone.0, &work_id),
+            genres_of_work(&phone.0, &lib, &work_id),
             vec!["science_fiction".to_owned()]
         );
         assert_converged(&[&laptop, &phone]);
 
-        remove_genre(&mut laptop.0, &work_id, "science_fiction");
+        remove_genre(&mut laptop.0, &lib, &work_id, "science_fiction");
         laptop.sync_with(&mut phone);
 
-        assert!(genres_of_work(&laptop.0, &work_id).is_empty());
-        assert!(genres_of_work(&phone.0, &work_id).is_empty());
+        assert!(genres_of_work(&laptop.0, &lib, &work_id).is_empty());
+        assert!(genres_of_work(&phone.0, &lib, &work_id).is_empty());
         assert_converged(&[&laptop, &phone]);
     }
 
     #[test]
     fn the_same_work_added_to_a_series_offline_on_two_devices_converges() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         let edition_id = laptop.add("Dune", None, "Ana");
-        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+        let work_id = catalog::get_book(&laptop.0, &lib, &edition_id)
             .unwrap()
             .work_id;
-        let series_id = series::create_series(&mut laptop.0, LIB, "Dune", true).unwrap();
+        let series_id = series::create_series(&mut laptop.0, &lib, "Dune", true).unwrap();
         phone.pull_from(&laptop);
 
-        series::add_to_series(&mut laptop.0, LIB, &series_id, &work_id, Some(1)).unwrap();
-        series::add_to_series(&mut phone.0, LIB, &series_id, &work_id, Some(1)).unwrap();
+        series::add_to_series(&mut laptop.0, &lib, &series_id, &work_id, Some(1)).unwrap();
+        series::add_to_series(&mut phone.0, &lib, &series_id, &work_id, Some(1)).unwrap();
         laptop.sync_with(&mut phone);
 
-        let laptop_detail = series::get_series(&laptop.0, LIB, &series_id).unwrap();
-        let phone_detail = series::get_series(&phone.0, LIB, &series_id).unwrap();
+        let laptop_detail = series::get_series(&laptop.0, &lib, &series_id).unwrap();
+        let phone_detail = series::get_series(&phone.0, &lib, &series_id).unwrap();
         assert_eq!(laptop_detail.entries.len(), 1);
         assert_eq!(phone_detail.entries.len(), 1);
         assert_converged(&[&laptop, &phone]);
@@ -2296,20 +2368,21 @@ mod tests {
     #[test]
     fn deleting_a_series_while_another_device_adds_to_it_offline_converges() {
         let mut laptop = Device::new();
-        let mut phone = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
         let edition_id = laptop.add("Dune", None, "Ana");
-        let work_id = catalog::get_book(&laptop.0, LIB, &edition_id)
+        let work_id = catalog::get_book(&laptop.0, &lib, &edition_id)
             .unwrap()
             .work_id;
-        let series_id = series::create_series(&mut laptop.0, LIB, "Dune", true).unwrap();
+        let series_id = series::create_series(&mut laptop.0, &lib, "Dune", true).unwrap();
         phone.pull_from(&laptop);
 
-        series::delete_series(&mut laptop.0, LIB, &series_id).unwrap();
-        series::add_to_series(&mut phone.0, LIB, &series_id, &work_id, Some(1)).unwrap();
+        series::delete_series(&mut laptop.0, &lib, &series_id).unwrap();
+        series::add_to_series(&mut phone.0, &lib, &series_id, &work_id, Some(1)).unwrap();
         laptop.sync_with(&mut phone);
 
-        assert!(series::get_series(&laptop.0, LIB, &series_id).is_err());
-        assert!(series::get_series(&phone.0, LIB, &series_id).is_err());
+        assert!(series::get_series(&laptop.0, &lib, &series_id).is_err());
+        assert!(series::get_series(&phone.0, &lib, &series_id).is_err());
         assert_converged(&[&laptop, &phone]);
     }
 }

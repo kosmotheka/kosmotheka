@@ -488,7 +488,6 @@ mod tests {
 
     use super::*;
     use crate::db;
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
 
     fn book(title: &str) -> ValidBook {
         ValidBook {
@@ -514,23 +513,25 @@ mod tests {
     }
 
     fn add_work(conn: &mut Connection, title: &str) -> String {
-        let edition_id = catalog::create_book(conn, LIB, &book(title), None)
+        let lib = ops::active_library(conn).unwrap();
+        let edition_id = catalog::create_book(conn, &lib, &book(title), None)
             .unwrap()
             .edition_id;
-        catalog::get_book(conn, LIB, &edition_id).unwrap().work_id
+        catalog::get_book(conn, &lib, &edition_id).unwrap().work_id
     }
 
     #[test]
     fn next_position_is_the_highest_plus_one() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
         let w2 = add_work(&mut conn, "Dune Messiah");
 
-        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
-        add_to_series(&mut conn, LIB, &series_id, &w2, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w2, None).unwrap();
 
-        let detail = get_series(&conn, LIB, &series_id).unwrap();
+        let detail = get_series(&conn, &lib, &series_id).unwrap();
         assert_eq!(detail.entries[0].position, Some(1));
         assert_eq!(detail.entries[1].position, Some(2));
     }
@@ -538,26 +539,31 @@ mod tests {
     #[test]
     fn adding_an_existing_work_changes_nothing() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
 
-        let first = add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
-        let second = add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
+        let first = add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
+        let second = add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
 
         assert_eq!(first, second);
-        assert_eq!(get_series(&conn, LIB, &series_id).unwrap().entries.len(), 1);
+        assert_eq!(
+            get_series(&conn, &lib, &series_id).unwrap().entries.len(),
+            1
+        );
     }
 
     #[test]
     fn reorder_only_touches_moved_entries() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
         let w2 = add_work(&mut conn, "Dune Messiah");
         let w3 = add_work(&mut conn, "Children of Dune");
-        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
-        add_to_series(&mut conn, LIB, &series_id, &w2, None).unwrap();
-        add_to_series(&mut conn, LIB, &series_id, &w3, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w2, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w3, None).unwrap();
 
         let intent_count_before: i64 = conn
             .query_row("SELECT count(*) FROM operations", [], |r| r.get(0))
@@ -565,7 +571,7 @@ mod tests {
         // Only w2 and w3 swap; w1 stays at position 1.
         reorder(
             &mut conn,
-            LIB,
+            &lib,
             &series_id,
             &[
                 (w1.clone(), Some(1)),
@@ -593,21 +599,22 @@ mod tests {
     #[test]
     fn reorder_keeps_the_numbers_typed_gaps_included() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
         let w2 = add_work(&mut conn, "Dune Messiah");
-        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
-        add_to_series(&mut conn, LIB, &series_id, &w2, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w2, None).unwrap();
 
         // Volumes 2 to 4 are not catalogued yet: the second book is number 5.
         reorder(
             &mut conn,
-            LIB,
+            &lib,
             &series_id,
             &[(w1.clone(), Some(1)), (w2.clone(), Some(5))],
         )
         .unwrap();
-        let positions: Vec<Option<i64>> = get_series(&conn, LIB, &series_id)
+        let positions: Vec<Option<i64>> = get_series(&conn, &lib, &series_id)
             .unwrap()
             .entries
             .iter()
@@ -615,20 +622,21 @@ mod tests {
             .collect();
         assert_eq!(positions, vec![Some(1), Some(5)]);
 
-        let zero = reorder(&mut conn, LIB, &series_id, &[(w1, Some(0))]);
+        let zero = reorder(&mut conn, &lib, &series_id, &[(w1, Some(0))]);
         assert!(matches!(zero, Err(Error::Validation(_))));
     }
 
     #[test]
     fn deleting_a_series_keeps_its_works() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
-        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
 
-        delete_series(&mut conn, LIB, &series_id).unwrap();
+        delete_series(&mut conn, &lib, &series_id).unwrap();
 
-        assert!(get_series(&conn, LIB, &series_id).is_err());
+        assert!(get_series(&conn, &lib, &series_id).is_err());
         let title: String = conn
             .query_row("SELECT title FROM works WHERE id = ?1", [&w1], |r| r.get(0))
             .unwrap();
@@ -638,22 +646,23 @@ mod tests {
     #[test]
     fn missing_counts_works_without_copies() {
         let mut conn = db::open_in_memory().unwrap();
-        let series_id = create_series(&mut conn, LIB, "Dune", true).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
         let w1 = add_work(&mut conn, "Dune");
-        add_to_series(&mut conn, LIB, &series_id, &w1, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
 
         // A second work in the series, but with its only copy removed: a gap.
-        let edition_id = catalog::create_book(&mut conn, LIB, &book("Dune Messiah"), None)
+        let edition_id = catalog::create_book(&mut conn, &lib, &book("Dune Messiah"), None)
             .unwrap()
             .edition_id;
-        let gap_work = catalog::get_book(&conn, LIB, &edition_id).unwrap().work_id;
-        let copy_id = catalog::get_book(&conn, LIB, &edition_id).unwrap().copies[0]
+        let gap_work = catalog::get_book(&conn, &lib, &edition_id).unwrap().work_id;
+        let copy_id = catalog::get_book(&conn, &lib, &edition_id).unwrap().copies[0]
             .id
             .clone();
-        catalog::delete_copy(&mut conn, LIB, &copy_id).unwrap();
-        add_to_series(&mut conn, LIB, &series_id, &gap_work, None).unwrap();
+        catalog::delete_copy(&mut conn, &lib, &copy_id).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &gap_work, None).unwrap();
 
-        let summary = list_series(&conn, LIB)
+        let summary = list_series(&conn, &lib)
             .unwrap()
             .into_iter()
             .find(|s| s.id == series_id)
@@ -665,9 +674,10 @@ mod tests {
     #[test]
     fn self_requirement_is_rejected() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let w1 = add_work(&mut conn, "Dune");
 
-        let error = add_requirement(&mut conn, LIB, &w1, &w1).unwrap_err();
+        let error = add_requirement(&mut conn, &lib, &w1, &w1).unwrap_err();
         assert!(
             matches!(error, Error::Validation(errors) if errors[0].code == ErrorCode::SelfReference)
         );

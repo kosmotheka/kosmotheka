@@ -5,7 +5,7 @@ use rusqlite::Connection;
 use rusqlite_migration::{M, Migrations};
 
 use crate::error::{Error, Result};
-use crate::{ops, search, sync};
+use crate::{libraries, ops, search, sync};
 
 const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0001_app_launches.sql")),
@@ -51,7 +51,14 @@ pub struct Database {
 
 impl Database {
     pub fn open(path: PathBuf) -> Result<Self> {
-        let conn = open_file(&path)?;
+        Self::open_as(path, None)
+    }
+
+    /// Opens with a chosen identity (device id and signing seed) already in place, so
+    /// the first library is created and signed as that device. For fixtures only
+    /// (`examples/fixture_devices.rs`).
+    pub fn open_as(path: PathBuf, identity: Option<(&str, [u8; 32])>) -> Result<Self> {
+        let conn = open_file(&path, identity)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
             path: Some(path),
@@ -90,7 +97,7 @@ impl Database {
                 delete_if_exists(&wal_path(path))?;
                 delete_if_exists(&shm_path(path))?;
                 delete_bak_siblings(path)?;
-                open_file(path)?
+                open_file(path, None)?
             }
             None => open_in_memory()?,
         };
@@ -143,15 +150,26 @@ fn delete_bak_siblings(path: &Path) -> Result<()> {
 
 /// Opens (creating if needed) and fully initialises a file-backed database: the
 /// same steps `Database::open` and `Database::reset` both need.
-fn open_file(path: &Path) -> Result<Connection> {
+fn open_file(path: &Path, identity: Option<(&str, [u8; 32])>) -> Result<Connection> {
     let mut conn = Connection::open(path)?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
     copy_before_migrating(&conn, path)?;
     migrate(&mut conn)?;
+    if let Some((device_id, seed)) = identity {
+        ops::set_identity(&conn, device_id, seed)?;
+    }
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
+    first_libraries(&mut conn)?;
     Ok(conn)
+}
+
+/// After the baseline, so a database from before it logs its old library first and
+/// the retire step takes that log away with the library (D85).
+fn first_libraries(conn: &mut Connection) -> Result<()> {
+    libraries::retire_fixed_library(conn)?;
+    libraries::ensure_first_library(conn)
 }
 
 /// Before migrations touch an existing database, a copy of it is left next to it
@@ -191,6 +209,7 @@ pub fn open_in_memory() -> Result<Connection> {
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
+    first_libraries(&mut conn)?;
     Ok(conn)
 }
 
@@ -307,7 +326,8 @@ mod tests {
 
         migrate(&mut conn).unwrap();
 
-        let library = crate::ops::DEFAULT_LIBRARY_ID;
+        // The id migration 0009 gives it; D85 retires it at startup, after migrating.
+        let library = "00000000-0000-7000-8000-000000000001";
         let in_library = |table: &str| -> i64 {
             conn.query_row(
                 &format!("SELECT count(*) FROM {table} WHERE library_id = ?1"),
@@ -436,7 +456,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(tables, 0, "the wishes table is dropped");
-        let log = sync::library_log(&conn, ops::DEFAULT_LIBRARY_ID).unwrap();
+        let log = sync::library_log(&conn, &ops::active_library(&conn).unwrap()).unwrap();
         assert!(
             log.iter().all(|op| op.id != "o1"),
             "the unparsable operation is left out entirely, not replayed with some changes missing"

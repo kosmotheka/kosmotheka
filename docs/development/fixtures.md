@@ -101,7 +101,7 @@ make app-fixtures    # = make fixtures + el ejemplo de Rust, dentro de library-d
 El servidor es la única fuente del reparto: al final de `make fixtures` escribe `server/var/fixtures/cast.json` (ignorado por git; lleva el token y la semilla de firma de cada dispositivo, que son de cuentas de prueba) y lo anuncia en el resumen («Cast for the app»). `make app-fixtures` pasa ese fichero a `app/src-tauri/examples/fixture_devices.rs`, que para cada dispositivo:
 
 1. crea una carpeta de datos que la app abre tal cual (la misma base `library.sqlite3` y las mismas migraciones);
-2. fija en `local_state` el id y la semilla de firma **antes de registrar nada**, así sus operaciones llevan la misma identidad que en el servidor;
+2. abre la base con `Database::open_as`, que fija el id y la semilla de firma **antes de que se cree la primera biblioteca**, así todas sus operaciones, la creación de esa biblioteca incluida, llevan la misma identidad que en el servidor;
 3. deja la sesión iniciada (servidor `http://localhost:8095`, token, usuario, correo);
 4. ejecuta el `cloud::sync_all` de verdad y escribe lo que informó: la biblioteca que se descargó o el motivo por el que no.
 
@@ -127,10 +127,12 @@ Esto es lo que informó el ejemplo en la última ejecución; las fixtures son de
 
 | Dispositivo | `sync_all` | Qué ves |
 |---|---|---|
-| `ana-laptop`, `ana-phone` | `Downloaded`: recibe 10 operaciones y **rechaza 4** | «Biblioteca García», ya enlazada a su biblioteca de nube, con los dos libros (*Cien años de soledad* y *El principito*) y los tres miembros. No aparecen la marca ni la solicitud de Hugo ni lo que añadió el móvil de Ana más tarde (*Rayuela* y el cambio de ubicación): ver «Lo que la app rechaza» |
-| `hugo-phone` | sin bibliotecas | Sesión iniciada y solo «Mi biblioteca» vacía. Hasta el hito 7.5 solo la cuenta dueña recibe la biblioteca por la nube (no tiene membresía) |
-| `kenji-laptop` | `LibraryConflict` | Su biblioteca de nube **no baja**. La app trae siempre «Mi biblioteca» con el id fijo `00000000-0000-7000-8000-000000000001`, que es justo el id local de la de Kenji: ya existe aquí y nada de su propio registro la enlaza a esa nube, así que no se mezcla (D84) |
-| `jhonny-phone`, `jhonny-as-ana-phone` | `NotLinked` para la copia que hizo de la García y `LibraryConflict` para la del id por defecto | No baja nada: la copia de la García su enlace nombra la nube de Ana, no la de Jhonny (se retira lo que se había fusionado), y la del id por defecto choca igual que la de Kenji |
+| `ana-laptop`, `ana-phone` | `Downloaded`: recibe 15 operaciones y no rechaza ninguna | «Biblioteca García», enlazada a su biblioteca de nube (`0199a3b2-…`), además de la primera biblioteca vacía con la que nace cada dispositivo (id aleatorio, D85) |
+| `hugo-phone` | sin bibliotecas en la nube | Sesión iniciada y solo su primera biblioteca vacía («Mi biblioteca», id aleatorio). Hasta el hito 7.5 solo la cuenta dueña recibe la biblioteca por la nube (no tiene membresía) |
+| `kenji-laptop` | `Downloaded`: recibe 5 operaciones | Su biblioteca de nube **baja**, con el id local que le dio la fixture. Antes de D85 no bajaba: la app traía siempre «Mi biblioteca» con el id fijo, que era justo el de la de Kenji, y D84, con razón, no las mezclaba. Ahora su dispositivo nace con una biblioteca de id aleatorio y no choca con nada |
+| `jhonny-phone`, `jhonny-as-ana-phone` | `NotLinked` para las dos bibliotecas de nube que ve: la copia que hizo de la García y la del id por defecto | Se baja, se comprueba que su registro no la enlaza a esa nube y se retira (`rejected 1` en cada una): no se queda nada de ellas |
+
+**Las fixtures del servidor conservan a propósito el id fijo antiguo** (`00000000-0000-7000-8000-000000000001`): ya no es el id de «Mi biblioteca» de nadie (D85), pero sirve de «id que dos desconocidos comparten» para probar la puerta de la nube y las costuras 2 y 4 (D84). La app ya no puede producirlo; por eso `server/` no cambia con D85.
 
 El enlace de las fixtures nombra el servidor `http://localhost:8095` (`SigningDevice::SERVER`): la app solo confía en un enlace que nombra el servidor con el que habla.
 

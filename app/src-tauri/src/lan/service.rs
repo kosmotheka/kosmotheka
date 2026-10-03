@@ -167,7 +167,6 @@ impl LanService {
 mod tests {
     use super::*;
     use crate::lan::client;
-    use crate::ops::DEFAULT_LIBRARY_ID;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn pairs_and_syncs_through_the_local_network_address() {
@@ -176,19 +175,15 @@ mod tests {
         let before = desk.status().await.unwrap();
         assert_eq!(before.serving_port, None, "no server until it is needed");
 
-        let pairing = desk
-            .open_pairing(vec![DEFAULT_LIBRARY_ID.to_owned()])
-            .await
-            .unwrap();
+        let home = ops::active_library(&desk.database.lock().unwrap()).unwrap();
+        let pairing = desk.open_pairing(vec![home]).await.unwrap();
         let code = PairingCode::decode(&pairing.code).unwrap();
         assert!(
             code.addresses.iter().all(|a| !a.starts_with("127.")),
             "{:?}",
             code.addresses
         );
-        let server = client::pair(&phone, &pairing.code, &[DEFAULT_LIBRARY_ID.to_owned()])
-            .await
-            .unwrap();
+        let server = client::pair(&phone, &pairing.code, &[]).await.unwrap();
         client::sync(&phone, &server.device_id).await.unwrap();
 
         let after = desk.status().await.unwrap();

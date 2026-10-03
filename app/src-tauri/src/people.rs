@@ -585,7 +585,7 @@ mod tests {
     use crate::backup;
     use crate::catalog::{self, BookFilter};
     use crate::db;
-    use crate::ops::DEFAULT_LIBRARY_ID as LIB;
+    use crate::ops;
     use crate::sync::{self, SyncOperation};
 
     fn book(title: &str) -> ValidBook {
@@ -619,8 +619,8 @@ mod tests {
     }
 
     /// Everything `from` has, merged into `to`, as a sync would.
-    fn pull(to: &mut Connection, from: &Connection) {
-        let libraries = vec![LIB.to_owned()];
+    fn pull(to: &mut Connection, from: &Connection, library: &str) {
+        let libraries = vec![library.to_owned()];
         let mine = sync::version_vectors(to, &libraries).unwrap();
         let missing: Vec<SyncOperation> = sync::operations_since(from, &mine).unwrap();
         sync::merge(to, missing).unwrap();
@@ -629,10 +629,11 @@ mod tests {
     #[test]
     fn starting_roles_makes_this_device_s_person_the_administrator() {
         let mut conn = db::open_in_memory().unwrap();
-        catalog::create_book(&mut conn, LIB, &book("Dune"), None).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        catalog::create_book(&mut conn, &lib, &book("Dune"), None).unwrap();
 
-        let member = start_roles(&mut conn, LIB, "tersoal", &[]).unwrap();
-        let people = list_people(&conn, LIB).unwrap();
+        let member = start_roles(&mut conn, &lib, "tersoal", &[]).unwrap();
+        let people = list_people(&conn, &lib).unwrap();
 
         assert!(people.has_roles);
         assert_eq!(people.my_role.as_deref(), Some("admin"));
@@ -641,7 +642,7 @@ mod tests {
         assert!(me.can_share);
         assert!(people.lone_admin, "one administrator with one device");
         assert!(matches!(
-            start_roles(&mut conn, LIB, "Ana", &[]),
+            start_roles(&mut conn, &lib, "Ana", &[]),
             Err(Error::NotAllowed)
         ));
     }
@@ -649,9 +650,10 @@ mod tests {
     #[test]
     fn the_last_administrator_stays_one() {
         let mut conn = db::open_in_memory().unwrap();
-        let member = start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let member = start_roles(&mut conn, &lib, "Tersoal", &[]).unwrap();
 
-        let result = set_role(&mut conn, LIB, &member, Some("editor"), false);
+        let result = set_role(&mut conn, &lib, &member, Some("editor"), false);
 
         assert!(matches!(result, Err(Error::LastAdmin)));
     }
@@ -660,37 +662,41 @@ mod tests {
     fn a_lost_phone_is_removed_and_what_it_still_sends_becomes_a_request() {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
-        catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
-        let member = start_roles(&mut laptop, LIB, "Tersoal", &[]).unwrap();
-        pull(&mut laptop, &phone);
+        let lib = ops::active_library(&laptop).unwrap();
+        // The library is the laptop's; the phone receives it before writing in it.
+        pull(&mut phone, &laptop, &lib);
+        catalog::create_book(&mut phone, &lib, &book("Tehanu"), None).unwrap();
+        let member = start_roles(&mut laptop, &lib, "Tersoal", &[]).unwrap();
+        pull(&mut laptop, &phone, &lib);
         let phone_id = ops::device_id(&phone).unwrap();
-        assign_device(&mut laptop, LIB, &phone_id, Some(&member)).unwrap();
-        pull(&mut phone, &laptop);
+        assign_device(&mut laptop, &lib, &phone_id, Some(&member)).unwrap();
+        pull(&mut phone, &laptop, &lib);
         assert!(
-            list_people(&laptop, LIB).unwrap().lone_admin,
+            list_people(&laptop, &lib).unwrap().lone_admin,
             "one person administers it, however many devices she has"
         );
 
         assert_eq!(remove_device(&mut laptop, &phone_id).unwrap(), 1);
         // Whoever has the phone now keeps writing, and it reaches the laptop somehow.
-        catalog::create_book(&mut phone, LIB, &book("Stolen"), None).unwrap();
-        pull(&mut laptop, &phone);
+        catalog::create_book(&mut phone, &lib, &book("Stolen"), None).unwrap();
+        pull(&mut laptop, &phone, &lib);
 
-        assert!(!titles(&laptop, LIB).contains(&"Stolen".to_owned()));
-        let requests = crate::requests::list_requests(&laptop, LIB).unwrap();
+        assert!(!titles(&laptop, &lib).contains(&"Stolen".to_owned()));
+        let requests = crate::requests::list_requests(&laptop, &lib).unwrap();
         assert_eq!(requests.len(), 1);
-        let people = list_people(&laptop, LIB).unwrap();
+        let people = list_people(&laptop, &lib).unwrap();
         assert_eq!(people.unassigned.len(), 1);
-        assert!(lan::revocations_of(&laptop, LIB, &phone_id).unwrap().len() == 1);
+        assert!(lan::revocations_of(&laptop, &lib, &phone_id).unwrap().len() == 1);
     }
 
     #[test]
     fn a_duplicate_has_the_books_and_no_roles() {
         let mut conn = db::open_in_memory().unwrap();
-        catalog::create_book(&mut conn, LIB, &book("Dune"), None).unwrap();
-        start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        catalog::create_book(&mut conn, &lib, &book("Dune"), None).unwrap();
+        start_roles(&mut conn, &lib, "Tersoal", &[]).unwrap();
 
-        let copy = backup::duplicate(&mut conn, LIB, "Casa (copia)").unwrap();
+        let copy = backup::duplicate(&mut conn, &lib, "Casa (copia)").unwrap();
 
         assert_eq!(titles(&conn, &copy), vec!["Dune"]);
         assert!(!permissions::has_roles(&conn, &copy).unwrap());
@@ -701,18 +707,19 @@ mod tests {
     #[test]
     fn a_second_administrator_ends_the_warning() {
         let mut conn = db::open_in_memory().unwrap();
-        start_roles(&mut conn, LIB, "Tersoal", &[]).unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        start_roles(&mut conn, &lib, "Tersoal", &[]).unwrap();
         let laura = PersonPick {
             id: None,
             name: "Laura".into(),
         };
         let mut changes = Vec::new();
-        let id = member_changes(&conn, LIB, &laura, Some("admin"), None, &mut changes).unwrap();
+        let id = member_changes(&conn, &lib, &laura, Some("admin"), None, &mut changes).unwrap();
         let tx = conn.transaction().unwrap();
-        ops::record(&tx, LIB, "member.add", changes).unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
         tx.commit().unwrap();
 
-        let people = list_people(&conn, LIB).unwrap();
+        let people = list_people(&conn, &lib).unwrap();
 
         assert!(!people.lone_admin);
         assert!(people.people.iter().any(|p| p.id == id));
@@ -723,10 +730,13 @@ mod tests {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
         let mut tablet = db::open_in_memory().unwrap();
-        catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
-        catalog::create_book(&mut tablet, LIB, &book("Solaris"), None).unwrap();
-        pull(&mut laptop, &phone);
-        pull(&mut laptop, &tablet);
+        let lib = ops::active_library(&laptop).unwrap();
+        pull(&mut phone, &laptop, &lib);
+        pull(&mut tablet, &laptop, &lib);
+        catalog::create_book(&mut phone, &lib, &book("Tehanu"), None).unwrap();
+        catalog::create_book(&mut tablet, &lib, &book("Solaris"), None).unwrap();
+        pull(&mut laptop, &phone, &lib);
+        pull(&mut laptop, &tablet, &lib);
         let (phone_id, tablet_id) = (
             ops::device_id(&phone).unwrap(),
             ops::device_id(&tablet).unwrap(),
@@ -734,7 +744,7 @@ mod tests {
 
         start_roles(
             &mut laptop,
-            LIB,
+            &lib,
             "Ana",
             &[
                 DeviceOwner {
@@ -754,7 +764,7 @@ mod tests {
         )
         .unwrap();
 
-        let people = list_people(&laptop, LIB).unwrap();
+        let people = list_people(&laptop, &lib).unwrap();
         let laura = people.people.iter().find(|p| p.name == "Laura").unwrap();
         assert_eq!(laura.role.as_deref(), Some("editor"), "editor by default");
         assert_eq!(laura.devices[0].id, phone_id);
@@ -764,14 +774,15 @@ mod tests {
     #[test]
     fn the_same_person_joins_another_library_with_the_same_id() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
         let hugo = PersonPick {
             id: None,
             name: "Hugo".into(),
         };
         let mut changes = Vec::new();
-        let id = member_changes(&conn, LIB, &hugo, Some("reader"), None, &mut changes).unwrap();
+        let id = member_changes(&conn, &lib, &hugo, Some("reader"), None, &mut changes).unwrap();
         let tx = conn.transaction().unwrap();
-        ops::record(&tx, LIB, "member.add", changes).unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
         tx.commit().unwrap();
         let games = crate::libraries::create_library(&mut conn, "Juegos").unwrap();
 
@@ -797,20 +808,21 @@ mod tests {
     fn only_administrators_and_people_who_may_share_take_a_library_elsewhere() {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
-        assert!(may_share(&phone, LIB).unwrap(), "without roles, anyone");
-        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
-        assert!(may_share(&laptop, LIB).unwrap(), "an administrator");
+        let lib = ops::active_library(&laptop).unwrap();
+        assert!(may_share(&phone, &lib).unwrap(), "without roles, anyone");
+        start_roles(&mut laptop, &lib, "Ana", &[]).unwrap();
+        assert!(may_share(&laptop, &lib).unwrap(), "an administrator");
 
         let phone_id = ops::device_id(&phone).unwrap();
         let laptop_id = ops::device_id(&laptop).unwrap();
-        lan::share_library(&laptop, LIB, &phone_id).unwrap();
-        lan::share_library(&phone, LIB, &laptop_id).unwrap();
-        pull(&mut phone, &laptop);
+        lan::share_library(&laptop, &lib, &phone_id).unwrap();
+        lan::share_library(&phone, &lib, &laptop_id).unwrap();
+        pull(&mut phone, &laptop, &lib);
         lan::register_in_shared(&mut phone, &laptop_id).unwrap();
-        pull(&mut laptop, &phone);
-        assert!(!may_share(&phone, LIB).unwrap(), "a device of nobody");
+        pull(&mut laptop, &phone, &lib);
+        assert!(!may_share(&phone, &lib).unwrap(), "a device of nobody");
         assert!(matches!(
-            crate::libraries::grant_access(&mut phone, LIB, "tablet"),
+            crate::libraries::grant_access(&mut phone, &lib, "tablet"),
             Err(Error::CannotShare)
         ));
 
@@ -818,41 +830,42 @@ mod tests {
             id: None,
             name: "Laura".into(),
         };
-        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "editor".to_owned())]);
+        let roles = std::collections::BTreeMap::from([(lib.clone(), "editor".to_owned())]);
         give_access(&mut laptop, &phone_id, &laura, &roles, false).unwrap();
-        pull(&mut phone, &laptop);
+        pull(&mut phone, &laptop, &lib);
         assert!(
-            !may_share(&phone, LIB).unwrap(),
+            !may_share(&phone, &lib).unwrap(),
             "an editor without «Can share»"
         );
-        let member = list_people(&laptop, LIB)
+        let member = list_people(&laptop, &lib)
             .unwrap()
             .people
             .into_iter()
             .find(|p| p.name == "Laura")
             .unwrap();
-        set_role(&mut laptop, LIB, &member.id, Some("editor"), true).unwrap();
-        pull(&mut phone, &laptop);
-        assert!(may_share(&phone, LIB).unwrap(), "an editor who may share");
+        set_role(&mut laptop, &lib, &member.id, Some("editor"), true).unwrap();
+        pull(&mut phone, &laptop, &lib);
+        assert!(may_share(&phone, &lib).unwrap(), "an editor who may share");
     }
 
     #[test]
     fn pairing_offers_only_libraries_with_roles_that_this_device_administers() {
         let mut laptop = db::open_in_memory().unwrap();
         let phone = db::open_in_memory().unwrap();
-        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
+        let lib = ops::active_library(&laptop).unwrap();
+        start_roles(&mut laptop, &lib, "Ana", &[]).unwrap();
         let games = crate::libraries::create_library(&mut laptop, "Juegos").unwrap();
         let phone_id = ops::device_id(&phone).unwrap();
-        lan::share_library(&laptop, LIB, &phone_id).unwrap();
+        lan::share_library(&laptop, &lib, &phone_id).unwrap();
         lan::share_library(&laptop, &games, &phone_id).unwrap();
 
         let owners = pairing_owners(&laptop, &phone_id).unwrap();
-        assert_eq!(owners.libraries, vec![LIB.to_owned()]);
+        assert_eq!(owners.libraries, vec![lib.clone()]);
         assert_eq!(owners.people.len(), 1);
         assert!(owners.people[0].me);
-        assert_eq!(owners.people[0].roles[LIB], "admin");
+        assert_eq!(owners.people[0].roles[&lib], "admin");
 
-        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "reader".to_owned())]);
+        let roles = std::collections::BTreeMap::from([(lib.clone(), "reader".to_owned())]);
         let hugo = PersonPick {
             id: None,
             name: "Hugo".into(),
@@ -868,10 +881,11 @@ mod tests {
     fn a_new_device_becomes_its_person_s_once_it_registers() {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
-        start_roles(&mut laptop, LIB, "Ana", &[]).unwrap();
+        let lib = ops::active_library(&laptop).unwrap();
+        start_roles(&mut laptop, &lib, "Ana", &[]).unwrap();
         let phone_id = ops::device_id(&phone).unwrap();
-        lan::share_library(&laptop, LIB, &phone_id).unwrap();
-        let roles = std::collections::BTreeMap::from([(LIB.to_owned(), "editor".to_owned())]);
+        lan::share_library(&laptop, &lib, &phone_id).unwrap();
+        let roles = std::collections::BTreeMap::from([(lib.clone(), "editor".to_owned())]);
 
         give_access(
             &mut laptop,
@@ -885,25 +899,25 @@ mod tests {
         )
         .unwrap();
         assert!(
-            list_people(&laptop, LIB).unwrap().unassigned.is_empty(),
+            list_people(&laptop, &lib).unwrap().unassigned.is_empty(),
             "not registered yet"
         );
 
         // Over the network, the phone registers as soon as the library arrives.
         let laptop_id = ops::device_id(&laptop).unwrap();
-        lan::share_library(&phone, LIB, &laptop_id).unwrap();
-        pull(&mut phone, &laptop);
+        lan::share_library(&phone, &lib, &laptop_id).unwrap();
+        pull(&mut phone, &laptop, &lib);
         lan::register_in_shared(&mut phone, &laptop_id).unwrap();
-        pull(&mut laptop, &phone);
-        pull(&mut phone, &laptop);
+        pull(&mut laptop, &phone, &lib);
+        pull(&mut phone, &laptop, &lib);
 
-        let people = list_people(&laptop, LIB).unwrap();
+        let people = list_people(&laptop, &lib).unwrap();
         let laura = people.people.iter().find(|p| p.name == "Laura").unwrap();
         assert_eq!(laura.devices[0].id, phone_id);
         assert_eq!(
-            list_people(&phone, LIB).unwrap().my_role.as_deref(),
+            list_people(&phone, &lib).unwrap().my_role.as_deref(),
             Some("editor")
         );
-        catalog::create_book(&mut phone, LIB, &book("Tehanu"), None).unwrap();
+        catalog::create_book(&mut phone, &lib, &book("Tehanu"), None).unwrap();
     }
 }

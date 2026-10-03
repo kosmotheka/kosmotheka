@@ -19,9 +19,6 @@ const DEVICE_ID_KEY: &str = "device_id";
 /// 32 random bytes, base64url: the seed of this device's signing key (D56).
 const SIGNING_SEED_KEY: &str = "signing_seed";
 
-/// The library that holds what existed before libraries did. The same id on every
-/// device, so devices that already synced merge without duplicates (D46).
-pub const DEFAULT_LIBRARY_ID: &str = "00000000-0000-7000-8000-000000000001";
 const LAST_HLC_KEY: &str = "last_hlc";
 const ACTIVE_LIBRARY_KEY: &str = "active_library";
 
@@ -234,14 +231,28 @@ pub fn schema_version(conn: &Connection) -> Result<i64> {
     Ok(conn.query_row("PRAGMA user_version", [], |row| row.get(0))?)
 }
 
-/// The library the user is working in. Until libraries can be created (milestone
-/// 4.5) it is always the one migrated from before libraries existed.
+/// The library the user is working in: the stored one if it still exists, otherwise
+/// the first one (D85). Startup guarantees there is always one.
 pub fn active_library(conn: &Connection) -> Result<String> {
-    Ok(read_state(conn, ACTIVE_LIBRARY_KEY)?.unwrap_or_else(|| DEFAULT_LIBRARY_ID.to_owned()))
+    current_library(conn)?.ok_or(Error::CorruptState(ACTIVE_LIBRARY_KEY))
+}
+
+/// `active_library`, or `None` while no library exists (mid-removal of the last one).
+pub fn current_library(conn: &Connection) -> Result<Option<String>> {
+    if let Some(id) = read_state(conn, ACTIVE_LIBRARY_KEY)?
+        && crate::libraries::library_exists(conn, &id)?
+    {
+        return Ok(Some(id));
+    }
+    crate::libraries::first_library(conn)
 }
 
 pub fn set_active_library(conn: &Connection, library: &str) -> Result<()> {
     write_state(conn, ACTIVE_LIBRARY_KEY, Some(library))
+}
+
+pub fn forget_active_library(conn: &Connection) -> Result<()> {
+    write_state(conn, ACTIVE_LIBRARY_KEY, None)
 }
 
 thread_local! {
@@ -482,7 +493,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
 }
 
 /// Every entity inside a library, children before parents.
-const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 21] = [
+pub(crate) const LIBRARY_CONTENTS_CHILDREN_FIRST: [Entity; 21] = [
     Entity::Copy,
     Entity::BookDetails,
     Entity::ComicDetails,
@@ -589,12 +600,13 @@ mod tests {
     #[test]
     fn records_the_operation_and_applies_its_changes() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
         let member_id = new_id();
         let tx = conn.transaction().unwrap();
 
         let op = record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -626,10 +638,11 @@ mod tests {
     #[test]
     fn each_operation_gets_a_later_hlc() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
         let tx = conn.transaction().unwrap();
         let first = record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -640,7 +653,7 @@ mod tests {
         .unwrap();
         let second = record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -655,18 +668,19 @@ mod tests {
     #[test]
     fn updates_and_deletes_apply_to_existing_rows() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
         let id = new_id();
         let tx = conn.transaction().unwrap();
         record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.add",
             vec![Change::create(Entity::Member, &id, json!({ "name": "A" }))],
         )
         .unwrap();
         record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.rename",
             vec![Change::update(Entity::Member, &id, json!({ "name": "B" }))],
         )
@@ -676,7 +690,7 @@ mod tests {
             .unwrap();
         record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.remove",
             vec![Change::delete(Entity::Member, &id)],
         )
@@ -684,18 +698,21 @@ mod tests {
 
         assert_eq!(renamed, "B");
         assert_eq!(count(&tx, "members"), 0);
-        // Three, plus the one where this device registered its key.
-        assert_eq!(count(&tx, "operations"), 4);
+        // Three, plus the two of the first start: the library's creation and the
+        // registration of this device's key that came with it.
+        assert_eq!(count(&tx, "operations"), 5);
     }
 
     #[test]
     fn invalid_operation_writes_nothing() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
         let tx = conn.transaction().unwrap();
+        let logged = count(&tx, "operations");
 
         let error = record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.add",
             vec![Change::create(
                 Entity::Member,
@@ -709,16 +726,17 @@ mod tests {
             matches!(error, Error::InvalidOperation(e) if e.code == OperationErrorCode::UnknownField)
         );
         assert_eq!(count(&tx, "members"), 0);
-        assert_eq!(count(&tx, "operations"), 0);
+        assert_eq!(count(&tx, "operations"), logged);
     }
 
     #[test]
     fn updating_a_missing_row_fails() {
         let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
         let tx = conn.transaction().unwrap();
         let error = record(
             &tx,
-            DEFAULT_LIBRARY_ID,
+            &lib,
             "member.rename",
             vec![Change::update(
                 Entity::Member,

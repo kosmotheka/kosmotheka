@@ -72,12 +72,15 @@ async fn run(cast: &Path, out: &Path) -> Result<(), String> {
 async fn build(device: &Device, out: &Path) -> Result<(), String> {
     let dir = out.join(&device.folder);
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let database = Database::open(dir.join(DATABASE_FILE)).map_err(|e| e.to_string())?;
+    // Identity first: opening records the first library, and it must carry it.
+    let seed = decode_seed(&device.signing_seed)?;
+    let database = Database::open_as(
+        dir.join(DATABASE_FILE),
+        Some((device.device_id.as_str(), seed)),
+    )
+    .map_err(|e| e.to_string())?;
     {
         let conn = database.lock().map_err(|e| e.to_string())?;
-        // Identity first: nothing is recorded yet, so every operation carries it.
-        let seed = decode_seed(&device.signing_seed)?;
-        ops::set_identity(&conn, &device.device_id, seed).map_err(|e| e.to_string())?;
         ops::write_state(&conn, account::ACCOUNT_SERVER, Some(&device.server))
             .map_err(|e| e.to_string())?;
         let user = AccountUser {

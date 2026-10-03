@@ -38,7 +38,7 @@ let mockSettings: Settings = { apiKeys: {}, disabledSources: [] };
 let mockAppLock = false;
 let mockAppLockAfter = 60;
 
-const HOME = "00000000-0000-7000-8000-000000000001";
+const HOME = "01997c7e-0000-7000-8000-00000000a0e1";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
 
 const libraries: LibrarySummary[] = [

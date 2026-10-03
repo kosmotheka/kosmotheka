@@ -26,7 +26,7 @@ Todo lo que sigue ocurre **biblioteca a biblioteca** (D46, D54):
 
 **La oferta.** En cada sincronización, las claves de los vectores que manda cada lado son su oferta: las bibliotecas que comparte con el otro. Al recibirla, cada dispositivo concilia (`lan::reconcile`):
 - **Una biblioteca que nunca tuvo** la acepta: la añade a `library_peers` y la recibe entera. Si la acepta el cliente, hace una segunda vuelta en la misma sincronización para traerla. Una biblioteca **borrada** cuenta como tenida: conserva su registro y su borrado (D65, D66), y aceptarla sola llevaría ese borrado a quien nunca la compartió con este dispositivo (SEG-010, `libraries::library_known`).
-- **Una biblioteca que ya tiene** no la acepta por su cuenta: compartir lo propio es siempre una decisión de ese dispositivo. Por eso «Mi biblioteca» (el mismo id en todos, D46) solo se une si **los dos** la marcan.
+- **Una biblioteca que ya tiene** no la acepta por su cuenta: compartir lo propio es siempre una decisión de ese dispositivo. Esto vale también para un id repetido a propósito (una copia, un par hostil): ningún id está fijo desde D85, así que dos dispositivos solo tienen la misma biblioteca si una llegó a la otra sincronizando, y solo se une si **los dos** la marcan.
 - Una biblioteca viaja solo cuando **los dos lados** la comparten.
 
 **Retirar el acceso** (desmarcar en «Qué va a…» o «Dejar de compartir» en los ajustes de la biblioteca):
