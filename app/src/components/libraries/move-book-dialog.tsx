@@ -60,7 +60,9 @@ export function MoveBookDialog({
       description={t("libraries.moveNow", { name: from })}
       icon={<FolderInput className="size-5 shrink-0 text-muted-foreground" />}
     >
-      <p className="-mt-2 text-sm text-muted-foreground">{t("libraries.moveNow", { name: from })}</p>
+      <p className="-mt-2 text-sm text-muted-foreground">
+        {t("libraries.moveNow", { name: from })}
+      </p>
       <div role="radiogroup" className="-mx-2 flex flex-col">
         {others.map((library) => {
           const on = library.id === target.id;

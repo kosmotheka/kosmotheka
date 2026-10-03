@@ -157,7 +157,12 @@ export function DeleteLibraryDialog({
           {t("form.cancel")}
         </Button>
         {savedTo ? (
-          <Button variant="destructive" className="h-12" disabled={busy} onClick={() => void remove()}>
+          <Button
+            variant="destructive"
+            className="h-12"
+            disabled={busy}
+            onClick={() => void remove()}
+          >
             {t("libraries.deleteNamed", { name })}
           </Button>
         ) : (
