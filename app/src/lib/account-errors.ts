@@ -28,7 +28,8 @@ export interface AccountActionError {
 /** The account screens (account, second factor, devices) all read a thrown
  * command error the same way AuthDialog does. */
 export function accountErrorOf(e: unknown): AccountActionError {
-  if (isCommandError(e) && e.kind === "account") return { reason: e.reason, retryAfter: e.retryAfter };
+  if (isCommandError(e) && e.kind === "account")
+    return { reason: e.reason, retryAfter: e.retryAfter };
   return { reason: "internal" };
 }
 
