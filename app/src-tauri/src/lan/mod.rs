@@ -266,10 +266,20 @@ pub fn record_server_sync(conn: &Connection, device_id: &str, working_address: &
 
 // --- Devices that connect to this one ----------------------------------------
 
+pub fn is_known_client(conn: &Connection, device_id: &str) -> Result<bool> {
+    Ok(conn
+        .query_row(
+            "SELECT 1 FROM known_clients WHERE device_id = ?1",
+            [device_id],
+            |_| Ok(()),
+        )
+        .optional()?
+        .is_some())
+}
+
 pub fn save_client(conn: &Connection, device_id: &str, name: &str, secret: &str) -> Result<()> {
     conn.execute(
-        "INSERT INTO known_clients (device_id, name, secret_hash) VALUES (?1, ?2, ?3)
-         ON CONFLICT (device_id) DO UPDATE SET name = excluded.name, secret_hash = excluded.secret_hash",
+        "INSERT INTO known_clients (device_id, name, secret_hash) VALUES (?1, ?2, ?3)",
         params![device_id, name, hash_secret(secret)],
     )?;
     Ok(())

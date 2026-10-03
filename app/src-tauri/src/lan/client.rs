@@ -135,6 +135,7 @@ async fn post<B: Serialize, R: DeserializeOwned>(
                 return match response.status() {
                     status if status.is_success() => Ok((response.json().await?, address.clone())),
                     StatusCode::UNAUTHORIZED => Err(Error::Lan("rejected")),
+                    StatusCode::FORBIDDEN => Err(Error::Lan("already_paired")),
                     StatusCode::CONFLICT => Err(Error::Lan("other_version")),
                     _ => Err(Error::Lan("peer_error")),
                 };
@@ -492,6 +493,28 @@ mod tests {
         // A second sync has nothing to do.
         let again = sync(&phone, &server.device_id).await.unwrap();
         assert_eq!((again.received.received, again.sent), (0, 0));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_paired_device_cannot_pair_again_until_forgotten() {
+        let desk = serve().await;
+        let phone = Database::in_memory();
+        let server = pair(&phone, &desk.open_pairing(), &default())
+            .await
+            .unwrap();
+
+        // Someone who saw the next code and claims the phone's id is turned away,
+        // and the phone keeps syncing with its own secret.
+        let again = pair(&phone, &desk.open_pairing(), &default()).await;
+        assert!(matches!(again, Err(Error::Lan("already_paired"))));
+        sync(&phone, &server.device_id).await.unwrap();
+
+        // Once the desk forgets it, it pairs as new.
+        let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+        crate::lan::forget_device(&desk.database.lock().unwrap(), &phone_id).unwrap();
+        pair(&phone, &desk.open_pairing(), &default())
+            .await
+            .unwrap();
     }
 
     fn add_to(database: &Database, library: &str, title: &str) {

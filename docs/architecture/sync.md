@@ -106,6 +106,7 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 1. El que se conecta prueba las direcciones del código hasta que una responde. Solo acepta el certificado cuya huella viene en el código: cualquier otro se rechaza como impostor.
 2. Envía el secreto de un solo uso, su identificador y su nombre. Cada lado guarda en `library_peers` las bibliotecas que marcó para el otro; las del servidor van en la ventana de emparejamiento abierta al mostrar el código.
 3. El servidor, si el secreto es válido, lo invalida (no sirve para un segundo dispositivo) y devuelve un **secreto permanente**. De ese secreto solo guarda el hash.
+   - Si el identificador ya está emparejado, responde `403` (`already_paired`): el identificador lo declara el cliente, y aceptarlo dejaría a otro quitarle el sitio a ese dispositivo y quedarse con lo que se compartía con él. Para volver a emparejar, se olvida antes en el servidor.
 4. El cliente guarda al servidor: nombre, direcciones, huella y secreto.
 
 **Sincronizar** (autenticado con `X-Device-Id` y `Authorization: Bearer <secreto>`):

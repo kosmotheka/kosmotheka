@@ -19,8 +19,9 @@ use tokio_rustls::TlsAcceptor;
 use super::pairing::PairingWindow;
 use super::{
     Hello, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, client_is_authorized,
-    device_name, notices_for, only_shared, only_shared_operations, random_secret, reconcile,
-    record_client_sync, register_in_shared, save_client, share_library, shared_libraries,
+    device_name, is_known_client, notices_for, only_shared, only_shared_operations, random_secret,
+    reconcile, record_client_sync, register_in_shared, save_client, share_library,
+    shared_libraries,
 };
 use crate::db::Database;
 use crate::error::Result;
@@ -87,6 +88,7 @@ fn router(state: ServerState) -> Router {
 /// Errors as HTTP statuses the client maps back to reasons.
 enum ApiError {
     Unauthorized,
+    AlreadyPaired,
     OtherVersion,
     Internal,
 }
@@ -95,6 +97,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ApiError::AlreadyPaired => StatusCode::FORBIDDEN,
             ApiError::OtherVersion => StatusCode::CONFLICT,
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -147,6 +150,11 @@ async fn pair(
     };
     blocking(move || {
         let conn = state.database.lock()?;
+        // The id is the client's word: taking over a paired one would cut that device
+        // off and hand over what was shared with it. It has to be forgotten first.
+        if is_known_client(&conn, &request.device_id)? {
+            return Err(ApiError::AlreadyPaired);
+        }
         let secret = random_secret();
         save_client(&conn, &request.device_id, &request.device_name, &secret)?;
         for library in &libraries {

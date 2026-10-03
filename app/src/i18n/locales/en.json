@@ -451,6 +451,7 @@
       "unreachable": "The other device cannot be reached. Is it on the same Wi-Fi, with the app open?",
       "wrong_certificate": "The device that answered is not the one in the code. Pairing was stopped for safety.",
       "rejected": "The other device refused: the code expired or was already used, or it forgot this device.",
+      "already_paired": "The other device already has this one paired. To pair them again, forget this device on the other one first.",
       "other_version": "The two devices run different versions of the app. Update both.",
       "peer_error": "The other device had a problem. Try again.",
       "unknown_device": "This device is not paired.",

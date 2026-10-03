@@ -464,6 +464,7 @@
       "unreachable": "No se encuentra el otro dispositivo. ¿Está en la misma wifi y con la app abierta?",
       "wrong_certificate": "El dispositivo que respondió no es el del código. Se ha detenido el emparejamiento por seguridad.",
       "rejected": "El otro dispositivo lo ha rechazado: el código caducó o ya se usó, o ha olvidado este dispositivo.",
+      "already_paired": "El otro dispositivo ya tiene emparejado este. Para emparejarlos de nuevo, olvida antes este dispositivo en el otro.",
       "other_version": "Los dos dispositivos tienen versiones distintas de la app. Actualiza ambos.",
       "peer_error": "El otro dispositivo ha tenido un problema. Inténtalo de nuevo.",
       "unknown_device": "Este dispositivo no está emparejado.",
