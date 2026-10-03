@@ -37,6 +37,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0025_drop_wishes.sql")),
     M::up(include_str!("../migrations/0026_device_fences.sql")),
     M::up(include_str!("../migrations/0027_library_cloud.sql")),
+    M::up(include_str!("../migrations/0028_forgotten_libraries.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 

@@ -252,6 +252,7 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
     let mut newest_before: BTreeMap<String, Option<String>> = BTreeMap::new();
     let mut arrived_late = BTreeSet::new();
     let mut received = Vec::new();
+    let mut held_back = BTreeSet::new();
     for SyncOperation {
         schema_version,
         operation,
@@ -261,10 +262,17 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
             report.known += 1;
             continue;
         }
-        if schema_version != local_schema
+        // Once an operation is refused its author's later ones wait too: the vector
+        // must stay below it so the next sync sends it again (DAT-004).
+        let author = (operation.library.clone(), operation.hlc.device.clone());
+        // An older version is history from before an update (D31); a newer one
+        // may mean something this app does not know.
+        if held_back.contains(&author)
+            || schema_version > local_schema
             || operation.validate().is_err()
             || !signature_holds(tx, &operation)?
         {
+            held_back.insert(author);
             report.rejected += 1;
             continue;
         }
@@ -1100,7 +1108,7 @@ mod tests {
     }
 
     #[test]
-    fn operations_from_another_schema_version_are_rejected() {
+    fn operations_from_an_older_schema_version_are_accepted() {
         let mut a = Device::new();
         let mut b = Device::empty_for(&a);
         a.add("A", None, "Ana");
@@ -1108,12 +1116,76 @@ mod tests {
         for op in &mut incoming {
             op.schema_version -= 1;
         }
+
+        let report = merge(&mut b.0, incoming).unwrap();
+
+        assert_eq!(report.rejected, 0);
+        assert_eq!(b.titles(), vec!["A"]);
+    }
+
+    #[test]
+    fn operations_from_a_newer_schema_version_are_rejected() {
+        let mut a = Device::new();
+        let mut b = Device::empty_for(&a);
+        a.add("A", None, "Ana");
+        let mut incoming = operations_since(&a.0, &everything(&a.1)).unwrap();
+        for op in &mut incoming {
+            op.schema_version += 1;
+        }
         let sent = incoming.len();
 
         let report = merge(&mut b.0, incoming).unwrap();
 
         assert_eq!(report.rejected, sent);
         assert!(b.titles().is_empty());
+    }
+
+    #[test]
+    fn a_device_paired_after_an_app_update_gets_the_old_history() {
+        let mut a = Device::new();
+        a.add("A", None, "Ana");
+        a.add("B", None, "Ana");
+        // What operations recorded before the last migration look like.
+        a.0.execute(
+            "UPDATE operations SET schema_version = schema_version - 1",
+            [],
+        )
+        .unwrap();
+        let mut b = Device::empty_for(&a);
+
+        b.pull_from(&a);
+
+        assert_eq!(b.titles().len(), 2);
+        assert_converged(&[&a, &b]);
+    }
+
+    #[test]
+    fn a_rejected_operation_holds_back_the_later_ones_of_its_author() {
+        let mut a = Device::new();
+        let mut b = Device::empty_for(&a);
+        a.add("One", None, "Ana");
+        a.add("Two", None, "Ana");
+        let mut incoming = operations_since(&a.0, &everything(&a.1)).unwrap();
+        let n = incoming.len();
+        // a1 carries a2's signature: it does not verify.
+        incoming[n - 2].operation.signature = incoming[n - 1].operation.signature.clone();
+
+        let report = merge(&mut b.0, incoming).unwrap();
+
+        assert!(report.rejected >= 2);
+        assert!(b.titles().is_empty());
+        let vector = &version_vectors(&b.0, std::slice::from_ref(&a.1)).unwrap()[&a.1];
+        let a2 = everything_from(&a).pop().unwrap().operation.hlc;
+        assert!(
+            vector
+                .get(&a2.device)
+                .is_none_or(|seen| *seen < a2.to_string())
+        );
+
+        b.pull_from(&a);
+
+        assert_eq!(b.titles().len(), 2);
+        assert_converged(&[&a, &b]);
     }
 
     #[test]

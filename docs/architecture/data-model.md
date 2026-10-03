@@ -54,6 +54,7 @@ works ──< work_contributors >── people
 | `known_servers`, `known_clients` | Dispositivos emparejados para sincronizar por la red local; locales, no se sincronizan (D34) | ver [sync.md](sync.md) |
 | `library_peers` | Qué bibliotecas van a cada dispositivo emparejado; local (D46) | `library_id`, `device_id` |
 | `leave_notices` | Bibliotecas de las que este dispositivo salió, pendientes de decírselo a cada dispositivo que se las ofrecía; local (D71) | `library_id`, `device_id` |
+| `forgotten_libraries` | Bibliotecas que este dispositivo dejó o de las que lo retiraron, para que la nube no se las devuelva; local, no es una entidad | `library_id` |
 | `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida, la biblioteca activa y los ajustes (clave de Google Books) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `pdf`, `audiobook`, `single_issue` (grapa), `box` (caja), `dvd`, `bluray`, `uhd` (4K), `physical` (videojuego en cartucho o disco), `digital`, `vinyl`, `cd`, `cassette`, `other`. Es una sola lista para todos los tipos, y la interfaz ofrece solo los de cada uno (así un ejemplar se valida sin mirar su obra). Estas listas no llevan `CHECK` en SQLite: solo las fija la spec. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.

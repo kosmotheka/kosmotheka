@@ -361,7 +361,8 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             let conn = database.lock()?;
             (
                 libraries::library_exists(&conn, local)?,
-                libraries::library_known(&conn, local)?,
+                libraries::library_known(&conn, local)?
+                    || libraries::library_forgotten(&conn, local)?,
             )
         };
         reports.push(if exists {
@@ -412,9 +413,10 @@ fn linked_libraries(conn: &Connection) -> Result<Vec<(String, Link)>> {
 
 /// A library this device already has, unlinked here, may have been uploaded by
 /// another device of the family before this one heard of it over the LAN. The
-/// link operation decides (D84): only one from `cloud` written by a device already
-/// registered in this library is merged, and judged like any other (signature,
-/// permissions). Whether the library ends up linked to `cloud` is the answer.
+/// link operation decides (D84): only if the pull holds one from `cloud` written by
+/// a device already registered in this library is anything merged, and then all of
+/// the library's operations, judged like any other (signature, permissions).
+/// Whether the library ends up linked to `cloud` is the answer.
 async fn adopt_link<A: CloudApi>(
     database: &Database,
     api: &A,
@@ -431,20 +433,24 @@ async fn adopt_link<A: CloudApi>(
     };
     let pulled = api.pull(cloud, schema_version, &vector).await?;
     let mut conn = database.lock()?;
-    let mut links = Vec::new();
+    let mut ours = Vec::new();
+    let mut linked = false;
     for synced in pulled.operations {
         let operation = &synced.operation;
-        if operation.library == local
-            && links_to(operation, cloud)
-            && is_registered(&conn, local, &operation.hlc.device)?
-        {
-            links.push(synced);
+        if operation.library != local {
+            continue;
         }
+        if links_to(operation, cloud) && is_registered(&conn, local, &operation.hlc.device)? {
+            linked = true;
+        }
+        ours.push(synced);
     }
-    if links.is_empty() {
+    if !linked {
         return Ok(false);
     }
-    sync::merge(&mut conn, links)?;
+    // All of it, not just the link: the author's vector would otherwise jump over
+    // what this device lacks between its last sync and the link (DAT-002).
+    sync::merge(&mut conn, ours)?;
     Ok(link_of(&conn, local)?.is_some_and(|link| link.is(cloud, api.server())))
 }
 

@@ -345,6 +345,11 @@ fn forget_here(tx: &Transaction<'_>, id: &str, told: Option<&str>) -> Result<()>
           WHERE library_id = ?1 AND device_id IS NOT ?2",
         params![id, told],
     )?;
+    // So the cloud does not hand it back (SEG-017).
+    tx.execute(
+        "INSERT OR IGNORE INTO forgotten_libraries (library_id) VALUES (?1)",
+        [id],
+    )?;
     ops::delete_library(tx, id)?;
     tx.execute("DELETE FROM operations WHERE library_id = ?1", [id])?;
     tx.execute("DELETE FROM library_peers WHERE library_id = ?1", [id])?;
@@ -427,6 +432,15 @@ fn fall_back_from(tx: &Transaction<'_>, gone: &str) -> Result<String> {
     };
     ops::set_active_library(tx, &next)?;
     Ok(next)
+}
+
+/// Whether this device left the library or was cut off from it (SEG-017).
+pub fn library_forgotten(conn: &Connection, id: &str) -> Result<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM forgotten_libraries WHERE library_id = ?1)",
+        [id],
+        |row| row.get(0),
+    )?)
 }
 
 /// Whether this device has or had the library: its row, or anything in its log.

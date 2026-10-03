@@ -559,6 +559,73 @@ async fn a_family_device_that_got_the_library_over_the_lan_before_the_upload_joi
 }
 
 #[tokio::test]
+async fn adopting_a_link_brings_what_the_author_wrote_before_it() {
+    // The laptop edits after the last LAN sync and before uploading: the phone
+    // must not jump over those operations when it adopts the link.
+    let cloud = FakeCloud::default();
+    let (laptop, library) = device_with_family();
+    let phone = Database::in_memory();
+    lan_sync(&phone, &laptop, &library);
+    add(&laptop, &library, "The Dispossessed");
+    add(&laptop, &library, "Tehanu");
+    upload(&laptop, &cloud.api("ana"), &library).await.unwrap();
+
+    let reports = sync_all(&phone, &cloud.api("ana")).await.unwrap();
+
+    assert_eq!(reports[0].outcome, Outcome::Synced);
+    assert_eq!(link(&phone, &library), link(&laptop, &library));
+    sync_all(&laptop, &cloud.api("ana")).await.unwrap();
+    assert_converged(&[&laptop, &phone], &library);
+}
+
+/// A phone that has the family library from the laptop, which uploaded it.
+async fn phone_with_uploaded_library() -> (FakeCloud, Database, String) {
+    let cloud = FakeCloud::default();
+    let (laptop, library) = device_with_family();
+    let phone = Database::in_memory();
+    lan_sync(&phone, &laptop, &library);
+    // What pairing records: the laptop is a paired peer for this library.
+    {
+        let conn = phone.lock().unwrap();
+        conn.execute(
+            "INSERT INTO known_servers (device_id, name, addresses, fingerprint, secret)
+             VALUES ('laptop', 'Laptop', '[]', 'f', 's')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO library_peers (library_id, device_id) VALUES (?1, 'laptop')",
+            [&library],
+        )
+        .unwrap();
+    }
+    upload(&laptop, &cloud.api("ana"), &library).await.unwrap();
+    (cloud, phone, library)
+}
+
+#[tokio::test]
+async fn a_library_left_here_is_not_downloaded_again() {
+    let (cloud, phone, library) = phone_with_uploaded_library().await;
+    libraries::leave_library(&mut phone.lock().unwrap(), &library).unwrap();
+
+    let reports = sync_all(&phone, &cloud.api("ana")).await.unwrap();
+
+    assert_eq!(reports[0].outcome, Outcome::DeletedHere);
+    assert!(!libraries::library_exists(&phone.lock().unwrap(), &library).unwrap());
+}
+
+#[tokio::test]
+async fn a_library_removed_by_a_revocation_is_not_downloaded_again() {
+    let (cloud, phone, library) = phone_with_uploaded_library().await;
+    libraries::remove_revoked(&mut phone.lock().unwrap(), &library, "laptop").unwrap();
+
+    let reports = sync_all(&phone, &cloud.api("ana")).await.unwrap();
+
+    assert_eq!(reports[0].outcome, Outcome::DeletedHere);
+    assert!(!libraries::library_exists(&phone.lock().unwrap(), &library).unwrap());
+}
+
+#[tokio::test]
 async fn a_link_signed_by_a_reader_of_the_family_is_not_adopted() {
     // Hugo reads. With a modified app he links the family library to a cloud
     // library of his own; his device is registered in the library, but a link is
