@@ -771,7 +771,8 @@ Cada dispositivo tiene un par de claves Ed25519, firma sus operaciones y los dem
   - **Con cuenta en la nube** (Fase 7), el control se recupera con el email.
   - **Descartado el código de recuperación:** es un secreto más que se pierde o se deja a la vista, y quien lo encuentre se queda con la biblioteca.
 - **Restaurar una copia no devuelve el control** de una biblioteca compartida: el dispositivo nuevo tiene otra clave, y vincularlo a una persona es cosa de un administrador. Si bastara la copia, cualquiera con el fichero podría hacerse administrador.
-- **Perder los datos** (un dispositivo que era la única copia y sin copia de seguridad) no tiene arreglo: lo evitan las copias y compartir con otro dispositivo, que ya es una copia completa. La **copia automática periódica**, como la de WhatsApp, queda como mejora para cuando el proyecto sea público; no entra en el roadmap de desarrollo.
+- **Perder los datos** (un dispositivo que era la única copia y sin copia de seguridad) no tiene arreglo: lo evitan las copias y compartir con otro dispositivo, que ya es una copia completa. La **copia automática periódica**, como la de WhatsApp, entra en el roadmap (Fase 9, cambiado el 03/10/2026 tras la auditoría SEG-001): la app escribe su propia copia sin claves, se activa y desactiva en Ajustes, y el destino (solo local, Google Drive u otro servicio) se decide al llegar.
+- **La copia de Android y el paso de un móvil a otro no llevan nada** (03/10/2026, auditoría SEG-001): la base de datos guarda la clave de firma y los secretos de emparejamiento, y Android copia ficheros enteros. `allowBackup="false"` y `data_extraction_rules.xml` lo excluyen todo. Restaurar el catálogo es cosa de las copias de la app.
 - La biometría no ayuda: sus claves no salen del chip del móvil.
 
 ## D59 · Organizaciones: la puerta abierta, sin construirlas — `aceptada`

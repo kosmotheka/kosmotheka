@@ -10,8 +10,8 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | CON-003 | abierto | baja | 177 traducciones sin uso aparente | `app/src/i18n/locales` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | COS-001 | abierto | baja | Búsquedas que no descartan respuestas viejas | `book-form.tsx:1347`, `series-work-picker.tsx:51`, `tags-page.tsx:31` | triaje ts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | PRU-001 | abierto | baja | Test ignorado que no se llama `live_*` | `signature.rs` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
-| SEG-001 | abierto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
-| SEG-002 | resuelto | media | Volver a emparejar con un `device_id` conocido suplanta a ese dispositivo | `lan/server.rs:148-153` | threat-model | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
+| SEG-001 | resuelto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
+| SEG-002 | resuelto | media | Volver a emparejar con un `device_id` conocido suplanta a ese dispositivo | `lan/server.rs:148-153` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-003 | abierto | media | CI sin `permissions:` y con actions de terceros sin fijar | `.github/workflows/ci.yml` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-004 | abierto | media | Falta `SECURITY.md` | raíz | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-005 | abierto | media | Sin avisos de licencias de terceros | `web/assets/fonts`, `app/package.json` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |

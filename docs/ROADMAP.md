@@ -176,6 +176,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Enlaces para compartir un ejemplar u ofrecerlo en préstamo** a quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
 - Ejemplar firmado o dedicado, con foto.
 - **Estadísticas** de lectura por año y por persona.
+- **Copia automática periódica** (D58, cambiado el 03/10/2026): la app guarda su propia copia sin claves cada cierto tiempo y, al reinstalar, ofrece restaurarla. Un ajuste para activarla o desactivarla. Por decidir en detalle: dónde se guarda (solo en el dispositivo, Google Drive u otro servicio), cada cuánto y qué hacer con las portadas si no caben.
 - ¿**Papelera** para deshacer borrados? (abierto; podría adelantarse a la Fase 5).
 
 ## Fase 10 — Herramientas de estantería
