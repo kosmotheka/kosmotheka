@@ -25,3 +25,4 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | SEG-011 | abierto | alta | Un aviso `revoked` falso hace borrar una biblioteca entera | `lan/mod.rs:430-435` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-012 | abierto | alta | El plan de la nube no dice de quién es un id de biblioteca | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-013 | abierto | alta | «Puede compartir» al subir a la nube solo lo comprueba la app | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-014 | abierto | media | Quien perdió un rol puede antedatar operaciones firmadas a antes de perderlo | `sync.rs` (`merge_in`), `permissions.rs` | coordinador (test `a_demoted_editor_cannot_backdate_a_change`) | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |

@@ -97,6 +97,7 @@ Revisado en la auditoría del 2026-10-03 (2), tema `library-access`. Quién pued
 **Límites conocidos:**
 - «Mi biblioteca» tiene el mismo id en todas las instalaciones (D46). Por la red local, fundir dos catálogos ajenos exige que los dos dispositivos la marquen, salvo SEG-010 mientras siga abierto.
 - Un compañero de mala fe ya emparejado puede hacer borrar una biblioteca en otro dispositivo (SEG-011, abierto).
+- Quien perdió un rol puede, con una app modificada, firmar cambios con fecha anterior a perderlo (SEG-014, abierto). Contra alguien de mala fe, retirar el acceso además de bajar el rol.
 - Lo que un dispositivo ya recibió no se puede borrar a distancia, y quien lo recibió a través de él lo conserva (D71).
 - La nube (Fase 7) aún no existe: su control de acceso está pendiente de SEG-012 y SEG-013, y el tema vuelve a auditarse al terminar los hitos 7.2, 7.5 y 7.6.
 

@@ -89,6 +89,7 @@
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
 | D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | abierta |
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
+| D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | propuesta |
 
 ---
 
@@ -1314,3 +1315,48 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Servidor:** un endpoint de búsqueda para cuentas, con caché y límite por cuenta; entra con la nube (fase 7), después de la 7.2.
 - **BNE:** investigación y proveedor en su propio paso, con respuestas grabadas como los demás (D18).
 - Amplía D26.
+
+## D84 · Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente — `propuesta`
+
+**Contexto:** al preparar el hito 7.2 (03/10/2026) salió que el plan copiaba a la nube la lógica de la red local: «la nube es un dispositivo más, con el mismo protocolo» (D57). En la red local la puerta la guarda una persona: nadie entra sin ver el QR, y el código puede fiarse de sus compañeros («una biblioteca que me ofrecen y no tengo, la acepto»). A la nube le habla cualquiera con una cuenta. Copiada tal cual, esa lógica convierte el id de una biblioteca en su llave, y «Mi biblioteca» tiene el mismo id en todas las instalaciones (D46): dos desconocidos que la subieran quedarían fundidos. La auditoría del mismo día ([2026-10-03-2](audits/2026-10-03-2.md), SEG-010 a SEG-013 y DAT-001) lo confirmó y encontró además dos fallos de la red local.
+
+Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de nada a una familia de España, pero es hostil y conoce sus ids** (de biblioteca, de operaciones y de dispositivos). No debe poder recibir nada de ella, ni escribir en ella, ni estorbarla.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| La nube decide con el id de la biblioteca (plan anterior) | Mismo código que la red local | El id es la llave: el fijo lo conoce todo el mundo y los demás viajan en vectores y copias |
+| Quitar el id fijo duplicando «Mi biblioteca» al actualizar | Ninguna instalación compartiría id | Cada dispositivo de una familia duplicaría por su cuenta: bibliotecas repetidas y sin historial. El id local seguiría siendo la llave para todos los demás |
+| **Dos niveles: datos iguales, puerta tradicional** | Un id local repetido deja de importar en la nube; el acceso es el de cualquier servicio con cuentas | El servidor tiene su propia clave para las bibliotecas; hay que vigilar cada sitio donde el id local pueda colarse |
+
+**Recomendación:** dos niveles.
+- **Datos, igual que hoy:** las mismas operaciones firmadas, las mismas reglas de fusión y los mismos roles (D32, D56, D73). Una operación que llega por la red local y por la nube es la misma y se aplica una vez.
+- **Puerta, como una app tradicional:**
+  1. **Id propio de la nube.** Al subir una biblioteca, el servidor crea un `cloud_library_id` aleatorio. Todo en PostgreSQL cuelga de él. El id local no da acceso a nada.
+  2. **Tabla de acceso** (`membership`: cuenta, biblioteca de la nube y persona, D76). La nube entrega una biblioteca solo a dispositivos, no retirados ni quitados, de cuentas que estén en esa tabla. Nadie entra en la tabla sin consentimiento: una persona sin cuenta (un niño) no aparece en ella, sigue por la red local y lo suyo llega a la nube como parte de la biblioteca, por decisión de quien administra (D76).
+  3. **Una operación firmada une las dos identidades.** Al subir, un dispositivo de una persona administradora registra en la biblioteca «esta biblioteca es `C` en la nube de `<servidor>`». Viaja a todos los dispositivos. Un dispositivo solo conecta su biblioteca local con `C` si **su propio registro** tiene esa operación; si la registra quien no puede compartir, los demás la juzgan como cualquier operación y queda en petición (D73).
+  4. **El servidor no se fía de ningún id del cliente.** El id local de la biblioteca, los ids de operación y los ids de dispositivo que llegan en una petición se comparan, nunca se usan para buscar ni para decidir.
+- **Lo que no cambia:** la red local (D34, D71), el modo sin cuenta (D57) y el id fijo de las instalaciones que ya lo tienen (D46). Las instalaciones nuevas pueden crear su primera biblioteca con id aleatorio, como mejora, pero ya no es una medida de seguridad.
+
+**Costuras de la nueva clave, cada una con su test del caso hostil** (lista completa en [plans/fase-7.md](plans/fase-7.md), «Batería de acceso»):
+1. Ids de operación únicos **dentro de cada biblioteca de la nube** (`(cloud_library_id, operation_id)`), nunca en toda la nube: si no, Jhonny sube antes operaciones con tus ids y las tuyas se descartan como «ya conocidas». También lo necesitan dos administradores que suben la misma biblioteca a la vez.
+2. Las peticiones de sincronización dicen `C`, no el id local; el servidor no traduce uno en otro.
+3. Cada `C` queda atada al id local de su operación de enlace; el servidor rechaza en `C` operaciones de otra biblioteca.
+4. Las claves de firma se buscan dentro de cada `C`, nunca en una tabla global por id de dispositivo.
+5. Avisos al momento (7.3), invitaciones (7.6) y registro de actividad (7.7) cuelgan de `C`: un tema de Mercure con el id local dejaría a Jhonny saber cuándo cambia algo.
+6. Ids de dispositivo de las cuentas (7.1): hoy, el primero que usa un id se lo queda. Si Jhonny conociera el id de tu móvil antes de que inicies sesión, podría ocuparlo con su clave: no se lleva nada (sus firmas no valen en tu biblioteca), pero te impide entrar. Revisarlo en 7.1.
+7. La nube rechaza solo por lo que dice la propia operación (estructura, versión, firma), nunca por el orden de llegada (DAT-001); lo no permitido pasa a petición (D73).
+8. Dos administradores que suben sin verse crean `C1` y `C2` para la misma biblioteca: gana el enlace de HLC más antiguo, los dispositivos del otro se pasan a esa y la sobrante se borra. No se pierde nada: son las mismas operaciones.
+
+**Abierto, a estudiar antes de aceptar:**
+- **Antedatar (SEG-014, confirmado el 03/10/2026 por `a_demoted_editor_cannot_backdate_a_change`):** el rol se juzga en el HLC de la operación, y el HLC lo pone quien firma. A quien bajaron de editor a lector, con una app modificada, firma un cambio con fecha anterior a la bajada y se aplica en todos los dispositivos. No es una fuga de datos (ya los tenía), pero sí una escritura que no debería entrar. Hay que decidir cómo acotarlo: una operación hecha sin conexión antes de enterarse de la bajada y una antedatada son indistinguibles sin una hora de confianza, y la nube sí la tiene (sabe cuándo llega cada operación). Mientras tanto, contra alguien de mala fe, la herramienta es retirarle el acceso (D71), no solo bajarle el rol.
+- **Un lector con una app modificada** puede subir una copia a su propia cuenta. No obtiene nada que no tuviera (D73), y nadie de su familia se conecta a esa copia (punto 3), pero hasta 7.4 el servidor no sabe de roles para impedirlo (SEG-013).
+
+**Consecuencias:**
+- **D57** se matiza: la nube es un dispositivo más **en los datos**, no en la puerta.
+- **D41:** la clave del catálogo en PostgreSQL pasa a `(cloud_library_id, id)`. No hay datos que migrar: el servidor aún no tiene catálogo.
+- **D76:** se mantiene, apoyada en la operación de enlace del punto 3 y en la prueba de clave al iniciar sesión.
+- **D46:** no cambia.
+- **Plan de la Fase 7:** 7.2 se rehace con este modelo; antes van los arreglos de la red local (SEG-010, SEG-011) y la batería de acceso.
+- **Pruebas:** toda regla de quién recibe una biblioteca tiene su test del caso hostil, en Rust, en PHP o en los dos ([AGENTS.md](../AGENTS.md)). La auditoría es la segunda línea, no la primera; el tema `library-access` vuelve tras 7.2, 7.5 y 7.6, y `threat-model` se rehace al aceptar esta decisión.

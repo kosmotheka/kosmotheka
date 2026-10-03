@@ -1,6 +1,6 @@
 # Plan de la Fase 7 — La nube
 
-> Plan de trabajo mientras dure la fase. Se basa en D38, D39, D41–D43, D45, D48–D52, D57, D58, D62, D66, D67, D71, D73, D75, D76, D77, D78 y D79 ([DECISIONS.md](../DECISIONS.md)), en el [ROADMAP](../ROADMAP.md) y en lo que sigue valiendo del [plan anterior del servidor](../historico/plan-servidor-2026-09.md). Escrito el 01/10/2026. Al cerrar la fase pasa a `historico/`.
+> Plan de trabajo mientras dure la fase. Se basa en D38, D39, D41–D43, D45, D48–D52, D57, D58, D62, D66, D67, D71, D73, D75, D76, D77, D78 D79 y D84 ([DECISIONS.md](../DECISIONS.md)), en el [ROADMAP](../ROADMAP.md) y en lo que sigue valiendo del [plan anterior del servidor](../historico/plan-servidor-2026-09.md). Escrito el 01/10/2026. Al cerrar la fase pasa a `historico/`.
 
 **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
@@ -12,6 +12,8 @@ Lo que sí es nuevo:
 - **el transporte:** HTTPS con un certificado de verdad en lugar del certificado fijado por el QR (D34), y un token de dispositivo que se obtiene con la cuenta en lugar del secreto del emparejamiento;
 - **quién es quién:** la cuenta (D57), que se enlaza con una persona de cada biblioteca;
 - **lo que solo tiene sentido con un servidor:** registro con email, avisos al momento, invitación por enlace, registro de actividad con hora y dirección de confianza, y proveedores con clave.
+
+**Matizado el 03/10/2026 (D84, propuesta):** la nube es un dispositivo más **en los datos** (operaciones, fusión, roles), pero **no en la puerta**. En la red local la guarda una persona con el QR; a la nube le habla cualquiera, así que decide quién recibe qué con su propio id de biblioteca y su tabla de acceso, y no se fía de ningún id que llegue del cliente. Ver 7.2 y la «Batería de acceso».
 
 ## Lo que ya existe
 
@@ -27,7 +29,8 @@ Cada hito deja la app y el servidor funcionando, con sus tests, y se prueba ante
 | Hito | Qué | Dónde |
 |---|---|---|
 | **7.1 Cuentas** | Registro con email y código (D42, D49) o con Google (D77), segundo factor opcional y desbloqueo con biometría (D78), iniciar sesión y dar de alta el dispositivo con su token, recuperar la contraseña (D50), límites de peticiones, cuentas sin confirmar que caducan, borrar la cuenta y superadministrador por consola (D51). En la app: las pantallas de la cuenta | `server/`, `app/` |
-| **7.2 Sincronizar con la nube** | `pull` y `push` en el servidor, con el mismo formato que por la red local; el servidor guarda el registro de operaciones de cada biblioteca, comprueba su estructura y sus firmas, y solo entrega una biblioteca a quien tiene acceso. **Subir una biblioteca** es la primera sincronización: viaja todo el historial. En la app: la nube como un sitio más de cada biblioteca | `server/`, `app/src-tauri` |
+| **7.A Acceso seguro** (añadido el 03/10/2026, antes de 7.2) | La batería de acceso (abajo): sus tests de la red local, primero en rojo y después en verde; arreglos de SEG-010 (una biblioteca borrada no se acepta sola) y SEG-011 (un aviso de retirada necesita la retirada firmada); antedatar (SEG-014, confirmado por un test: necesita decidir cómo acotarlo); revisar en 7.1 que un id de dispositivo no se pueda ocupar con otra clave | `app/src-tauri`, `server/` |
+| **7.2 Sincronizar con la nube** | Con el modelo de D84: id propio de la nube y tabla de acceso. `pull` y `push` en el servidor con el mismo formato de operaciones que la red local, pero dirigidos a una biblioteca de la nube (`C`); el servidor guarda el registro de operaciones de cada `C`, comprueba estructura y firmas, y solo entrega una biblioteca a las cuentas de su tabla de acceso. **Subir una biblioteca**: crear `C`, registrar la operación firmada de enlace y enviar todo el historial. En la app: la nube como un sitio más de cada biblioteca. Empieza por los tests de la batería que le tocan, en rojo | `spec/`, `server/`, `app/src-tauri` |
 | **7.3 Avisos al momento** | Con la app abierta, el servidor avisa en cuanto hay algo nuevo en una biblioteca y la app sincroniza (D75). Sustituye a preguntar cada cierto tiempo. Por la red local, un cambio se envía al momento a los dispositivos a la vista | `server/` (Mercure), `app/` |
 | **7.4 El servidor aplica y juzga** | El motor de fusión y los permisos de D73 en PHP, con las tablas del catálogo en PostgreSQL (D41); recalcular una biblioteca cuando llega algo tarde. Antes: los casos de fusión que faltan, en `spec/`, pasando en Rust | `spec/`, `server/` |
 | **7.5 La cuenta en la biblioteca** | Enlazar una cuenta con una persona; un dispositivo nuevo de la misma cuenta entra en las bibliotecas de esa persona sin que nadie lo vincule a mano; recuperar el control con el email (D58). Retirar el acceso de una persona, al momento (D71) | `spec/`, `crates/domain`, `server/`, `app/` |
@@ -38,7 +41,7 @@ Cada hito deja la app y el servidor funcionando, con sus tests, y se prueba ante
 
 Las pantallas de la cuenta, la nube y las invitaciones se piden a Claude Design antes de construir la interfaz de 7.1. Los textos de error nuevos (código caducado, invitación caducada o usada, sesión cerrada por cambio de contraseña) van a [design/errors.md](../design/errors.md), como piden D43 y D50.
 
-**Orden.** Con 7.1 y 7.2 ya se puede compartir a distancia, porque cada dispositivo juzga lo que recibe. 7.4 hace que el servidor entienda los datos (D57) y es el hito más grande: es portar a PHP buena parte de `sync.rs` y `permissions.rs`. Si conviene probar antes con el amigo, 7.9 puede adelantarse detrás de 7.3.
+**Orden.** 7.A va antes que 7.2: sin ella, la nube se construiría sobre dos fallos conocidos de la red local. Con 7.1 y 7.2 ya se puede compartir a distancia, porque cada dispositivo juzga lo que recibe. 7.4 hace que el servidor entienda los datos (D57) y es el hito más grande: es portar a PHP buena parte de `sync.rs` y `permissions.rs`. Si conviene probar antes con el amigo, 7.9 puede adelantarse detrás de 7.3.
 
 ## Propuestas técnicas
 
@@ -58,17 +61,20 @@ Todo es **propuesta** hasta que el maintainer lo revise; lo que toca una decisi�
 
 ### 7.2 Sincronizar con la nube
 
-- **Mismas rutas que la red local** (`/v1/sync/pull` y `/v1/sync/push`) y mismos cuerpos: versión de esquema, vectores por biblioteca, operaciones y avisos. El código de la app se reutiliza; lo que cambia es el transporte (pregunta técnica para Rust: un *trait* que tienen los dos clientes, el de la red local y el de la nube).
-- **Registro de operaciones en PostgreSQL** (`operations`, con el cuerpo en JSONB, la biblioteca y el dispositivo autor), del que salen los vectores, como en la app.
-- **El servidor rechaza solo lo inválido**, como cualquier dispositivo: estructura, versión de esquema, firma o acceso retirado. Lo no permitido no se rechaza: llega como petición (D73, que reemplaza a D47). Lo rechazado no se reenvía.
-- **La red local sigue a la vez** (D39): un cambio que llega por los dos caminos no se aplica dos veces, por el id de la operación y el vector de versiones.
-- **Quién recibe una biblioteca:** un dispositivo de una cuenta enlazada con una persona de esa biblioteca (7.5), que no esté retirado (`revocation`). Hasta 7.5, quien la subió.
-- **Subir una biblioteca** la puede hacer quien puede compartirla (administrador o «Puede compartir», D73; sin roles, cualquiera), igual que al emparejar. En la app, «Subir a la nube» añade la nube a `library_peers` y sincroniza: viaja todo el registro, firmas incluidas, y no se pierde nada.
+Rehecho el 03/10/2026 con D84 (propuesta). Antes, este apartado decía «mismas rutas que la red local» y «hasta 7.5, quien la subió», sin decir de quién es un id: la auditoría [2026-10-03-2](../audits/2026-10-03-2.md) mostró que así el id de una biblioteca se convertía en su llave.
+
+- **Dos niveles (D84).** Datos iguales que en la red local: mismas operaciones firmadas, mismas reglas de fusión y roles. Puerta tradicional: la nube decide quién recibe qué con sus propias tablas, nunca con un id que llega del cliente.
+- **Tablas nuevas:** `cloud_library` (id propio aleatorio, id local atado por la operación de enlace, fecha, borrada o no), `membership` (cuenta, `cloud_library`, persona; hasta 7.5, solo la cuenta que la subió) y `cloud_operation` (`cloud_library`, id de operación, autor, HLC, cuerpo en JSONB), con clave `(cloud_library_id, operation_id)`.
+- **Rutas:** `POST /v1/cloud/libraries` crea `C` para la cuenta y devuelve su id; `POST /v1/cloud/libraries/{C}/pull` y `/push` llevan los mismos cuerpos que la red local (versión de esquema, vector, operaciones), para una sola biblioteca. Toda ruta con `{C}` comprueba primero la tabla de acceso; si no hay acceso, responde `404`, igual que si no existiera, para no confirmar a nadie que existe.
+- **Subir una biblioteca:** la app crea `C`, registra en la biblioteca la operación firmada de enlace (`library.cloud`, con `C` y el servidor) y hace `push` de todo el registro. El servidor no acepta en `C` ninguna operación hasta recibir esa, firmada por un dispositivo de la cuenta dueña de `C`, y desde entonces solo operaciones de ese id local. Solo lo ofrece la app a quien puede compartir (D73); el servidor lo comprueba con roles en 7.4 (SEG-013).
+- **El servidor rechaza solo lo inválido** por la propia operación: estructura, versión de esquema, firma o id local distinto del de `C`. Nunca por el orden de llegada (DAT-001). Lo rechazado no se reenvía.
+- **La red local sigue a la vez** (D39): una operación que llega por los dos caminos no se aplica dos veces, por su id y el vector.
+- **En la app:** una tabla local `cloud_links` (biblioteca local, servidor, `C`) se llena solo cuando el registro de esa biblioteca tiene la operación de enlace. La nube es otro compañero, pero el cliente de la nube es distinto del de la red local: dirección y token de la cuenta en lugar de certificado fijado, y una petición por `C`. Lo común (vectores, `operations_since`, `merge`) se reutiliza tal cual.
 - **Cuándo se sincroniza:** como con la red local (al abrir, al volver a primer plano y a mano), más tras cada cambio local, con un pequeño retraso para juntar varios. Sin preguntar cada cierto tiempo: de eso se encargan los avisos (7.3).
 
 ### 7.3 Avisos al momento (D75)
 
-- **Mercure** en el servidor (`symfony/mercure-bundle` y el hub oficial en su propio contenedor), porque PHP-FPM no sirve para mantener conexiones abiertas. Tras aplicar un `push`, el servidor publica «hay algo nuevo» en el tema de esa biblioteca, sin datos.
+- **Mercure** en el servidor (`symfony/mercure-bundle` y el hub oficial en su propio contenedor), porque PHP-FPM no sirve para mantener conexiones abiertas. Tras aplicar un `push`, el servidor publica «hay algo nuevo» en el tema de esa biblioteca de la nube (`C`, nunca el id local: D84), sin datos.
 - **El núcleo de Rust** mantiene una sola conexión con el servidor mientras la app está abierta, suscrita a las bibliotecas de la cuenta (con un token de Mercure que da el servidor solo para esas), reconecta sola y, al recibir un aviso, sincroniza esa biblioteca.
 - **La interfaz** escucha un evento de Tauri y refresca lo que se ve; añade un indicador discreto de conectado o sin conexión y el contador de la campanita.
 - **Red local:** tras un cambio, se envía al momento a los dispositivos emparejados que respondan.
@@ -79,7 +85,7 @@ Todo es **propuesta** hasta que el maintainer lo revise; lo que toca una decisi�
 
 - **Primero los casos de fusión** que faltan, en `spec/conformance/merge.json`: campo a campo por HLC, el borrado gana, una operación repetida no cambia nada, el orden de llegada no importa y la referencia rota se salta. Pasan primero en Rust, contra `sync::merge`, y después en PHP. Ese día el servidor ejecuta también `library-merge.json`, que hoy solo pasa la app (auditoría CON-001).
 - **Antes de empezar, pruebas de mutación** (`cargo-mutants`) sobre `sync.rs`, `permissions` y `crates/domain`: dicen qué fallos no detectaría ningún test, justo lo que hay que tener cubierto antes de portar la fusión. Sin modelo para ejecutarlas; un agente ligero tría los mutantes que sobreviven (`docs/audits/README.md`, «Lo que no cubre todavía»).
-- **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con clave `(library_id, id)` también en las foráneas (D41), y `field_versions` y `tombstones` por biblioteca.
+- **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con clave `(cloud_library_id, id)` también en las foráneas (D41, con la clave de D84), y `field_versions` y `tombstones` por biblioteca.
 - **Motor con DBAL**, sin ORM, en `server/src/Sync/`: SQL directo en una transacción, guiado por `CatalogEntity`, como el motor de Rust por `schema.rs`.
 - **Permisos:** las mismas reglas que `crates/domain/src/permission.rs`, en PHP, con `permissions.json`; y recalcular la biblioteca desde el registro cuando llega algo tarde.
 
@@ -129,6 +135,42 @@ Propuestas para construirlo:
 - **Actualizar:** un script que hace una copia, baja la versión nueva, aplica las migraciones y recarga PHP-FPM, con forma de volver atrás.
 - **Guía para quien monte su servidor**, en `docs/`: requisitos, variables, correo, proxy con HTTPS, copias y actualización.
 
+## Batería de acceso
+
+Añadida el 03/10/2026 (D84). La primera línea de defensa son estos tests; la auditoría `library-access` es la segunda. Cada test se escribe antes que su arreglo, se ve fallar y después pasar. Toda regla nueva sobre quién recibe una biblioteca añade aquí su caso hostil ([AGENTS.md](../../AGENTS.md)).
+
+**Red local (Rust, por TLS de verdad, en `lan/client.rs`):**
+
+| Test | Qué comprueba | Estado |
+|---|---|---|
+| `a_deleted_library_is_not_taken_up_when_offered` | SEG-010: quien borró una biblioteca no la acepta sola cuando otro le ofrece el mismo id, y su borrado no llega al otro | ❌ falla (el móvil pierde sus libros) |
+| `a_forged_revocation_notice_removes_nothing` | SEG-011: un aviso de retirada sin la retirada firmada no borra nada | ❌ falla (el escritorio pierde la biblioteca) |
+| `a_library_both_have_travels_only_if_both_share_it` | El id fijo solo se funde si los dos lados lo marcan | ✅ |
+| `only_the_chosen_libraries_travel` | Nada sale sin marcarlo | ✅ |
+| `a_revoked_device_is_refused_its_old_offer` | Un retirado no vuelve a meter cambios | ✅ |
+| `a_revocation_reaches_the_device_through_another_one` | La retirada llega por un tercero | ✅ |
+| `a_paired_device_cannot_pair_again_until_forgotten` | Nadie ocupa el sitio de un dispositivo emparejado | ✅ |
+| `a_demoted_editor_cannot_backdate_a_change` (en `sync.rs`) | SEG-014: a quien bajaron de editor a lector no puede firmar después un cambio con fecha anterior a la bajada | ❌ falla (el cambio se aplica: antedatar funciona hoy) |
+| Retirado a través de un tercero (por escribir) | Una operación de un dispositivo retirado que llega por otro que aún no sabía de la retirada | Por escribir en 7.A |
+
+**Nube (PHP, en `server/tests/`, contra las rutas de 7.2; se escriben al empezar 7.2, en rojo).** Todos con dos cuentas, la de una familia y la de **Jhonny**, que es hostil y conoce los ids de la familia:
+
+| Test | Qué comprueba |
+|---|---|
+| Mismo id local, dos bibliotecas | La familia y Jhonny suben bibliotecas con el mismo id local (el fijo): salen dos `C` y ninguna operación cruza |
+| Sin acceso es como no existir | Jhonny pide `pull`/`push` de la `C` de la familia: `404`, sin datos, sin escribir nada |
+| Ids de operación robados | Jhonny sube a su `C` operaciones con los ids de la familia antes que ella: las de la familia entran igual en su `C` |
+| Id local ajeno | Jhonny intenta meter en su `C` operaciones de otro id local, o la familia en la suya: rechazadas |
+| Sin enlace no hay nada | Un `push` a una `C` recién creada sin la operación de enlace firmada por un dispositivo de la cuenta: rechazado |
+| Firma con clave ajena | Jhonny registra en su `C` una fila de dispositivo con el id de un móvil de la familia: en la `C` de la familia sus firmas no valen |
+| Retirado y quitado | Un dispositivo quitado (D81) o retirado (D71) deja de recibir al momento |
+| Sin cuenta, sin entrada | Un hijo sin cuenta no aparece en la tabla de acceso y sigue por la red local; lo suyo llega a la nube por su padre |
+| No rechazar por orden | La operación t3 de un autor llega después que su t5: se guarda (DAT-001) |
+
+**Las dos a la vez (Rust, simulando dispositivos y un servidor de prueba):** un dispositivo edita una semana sin conexión y luego sincroniza con la nube y con un compañero de la red local, en los dos órdenes: mismo estado final, nada duplicado, nada perdido (`assert_converged`). Una retirada que llega solo por un camino.
+
+**Escenarios de la familia (Ana administra, Hugo lee):** Ana nunca conecta con la nube y Hugo inicia sesión (la subida de Hugo no conecta a nadie); Ana sube; Ana cierra sesión una semana mientras Hugo sigue (desde 7.5). Se escriben con 7.2 y 7.5.
+
 ## Preguntas
 
 Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una conversación aparte.
@@ -156,4 +198,6 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 - [x] D79 aceptada: `api.kosmotheka.app`, invitaciones en `kosmotheka.app/i/…` y la web en `kosmotheka.com` (01/10/2026).
 - [x] D78 aceptada (biometría y segundo factor, opcionales, en 7.1); «Otro servidor» en D77 y un año para el registro de actividad en D66 (01/10/2026).
 - [x] D75 aceptada: avisos al momento con Mercure en esta fase; con la app cerrada, FCM en la Fase 8 (01/10/2026).
+- [x] Auditoría especial `library-access` (03/10/2026): SEG-010 a SEG-013 y DAT-001; D84 propuesta; 7.2 rehecho y 7.A añadido ([informe](../audits/2026-10-03-2.md)).
+- [ ] 7.A Acceso seguro: tests de SEG-010, SEG-011 y SEG-014 (antedatar) escritos y en rojo (03/10/2026); faltan sus arreglos (SEG-014 necesita antes una decisión), el test del retirado a través de un tercero y la revisión de ids de dispositivo de 7.1.
 - [ ] 7.1 Cuentas. **Servidor, parte básica hecha (02/10/2026):** correo (Mailpit en desarrollo, Brevo en producción), límites de peticiones, registro con código, inicio de sesión del dispositivo con reto firmado y token, cuenta y dispositivos, recuperar y cambiar la contraseña, borrar la cuenta, purga cada hora y comandos de consola; ver [architecture/accounts.md](../architecture/accounts.md). Después (02/10/2026): dispositivo quitado y deshacer (D81) y segundo factor con `otphp` (D78 revisada). **App (02/10/2026):** cliente de la cuenta en Rust, reinicio del dispositivo (D81) y las pantallas de Design (ver [architecture/accounts.md](../architecture/accounts.md), «En la app»). Desbloqueo con huella o cara (D78). Falta: Google y la prueba en pantalla contra el servidor; encargo de pantallas en [design/encargo-fase-7-cuentas.md](../design/encargo-fase-7-cuentas.md).
