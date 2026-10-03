@@ -518,6 +518,71 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertStringStartsWith(\sprintf('%016d', self::T + 5), $everything[3]);
     }
 
+    /**
+     * SEG-021: only an `update` of the library's own row links. A change of another row is already
+     * refused by the structure rules (OtherLibrary); the action is what isLink must check itself.
+     */
+    public function testAnotherActionOnTheLibraryRowDoesNotLinkTheCloudLibrary(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $creation = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [[
+            'entity' => 'library',
+            'id' => self::LOCAL,
+            'action' => 'create',
+            'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER],
+        ]]);
+
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $creation]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
+        self::assertSame(0, $this->rows('cloud_operation'));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    /** SEG-021: a change of another library row never reaches isLink; the structure rules refuse it. */
+    public function testALinkOnAnotherLibraryRowDoesNotLinkTheCloudLibrary(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $misdirected = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [[
+            'entity' => 'library',
+            'id' => '00000000-0000-7000-8000-000000000002',
+            'action' => 'update',
+            'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER],
+        ]]);
+
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $misdirected]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
+        self::assertSame(0, $this->rows('cloud_operation'));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    /** SEG-019 (part 1): a registered device changing its own key. */
+    public function testARegisteredDeviceCannotChangeItsOwnKey(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $other = SigningDevice::generate();
+
+        $response = $this->push($this->familySession, $cloud, [$this->deviceKeyChange($this->laptop, $this->laptop->id, $other->publicKey, self::T + 80)]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $response['body']);
+        self::assertSame([$this->laptop->publicKey], $this->storedKeys($this->laptop->id));
+    }
+
+    /** SEG-019 (part 1): a device changing the key of another registered device. */
+    public function testADeviceCannotChangeTheKeyOfAnotherRegisteredDevice(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $phone = SigningDevice::generate();
+        $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 81)]);
+        $other = SigningDevice::generate();
+
+        $response = $this->push($this->familySession, $cloud, [$this->deviceKeyChange($this->laptop, $phone->id, $other->publicKey, self::T + 82)]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $response['body']);
+        self::assertSame([$phone->publicKey], $this->storedKeys($phone->id));
+    }
+
     // ----------------------------------------------------------- helpers ---
     /**
      * @param array{headers: array<string, string>}|null $session
@@ -538,6 +603,31 @@ final class CloudSyncControllerTest extends WebTestCase
         \assert(\is_array($decoded));
 
         return ['status' => $this->client->getResponse()->getStatusCode(), 'body' => $decoded];
+    }
+
+    /**
+     * An operation signed by $author that sets $key on the device row $target.
+     *
+     * @return array<string, mixed>
+     */
+    private function deviceKeyChange(SigningDevice $author, string $target, string $key, int $time): array
+    {
+        return $author->sign(self::LOCAL, $time, 'device.rekey', [[
+            'entity' => 'device',
+            'id' => $target,
+            'action' => 'update',
+            'fields' => ['public_key' => $key],
+        ]]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function storedKeys(string $device): array
+    {
+        $keys = self::getContainer()->get(Connection::class)->fetchFirstColumn('SELECT public_key FROM cloud_device_key WHERE device_id = ?', [$device]);
+
+        return array_map(static fn (mixed $key): string => \is_string($key) ? $key : '', $keys);
     }
 
     /**

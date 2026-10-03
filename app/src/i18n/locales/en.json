@@ -1584,6 +1584,18 @@
       "title": "The second factor isn't on.",
       "help": "Reload the account screen to see its current state."
     },
+    "notFound": {
+      "title": "Something went wrong.",
+      "help": "Try again. If it keeps happening, report it."
+    },
+    "invalidRequest": {
+      "title": "Something went wrong.",
+      "help": "Try again. If it keeps happening, report it."
+    },
+    "schemaVersion": {
+      "title": "This app version cannot sync with the server.",
+      "help": "Update the app and try again."
+    },
     "deviceNotFound": {
       "title": "That device no longer exists."
     },
@@ -1618,15 +1630,6 @@
       "unsigned_history": "This library has changes from before signing existed, so it cannot go to the cloud. Duplicate it as a new library and upload that one.",
       "already_linked": "This library is already in a cloud.",
       "offline": "Not connected to the cloud."
-    },
-    "outcome": {
-      "synced": "Up to date",
-      "downloaded": "Downloaded from the cloud",
-      "library_conflict": "This device already has a different library that the app identifies the same way. Nothing was merged.",
-      "not_linked": "The cloud offered a library that was not properly linked. It was ignored.",
-      "missing_in_cloud": "This library is no longer in your cloud account.",
-      "other_server": "This library is in a cloud on another server.",
-      "deleted_here": "You deleted this library on this device, so it was not downloaded again."
     },
     "notice": {
       "downloaded": "{{name}} came down from your cloud.",

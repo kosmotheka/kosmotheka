@@ -1598,6 +1598,18 @@
       "title": "El segundo factor no está activado.",
       "help": "Recarga la pantalla de cuenta para ver su estado actual."
     },
+    "notFound": {
+      "title": "Algo ha fallado.",
+      "help": "Inténtalo de nuevo. Si se repite, avisa."
+    },
+    "invalidRequest": {
+      "title": "Algo ha fallado.",
+      "help": "Inténtalo de nuevo. Si se repite, avisa."
+    },
+    "schemaVersion": {
+      "title": "Esta versión de la app no puede sincronizar con el servidor.",
+      "help": "Actualiza la app e inténtalo de nuevo."
+    },
     "deviceNotFound": {
       "title": "Ese dispositivo ya no existe."
     },
@@ -1632,15 +1644,6 @@
       "unsigned_history": "Esta biblioteca tiene cambios de antes de que existieran las firmas, así que no puede subir a la nube. Duplícala como nueva y sube esa.",
       "already_linked": "Esta biblioteca ya está en una nube.",
       "offline": "Sin conexión con la nube."
-    },
-    "outcome": {
-      "synced": "Al día",
-      "downloaded": "Descargada de la nube",
-      "library_conflict": "Este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se mezcló nada.",
-      "not_linked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró.",
-      "missing_in_cloud": "Esta biblioteca ya no está en tu cuenta de la nube.",
-      "other_server": "Esta biblioteca está en una nube de otro servidor.",
-      "deleted_here": "Borraste esta biblioteca en este dispositivo, así que no se descargó otra vez."
     },
     "notice": {
       "downloaded": "{{name}} ha bajado de tu nube.",

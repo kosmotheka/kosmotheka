@@ -112,6 +112,9 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 | `server_unavailable` | (sin respuesta o 5xx) | aviso | El servidor no responde. | Puede estar en mantenimiento, o la dirección no es correcta. Inténtalo en unos minutos. **«Reintentar»** |
 | `invite_invalid` | (hito 7.6) | error | Esta invitación ya no vale. | Ya se usó o han pasado más de 24 horas. Pide a {nombre} que te mande otra. |
 | `password_short` | 422 de validación | error | La contraseña necesita al menos 8 caracteres. | |
+| `not_found` | `not_found` | error | Algo ha fallado. | Inténtalo de nuevo. Si se repite, avisa. |
+| `invalid_request` | `invalid_request` | error | Algo ha fallado. | Inténtalo de nuevo. Si se repite, avisa. |
+| `schema_version` | `schema_version` | aviso | Esta versión de la app no puede sincronizar con el servidor. | Actualiza la app e inténtalo de nuevo. |
 
 - Inicio de sesión y códigos: en un bloque bajo los campos; el formulario no se cierra.
 - `session_revoked` y `device_removed`: pantalla propia al abrir la app.

@@ -191,6 +191,24 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         helpKey: "accountErrors.notSignedIn.help",
         actionKey: "accountErrors.notSignedIn.action",
       };
+    case "not_found":
+      return {
+        level: "error",
+        titleKey: "accountErrors.notFound.title",
+        helpKey: "accountErrors.notFound.help",
+      };
+    case "invalid_request":
+      return {
+        level: "error",
+        titleKey: "accountErrors.invalidRequest.title",
+        helpKey: "accountErrors.invalidRequest.help",
+      };
+    case "schema_version":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.schemaVersion.title",
+        helpKey: "accountErrors.schemaVersion.help",
+      };
     default:
       return null;
   }

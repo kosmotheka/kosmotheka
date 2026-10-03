@@ -5,13 +5,13 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | ID | Estado | Severidad | Título | Dónde | Auditor | Abierto | Cerrado | Informe |
 |---|---|---|---|---|---|---|---|---|
 | CAL-001 | descartado | baja | Parámetro `only` siempre vacío (falso: `notices` le pasa un filtro) | `requests.rs:91` | coordinador | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| CAL-002 | abierto | baja | Siete traducciones sin uso: `cloud.outcome.*` | `app/src/i18n/locales/*.json` | facts | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| CAL-002 | resuelto | baja | Siete traducciones sin uso: `cloud.outcome.*` | `app/src/i18n/locales/*.json` | facts | 2026-10-03 | | 2026-10-04 |
 | CON-001 | abierto | media | `library-merge.json` solo lo ejecuta Rust | `spec/conformance/library-merge.json` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | CON-002 | resuelto | media | `duplicate_library` registrado y sin pantalla | `lib.rs:149` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-003 | resuelto | baja | 177 traducciones sin uso aparente (solo 9 de verdad; el resto, claves dinámicas) | `app/src/i18n/locales` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-004 | resuelto | media | La lista de géneros del JSON Schema no es la de Rust ni la de PHP (anterior a la 6.7) | `spec/operation.schema.json` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-005 | resuelto | media | La app y el servidor no rechazan los mismos textos (NUL) | `server/src/Sync/OperationReader.php:44` | library-access | 2026-10-03 | | 2026-10-04 |
-| CON-006 | abierto | baja | Tres códigos de error de la cuenta sin texto propio | `app/src/lib/account-errors.ts` | facts | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| CON-006 | resuelto | baja | Tres códigos de error de la cuenta sin texto propio | `app/src/lib/account-errors.ts` | facts | 2026-10-03 | | 2026-10-04 |
 | COS-001 | resuelto | baja | Búsquedas que no descartan respuestas viejas | `book-form.tsx:1347`, `series-work-picker.tsx:51`, `tags-page.tsx:31` | triaje ts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | DAT-001 | resuelto | media | Si la nube rechaza una operación y acepta otra posterior del mismo autor, las copias divergen | `sync.rs:165-186` | library-access | 2026-10-03 | | 2026-10-04 |
 | DAT-002 | resuelto | crítica | `adopt_link` salta las operaciones intermedias del autor del enlace | `cloud/mod.rs:418-449` | library-access | 2026-10-03 | | 2026-10-03 |
@@ -38,6 +38,6 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | SEG-016 | resuelto | media | Un intruso que conoce el id de un dispositivo lo ocupa en la nube con otra clave y deja fuera a su dueño | `server/src/Controller/AuthController.php` | coordinador (test `testAnIntruderCannotTakeADeviceIdBeforeItsOwner`) | 2026-10-03 | 2026-10-03 | [2026-10-03-2](2026-10-03-2.md) |
 | SEG-017 | resuelto | alta | Una biblioteca que se dejó o se retiró vuelve a bajar sola de la nube | `cloud/mod.rs:375-378`, `libraries.rs:341-351` | library-access | 2026-10-03 | | 2026-10-03 |
 | SEG-018 | abierto | alta | Una operación nueva firmada por debajo de la marca de una valla se juzga con el rol antiguo | `permissions.rs:95-110` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
-| SEG-019 | abierto | media | El servidor registra la clave de un dispositivo en `C` con la primera operación que llega | `server/src/Sync/CloudPush.php:170-182` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| SEG-019 | abierto | media | El servidor registra la clave de un dispositivo en `C` con la primera operación que llega (parte 1 hecha el 2026-10-04: una clave registrada no cambia; queda quién registra primero, para 7.5) | `server/src/Sync/CloudPush.php:170-182` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
 | SEG-020 | resuelto | media | El contador `u32` del HLC desborda con una operación remota | `crates/domain/src/hlc.rs:45-59` | sync-convergence | 2026-10-03 | | 2026-10-04 |
-| SEG-021 | abierto | baja | `isLink` del servidor no exige que el cambio sea de la fila de la propia biblioteca | `server/src/Sync/CloudPush.php:210-221` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| SEG-021 | resuelto | baja | `isLink` del servidor no exige que el cambio sea de la fila de la propia biblioteca | `server/src/Sync/CloudPush.php:210-221` | library-access | 2026-10-03 | | 2026-10-04 |

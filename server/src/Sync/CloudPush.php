@@ -198,6 +198,9 @@ final readonly class CloudPush
         $registered = $this->deviceKeys->findOneInLibrary($library, $author)?->getPublicKey();
         $declared = $this->declaredKey($payload, $author);
 
+        // A device's key never changes, whoever signs the change (as in the app's signature_holds).
+        $this->refuseKeyChanges($library, $payload);
+
         if (null !== $registered) {
             if (null !== $declared && !hash_equals($registered, $declared)) {
                 throw new OperationRejectedException(OperationRejection::KeyChanged);
@@ -227,6 +230,23 @@ final readonly class CloudPush
         }
     }
 
+    /**
+     * @throws OperationRejectedException when a `device` change offers another key than the registered one
+     */
+    private function refuseKeyChanges(CloudLibrary $library, OperationPayload $payload): void
+    {
+        foreach ($payload->changes as $change) {
+            $offered = $change->fields['public_key'] ?? null;
+            if (CatalogEntity::Device !== $change->entity || !\is_string($offered)) {
+                continue;
+            }
+            $registered = $this->deviceKeys->findOneInLibrary($library, $change->id)?->getPublicKey();
+            if (null !== $registered && !hash_equals($registered, $offered)) {
+                throw new OperationRejectedException(OperationRejection::KeyChanged);
+            }
+        }
+    }
+
     /** The public key a `device` create change in the operation gives its own author, if any. */
     private function declaredKey(OperationPayload $payload, string $author): ?string
     {
@@ -245,8 +265,9 @@ final readonly class CloudPush
     {
         foreach ($payload->changes as $change) {
             $cloudId = $change->fields['cloud_library_id'] ?? null;
-            if (CatalogEntity::Library === $change->entity && \is_string($cloudId)
-                && strtolower($cloudId) === $library->getId()->toRfc4122()) {
+            if (CatalogEntity::Library === $change->entity && ChangeAction::Update === $change->action
+                && strtolower($change->id) === strtolower($payload->library)
+                && \is_string($cloudId) && strtolower($cloudId) === $library->getId()->toRfc4122()) {
                 return true;
             }
         }
