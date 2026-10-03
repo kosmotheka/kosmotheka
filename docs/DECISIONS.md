@@ -91,6 +91,7 @@
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
 | D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
+| D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada |
 
 ---
 
@@ -1391,3 +1392,26 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - D46: su punto «Migración con continuidad» queda reemplazado; el resto sigue.
 - D84: deja de necesitar el caso especial del id fijo; sus costuras y tests siguen valiendo para cualquier id repetido.
 - Los tests que simulaban «una biblioteca compartida» usando el mismo id fijo en dos dispositivos crean la biblioteca en uno y la reciben en el otro, como en la realidad.
+
+## D86 · Copias de seguridad cifradas con contraseña, activado por defecto — `aceptada`
+
+> Aceptada por el maintainer el 03/10/2026, al preguntar qué pasa si a alguien le roban su copia.
+
+**Contexto:** una copia (D30, D58) es un zip sin cifrar con el catálogo en JSON, las portadas y el historial. No lleva claves, tokens ni secretos (D58), así que quien la encuentre no puede firmar, sincronizar ni entrar en ninguna cuenta, y con D84 y SEG-016 los ids que contiene no abren ninguna puerta. Pero sí lee datos personales: nombres (también de niños), qué hay en casa y dónde, qué lee cada uno, valoraciones y préstamos. Las copias suelen acabar en servicios como Google Drive, que se pueden hackear.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Siempre cifrada | Ninguna copia legible fuera de la app | Si se olvida la contraseña, la copia no sirve |
+| **Opcional, activada por defecto** | Cifrada salvo que se quite a propósito, sabiendo lo que implica | Puede haber copias legibles, por decisión de quien la hace |
+| Opcional, desactivada | Como hasta ahora | La mayoría de copias quedarían legibles |
+
+**Decisión:** opcional, activada por defecto.
+- Al crear una copia, «Proteger con contraseña» viene marcado; quitarlo explica que la copia quedará legible para quien la encuentre.
+- **Formato abierto y auditado: `age`** (con contraseña: scrypt y ChaCha20-Poly1305), con el crate de Rust `age`. Cualquiera puede descifrar su copia sin la app con la herramienta `age`, lo que es coherente con un proyecto abierto y con que los datos son de quien los tiene. Nada de criptografía propia.
+- Al restaurar, la app detecta si la copia está cifrada y pide la contraseña; con una contraseña equivocada no restaura nada.
+- La contraseña no se guarda en ningún sitio: si se pierde, la copia no se puede abrir, y la pantalla lo dice antes de crearla.
+- **Un test garantiza** que ninguna copia, cifrada o no, contiene la clave de firma, el token de la cuenta, los secretos de emparejamiento ni la identidad TLS.
+
+**Consecuencias:** cambia el formato de las copias (una copia cifrada es un fichero `age` que contiene el zip de siempre); las copias antiguas sin cifrar se siguen restaurando. Exportar a CSV sigue siendo legible: es para llevarse los datos a otra herramienta, y la pantalla lo avisa.
