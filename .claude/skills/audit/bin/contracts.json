@@ -1,0 +1,19 @@
+{
+  "_comment": "What facts.py compares across layers. A closed list is read from Rust and must match TypeScript and have a translation in en and es under every prefix. Sources: const:NAME (a Rust &[&str] or a TS `as const` array), type:Name (a TS union), enum:path:Name (a Rust enum, variants in snake_case), literal:REGEX (every match in the app's Rust), regex:path:REGEX (quoted strings inside group 1), cases:path (PHP enum string cases), switch:path (TS `case \"x\":`).",
+  "lists": [
+    { "name": "formats", "rust": "const:FORMATS", "ts": "const:formats", "i18n": ["formats."] },
+    { "name": "kinds", "rust": "const:KINDS", "ts": "const:kinds", "i18n": ["types.", "typesPlural."] },
+    { "name": "contributor roles", "rust": "const:CONTRIBUTOR_ROLES", "ts": "const:contributorRoles", "i18n": ["form.people."] },
+    { "name": "roles", "rust": "const:ROLES", "ts": "type:Role", "i18n": ["people.roles.", "people.roleHints.", "people.roleLegend."] },
+    { "name": "request statuses", "rust": "const:REQUEST_STATUSES", "ts": "type:RequestStatus", "ts_extra": ["pending"], "i18n": ["requests.status."] },
+    { "name": "mark statuses", "rust": "const:MARK_STATUSES", "ts": "type:MarkStatus", "i18n": ["marks.statuses."] },
+    { "name": "genres", "rust": "const:GENRES", "i18n": ["genres."] }
+  ],
+  "errors": [
+    { "name": "validation", "rust": "enum:crates/domain/src/book.rs:ErrorCode", "ts": "type:FieldErrorCode", "i18n": ["errors."] },
+    { "name": "sync", "rust": "literal:Error::Lan\\(\"(\\w+)\"\\)", "i18n": ["devices.errors."] },
+    { "name": "backup", "rust": "literal:Error::BadBackup\\(\"(\\w+)\"\\)", "i18n": ["data.backupErrors."] },
+    { "name": "permission", "rust": "regex:app/src-tauri/src/error.rs:ErrorPayload::Permission \\{\\s*reason: (\"\\w+\")", "ts": "regex:app/src/lib/api.ts:kind: \"permission\"; reason: ([^}]+)", "i18n": ["people.errors."] },
+    { "name": "account", "php": "cases:server/src/Enum/AccountErrorCode.php", "ts": "switch:app/src/lib/account-errors.ts" }
+  ]
+}

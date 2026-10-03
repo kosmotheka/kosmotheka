@@ -52,9 +52,12 @@ Open only the sections the summary flags (⚠ or non-zero counts), with `sed -n 
 - `contracts.md`:
   - schema-chain differences, commands invoked but not registered, argument mismatches, keys used but missing in a language, conformance files not run by both Rust and PHP: `CON` findings, usually `alta`;
   - **never dismiss a mechanical difference as a script error without comparing the real sources yourself** (in the first audit, a stale genre list in the JSON Schema was dismissed that way);
+  - closed lists and error codes (`bin/contracts.json`): a value missing in TypeScript or without a translation is `CON` `media`; an error code the UI cannot show specifically (account `switch`) is `baja`. If a list or family cannot be read, fix `bin/contracts.json`, not the finding;
+  - Rust structs and TS interfaces with different fields: `CON`, `alta` when the UI reads a field Rust no longer sends, otherwise `media`;
   - commands never invoked, keys only in one language, different variables: `media`;
   - unused keys: one `baja` finding with the list.
-- `tests.md`: ignored tests not named `live_*`: `PRU`, `baja`.
+- `tests.md`: ignored tests not named `live_*` or `print_*`: `PRU`, `baja`.
+- `scanners.md`, «Dead code (knip)»: an unused export in `lib/api.ts` is a command with no screen (`COS` `media`: check the feature works end to end); anything else is `CAL` `baja`, grouped in one finding.
 - `candidates.tsv` categories `*.todo`, `*.long-fn`, `*.big-file`: not findings; count them in the report's process notes.
 
 ## 3 · Choose the work
@@ -159,5 +162,6 @@ An audit full of false positives is worse than none.
 ## 7 · Close
 
 1. Tell the maintainer, briefly: the figures, each `crítica` and `alta` in one line, what needs a decision, and which findings you suggest for the development session. They decide what gets fixed and when.
-2. `git status`, then `git add docs/audits/<each file you wrote>` and `git commit -m "Audit AAAA-MM-DD: <n> new findings"`. Never push.
-3. `rm -rf "$W"`.
+2. Add to `docs/audits/descartes.md` one row per triage candidate you verified is not a problem (category, path, function and code exactly as in `candidates.tsv`, the reason, and the audited commit). Never add rows for something you did not check yourself.
+3. `git status`, then `git add docs/audits/<each file you wrote>` and `git commit -m "Audit AAAA-MM-DD: <n> new findings"`. Never push.
+4. `rm -rf "$W"`.

@@ -78,6 +78,7 @@ Todo es **propuesta** hasta que el maintainer lo revise; lo que toca una decisi�
 ### 7.4 El servidor aplica y juzga
 
 - **Primero los casos de fusión** que faltan, en `spec/conformance/merge.json`: campo a campo por HLC, el borrado gana, una operación repetida no cambia nada, el orden de llegada no importa y la referencia rota se salta. Pasan primero en Rust, contra `sync::merge`, y después en PHP. Ese día el servidor ejecuta también `library-merge.json`, que hoy solo pasa la app (auditoría CON-001).
+- **Antes de empezar, pruebas de mutación** (`cargo-mutants`) sobre `sync.rs`, `permissions` y `crates/domain`: dicen qué fallos no detectaría ningún test, justo lo que hay que tener cubierto antes de portar la fusión. Sin modelo para ejecutarlas; un agente ligero tría los mutantes que sobreviven (`docs/audits/README.md`, «Lo que no cubre todavía»).
 - **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con clave `(library_id, id)` también en las foráneas (D41), y `field_versions` y `tombstones` por biblioteca.
 - **Motor con DBAL**, sin ORM, en `server/src/Sync/`: SQL directo en una transacción, guiado por `CatalogEntity`, como el motor de Rust por `schema.rs`.
 - **Permisos:** las mismas reglas que `crates/domain/src/permission.rs`, en PHP, con `permissions.json`; y recalcular la biblioteca desde el registro cuando llega algo tarde.

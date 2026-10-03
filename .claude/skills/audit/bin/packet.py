@@ -12,6 +12,7 @@ Runs on the host's python3 (3.8), standard library only.
 """
 import fnmatch
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -218,6 +219,23 @@ def review(work, topic_path, incremental):
         print(f"WARNING: {len(lines)} lines is over max_lines {limit}; split the topic or narrow its code list")
 
 
+def dismissed(work):
+    """Candidates docs/audits/descartes.md already judged: (category, path, function,
+    code). A row counts only while its file is unchanged since the audited commit it
+    names, so a new candidate in the same function is never hidden by an old verdict."""
+    repo, head = read(work / "tools/repo.txt").strip(), read(work / "tools/commit.txt").strip()
+    known = set()
+    for line in read(work / "src/docs/audits/descartes.md").split("\n"):
+        cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+        if len(cells) < 6 or not re.fullmatch(r"[0-9a-f]{7,40}", cells[5]):
+            continue
+        cat, path, function, code, _, since = cells[:6]
+        unchanged = subprocess.run(["git", "-C", repo, "diff", "--quiet", since, head, "--", path]).returncode == 0
+        if unchanged:
+            known.add((cat, path, function, code.replace("\\|", "|")))
+    return known
+
+
 def enclosing(rows, rel, ln, context, whole=60):
     """The whole function around a candidate when it is short, so the agent sees every
     caller-visible line; otherwise the lines around it."""
@@ -232,14 +250,20 @@ def enclosing(rows, rel, ln, context, whole=60):
 def triage(work, categories, limit, context, incremental):
     patterns = categories.split(",")
     changed = set(read(work / "tools/changed.txt").split()) if incremental else None
-    cands = []
+    cands, skipped = [], 0
+    known = dismissed(work)
     for line in read(work / "facts/candidates.tsv").split("\n")[1:]:
         parts = line.split("\t")
-        if len(parts) != 4 or not any(fnmatch.fnmatch(parts[0], p) for p in patterns):
+        if len(parts) != 5 or not any(fnmatch.fnmatch(parts[0], p) for p in patterns):
             continue
         if changed is not None and parts[1] not in changed:
             continue
+        if (parts[0], parts[1], parts[3], parts[4]) in known:
+            skipped += 1
+            continue
         cands.append((parts[0], parts[1], int(parts[2])))
+    if skipped:
+        print(f"{categories}: {skipped} candidates skipped, already dismissed in docs/audits/descartes.md")
     if not cands:
         print(f"{categories}: no candidates")
         sys.exit(3)

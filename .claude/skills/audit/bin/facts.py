@@ -231,7 +231,11 @@ CANDIDATES = []
 
 
 def add(cat, path, line, code):
-    CANDIDATES.append((cat, path, line, short(code)))
+    # The enclosing function makes the candidate recognisable in docs/audits/descartes.md
+    # even after its line moves.
+    inner = [o for o in OUTLINE if o["path"] == path and o["start"] <= line <= o["end"]]
+    where = min(inner, key=lambda o: o["end"] - o["start"])["name"] if inner else "-"
+    CANDIDATES.append((cat, path, line, where, short(code)))
 
 
 RUST_LINE_RULES = [
@@ -302,7 +306,7 @@ def section_candidates():
         if not p.startswith(SKIP):
             add("semgrep", p, r["start"]["line"], f'{r["check_id"]}: {r["extra"].get("message", "")}')
     CANDIDATES.sort(key=lambda c: (c[0], c[1], c[2]))
-    lines = ["# category\tpath\tline\tcode"] + [f"{c}\t{p}\t{l}\t{t}" for c, p, l, t in CANDIDATES]
+    lines = ["# category\tpath\tline\tfunction\tcode"] + [f"{c}\t{p}\t{l}\t{f}\t{t}" for c, p, l, f, t in CANDIDATES]
     write("candidates.tsv", lines)
     counts = Counter(c[0] for c in CANDIDATES)
     summary.append("- Candidates for triage (`candidates.tsv`): " +
@@ -724,9 +728,173 @@ def section_conformance(lines):
     lines.append("")
 
 
+# ---------------------------------------------------------------- closed lists and error codes
+
+def snake_case(name):
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+
+def read_values(spec):
+    """Reads a list of strings from one layer; see bin/contracts.json for the forms."""
+    kind, _, rest = spec.partition(":")
+    if kind == "const":
+        for path, info in FILES.items():
+            if info["lang"] == "rust":
+                m = re.search(rf"const {rest}: &\[&str\] = &\[(.*?)\];", info["src"], re.S)
+            elif info["lang"] == "ts":
+                m = re.search(rf"export const {rest} = \[(.*?)\] as const", info["src"], re.S)
+            else:
+                m = None
+            if m:
+                return re.findall(r"\"(\w+)\"", re.sub(r"//[^\n]*", "", m.group(1)))
+        return None
+    if kind == "type":
+        for path, info in FILES.items():
+            m = info["lang"] == "ts" and re.search(rf"export type {rest} =(.*?);", info["src"], re.S)
+            if m:
+                return re.findall(r"\"(\w+)\"", m.group(1))
+        return None
+    if kind == "enum":
+        path, _, name = rest.rpartition(":")
+        m = re.search(rf"enum {name} \{{(.*?)\n\}}", re.sub(r"//[^\n]*", "", text(path)), re.S)
+        return [snake_case(v) for v in re.findall(r"^\s*(\w+),", m.group(1), re.M)] if m else None
+    if kind == "literal":
+        found = []
+        for path, info in FILES.items():
+            if info["lang"] == "rust" and path.startswith("app/src-tauri/src"):
+                for m in re.finditer(rest, info["src"]):
+                    if not in_tests(info, m.start()):
+                        found.append(m.group(1))
+        return sorted(set(found))
+    if kind == "regex":
+        path, _, pattern = rest.partition(":")
+        return sorted({v for g in re.findall(pattern, text(path), re.S) for v in re.findall(r"\"(\w+)\"", g)})
+    if kind == "cases":
+        return re.findall(r"case \w+ = '(\w+)';", text(rest))
+    if kind == "switch":
+        return re.findall(r"case \"(\w+)\":", text(rest))
+    return None
+
+
+def section_lists(lines):
+    config = json.loads((Path(__file__).parent / "contracts.json").read_text(encoding="utf-8"))
+    en = dict(flatten(load_json(SNAP / "app/src/i18n/locales/en.json") or {}))
+    es = dict(flatten(load_json(SNAP / "app/src/i18n/locales/es.json") or {}))
+    has = lambda key, d: key in d or f"{key}_one" in d
+    problems = 0
+    lines.append("## Closed lists and error codes across layers (bin/contracts.json)")
+    for group in ("lists", "errors"):
+        for item in config[group]:
+            issues = []
+            origin = item.get("rust") or item.get("php")
+            values = read_values(origin)
+            if values is None:
+                lines.append(f"- ⚠ **{item['name']}**: cannot read `{origin}`; update bin/contracts.json")
+                problems += 1
+                continue
+            if "ts" in item:
+                ts = read_values(item["ts"])
+                if ts is None:
+                    issues.append(f"cannot read TS `{item['ts']}`")
+                else:
+                    extra = sorted(set(ts) - set(values) - set(item.get("ts_extra", [])))
+                    missing = sorted(set(values) - set(ts))
+                    if missing:
+                        issues.append(f"missing in TS: {', '.join(missing)}")
+                    if extra and not item["ts"].startswith("switch:"):
+                        issues.append(f"only in TS: {', '.join(extra)}")
+                    if missing and item["ts"].startswith("switch:"):
+                        issues[-1] += " (falls back to the generic error)"
+            for prefix in item.get("i18n", []):
+                for lang, d in (("en", en), ("es", es)):
+                    gone = [v for v in values if not has(prefix + v, d)]
+                    if gone:
+                        issues.append(f"no `{prefix}…` in {lang}: {', '.join(gone)}")
+            if issues:
+                problems += 1
+                lines.append(f"- ⚠ **{item['name']}** ({len(values)}): " + "; ".join(issues))
+            else:
+                lines.append(f"- {item['name']} ({len(values)}): consistent")
+    lines.append("")
+    summary.append(f"- Closed lists and error codes: {problems} with differences (`contracts.md`).")
+
+
+# ---------------------------------------------------------------- Rust structs ↔ TS interfaces
+
+def camel_case(name):
+    head, *rest = name.split("_")
+    return head + "".join(w[:1].upper() + w[1:] for w in rest)
+
+
+def section_structs(lines):
+    rust, wrapper = {}, set()
+    for path, info in FILES.items():
+        if info["lang"] != "rust" or not (path.startswith("app/src-tauri/src") or path.startswith("crates/domain/src")):
+            continue
+        # Generic wrappers such as `Saved<T>` flatten any struct and add their own fields.
+        for m in re.finditer(r"pub struct \w+<[^>]*>\s*\{", info["src"]):
+            body = info["src"][m.end():block_end(info["masked"], m.end() - 1) or m.end()]
+            if "flatten" in body:
+                wrapper.update(camel_case(f) for f in re.findall(r"pub (\w+):", body))
+        for m in re.finditer(r"#\[derive\(([^)]*)\)\]\s*((?:#\[[^\]]*\]\s*)*)pub struct (\w+)\s*\{", info["src"]):
+            if "Serialize" not in m.group(1) and "Deserialize" not in m.group(1) or in_tests(info, m.start()):
+                continue
+            body_end = block_end(info["masked"], m.end() - 1)
+            body = info["src"][m.end():body_end or m.end()]
+            camel = "camelCase" in m.group(2)
+            fields, flatten_ = set(), False
+            for f in re.finditer(r"((?:#\[[^\]]*\]\s*)*)pub (\w+):", body):
+                attrs = f.group(1)
+                if "skip" in attrs and "skip_serializing_if" not in attrs:
+                    continue
+                if "flatten" in attrs:
+                    flatten_ = True
+                    continue
+                rename = re.search(r"rename = \"(\w+)\"", attrs)
+                fields.add(rename.group(1) if rename else (camel_case(f.group(2)) if camel else f.group(2)))
+            rust.setdefault(m.group(3), []).append((path, fields, flatten_))
+    ts = {}
+    for path, info in FILES.items():
+        if info["lang"] == "ts" and path.startswith("app/src/lib/"):
+            for m in re.finditer(r"export interface (\w+)(?: extends [\w, ]+)? \{", info["src"]):
+                end = block_end(info["masked"], m.end() - 1)
+                body = re.sub(r"/\*.*?\*/|//[^\n]*", "", info["src"][m.end():end or m.end()], flags=re.S)
+                depth, own = 0, set()
+                for line in body.split("\n"):
+                    if depth == 0:
+                        f = re.match(r"\s*(\w+)\??:", line)
+                        if f:
+                            own.add(f.group(1))
+                    depth += line.count("{") - line.count("}")
+                ts[m.group(1)] = (path, own, " extends " in m.group(0))
+    lines.append("## Rust structs and TS interfaces with the same name (field names)")
+    problems = 0
+    for name in sorted(set(rust) & set(ts)):
+        tpath, tf, text_ext = ts[name]
+        found = rust[name]
+        if any(flat for _, _, flat in found):
+            # A wrapper that flattens a struct of the same name: their fields add up.
+            rpath = " + ".join(p for p, _, _ in found)
+            rf, rflat = set().union(*(f for _, f, _ in found)), len(found) == 1
+        else:
+            # Two unrelated structs share the name: compare with the closer one.
+            rpath, rf, rflat = min(found, key=lambda r: len(r[1] ^ tf))
+        only_r, only_t = sorted(rf - tf), sorted(tf - rf - wrapper)
+        if (only_r or only_t) and not rflat and not text_ext:
+            problems += 1
+            lines.append(f"- ⚠ **{name}** (`{rpath}` · `{tpath}`): only in Rust {only_r or '—'}; only in TS {only_t or '—'}")
+        elif only_r or only_t:
+            lines.append(f"- {name}: differs, but uses flatten/extends (check by hand): Rust {only_r or '—'}; TS {only_t or '—'}")
+    lines.append(f"- Fields that generic wrappers add (allowed in TS): {', '.join(sorted(wrapper)) or '—'}")
+    lines.append(f"- Compared: {len(set(rust) & set(ts))} pairs; Rust-only structs: {len(set(rust) - set(ts))}; TS-only interfaces: {len(set(ts) - set(rust))}")
+    lines.append("")
+    summary.append(f"- Rust ↔ TS structs: {problems} pairs with different fields (`contracts.md`).")
+
+
 def section_contracts():
     lines = ["# Contracts between layers", ""]
-    for fn in (section_schema, section_commands, section_i18n, section_errors, section_conformance):
+    for fn in (section_schema, section_lists, section_structs, section_commands, section_i18n, section_errors,
+               section_conformance):
         try:
             fn(lines)
         except Exception:
@@ -982,9 +1150,24 @@ def section_scanners():
     lines.append(f"## Semgrep results{' in changed files' if changed is not None else ''}: {total} (errors: {len(sg.get('errors', []))})")
     for (rule, sev, msg), locs in sorted(by_rule.items()):
         lines.append(f"- `{rule}` [{sev}] {len(locs)}× · {msg} · {', '.join(locs[:10])}" + (" …" if len(locs) > 10 else ""))
+    lines.append("")
+    # shadcn/ui components are copied in whole on purpose: unused parts there are expected.
+    knip = load_json(TOOLS / "knip.json") or {}
+    dead = defaultdict(list)
+    for issue in knip.get("issues", []):
+        f = issue["file"]
+        if f.startswith("src/components/ui/"):
+            continue
+        for kind in ("files", "exports", "types", "dependencies", "devDependencies", "unlisted", "duplicates"):
+            for item in issue.get(kind, []):
+                name = item.get("name") if isinstance(item, dict) else str(item)
+                dead[kind].append(f"app/{f}" + ("" if kind == "files" else f" · `{name}`"))
+    lines.append(f"## Dead code in the app (knip, outside components/ui): {sum(map(len, dead.values()))}")
+    for kind, items in sorted(dead.items()):
+        lines.append(f"- {kind} ({len(items)}): {', '.join(items[:LIMIT])}" + (" …" if len(items) > LIMIT else ""))
     write("scanners.md", lines)
     fam = Counter(f for f, _ in groups)
-    summary.append(f"- Scanners: {len(vulns)} vulnerable dependencies, licenses {dict(fam)}, {len(leaks)} gitleaks hits, {total} semgrep results (`scanners.md`).")
+    summary.append(f"- Scanners: {len(vulns)} vulnerable dependencies, licenses {dict(fam)}, {len(leaks)} gitleaks hits, {total} semgrep results, {sum(map(len, dead.values()))} knip items (`scanners.md`).")
 
 
 def text_tools(name):

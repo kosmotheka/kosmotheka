@@ -13,6 +13,7 @@ rm -rf "$SNAP" "$T" "$F" "$WORK/packets"
 mkdir -p "$SNAP" "$T" "$F"
 git -C "$REPO" archive "$COMMIT" | tar -x -C "$SNAP"
 echo "$COMMIT" > "$T/commit.txt"
+echo "$REPO" > "$T/repo.txt"
 
 RANGE=()
 if [ -n "$BASE" ]; then
@@ -43,6 +44,11 @@ run semgrep docker run --rm --user "$U" -e HOME=/tmp -v "$SNAP:/src:ro" -v "$T:/
   --config p/dockerfile --config p/docker-compose --config p/github-actions --config p/nginx \
   --exclude docs/historico --exclude docs/research --exclude docs/design \
   --json --output /out/semgrep.json /src &
+# knip needs the app's dependencies: the snapshot borrows the working copy's node_modules, read-only.
+mkdir -p "$SNAP/app/node_modules"
+run knip docker run --rm --user "$U" -e HOME=/tmp -v "$SNAP:/src:ro" -v "$T:/out" \
+  -v "$REPO/app/node_modules:/src/app/node_modules:ro" -w /src/app node:22.20.0-slim \
+  sh -c 'npx -y knip@6.39.0 --no-progress --reporter json > /out/knip.json' &
 wait
 
 run facts docker run --rm --user "$U" -v "$SNAP:/src:ro" -v "$T:/tools:ro" -v "$F:/out" -v "$BIN:/audit-bin:ro" \

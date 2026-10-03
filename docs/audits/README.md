@@ -20,10 +20,13 @@ Cuándo: al cerrar cada hito del ROADMAP.
 
 La sesión coordinadora orquesta y nadie explora el repositorio por su cuenta. Hay cuatro capas, de la más barata a la más cara:
 
-1. **Scripts, sin modelo.** `bin/prepare.sh` saca una copia fija del último commit de `main` con `git archive`, lanza los escáneres y ejecuta `bin/facts.py`. Todo corre en Docker con versiones fijadas y tarda unos 15 segundos. `facts.py` comprueba mecánicamente:
+1. **Scripts, sin modelo.** `bin/prepare.sh` saca una copia fija del último commit de `main` con `git archive`, lanza los escáneres y ejecuta `bin/facts.py`. Todo corre en Docker con versiones fijadas y tarda unos 20 segundos. `facts.py` comprueba mecánicamente:
    - que coincidan el esquema de las migraciones, `schema.rs`, el JSON Schema y el espejo PHP;
    - los comandos de Tauri frente a las llamadas del front;
-   - las traducciones `en` frente a `es`, los códigos de error y los casos de conformidad;
+   - cada lista cerrada (formatos, tipos, roles, estados, géneros) y cada familia de códigos de error en Rust, TypeScript y las traducciones, según `bin/contracts.json`;
+   - los campos de cada `struct` de Rust frente a la `interface` de TypeScript del mismo nombre;
+   - las traducciones `en` frente a `es` (contando las claves que se construyen con un prefijo), los códigos de error y los casos de conformidad;
+   - el código muerto de la app (`knip`): un comando que tiene función en `api.ts` pero ninguna pantalla que la use;
    - el inventario de tests y la superficie de ataque (CSP, capabilities, Android, Docker, `.env`);
    - y apunta los candidatos a problema: `unwrap`, SQL construido a mano, errores que se pierden, efectos de React…
 2. **Hallazgos mecánicos.** Los escribe el coordinador directamente a partir de esos datos, sin agentes.
@@ -95,6 +98,7 @@ En cada pasada incremental se revisa un tema entero, por este orden de riesgo:
 
   Basta con decir en la sesión de desarrollo «arregla SEG-003».
 - `amenazas.md`: el modelo de amenazas.
+- `descartes.md`: los candidatos mecánicos ya revisados que no son un problema. No vuelven a los paquetes de triaje mientras su fichero no cambie, así que cada pasada solo paga por lo nuevo.
 
 La auditoría no arregla nada ni escribe fuera de esta carpeta. Tú decides qué se arregla y cuándo.
 
@@ -121,6 +125,7 @@ Todas se ejecutan en Docker con la versión fijada. No se instala nada en la má
 | gitleaks | v8.30.1 | Secretos en el historial de git | Nada |
 | semgrep | 1.177.0 | Análisis estático de PHP, TypeScript, Rust, Docker, nginx y GitHub Actions | Nada; solo descarga las reglas |
 | python | 3.13.15-slim | Ejecuta `facts.py` (SQLite moderno para aplicar las migraciones) | Nada |
+| knip | 6.39.0 (en `node:22.20.0-slim`) | Exportaciones, ficheros y dependencias sin usar en la app | Nada; solo descarga knip. Usa el `node_modules` de tu copia, en solo lectura |
 
 `packet.py` usa el `python3` de la máquina. Para cambiar una versión, se actualiza en `bin/prepare.sh` y aquí, y se indica en el informe siguiente.
 
@@ -133,3 +138,8 @@ Antes de hacerlo público:
 - un `SECURITY.md` que explique cómo avisar de una vulnerabilidad.
 
 Los informes de seguridad se quedarán en el historial público. Para entonces, lo que describan tiene que estar resuelto.
+
+## Lo que no cubre todavía
+
+- **Lo que se ve en pantalla** (textos tapados, contraste en modo oscuro, botones fuera de la zona segura): irá en una skill aparte, `/audit-visual`, con capturas del modo `?mock` a ancho de móvil y su propio presupuesto, para lanzarla de vez en cuando (por ejemplo, antes de subir una versión a Play). Pendiente de construir.
+- **Si los tests detectarían un fallo** (pruebas de mutación con `cargo-mutants`, y la cobertura del núcleo): necesita compilar la app con sus dependencias del sistema y tarda minutos. Se hará antes del hito 7.4, cuando la fusión pase a PHP.
