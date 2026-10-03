@@ -84,30 +84,31 @@ Open only the sections the summary flags (⚠ or non-zero counts), with `sed -n 
 
 **Rotation and risk order:**
 1. sync-convergence
-2. permissions-on-receipt
-3. lan-pairing
-4. ipc-surface
-5. data-files
-6. migrations
-7. signatures
-8. flows-sharing
-9. flows-catalog
-10. webview-rendering
-11. server
-12. metadata-covers
-13. spec-coverage
-14. tests-quality
-15. ux-sharing
-16. ux-catalog
-17. ux-book
-18. ux-shell
-19. ux-wording
-20. quality-rust
-21. quality-ts
-22. docs-vs-code
-23. supply-chain
+2. library-access
+3. permissions-on-receipt
+4. lan-pairing
+5. ipc-surface
+6. data-files
+7. migrations
+8. signatures
+9. flows-sharing
+10. flows-catalog
+11. webview-rendering
+12. server
+13. metadata-covers
+14. spec-coverage
+15. tests-quality
+16. ux-sharing
+17. ux-catalog
+18. ux-book
+19. ux-shell
+20. ux-wording
+21. quality-rust
+22. quality-ts
+23. docs-vs-code
+24. supply-chain
 
-After the last one, start again at the first. `threat-model` runs again only when security decisions change.
+After the last one, start again at the first. `threat-model` runs again only when security decisions change. `library-access` also runs, outside the rotation, whenever who receives a library changes: at the end of milestones 7.2, 7.5 and 7.6.
 
 Topic names given as arguments replace the deep dive, in full mode, within the budget.
 
@@ -140,7 +141,7 @@ An audit full of false positives is worse than none.
 
 | Prefix | For |
 |---|---|
-| `SEG` | Security: threat-model, permissions-on-receipt, lan-pairing, signatures, ipc-surface, webview-rendering, metadata-covers, server, supply-chain; triage `ts.sink`, `ts.mock-ipc-import`, `rust.sql-format`, `semgrep`, and `rust.panic` fed by peers |
+| `SEG` | Security: threat-model, library-access, permissions-on-receipt, lan-pairing, signatures, ipc-surface, webview-rendering, metadata-covers, server, supply-chain; triage `ts.sink`, `ts.mock-ipc-import`, `rust.sql-format`, `semgrep`, and `rust.panic` fed by peers |
 | `DAT` | Data integrity: sync-convergence, data-files, migrations; triage `rust.swallow` that can lose data |
 | `COS` | Seams: flows-*, ux-*, docs-vs-code; triage `ts.effect` |
 | `CON` | Contracts: spec-coverage and the mechanical findings of step 2 |

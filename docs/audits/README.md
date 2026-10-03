@@ -59,23 +59,26 @@ En cada pasada incremental se revisa un tema entero, por este orden de riesgo:
 | # | Tema | Qué revisa |
 |---|---|---|
 | 1 | `sync-convergence` | Que los dispositivos converjan: HLC, borrados, lotes, versiones distintas de la app |
-| 2 | `permissions-on-receipt` | Que quien recibe compruebe los permisos, la retirada de acceso y las solicitudes |
-| 3 | `lan-pairing` | Identidad, emparejamiento por QR y transporte en la LAN |
-| 4 | `ipc-surface` | Comandos de Tauri, capabilities, CSP, claves y Android |
-| 5 | `data-files` | SQLite, copias de seguridad, restaurar con sync, CSV y carpeta de datos |
-| 6 | `migrations` | Migraciones que pueden perder datos o dejar la base a medias |
-| 7 | `signatures` | Firmas en Rust y PHP: mismos bytes, diferencias entre los analizadores de JSON |
-| 8 | `flows-sharing` | Costuras de compartir: roles sin conexión, solicitudes, retirada, personas |
-| 9 | `flows-catalog` | Costuras del catálogo: mover libros, marcas, deseos, búsqueda |
-| 10 | `webview-rendering` | Datos no fiables mostrados en la interfaz (XSS) |
-| 11 | `server` | Servidor Symfony: seguridad y convenciones |
-| 12 | `metadata-covers` | Proveedores externos y portadas sin conexión o con respuestas hostiles |
-| 13 | `spec-coverage` | Que cada regla de la spec tenga casos de conformidad |
-| 14 | `tests-quality` | QA: qué falta probar y si las pruebas detectarían un fallo |
-| 15–19 | `ux-sharing` · `ux-catalog` · `ux-book` · `ux-shell` · `ux-wording` | Pantallas sin salida, errores, estados vacíos, textos |
-| 20–21 | `quality-rust` · `quality-ts` | Calidad; en Rust explica el porqué de cada hallazgo, para aprender |
-| 22 | `docs-vs-code` | Decisiones y hojas de ruta frente al código |
-| 23 | `supply-chain` | Dependencias, secretos, licencias, CI y lo necesario para publicar |
+| 2 | `library-access` | Quién puede acabar con los datos de una biblioteca: red local, nube, id fijo, local-first y resincronizar por dos caminos |
+| 3 | `permissions-on-receipt` | Que quien recibe compruebe los permisos, la retirada de acceso y las solicitudes |
+| 4 | `lan-pairing` | Identidad, emparejamiento por QR y transporte en la LAN |
+| 5 | `ipc-surface` | Comandos de Tauri, capabilities, CSP, claves y Android |
+| 6 | `data-files` | SQLite, copias de seguridad, restaurar con sync, CSV y carpeta de datos |
+| 7 | `migrations` | Migraciones que pueden perder datos o dejar la base a medias |
+| 8 | `signatures` | Firmas en Rust y PHP: mismos bytes, diferencias entre los analizadores de JSON |
+| 9 | `flows-sharing` | Costuras de compartir: roles sin conexión, solicitudes, retirada, personas |
+| 10 | `flows-catalog` | Costuras del catálogo: mover libros, marcas, deseos, búsqueda |
+| 11 | `webview-rendering` | Datos no fiables mostrados en la interfaz (XSS) |
+| 12 | `server` | Servidor Symfony: seguridad y convenciones |
+| 13 | `metadata-covers` | Proveedores externos y portadas sin conexión o con respuestas hostiles |
+| 14 | `spec-coverage` | Que cada regla de la spec tenga casos de conformidad |
+| 15 | `tests-quality` | QA: qué falta probar y si las pruebas detectarían un fallo |
+| 16–20 | `ux-sharing` · `ux-catalog` · `ux-book` · `ux-shell` · `ux-wording` | Pantallas sin salida, errores, estados vacíos, textos |
+| 21–22 | `quality-rust` · `quality-ts` | Calidad; en Rust explica el porqué de cada hallazgo, para aprender |
+| 23 | `docs-vs-code` | Decisiones y hojas de ruta frente al código |
+| 24 | `supply-chain` | Dependencias, secretos, licencias, CI y lo necesario para publicar |
+
+`library-access` vuelve además, fuera de la rotación, cada vez que cambia quién recibe una biblioteca: al terminar los hitos 7.2, 7.5 y 7.6 (`/audit library-access`).
 
 `threat-model` se escribe en la primera pasada y vuelve a revisarse solo cuando cambian decisiones de seguridad.
 

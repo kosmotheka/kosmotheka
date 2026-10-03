@@ -10,6 +10,7 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | CON-003 | resuelto | baja | 177 traducciones sin uso aparente (solo 9 de verdad; el resto, claves dinámicas) | `app/src/i18n/locales` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-004 | resuelto | media | La lista de géneros del JSON Schema no es la de Rust ni la de PHP (anterior a la 6.7) | `spec/operation.schema.json` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | COS-001 | resuelto | baja | Búsquedas que no descartan respuestas viejas | `book-form.tsx:1347`, `series-work-picker.tsx:51`, `tags-page.tsx:31` | triaje ts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
+| DAT-001 | abierto | media | Si la nube rechaza una operación y acepta otra posterior del mismo autor, las copias divergen | `sync.rs:165-186` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
 | PRU-001 | resuelto | baja | Test ignorado que no se llama `live_*` | `signature.rs` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-001 | resuelto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-002 | resuelto | media | Volver a emparejar con un `device_id` conocido suplanta a ese dispositivo | `lan/server.rs:148-153` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
@@ -20,3 +21,7 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | SEG-007 | resuelto | baja | En Windows la clave TLS se escribe sin permisos propios | `lan/identity.rs:109-112` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-008 | abierto | baja | Dependencias con avisos sin parche, fuera del uso de la app | `Cargo.lock`, `package-lock.json` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-009 | resuelto | baja | Dockerfiles de desarrollo como root o con `sudo` | `server/docker/*/Dockerfile` | supply-chain | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
+| SEG-010 | abierto | crítica | Una biblioteca borrada se acepta sola y su borrado arrasa la del otro | `lan/mod.rs:454-462` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-011 | abierto | alta | Un aviso `revoked` falso hace borrar una biblioteca entera | `lan/mod.rs:430-435` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-012 | abierto | alta | El plan de la nube no dice de quién es un id de biblioteca | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| SEG-013 | abierto | alta | «Puede compartir» al subir a la nube solo lo comprueba la app | `docs/plans/fase-7.md` (7.2) | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |

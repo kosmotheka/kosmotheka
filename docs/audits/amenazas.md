@@ -82,6 +82,24 @@ Escrito en la auditoría del 2026-10-03 (commit `18c5365`). Se revisa cuando cam
 - **A7:** ver frontera 4 y SEG-006.
 - **A8:** ver frontera 6 y SEG-003.
 
+## Acceso a las bibliotecas
+
+Revisado en la auditoría del 2026-10-03 (2), tema `library-access`. Quién puede acabar con los datos de una biblioteca.
+
+**Garantías comprobadas** (cada una con el código que la asegura, en el informe):
+- Por la red local, una biblioteca solo sale hacia un dispositivo si alguien la marcó para él (`library_peers`); lo que no está compartido no se pide, no se envía ni se acepta.
+- Una retirada de acceso (D71) gana sobre la lista local de cada dispositivo.
+- Compartir exige el permiso «Puede compartir» o ser administrador en el propio dispositivo.
+- El código de emparejamiento es de un solo uso, caduca a los 10 minutos y no deja ocupar el sitio de un dispositivo ya emparejado.
+- Un dispositivo dado a otra persona (D81) empieza con identidad nueva: nadie le reconoce con la antigua.
+- La app funciona entera sin servidor ni cuenta; nada de la nube planificada bloquea la red local.
+
+**Límites conocidos:**
+- «Mi biblioteca» tiene el mismo id en todas las instalaciones (D46). Por la red local, fundir dos catálogos ajenos exige que los dos dispositivos la marquen, salvo SEG-010 mientras siga abierto.
+- Un compañero de mala fe ya emparejado puede hacer borrar una biblioteca en otro dispositivo (SEG-011, abierto).
+- Lo que un dispositivo ya recibió no se puede borrar a distancia, y quien lo recibió a través de él lo conserva (D71).
+- La nube (Fase 7) aún no existe: su control de acceso está pendiente de SEG-012 y SEG-013, y el tema vuelve a auditarse al terminar los hitos 7.2, 7.5 y 7.6.
+
 ## Riesgos aceptados
 
 - Quien ya sacó datos (exportaciones, capturas, app modificada que ignora la retirada) los conserva (D71).
