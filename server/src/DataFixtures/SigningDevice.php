@@ -26,6 +26,12 @@ final readonly class SigningDevice
         private string $secretKey,
         /** The 32-byte seed of the key, hex; null when the key did not come from a seed. */
         public ?string $seed = null,
+        /**
+         * The id of the last operation this object signed, per library: the next one chains to it (D87).
+         *
+         * @var \ArrayObject<string, string>
+         */
+        private \ArrayObject $latest = new \ArrayObject(),
     ) {
     }
 
@@ -53,6 +59,12 @@ final readonly class SigningDevice
         $secret = sodium_base642bin($session['secret_key'], \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
 
         return new self($session['device_id'], $session['public_key'], $secret);
+    }
+
+    /** The id of the last operation this object signed in the library: what the next one chains to (D87). */
+    public function latest(string $library): ?string
+    {
+        return $this->latest[$library] ?? null;
     }
 
     /**
@@ -86,23 +98,26 @@ final readonly class SigningDevice
     /**
      * @return array<string, mixed>
      */
-    public function publisher(string $library, int $time, string $name = 'Minotauro'): array
+    public function publisher(string $library, int $time, string $name = 'Minotauro', string|false|null $previous = false): array
     {
         return $this->sign($library, $time, 'publisher.add', [[
             'entity' => 'publisher',
             'id' => Uuid::v7()->toRfc4122(),
             'action' => 'create',
             'fields' => ['name' => $name],
-        ]]);
+        ]], previous: $previous);
     }
 
     /**
      * @param list<array<string, mixed>> $changes
-     * @param string|null                $id      the operation's id; a fresh one when null
+     * @param string|null                $id       the operation's id; a fresh one when null
+     * @param string|false|null          $previous the operation it chains to (D87): false for the last one this object signed in
+     *                                             the library, null for none. A device of the story that signs in several steps
+     *                                             names it, because every step builds the device again
      *
      * @return array<string, mixed>
      */
-    public function sign(string $library, int $time, string $intent, array $changes, ?string $id = null): array
+    public function sign(string $library, int $time, string $intent, array $changes, ?string $id = null, string|false|null $previous = false): array
     {
         $operation = [
             'id' => $id ?? Uuid::v7()->toRfc4122(),
@@ -110,7 +125,23 @@ final readonly class SigningDevice
             'hlc' => \sprintf('%016d-%08x-%s', $time, 0, $this->id),
             'intent' => $intent,
             'changes' => $changes,
+            'previous' => false === $previous ? ($this->latest[$library] ?? null) : $previous,
         ];
+        $this->latest[$library] = $operation['id'];
+
+        return $operation + ['signature' => $this->signature($operation)];
+    }
+
+    /**
+     * Signs an operation built by hand as it stands, for tests that need a malformed one.
+     *
+     * @param array<string, mixed> $operation
+     *
+     * @return array<string, mixed>
+     */
+    public function resign(array $operation): array
+    {
+        unset($operation['signature']);
 
         return $operation + ['signature' => $this->signature($operation)];
     }

@@ -604,6 +604,7 @@ mod tests {
                 hlc: "0001727222222222-00000000-dev".parse().unwrap(),
                 intent: "member.add".into(),
                 changes: Vec::new(),
+                previous: None,
                 signature: None,
             },
         }

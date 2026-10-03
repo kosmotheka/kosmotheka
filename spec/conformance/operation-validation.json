@@ -15,7 +15,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -68,7 +69,8 @@
             "acquired_on": "2026-09-24"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -90,7 +92,8 @@
             "location": null
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -109,7 +112,8 @@
           "id": "01997c7e-0000-7000-8000-000000000013",
           "action": "delete"
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -140,7 +144,8 @@
             "open_library_id": "OL7353617M"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -170,7 +175,8 @@
             "publisher_id": "01997c7e-0000-7000-8000-000000000051"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -192,7 +198,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -215,7 +222,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -229,7 +237,8 @@
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
       "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
       "intent": "member.add",
-      "changes": []
+      "changes": [],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -252,7 +261,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -277,7 +287,8 @@
             "colour": "blue"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -302,7 +313,8 @@
             "kind": "book"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -327,7 +339,8 @@
             "name": null
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -352,7 +365,8 @@
             "published_year": "2007"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -377,7 +391,8 @@
             "acquired_on": "2026-02-30"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -402,7 +417,8 @@
             "format": "scroll"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -427,7 +443,8 @@
             "owner_id": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -449,7 +466,8 @@
           "id": "01997c7e-0000-7000-8000-000000000013",
           "action": "update"
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -473,7 +491,8 @@
             "location": null
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -506,7 +525,8 @@
             "title": "Title"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -531,7 +551,8 @@
             "publisher": "Minotauro"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -556,7 +577,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -578,7 +600,8 @@
             "name": "Family"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -600,7 +623,8 @@
             "name": "Home"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -619,7 +643,8 @@
           "id": "01997c7e-0000-7000-8000-00000000aaaa",
           "action": "delete"
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -641,7 +666,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -663,7 +689,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -686,7 +713,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -709,7 +737,8 @@
             "name": "Tersoal"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -732,7 +761,8 @@
             "name": "Friends"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -754,7 +784,8 @@
           "action": "create",
           "fields": {}
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -779,7 +810,8 @@
             "name": null
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -805,7 +837,8 @@
             "library_id": "01997c7e-0000-7000-8000-00000000bbbb"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -838,7 +871,8 @@
             "name": "Friends"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -863,7 +897,8 @@
             "device_name": "Móvil de Laura"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -885,7 +920,8 @@
             "device_name": "Móvil de Laura"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -911,7 +947,8 @@
             "name": "Portátil"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -934,7 +971,8 @@
             "name": "Portátil"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -959,7 +997,8 @@
             "can_share": false
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -981,7 +1020,8 @@
             "role": "owner"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1006,7 +1046,8 @@
             "can_share": 1
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1031,7 +1072,8 @@
             "member_id": "01997c7e-0000-7000-8000-000000000012"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1053,7 +1095,8 @@
             "status": "rejected"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1075,7 +1118,8 @@
             "note": "Me lo regaló la abuela"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1097,7 +1141,8 @@
             "status": "withdrawn"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1119,7 +1164,8 @@
             "status": "forgotten"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1149,7 +1195,8 @@
             "favorite": true
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1177,7 +1224,8 @@
             "wished": true
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1199,7 +1247,8 @@
             "wished": "yes"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1225,7 +1274,8 @@
             "work_id": "01997c7e-0000-7000-8000-0000000000d1"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1249,7 +1299,8 @@
             "member_id": "01997c7e-0000-7000-8000-000000000013"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1274,7 +1325,8 @@
             "favorite": false
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1296,7 +1348,8 @@
             "rating": 6
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1321,7 +1374,8 @@
             "rating": 0
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1346,7 +1400,8 @@
             "status": "reading"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1368,7 +1423,8 @@
           "id": "9ae21929-1e26-5646-8c48-52cf10f8e911",
           "action": "delete"
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1433,7 +1489,8 @@
             "quantity": 1
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1456,7 +1513,8 @@
             "title": "Radio"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1484,7 +1542,8 @@
             "position": 0
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1527,7 +1586,8 @@
             "number": "12"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1570,7 +1630,8 @@
             "min_age": 10
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1610,7 +1671,8 @@
             "duration_minutes": 142
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1650,7 +1712,8 @@
             "seasons": 7
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1675,7 +1738,8 @@
             "platform": "Nintendo Switch"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1700,7 +1764,8 @@
             "seasons": "1–2"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1722,7 +1787,8 @@
             "platform": "Switch"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1747,7 +1813,8 @@
             "seasons": "seven"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1792,7 +1859,8 @@
             "position": 0
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1823,7 +1891,8 @@
             "tag_id": "01997c7e-0000-7000-8000-000000000401"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1846,7 +1915,8 @@
             "genre": "fantasy"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1869,7 +1939,8 @@
             "genre": "steampunk"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1894,7 +1965,8 @@
             "work_id": "01997c7e-0000-7000-8000-000000000011"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -1930,7 +2002,8 @@
             "position": 1
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1954,7 +2027,8 @@
             "relation": "requires"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
@@ -1978,7 +2052,8 @@
             "relation": "sequel"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -2003,7 +2078,8 @@
             "name": "Dune"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -2029,7 +2105,8 @@
             "title": "Dune\u0000"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "invalid",
@@ -2055,10 +2132,129 @@
             "title": "Dune\\u0000"
           }
         }
-      ]
+      ],
+      "previous": null
     },
     "expect": {
       "result": "valid"
+    }
+  },
+  {
+    "name": "the first operation of a device has a null previous",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a previous operation of the same device",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": "01997c7e-0000-7000-8000-000000000000"
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a previous that is not a UUID",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": "not-a-uuid"
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_previous"
+    }
+  },
+  {
+    "name": "an empty previous is not the same as none",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": ""
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_previous"
+    }
+  },
+  {
+    "name": "an operation cannot be its own previous",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": "01997c7e-0000-7000-8000-000000000001"
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_previous"
     }
   }
 ]

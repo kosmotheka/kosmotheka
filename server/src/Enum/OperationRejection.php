@@ -19,4 +19,6 @@ enum OperationRejection: string
     case KeyChanged = 'key_changed';
     case BadSignature = 'bad_signature';
     case NewerVersion = 'newer_version';
+    /** Its previous operation is not stored here (yet), or is not an earlier one of the same author (D87). */
+    case BrokenChain = 'broken_chain';
 }

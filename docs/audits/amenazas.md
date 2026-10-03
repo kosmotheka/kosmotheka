@@ -110,9 +110,10 @@ Revisado en la auditoría del 2026-10-03 (2), tema `library-access`. Quién pued
 - La retirada llega cuando el afectado vuelve a conectar, y no alcanza a quien recibió la biblioteca a través de él (D71).
 - Sin roles, cualquier dispositivo con la biblioteca puede borrarla o retirar a otro, también a quien la creó (D65, D71).
 - Una app modificada puede compartir sin `can_share`; quien recibe cuenta como lector sin persona (D73).
-- Se confía en el HLC de cada dispositivo: un reloj manipulado fecha mal sus cambios (D55, D73).
+- Se confía en el HLC de cada dispositivo dentro de un margen: un reloj manipulado fecha mal sus cambios, pero nunca más de una hora por delante del de quien los recibe (D55, D73; DAT-005).
 - El superadministrador tiene acceso total a la nube (D51).
 - En local no hay hora fiable ni IP en el registro (D66).
 - El administrador único que pierde su único dispositivo pierde el control; duplicar la biblioteca es el último recurso (D58; ver CON-002).
-- Mientras la biblioteca no tenga roles se aceptan operaciones sin firma (D73).
+- ~~Mientras la biblioteca no tenga roles se aceptan operaciones sin firma (D73).~~ Desde el 03/10/2026 toda operación va firmada (D56, D84).
+- Un editor con una app modificada puede bifurcar su propia cadena (dos operaciones con la misma `previous`) y que solo la reciban los dispositivos que iban por detrás: esos quedan distintos en lo que él podía editar. La cadena lo hace detectable; no se resuelve (D87).
 - La nube entiende los datos, no es un relé cifrado; la privacidad total es el modo sin cuenta (D57).

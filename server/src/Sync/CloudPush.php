@@ -68,11 +68,15 @@ final readonly class CloudPush
             $entries[] = $this->read($pushed);
         }
 
+        // An unlinked library takes the link first, so an upload that carries it anywhere in the batch links the
+        // library. The link itself is stored in its place by HLC, after the operations it chains to (D87).
+        $verifiedLink = $library->isLinked() ? null : $this->linkWith($library, $entries);
+
         // As in the app's merge_in: once an author's operation is rejected, that author's later ones in this
         // push are too, so the library's vector never jumps over a gap that nobody would send again (DAT-001).
         $received = $known = $rejected = 0;
         $heldBack = [];
-        foreach ($this->inOrder($library, $entries) as ['pushed' => $pushed, 'payload' => $payload, 'author' => $author]) {
+        foreach ($this->inHlcOrder($entries) as ['pushed' => $pushed, 'payload' => $payload, 'author' => $author]) {
             if (null !== $author && isset($heldBack[$author])) {
                 ++$rejected;
                 continue;
@@ -81,7 +85,7 @@ final readonly class CloudPush
                 if (!$payload instanceof OperationPayload) {
                     throw new OperationRejectedException(OperationRejection::Malformed);
                 }
-                $this->accept($library, $pushed, $payload) ? ++$received : ++$known;
+                $this->accept($library, $pushed, $payload, $verifiedLink) ? ++$received : ++$known;
             } catch (OperationRejectedException) {
                 ++$rejected;
                 if (null !== $author) {
@@ -120,19 +124,43 @@ final readonly class CloudPush
     }
 
     /**
-     * The link first, so an upload that carries it anywhere in the batch links the library; then by
-     * HLC, so a device's registration comes before the operations it signs whatever the batch order.
+     * By HLC, so a device's registration comes before the operations it signs, and each operation after the
+     * previous one of its author, whatever the batch order.
      *
      * @param list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}> $entries
      *
      * @return list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}>
      */
-    private function inOrder(CloudLibrary $library, array $entries): array
+    private function inHlcOrder(array $entries): array
     {
-        $key = fn (array $entry): array => [!$entry['payload'] instanceof OperationPayload || !$this->isLink($library, $entry['payload']), $entry['hlc']];
-        usort($entries, static fn (array $a, array $b): int => $key($a) <=> $key($b));
+        usort($entries, static fn (array $a, array $b): int => $a['hlc'] <=> $b['hlc']);
 
         return $entries;
+    }
+
+    /**
+     * Links the library with the first operation of the batch that is a valid link, without storing it.
+     *
+     * @param list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}> $entries
+     *
+     * @return ?string the id of that operation, already verified; null when none links the library
+     */
+    private function linkWith(CloudLibrary $library, array $entries): ?string
+    {
+        foreach ($entries as ['pushed' => $pushed, 'payload' => $payload]) {
+            if (!$payload instanceof OperationPayload || !$this->isLink($library, $payload)) {
+                continue;
+            }
+            try {
+                $this->link($library, $pushed, $payload);
+
+                return $payload->id;
+            } catch (OperationRejectedException) {
+                // Judged again, and counted, in its place.
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -140,20 +168,23 @@ final readonly class CloudPush
      *
      * @throws OperationRejectedException
      */
-    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): bool
+    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?string $verifiedLink): bool
     {
         if ($this->operations->has($library, $payload->id)) {
             return false;
         }
 
         if (!$library->isLinked()) {
-            $this->link($library, $pushed, $payload);
-        } else {
-            if (strtolower($payload->library) !== $library->getLocalLibraryId()) {
-                throw new OperationRejectedException(OperationRejection::OtherLibrary);
-            }
+            // Nothing enters before the link.
+            throw new OperationRejectedException(OperationRejection::NotLinked);
+        }
+        if (strtolower($payload->library) !== $library->getLocalLibraryId()) {
+            throw new OperationRejectedException(OperationRejection::OtherLibrary);
+        }
+        if ($payload->id !== $verifiedLink) {
             $this->verifyAuthor($library, $pushed->operation, $payload);
         }
+        $this->requirePrevious($library, $payload);
 
         return $this->operations->insertIfNew(
             $library,
@@ -163,6 +194,24 @@ final readonly class CloudPush
             $pushed->schemaVersion,
             json_encode($pushed->operation, \JSON_THROW_ON_ERROR),
         );
+    }
+
+    /**
+     * An operation follows an operation of its author that this library already stores (D87): one whose previous
+     * is missing waits for it, with the rest of its author's (the caller holds them back); one that chains to
+     * another author's operation or to a later one is malformed. A null previous is taken as it comes.
+     *
+     * @throws OperationRejectedException
+     */
+    private function requirePrevious(CloudLibrary $library, OperationPayload $payload): void
+    {
+        if (null === $payload->previous) {
+            return;
+        }
+        $previous = $this->operations->findAuthorAndHlc($library, $payload->previous);
+        if (null === $previous || $previous['author'] !== $this->author($payload) || $previous['hlc'] >= $payload->hlc) {
+            throw new OperationRejectedException(OperationRejection::BrokenChain);
+        }
     }
 
     /**

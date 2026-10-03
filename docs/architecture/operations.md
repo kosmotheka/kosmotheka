@@ -19,6 +19,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
   "library": "0199a0aa-…",
   "hlc": "0001727222222222-00000000-0199a0ff-…",
   "intent": "book.add",
+  "previous": "0199a1a0-…",
   "changes": [
     { "entity": "work",         "id": "0199…11", "action": "create", "fields": { "kind": "book", "title": "El nombre del viento" } },
     { "entity": "edition",      "id": "0199…12", "action": "create", "fields": { "work_id": "0199…11", "title": "El nombre del viento" } },
@@ -34,6 +35,7 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 | `library` | La biblioteca a la que pertenecen todos sus cambios (D54). Un cambio no puede elegir otra; solo puede tocar la entidad `library` si es la suya |
 | `hlc` | Marca del reloj lógico híbrido (ver abajo). Incluye el identificador del dispositivo |
 | `intent` | Etiqueta de intención: palabras en minúscula separadas por puntos. **Solo informativa**: los permisos y la fusión miran los cambios, nunca la etiqueta |
+| `previous` | Id de la última operación replicable del mismo dispositivo en la misma biblioteca cuando se hizo esta, o `null` si es la primera (D87). Obligatoria: la clave siempre está, aunque sea nula. Va firmada. Ver «Cadena de cada autor», más abajo |
 | `changes` | Cambios: entidad, id, acción (`create`, `update`, `delete`) y campos |
 | `signature` | Firma Ed25519 del dispositivo autor (D56). Las operaciones anteriores a la Fase 5 no la llevan. Ver «Firmas», más abajo |
 
@@ -82,6 +84,10 @@ El texto tiene ceros a la izquierda para que ordenar como texto sea igual que or
   - una operación con firma que no cuadra con la clave de su autor, o de un autor sin clave conocida;
   - una que intenta cambiar la clave de un dispositivo que ya tiene una: la primera es la que vale.
 - **Una operación sin firma se rechaza siempre** (D56, ampliada el 03/10/2026), con roles o sin ellos, en los dispositivos y en la nube. Las de antes de esta fase eran de prueba: ya no viajan.
+
+## Cadena de cada autor (D87)
+
+Cada dispositivo encadena sus operaciones por biblioteca: `previous` apunta a la anterior suya, y la firma cubre el campo. Quien recibe una operación cuya anterior no tiene la deja esperando y no se salta nunca; una que apunta a una operación de otro autor, de otra biblioteca o posterior en el reloj está mal formada. Con la cadena, las vallas de D84 señalan una operación (`trusted_through`) y no una fecha. El detalle, en [sync.md](sync.md). Las operaciones registradas antes de D87 no tienen `previous` y no son válidas: una biblioteca de prueba anterior se recupera con «Duplicar como nueva» (D58).
 
 ## Permisos (D73, hitos 5.2 a 5.4)
 

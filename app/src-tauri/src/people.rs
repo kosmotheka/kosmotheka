@@ -342,7 +342,7 @@ pub fn assign_device(
     let mut fields = json!({ "member_id": member });
     // A device that stops belonging to its person is fenced (D84).
     if current.as_deref().is_some_and(|c| Some(c) != member) {
-        fields["trusted_until"] = json!(crate::permissions::fence_mark(&tx, library, device)?);
+        fields["trusted_through"] = json!(crate::permissions::fence_mark(&tx, library, device)?);
     }
     ops::record(
         &tx,

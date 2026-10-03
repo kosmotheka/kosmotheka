@@ -47,6 +47,11 @@ final class ValidOperationValidator extends ConstraintValidator
 
             return;
         }
+        if (null !== $value->previous && (!$this->isUuid($value->previous) || $value->previous === $value->id)) {
+            $this->report(OperationErrorCode::InvalidPrevious, 'previous');
+
+            return;
+        }
         if (1 !== preg_match(self::INTENT, $value->intent)) {
             $this->report(OperationErrorCode::InvalidIntent, 'intent');
 

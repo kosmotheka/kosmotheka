@@ -75,7 +75,7 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertCount(2, $garcia, 'The Garcías\' own copy and the one Jhonny made of its ids.');
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         self::assertContains($ana, $garcia);
-        // 13 of the upload and 2 of the phone, the older one included.
+        // 13 of the upload, 1 of the phone and the laptop's older one.
         self::assertSame(15, $this->operationsIn($ana));
         // Three authors registered their keys: the laptop, the phone and Hugo's phone.
         self::assertSame(3, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
@@ -155,16 +155,18 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertContains(Cast::jhonnyAsAnaLaptop()->publicKey, $byLibrary);
     }
 
-    public function testAnOlderOperationOfThePhoneWasStoredAfterANewerOne(): void
+    public function testAnOlderOperationOfTheLaptopIsStoredAlongsideANewerOneOfThePhone(): void
     {
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         $hlcs = $this->connection->fetchFirstColumn(
-            'SELECT hlc FROM cloud_operation WHERE cloud_library_id = :library AND author_device_id = :phone ORDER BY received_at, hlc',
-            ['library' => $ana, 'phone' => Cast::anaPhone()->id],
+            'SELECT hlc FROM cloud_operation WHERE cloud_library_id = :library ORDER BY hlc',
+            ['library' => $ana],
         );
+        $older = \sprintf('%016d-%08x-%s', Cast::at(2900), 0, Cast::anaLaptop()->id);
+        $newer = \sprintf('%016d-%08x-%s', Cast::at(3000), 0, Cast::anaPhone()->id);
 
-        self::assertContains(\sprintf('%016d-%08x-%s', Cast::at(2900), 0, Cast::anaPhone()->id), $hlcs);
-        self::assertContains(\sprintf('%016d-%08x-%s', Cast::at(3000), 0, Cast::anaPhone()->id), $hlcs);
+        self::assertContains($older, $hlcs);
+        self::assertContains($newer, $hlcs);
     }
 
     public function testTheGarciaLibraryIsInvisibleToJhonnyThroughTheApi(): void

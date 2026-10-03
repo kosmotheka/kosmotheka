@@ -98,12 +98,14 @@ fn record_inner(
     }
     let hlc = HlcClock::new(device_id.clone(), last_hlc(tx)?.as_ref()).tick(now_millis());
 
+    // After the registration above, which may be the operation this one follows.
     let mut operation = Operation {
         id: new_id(),
         library: library.to_owned(),
         hlc,
         intent: intent.to_owned(),
         changes,
+        previous: latest_of(tx, library, &device_id)?,
         signature: None,
     };
     operation.validate()?;
@@ -286,6 +288,7 @@ pub fn would_allow(conn: &Connection, library: &str, changes: Vec<Change>) -> Re
         hlc,
         intent: "check".to_owned(),
         changes,
+        previous: latest_of(conn, library, &device_id(conn)?)?,
         signature: None,
     };
     // Unsigned operations count as a reader's.
@@ -331,6 +334,20 @@ pub fn set_status(conn: &Connection, operation_id: &str, status: Status) -> Resu
     Ok(())
 }
 
+/// The id of the latest replicable operation `device` has in `library`: the one
+/// the next operation of that device chains to (D87).
+pub fn latest_of(conn: &Connection, library: &str, device: &str) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT id FROM operations
+              WHERE library_id = ?1 AND device_id = ?2 AND replicable = 1
+              ORDER BY hlc DESC LIMIT 1",
+            [library, device],
+            |row| row.get(0),
+        )
+        .optional()?)
+}
+
 /// Appends to the log. The author device is the one inside the HLC.
 pub fn log_operation(
     conn: &Connection,
@@ -339,8 +356,8 @@ pub fn log_operation(
     status: Status,
 ) -> Result<()> {
     conn.execute(
-        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable, signature, status)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9)",
+        "INSERT INTO operations (id, library_id, hlc, device_id, intent, changes, schema_version, replicable, signature, status, previous)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8, ?9, ?10)",
         params![
             operation.id,
             operation.library,
@@ -351,6 +368,7 @@ pub fn log_operation(
             schema_version,
             operation.signature,
             status.as_str(),
+            operation.previous,
         ],
     )?;
     Ok(())
@@ -489,6 +507,10 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
     conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM row_authors WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM device_fences WHERE library_id = ?1", [library])?;
+    conn.execute(
+        "DELETE FROM device_fence_chains WHERE library_id = ?1",
+        [library],
+    )?;
     Ok(())
 }
 

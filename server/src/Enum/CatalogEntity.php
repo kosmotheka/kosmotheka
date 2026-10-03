@@ -175,7 +175,7 @@ enum CatalogEntity: string
                 'relation' => $oneOf(...self::WORK_RELATIONS),
             ],
             self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
-            self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref(), 'trusted_until' => $text()],
+            self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref(), 'trusted_through' => $text()],
             self::ChangeRequest => [
                 'status' => new FieldSpec(FieldType::OneOf, false, ['accepted', 'rejected', 'withdrawn']),
                 'note' => $text(),

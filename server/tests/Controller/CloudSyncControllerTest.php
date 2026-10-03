@@ -251,15 +251,17 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $stored = $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']);
+        // Both follow the last stored operation, so only the rejection holds the later one back, not the chain.
+        $lastStored = $this->laptop->latest(self::LOCAL);
         $invalid = $this->laptop->sign(self::LOCAL, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
-        $later = $this->laptop->publisher(self::LOCAL, self::T + 11);
+        $later = $this->laptop->publisher(self::LOCAL, self::T + 11, previous: $lastStored);
 
         $response = $this->push($this->familySession, $cloud, [$later, $invalid]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame($stored, $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']));
 
-        $fixed = $this->laptop->publisher(self::LOCAL, self::T + 10);
+        $fixed = $this->laptop->publisher(self::LOCAL, self::T + 10, previous: $lastStored);
         $response = $this->push($this->familySession, $cloud, [$fixed, $later]);
 
         self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $response['body']);
@@ -279,8 +281,9 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testATextWithNulIsRejectedAndTheSixCharactersTypedAreNot(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $stored = $this->laptop->latest(self::LOCAL);
         $nul = $this->laptop->publisher(self::LOCAL, self::T + 10, "Minotauro\0");
-        $typed = $this->laptop->publisher(self::LOCAL, self::T + 11, 'Minotauro\\u0000');
+        $typed = $this->laptop->publisher(self::LOCAL, self::T + 11, 'Minotauro\\u0000', $stored);
 
         $response = $this->push($this->familySession, $cloud, [$nul, $typed]);
 
@@ -293,13 +296,14 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testOperationsWithABrokenStructureOrNoSignatureAreRejectedOneByOne(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $stored = $this->laptop->latest(self::LOCAL);
         $unsigned = $this->laptop->publisher(self::LOCAL, self::T + 30);
         unset($unsigned['signature']);
         $badIntent = $this->laptop->sign(self::LOCAL, self::T + 31, 'NOT AN INTENT', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]]);
         $tampered = $this->laptop->publisher(self::LOCAL, self::T + 32);
         $tampered['changes'] = [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'Somebody else']]];
         // Before the others: a rejection holds back the author's later operations (DAT-001).
-        $good = $this->laptop->publisher(self::LOCAL, self::T + 29);
+        $good = $this->laptop->publisher(self::LOCAL, self::T + 29, previous: $stored);
 
         $response = $this->push($this->familySession, $cloud, [$unsigned, $badIntent, $tampered, $good]);
 
@@ -496,26 +500,88 @@ final class CloudSyncControllerTest extends WebTestCase
         }
     }
 
-    /** Battery 8 (DAT-001). */
+    /** D87: an operation whose previous the cloud lacks waits, and the author's vector stays below it. */
+    public function testAnOperationWhoseCloudLacksThePreviousWaitsForIt(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $first = $this->laptop->publisher(self::LOCAL, self::T + 10, 'first');
+        $second = $this->laptop->publisher(self::LOCAL, self::T + 11, 'second');
+        $third = $this->laptop->publisher(self::LOCAL, self::T + 12, 'third');
+        self::assertSame($first['id'], $second['previous']);
+
+        $response = $this->push($this->familySession, $cloud, [$second, $third]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
+        self::assertSame(4, $this->rows('cloud_operation'));
+        $vector = $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']);
+        self::assertLessThan(\sprintf('%016d', self::T + 10), $vector[$this->laptop->id]);
+
+        $response = $this->push($this->familySession, $cloud, [$third, $second, $first]);
+
+        self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $response['body']);
+        $vector = $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']);
+        self::assertStringStartsWith(\sprintf('%016d', self::T + 12), $vector[$this->laptop->id]);
+    }
+
+    /** D87: a previous that is another author's operation, or a later one, is a malformed chain. */
+    public function testAPreviousThatIsNotAnEarlierOperationOfTheSameAuthorIsRefused(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $phone = SigningDevice::generate();
+        $registration = $phone->registration(self::LOCAL, self::T + 20);
+        \assert(\is_string($registration['id']));
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$registration])['body']);
+        $own = $this->laptop->publisher(self::LOCAL, self::T + 30, 'own');
+        \assert(\is_string($own['id']));
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$own])['body']);
+
+        $ofAnotherAuthor = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]], previous: $registration['id']);
+        $notOlder = $this->laptop->sign(self::LOCAL, self::T + 30, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'y']]], previous: $own['id']);
+        $before = $this->rows('cloud_operation');
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$ofAnotherAuthor])['body']);
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$notOlder])['body']);
+        self::assertSame($before, $this->rows('cloud_operation'));
+        // A previous the push itself brings earlier is fine, as are two operations on the same previous (a fork).
+        $honest = $this->laptop->sign(self::LOCAL, self::T + 32, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'z']]], previous: $own['id']);
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$honest])['body']);
+    }
+
+    /** D87: the key `previous` is required, even when it is null. */
+    public function testAnOperationWithoutThePreviousKeyIsRejected(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $operation = $this->laptop->publisher(self::LOCAL, self::T + 10);
+        unset($operation['previous'], $operation['signature']);
+        $operation = $this->laptop->resign($operation);
+
+        $response = $this->push($this->familySession, $cloud, [$operation]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $response['body']);
+    }
+
+    /** Battery 8 (DAT-001). Between authors: one author's chain does not wait for another's. */
     public function testAnOldOperationArrivingLateIsStoredNotRejected(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
+        $phone = SigningDevice::generate();
         $this->push($this->familySession, $cloud, [
             $this->laptop->registration(self::LOCAL, self::T),
             $this->laptop->link(self::LOCAL, $cloud, self::T + 1),
-            $this->laptop->publisher(self::LOCAL, self::T + 5, 'fifth'),
+            $phone->registration(self::LOCAL, self::T + 2),
+            $phone->publisher(self::LOCAL, self::T + 5, 'fifth'),
         ]);
-        $fifth = $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body'])[2];
+        $fifth = $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body'])[3];
 
         $late = $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 3, 'third')]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $late['body']);
-        $partial = $this->pull($this->familySession, $cloud, [$this->laptop->id => $fifth]);
+        $partial = $this->pull($this->familySession, $cloud, [$phone->id => $fifth, $this->laptop->id => \sprintf('%016d-00000000-%s', self::T + 3, $this->laptop->id)]);
         self::assertSame([], $this->operationsOf($partial['body']));
         $everything = $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body']);
-        self::assertCount(4, $everything);
-        self::assertStringStartsWith(\sprintf('%016d', self::T + 3), $everything[2]);
-        self::assertStringStartsWith(\sprintf('%016d', self::T + 5), $everything[3]);
+        self::assertCount(5, $everything);
+        self::assertStringStartsWith(\sprintf('%016d', self::T + 3), $everything[3]);
+        self::assertStringStartsWith(\sprintf('%016d', self::T + 5), $everything[4]);
     }
 
     /**

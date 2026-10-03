@@ -780,6 +780,8 @@ mod tests {
         // First a bare notice, then one with a revocation the phone signed itself,
         // which a reader may not make.
         let desk_id = id_of(&desk.database);
+        let phone_id = id_of(&phone);
+        let phone_previous = ops::latest_of(&phone.lock().unwrap(), &club, &phone_id).unwrap();
         let mut own_proof = kosmotheka_domain::Operation {
             id: ops::new_id(),
             library: club.clone(),
@@ -790,6 +792,7 @@ mod tests {
                 ops::new_id(),
                 serde_json::json!({ "device_id": desk_id, "device_name": "Desk" }),
             )],
+            previous: phone_previous,
             signature: None,
         };
         own_proof.hlc.millis += 1;
@@ -799,7 +802,6 @@ mod tests {
                 .sign(&own_proof),
         );
         let client = pinned_client(&server.fingerprint).unwrap();
-        let phone_id = id_of(&phone);
         for proofs in [vec![], vec![own_proof]] {
             let forged = {
                 let conn = phone.lock().unwrap();

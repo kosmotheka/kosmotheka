@@ -34,6 +34,11 @@ final readonly class OperationReader
             throw new OperationRejectedException(OperationRejection::Malformed);
         }
 
+        // The key is required even when it is null (D87), and the Serializer takes a missing nullable as null.
+        if (!property_exists($operation, 'previous')) {
+            throw new OperationRejectedException(OperationRejection::Malformed);
+        }
+
         try {
             $json = json_encode($operation, \JSON_THROW_ON_ERROR);
             $payload = $this->serializer->deserialize($json, OperationPayload::class, 'json', OperationPayload::SERIALIZATION_CONTEXT);

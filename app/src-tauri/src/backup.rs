@@ -688,6 +688,80 @@ mod tests {
         assert_eq!(titles(&target, &club), vec!["Club book"]);
     }
 
+    /// What `sync` does between two devices: everything each lacks, both ways.
+    /// Returns how many operations were refused in each direction.
+    fn sync_pair(one: &mut Connection, other: &mut Connection, library: &str) -> (usize, usize) {
+        let libraries = [library.to_owned()];
+        let mut refused = (0, 0);
+        let missing = crate::sync::operations_since(
+            other,
+            &crate::sync::version_vectors(one, &libraries).unwrap(),
+        )
+        .unwrap();
+        refused.0 = crate::sync::merge(one, missing).unwrap().rejected;
+        let missing = crate::sync::operations_since(
+            one,
+            &crate::sync::version_vectors(other, &libraries).unwrap(),
+        )
+        .unwrap();
+        refused.1 = crate::sync::merge(other, missing).unwrap().rejected;
+        refused
+    }
+
+    #[test]
+    fn a_restored_device_writes_a_new_chain_and_syncs_with_peers_that_hold_the_old_one() {
+        // A backup carries neither the device id nor the key (D58): the device that
+        // restores keeps its own identity, so its chain starts from its own log and
+        // never collides with the one the backed-up device left on its peers.
+        let dir = temp("chain");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut old = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&old).unwrap();
+        catalog::create_book(&mut old, &lib, &book("Before the backup", None), None).unwrap();
+        let file = dir.join("old.zip");
+        export(
+            &old,
+            std::slice::from_ref(&lib),
+            &covers,
+            File::create(&file).unwrap(),
+            None,
+        )
+        .unwrap();
+        let mut peer = db::open_in_memory().unwrap();
+        assert_eq!(sync_pair(&mut peer, &mut old, &lib), (0, 0));
+        // The old device goes on after the backup; the peer holds those operations.
+        catalog::create_book(&mut old, &lib, &book("After the backup", None), None).unwrap();
+        assert_eq!(sync_pair(&mut peer, &mut old, &lib), (0, 0));
+
+        let mut restored = db::open_in_memory().unwrap();
+        let first = ops::active_library(&restored).unwrap();
+        let summary = restore(
+            &mut restored,
+            &first,
+            &covers,
+            File::open(&file).unwrap(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(summary.restored.len(), 1);
+        catalog::create_book(&mut restored, &lib, &book("After the restore", None), None).unwrap();
+        catalog::create_book(&mut restored, &lib, &book("And again", None), None).unwrap();
+
+        assert_eq!(sync_pair(&mut restored, &mut peer, &lib), (0, 0));
+        assert_eq!(sync_pair(&mut restored, &mut old, &lib), (0, 0));
+        assert_eq!(sync_pair(&mut peer, &mut old, &lib), (0, 0));
+        let sorted = |conn: &Connection| {
+            let mut titles = titles(conn, &lib);
+            titles.sort();
+            titles.dedup();
+            titles
+        };
+        assert_eq!(sorted(&restored), sorted(&peer));
+        assert_eq!(sorted(&peer), sorted(&old));
+        assert!(sorted(&peer).contains(&"After the restore".to_owned()));
+        assert!(sorted(&peer).contains(&"After the backup".to_owned()));
+    }
+
     #[test]
     fn a_library_already_here_with_content_is_skipped() {
         let dir = temp("nonempty");

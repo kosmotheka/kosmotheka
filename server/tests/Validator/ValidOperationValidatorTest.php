@@ -85,6 +85,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
 
         yield 'missing hlc' => [array_diff_key($valid, ['hlc' => true])];
         yield 'missing library' => [array_diff_key($valid, ['library' => true])];
+        yield 'previous is not a string' => [['previous' => 5] + $valid];
         yield 'unknown top-level key' => [$valid + ['author' => 'x']];
         yield 'intent is not a string' => [['intent' => 7] + $valid];
         yield 'unknown entity' => [$withChange(['entity' => 'boardgame'])];
@@ -141,6 +142,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
             return match ($expect['code']) {
                 'invalid_id' => 'id',
                 'invalid_library' => 'library',
+                'invalid_previous' => 'previous',
                 'invalid_intent' => 'intent',
                 default => 'changes',
             };
@@ -154,7 +156,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
     }
 
     /**
-     * @return array{id: string, library: string, hlc: string, intent: string, changes: list<array<string, mixed>>}
+     * @return array{id: string, library: string, hlc: string, intent: string, previous: null, changes: list<array<string, mixed>>}
      */
     private static function validOperation(): array
     {
@@ -163,6 +165,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
             'library' => '01997c7e-0000-7000-8000-00000000aaaa',
             'hlc' => '0001727222222222-00000000-dev',
             'intent' => 'member.add',
+            'previous' => null,
             'changes' => [[
                 'entity' => 'member',
                 'id' => '01997c7e-0000-7000-8000-000000000002',

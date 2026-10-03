@@ -24,11 +24,13 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 - **Create** must include every required field of the entity.
 - **Required fields** can never be set to `null`.
 - **Dates** must exist on the calendar (`2026-02-30` is invalid).
-- Errors are reported in this order: operation id, library, intent, empty changes, then each change in order (id, other library, other device, action, fields in alphabetical order, missing required fields).
+- **`previous`** (D87) is the id of the latest operation of the same device in the same library when the operation was made, or `null` for the first. The key is **required** even when it is null: an operation without it is not an operation (it does not deserialize). It must be a UUID and never the operation's own id (`invalid_previous`). It is part of what the signature covers. A receiver that does not have `previous` yet makes the operation **wait** (not stored, the rest of its author's with it) and one whose `previous` belongs to another device or library, or is not earlier in the clock, refuses it; a null `previous` from an author that already has operations, or two operations with the same `previous`, are accepted (forks are left to the fences). See `docs/architecture/sync.md`.
+- A device's **`trusted_through`** (D84, D87) is the id of the last operation of that device the administrator had when it lost power, or `""`. Of that device's operations dated before the one that sets it, only the marked one and its ancestors through `previous` count; any other is a request.
+- Errors are reported in this order: operation id, library, previous, intent, empty changes, then each change in order (id, other library, other device, action, fields in alphabetical order, missing required fields).
 
 ## Error codes
 
-`invalid_id`, `invalid_library`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`, `wrong_id`, `undeletable`.
+`invalid_id`, `invalid_library`, `invalid_previous`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`, `wrong_id`, `undeletable`.
 
 ## Signatures
 
@@ -62,7 +64,7 @@ Every device checks each operation it receives, and each one it makes, against t
 9. **Withdrawing a request** is for whoever asked: a device of the same person as the requested operation's author may create that `change_request` row with `status` `withdrawn`, and nothing else. It is the only `change_request` row a non-administrator may write.
 10. **The asker's note travels inside the request:** the requested operation may carry a `change_request` row with its own id and only a `note`. Only an administrator could create that row, so the operation always stays a request; accepting repeats the requested changes without it.
 
-`conformance/permissions.json` has cases in the shape of the merge cases (`operations`, `deliveries`), with `expect` listing the ids of the operations that end **applied**, those that end as **requests**, and, optionally, those **rejected** (not stored at all, like an unsigned one); every delivery order must give the same lists. Deliveries keep each device's own operations in order, as the sync protocol does, so a device's key registration always comes before its signed operations. Every operation is signed with the test key of `conformance/signatures.json`, except those marked `"unsigned": true` (a field of the case, not of the operation), which every implementation must refuse.
+`conformance/permissions.json` has cases in the shape of the merge cases (`operations`, `deliveries`), with `expect` listing the ids of the operations that end **applied**, those that end as **requests**, and, optionally, those **rejected** (not stored at all, like an unsigned one); every delivery order must give the same lists. Deliveries keep each device's own operations in order (each one follows its `previous`), as the sync protocol does, so a device's key registration always comes before its signed operations. Every operation is signed with the test key of `conformance/signatures.json`, except those marked `"unsigned": true` (a field of the case, not of the operation), which every implementation must refuse.
 
 The merge cases (`conformance/library-merge.json`) are written without signatures and without key registrations, to keep them about merging: each implementation registers every author of a case with the test key before delivering it (a `device` row it then leaves out of the comparison) and signs every operation with that key.
 

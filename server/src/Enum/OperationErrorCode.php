@@ -13,6 +13,7 @@ enum OperationErrorCode: string
 {
     case InvalidId = 'invalid_id';
     case InvalidLibrary = 'invalid_library';
+    case InvalidPrevious = 'invalid_previous';
     case InvalidIntent = 'invalid_intent';
     case NoChanges = 'no_changes';
     case OtherLibrary = 'other_library';

@@ -362,6 +362,36 @@ async fn uploading_links_the_library_and_sends_its_whole_log() {
 }
 
 #[tokio::test]
+async fn a_long_log_is_pushed_in_an_order_where_every_previous_goes_first() {
+    // The client pushes the log in HLC order and cuts it into consecutive batches
+    // of PUSH_BATCH, so a batch boundary never separates an operation from the
+    // previous one of its author that the cloud has yet to store (D87).
+    let cloud = FakeCloud::default();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+    for n in 0..300 {
+        add(&ana, &library, &format!("Book {n}"));
+    }
+
+    let report = upload(&ana, &api, &library).await.unwrap();
+
+    let log = sync::library_log(&ana.lock().unwrap(), &library).unwrap();
+    assert!(log.len() > 300);
+    let mut seen = std::collections::BTreeSet::new();
+    for operation in &log {
+        if let Some(previous) = &operation.previous {
+            assert!(
+                seen.contains(previous),
+                "{} comes before its previous",
+                operation.id
+            );
+        }
+        seen.insert(operation.id.clone());
+    }
+    assert_eq!((report.sent, report.rejected), (log.len(), 0));
+}
+
+#[tokio::test]
 async fn uploading_twice_is_refused() {
     let cloud = FakeCloud::default();
     let api = cloud.api("ana");

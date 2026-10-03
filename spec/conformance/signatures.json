@@ -1,6 +1,6 @@
 [
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "result": "valid"
     },
@@ -20,12 +20,13 @@
       "id": "01997c7e-0000-7000-8000-000000000301",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
+      "previous": null,
+      "signature": "Gk0vM89X7FZunfTsuHoaaKTTq-GSyuAQB_GIZeuczKVHtR28dCNNvKZwdIOWye7c2uz8D0qSF8AYdbn_qcc9Bw"
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"«El \\\"mesías\\\"» de Dune\\n\\t/ñ €\\u0001\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000302\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"«El \\\"mesías\\\"» de Dune\\n\\t/ñ €\\u0001\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000302\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "result": "valid"
     },
@@ -45,12 +46,13 @@
       "id": "01997c7e-0000-7000-8000-000000000302",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "XxQOUtEqGIt22Zl6pUEEnajrJnbVeStrlF6aJZcN1YDTgz5lPNdeRltQYpLIiRjis-I_7nP1znWeaaXXQcZcDg"
+      "previous": null,
+      "signature": "2qGKrB4uzuBH_Pjr9dJ7Ir6V1g_lXEIbhAGCdLwuDKSlLcT9ER8YH6eNDdCL9jhGdO0_iDajRV4i69H0DKYuCA"
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro (2)\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro (2)\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "mismatch",
       "result": "invalid"
@@ -71,12 +73,66 @@
       "id": "01997c7e-0000-7000-8000-000000000301",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
+      "previous": null,
+      "signature": "Gk0vM89X7FZunfTsuHoaaKTTq-GSyuAQB_GIZeuczKVHtR28dCNNvKZwdIOWye7c2uz8D0qSF8AYdbn_qcc9Bw"
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000303\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000305\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":\"01997c7e-0000-7000-8000-000000000300\"}",
+    "expect": {
+      "result": "valid"
+    },
+    "name": "signed with a previous operation",
+    "operation": {
+      "changes": [
+        {
+          "action": "create",
+          "entity": "publisher",
+          "fields": {
+            "name": "Minotauro"
+          },
+          "id": "01997c7e-0000-7000-8000-000000000061"
+        }
+      ],
+      "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
+      "id": "01997c7e-0000-7000-8000-000000000305",
+      "intent": "publisher.add",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "previous": "01997c7e-0000-7000-8000-000000000300",
+      "signature": "LtWYKeElKozmMMqqSXnaPEXFjvBhNBNsRtwWMRGj1zYs_LMwI5SpGAwd9wDmaRcNNWF8EokLia0afFL6PsmMDg"
+    },
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+  },
+  {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":\"01997c7e-0000-7000-8000-000000000300\"}",
+    "expect": {
+      "code": "mismatch",
+      "result": "invalid"
+    },
+    "name": "previous changed after signing",
+    "operation": {
+      "changes": [
+        {
+          "action": "create",
+          "entity": "publisher",
+          "fields": {
+            "name": "Minotauro"
+          },
+          "id": "01997c7e-0000-7000-8000-000000000061"
+        }
+      ],
+      "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
+      "id": "01997c7e-0000-7000-8000-000000000301",
+      "intent": "publisher.add",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "previous": "01997c7e-0000-7000-8000-000000000300",
+      "signature": "Gk0vM89X7FZunfTsuHoaaKTTq-GSyuAQB_GIZeuczKVHtR28dCNNvKZwdIOWye7c2uz8D0qSF8AYdbn_qcc9Bw"
+    },
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+  },
+  {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000303\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "mismatch",
       "result": "invalid"
@@ -97,12 +153,13 @@
       "id": "01997c7e-0000-7000-8000-000000000303",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "twz8caJ2jMRpyd60F1ISrp8y7V39CqXLvxO1OhG9xppmm1NNFa9U-qEVIVdTyTa5Sg5XK46s-Spb-vDYjEHcAA"
+      "previous": null,
+      "signature": "n4_pXN_wwhcydpvrP5dPMdDFuO7t3XjZv6xczmaodXU-NDfO5LUmjN0iejQIphO7prbTLwN0GjxpzmdQC0K2Aw"
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "malformed",
       "result": "invalid"
@@ -123,12 +180,13 @@
       "id": "01997c7e-0000-7000-8000-000000000301",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "previous": null,
       "signature": "not-a-signature"
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "bad_key",
       "result": "invalid"
@@ -149,12 +207,13 @@
       "id": "01997c7e-0000-7000-8000-000000000301",
       "intent": "publisher.add",
       "library": "01997c7e-0000-7000-8000-00000000aaaa",
-      "signature": "yeYR-ZqvVShVoGUvlIrWgMQR5TKWrP4jM7XMRGkjRj1_eTuU63-U1qOkYGwm8qKYetzANbH9tSYNK6Ec8iLqAg"
+      "previous": null,
+      "signature": "Gk0vM89X7FZunfTsuHoaaKTTq-GSyuAQB_GIZeuczKVHtR28dCNNvKZwdIOWye7c2uz8D0qSF8AYdbn_qcc9Bw"
     },
     "publicKey": "AAAA"
   },
   {
-    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000304\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\"}",
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000304\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "missing",
       "result": "invalid"
@@ -174,9 +233,9 @@
       "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
       "id": "01997c7e-0000-7000-8000-000000000304",
       "intent": "publisher.add",
-      "library": "01997c7e-0000-7000-8000-00000000aaaa"
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "previous": null
     },
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   }
 ]
-

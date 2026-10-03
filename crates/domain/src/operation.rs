@@ -20,10 +20,25 @@ pub struct Operation {
     /// merging look at the changes, never at the label.
     pub intent: String,
     pub changes: Vec<Change>,
+    /// The latest operation of the same device in the same library when this one was
+    /// made, or `None` for the first (D87). The key is required, so a missing one
+    /// cannot pass for "no previous".
+    #[serde(deserialize_with = "required")]
+    pub previous: Option<String>,
     /// Ed25519 signature of the author device over the rest of the operation
     /// (D56, see `signature`). Operations from before phase 5 have none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
+}
+
+/// `Option` fields default to `None` when the key is missing; with a custom
+/// deserializer serde reports the missing key instead.
+fn required<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,6 +64,7 @@ pub enum Action {
 pub enum OperationErrorCode {
     InvalidId,
     InvalidLibrary,
+    InvalidPrevious,
     InvalidIntent,
     NoChanges,
     OtherLibrary,
@@ -210,6 +226,11 @@ impl Operation {
         if Uuid::parse_str(&self.library).is_err() {
             return Err(OperationError::new(OperationErrorCode::InvalidLibrary));
         }
+        if let Some(previous) = &self.previous
+            && (Uuid::parse_str(previous).is_err() || *previous == self.id)
+        {
+            return Err(OperationError::new(OperationErrorCode::InvalidPrevious));
+        }
         if !is_valid_intent(&self.intent) {
             return Err(OperationError::new(OperationErrorCode::InvalidIntent));
         }
@@ -308,6 +329,31 @@ mod tests {
     }
 
     #[test]
+    fn the_previous_key_is_required_even_when_it_is_null() {
+        let operation = |previous: Option<Value>| {
+            let mut op = json!({
+                "id": "01997c7e-0000-7000-8000-000000000001",
+                "library": "01997c7e-0000-7000-8000-00000000aaaa",
+                "hlc": "0001727222222222-00000000-dev",
+                "intent": "member.add",
+                "changes": [{
+                    "entity": "member",
+                    "id": "01997c7e-0000-7000-8000-000000000002",
+                    "action": "create",
+                    "fields": { "name": "Tersoal" }
+                }]
+            });
+            if let Some(previous) = previous {
+                op["previous"] = previous;
+            }
+            serde_json::from_value::<Operation>(op)
+        };
+        assert!(operation(None).is_err(), "no key at all");
+        assert!(operation(Some(json!(5))).is_err(), "not a string");
+        assert_eq!(operation(Some(Value::Null)).unwrap().previous, None);
+    }
+
+    #[test]
     fn serializes_to_the_documented_shape() {
         let op = Operation {
             id: "01997c7e-0000-7000-8000-000000000001".into(),
@@ -319,6 +365,7 @@ mod tests {
                 "01997c7e-0000-7000-8000-000000000002",
                 json!({ "name": "Tersoal" }),
             )],
+            previous: None,
             signature: None,
         };
 
@@ -329,6 +376,7 @@ mod tests {
                 "library": "01997c7e-0000-7000-8000-00000000aaaa",
                 "hlc": "0001727222222222-00000000-dev",
                 "intent": "member.add",
+                "previous": null,
                 "changes": [{
                     "entity": "member",
                     "id": "01997c7e-0000-7000-8000-000000000002",

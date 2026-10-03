@@ -145,7 +145,10 @@ final class ScenarioFixtures extends Fixture
     private function anasPhoneAddsABookLater(CloudLibrary $garcia): void
     {
         $scenario = 'Familia García: Ana\'s phone adds a book later';
-        $operation = Cast::anaPhone()->sign(Cast::GARCIA_LOCAL, Cast::at(3000), 'book.add', $this->book('rayuela', 'Rayuela', 'Julio Cortázar', '9788437604572', Cast::id('member:ana'), 'Estudio'), Cast::id('operation:rayuela'));
+        $phone = Cast::anaPhone();
+        // The phone's only operation in the upload is its registration; this one chains to it (D87).
+        $registration = Cast::id(\sprintf('operation:device.register:5:%s', $phone->id));
+        $operation = $phone->sign(Cast::GARCIA_LOCAL, Cast::at(3000), 'book.add', $this->book('rayuela', 'Rayuela', 'Julio Cortázar', '9788437604572', Cast::id('member:ana'), 'Estudio'), Cast::id('operation:rayuela'), $registration);
 
         $this->expectStored($this->push($garcia, [$operation]), 1, $scenario);
         $this->report->add($scenario, 'loaded: 1 operation, signed by the key the phone registered in the upload');
@@ -219,19 +222,25 @@ final class ScenarioFixtures extends Fixture
         $this->report->add($scenario, 'loaded: two `device` rows with the same device_id, different accounts and different keys');
     }
 
-    /** Seam 7 (DAT-001): nothing is refused for arriving late. */
+    /**
+     * Seam 7 (DAT-001): nothing is refused for arriving late. With the chain of each author (D87) that holds
+     * between authors: the laptop's older operation arrives after the phone's newer one.
+     */
     private function anOldOperationArrivesLate(CloudLibrary $garcia): void
     {
-        $scenario = 'Seam 7: an older operation of Ana\'s phone arrives after a newer one';
-        $older = Cast::anaPhone()->sign(Cast::GARCIA_LOCAL, Cast::at(2900), 'copy.move', [[
+        $scenario = 'Seam 7: an older operation of Ana\'s laptop arrives after a newer one of her phone';
+        $laptop = Cast::anaLaptop();
+        // The laptop's last operation in the upload is the link, at +60 minutes.
+        $link = Cast::id(\sprintf('operation:library.link:60:%s', $laptop->id));
+        $older = $laptop->sign(Cast::GARCIA_LOCAL, Cast::at(2900), 'copy.move', [[
             'entity' => 'copy',
             'id' => Cast::id('copy:cien-anos'),
             'action' => 'update',
             'fields' => ['location' => 'Estudio'],
-        ]], Cast::id('operation:cien-anos-moves'));
+        ]], Cast::id('operation:cien-anos-moves'), $link);
 
         $this->expectStored($this->push($garcia, [$older]), 1, $scenario);
-        $this->report->add($scenario, 'loaded: the phone\'s operation at +2900 minutes is stored after its operation at +3000');
+        $this->report->add($scenario, 'loaded: the laptop\'s operation at +2900 minutes is stored after the phone\'s at +3000');
     }
 
     // ----------------------------------------------- refused, no rows left ---

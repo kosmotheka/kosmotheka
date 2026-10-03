@@ -13,7 +13,8 @@ const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema)
 
 const beyondSchema = (expect, name) =>
   ["missing_field", "null_required", "other_library", "other_device", "wrong_id"].includes(expect.code) ||
-  (expect.code === "wrong_type" && name.includes("date"));
+  (expect.code === "wrong_type" && name.includes("date")) ||
+  (expect.code === "invalid_previous" && name.includes("its own previous"));
 
 let mismatches = 0;
 for (const { name, operation, expect } of cases) {

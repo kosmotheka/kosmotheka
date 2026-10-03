@@ -226,6 +226,7 @@ mod tests {
                 "01997c7e-0000-7000-8000-000000000002",
                 json!({ "name": "Ana" }),
             )],
+            previous: None,
             signature: None,
         };
         assert_eq!(
@@ -240,6 +241,40 @@ mod tests {
         );
         // Signing again with the signature in place gives the same bytes: it is left out.
         assert_eq!(alice.sign(&op), op.signature.clone().unwrap());
+    }
+
+    #[test]
+    fn the_previous_operation_is_covered_by_the_signature() {
+        let key = DeviceKey::from_seed([7; 32]);
+        let mut op = Operation {
+            id: "01997c7e-0000-7000-8000-000000000001".into(),
+            library: "01997c7e-0000-7000-8000-00000000aaaa".into(),
+            hlc: "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff"
+                .parse()
+                .unwrap(),
+            intent: "member.add".into(),
+            changes: vec![Change::create(
+                Entity::Member,
+                "01997c7e-0000-7000-8000-000000000002",
+                json!({ "name": "Ana" }),
+            )],
+            previous: Some("01997c7e-0000-7000-8000-000000000000".into()),
+            signature: None,
+        };
+        op.signature = Some(key.sign(&op));
+        assert_eq!(verify(&op, &key.public_key()), Ok(()));
+
+        // A modified app cannot point a signed operation at another chain.
+        op.previous = None;
+        assert_eq!(
+            verify(&op, &key.public_key()),
+            Err(SignatureError::Mismatch)
+        );
+        op.previous = Some("01997c7e-0000-7000-8000-000000000009".into());
+        assert_eq!(
+            verify(&op, &key.public_key()),
+            Err(SignatureError::Mismatch)
+        );
     }
 
     /// Prints the cases in spec/conformance/signatures.json. Run it by hand only
@@ -262,6 +297,7 @@ mod tests {
                 "01997c7e-0000-7000-8000-000000000061",
                 fields,
             )],
+            previous: None,
             signature: None,
         };
         let signed = |mut o: Operation, key: &DeviceKey| {
@@ -292,6 +328,19 @@ mod tests {
                 json!({ "name": "Minotauro" }),
             ),
             &stranger,
+        );
+        // Same operation, pointed at another previous after signing.
+        let mut rechained = plain.clone();
+        rechained.previous = Some("01997c7e-0000-7000-8000-000000000300".into());
+        let chained = signed(
+            Operation {
+                previous: Some("01997c7e-0000-7000-8000-000000000300".into()),
+                ..op(
+                    "01997c7e-0000-7000-8000-000000000305",
+                    json!({ "name": "Minotauro" }),
+                )
+            },
+            &author,
         );
         let mut malformed = plain.clone();
         malformed.signature = Some("not-a-signature".into());
@@ -325,6 +374,18 @@ mod tests {
             case(
                 "changed after signing",
                 &tampered,
+                &key,
+                json!({ "result": "invalid", "code": "mismatch" })
+            ),
+            case(
+                "signed with a previous operation",
+                &chained,
+                &key,
+                json!({ "result": "valid" })
+            ),
+            case(
+                "previous changed after signing",
+                &rechained,
                 &key,
                 json!({ "result": "invalid", "code": "mismatch" })
             ),

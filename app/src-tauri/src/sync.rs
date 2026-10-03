@@ -180,7 +180,7 @@ pub fn version_vectors(conn: &Connection, libraries: &[String]) -> Result<Librar
 /// Replicable operations of the libraries in `vectors` that their owner lacks, oldest first.
 pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<Vec<SyncOperation>> {
     let mut statement = conn.prepare(
-        "SELECT id, library_id, hlc, intent, changes, schema_version, signature FROM operations
+        "SELECT id, library_id, hlc, intent, changes, schema_version, signature, previous FROM operations
           WHERE replicable = 1 AND library_id = ?1
             AND hlc > coalesce((SELECT value FROM json_each(?2) WHERE key = device_id), '')
           ORDER BY hlc",
@@ -197,10 +197,11 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                     row.get::<_, String>(4)?,
                     row.get::<_, i64>(5)?,
                     row.get::<_, Option<String>>(6)?,
+                    row.get::<_, Option<String>>(7)?,
                 ))
             })?;
         for row in rows {
-            let (id, library, hlc, intent, changes, schema_version, signature) = row?;
+            let (id, library, hlc, intent, changes, schema_version, signature, previous) = row?;
             // An entity dropped from the schema since this operation was recorded
             // (like `wish`, D61) makes it unparsable: it can no longer be applied
             // anywhere, so it is left out entirely rather than sent with some of its
@@ -218,6 +219,7 @@ pub fn operations_since(conn: &Connection, vectors: &LibraryVectors) -> Result<V
                         .map_err(|_| crate::error::Error::CorruptState("operations.hlc"))?,
                     intent,
                     changes,
+                    previous,
                     signature,
                 },
             });
@@ -273,6 +275,7 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
             || operation.hlc.is_ahead_of(now_millis())
             || operation.validate().is_err()
             || !signature_holds(tx, &operation)?
+            || !previous_holds(tx, &operation)?
         {
             held_back.insert(author);
             report.rejected += 1;
@@ -336,6 +339,30 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         ops::set_last_hlc(tx, &latest)?;
     }
     Ok(report)
+}
+
+/// Whether the operation follows an operation of its author that this device
+/// already has (D87). One whose previous is missing waits for it, with the rest
+/// of its author's; one that chains to someone else's operation, to another
+/// library's, or to a later one, is malformed. Either way it is not logged.
+/// An operation with no previous is taken as it comes: a fork is left to the
+/// fences (D87).
+fn previous_holds(conn: &Connection, operation: &Operation) -> Result<bool> {
+    let Some(previous) = &operation.previous else {
+        return Ok(true);
+    };
+    let found: Option<(String, String, String)> = conn
+        .query_row(
+            "SELECT library_id, device_id, hlc FROM operations WHERE id = ?1",
+            [previous],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .optional()?;
+    Ok(found.is_some_and(|(library, device, hlc)| {
+        library == operation.library
+            && device == operation.hlc.device
+            && hlc < operation.hlc.to_string()
+    }))
 }
 
 fn newest_hlc(conn: &Connection, library: &str) -> Result<Option<String>> {
@@ -1581,6 +1608,7 @@ mod tests {
                 &work,
                 json!({ "title": "Backdated" }),
             )],
+            previous: ops::latest_of(&phone.0, &lib, &device_id_of(&phone)).unwrap(),
             signature: None,
         };
         backdated.signature = Some(ops::signing_key(&phone.0).unwrap().sign(&backdated));
@@ -1683,6 +1711,7 @@ mod tests {
                 &work,
                 json!({ "title": "Backdated" }),
             )],
+            previous: ops::latest_of(&phone.0, &lib, &device_id_of(&phone)).unwrap(),
             signature: None,
         };
         backdated.signature = Some(ops::signing_key(&phone.0).unwrap().sign(&backdated));
@@ -1699,6 +1728,295 @@ mod tests {
         assert_eq!(report.requests, 1);
         assert!(!laptop.titles().contains(&"Backdated".to_owned()));
         assert_converged(&[&laptop]);
+    }
+
+    /// Records an edit of `work`'s title on `device`, as its own app would.
+    fn edit_title(device: &mut Device, work: &str, title: &str) -> Operation {
+        let tx = device.0.transaction().unwrap();
+        let operation = ops::record(
+            &tx,
+            &device.1,
+            "book.edit",
+            vec![Change::update(
+                Entity::Work,
+                work,
+                json!({ "title": title }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        operation
+    }
+
+    /// An edit of `work` signed by `device` with a modified app: any HLC, any previous.
+    fn forged_edit(
+        device: &Device,
+        work: &str,
+        title: &str,
+        millis: u64,
+        previous: Option<&str>,
+    ) -> SyncOperation {
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: device.1.clone(),
+            hlc: kosmotheka_domain::Hlc {
+                millis,
+                counter: 0,
+                device: device_id_of(device),
+            },
+            intent: "book.edit".into(),
+            changes: vec![Change::update(
+                Entity::Work,
+                work,
+                json!({ "title": title }),
+            )],
+            previous: previous.map(str::to_owned),
+            signature: None,
+        };
+        operation.signature = Some(ops::signing_key(&device.0).unwrap().sign(&operation));
+        SyncOperation {
+            schema_version: ops::schema_version(&device.0).unwrap(),
+            operation,
+        }
+    }
+
+    fn vector_of(device: &Device, author: &Device) -> Option<String> {
+        version_vectors(&device.0, std::slice::from_ref(&device.1)).unwrap()[&device.1]
+            .get(&device_id_of(author))
+            .cloned()
+    }
+
+    #[test]
+    fn an_operation_whose_previous_is_missing_waits_for_it() {
+        let mut laptop = Device::new();
+        let mut phone = Device::sharing(&laptop);
+        let one = phone.add("One", None, "Hugo");
+        let two = phone.add("Two", None, "Hugo");
+        let _ = (one, two);
+        let first = ops::latest_of(&phone.0, &phone.1, &device_id_of(&phone)).unwrap();
+        let mut batch = everything_from(&phone);
+        // Take the operation that added "One" out of the batch: "Two" chains to it.
+        batch.retain(|synced| {
+            !serde_json::to_string(&synced.operation.changes)
+                .unwrap()
+                .contains("\"One\"")
+        });
+        let held = batch.len();
+        assert!(held > 0);
+
+        let report = merge(&mut laptop.0, batch).unwrap();
+
+        assert!(report.rejected > 0, "{report:?}");
+        assert!(!laptop.titles().contains(&"Two".to_owned()));
+        let newest_of_phone = vector_of(&laptop, &phone).unwrap();
+        let two_hlc: String = phone
+            .0
+            .query_row(
+                "SELECT hlc FROM operations WHERE id = ?1",
+                [first.unwrap()],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(
+            newest_of_phone < two_hlc,
+            "the vector must stay below the operation that waits"
+        );
+
+        laptop.sync_with(&mut phone);
+        assert!(laptop.titles().contains(&"One".to_owned()));
+        assert!(laptop.titles().contains(&"Two".to_owned()));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_previous_that_is_not_an_earlier_operation_of_the_same_author_and_library_is_refused() {
+        let mut laptop = Device::new();
+        let mut phone = Device::sharing(&laptop);
+        let mut tablet = Device::sharing(&laptop);
+        laptop.add("Dune", None, "Tersoal");
+        let work = work_titled(&laptop, "Dune");
+        laptop.sync_with(&mut phone);
+        phone.add("Tehanu", None, "Hugo");
+        let other_library = crate::libraries::create_library(&mut laptop.0, "Other").unwrap();
+        let in_other_library = ops::latest_of(&laptop.0, &other_library, &device_id_of(&laptop))
+            .unwrap()
+            .unwrap();
+        let by_another_author = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop))
+            .unwrap()
+            .unwrap();
+        let own_latest = ops::latest_of(&phone.0, &phone.1, &device_id_of(&phone))
+            .unwrap()
+            .unwrap();
+        let own_latest_millis: u64 = phone
+            .0
+            .query_row(
+                "SELECT hlc FROM operations WHERE id = ?1",
+                [&own_latest],
+                |row| row.get::<_, String>(0),
+            )
+            .unwrap()
+            .parse::<Hlc>()
+            .unwrap()
+            .millis;
+        tablet.pull_from(&laptop);
+        tablet.pull_from(&phone);
+        let later = own_latest_millis + 10;
+
+        for (name, forged) in [
+            (
+                "another author",
+                forged_edit(&phone, &work, "Forged", later, Some(&by_another_author)),
+            ),
+            (
+                "another library",
+                forged_edit(&phone, &work, "Forged", later, Some(&in_other_library)),
+            ),
+            (
+                "not older than the operation",
+                forged_edit(
+                    &phone,
+                    &work,
+                    "Forged",
+                    own_latest_millis,
+                    Some(&own_latest),
+                ),
+            ),
+        ] {
+            let before = tablet.state();
+            let report = merge(&mut tablet.0, vec![forged]).unwrap();
+            assert_eq!(report.rejected, 1, "{name}: {report:?}");
+            assert_eq!(report.received, 0, "{name}");
+            assert_eq!(tablet.state(), before, "{name}");
+        }
+        // The honest chain still goes through.
+        let honest = forged_edit(&phone, &work, "Honest", later, Some(&own_latest));
+        let report = merge(&mut tablet.0, vec![honest]).unwrap();
+        assert_eq!(report.received, 1, "{report:?}");
+    }
+
+    /// The timeline of SEG-018, with Hugo's phone as the demoted editor. His
+    /// admin last saw `known` (an edit of his); with a modified app he signs a new
+    /// edit dated before it and chained to an older operation of his own. Returns
+    /// the laptop (which demoted him and then received the forgery), the tablet
+    /// (which received the forgery before hearing of the demotion) and the id of
+    /// the forged operation.
+    fn demoted_editor_forks_his_chain() -> (Device, Device, String) {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let work = work_titled(&laptop, "Dune");
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        let older = edit_title(&mut phone, &work, "Older edit");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        let known = edit_title(&mut phone, &work, "Known edit");
+        laptop.pull_from(&phone);
+        let mut tablet = Device::sharing(&laptop);
+        tablet.pull_from(&laptop);
+
+        // Dated below what the administrator knows, chained to an older operation.
+        let forged = forged_edit(
+            &phone,
+            &work,
+            "Forged",
+            known.hlc.millis - 1,
+            Some(&older.id),
+        );
+        let forged_id = forged.operation.id.clone();
+        // The tablet has not heard of the demotion yet: it sees an editor's edit.
+        merge(&mut tablet.0, vec![forged.clone()]).unwrap();
+        assert_eq!(status_of_id(&tablet, &forged_id), "applied");
+
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("reader"), false).unwrap();
+        merge(&mut laptop.0, vec![forged]).unwrap();
+        tablet.pull_from(&laptop);
+        laptop.pull_from(&tablet);
+        (laptop, tablet, forged_id)
+    }
+
+    fn status_of_id(device: &Device, id: &str) -> String {
+        device
+            .0
+            .query_row("SELECT status FROM operations WHERE id = ?1", [id], |row| {
+                row.get(0)
+            })
+            .unwrap()
+    }
+
+    #[test]
+    fn a_device_that_left_a_library_and_took_it_up_again_continues_its_own_chain() {
+        // Leaving removes the log here; the peers still hold this device's
+        // operations and send them back, so the chain is whole again (D87).
+        let mut laptop = Device::new();
+        let mut phone = Device::sharing(&laptop);
+        phone.add("Before leaving", None, "Hugo");
+        laptop.sync_with(&mut phone);
+        let lib = laptop.1.clone();
+        // What `libraries::forget_here` does to the log, without the pairing it needs.
+        let tx = phone.0.transaction().unwrap();
+        ops::delete_library(&tx, &lib).unwrap();
+        tx.execute("DELETE FROM operations WHERE library_id = ?1", [&lib])
+            .unwrap();
+        tx.commit().unwrap();
+        assert!(
+            ops::latest_of(&phone.0, &lib, &device_id_of(&phone))
+                .unwrap()
+                .is_none()
+        );
+
+        phone.pull_from(&laptop);
+        assert!(phone.titles().contains(&"Before leaving".to_owned()));
+        phone.add("After returning", None, "Hugo");
+        laptop.sync_with(&mut phone);
+
+        assert!(laptop.titles().contains(&"After returning".to_owned()));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_fork_dated_below_the_fence_is_a_request_whatever_the_order() {
+        let (laptop, tablet, forged) = demoted_editor_forks_his_chain();
+        for device in [&laptop, &tablet] {
+            assert_eq!(status_of_id(device, &forged), "request");
+        }
+        assert_converged(&[&laptop, &tablet]);
+    }
+
+    #[test]
+    fn a_fence_that_arrives_before_its_operation_is_judged_again_when_it_arrives() {
+        // The tablet hears of the demotion before it has Hugo's last operation, so
+        // at first everything of his looks fenced; when the marked operation comes,
+        // the library is judged again and the operations up to it count (D87).
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let mut tablet = Device::sharing(&laptop);
+        let hugo = phone_person(&laptop, &phone);
+        let work = work_titled(&laptop, "Dune");
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        let older = edit_title(&mut phone, &work, "Older edit");
+        let known = edit_title(&mut phone, &work, "Known edit");
+        laptop.pull_from(&phone);
+        let phone_ops = [older.id.clone(), known.id.clone()];
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("reader"), false).unwrap();
+        // Everything the laptop has but what the phone wrote after registering.
+        let theirs = version_vectors(&tablet.0, std::slice::from_ref(&lib)).unwrap();
+        let from_laptop = operations_since(&laptop.0, &theirs)
+            .unwrap()
+            .into_iter()
+            .filter(|synced| !phone_ops.contains(&synced.operation.id))
+            .collect();
+        merge(&mut tablet.0, from_laptop).unwrap();
+
+        tablet.pull_from(&phone);
+
+        for id in &phone_ops {
+            assert_eq!(status_of_id(&tablet, id), "applied");
+        }
+        laptop.sync_with(&mut tablet);
+        assert_converged(&[&laptop, &tablet]);
     }
 
     /// The id of the work titled `title` in the default library.
@@ -2271,6 +2589,7 @@ mod tests {
                             author,
                             json!({ "public_key": key.public_key(), "name": "test" }),
                         )],
+                        previous: None,
                         signature: None,
                     };
                     register.signature = Some(key.sign(&register));

@@ -92,18 +92,26 @@ impl LibraryView for SqlView<'_> {
         self.member_of(device)
     }
 
-    fn fenced(&self, device: &str, hlc: &str) -> bool {
+    fn fenced(&self, operation: &Operation) -> bool {
         self.conn
             .query_row(
-                "SELECT EXISTS (SELECT 1 FROM device_fences
-                  WHERE library_id = ?1 AND device_id = ?2
-                    AND after_hlc < ?3 AND ?3 < until_hlc)
+                "SELECT EXISTS (SELECT 1 FROM device_fences f
+                  WHERE f.library_id = ?1 AND f.device_id = ?2 AND ?3 < f.until_hlc
+                    AND ?4 <> f.through
+                    AND NOT EXISTS (SELECT 1 FROM device_fence_chains c
+                                     WHERE c.library_id = ?1 AND c.fence_operation_id = f.operation_id
+                                       AND c.device_id = ?2 AND c.operation_id = ?4))
                      OR EXISTS (SELECT 1 FROM revocations r
                                   JOIN field_versions v
                                     ON v.library_id = r.library_id AND v.entity = 'revocations'
                                    AND v.entity_id = r.id AND v.field = 'device_id'
                                  WHERE r.library_id = ?1 AND r.device_id = ?2 AND v.hlc < ?3)",
-                [self.library, device, hlc],
+                params![
+                    self.library,
+                    operation.hlc.device,
+                    operation.hlc.to_string(),
+                    operation.id
+                ],
                 |row| row.get(0),
             )
             .unwrap_or(true)
@@ -222,17 +230,11 @@ pub fn rebuild(tx: &Transaction<'_>, library: &str) -> Result<()> {
     Ok(())
 }
 
-/// The mark of an antedating fence for `device` (D84): the newest operation of it
+/// The mark of a fence for `device` (D87): the id of the newest operation of it
 /// this device holds, or the empty string if none. What the administrator who takes
-/// power away knows of the device is everything up to there.
+/// power away knows of the device is that operation and the ones it chains to.
 pub fn fence_mark(conn: &Connection, library: &str, device: &str) -> Result<String> {
-    let newest: Option<String> = conn.query_row(
-        "SELECT max(hlc) FROM operations
-          WHERE library_id = ?1 AND device_id = ?2 AND replicable = 1",
-        [library, device],
-        |row| row.get(0),
-    )?;
-    Ok(newest.unwrap_or_default())
+    Ok(ops::latest_of(conn, library, device)?.unwrap_or_default())
 }
 
 /// The changes that fence each of `devices` that is registered in the library. They
@@ -249,17 +251,17 @@ pub fn fence_changes(conn: &Connection, library: &str, devices: &[String]) -> Re
             changes.push(Change::update(
                 Entity::Device,
                 device,
-                serde_json::json!({ "trusted_until": fence_mark(conn, library, device)? }),
+                serde_json::json!({ "trusted_through": fence_mark(conn, library, device)? }),
             ));
         }
     }
     Ok(changes)
 }
 
-/// A fence an operation of the log sets (D84), not yet known to be honoured.
+/// A fence an operation of the log sets (D84, D87), not yet known to be honoured.
 struct Fence {
     device: String,
-    after: String,
+    through: String,
     until: String,
     operation_id: String,
 }
@@ -274,10 +276,10 @@ fn fences_of(operation: &Operation) -> Vec<Fence> {
         .iter()
         .filter(|change| change.entity == Entity::Device && change.action != Action::Delete)
         .filter_map(|change| {
-            let after = change.fields.get("trusted_until")?.as_str()?;
+            let through = change.fields.get("trusted_through")?.as_str()?;
             Some(Fence {
                 device: change.id.clone(),
-                after: after.to_owned(),
+                through: through.to_owned(),
                 until: operation.hlc.to_string(),
                 operation_id: operation.id.clone(),
             })
@@ -285,38 +287,58 @@ fn fences_of(operation: &Operation) -> Vec<Fence> {
         .collect()
 }
 
+/// Notes the fence and the operations it still counts. Worked out here, once,
+/// so judging each operation of a long log never walks the chain again. If
+/// `through` is not in the log yet, the chain is empty and the fence covers all
+/// of the device's operations before it: they are judged again when it arrives.
 fn insert_fence(conn: &Connection, library: &str, fence: &Fence) -> Result<()> {
     conn.execute(
         "INSERT OR IGNORE INTO device_fences
-            (library_id, device_id, after_hlc, until_hlc, operation_id)
+            (library_id, device_id, through, until_hlc, operation_id)
          VALUES (?1, ?2, ?3, ?4, ?5)",
         params![
             library,
             fence.device,
-            fence.after,
+            fence.through,
             fence.until,
             fence.operation_id
         ],
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO device_fence_chains
+            (library_id, fence_operation_id, device_id, operation_id)
+         WITH RECURSIVE chain(id, previous) AS (
+            SELECT id, previous FROM operations
+             WHERE library_id = ?1 AND device_id = ?2 AND id = ?3
+            UNION
+            SELECT o.id, o.previous FROM operations o JOIN chain ON o.id = chain.previous
+             WHERE o.library_id = ?1 AND o.device_id = ?2)
+         SELECT ?1, ?4, ?2, id FROM chain",
+        params![library, fence.device, fence.through, fence.operation_id],
     )?;
     Ok(())
 }
 
 /// Remembers the fences an applied operation sets (D84). Returns whether the log
-/// already holds an operation inside one of the new windows: judged before the
+/// already holds an operation the new fence puts under suspicion: judged before the
 /// fence was known, it has to be judged again.
 pub fn note_fences(conn: &Connection, operation: &Operation) -> Result<bool> {
     let mut late = false;
     for fence in fences_of(operation) {
         insert_fence(conn, &operation.library, &fence)?;
         late |= conn.query_row(
-            "SELECT EXISTS (SELECT 1 FROM operations
-              WHERE library_id = ?1 AND device_id = ?2 AND replicable = 1
-                AND hlc > ?3 AND hlc < ?4)",
-            [
-                &operation.library,
-                &fence.device,
-                &fence.after,
-                &fence.until,
+            "SELECT EXISTS (SELECT 1 FROM operations o
+              WHERE o.library_id = ?1 AND o.device_id = ?2 AND o.replicable = 1
+                AND o.hlc < ?3 AND o.id <> ?4
+                AND NOT EXISTS (SELECT 1 FROM device_fence_chains c
+                                 WHERE c.library_id = ?1 AND c.fence_operation_id = ?5
+                                   AND c.device_id = ?2 AND c.operation_id = o.id))",
+            params![
+                operation.library,
+                fence.device,
+                fence.until,
+                fence.through,
+                fence.operation_id
             ],
             |row| row.get::<_, bool>(0),
         )?;

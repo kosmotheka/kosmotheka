@@ -33,6 +33,26 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * The author and HLC of an operation of this library's log, or null if it has none with that id.
+     *
+     * @return array{author: string, hlc: string}|null
+     */
+    public function findAuthorAndHlc(CloudLibrary $library, string $operationId): ?array
+    {
+        $row = $this->getEntityManager()->getConnection()->fetchAssociative(
+            'SELECT author_device_id, hlc FROM cloud_operation WHERE cloud_library_id = :library AND operation_id = :operation',
+            ['library' => $library->getId()->toRfc4122(), 'operation' => $operationId],
+        );
+
+        if (false === $row) {
+            return null;
+        }
+        \assert(\is_string($row['author_device_id']) && \is_string($row['hlc']));
+
+        return ['author' => $row['author_device_id'], 'hlc' => $row['hlc']];
+    }
+
+    /**
      * Stores the operation as received, unless the library's log already has it.
      *
      * @return bool whether it was stored (false: it was already known)

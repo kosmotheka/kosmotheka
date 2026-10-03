@@ -39,12 +39,13 @@ pub trait LibraryView {
     fn member_of_device(&self, device: &str) -> Option<String>;
     /// Whose the mark `id` is, if it exists (D68).
     fn mark_member(&self, id: &str) -> Option<String>;
-    /// Whether `hlc` falls inside a honoured antedating fence of `device` (D84):
-    /// after the newest operation of the device the administrator knew, and before
-    /// the operation that took its power away. Such an operation cannot be honest.
-    /// Also after a revocation of `device` still in force at `hlc` (D71): a revoked
-    /// device writes nothing, even through a device that has not heard of it yet.
-    fn fenced(&self, device: &str, hlc: &str) -> bool;
+    /// Whether `operation` falls under a honoured fence of its author (D84, D87):
+    /// dated before the operation that took the author's power away, and neither
+    /// the last one the administrator had nor one of its ancestors through
+    /// `previous`. Such an operation cannot be honest.
+    /// Also after a revocation of the author still in force at its HLC (D71): a
+    /// revoked device writes nothing, even through a device that has not heard of it yet.
+    fn fenced(&self, operation: &Operation) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -57,7 +58,7 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     let author = operation.hlc.device.as_str();
     // A fenced author is judged as nobody's, with or without roles: its date cannot
     // be trusted, or its access was withdrawn (D71, D84).
-    let fenced = view.fenced(author, &operation.hlc.to_string());
+    let fenced = view.fenced(operation);
     if !view.has_roles() && !fenced {
         return true;
     }
@@ -88,7 +89,7 @@ fn change_allowed(
         // Every device registers and renames itself; saying whose it is, or
         // touching another device, or its fence, is for administrators.
         Entity::Device if change.id == author => {
-            change.action != Action::Delete && !touches("member_id") && !touches("trusted_until")
+            change.action != Action::Delete && !touches("member_id") && !touches("trusted_through")
         }
         // Withdrawing is the one resolution that is not an administrator's.
         Entity::ChangeRequest => {
@@ -152,7 +153,7 @@ mod tests {
         fn member_of_device(&self, _: &str) -> Option<String> {
             self.role.map(|_| MY_MEMBER.to_owned())
         }
-        fn fenced(&self, _: &str, _: &str) -> bool {
+        fn fenced(&self, _: &Operation) -> bool {
             self.fenced
         }
         fn mark_member(&self, _: &str) -> Option<String> {
@@ -210,6 +211,7 @@ mod tests {
             hlc: format!("0001727222222222-00000000-{ME}").parse().unwrap(),
             intent: "test.op".into(),
             changes,
+            previous: None,
             signature: Some("signed".into()),
         }
     }
@@ -323,12 +325,12 @@ mod tests {
         let own = op(vec![Change::update(
             Entity::Device,
             ME,
-            json!({ "trusted_until": "" }),
+            json!({ "trusted_through": "" }),
         )]);
         let other = op(vec![Change::update(
             Entity::Device,
             "01997c7e-0000-7000-8000-0000000000fc",
-            json!({ "trusted_until": "" }),
+            json!({ "trusted_through": "" }),
         )]);
         assert!(!is_allowed(&own, &view(Some(Role::Editor))));
         assert!(!is_allowed(&other, &view(Some(Role::Editor))));

@@ -10,7 +10,8 @@
     "library",
     "hlc",
     "intent",
-    "changes"
+    "changes",
+    "previous"
   ],
   "properties": {
     "id": {
@@ -36,6 +37,17 @@
       "items": {
         "$ref": "#/$defs/change"
       }
+    },
+    "previous": {
+      "description": "The id of the latest operation of the same device in the same library when this one was made (D87), or null for the first. The key is required. Signed with the rest of the operation. An operation is never its own previous (a rule the schema cannot express).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "signature": {
       "description": "Ed25519 signature by the device in the hlc over the operation without this field, in canonical JSON (RFC 8785); base64url without padding. Operations from before signatures existed have none.",
@@ -838,12 +850,11 @@
                     "description": "The member this device belongs to (D55). Only administrators set it.",
                     "$ref": "#/$defs/ref"
                   },
-                  "trusted_until": {
-                    "description": "Antedating fence (D84): the HLC of the newest operation of this device the administrator knew when it lost power, or the empty string if none. Set in the same operation that takes the power away; an operation of this device with an HLC after it and before the operation that set it is a request. Only administrators set it, never the device itself.",
+                  "trusted_through": {
+                    "description": "Fence (D84, D87): the id of the newest operation of this device the administrator had when it lost power, or the empty string if it had none. Set in the same operation that takes the power away. Of this device's operations dated before the one that set it, only the marked operation and its ancestors through `previous` count; any other is a request. Only administrators set it, never the device itself.",
                     "anyOf": [
                       {
-                        "type": "string",
-                        "pattern": "^[0-9]{16}-[0-9a-f]{8}-.+$"
+                        "$ref": "#/$defs/uuid"
                       },
                       {
                         "const": ""
@@ -851,8 +862,7 @@
                       {
                         "type": "null"
                       }
-                    ]
-                  }
+                    ]                  }
                 }
               }
             }
