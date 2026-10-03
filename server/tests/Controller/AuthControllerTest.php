@@ -218,7 +218,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertSame('new-device@example.com', $body['user']['email']);
         self::assertSame($session['token'], $body['token']);
 
-        $device = $this->deviceRepository()->find($session['device_id']);
+        $device = $this->deviceRepository()->findOneBy(['deviceId' => $session['device_id']]);
         self::assertInstanceOf(Device::class, $device);
         self::assertSame('Test device', $device->getName());
         self::assertTrue($device->isSignedIn());
@@ -247,7 +247,7 @@ final class AuthControllerTest extends WebTestCase
         $secondBody = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
         self::assertNotSame($firstBody['token'], $secondBody['token']);
 
-        $device = $this->deviceRepository()->find($deviceId);
+        $device = $this->deviceRepository()->findOneBy(['deviceId' => $deviceId]);
         self::assertInstanceOf(Device::class, $device);
         self::assertSame('Second name', $device->getName());
 
@@ -257,25 +257,66 @@ final class AuthControllerTest extends WebTestCase
         self::assertSame('{"error":"invalid_token"}', $client->getResponse()->getContent());
     }
 
-    public function testADeviceTakenByAnotherAccountIsRejected(): void
+    /**
+     * A device is its id together with its key (D84, seam 6). A second account
+     * logging in with the same id and another key is not a takeover any more:
+     * it is another install, gets its own row, and the first device keeps working.
+     */
+    public function testAnotherAccountWithTheSameIdAndAnotherKeyGetsItsOwnDevice(): void
     {
         $client = $this->createTestClient();
-        $firstEmail = 'owner@example.com';
-        $this->registerAndConfirmForLogin($client, $firstEmail, 'correct horse battery');
         $deviceId = Uuid::v4()->toRfc4122();
-        $this->loginDevice($client, $firstEmail, 'correct horse battery', $deviceId, 'Shared device');
+        $this->registerAndConfirmForLogin($client, 'owner@example.com', 'correct horse battery');
+        $first = $this->loginDevice($client, 'owner@example.com', 'correct horse battery', $deviceId, 'First');
 
-        $secondEmail = 'intruder@example.com';
+        $this->registerAndConfirmForLogin($client, 'other@example.com', 'correct horse battery');
+        $second = $this->loginDevice($client, 'other@example.com', 'correct horse battery', $deviceId, 'Second');
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+
+        self::assertCount(2, $this->deviceRepository()->findBy(['deviceId' => $deviceId]));
+
+        $client->request('GET', '/v1/account', server: $first['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $client->request('GET', '/v1/account', server: $second['headers']);
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+    }
+
+    public function testTheSameIdAndKeyInASecondAccountIsDeviceTaken(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'owner@example.com';
+        $this->registerAndConfirmForLogin($client, $email, 'correct horse battery');
+        $deviceId = Uuid::v4()->toRfc4122();
+        $first = $this->loginDevice($client, $email, 'correct horse battery', $deviceId, 'Shared device');
+
+        $secondEmail = 'second@example.com';
         $this->registerAndConfirmForLogin($client, $secondEmail, 'correct horse battery');
         $challenge = $this->requestChallenge($client)['challenge'];
-        $keyPair = sodium_crypto_sign_keypair();
-        $signature = $this->sign($challenge, $deviceId, sodium_crypto_sign_secretkey($keyPair));
-        $publicKey = $this->encode(sodium_crypto_sign_publickey($keyPair));
+        $secretKey = sodium_base642bin($first['secret_key'], \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+        $signature = $this->sign($challenge, $deviceId, $secretKey);
 
-        $this->requestLogin($client, $secondEmail, 'correct horse battery', $deviceId, 'Shared device', $publicKey, $challenge, $signature);
+        $this->requestLogin($client, $secondEmail, 'correct horse battery', $deviceId, 'Shared device', $first['public_key'], $challenge, $signature);
 
         self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
         self::assertSame('{"error":"device_taken"}', $client->getResponse()->getContent());
+    }
+
+    /**
+     * D84, seam 6: someone who learnt the id of a phone signs in with it first,
+     * with a key of their own. The phone, proving its real key, must still get in.
+     */
+    public function testAnIntruderCannotTakeADeviceIdBeforeItsOwner(): void
+    {
+        $client = $this->createTestClient();
+        $deviceId = Uuid::v4()->toRfc4122();
+        $this->registerAndConfirmForLogin($client, 'intruder@example.com', 'correct horse battery');
+        $this->loginDevice($client, 'intruder@example.com', 'correct horse battery', $deviceId, 'Not mine');
+        self::assertResponseIsSuccessful();
+
+        $this->registerAndConfirmForLogin($client, 'owner@example.com', 'correct horse battery');
+        $this->loginDevice($client, 'owner@example.com', 'correct horse battery', $deviceId, 'My phone');
+
+        self::assertResponseIsSuccessful();
     }
 
     public function testADeviceIdWithADifferentKeyIsRejected(): void

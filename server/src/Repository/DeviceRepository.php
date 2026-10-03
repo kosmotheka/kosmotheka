@@ -43,9 +43,25 @@ final class DeviceRepository extends ServiceEntityRepository
         }
 
         if (null !== $exceptDeviceId) {
-            $queryBuilder->andWhere('d.id != :exceptDeviceId')->setParameter('exceptDeviceId', $exceptDeviceId);
+            $queryBuilder->andWhere('d.deviceId != :exceptDeviceId')->setParameter('exceptDeviceId', $exceptDeviceId);
         }
 
         $queryBuilder->getQuery()->execute();
+    }
+
+    /** One install: the id alone is not an identity (D84). */
+    public function findOneByDeviceIdAndKey(string $deviceId, string $publicKey): ?Device
+    {
+        return $this->findOneBy(['deviceId' => $deviceId, 'publicKey' => $publicKey]);
+    }
+
+    public function findOneOfUser(User $user, string $deviceId): ?Device
+    {
+        return $this->findOneBy(['user' => $user, 'deviceId' => $deviceId]);
+    }
+
+    public function findOneByTokenHash(string $tokenHash): ?Device
+    {
+        return $this->findOneBy(['tokenHash' => $tokenHash]);
     }
 }

@@ -1345,7 +1345,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 3. Cada `C` queda atada al id local de su operación de enlace; el servidor rechaza en `C` operaciones de otra biblioteca.
 4. Las claves de firma se buscan dentro de cada `C`, nunca en una tabla global por id de dispositivo.
 5. Avisos al momento (7.3), invitaciones (7.6) y registro de actividad (7.7) cuelgan de `C`: un tema de Mercure con el id local dejaría a Jhonny saber cuándo cambia algo.
-6. Ids de dispositivo de las cuentas (7.1): hoy, el primero que usa un id se lo queda. Si Jhonny conociera el id de tu móvil antes de que inicies sesión, podría ocuparlo con su clave: no se lleva nada (sus firmas no valen en tu biblioteca), pero te impide entrar. Revisarlo en 7.1.
+6. Ids de dispositivo de las cuentas (7.1): el primero que usaba un id se lo quedaba, y quien conociera el id de tu móvil podía ocuparlo con su clave y dejarte fuera (SEG-016). **Arreglado el 03/10/2026:** para el servidor, un dispositivo es su id junto con la clave que prueba al iniciar sesión.
 7. La nube rechaza solo por lo que dice la propia operación (estructura, versión, firma), nunca por el orden de llegada (DAT-001); lo no permitido pasa a petición (D73).
 8. Dos administradores que suben sin verse crean `C1` y `C2` para la misma biblioteca: gana el enlace de HLC más antiguo, los dispositivos del otro se pasan a esa y la sobrante se borra. No se pierde nada: son las mismas operaciones.
 
@@ -1356,6 +1356,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   - **Cuenta cada marca, no solo la última:** el campo del dispositivo guarda la vigente, pero las ventanas salen del registro, para que una segunda bajada no reabra la ventana de la primera.
   - **Solo cuentan las marcas permitidas:** las pone un administrador (como todo cambio en el dispositivo de otro). Al recalcular una biblioteca se parte de todas las marcas del registro, se descartan las que hayan quedado en petición y se repite hasta que no cambie nada; termina siempre y da lo mismo en todos los dispositivos.
   - **Coste aceptado:** una edición honrada hecha sin conexión justo antes de enterarse de la bajada queda como petición, y quien administra la acepta. Nadie pierde nada.
+- **Retirada a través de un tercero (SEG-015, arreglado el 03/10/2026):** retirar el acceso solo cortaba el intercambio directo; lo que el dispositivo retirado firmaba después llegaba a todos a través de otro que aún no lo sabía, y se aplicaba. Ahora una retirada en vigor es una marca abierta: lo que ese dispositivo firme después pasa a petición, con roles y sin ellos, hasta que se le devuelva el acceso.
 - **Un lector con una app modificada** puede subir una copia a su propia cuenta. No obtiene nada que no tuviera (D73), y nadie de su familia se conecta a esa copia (punto 3), pero hasta 7.4 el servidor no sabe de roles para impedirlo (SEG-013).
 
 **Consecuencias:**

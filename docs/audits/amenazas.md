@@ -92,6 +92,8 @@ Revisado en la auditoría del 2026-10-03 (2), tema `library-access`. Quién pued
 - Compartir exige el permiso «Puede compartir» o ser administrador en el propio dispositivo.
 - El código de emparejamiento es de un solo uso, caduca a los 10 minutos y no deja ocupar el sitio de un dispositivo ya emparejado.
 - Un dispositivo dado a otra persona (D81) empieza con identidad nueva: nadie le reconoce con la antigua.
+- Un dispositivo retirado no escribe en ningún sitio después de la retirada, aunque lo suyo llegue a través de otro que aún no lo sabe (SEG-015).
+- En la nube, un dispositivo es su id junto con su clave: conocer el id de un móvil ajeno no permite ocuparlo (SEG-016).
 - La app funciona entera sin servidor ni cuenta; nada de la nube planificada bloquea la red local.
 
 **Límites conocidos:**

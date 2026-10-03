@@ -148,8 +148,16 @@ final class AuthController extends AbstractController
     /** @throws AccountException with device_removed, device_taken or device_key_mismatch */
     private function signInDevice(User $user, string $deviceId, string $deviceName, string $publicKey): Device
     {
-        $device = $this->deviceRepository->find($deviceId);
+        // A device is its id together with its key: the id alone is public
+        // (D84, SEG-016), and the key is what the login just proved.
+        $device = $this->deviceRepository->findOneByDeviceIdAndKey($deviceId, $publicKey);
         if (!$device instanceof Device) {
+            if ($this->deviceRepository->findOneOfUser($user, $deviceId) instanceof Device) {
+                throw AccountException::deviceKeyMismatch();
+            }
+
+            // Another account's row with this id and another key is somebody
+            // else's install (or an intruder's useless one): it does not matter.
             $device = new Device($deviceId, $user, $deviceName, $publicKey);
             $this->entityManager->persist($device);
 
@@ -157,23 +165,16 @@ final class AuthController extends AbstractController
         }
 
         // Before device_taken: a removed install must start again (D81),
-        // whichever account tries it. The proof was checked against this key,
-        // so a matching key means the install itself is being told.
+        // whichever account tries it.
         if ($device->isRemoved()) {
-            if (hash_equals($device->getPublicKey(), $publicKey)) {
-                $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
-                $this->entityManager->flush();
-            }
+            $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+            $this->entityManager->flush();
 
             throw AccountException::deviceRemoved();
         }
 
         if (!$device->getUser()->getId()->equals($user->getId())) {
             throw AccountException::deviceTaken();
-        }
-
-        if (!hash_equals($device->getPublicKey(), $publicKey)) {
-            throw AccountException::deviceKeyMismatch();
         }
 
         $device->setName($deviceName);

@@ -65,9 +65,10 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
             throw new CustomUserMessageAuthenticationException('Missing device id or token.');
         }
 
-        $device = $this->deviceRepository->find($deviceId);
-        $tokenHash = $device?->getTokenHash();
-        if (!$device instanceof Device || null === $tokenHash || !hash_equals($tokenHash, hash('sha256', $token))) {
+        // Several rows may share a device id, so the token finds the row and
+        // the header must then agree with it.
+        $device = $this->deviceRepository->findOneByTokenHash(hash('sha256', $token));
+        if (!$device instanceof Device || !hash_equals($device->getDeviceId(), $deviceId)) {
             throw new CustomUserMessageAuthenticationException('Unknown device, signed-out device or wrong token.');
         }
 

@@ -7,22 +7,33 @@ namespace App\Entity;
 use App\Enum\SignOutReason;
 use App\Repository\DeviceRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 /**
- * One app install (milestone 7.1, part 2): its id is the device id the Rust
- * app already uses in its HLCs, not generated here. `tokenHash` null means
+ * One app install (milestone 7.1, part 2). The primary key is generated here;
+ * `deviceId` is the id the Rust app already uses in its HLCs. Those ids are
+ * public (they travel in every operation), so the server identifies an
+ * install by its id together with its key, never by the id alone (D84, SEG-016):
+ * otherwise whoever signed in first with someone else's id would own it.
+ * Two accounts may hold rows with the same id and different keys. `tokenHash` null means
  * signed out; `removedAt` means removed (D81): the install was handed to
  * someone else and must start again with a new identity. Until the install
  * is told so (`removalNoticedAt`), the removal can be undone and the device
- * carries on with its token, as if nothing had happened. A device id is
- * bound to its account forever, checked by App\Controller\AuthController
- * before a row is created.
+ * carries on with its token, as if nothing had happened. The same id and key
+ * cannot sign into a second account: App\Controller\AuthController checks it.
  */
 #[ORM\Entity(repositoryClass: DeviceRepository::class)]
 #[ORM\Table(name: 'device')]
 #[ORM\Index(name: 'idx_device_user', columns: ['user_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_device_id_key', columns: ['device_id', 'public_key'])]
+#[ORM\UniqueConstraint(name: 'uniq_device_user_device_id', columns: ['user_id', 'device_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_device_token_hash', columns: ['token_hash'])]
 final class Device
 {
+    #[ORM\Id]
+    #[ORM\Column(type: 'uuid', unique: true)]
+    private Uuid $id;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -44,9 +55,9 @@ final class Device
     private ?\DateTimeImmutable $removalNoticedAt = null;
 
     public function __construct(
-        #[ORM\Id]
+        /** The app's own device id. */
         #[ORM\Column(length: 36)]
-        private readonly string $id,
+        private readonly string $deviceId,
         #[ORM\ManyToOne(targetEntity: User::class)]
         #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_device_user')]
         private User $user,
@@ -59,12 +70,18 @@ final class Device
         #[ORM\Column(length: 64, nullable: true)]
         private ?string $tokenHash = null,
     ) {
+        $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
 
-    public function getId(): string
+    public function getId(): Uuid
     {
         return $this->id;
+    }
+
+    public function getDeviceId(): string
+    {
+        return $this->deviceId;
     }
 
     public function getUser(): User

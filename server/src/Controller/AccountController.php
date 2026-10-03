@@ -167,7 +167,7 @@ final class AccountController extends AbstractController
         }
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
-        $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getId(), SignOutReason::PasswordChanged);
+        $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getDeviceId(), SignOutReason::PasswordChanged);
         $this->entityManager->flush();
         $this->accountMailer->sendPasswordChangedNotice($user);
 
@@ -225,19 +225,19 @@ final class AccountController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function devices(): JsonResponse
     {
-        $currentDeviceId = $this->currentDevice->get()->getId();
+        $currentDeviceId = $this->currentDevice->get()->getDeviceId();
         $devices = $this->deviceRepository->findBy(['user' => $this->currentUser()], ['createdAt' => 'ASC']);
 
         return new JsonResponse(array_map(
             static fn (Device $device): array => [
-                'id' => $device->getId(),
+                'id' => $device->getDeviceId(),
                 'name' => $device->getName(),
                 'created_at' => $device->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 'last_seen_at' => $device->getLastSeenAt()?->format(\DateTimeInterface::ATOM),
                 'signed_in' => $device->isSignedIn(),
                 'removed' => $device->isRemoved(),
                 'can_restore' => $device->canRestore(),
-                'current' => $device->getId() === $currentDeviceId,
+                'current' => $device->getDeviceId() === $currentDeviceId,
             ],
             $devices,
         ));
@@ -251,15 +251,15 @@ final class AccountController extends AbstractController
      */
     public function removeDevice(string $id): Response
     {
-        $device = $this->deviceRepository->find($id);
-        if (!$device instanceof Device || !$device->getUser()->getId()->equals($this->currentUser()->getId())) {
+        $device = $this->deviceRepository->findOneOfUser($this->currentUser(), $id);
+        if (!$device instanceof Device) {
             throw AccountException::deviceNotFound();
         }
 
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $device->remove($now);
         // The calling install removing itself already knows: nothing to undo.
-        if ($device->getId() === $this->currentDevice->get()->getId()) {
+        if ($device->getDeviceId() === $this->currentDevice->get()->getDeviceId()) {
             $device->noticeRemoval($now);
         }
         $this->entityManager->flush();
@@ -275,8 +275,8 @@ final class AccountController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function restoreDevice(string $id): Response
     {
-        $device = $this->deviceRepository->find($id);
-        if (!$device instanceof Device || !$device->getUser()->getId()->equals($this->currentUser()->getId())) {
+        $device = $this->deviceRepository->findOneOfUser($this->currentUser(), $id);
+        if (!$device instanceof Device) {
             throw AccountException::deviceNotFound();
         }
 
@@ -335,6 +335,6 @@ final class AccountController extends AbstractController
             return null;
         }
 
-        return $device->getId();
+        return $device->getDeviceId();
     }
 }

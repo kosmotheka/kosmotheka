@@ -415,7 +415,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
         self::assertSame('{"error":"device_removed"}', $client->getResponse()->getContent());
 
-        $device = self::getContainer()->get(DeviceRepository::class)->find($first['device_id']);
+        $device = self::getContainer()->get(DeviceRepository::class)->findOneBy(['deviceId' => $first['device_id']]);
         self::assertInstanceOf(Device::class, $device);
         self::assertFalse($device->isSignedIn());
         self::assertTrue($device->isRemoved());
