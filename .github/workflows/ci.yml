@@ -47,6 +47,8 @@ jobs:
         working-directory: app
       - run: npm run lint
         working-directory: app
+      - run: npm run knip
+        working-directory: app
       - run: npm run check:spec
         working-directory: app
       - run: cargo fmt --all --check

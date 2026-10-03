@@ -1,0 +1,4 @@
+dist
+src-tauri
+# shadcn/ui components are copied in from upstream and kept as they come.
+src/components/ui
