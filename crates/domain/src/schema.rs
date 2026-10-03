@@ -208,6 +208,7 @@ const DEVICE_FIELDS: &[FieldSpec] = &[
     field("public_key", FieldType::Text, true),
     field("name", FieldType::Text, true),
     field("member_id", FieldType::Ref(Entity::Member), false),
+    field("trusted_until", FieldType::Text, false),
 ];
 /// How a request ended: accepted or rejected by an administrator, or withdrawn by
 /// whoever asked. The row without a status carries the asker's note (D73).

@@ -39,6 +39,10 @@ pub trait LibraryView {
     fn member_of_device(&self, device: &str) -> Option<String>;
     /// Whose the mark `id` is, if it exists (D68).
     fn mark_member(&self, id: &str) -> Option<String>;
+    /// Whether `hlc` falls inside a honoured antedating fence of `device` (D84):
+    /// after the newest operation of the device the administrator knew, and before
+    /// the operation that took its power away. Such an operation cannot be honest.
+    fn fenced(&self, device: &str, hlc: &str) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -50,9 +54,10 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     let author = operation.hlc.device.as_str();
     // Without a signature nobody can tell who wrote it: it counts as a reader's,
     // and as nobody's in particular, like a device that belongs to no person.
+    // A fenced author is judged the same way: its date cannot be trusted (D84).
     let role = match operation.signature {
-        Some(_) => view.role_of_device(author),
-        None => None,
+        Some(_) if !view.fenced(author, &operation.hlc.to_string()) => view.role_of_device(author),
+        _ => None,
     };
     operation
         .changes
@@ -74,9 +79,9 @@ fn change_allowed(
     let touches = |field: &str| change.fields.contains_key(field);
     match change.entity {
         // Every device registers and renames itself; saying whose it is, or
-        // touching another device, is for administrators.
+        // touching another device, or its fence, is for administrators.
         Entity::Device if change.id == author => {
-            change.action != Action::Delete && !touches("member_id")
+            change.action != Action::Delete && !touches("member_id") && !touches("trusted_until")
         }
         // Withdrawing is the one resolution that is not an administrator's.
         Entity::ChangeRequest => {
@@ -121,6 +126,7 @@ mod tests {
         roles: bool,
         role: Option<Role>,
         same_person: bool,
+        fenced: bool,
     }
 
     impl LibraryView for View {
@@ -138,6 +144,9 @@ mod tests {
         }
         fn member_of_device(&self, _: &str) -> Option<String> {
             self.role.map(|_| MY_MEMBER.to_owned())
+        }
+        fn fenced(&self, _: &str, _: &str) -> bool {
+            self.fenced
         }
         fn mark_member(&self, _: &str) -> Option<String> {
             Some(
@@ -203,6 +212,7 @@ mod tests {
             roles: true,
             role,
             same_person: false,
+            fenced: false,
         }
     }
 
@@ -215,6 +225,7 @@ mod tests {
             roles: false,
             role: None,
             same_person: false,
+            fenced: false,
         };
         assert!(is_allowed(&delete, &none));
         assert!(!is_allowed(&delete, &view(Some(Role::Reader))));
@@ -280,5 +291,40 @@ mod tests {
         assert!(is_allowed(&withdraw, &asker));
         assert!(!is_allowed(&accept, &asker));
         assert!(!is_allowed(&withdraw, &view(Some(Role::Editor))));
+    }
+
+    #[test]
+    fn a_fenced_device_can_only_do_what_a_device_of_nobody_can() {
+        let delete = op(vec![Change::delete(Entity::Tag, TAG)]);
+        let register = op(vec![Change::update(
+            Entity::Device,
+            ME,
+            json!({ "name": "Phone" }),
+        )]);
+        let fenced = View {
+            fenced: true,
+            ..view(Some(Role::Admin))
+        };
+        assert!(is_allowed(&delete, &view(Some(Role::Admin))));
+        assert!(!is_allowed(&delete, &fenced));
+        assert!(is_allowed(&register, &fenced), "renaming itself is for all");
+    }
+
+    #[test]
+    fn a_device_never_sets_its_own_fence() {
+        let own = op(vec![Change::update(
+            Entity::Device,
+            ME,
+            json!({ "trusted_until": "" }),
+        )]);
+        let other = op(vec![Change::update(
+            Entity::Device,
+            "01997c7e-0000-7000-8000-0000000000fc",
+            json!({ "trusted_until": "" }),
+        )]);
+        assert!(!is_allowed(&own, &view(Some(Role::Editor))));
+        assert!(!is_allowed(&other, &view(Some(Role::Editor))));
+        assert!(is_allowed(&other, &view(Some(Role::Admin))));
+        assert!(!is_allowed(&own, &view(None)));
     }
 }

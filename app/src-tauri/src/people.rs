@@ -288,18 +288,39 @@ pub fn set_role(
         return Err(Error::LastAdmin);
     }
     let tx = conn.transaction()?;
-    ops::record(
-        &tx,
-        library,
-        "member.role",
-        vec![Change::update(
-            Entity::Member,
-            member,
-            json!({ "role": role, "can_share": can_share }),
-        )],
-    )?;
+    let (old_role, old_can_share): (Option<String>, bool) = tx
+        .query_row(
+            "SELECT role, COALESCE(can_share, 0) FROM members WHERE library_id = ?1 AND id = ?2",
+            [library, member],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()?
+        .unwrap_or((None, false));
+    let mut changes = vec![Change::update(
+        Entity::Member,
+        member,
+        json!({ "role": role, "can_share": can_share }),
+    )];
+    // Taking power away fences the person's devices, in the same operation (D84).
+    if power_rank(role) < power_rank(old_role.as_deref()) || (old_can_share && !can_share) {
+        let devices: Vec<String> = tx
+            .prepare("SELECT id FROM devices WHERE library_id = ?1 AND member_id = ?2")?
+            .query_map([library, member], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        changes.extend(crate::permissions::fence_changes(&tx, library, &devices)?);
+    }
+    ops::record(&tx, library, "member.role", changes)?;
     tx.commit()?;
     Ok(())
+}
+
+fn power_rank(role: Option<&str>) -> u8 {
+    match role {
+        Some("admin") => 3,
+        Some("editor") => 2,
+        Some("reader") => 1,
+        _ => 0,
+    }
 }
 
 /// Says whose a device is, or that it is nobody's (`None`).
@@ -310,15 +331,24 @@ pub fn assign_device(
     member: Option<&str>,
 ) -> Result<()> {
     let tx = conn.transaction()?;
+    let current: Option<String> = tx
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [library, device],
+            |row| row.get(0),
+        )
+        .optional()?
+        .flatten();
+    let mut fields = json!({ "member_id": member });
+    // A device that stops belonging to its person is fenced (D84).
+    if current.as_deref().is_some_and(|c| Some(c) != member) {
+        fields["trusted_until"] = json!(crate::permissions::fence_mark(&tx, library, device)?);
+    }
     ops::record(
         &tx,
         library,
         "device.assign",
-        vec![Change::update(
-            Entity::Device,
-            device,
-            json!({ "member_id": member }),
-        )],
+        vec![Change::update(Entity::Device, device, fields)],
     )?;
     tx.commit()?;
     Ok(())

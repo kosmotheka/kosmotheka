@@ -792,6 +792,21 @@
                   "member_id": {
                     "description": "The member this device belongs to (D55). Only administrators set it.",
                     "$ref": "#/$defs/ref"
+                  },
+                  "trusted_until": {
+                    "description": "Antedating fence (D84): the HLC of the newest operation of this device the administrator knew when it lost power, or the empty string if none. Set in the same operation that takes the power away; an operation of this device with an HLC after it and before the operation that set it is a request. Only administrators set it, never the device itself.",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9]{16}-[0-9a-f]{8}-.+$"
+                      },
+                      {
+                        "const": ""
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }

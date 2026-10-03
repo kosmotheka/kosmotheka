@@ -252,16 +252,18 @@ pub fn revoke_access(conn: &mut Connection, id: &str, device_id: &str) -> Result
     let name = lan::known_device_name(conn, device_id)?.unwrap_or_else(|| device_id.to_owned());
     let tx = conn.transaction()?;
     if lan::revocations_of(&tx, id, device_id)?.is_empty() {
-        ops::record(
+        let mut changes = vec![Change::create(
+            Entity::Revocation,
+            new_id(),
+            json!({ "device_id": device_id, "device_name": name }),
+        )];
+        // The revoked device is fenced in the same operation (D84).
+        changes.extend(crate::permissions::fence_changes(
             &tx,
             id,
-            "library.revoke",
-            vec![Change::create(
-                Entity::Revocation,
-                new_id(),
-                json!({ "device_id": device_id, "device_name": name }),
-            )],
-        )?;
+            &[device_id.to_owned()],
+        )?);
+        ops::record(&tx, id, "library.revoke", changes)?;
     }
     tx.execute(
         "DELETE FROM library_peers WHERE library_id = ?1 AND device_id = ?2",

@@ -298,6 +298,10 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
             ops::Status::Request
         };
         ops::log_operation(tx, &operation, schema_version, status)?;
+        // After logging, so an operation of the fenced device already in the log is seen.
+        if status == ops::Status::Applied && permissions::note_fences(tx, &operation)? {
+            arrived_late.insert(library.to_owned());
+        }
         received.push(operation.id.clone());
         report.received += 1;
     }
@@ -1389,6 +1393,158 @@ mod tests {
         tx.commit().unwrap();
         phone.pull_from(&laptop);
         (laptop, phone)
+    }
+
+    #[test]
+    fn a_demoted_editor_cannot_backdate_a_change() {
+        // D84, «Abierto»: the role is judged at the operation's HLC, and the author
+        // sets the HLC. Hugo is an editor; the laptop lowers him to reader. His
+        // phone, with a modified app, then signs an edit dated just before that.
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+        let lowered = ops::last_hlc(&laptop.0).unwrap().unwrap();
+        let work: String = laptop
+            .0
+            .query_row(
+                "SELECT id FROM works WHERE library_id = ?1 AND title = 'Dune'",
+                [LIB],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        let mut backdated = Operation {
+            id: ops::new_id(),
+            library: LIB.to_owned(),
+            hlc: kosmotheka_domain::Hlc {
+                millis: lowered.millis - 1,
+                counter: 0,
+                device: device_id_of(&phone),
+            },
+            intent: "book.edit".into(),
+            changes: vec![Change::update(
+                Entity::Work,
+                &work,
+                json!({ "title": "Backdated" }),
+            )],
+            signature: None,
+        };
+        backdated.signature = Some(ops::signing_key(&phone.0).unwrap().sign(&backdated));
+        let schema_version = ops::schema_version(&laptop.0).unwrap();
+        let report = merge(
+            &mut laptop.0,
+            vec![SyncOperation {
+                schema_version,
+                operation: backdated,
+            }],
+        )
+        .unwrap();
+        let title: String = laptop
+            .0
+            .query_row(
+                "SELECT title FROM works WHERE library_id = ?1 AND id = ?2",
+                [LIB, &work],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(report.rejected, 0, "signed by the phone, so it is valid");
+        assert_eq!(
+            (title.as_str(), report.requests),
+            ("Dune", 1),
+            "a change dated before the demotion but made after it must not apply"
+        );
+    }
+
+    /// The status of the operation that made `title`, as this device knows it.
+    fn status_of_edit_titled(device: &Device, title: &str) -> String {
+        device
+            .0
+            .query_row(
+                "SELECT status FROM operations
+                  WHERE library_id = ?1 AND changes LIKE ?2 AND intent <> 'device.register'",
+                params![LIB, format!("%\"{title}\"%")],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    #[test]
+    fn an_offline_edit_made_before_hearing_of_the_demotion_becomes_a_request() {
+        // The honest case the fence costs (D84): Hugo's phone edits offline, the
+        // laptop lowers him without having seen that edit, and then they sync.
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        phone.add("Made offline", None, "Hugo");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("reader"), false).unwrap();
+
+        laptop.sync_with(&mut phone);
+
+        for device in [&laptop, &phone] {
+            assert!(!device.titles().contains(&"Made offline".to_owned()));
+            assert_eq!(status_of_edit_titled(device, "Made offline"), "request");
+        }
+        let notices: i64 = phone
+            .0
+            .query_row("SELECT count(*) FROM request_notices", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(notices, 1, "the phone is told its edit became a request");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_revoked_device_cannot_backdate_a_change_either() {
+        // The revocation carries a fence like a demotion does (D71, D84).
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, LIB, &hugo, Some("editor"), false).unwrap();
+        phone.pull_from(&laptop);
+        let phone_id = device_id_of(&phone);
+        crate::libraries::revoke_access(&mut laptop.0, LIB, &phone_id).unwrap();
+        let revoked = ops::last_hlc(&laptop.0).unwrap().unwrap();
+        let work: String = laptop
+            .0
+            .query_row(
+                "SELECT id FROM works WHERE library_id = ?1 AND title = 'Dune'",
+                [LIB],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let mut backdated = Operation {
+            id: ops::new_id(),
+            library: LIB.to_owned(),
+            hlc: kosmotheka_domain::Hlc {
+                millis: revoked.millis - 1,
+                counter: 0,
+                device: phone_id,
+            },
+            intent: "book.edit".into(),
+            changes: vec![Change::update(
+                Entity::Work,
+                &work,
+                json!({ "title": "Backdated" }),
+            )],
+            signature: None,
+        };
+        backdated.signature = Some(ops::signing_key(&phone.0).unwrap().sign(&backdated));
+        let schema_version = ops::schema_version(&laptop.0).unwrap();
+        let report = merge(
+            &mut laptop.0,
+            vec![SyncOperation {
+                schema_version,
+                operation: backdated,
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(report.requests, 1);
+        assert!(!laptop.titles().contains(&"Backdated".to_owned()));
+        assert_converged(&[&laptop]);
     }
 
     #[test]

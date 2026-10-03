@@ -92,6 +92,18 @@ impl LibraryView for SqlView<'_> {
         self.member_of(device)
     }
 
+    fn fenced(&self, device: &str, hlc: &str) -> bool {
+        self.conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM device_fences
+                  WHERE library_id = ?1 AND device_id = ?2
+                    AND after_hlc < ?3 AND ?3 < until_hlc)",
+                [self.library, device, hlc],
+                |row| row.get(0),
+            )
+            .unwrap_or(true)
+    }
+
     fn mark_member(&self, id: &str) -> Option<String> {
         self.conn
             .query_row(
@@ -151,11 +163,164 @@ pub fn rebuild(tx: &Transaction<'_>, library: &str) -> Result<()> {
         )?
         .query_map([library, &me], |row| row.get(0))?
         .collect::<rusqlite::Result<_>>()?;
-    ops::clear_library(tx, library)?;
     let log = sync::library_log(tx, library)?;
+    // Every fence in the log is a candidate; only those set by an operation that
+    // is itself allowed count (D84). Dropping one can make another operation a
+    // request or not, so replay until no candidate is dropped. The set only
+    // shrinks, so it ends, and every device reaches the same result.
+    let mut fences = candidate_fences(&log);
     let mut editions = BTreeSet::new();
+    loop {
+        replay(tx, library, &log, &fences, &mut editions)?;
+        let before = fences.len();
+        let mut kept = Vec::new();
+        for fence in fences {
+            if ops::status_of(tx, &fence.operation_id)? == ops::Status::Applied {
+                kept.push(fence);
+            }
+        }
+        fences = kept;
+        if fences.len() == before {
+            break;
+        }
+    }
+    for operation in &log {
+        // Made here, applied here, and now a request: tell whoever made it, once.
+        if was_applied.contains(&operation.id)
+            && ops::status_of(tx, &operation.id)? == ops::Status::Request
+        {
+            tx.execute(
+                "INSERT OR IGNORE INTO request_notices (library_id, operation_id)
+                 VALUES (?1, ?2)",
+                [library, &operation.id],
+            )?;
+        }
+    }
+    let all_editions: BTreeSet<String> = tx
+        .prepare("SELECT id FROM editions WHERE library_id = ?1")?
+        .query_map([library], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    editions.extend(all_editions);
+    search::reindex(tx, library, &editions)?;
+    Ok(())
+}
+
+/// The mark of an antedating fence for `device` (D84): the newest operation of it
+/// this device holds, or the empty string if none. What the administrator who takes
+/// power away knows of the device is everything up to there.
+pub fn fence_mark(conn: &Connection, library: &str, device: &str) -> Result<String> {
+    let newest: Option<String> = conn.query_row(
+        "SELECT max(hlc) FROM operations
+          WHERE library_id = ?1 AND device_id = ?2 AND replicable = 1",
+        [library, device],
+        |row| row.get(0),
+    )?;
+    Ok(newest.unwrap_or_default())
+}
+
+/// The changes that fence each of `devices` that is registered in the library. They
+/// go in the same operation as the change that takes the power away.
+pub fn fence_changes(conn: &Connection, library: &str, devices: &[String]) -> Result<Vec<Change>> {
+    let mut changes = Vec::new();
+    for device in devices {
+        let registered: bool = conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM devices WHERE library_id = ?1 AND id = ?2)",
+            [library, device],
+            |row| row.get(0),
+        )?;
+        if registered {
+            changes.push(Change::update(
+                Entity::Device,
+                device,
+                serde_json::json!({ "trusted_until": fence_mark(conn, library, device)? }),
+            ));
+        }
+    }
+    Ok(changes)
+}
+
+/// A fence an operation of the log sets (D84), not yet known to be honoured.
+struct Fence {
+    device: String,
+    after: String,
+    until: String,
+    operation_id: String,
+}
+
+fn candidate_fences(log: &[Operation]) -> Vec<Fence> {
+    log.iter().flat_map(fences_of).collect()
+}
+
+fn fences_of(operation: &Operation) -> Vec<Fence> {
+    operation
+        .changes
+        .iter()
+        .filter(|change| change.entity == Entity::Device && change.action != Action::Delete)
+        .filter_map(|change| {
+            let after = change.fields.get("trusted_until")?.as_str()?;
+            Some(Fence {
+                device: change.id.clone(),
+                after: after.to_owned(),
+                until: operation.hlc.to_string(),
+                operation_id: operation.id.clone(),
+            })
+        })
+        .collect()
+}
+
+fn insert_fence(conn: &Connection, library: &str, fence: &Fence) -> Result<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO device_fences
+            (library_id, device_id, after_hlc, until_hlc, operation_id)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            library,
+            fence.device,
+            fence.after,
+            fence.until,
+            fence.operation_id
+        ],
+    )?;
+    Ok(())
+}
+
+/// Remembers the fences an applied operation sets (D84). Returns whether the log
+/// already holds an operation inside one of the new windows: judged before the
+/// fence was known, it has to be judged again.
+pub fn note_fences(conn: &Connection, operation: &Operation) -> Result<bool> {
+    let mut late = false;
+    for fence in fences_of(operation) {
+        insert_fence(conn, &operation.library, &fence)?;
+        late |= conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM operations
+              WHERE library_id = ?1 AND device_id = ?2 AND replicable = 1
+                AND hlc > ?3 AND hlc < ?4)",
+            [
+                &operation.library,
+                &fence.device,
+                &fence.after,
+                &fence.until,
+            ],
+            |row| row.get::<_, bool>(0),
+        )?;
+    }
+    Ok(late)
+}
+
+/// One pass over the log with the given fences in force.
+fn replay(
+    tx: &Transaction<'_>,
+    library: &str,
+    log: &[Operation],
+    fences: &[Fence],
+    editions: &mut BTreeSet<String>,
+) -> Result<()> {
+    ops::clear_library(tx, library)?;
+    for fence in fences {
+        insert_fence(tx, library, fence)?;
+    }
     for operation in log {
-        let status = if allowed(tx, &operation) {
+        let status = if allowed(tx, operation) {
             let hlc = operation.hlc.to_string();
             for change in &operation.changes {
                 if sync::apply_change(tx, library, change, &hlc)? {
@@ -167,23 +332,9 @@ pub fn rebuild(tx: &Transaction<'_>, library: &str) -> Result<()> {
             }
             ops::Status::Applied
         } else {
-            // Made here, applied here, and now a request: tell whoever made it, once.
-            if was_applied.contains(&operation.id) {
-                tx.execute(
-                    "INSERT OR IGNORE INTO request_notices (library_id, operation_id)
-                     VALUES (?1, ?2)",
-                    [library, &operation.id],
-                )?;
-            }
             ops::Status::Request
         };
         ops::set_status(tx, &operation.id, status)?;
     }
-    let all_editions: BTreeSet<String> = tx
-        .prepare("SELECT id FROM editions WHERE library_id = ?1")?
-        .query_map([library], |row| row.get(0))?
-        .collect::<rusqlite::Result<_>>()?;
-    editions.extend(all_editions);
-    search::reindex(tx, library, &editions)?;
     Ok(())
 }

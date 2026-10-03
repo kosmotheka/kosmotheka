@@ -150,6 +150,8 @@ fn record_inner(
         affected.extend(search::affected_editions(tx, library, change)?);
     }
     search::reindex(tx, library, &affected)?;
+    // The administrator knew everything up to the fence, so nothing is late here.
+    crate::permissions::note_fences(tx, &operation)?;
     log_operation(tx, &operation, schema_version(tx)?, Status::Applied)?;
     write_state(tx, LAST_HLC_KEY, Some(&hlc_text))?;
     Ok(operation)
@@ -283,6 +285,19 @@ impl Status {
             Status::Request => "request",
         }
     }
+}
+
+pub fn status_of(conn: &Connection, operation_id: &str) -> Result<Status> {
+    let status: String = conn.query_row(
+        "SELECT status FROM operations WHERE id = ?1",
+        [operation_id],
+        |row| row.get(0),
+    )?;
+    Ok(if status == "request" {
+        Status::Request
+    } else {
+        Status::Applied
+    })
 }
 
 pub fn set_status(conn: &Connection, operation_id: &str, status: Status) -> Result<()> {
@@ -450,6 +465,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
     conn.execute("DELETE FROM tombstones WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM row_authors WHERE library_id = ?1", [library])?;
+    conn.execute("DELETE FROM device_fences WHERE library_id = ?1", [library])?;
     Ok(())
 }
 
