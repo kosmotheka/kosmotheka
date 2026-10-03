@@ -740,6 +740,8 @@ Los de salud y abuso necesitan que el servidor **registre esos eventos** (rechaz
 
 ## D56 · Cada dispositivo firma sus operaciones — `aceptada`
 
+> **Ampliada el 03/10/2026 (D84):** la firma es obligatoria. Una operación sin firma se rechaza en todas partes (dispositivos y nube), también sin roles: era una excepción solo para los datos de antes de la Fase 5, que son de prueba. Las instalaciones de antes del 27/09 tienen historia sin firmar que ya no viaja; para sincronizar, empezar de cero o «Duplicar como nueva» (D58).
+
 Cada dispositivo tiene un par de claves Ed25519, firma sus operaciones y los demás las verifican con la clave pública que reciben al emparejar. Así se sabe quién hizo cada cambio aunque llegue a través de otro dispositivo, y D55 puede comprobar permisos sin servidor. Es lo que hacen SSH o Signal; nada de cadenas de bloques.
 
 ## D57 · Dos formas de usar la app; la nube es un dispositivo más — `aceptada`
@@ -1017,7 +1019,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Todo o nada:** si un solo cambio de una operación no está permitido, la operación entera pasa a petición.
 - **Converger:** cada operación se juzga con los roles vigentes en su HLC. Si llega tarde una que cambia roles, el dispositivo recalcula la biblioteca desde su registro.
 - **Nada se pierde:** lo no permitido se queda en el registro, viaja como las demás y es una petición para los administradores.
-- **Operaciones sin firma** (anteriores a la Fase 5): se aceptan mientras la biblioteca no tenga roles; con roles, cuentan como de un lector.
+- ~~**Operaciones sin firma** (anteriores a la Fase 5): se aceptan mientras la biblioteca no tenga roles; con roles, cuentan como de un lector.~~ **Cambiado el 03/10/2026 (D84):** toda operación va firmada; una sin firma se rechaza en todos los dispositivos y en la nube.
 
 **Añadido al revisar las pantallas de Design (27/09/2026):**
 - **Activar los roles incluye decir de quién es cada dispositivo.** Quien activa los roles pasa a administrar; en el mismo paso asigna persona a los dispositivos que ya comparten la biblioteca, con **editor** por defecto. Así nadie pierde de golpe lo que podía hacer, y se mantiene la regla de que un dispositivo sin persona cuenta como lector (un dispositivo perdido y quitado no conserva permisos). Todo va en una sola operación, que se juzga cuando aún no hay roles.
@@ -1360,7 +1362,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   - **Coste aceptado:** una edición honrada hecha sin conexión justo antes de enterarse de la bajada queda como petición, y quien administra la acepta. Nadie pierde nada.
 - **Retirada a través de un tercero (SEG-015, arreglado el 03/10/2026):** retirar el acceso solo cortaba el intercambio directo; lo que el dispositivo retirado firmaba después llegaba a todos a través de otro que aún no lo sabía, y se aplicaba. Ahora una retirada en vigor es una marca abierta: lo que ese dispositivo firme después pasa a petición, con roles y sin ellos, hasta que se le devuelva el acceso.
 
-**Operaciones sin firma en la nube (decidido el 03/10/2026):** la nube rechaza las operaciones sin firma, y la app no sube una biblioteca con historia sin firmar: propone «Duplicar como nueva» (D58). Aceptarlas habría sido coherente con D73, pero una biblioteca subida con huecos dejaría distintas para siempre las copias de quien solo sincroniza con la nube; los datos de antes de las firmas son de prueba y pueden perderse.
+**Operaciones sin firma (decidido el 03/10/2026):** primero se decidió que la nube las rechazara y que la app no subiera una biblioteca con historia sin firmar; el mismo día el maintainer amplió la regla a todas partes: toda operación va firmada y una sin firma se rechaza en cualquier dispositivo y en la nube (D56, D73). Así nube y dispositivos aplican el mismo criterio y no hay huecos. La app sigue sin subir una biblioteca con historia sin firmar y propone «Duplicar como nueva» (D58). Los datos de antes de las firmas son de prueba y pueden perderse.
 
 **Pendiente hasta 7.4:**
 - **Un lector con una app modificada** puede subir una copia a su propia cuenta. No obtiene nada que no tuviera (D73), y nadie de su familia se conecta a esa copia (punto 3), pero hasta 7.4 el servidor no sabe de roles para impedirlo (SEG-013).

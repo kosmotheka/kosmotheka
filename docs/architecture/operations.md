@@ -81,13 +81,13 @@ El texto tiene ceros a la izquierda para que ordenar como texto sea igual que or
 - **Al recibir** (`sync::merge`), se rechaza y se cuenta como rechazada:
   - una operación con firma que no cuadra con la clave de su autor, o de un autor sin clave conocida;
   - una que intenta cambiar la clave de un dispositivo que ya tiene una: la primera es la que vale.
-- **Las operaciones sin firma** (anteriores a esta fase) se siguen aceptando mientras no haya roles; en una biblioteca con roles cuentan como de un lector y pasan a petición (D73).
+- **Una operación sin firma se rechaza siempre** (D56, ampliada el 03/10/2026), con roles o sin ellos, en los dispositivos y en la nube. Las de antes de esta fase eran de prueba: ya no viajan.
 
 ## Permisos (D73, hitos 5.2 a 5.4)
 
 Las reglas están en `spec/README.md` («Roles and permissions») y en D73. Resumen:
 - **Sin roles, como siempre:** hasta que algún miembro tiene rol, todos pueden todo.
-- Con roles, cada operación se juzga con el rol de su autor en ese momento: el autor es el dispositivo del `hlc`, su persona es el `member_id` de su fila `device`, y un dispositivo que no es de nadie, o una operación sin firma, cuenta como lector.
+- Con roles, cada operación se juzga con el rol de su autor en ese momento: el autor es el dispositivo del `hlc`, su persona es el `member_id` de su fila `device`, y un dispositivo que no es de nadie cuenta como lector (una operación sin firma ni siquiera llega aquí: se rechaza antes).
 - **Todo o nada:** si un cambio no está permitido, la operación entera queda como **petición** (`operations.status = 'request'`): se guarda en el registro y viaja, pero no se aplica.
 
 Dónde está:

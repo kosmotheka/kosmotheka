@@ -50,6 +50,10 @@ pub trait LibraryView {
 /// Whether the author of `operation` may make all of its changes. All or nothing:
 /// one change not allowed makes the whole operation a request.
 pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
+    // Every operation is signed (D56): without a signature nobody can tell who wrote it.
+    if operation.signature.is_none() {
+        return false;
+    }
     let author = operation.hlc.device.as_str();
     // A fenced author is judged as nobody's, with or without roles: its date cannot
     // be trusted, or its access was withdrawn (D71, D84).
@@ -57,11 +61,10 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     if !view.has_roles() && !fenced {
         return true;
     }
-    // Without a signature nobody can tell who wrote it: it counts as a reader's,
-    // and as nobody's in particular, like a device that belongs to no person.
-    let role = match operation.signature {
-        Some(_) if !fenced => view.role_of_device(author),
-        _ => None,
+    let role = if fenced {
+        None
+    } else {
+        view.role_of_device(author)
     };
     operation
         .changes
@@ -264,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    fn an_unsigned_operation_counts_as_a_readers() {
+    fn an_unsigned_operation_is_never_allowed() {
         let mut add = op(vec![Change::create(
             Entity::Tag,
             TAG,
@@ -272,7 +275,8 @@ mod tests {
         )]);
         assert!(is_allowed(&add, &view(Some(Role::Editor))));
         add.signature = None;
-        assert!(!is_allowed(&add, &view(Some(Role::Editor))));
+        assert!(!is_allowed(&add, &view(Some(Role::Admin))));
+        assert!(!is_allowed(&add, &view(None)), "not even without roles");
     }
 
     #[test]

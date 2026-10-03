@@ -347,9 +347,8 @@ pub fn library_log(conn: &Connection, library: &str) -> Result<Vec<Operation>> {
 
 /// Whether the operation's signature is its author's (D56). The author's key is the
 /// one registered in the library, or the one the operation itself registers. A
-/// device's key never changes: an operation that sets another one is refused.
-/// Operations from before signatures carry none and pass, until the library has
-/// roles; then they count as a reader's (D73).
+/// device's key never changes: an operation that sets another one is refused, and
+/// so is one without a signature.
 fn signature_holds(tx: &Transaction<'_>, operation: &Operation) -> Result<bool> {
     let library = operation.library.as_str();
     for change in &operation.changes {
@@ -361,8 +360,9 @@ fn signature_holds(tx: &Transaction<'_>, operation: &Operation) -> Result<bool> 
             return Ok(false);
         }
     }
+    // Every operation is signed (D56): one without a signature is refused anywhere.
     if operation.signature.is_none() {
-        return Ok(true);
+        return Ok(false);
     }
     let author = operation.hlc.device.as_str();
     let key = match registered_key(tx, library, author)? {
@@ -834,20 +834,22 @@ mod tests {
     }
 
     #[test]
-    fn unsigned_operations_from_before_signatures_still_merge() {
+    fn an_unsigned_operation_is_refused() {
+        // D56: every operation is signed; nobody can tell who wrote one that is not.
         let mut laptop = Device::new();
         laptop.add("A Wizard of Earthsea", None, "Ana");
         let mut phone = Device::new();
         let mut operations = everything_from(&laptop);
         for op in &mut operations {
-            op.operation.signature = None;
+            if op.operation.intent != "device.register" {
+                op.operation.signature = None;
+            }
         }
-        operations.retain(|op| op.operation.intent != "device.register");
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        assert_eq!((report.received, report.rejected), (1, 0));
-        assert_eq!(phone.titles(), vec!["A Wizard of Earthsea"]);
+        assert_eq!((report.received, report.rejected), (1, 1));
+        assert!(phone.titles().is_empty());
     }
 
     #[test]
@@ -2000,6 +2002,8 @@ mod tests {
     struct PermissionExpect {
         applied: Vec<String>,
         requests: Vec<String>,
+        #[serde(default)]
+        rejected: Vec<String>,
     }
 
     #[test]
@@ -2021,6 +2025,7 @@ mod tests {
                     if !unsigned {
                         operation.signature = Some(key.sign(&operation));
                     }
+                    let id = operation.id.clone();
                     let report = merge(
                         &mut device.0,
                         vec![SyncOperation {
@@ -2029,9 +2034,11 @@ mod tests {
                         }],
                     )
                     .unwrap();
+                    let refused = case.expect.rejected.contains(&id);
                     assert_eq!(
-                        report.rejected, 0,
-                        "case '{}': op {index} rejected",
+                        report.rejected,
+                        usize::from(refused),
+                        "case '{}': op {index} rejected or not",
                         case.name
                     );
                 }
@@ -2069,14 +2076,53 @@ mod tests {
         let cases: Vec<MergeCase> = serde_json::from_str(MERGE_CASES).unwrap();
         assert!(!cases.is_empty());
 
+        // Every operation is signed (D56): each author registers the test key of
+        // spec/conformance/signatures.json first, and the runner signs the case's
+        // operations with it, as for the permission cases.
+        let key = kosmotheka_domain::DeviceKey::from_seed([1; 32]);
         for case in cases {
+            let authors: BTreeSet<(String, String)> = case
+                .operations
+                .iter()
+                .map(|op| (op.library.clone(), op.hlc.device.clone()))
+                .collect();
             for order in &case.deliveries {
                 let mut device = Device::new();
-                // Only rows the case creates count: every device has the default library.
-                let before = state(&device.0);
                 let schema_version = ops::schema_version(&device.0).unwrap();
+                for (counter, (library, author)) in (0u32..).zip(&authors) {
+                    let mut register = Operation {
+                        id: ops::new_id(),
+                        library: library.clone(),
+                        // HLCs are unique in the log, also for one author in two libraries.
+                        hlc: kosmotheka_domain::Hlc {
+                            millis: 0,
+                            counter,
+                            device: author.clone(),
+                        },
+                        intent: "device.register".into(),
+                        changes: vec![Change::create(
+                            Entity::Device,
+                            author,
+                            json!({ "public_key": key.public_key(), "name": "test" }),
+                        )],
+                        signature: None,
+                    };
+                    register.signature = Some(key.sign(&register));
+                    merge(
+                        &mut device.0,
+                        vec![SyncOperation {
+                            schema_version,
+                            operation: register,
+                        }],
+                    )
+                    .unwrap();
+                }
+                // Only rows the case creates count: every device has the default
+                // library, and the registrations above are the runner's (skipped below).
+                let before = state(&device.0);
                 for &index in order {
-                    let operation = case.operations[index].clone();
+                    let mut operation = case.operations[index].clone();
+                    operation.signature = Some(key.sign(&operation));
                     merge(
                         &mut device.0,
                         vec![SyncOperation {
@@ -2095,7 +2141,9 @@ mod tests {
                         let untouched = before.iter().any(|(l, t, r)| {
                             *l == library && *t == table && r.iter().any(|old| old["id"] == id)
                         });
-                        if untouched {
+                        let registration = entity == &Entity::Device
+                            && authors.contains(&(library.clone(), id.clone()));
+                        if untouched || registration {
                             continue;
                         }
                         rows.push(ExpectedRow {

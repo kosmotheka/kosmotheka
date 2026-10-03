@@ -1352,8 +1352,8 @@
     }
   },
   {
-    "name": "an unsigned operation in a library with roles becomes a request",
-    "note": "Proposal for question 1 of docs/plans/fase-5.md. 'unsigned' marks an operation without a signature; every other operation here is assumed correctly signed by the device in its hlc.",
+    "name": "An unsigned operation is refused, with or without roles",
+    "note": "D56: every operation is signed. 'unsigned' marks an operation without a signature; every other operation here is assumed correctly signed by the device in its hlc. A refused operation is not stored: it is neither applied nor a request.",
     "operations": [
       {
         "id": "01997c7e-0000-7000-8000-000000000001",
@@ -1537,7 +1537,8 @@
         "01997c7e-0000-7000-8000-000000000004",
         "01997c7e-0000-7000-8000-000000000005"
       ],
-      "requests": [
+      "requests": [],
+      "rejected": [
         "01997c7e-0000-7000-8000-000000000006"
       ]
     }

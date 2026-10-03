@@ -46,12 +46,12 @@ The public key of each device travels with the library as a **`device`** row (32
 Every device checks each operation it receives, and each one it makes, against the roles of the library (D55, D73 in `docs/DECISIONS.md`). All devices reach the same verdict, whatever the order operations arrive in.
 
 1. **A library without roles works as before:** until some member has a role, every device may do everything. The first role is assigned under that same rule; from then on the library has roles.
-2. **Who wrote an operation** is the device in its `hlc` (signed). Its **person** is the member its `device` row points to (`member_id`), and its **role** is that member's `role` at the moment of the operation. A device linked to no member, or an operation without a signature, counts as a **reader**.
+2. **Who wrote an operation** is the device in its `hlc` (signed). Its **person** is the member its `device` row points to (`member_id`), and its **role** is that member's `role` at the moment of the operation. A device linked to no member counts as a **reader**. An operation without a signature is never allowed: it is refused before it is judged (D56).
 3. **Roles** (`member.role`: `admin`, `editor` or `reader`; `member.can_share`: true or false):
    - **admin** may do everything, including roles, who owns each device, access (`revocation`), the `library` row and deleting the library.
    - **editor** creates and edits the catalog. It deletes only rows its person created: a row whose first create change came from a device of the same person.
    - **reader** changes nothing in the catalog: what it tries becomes a request.
-   - **Everyone keeps their own marks** (D68), whatever their role: a device with a person creates, changes and deletes the `mark` rows of that person (a create names it in `member_id`), and only administrators touch other people's. A device linked to no member, or an unsigned operation, may not.
+   - **Everyone keeps their own marks** (D68), whatever their role: a device with a person creates, changes and deletes the `mark` rows of that person (a create names it in `member_id`), and only administrators touch other people's. A device linked to no member may not.
    - **Nobody gives more than they have:** changing `role`, `can_share` or a device's `member_id` is for administrators.
 4. **Every device registers and renames itself**, whatever its role: its own `device` row, without `member_id`.
 5. **All or nothing:** if any change in an operation is not allowed, none is applied and the whole operation becomes a **request**.
@@ -61,7 +61,9 @@ Every device checks each operation it receives, and each one it makes, against t
 9. **Withdrawing a request** is for whoever asked: a device of the same person as the requested operation's author may create that `change_request` row with `status` `withdrawn`, and nothing else. It is the only `change_request` row a non-administrator may write.
 10. **The asker's note travels inside the request:** the requested operation may carry a `change_request` row with its own id and only a `note`. Only an administrator could create that row, so the operation always stays a request; accepting repeats the requested changes without it.
 
-`conformance/permissions.json` has cases in the shape of the merge cases (`operations`, `deliveries`), with `expect` listing the ids of the operations that end **applied** and those that end as **requests**; every delivery order must give the same lists. Deliveries keep each device's own operations in order, as the sync protocol does, so a device's key registration always comes before its signed operations. Every operation is signed with the test key of `conformance/signatures.json`, except those marked `"unsigned": true` (a field of the case, not of the operation).
+`conformance/permissions.json` has cases in the shape of the merge cases (`operations`, `deliveries`), with `expect` listing the ids of the operations that end **applied**, those that end as **requests**, and, optionally, those **rejected** (not stored at all, like an unsigned one); every delivery order must give the same lists. Deliveries keep each device's own operations in order, as the sync protocol does, so a device's key registration always comes before its signed operations. Every operation is signed with the test key of `conformance/signatures.json`, except those marked `"unsigned": true` (a field of the case, not of the operation), which every implementation must refuse.
+
+The merge cases (`conformance/library-merge.json`) are written without signatures and without key registrations, to keep them about merging: each implementation registers every author of a case with the test key before delivering it (a `device` row it then leaves out of the comparison) and signs every operation with that key.
 
 ## Running the conformance cases
 
