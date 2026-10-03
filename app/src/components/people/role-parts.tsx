@@ -147,9 +147,7 @@ export function RoleMenu({
 export function RoleLegend({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation();
   if (compact) {
-    return (
-      <p className="text-center text-xs text-muted-foreground">{t("people.legendShort")}</p>
-    );
+    return <p className="text-center text-xs text-muted-foreground">{t("people.legendShort")}</p>;
   }
   return (
     <div className="flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-muted-foreground">

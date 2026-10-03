@@ -72,7 +72,10 @@ export function ActivateDialog({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open) knownPeople().then(setKnown).catch(() => setKnown([]));
+    if (open)
+      knownPeople()
+        .then(setKnown)
+        .catch(() => setKnown([]));
   }, [open]);
 
   const update = (index: number, change: Partial<Row>) =>
@@ -236,4 +239,3 @@ function DeviceName({ device }: { device: PersonDevice }) {
     </div>
   );
 }
-
