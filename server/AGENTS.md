@@ -100,7 +100,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 
 - `.env` is committed and **holds no credentials**, only defaults and placeholders. Development credentials go in `.env.local`, which is not versioned (see `docs/development/server.md`). Production secrets go in `.env.local` on the server.
 - `.env.test` **is** committed, and has to be: Symfony does not load `.env.local` when `APP_ENV=test`, so without it a fresh clone cannot run the suite. Its `test` role exists only inside the container and can only reach `kosmotheka_test`.
-- `.env.dev` is committed with a development-only `APP_SECRET`, as the Symfony skeleton does.
+- **No `APP_SECRET` is committed**, not even for development: it goes in `.env.local`. Tests make up a random one in `tests/bootstrap.php`.
 - There is **no `compose.yaml` in `server/`**: `extra.symfony.docker` is `false` in `composer.json`, so recipes do not generate one. The Docker setup lives in `server/docker/`. If a `compose.yaml` ever appears, delete it.
 
 ## Tests

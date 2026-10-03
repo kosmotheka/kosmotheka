@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -33,14 +34,13 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/v1/auth')]
 final class AuthController extends AbstractController
 {
-    private const string DUMMY_PASSWORD_HASH = 'REMOVED';
-
     public function __construct(
         private readonly LoginChallengeIssuer $challengeIssuer,
         private readonly DeviceProof $deviceProof,
         private readonly UserRepository $userRepository,
         private readonly DeviceRepository $deviceRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly PasswordHasherFactoryInterface $hasherFactory,
         private readonly UserChecker $userChecker,
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestLimiter $requestLimiter,
@@ -117,12 +117,12 @@ final class AuthController extends AbstractController
     }
 
     /**
-     * Verifies against a fixed argon2id hash (PHP's default cost, like the real
-     * ones) so an unknown email takes as long as a wrong password.
+     * Hashes the password with the users' own hasher and throws the result away, so
+     * an unknown email costs one hash, as long as checking a wrong password.
      */
     private function hashDummyPassword(string $password): void
     {
-        password_verify($password, self::DUMMY_PASSWORD_HASH);
+        $this->hasherFactory->getPasswordHasher(User::class)->hash($password);
     }
 
     /**

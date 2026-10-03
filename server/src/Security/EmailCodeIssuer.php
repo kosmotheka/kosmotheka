@@ -26,6 +26,9 @@ final readonly class EmailCodeIssuer
         #[\SensitiveParameter]
         private string $secret,
     ) {
+        if ('' === $secret) {
+            throw new \LogicException('APP_SECRET is empty: set it in .env.local (docs/development/server.md).');
+        }
     }
 
     /** Issues a fresh code, replacing any live one for the same user and purpose, and emails it. */

@@ -18,8 +18,9 @@
 cd server/docker
 cp .env.dist .env        # solo la primera vez; .env no se versiona
 cd ..
-cat > .env.local <<'ENV'  # solo la primera vez; tampoco se versiona
+cat > .env.local <<ENV   # solo la primera vez; tampoco se versiona
 DATABASE_URL="postgresql://kosmotheka:kosmotheka@db_kosmotheka:5432/kosmotheka?serverVersion=18&charset=utf8"
+APP_SECRET=$(openssl rand -hex 32)
 ENV
 make build               # solo la primera vez o si cambia un Dockerfile
 make up
@@ -53,7 +54,7 @@ Elegidos para no chocar con otros proyectos Docker de la máquina (Riddle, rpgut
 
 `kosmotheka_test` y su usuario los crea `docker/postgres/init/01-test-database.sql` la **primera vez** que arranca el volumen. Si el volumen ya existía sin ella, bórralo (`docker volume rm kosmotheka_db_kosmotheka`, con los contenedores parados) o ejecuta ese SQL a mano.
 
-Como en Riddle, `.env` no lleva credenciales: las de desarrollo van en `.env.local`. `.env.test` sí se versiona, porque Symfony no carga `.env.local` en test y sin él un clon recién hecho no pasaría la suite; su usuario `test` solo existe dentro del contenedor y solo tiene acceso a `kosmotheka_test`. Las de producción irán en `.env.local` en el VPS, nunca en el repo.
+Como en Riddle, `.env` no lleva credenciales: las de desarrollo van en `.env.local`, también `APP_SECRET`, que cada instalación genera (sin él, el servidor se niega a emitir códigos por email). `.env.test` sí se versiona, porque Symfony no carga `.env.local` en test y sin él un clon recién hecho no pasaría la suite. No lleva secreto: cada ejecución de los tests se inventa uno (`tests/bootstrap.php`), salvo que `.env.test.local` o el entorno fijen otro; su usuario `test` solo existe dentro del contenedor y solo tiene acceso a `kosmotheka_test`. Las de producción irán en `.env.local` en el VPS, nunca en el repo.
 
 ## Correo (hito 7.1)
 

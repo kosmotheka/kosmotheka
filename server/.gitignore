@@ -1,8 +1,7 @@
-# Symfony commits .env, .env.dev and .env.test on purpose: they hold only
-# defaults and container-local credentials. Real secrets go in .env.local,
-# ignored below and by the root .gitignore.
+# Symfony commits .env and .env.test on purpose: they hold only defaults and
+# container-local credentials. Secrets, APP_SECRET included, go in .env.local
+# (.env.test.local in tests), ignored below and by the root .gitignore.
 !/.env
-!/.env.dev
 !/.env.test
 
 ###> symfony/framework-bundle ###
