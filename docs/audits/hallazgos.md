@@ -12,9 +12,9 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | PRU-001 | abierto | baja | Test ignorado que no se llama `live_*` | `signature.rs` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-001 | resuelto | media | La copia automática de Android se lleva las claves | `AndroidManifest.xml` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-002 | resuelto | media | Volver a emparejar con un `device_id` conocido suplanta a ese dispositivo | `lan/server.rs:148-153` | threat-model | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| SEG-003 | abierto | media | CI sin `permissions:` y con actions de terceros sin fijar | `.github/workflows/ci.yml` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
-| SEG-004 | abierto | media | Falta `SECURITY.md` | raíz | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
-| SEG-005 | abierto | media | Sin avisos de licencias de terceros | `web/assets/fonts`, `app/package.json` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
+| SEG-003 | resuelto | media | CI sin `permissions:` y con actions de terceros sin fijar | `.github/workflows/ci.yml` | supply-chain | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
+| SEG-004 | resuelto | media | Falta `SECURITY.md` | raíz | supply-chain | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
+| SEG-005 | resuelto | media | Sin avisos de licencias de terceros | `web/assets/fonts`, `app/package.json` | supply-chain | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | SEG-006 | abierto | baja | La CSP deja cargar imágenes de cualquier origen https | `tauri.conf.json` | threat-model | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-007 | abierto | baja | En Windows la clave TLS se escribe sin permisos propios | `lan/identity.rs:109-112` | threat-model | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
 | SEG-008 | abierto | baja | Dependencias con avisos sin parche, fuera del uso de la app | `Cargo.lock`, `package-lock.json` | supply-chain | 2026-10-03 | | [2026-10-03](2026-10-03.md) |

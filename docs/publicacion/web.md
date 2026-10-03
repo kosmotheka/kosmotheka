@@ -7,7 +7,7 @@ web/
   index.html        elige el idioma (el guardado o el del navegador) y redirige a es/ o en/
   es/               index, preguntas, descargas, proyecto, privacidad
   en/               index, faq, download, about, privacy
-  assets/           site.css, site.js, fuentes Figtree, marca (SVG) y capturas (webp, claro y oscuro)
+  assets/           site.css, site.js, fuentes Figtree (con su licencia, `OFL.txt`), marca (SVG) y capturas (webp, claro y oscuro)
 ```
 
 - La política de privacidad está en `es/privacidad.html` y `en/privacy.html`. Si cambia, se cambia a la vez en [politica-privacidad.md](politica-privacidad.md) y en las dos páginas, con la fecha de «Última actualización».
