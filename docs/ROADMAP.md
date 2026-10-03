@@ -142,7 +142,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - Subir una biblioteca a la nube sin perder nada, historial incluido.
 - **Enlace para invitar a una biblioteca**, además del QR (D43, D67).
 - **Acceso seguro antes de sincronizar** (hito 7.A, auditoría del 03/10/2026): arreglar dos fallos de la red local (SEG-010, SEG-011) y una batería de tests de casos hostiles, que es la primera línea de defensa.
-- **Sincronizar a distancia** con los mismos roles y peticiones; la nube juzga como un dispositivo más (D73) y la red local sigue funcionando a la vez (D39). La nube decide quién recibe qué con su propio id de biblioteca y una tabla de acceso, nunca con un id que llegue del cliente (D84, propuesta).
+- **Sincronizar a distancia** con los mismos roles y peticiones; la nube juzga como un dispositivo más (D73) y la red local sigue funcionando a la vez (D39). La nube decide quién recibe qué con su propio id de biblioteca y una tabla de acceso, nunca con un id que llegue del cliente (D84).
 - **Avisos al momento** con la app abierta (Mercure, D75), en lugar de preguntar cada cierto tiempo.
 - **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse.
 - Límites de peticiones y cuentas sin confirmar que caducan.

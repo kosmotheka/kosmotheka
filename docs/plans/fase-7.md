@@ -13,7 +13,7 @@ Lo que sí es nuevo:
 - **quién es quién:** la cuenta (D57), que se enlaza con una persona de cada biblioteca;
 - **lo que solo tiene sentido con un servidor:** registro con email, avisos al momento, invitación por enlace, registro de actividad con hora y dirección de confianza, y proveedores con clave.
 
-**Matizado el 03/10/2026 (D84, propuesta):** la nube es un dispositivo más **en los datos** (operaciones, fusión, roles), pero **no en la puerta**. En la red local la guarda una persona con el QR; a la nube le habla cualquiera, así que decide quién recibe qué con su propio id de biblioteca y su tabla de acceso, y no se fía de ningún id que llegue del cliente. Ver 7.2 y la «Batería de acceso».
+**Matizado el 03/10/2026 (D84):** la nube es un dispositivo más **en los datos** (operaciones, fusión, roles), pero **no en la puerta**. En la red local la guarda una persona con el QR; a la nube le habla cualquiera, así que decide quién recibe qué con su propio id de biblioteca y su tabla de acceso, y no se fía de ningún id que llegue del cliente. Ver 7.2 y la «Batería de acceso».
 
 ## Lo que ya existe
 
@@ -61,7 +61,7 @@ Todo es **propuesta** hasta que el maintainer lo revise; lo que toca una decisi�
 
 ### 7.2 Sincronizar con la nube
 
-Rehecho el 03/10/2026 con D84 (propuesta). Antes, este apartado decía «mismas rutas que la red local» y «hasta 7.5, quien la subió», sin decir de quién es un id: la auditoría [2026-10-03-2](../audits/2026-10-03-2.md) mostró que así el id de una biblioteca se convertía en su llave.
+Rehecho el 03/10/2026 con D84 (aceptada). Antes, este apartado decía «mismas rutas que la red local» y «hasta 7.5, quien la subió», sin decir de quién es un id: la auditoría [2026-10-03-2](../audits/2026-10-03-2.md) mostró que así el id de una biblioteca se convertía en su llave.
 
 - **Dos niveles (D84).** Datos iguales que en la red local: mismas operaciones firmadas, mismas reglas de fusión y roles. Puerta tradicional: la nube decide quién recibe qué con sus propias tablas, nunca con un id que llega del cliente.
 - **Tablas nuevas:** `cloud_library` (id propio aleatorio, id local atado por la operación de enlace, fecha, borrada o no), `membership` (cuenta, `cloud_library`, persona; hasta 7.5, solo la cuenta que la subió) y `cloud_operation` (`cloud_library`, id de operación, autor, HLC, cuerpo en JSONB), con clave `(cloud_library_id, operation_id)`.
@@ -198,6 +198,6 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 - [x] D79 aceptada: `api.kosmotheka.app`, invitaciones en `kosmotheka.app/i/…` y la web en `kosmotheka.com` (01/10/2026).
 - [x] D78 aceptada (biometría y segundo factor, opcionales, en 7.1); «Otro servidor» en D77 y un año para el registro de actividad en D66 (01/10/2026).
 - [x] D75 aceptada: avisos al momento con Mercure en esta fase; con la app cerrada, FCM en la Fase 8 (01/10/2026).
-- [x] Auditoría especial `library-access` (03/10/2026): SEG-010 a SEG-013 y DAT-001; D84 propuesta; 7.2 rehecho y 7.A añadido ([informe](../audits/2026-10-03-2.md)).
+- [x] Auditoría especial `library-access` (03/10/2026): SEG-010 a SEG-013 y DAT-001; D84 aceptada el mismo día; 7.2 rehecho y 7.A añadido ([informe](../audits/2026-10-03-2.md)).
 - [ ] 7.A Acceso seguro: SEG-010 y SEG-011 arreglados, con sus tests vistos en rojo y después en verde (03/10/2026). SEG-014 (antedatar) arreglado con las marcas de D84 (opción B), también visto en rojo y después en verde; sin el código de las marcas fallan los cuatro tests nuevos. El test del retirado a través de un tercero encontró SEG-015 y la revisión de ids de dispositivo de 7.1 encontró SEG-016: los dos arreglados, con sus tests vistos en rojo y después en verde. Queda que el maintainer acepte D84.
 - [ ] 7.1 Cuentas. **Servidor, parte básica hecha (02/10/2026):** correo (Mailpit en desarrollo, Brevo en producción), límites de peticiones, registro con código, inicio de sesión del dispositivo con reto firmado y token, cuenta y dispositivos, recuperar y cambiar la contraseña, borrar la cuenta, purga cada hora y comandos de consola; ver [architecture/accounts.md](../architecture/accounts.md). Después (02/10/2026): dispositivo quitado y deshacer (D81) y segundo factor con `otphp` (D78 revisada). **App (02/10/2026):** cliente de la cuenta en Rust, reinicio del dispositivo (D81) y las pantallas de Design (ver [architecture/accounts.md](../architecture/accounts.md), «En la app»). Desbloqueo con huella o cara (D78). Falta: Google y la prueba en pantalla contra el servidor; encargo de pantallas en [design/encargo-fase-7-cuentas.md](../design/encargo-fase-7-cuentas.md).

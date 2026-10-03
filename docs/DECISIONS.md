@@ -89,7 +89,7 @@
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
 | D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | abierta |
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
-| D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | propuesta |
+| D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
 
 ---
 
@@ -1316,7 +1316,9 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **BNE:** investigación y proveedor en su propio paso, con respuestas grabadas como los demás (D18).
 - Amplía D26.
 
-## D84 · Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente — `propuesta`
+## D84 · Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente — `aceptada`
+
+> Aceptada por el maintainer el 03/10/2026, con dos condiciones para construir 7.2: fixtures que simulen todos los casos, normales y costuras, para ver la base de datos; y el código del servidor, revisado y refactorizado por él.
 
 **Contexto:** al preparar el hito 7.2 (03/10/2026) salió que el plan copiaba a la nube la lógica de la red local: «la nube es un dispositivo más, con el mismo protocolo» (D57). En la red local la puerta la guarda una persona: nadie entra sin ver el QR, y el código puede fiarse de sus compañeros («una biblioteca que me ofrecen y no tengo, la acepto»). A la nube le habla cualquiera con una cuenta. Copiada tal cual, esa lógica convierte el id de una biblioteca en su llave, y «Mi biblioteca» tiene el mismo id en todas las instalaciones (D46): dos desconocidos que la subieran quedarían fundidos. La auditoría del mismo día ([2026-10-03-2](audits/2026-10-03-2.md), SEG-010 a SEG-013 y DAT-001) lo confirmó y encontró además dos fallos de la red local.
 
@@ -1330,7 +1332,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 | Quitar el id fijo duplicando «Mi biblioteca» al actualizar | Ninguna instalación compartiría id | Cada dispositivo de una familia duplicaría por su cuenta: bibliotecas repetidas y sin historial. El id local seguiría siendo la llave para todos los demás |
 | **Dos niveles: datos iguales, puerta tradicional** | Un id local repetido deja de importar en la nube; el acceso es el de cualquier servicio con cuentas | El servidor tiene su propia clave para las bibliotecas; hay que vigilar cada sitio donde el id local pueda colarse |
 
-**Recomendación:** dos niveles.
+**Decisión:** dos niveles.
 - **Datos, igual que hoy:** las mismas operaciones firmadas, las mismas reglas de fusión y los mismos roles (D32, D56, D73). Una operación que llega por la red local y por la nube es la misma y se aplica una vez.
 - **Puerta, como una app tradicional:**
   1. **Id propio de la nube.** Al subir una biblioteca, el servidor crea un `cloud_library_id` aleatorio. Todo en PostgreSQL cuelga de él. El id local no da acceso a nada.
@@ -1349,7 +1351,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 7. La nube rechaza solo por lo que dice la propia operación (estructura, versión, firma), nunca por el orden de llegada (DAT-001); lo no permitido pasa a petición (D73).
 8. Dos administradores que suben sin verse crean `C1` y `C2` para la misma biblioteca: gana el enlace de HLC más antiguo, los dispositivos del otro se pasan a esa y la sobrante se borra. No se pierde nada: son las mismas operaciones.
 
-**Abierto, a estudiar antes de aceptar:**
+**Resuelto al estudiarla (03/10/2026), cada uno con su test visto en rojo y después en verde:**
 - **Antedatar (SEG-014, confirmado el 03/10/2026 por `a_demoted_editor_cannot_backdate_a_change`; decidido el mismo día: opción B, «marca en la bajada»):** el rol se juzga en el HLC de la operación, y el HLC lo pone quien firma. A quien bajaron de editor a lector podía, con una app modificada, firmar un cambio con fecha anterior a la bajada, y se aplicaba en todos los dispositivos. Una operación hecha sin conexión antes de enterarse y una antedatada son indistinguibles sin una hora de confianza, así que:
   - **Cada operación que quita poder a una persona lleva una marca por cada dispositivo suyo:** bajar de rol, quitar «Puede compartir», cambiar de quién es un dispositivo o dejarlo sin persona, y retirar el acceso (D71). La marca es un campo nuevo del dispositivo, `trusted_until`: el HLC de la última operación de ese dispositivo que tiene quien la registra.
   - **Ventana vigilada:** una operación de ese dispositivo con HLC posterior a la marca y anterior a la operación que la puso **pasa a petición**, llegue cuando llegue. Lo anterior a la marca ya lo conocía quien administra (las operaciones de un autor llegan siempre en orden y completas), así que no puede ser nuevo de forma honrada.
@@ -1357,6 +1359,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   - **Solo cuentan las marcas permitidas:** las pone un administrador (como todo cambio en el dispositivo de otro). Al recalcular una biblioteca se parte de todas las marcas del registro, se descartan las que hayan quedado en petición y se repite hasta que no cambie nada; termina siempre y da lo mismo en todos los dispositivos.
   - **Coste aceptado:** una edición honrada hecha sin conexión justo antes de enterarse de la bajada queda como petición, y quien administra la acepta. Nadie pierde nada.
 - **Retirada a través de un tercero (SEG-015, arreglado el 03/10/2026):** retirar el acceso solo cortaba el intercambio directo; lo que el dispositivo retirado firmaba después llegaba a todos a través de otro que aún no lo sabía, y se aplicaba. Ahora una retirada en vigor es una marca abierta: lo que ese dispositivo firme después pasa a petición, con roles y sin ellos, hasta que se le devuelva el acceso.
+
+**Pendiente hasta 7.4:**
 - **Un lector con una app modificada** puede subir una copia a su propia cuenta. No obtiene nada que no tuviera (D73), y nadie de su familia se conecta a esa copia (punto 3), pero hasta 7.4 el servidor no sabe de roles para impedirlo (SEG-013).
 
 **Consecuencias:**
