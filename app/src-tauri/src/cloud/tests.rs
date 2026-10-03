@@ -166,7 +166,12 @@ impl CloudApi for FakeApi {
         })
     }
 
-    async fn push(&self, cloud: &str, operations: &[SyncOperation]) -> Result<PushReport> {
+    async fn push(
+        &self,
+        cloud: &str,
+        _schema_version: i64,
+        operations: &[SyncOperation],
+    ) -> Result<PushReport> {
         let mut state = self.cloud.0.lock().unwrap();
         state.pushes += 1;
         let library = state

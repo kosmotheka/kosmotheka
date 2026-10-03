@@ -40,12 +40,32 @@ final readonly class OperationReader
         } catch (\JsonException|ExceptionInterface) {
             throw new OperationRejectedException(OperationRejection::Malformed);
         }
-        // PostgreSQL's JSONB cannot hold a NUL character.
-        if (str_contains($json, '\u0000') || \count($this->validator->validate($payload)) > 0) {
+        if ($this->holdsNul($operation) || \count($this->validator->validate($payload)) > 0) {
             throw new OperationRejectedException(OperationRejection::Malformed);
         }
 
         return $payload;
+    }
+
+    /**
+     * PostgreSQL's JSONB cannot hold U+0000. The validator already refuses it in text fields (spec);
+     * this looks at the decoded values, so the six characters `\u0000` typed in a title pass, and
+     * covers the strings the spec does not type, such as the device in the HLC.
+     */
+    private function holdsNul(mixed $value): bool
+    {
+        if (\is_string($value)) {
+            return str_contains($value, "\0");
+        }
+        if (\is_array($value) || $value instanceof \stdClass) {
+            foreach ((array) $value as $key => $item) {
+                if (str_contains((string) $key, "\0") || $this->holdsNul($item)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function hasObjectFields(\stdClass $operation): bool

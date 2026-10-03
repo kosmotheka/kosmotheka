@@ -10,10 +10,10 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 | CON-002 | resuelto | media | `duplicate_library` registrado y sin pantalla | `lib.rs:149` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-003 | resuelto | baja | 177 traducciones sin uso aparente (solo 9 de verdad; el resto, claves dinámicas) | `app/src/i18n/locales` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-004 | resuelto | media | La lista de géneros del JSON Schema no es la de Rust ni la de PHP (anterior a la 6.7) | `spec/operation.schema.json` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| CON-005 | abierto | media | La app y el servidor no rechazan los mismos textos (NUL) | `server/src/Sync/OperationReader.php:44` | library-access | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
+| CON-005 | resuelto | media | La app y el servidor no rechazan los mismos textos (NUL) | `server/src/Sync/OperationReader.php:44` | library-access | 2026-10-03 | | 2026-10-04 |
 | CON-006 | abierto | baja | Tres códigos de error de la cuenta sin texto propio | `app/src/lib/account-errors.ts` | facts | 2026-10-03 | | [2026-10-03-3](2026-10-03-3.md) |
 | COS-001 | resuelto | baja | Búsquedas que no descartan respuestas viejas | `book-form.tsx:1347`, `series-work-picker.tsx:51`, `tags-page.tsx:31` | triaje ts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
-| DAT-001 | abierto | media | Si la nube rechaza una operación y acepta otra posterior del mismo autor, las copias divergen | `sync.rs:165-186` | library-access | 2026-10-03 | | [2026-10-03-2](2026-10-03-2.md) |
+| DAT-001 | resuelto | media | Si la nube rechaza una operación y acepta otra posterior del mismo autor, las copias divergen | `sync.rs:165-186` | library-access | 2026-10-03 | | 2026-10-04 |
 | DAT-002 | resuelto | crítica | `adopt_link` salta las operaciones intermedias del autor del enlace | `cloud/mod.rs:418-449` | library-access | 2026-10-03 | | 2026-10-03 |
 | DAT-003 | resuelto | crítica | Tras actualizar la app, las operaciones de la versión anterior se rechazan siempre | `sync.rs:264`, `ops.rs:351` | sync-convergence | 2026-10-03 | | 2026-10-03 |
 | DAT-004 | resuelto | media | En la app, una operación rechazada deja un hueco que el vector nunca vuelve a pedir | `sync.rs:264-269` | sync-convergence | 2026-10-03 | | 2026-10-03 |

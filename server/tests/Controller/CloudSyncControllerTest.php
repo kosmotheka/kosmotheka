@@ -184,6 +184,7 @@ final class CloudSyncControllerTest extends WebTestCase
 
         $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $this->familySession, ['schemaVersion' => $other, 'vector' => []]);
         $push = $this->call('POST', "/v1/cloud/libraries/$cloud/push", $this->familySession, [
+            'schemaVersion' => $other,
             'operations' => [['schemaVersion' => $other, 'operation' => $this->laptop->registration(self::LOCAL, self::T)]],
         ]);
 
@@ -194,6 +195,101 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(0, $this->rows('cloud_operation'));
     }
 
+    public function testAPushOfHistoryRecordedBeforeAnUpdateIsAccepted(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+
+        $response = $this->push($this->familySession, $cloud, $this->upload($this->laptop, $cloud), operationVersion: $this->schemaVersion() - 1);
+
+        self::assertSame(Response::HTTP_OK, $response['status']);
+        self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
+    }
+
+    public function testAPushWhoseClientVersionDiffersIsAConflict(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+
+        $response = $this->push($this->familySession, $cloud, $this->upload($this->laptop, $cloud), clientVersion: $this->schemaVersion() - 1);
+
+        self::assertSame(Response::HTTP_CONFLICT, $response['status']);
+        self::assertSame(['error' => 'schema_version'], $response['body']);
+        self::assertSame(0, $this->rows('cloud_operation'));
+    }
+
+    public function testAPushWithoutItsClientVersionIsABadRequest(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+
+        $response = $this->call('POST', "/v1/cloud/libraries/$cloud/push", $this->familySession, [
+            'operations' => [['schemaVersion' => $this->schemaVersion(), 'operation' => $this->laptop->registration(self::LOCAL, self::T)]],
+        ]);
+
+        self::assertSame(Response::HTTP_BAD_REQUEST, $response['status']);
+        self::assertSame(['error' => 'invalid_request'], $response['body']);
+    }
+
+    public function testAnOperationClaimingANewerVersionIsRejectedAlone(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $operations = $this->upload($this->laptop, $cloud);
+        $schemaVersion = $this->schemaVersion();
+        $this->client->request('POST', "/v1/cloud/libraries/$cloud/push", server: ['CONTENT_TYPE' => 'application/json'] + $this->familySession['headers'], content: json_encode([
+            'schemaVersion' => $schemaVersion,
+            'operations' => array_map(
+                static fn (array $operation, int $version): array => ['schemaVersion' => $version, 'operation' => $operation],
+                $operations,
+                [$schemaVersion, $schemaVersion, $schemaVersion, $schemaVersion + 1],
+            ),
+        ], \JSON_THROW_ON_ERROR));
+        $body = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 1], $body);
+    }
+
+    public function testARejectedOperationHoldsBackTheLaterOnesOfItsAuthor(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $stored = $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']);
+        $invalid = $this->laptop->sign(self::LOCAL, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
+        $later = $this->laptop->publisher(self::LOCAL, self::T + 11);
+
+        $response = $this->push($this->familySession, $cloud, [$later, $invalid]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
+        self::assertSame($stored, $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']));
+
+        $fixed = $this->laptop->publisher(self::LOCAL, self::T + 10);
+        $response = $this->push($this->familySession, $cloud, [$fixed, $later]);
+
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $response['body']);
+    }
+
+    public function testOperationsOfOtherAuthorsAreNotHeldBack(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $phone = SigningDevice::generate();
+        $invalid = $this->laptop->sign(self::LOCAL, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
+
+        $response = $this->push($this->familySession, $cloud, [$invalid, $phone->registration(self::LOCAL, self::T + 11)]);
+
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 1], $response['body']);
+    }
+
+    public function testATextWithNulIsRejectedAndTheSixCharactersTypedAreNot(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $nul = $this->laptop->publisher(self::LOCAL, self::T + 10, "Minotauro\0");
+        $typed = $this->laptop->publisher(self::LOCAL, self::T + 11, 'Minotauro\\u0000');
+
+        $response = $this->push($this->familySession, $cloud, [$nul, $typed]);
+
+        // The typed one is the author's later operation, so the rejection holds it back (DAT-001): sent alone it enters.
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
+        $response = $this->push($this->familySession, $cloud, [$typed]);
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $response['body']);
+    }
+
     public function testOperationsWithABrokenStructureOrNoSignatureAreRejectedOneByOne(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
@@ -202,7 +298,8 @@ final class CloudSyncControllerTest extends WebTestCase
         $badIntent = $this->laptop->sign(self::LOCAL, self::T + 31, 'NOT AN INTENT', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]]);
         $tampered = $this->laptop->publisher(self::LOCAL, self::T + 32);
         $tampered['changes'] = [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'Somebody else']]];
-        $good = $this->laptop->publisher(self::LOCAL, self::T + 33);
+        // Before the others: a rejection holds back the author's later operations (DAT-001).
+        $good = $this->laptop->publisher(self::LOCAL, self::T + 29);
 
         $response = $this->push($this->familySession, $cloud, [$unsigned, $badIntent, $tampered, $good]);
 
@@ -484,15 +581,18 @@ final class CloudSyncControllerTest extends WebTestCase
     /**
      * @param array{headers: array<string, string>} $session
      * @param list<array<string, mixed>>            $operations
+     * @param int|null                              $clientVersion    the push's own `schemaVersion`; the server's when null
+     * @param int|null                              $operationVersion the one each operation was recorded at; the server's when null
      *
      * @return array{status: int, body: array<mixed>}
      */
-    private function push(array $session, string $cloud, array $operations): array
+    private function push(array $session, string $cloud, array $operations, ?int $clientVersion = null, ?int $operationVersion = null): array
     {
-        $schemaVersion = $this->schemaVersion();
+        $operationVersion ??= $this->schemaVersion();
 
         return $this->call('POST', "/v1/cloud/libraries/$cloud/push", $session, [
-            'operations' => array_map(static fn (array $operation): array => ['schemaVersion' => $schemaVersion, 'operation' => $operation], $operations),
+            'schemaVersion' => $clientVersion ?? $this->schemaVersion(),
+            'operations' => array_map(static fn (array $operation): array => ['schemaVersion' => $operationVersion, 'operation' => $operation], $operations),
         ]);
     }
 

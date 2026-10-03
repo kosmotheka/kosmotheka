@@ -49,10 +49,17 @@
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "text": {
+      "description": "Free text. U+0000 is refused: PostgreSQL's JSONB cannot hold it.",
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "pattern": "^[^\\u0000]*$"
+    },
+    "requiredText": {
+      "description": "Free text that cannot be null. U+0000 is refused as in text.",
+      "type": "string",
+      "pattern": "^[^\\u0000]*$"
     },
     "integer": {
       "type": [
@@ -217,7 +224,7 @@
                     ]
                   },
                   "title": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   }
                 }
               }
@@ -242,7 +249,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   }
                 }
               }
@@ -263,7 +270,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "cloud_library_id": {
                     "description": "The library's own id in the cloud it is linked to (D84), set by the signed link operation of an administrator. Null when it is in no cloud.",
@@ -302,7 +309,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "role": {
                     "description": "The member's role in the library (D73). Null or absent: no role.",
@@ -377,7 +384,7 @@
                     "$ref": "#/$defs/uuid"
                   },
                   "title": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "subtitle": {
                     "$ref": "#/$defs/text"
@@ -718,7 +725,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "ordered": {
                     "type": "boolean"
@@ -798,10 +805,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "device_id": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "device_name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   }
                 }
               }
@@ -822,10 +829,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "public_key": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "name": {
-                    "type": "string"
+                    "$ref": "#/$defs/requiredText"
                   },
                   "member_id": {
                     "description": "The member this device belongs to (D55). Only administrators set it.",

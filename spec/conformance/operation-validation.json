@@ -2011,5 +2011,54 @@
       "change": 0,
       "field": "ordered"
     }
+  },
+  {
+    "name": "text with a NUL character",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000601",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "work.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000602",
+          "action": "create",
+          "fields": {
+            "kind": "book",
+            "title": "Dune\u0000"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "title"
+    }
+  },
+  {
+    "name": "text with the six characters backslash u 0000",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000601",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "work.add",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-000000000602",
+          "action": "create",
+          "fields": {
+            "kind": "book",
+            "title": "Dune\\u0000"
+          }
+        }
+      ]
+    },
+    "expect": {
+      "result": "valid"
+    }
   }
 ]

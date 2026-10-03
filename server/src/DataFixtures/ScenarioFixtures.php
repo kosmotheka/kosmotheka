@@ -349,7 +349,7 @@ final class ScenarioFixtures extends Fixture
     {
         $version = $this->schemaVersion->current();
 
-        return $this->cloudPush->push($library, new PushRequest(array_map(
+        return $this->cloudPush->push($library, new PushRequest($version, array_map(
             static function (array $operation) use ($version): PushedOperation {
                 $decoded = json_decode(json_encode($operation, \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
                 \assert($decoded instanceof \stdClass);

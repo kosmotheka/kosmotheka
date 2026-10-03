@@ -142,7 +142,8 @@ final class ValidOperationValidator extends ConstraintValidator
     private function matchesType(FieldSpec $spec, mixed $value): bool
     {
         return match ($spec->type) {
-            FieldType::Text => \is_string($value),
+            // No NUL: PostgreSQL's JSONB cannot hold it.
+            FieldType::Text => \is_string($value) && !str_contains($value, "\0"),
             FieldType::Integer => \is_int($value),
             FieldType::Date => \is_string($value) && $this->isDate($value),
             FieldType::OneOf => \in_array($value, $spec->allowed, true),

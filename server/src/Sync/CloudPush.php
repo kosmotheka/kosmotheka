@@ -46,14 +46,13 @@ final readonly class CloudPush
     }
 
     /**
-     * @throws AccountException when an operation comes from another schema version
+     * @throws AccountException when the client's database is on another schema version
      */
     public function push(CloudLibrary $library, PushRequest $request): PushResult
     {
-        // A client on another version does not sync at all (D31), so this is not a per-operation rejection.
-        foreach ($request->operations as $pushed) {
-            $this->schemaVersion->require($pushed->schemaVersion);
-        }
+        // A client on another version does not sync at all (D31). What each operation was recorded at is judged
+        // one by one in apply(): history from before an update is still good.
+        $this->schemaVersion->require($request->schemaVersion);
 
         return $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request));
     }
@@ -64,21 +63,30 @@ final readonly class CloudPush
         // The refresh also brings the link state as it is now, not as it was when the library was loaded.
         $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
 
-        $received = $known = $rejected = 0;
-        $readable = [];
+        $entries = [];
         foreach ($request->operations as $pushed) {
-            try {
-                $readable[] = ['pushed' => $pushed, 'payload' => $this->reader->read($pushed->operation)];
-            } catch (OperationRejectedException) {
-                ++$rejected;
-            }
+            $entries[] = $this->read($pushed);
         }
 
-        foreach ($this->inOrder($library, $readable) as ['pushed' => $pushed, 'payload' => $payload]) {
+        // As in the app's merge_in: once an author's operation is rejected, that author's later ones in this
+        // push are too, so the library's vector never jumps over a gap that nobody would send again (DAT-001).
+        $received = $known = $rejected = 0;
+        $heldBack = [];
+        foreach ($this->inOrder($library, $entries) as ['pushed' => $pushed, 'payload' => $payload, 'author' => $author]) {
+            if (null !== $author && isset($heldBack[$author])) {
+                ++$rejected;
+                continue;
+            }
             try {
+                if (!$payload instanceof OperationPayload) {
+                    throw new OperationRejectedException(OperationRejection::Malformed);
+                }
                 $this->accept($library, $pushed, $payload) ? ++$received : ++$known;
             } catch (OperationRejectedException) {
                 ++$rejected;
+                if (null !== $author) {
+                    $heldBack[$author] = true;
+                }
             }
         }
 
@@ -86,19 +94,45 @@ final readonly class CloudPush
     }
 
     /**
+     * What the push says about one operation. An unreadable one keeps the HLC and author it claims, if it
+     * claims any, only to be sorted and to hold back its author's later operations.
+     *
+     * @return array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}
+     */
+    private function read(PushedOperation $pushed): array
+    {
+        $claimed = $pushed->operation->hlc ?? null;
+        $hlc = \is_string($claimed) ? $claimed : '';
+        $parts = explode('-', $hlc, 3);
+        $author = 3 === \count($parts) && '' !== $parts[2] ? $parts[2] : null;
+
+        try {
+            // Older history is fine; a version this server does not know cannot be judged.
+            if ($pushed->schemaVersion > $this->schemaVersion->current()) {
+                throw new OperationRejectedException(OperationRejection::NewerVersion);
+            }
+            $payload = $this->reader->read($pushed->operation);
+
+            return ['pushed' => $pushed, 'payload' => $payload, 'hlc' => $payload->hlc, 'author' => $this->author($payload)];
+        } catch (OperationRejectedException) {
+            return ['pushed' => $pushed, 'payload' => null, 'hlc' => $hlc, 'author' => $author];
+        }
+    }
+
+    /**
      * The link first, so an upload that carries it anywhere in the batch links the library; then by
      * HLC, so a device's registration comes before the operations it signs whatever the batch order.
      *
-     * @param list<array{pushed: PushedOperation, payload: OperationPayload}> $readable
+     * @param list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}> $entries
      *
-     * @return list<array{pushed: PushedOperation, payload: OperationPayload}>
+     * @return list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}>
      */
-    private function inOrder(CloudLibrary $library, array $readable): array
+    private function inOrder(CloudLibrary $library, array $entries): array
     {
-        usort($readable, fn (array $a, array $b): int => [!$this->isLink($library, $a['payload']), $a['payload']->hlc]
-            <=> [!$this->isLink($library, $b['payload']), $b['payload']->hlc]);
+        $key = fn (array $entry): array => [!$entry['payload'] instanceof OperationPayload || !$this->isLink($library, $entry['payload']), $entry['hlc']];
+        usort($entries, static fn (array $a, array $b): int => $key($a) <=> $key($b));
 
-        return $readable;
+        return $entries;
     }
 
     /**

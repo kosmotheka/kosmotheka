@@ -187,7 +187,8 @@ impl Change {
 
 fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
     match spec.field_type {
-        FieldType::Text => value.is_string(),
+        // No NUL: PostgreSQL's JSONB cannot hold it, so the cloud would refuse what the app accepted.
+        FieldType::Text => value.as_str().is_some_and(|s| !s.contains('\0')),
         FieldType::Integer => value.is_i64(),
         FieldType::Date => value
             .as_str()

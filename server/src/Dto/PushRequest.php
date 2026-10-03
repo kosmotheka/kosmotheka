@@ -18,14 +18,15 @@ final readonly class PushRequest
     public const int MAX_OPERATIONS = 1000;
 
     /**
+     * @param int                   $schemaVersion the client's own database version, like a pull's; the operations carry the one they were recorded at
      * @param list<PushedOperation> $operations
      */
-    public function __construct(public array $operations)
+    public function __construct(public int $schemaVersion, public array $operations)
     {
     }
 
     /**
-     * @throws AccountException when the body is not `{"operations": [{"schemaVersion": n, "operation": {…}}]}`
+     * @throws AccountException when the body is not `{"schemaVersion": n, "operations": [{"schemaVersion": n, "operation": {…}}]}`
      */
     public static function fromJson(string $json): self
     {
@@ -34,7 +35,7 @@ final readonly class PushRequest
         } catch (\JsonException) {
             throw AccountException::invalidRequest();
         }
-        if (!$body instanceof \stdClass || !\is_array($body->operations ?? null) || !array_is_list($body->operations)
+        if (!$body instanceof \stdClass || !\is_int($body->schemaVersion ?? null) || !\is_array($body->operations ?? null) || !array_is_list($body->operations)
             || \count($body->operations) > self::MAX_OPERATIONS) {
             throw AccountException::invalidRequest();
         }
@@ -47,6 +48,6 @@ final readonly class PushRequest
             $operations[] = new PushedOperation($entry->schemaVersion, $entry->operation);
         }
 
-        return new self($operations);
+        return new self($body->schemaVersion, $operations);
     }
 }

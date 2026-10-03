@@ -118,10 +118,15 @@ impl CloudApi for HttpCloud {
         .map_err(cloud_error)
     }
 
-    async fn push(&self, cloud: &str, operations: &[SyncOperation]) -> Result<PushReport> {
+    async fn push(
+        &self,
+        cloud: &str,
+        schema_version: i64,
+        operations: &[SyncOperation],
+    ) -> Result<PushReport> {
         let mut total = PushReport::default();
         for batch in operations.chunks(PUSH_BATCH) {
-            let body = json!({ "operations": batch });
+            let body = json!({ "schemaVersion": schema_version, "operations": batch });
             let report: PushReport = send_json(
                 &self.client,
                 Method::POST,

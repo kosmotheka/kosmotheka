@@ -35,7 +35,13 @@ pub trait CloudApi {
         schema_version: i64,
         vector: &VersionVector,
     ) -> Result<Pulled>;
-    async fn push(&self, cloud: &str, operations: &[SyncOperation]) -> Result<PushReport>;
+    /// `schema_version` is this database's; each operation carries the one it was recorded at.
+    async fn push(
+        &self,
+        cloud: &str,
+        schema_version: i64,
+        operations: &[SyncOperation],
+    ) -> Result<PushReport>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -314,15 +320,18 @@ async fn push_missing<A: CloudApi>(
     server_vector: VersionVector,
     report: &mut LibraryReport,
 ) -> Result<()> {
-    let to_send = {
+    let (schema_version, to_send) = {
         let conn = database.lock()?;
         let theirs = LibraryVectors::from([(library.to_owned(), server_vector)]);
-        sync::operations_since(&conn, &theirs)?
+        (
+            ops::schema_version(&conn)?,
+            sync::operations_since(&conn, &theirs)?,
+        )
     };
     if to_send.is_empty() {
         return Ok(());
     }
-    let pushed = api.push(cloud, &to_send).await?;
+    let pushed = api.push(cloud, schema_version, &to_send).await?;
     report.sent += to_send.len();
     report.rejected += pushed.rejected;
     Ok(())

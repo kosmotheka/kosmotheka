@@ -18,4 +18,5 @@ enum OperationRejection: string
     case UnknownKey = 'unknown_key';
     case KeyChanged = 'key_changed';
     case BadSignature = 'bad_signature';
+    case NewerVersion = 'newer_version';
 }
