@@ -27,7 +27,7 @@ final class UserTwoFactorDisableCommandTest extends KernelTestCase
         $entityManager->persist(new BackupCode($user, hash_hmac('sha256', 'ABCDE12345', 'whatever')));
         $entityManager->flush();
 
-        $commandTester = new CommandTester(new Application(self::$kernel)->find('app:user:two-factor-disable'));
+        $commandTester = new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:two-factor-disable'));
         $commandTester->execute(['email' => $email]);
         $commandTester->assertCommandIsSuccessful();
 
@@ -42,7 +42,7 @@ final class UserTwoFactorDisableCommandTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $commandTester = new CommandTester(new Application(self::$kernel)->find('app:user:two-factor-disable'));
+        $commandTester = new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:two-factor-disable'));
         $commandTester->execute(['email' => 'nobody@example.com']);
 
         self::assertSame(Command::FAILURE, $commandTester->getStatusCode());
@@ -56,7 +56,7 @@ final class UserTwoFactorDisableCommandTest extends KernelTestCase
         $entityManager->persist(new User($email, 'Ada', 'en'));
         $entityManager->flush();
 
-        $commandTester = new CommandTester(new Application(self::$kernel)->find('app:user:two-factor-disable'));
+        $commandTester = new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:two-factor-disable'));
         $commandTester->execute(['email' => $email]);
 
         self::assertSame(Command::FAILURE, $commandTester->getStatusCode());

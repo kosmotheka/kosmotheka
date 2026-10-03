@@ -83,7 +83,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 - **No `empty()`.** Compare explicitly: `[] === $array`, `'' === $string`, `null === $value`.
 - Yoda comparisons (`null === $value`); php-cs-fixer enforces them.
 - **Early returns** instead of `else` after a `return` or `throw`.
-- **Array shapes in phpdoc** for parameters and returns (`@return list<array{id: string, role: string}>`). PHPStan level 6 needs them, and they document the code.
+- **Array shapes in phpdoc** for parameters and returns (`@return list<array{id: string, role: string}>`). PHPStan needs them, and they document the code.
 - Enums rather than loose constants for fixed sets of values. `SCREAMING_SNAKE_CASE` for constants, `camelCase` for methods and variables.
 - A newline at the end of every file.
 
@@ -118,7 +118,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 |---|---|
 | php-cs-fixer | Style: `@Symfony` + `@Symfony:risky`, the ruleset of the official Symfony repositories |
 | Rector | Syntax modernisation: PHP 8.5 sets, promotion, types, Symfony and Doctrine quality sets |
-| PHPStan | Correctness: level 6 with phpstan-doctrine, which also validates DQL. **No baseline**, deliberately |
+| PHPStan | Correctness: the **highest level** (`max`), with phpstan-doctrine (also validates DQL), phpstan-symfony (reads the test container, so `make phpstan` warms it first) and phpstan-phpunit. **No baseline**, deliberately. Where a value can legitimately be missing, narrow it (`?? self::fail()`, an assertion), never silence the rule |
 | PHPUnit | Behaviour |
 
 - A style warning is not fixed by hand: `make fix` fixes it.

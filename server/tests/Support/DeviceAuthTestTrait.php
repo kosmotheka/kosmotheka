@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Support;
 
 use App\Security\DeviceProof;
+use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Uid\Uuid;
@@ -43,7 +44,7 @@ trait DeviceAuthTestTrait
 
         $client->request('POST', '/v1/account/confirm', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'email' => $email,
-            'code' => $matches[0],
+            'code' => $matches[0] ?? self::fail('No code in the email.'),
         ], \JSON_THROW_ON_ERROR));
     }
 
@@ -112,6 +113,7 @@ trait DeviceAuthTestTrait
     private function sign(string $challenge, string $deviceId, string $secretKey): string
     {
         $message = \sprintf(DeviceProof::MESSAGE_FORMAT, $challenge, $deviceId);
+        \assert('' !== $secretKey);
 
         return $this->encode(sodium_crypto_sign_detached($message, $secretKey));
     }
@@ -119,5 +121,14 @@ trait DeviceAuthTestTrait
     private function encode(string $bytes): string
     {
         return sodium_bin2base64($bytes, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    }
+
+    /** The TOTP code an authenticator app would show for `$secret` at `$at`. */
+    private static function totpAt(string $secret, string $at): string
+    {
+        $time = new \DateTimeImmutable($at)->getTimestamp();
+        \assert('' !== $secret && $time >= 0);
+
+        return TOTP::createFromSecret($secret)->at($time);
     }
 }

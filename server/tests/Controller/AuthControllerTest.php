@@ -9,7 +9,6 @@ use App\Entity\User;
 use App\Repository\DeviceRepository;
 use App\Tests\Support\DeviceAuthTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
-use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -395,7 +394,7 @@ final class AuthControllerTest extends WebTestCase
         $secret = $this->enableTwoFactor($client, $session['headers']);
 
         self::mockTime(self::LOGIN_AT);
-        $this->loginAgainWithTotp($client, $session, TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::LOGIN_AT)->getTimestamp()));
+        $this->loginAgainWithTotp($client, $session, self::totpAt($secret, self::LOGIN_AT));
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
     }
@@ -409,7 +408,7 @@ final class AuthControllerTest extends WebTestCase
         $secret = $this->enableTwoFactor($client, $session['headers']);
 
         self::mockTime(self::LOGIN_AT);
-        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::LOGIN_AT)->getTimestamp());
+        $code = self::totpAt($secret, self::LOGIN_AT);
 
         $this->loginAgainWithTotp($client, $session, $code);
         self::assertResponseStatusCodeSame(Response::HTTP_OK);
@@ -483,7 +482,7 @@ final class AuthControllerTest extends WebTestCase
     private function enableTwoFactorForBackupCodes(KernelBrowser $client, array $headers): array
     {
         $secret = $this->setupTwoFactor($client, $headers);
-        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::AT)->getTimestamp());
+        $code = self::totpAt($secret, self::AT);
 
         $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
 
@@ -497,7 +496,7 @@ final class AuthControllerTest extends WebTestCase
     private function enableTwoFactor(KernelBrowser $client, array $headers): string
     {
         $secret = $this->setupTwoFactor($client, $headers);
-        $code = TOTP::createFromSecret($secret)->at(new \DateTimeImmutable(self::AT)->getTimestamp());
+        $code = self::totpAt($secret, self::AT);
 
         $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
 

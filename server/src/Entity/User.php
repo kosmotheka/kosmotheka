@@ -166,8 +166,13 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->blockedAt = null;
     }
 
+    /** @return non-empty-string */
     public function getUserIdentifier(): string
     {
+        if ('' === $this->email) {
+            throw new \LogicException('A user always has an email.');
+        }
+
         return $this->email;
     }
 

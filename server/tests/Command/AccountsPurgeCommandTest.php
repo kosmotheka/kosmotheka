@@ -22,7 +22,7 @@ final class AccountsPurgeCommandTest extends KernelTestCase
         $entityManager->persist($user);
         $entityManager->flush();
 
-        $application = new Application(self::$kernel);
+        $application = new Application(self::$kernel ?? self::bootKernel());
         $commandTester = new CommandTester($application->find('app:accounts:purge'));
         $commandTester->execute([]);
 

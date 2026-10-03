@@ -76,7 +76,8 @@ test: ## Runs the suite (usage: make test ARGS="--filter testAppliesAnOperation"
 # ---------------------------------------------------------------- quality ---
 
 .PHONY: phpstan
-phpstan: ## Static analysis, level 6
+phpstan: ## Static analysis (reads the test container, warmed first)
+	$(CONSOLE) cache:warmup --env=test --quiet $(END)
 	$(PHP) ./vendor/bin/phpstan analyse --memory-limit=1G $(END)
 
 .PHONY: cs

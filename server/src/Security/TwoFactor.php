@@ -61,7 +61,7 @@ final readonly class TwoFactor
         }
 
         $totp = TOTP::generate($this->clock);
-        $totp->setLabel($user->getEmail());
+        $totp->setLabel($user->getUserIdentifier());
         $totp->setIssuer(self::ISSUER);
 
         $user->setTotpPendingSecret($totp->getSecret());
@@ -205,6 +205,10 @@ final readonly class TwoFactor
 
     private function totpFor(string $secret): TOTP
     {
+        if ('' === $secret) {
+            throw new \LogicException('A stored TOTP secret is never empty.');
+        }
+
         return TOTP::createFromSecret($secret, $this->clock);
     }
 

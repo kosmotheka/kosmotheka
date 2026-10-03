@@ -32,7 +32,7 @@ final class UserBlockCommandTest extends KernelTestCase
         $entityManager->persist($device);
         $entityManager->flush();
 
-        $commandTester = new CommandTester(new Application(self::$kernel)->find('app:user:block'));
+        $commandTester = new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:block'));
         $commandTester->execute(['email' => $email]);
         $commandTester->assertCommandIsSuccessful();
 
@@ -57,7 +57,7 @@ final class UserBlockCommandTest extends KernelTestCase
     {
         self::bootKernel();
 
-        $commandTester = new CommandTester(new Application(self::$kernel)->find('app:user:block'));
+        $commandTester = new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:block'));
         $commandTester->execute(['email' => 'nobody@example.com']);
 
         self::assertSame(Command::FAILURE, $commandTester->getStatusCode());

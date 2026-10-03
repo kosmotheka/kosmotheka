@@ -77,6 +77,7 @@ final class DeviceProofTest extends TestCase
     private function sign(string $challenge, string $deviceId, string $secretKey): string
     {
         $message = \sprintf(DeviceProof::MESSAGE_FORMAT, $challenge, $deviceId);
+        \assert('' !== $secretKey);
 
         return $this->encode(sodium_crypto_sign_detached($message, $secretKey));
     }

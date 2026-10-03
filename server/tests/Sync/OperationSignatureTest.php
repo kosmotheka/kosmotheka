@@ -26,7 +26,8 @@ final class OperationSignatureTest extends TestCase
         $cases = json_decode($contents, flags: \JSON_THROW_ON_ERROR);
         self::assertIsArray($cases);
         foreach ($cases as $case) {
-            \assert($case instanceof \stdClass);
+            \assert($case instanceof \stdClass && \is_string($case->name) && $case->operation instanceof \stdClass
+                && \is_string($case->publicKey) && \is_string($case->canonical) && $case->expect instanceof \stdClass);
 
             yield $case->name => [$case->operation, $case->publicKey, $case->canonical, $case->expect];
         }

@@ -33,7 +33,7 @@ final class EmailCodeIssuerTest extends KernelTestCase
         $message = $container->get('mailer.message_logger_listener')->getEvents()->getMessages()[0];
         self::assertInstanceOf(Email::class, $message);
         preg_match('/\d{6}/', (string) $message->getTextBody(), $matches);
-        $code = $matches[0];
+        $code = $matches[0] ?? self::fail('No code in the email.');
 
         self::assertNotSame($code, $emailCode->getCodeHash());
         self::assertSame(64, \strlen($emailCode->getCodeHash()), 'SHA-256 hex is 64 characters.');
@@ -52,7 +52,7 @@ final class EmailCodeIssuerTest extends KernelTestCase
         $message = $container->get('mailer.message_logger_listener')->getEvents()->getMessages()[0];
         self::assertInstanceOf(Email::class, $message);
         preg_match('/\d{6}/', (string) $message->getTextBody(), $matches);
-        $code = $matches[0];
+        $code = $matches[0] ?? self::fail('No code in the email.');
 
         $issuer->verify($user, EmailCodePurpose::ConfirmEmail, $code);
 

@@ -113,6 +113,8 @@ jobs:
       # The same steps as `make check`, without Docker.
       - run: vendor/bin/php-cs-fixer fix --dry-run --diff
       - run: vendor/bin/rector process --dry-run
+      # PHPStan reads the test container to know what each service is.
+      - run: php bin/console cache:warmup --env=test
       - run: vendor/bin/phpstan analyse --memory-limit=1G
       - run: php bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration
       - run: php bin/phpunit

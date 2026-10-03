@@ -53,6 +53,6 @@ final class UserSuperAdminCommandTest extends KernelTestCase
 
     private function commandTester(): CommandTester
     {
-        return new CommandTester(new Application(self::$kernel)->find('app:user:super-admin'));
+        return new CommandTester(new Application(self::$kernel ?? self::bootKernel())->find('app:user:super-admin'));
     }
 }

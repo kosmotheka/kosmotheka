@@ -8,7 +8,6 @@ use App\Entity\User;
 use App\Repository\BackupCodeRepository;
 use App\Tests\Support\DeviceAuthTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
-use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -338,7 +337,7 @@ final class TwoFactorControllerTest extends WebTestCase
 
     private function totpCodeAt(string $secret, string $at): string
     {
-        return TOTP::createFromSecret($secret)->at(new \DateTimeImmutable($at)->getTimestamp());
+        return self::totpAt($secret, $at);
     }
 
     private function findUser(string $email): ?User

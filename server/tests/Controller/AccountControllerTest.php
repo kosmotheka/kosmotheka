@@ -320,7 +320,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertMatchesRegularExpression('/\d{6}/', $body, 'The email should contain a 6-digit code.');
         preg_match('/\d{6}/', $body, $matches);
 
-        return $matches[0];
+        return $matches[0] ?? self::fail('No code in the email.');
     }
 
     private function registerAndConfirm(KernelBrowser $client, string $email): string
@@ -421,10 +421,13 @@ final class AccountControllerTest extends WebTestCase
         self::assertTrue($device->isRemoved());
 
         $client->request('GET', '/v1/account/devices', server: $second['headers']);
-        $devices = json_decode($client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
-        $byId = array_combine(array_column($devices, 'id'), $devices);
-        self::assertTrue($byId[$first['device_id']]['removed']);
-        self::assertFalse($byId[$second['device_id']]['removed']);
+        $body = $client->getResponse()->getContent();
+        self::assertIsString($body);
+        $devices = json_decode($body, true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($devices);
+        $removed = array_column($devices, 'removed', 'id');
+        self::assertTrue($removed[$first['device_id']] ?? null);
+        self::assertFalse($removed[$second['device_id']] ?? null);
     }
 
     public function testRemovingTheCallingDeviceLeavesItToSomeoneElse(): void
@@ -747,7 +750,7 @@ final class AccountControllerTest extends WebTestCase
         $body = (string) $message->getTextBody();
         preg_match('/\d{6}/', $body, $matches);
 
-        return $matches[0];
+        return $matches[0] ?? self::fail('No code in the email.');
     }
 
     /** @param array<string, string> $headers */

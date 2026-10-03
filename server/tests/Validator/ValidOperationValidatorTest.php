@@ -24,7 +24,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
      * The cases every implementation of the spec shares with the Rust client
      * (crates/domain/src/operation.rs).
      *
-     * @return iterable<string, array{array<mixed>, array<string, mixed>}>
+     * @return iterable<string, array{array<mixed>, array<mixed>}>
      */
     public static function conformanceCases(): iterable
     {
@@ -36,8 +36,8 @@ final class ValidOperationValidatorTest extends KernelTestCase
     }
 
     /**
-     * @param array<mixed>         $operation
-     * @param array<string, mixed> $expect
+     * @param array<mixed> $operation
+     * @param array<mixed> $expect
      */
     #[DataProvider('conformanceCases')]
     public function testConformance(array $operation, array $expect): void
@@ -50,8 +50,8 @@ final class ValidOperationValidatorTest extends KernelTestCase
             return;
         }
         self::assertCount(1, $violations, (string) $violations);
-        self::assertSame($expect['code'], $violations[0]->getCode());
-        self::assertSame($this->expectedPath($expect), $violations[0]->getPropertyPath());
+        self::assertSame($expect['code'], $violations->get(0)->getCode());
+        self::assertSame($this->expectedPath($expect), $violations->get(0)->getPropertyPath());
     }
 
     public function testCopyFormatsMatchTheSchema(): void
@@ -108,7 +108,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
         $violations = $this->validate(['hlc' => 'yesterday'] + self::validOperation());
 
         self::assertCount(1, $violations);
-        self::assertSame('hlc', $violations[0]->getPropertyPath());
+        self::assertSame('hlc', $violations->get(0)->getPropertyPath());
     }
 
     /**
@@ -118,9 +118,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
     {
         $container = self::getContainer();
         $serializer = $container->get(SerializerInterface::class);
-        \assert($serializer instanceof SerializerInterface);
         $validator = $container->get(ValidatorInterface::class);
-        \assert($validator instanceof ValidatorInterface);
 
         $payload = $serializer->deserialize(
             json_encode($operation, \JSON_THROW_ON_ERROR),
@@ -133,7 +131,7 @@ final class ValidOperationValidatorTest extends KernelTestCase
     }
 
     /**
-     * @param array<string, mixed> $expect
+     * @param array<mixed> $expect
      */
     private function expectedPath(array $expect): string
     {

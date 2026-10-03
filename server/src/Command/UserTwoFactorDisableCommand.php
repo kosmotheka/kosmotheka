@@ -35,7 +35,7 @@ final class UserTwoFactorDisableCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $email = mb_strtolower(trim((string) $input->getArgument('email')));
+        $email = mb_strtolower(trim($this->text($input->getArgument('email'))));
 
         $user = $this->userRepository->findOneByEmail($email);
         if (!$user instanceof User) {
@@ -55,5 +55,11 @@ final class UserTwoFactorDisableCommand extends Command
         $io->success(\sprintf('Removed the second factor of %s.', $email));
 
         return Command::SUCCESS;
+    }
+
+    /** Arguments come back as mixed; `email` is a required string argument. */
+    private function text(mixed $value): string
+    {
+        return \is_string($value) ? $value : '';
     }
 }

@@ -27,6 +27,7 @@ final class DeviceProof
         }
     }
 
+    /** @return non-empty-string */
     private function decode(string $base64url, int $length): string
     {
         try {
@@ -35,7 +36,7 @@ final class DeviceProof
             throw AccountException::invalidDeviceProof();
         }
 
-        if ($length !== \strlen($bytes)) {
+        if ('' === $bytes || $length !== \strlen($bytes)) {
             throw AccountException::invalidDeviceProof();
         }
 

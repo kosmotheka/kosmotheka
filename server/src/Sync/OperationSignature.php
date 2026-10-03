@@ -93,6 +93,7 @@ final class OperationSignature
         return '"'.$escaped.'"';
     }
 
+    /** @return non-empty-string */
     private function decode(string $base64url, int $length, SignatureErrorCode $error): string
     {
         try {
@@ -100,7 +101,7 @@ final class OperationSignature
         } catch (\SodiumException) {
             throw new InvalidSignatureException($error);
         }
-        if ($length !== \strlen($bytes)) {
+        if ('' === $bytes || $length !== \strlen($bytes)) {
             throw new InvalidSignatureException($error);
         }
 
