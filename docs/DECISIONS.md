@@ -91,7 +91,7 @@
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
 | D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
-| D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada |
+| D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada (cambiar `age` por RustCrypto, pendiente) |
 
 ---
 
@@ -1409,7 +1409,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 **Decisión:** opcional, activada por defecto.
 - Al crear una copia, «Proteger con contraseña» viene marcado; quitarlo explica que la copia quedará legible para quien la encuentre.
-- **Formato abierto y auditado: `age`** (con contraseña: scrypt y ChaCha20-Poly1305), con el crate de Rust `age`. Cualquiera puede descifrar su copia sin la app con la herramienta `age`, lo que es coherente con un proyecto abierto y con que los datos son de quien los tiene. Nada de criptografía propia.
+- **Criptografía estándar, pocas dependencias** (cambiado el 03/10/2026, revisado con el maintainer): `scrypt` para sacar la clave de la contraseña y `chacha20poly1305` para cifrar, los dos de RustCrypto. Solo el «sobre» del fichero es nuestro (cabecera con versión, parámetros de scrypt, sal, nonce y datos cifrados), **documentado paso a paso** en `docs/architecture/data-model.md` para que la comunidad lo pueda auditar y cualquiera pueda descifrar su copia con unas líneas en otro lenguaje.
+  - Primero se construyó con el formato `age` (crate `age`), para poder abrir la copia sin la app con la herramienta `age`. Trajo unas 70 dependencias nuevas a la app (traducciones propias, criptografía post-cuántica que no se usa): demasiado peso y superficie de ataque para lo que aporta. **Pendiente:** sustituirlo; mientras, el código usa `age`.
 - Al restaurar, la app detecta si la copia está cifrada y pide la contraseña; con una contraseña equivocada no restaura nada.
 - La contraseña no se guarda en ningún sitio: si se pierde, la copia no se puede abrir, y la pantalla lo dice antes de crearla.
 - **Un test garantiza** que ninguna copia, cifrada o no, contiene la clave de firma, el token de la cuenta, los secretos de emparejamiento ni la identidad TLS.

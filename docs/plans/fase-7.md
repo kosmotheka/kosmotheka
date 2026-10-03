@@ -37,7 +37,6 @@ Cada hito deja la app y el servidor funcionando, con sus tests, y se prueba ante
 | **7.6 Invitar con un enlace** | Un enlace de un solo uso que caduca en 24 horas (D43), para una persona nueva o para una que ya está en la biblioteca, con el rol que elige quien invita. El QR sigue igual | `server/`, `app/` |
 | **7.7 Registro de actividad** | La tabla de solo añadir de D66, con hora del servidor, IP y app; su plazo y la purga | `server/` |
 | **7.8 Proveedores con clave** | BoardGameGeek, TMDB, IGDB o RAWG y Comic Vine a través del servidor, que pone las claves (D62); se activan solos al conectarse | `server/`, `app/src-tauri/src/metadata` |
-| **7.H Endurecimiento del servidor** (añadido el 03/10/2026, antes de 7.9) | El servidor protegido de forma categórica antes de abrirlo a nadie: modelo de amenazas rehecho y la lista **OWASP ASVS nivel 2**, cada punto con su test o comprobación automática (abajo) | `server/`, `docs/` |
 | **7.9 Producción** | Imágenes y `docker-compose` de producción (D48), despliegue en el VPS, copias de PostgreSQL, y la guía para quien monte su propio servidor | `server/docker/`, `docs/` |
 
 Las pantallas de la cuenta, la nube y las invitaciones se piden a Claude Design antes de construir la interfaz de 7.1. Los textos de error nuevos (código caducado, invitación caducada o usada, sesión cerrada por cambio de contraseña) van a [design/errors.md](../design/errors.md), como piden D43 y D50.
@@ -149,16 +148,11 @@ Propuestas para construirlo:
 - **Operaciones sin firma (decidido el 03/10/2026):** se rechazan en todas partes, dispositivos y nube (D56 ampliada). **La app no deja subir una biblioteca que tenga en su registro operaciones sin firma** (las de antes del 27/09, como `sync.baseline`) y propone «Duplicar como nueva» (D58), que la rehace con operaciones firmadas. Los datos de prueba de antes de esa fecha pueden perderse.
 - **Rutas:** `POST /v1/cloud/libraries` (crear `C`), `GET /v1/cloud/libraries` (las de la cuenta, para que un dispositivo nuevo sepa cuáles hay), `POST /v1/cloud/libraries/{C}/pull` y `/push`. Sin acceso, `404`.
 
-### 7.H Endurecimiento del servidor
+### Seguridad del servidor antes de producción
 
-Pedido por el maintainer el 03/10/2026: «hay que proteger de forma categórica el servidor». Va antes de 7.9: nada se despliega sin esto. Cada punto se da por hecho solo con su prueba (test de PHPUnit, comprobación en el CI o escaneo), nunca con un «hecho» a secas. La guía es **OWASP ASVS 4.0 nivel 2**, la habitual para aplicaciones con datos personales; la lista completa con el estado de cada requisito vivirá en `docs/security/asvs.md`.
+Hablado con el maintainer el 03/10/2026: **proporcionado a lo que es**, un VPS pequeño y compartido, sin datos de banco ni de red social. Nada de listas formales ni escáneres en el CI. Antes de 7.9 haremos **una sesión juntos para revisar la seguridad del servidor**, partiendo de lo básico (HTTPS, puertos cerrados salvo 80, 443 y SSH, SSH con clave, actualizaciones de seguridad automáticas, PostgreSQL solo en local con un usuario que no sea superusuario, Symfony en modo producción). Queda abierto, para esa sesión, **cómo hacer las copias de PostgreSQL fuera del servidor sin gastar dinero**, o gastando lo mínimo.
 
-1. **Modelo de amenazas rehecho** (`/audit threat-model`), con D84, D85 y D86 ya dentro. Sale de ahí qué más hace falta.
-2. **Red y máquina:** solo 443 abierto (TLS 1.2+ y HSTS), PostgreSQL sin acceso desde fuera, SSH solo con clave y sin root, cortafuegos, fail2ban, actualizaciones automáticas de seguridad, usuarios de sistema separados para PHP-FPM y PostgreSQL.
-3. **Aplicación:** cabeceras de seguridad, sin CORS abierto (la API solo la usa la app), límite de tamaño de cada petición, ningún error con trazas en producción, secretos solo en el entorno, límites de peticiones (ya están, 7.1), contraseñas con argon2id, tokens como hash y segundo factor (ya están).
-4. **Datos:** usuario de PostgreSQL con los permisos mínimos (nunca superusuario, sin crear tablas en producción salvo al migrar), disco cifrado, copias de PostgreSQL cifradas y fuera del servidor (7.9), plazo de conservación (D66) y lo mínimo de datos personales.
-5. **Verificación automática:** escaneo de dependencias en el CI (ya está: osv-scanner, cargo-deny), **OWASP ZAP** en Docker con versión fijada contra un servidor de pruebas, y tests de PHPUnit para cada control de la aplicación (cabeceras, CORS, tamaño, errores).
-6. **Antes de abrir el repositorio:** una revisión externa de seguridad, y decir en `amenazas.md` y en la política de privacidad, sin rodeos, que quien entra en el servidor puede leer las bibliotecas de la nube (D57: el servidor entiende los datos; la privacidad total es el modo sin cuenta).
+**La política de privacidad** dirá lo habitual (dónde se guardan los datos, quién accede y para qué, qué medidas se toman), redactada como se redactan estos textos, sin frases alarmistas. Que la nube no tiene cifrado de extremo a extremo (D57) se explica en la documentación técnica, en el modelo de amenazas (`docs/audits/amenazas.md`, riesgos aceptados), como hacen los proyectos abiertos.
 
 ## Batería de acceso
 

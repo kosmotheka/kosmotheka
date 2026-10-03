@@ -148,7 +148,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - Límites de peticiones y cuentas sin confirmar que caducan.
 - **Dar un dispositivo a otra persona** (D81): «Dejar este dispositivo a otra persona» borra sus bibliotecas y crea una identidad nueva, también sin cuenta; un dispositivo quitado desde otro hace lo mismo y pierde el acceso a las bibliotecas.
 - **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad.
-- **Endurecimiento del servidor antes de producción** (hito 7.H): modelo de amenazas rehecho y OWASP ASVS nivel 2, cada punto con su prueba automática.
+- **Seguridad del servidor antes de producción:** una sesión con el maintainer para revisarla, proporcionada a un VPS pequeño y compartido; ahí se decide cómo hacer las copias de PostgreSQL sin gastar o gastando lo mínimo.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.

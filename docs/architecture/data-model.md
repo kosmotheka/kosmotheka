@@ -89,6 +89,8 @@ La biblioteca activa es la guardada si aún existe y, si no, la primera por nomb
 
 Una copia es un zip con `backup.json` (catálogo de cada biblioteca e historial de operaciones) y `covers/`. **Nunca lleva secretos**: ni la semilla de la clave de firma, ni el token y la sesión de la cuenta, ni los secretos de emparejamiento (`known_servers`, `known_clients`), ni la identidad TLS; esos viven en `local_state`, en esas tablas y en la carpeta de datos, y la exportación no los lee. Lo garantiza el test `no_backup_carries_a_secret`, que exporta una copia sin cifrar y otra cifrada y busca cada secreto en sus bytes y en cada fichero de dentro.
 
+> **Pendiente (D86, 03/10/2026):** el formato `age` se sustituirá por `scrypt` + `chacha20poly1305` con un sobre propio documentado aquí, para no cargar la app con unas 70 dependencias. Lo que sigue describe el código actual.
+
 Por defecto la copia va **cifrada con contraseña** (D86): el fichero es un fichero [`age`](https://age-encryption.org) (scrypt y ChaCha20-Poly1305, crate `age`) cuyo contenido es el zip de siempre. Empieza por `age-encryption.org/v1`; al restaurar, la app detecta esa cabecera y pide la contraseña. Una contraseña equivocada (`wrong_passphrase`) o ausente (`passphrase_needed`) no escribe nada. Una copia sin cifrar (zip) se sigue restaurando igual.
 
 **Abrir una copia sin la app:**
