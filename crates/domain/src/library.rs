@@ -34,4 +34,10 @@ mod tests {
             vec![FieldError::new("name", ErrorCode::OutOfRange)]
         );
     }
+
+    #[test]
+    fn a_name_of_exactly_the_maximum_length_is_valid() {
+        let name = "x".repeat(MAX_NAME_CHARS);
+        assert_eq!(validate_library_name(&name).unwrap(), name);
+    }
 }

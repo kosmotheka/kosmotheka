@@ -337,4 +337,20 @@ mod tests {
         assert!(is_allowed(&other, &view(Some(Role::Admin))));
         assert!(!is_allowed(&own, &view(None)));
     }
+
+    #[test]
+    fn a_device_changes_only_its_own_row() {
+        let rename = |id: &str| {
+            op(vec![Change::update(
+                Entity::Device,
+                id,
+                json!({ "name": "Tablet" }),
+            )])
+        };
+        let other = "01997c7e-0000-7000-8000-0000000000fc";
+        assert!(is_allowed(&rename(ME), &view(Some(Role::Editor))));
+        assert!(!is_allowed(&rename(other), &view(Some(Role::Editor))));
+        assert!(!is_allowed(&rename(other), &view(Some(Role::Reader))));
+        assert!(is_allowed(&rename(other), &view(Some(Role::Admin))));
+    }
 }

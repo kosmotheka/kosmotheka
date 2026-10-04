@@ -260,4 +260,64 @@ mod tests {
         let hlc: Hlc = "0000000000000001-00000000-0199-abcd".parse().unwrap();
         assert_eq!(hlc.device, "0199-abcd");
     }
+
+    #[test]
+    fn the_allowed_drift_is_one_hour() {
+        let now = 5_000_000_000;
+        let at = |millis| Hlc {
+            millis,
+            counter: 0,
+            device: "b".into(),
+        };
+        assert!(!at(now + 3_600_000).is_ahead_of(now));
+        assert!(at(now + 3_600_001).is_ahead_of(now));
+    }
+
+    #[test]
+    fn receive_takes_the_counter_of_whichever_clock_decides_the_millisecond() {
+        let remote = |millis, counter| Hlc {
+            millis,
+            counter,
+            device: "b".into(),
+        };
+        let clock_at = |millis, counter| {
+            HlcClock::new(
+                "a",
+                Some(&Hlc {
+                    millis,
+                    counter,
+                    device: "a".into(),
+                }),
+            )
+        };
+        let result = |mut clock: HlcClock, remote: &Hlc| {
+            let hlc = clock.receive(remote, 10);
+            (hlc.millis, hlc.counter)
+        };
+
+        // Same millisecond on both: the larger counter, plus one.
+        assert_eq!(result(clock_at(100, 3), &remote(100, 7)), (100, 8));
+        assert_eq!(result(clock_at(100, 7), &remote(100, 3)), (100, 8));
+        // Only ours is the latest: the remote counter does not count.
+        assert_eq!(result(clock_at(100, 3), &remote(50, 9)), (100, 4));
+        // Only the remote is the latest: our counter does not count.
+        assert_eq!(result(clock_at(50, 9), &remote(100, 3)), (100, 4));
+        // The wall clock is the latest: the counter starts over.
+        assert_eq!(result(clock_at(5, 9), &remote(8, 9)), (10, 0));
+    }
+
+    #[test]
+    fn a_malformed_text_form_is_rejected_whichever_part_is_wrong() {
+        let valid = "0000000000000001-00000000-dev";
+        assert!(valid.parse::<Hlc>().is_ok());
+        for bad in [
+            "000000000000001-00000000-dev",   // 15 digits of time
+            "00000000000000001-00000000-dev", // 17 digits of time
+            "0000000000000001-0000000-dev",   // 7 digits of counter
+            "0000000000000001-000000000-dev", // 9 digits of counter
+            "0000000000000001-00000000-",     // no device
+        ] {
+            assert_eq!(bad.parse::<Hlc>(), Err(HlcParseError), "{bad}");
+        }
+    }
 }

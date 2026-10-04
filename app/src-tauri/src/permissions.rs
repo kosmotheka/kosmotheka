@@ -377,3 +377,38 @@ fn replay(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+
+    #[test]
+    fn the_same_person_is_the_same_device_or_two_devices_of_one_member() {
+        let conn = db::open_in_memory().unwrap();
+        let library = ops::active_library(&conn).unwrap();
+        for (device, member) in [("d1", Some("m1")), ("d2", Some("m1")), ("d3", Some("m2"))] {
+            conn.execute(
+                "INSERT INTO devices (library_id, id, public_key, name, member_id)
+                 VALUES (?1, ?2, 'k', ?2, ?3)",
+                params![library, device, member],
+            )
+            .unwrap();
+        }
+        let view = SqlView::new(&conn, &library);
+
+        assert!(view.same_person("d1", "d1"));
+        assert!(
+            view.same_person("ghost", "ghost"),
+            "a device is its own person"
+        );
+        assert!(view.same_person("d1", "d2"), "two devices of one member");
+        assert!(!view.same_person("d1", "d3"), "two members");
+        assert!(!view.same_person("d1", "ghost"));
+        assert!(!view.same_person("ghost", "d1"));
+        assert!(
+            !view.same_person("ghost", "other-ghost"),
+            "no member, no person"
+        );
+    }
+}

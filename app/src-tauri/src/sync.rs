@@ -2813,4 +2813,353 @@ mod tests {
         assert!(series::get_series(&phone.0, &lib, &series_id).is_err());
         assert_converged(&[&laptop, &phone]);
     }
+
+    // Tests that pin merge rules found by mutation testing (docs/audits/mutaciones-2026-10-04.md).
+
+    #[test]
+    fn a_merge_report_adds_up_field_by_field() {
+        let mut total = MergeReport {
+            received: 1,
+            known: 2,
+            rejected: 3,
+            skipped_changes: 4,
+            requests: 5,
+        };
+        total.add(&MergeReport {
+            received: 10,
+            known: 20,
+            rejected: 30,
+            skipped_changes: 40,
+            requests: 50,
+        });
+        assert_eq!(
+            total,
+            MergeReport {
+                received: 11,
+                known: 22,
+                rejected: 33,
+                skipped_changes: 44,
+                requests: 55,
+            }
+        );
+    }
+
+    /// An operation signed by `device`, dated now, with any changes and no previous.
+    fn forged(device: &Device, changes: Vec<Change>) -> SyncOperation {
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: device.1.clone(),
+            hlc: Hlc {
+                millis: now_millis(),
+                counter: 0,
+                device: device_id_of(device),
+            },
+            intent: "test.forged".into(),
+            changes,
+            previous: None,
+            signature: None,
+        };
+        operation.signature = Some(ops::signing_key(&device.0).unwrap().sign(&operation));
+        SyncOperation {
+            schema_version: ops::schema_version(&device.0).unwrap(),
+            operation,
+        }
+    }
+
+    #[test]
+    fn the_report_counts_known_operations_and_skipped_changes() {
+        let a = Device::new();
+        let mut b = Device::sharing(&a);
+        // An update of a row that does not exist is skipped, not an error.
+        let missing = forged(
+            &a,
+            vec![Change::update(
+                Entity::Work,
+                "01997c7e-0000-7000-8000-0000000000aa",
+                json!({ "title": "Nowhere" }),
+            )],
+        );
+
+        let first = merge(&mut b.0, vec![missing.clone()]).unwrap();
+        let again = merge(&mut b.0, vec![missing]).unwrap();
+
+        assert_eq!((first.received, first.skipped_changes), (1, 1));
+        assert_eq!((again.received, again.known), (0, 1));
+    }
+
+    #[test]
+    fn a_library_row_alone_is_not_worth_a_baseline() {
+        let mut device = Device::new();
+        // What a new library has is its own row and its device's registration.
+        device.0.execute("DELETE FROM operations", []).unwrap();
+        device.0.execute("DELETE FROM devices", []).unwrap();
+        device
+            .0
+            .execute("DELETE FROM local_state WHERE key = ?1", [BASELINE_KEY])
+            .unwrap();
+
+        ensure_baseline(&mut device.0).unwrap();
+
+        let baselines: i64 = device
+            .0
+            .query_row(
+                "SELECT count(*) FROM operations WHERE intent = 'sync.baseline'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(baselines, 0);
+    }
+
+    const UNTRACKED_TAG: &str = "01997c7e-0000-7000-8000-0000000000e1";
+
+    /// A row no operation made: a rebuild from the log would not bring it back, so
+    /// finding it after a merge proves the library was not rebuilt.
+    fn plant_untracked_row(device: &Device) {
+        device
+            .0
+            .execute(
+                "INSERT INTO tags (library_id, id, name) VALUES (?1, ?2, 'Untracked')",
+                [&device.1, UNTRACKED_TAG],
+            )
+            .unwrap();
+    }
+
+    fn untracked_row_survives(device: &Device) -> bool {
+        device
+            .0
+            .query_row(
+                "SELECT count(*) FROM tags WHERE library_id = ?1 AND id = ?2",
+                [&device.1, UNTRACKED_TAG],
+                |r| r.get::<_, i64>(0),
+            )
+            .unwrap()
+            == 1
+    }
+
+    #[test]
+    fn an_operation_that_arrives_in_order_does_not_rebuild_the_library() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        plant_untracked_row(&phone);
+        laptop.add("In order", None, "Tersoal");
+
+        let report = phone.pull_from(&laptop);
+
+        assert!(report.received >= 1);
+        assert!(phone.titles().contains(&"In order".to_owned()));
+        assert!(untracked_row_survives(&phone), "rebuilt without need");
+    }
+
+    #[test]
+    fn a_late_operation_in_a_library_without_roles_does_not_rebuild_it() {
+        let mut a = Device::new();
+        let mut b = Device::sharing(&a);
+        b.add("Older, on b", None, "Bea");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        a.add("Newer, on a", None, "Ana");
+        plant_untracked_row(&a);
+
+        let report = a.pull_from(&b);
+
+        assert!(report.received >= 1, "b's older operation arrived");
+        assert!(!permissions::judged_by_order(&a.0, &a.1).unwrap());
+        assert!(untracked_row_survives(&a), "order does not matter here");
+    }
+
+    #[test]
+    fn a_fence_set_by_a_request_is_not_noted() {
+        // The phone is a reader: asking to fence the laptop is a request, and a
+        // request must not take effect, fence included (D84).
+        let (mut laptop, phone) = laptop_admin_phone_reader();
+        let mark = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop))
+            .unwrap()
+            .unwrap();
+        let fence = forged(
+            &phone,
+            vec![Change::update(
+                Entity::Device,
+                device_id_of(&laptop),
+                json!({ "trusted_through": mark }),
+            )],
+        );
+
+        let report = merge(&mut laptop.0, vec![fence]).unwrap();
+
+        assert_eq!((report.rejected, report.requests), (0, 1));
+        let fences: i64 = laptop
+            .0
+            .query_row("SELECT count(*) FROM device_fences", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(fences, 0);
+    }
+
+    #[test]
+    fn the_same_hlc_does_not_overwrite_a_field() {
+        let device = Device::new();
+        let mut conn = device.0;
+        let lib = device.1;
+        let work = "01997c7e-0000-7000-8000-0000000000b1";
+        let at = "0001727222222222-00000001-dev";
+        let tx = conn.transaction().unwrap();
+
+        let create = Change::create(
+            Entity::Work,
+            work,
+            json!({ "kind": "book", "title": "First" }),
+        );
+        let rename = Change::update(Entity::Work, work, json!({ "title": "Second" }));
+
+        assert!(apply_change(&tx, &lib, &create, at).unwrap());
+        assert!(
+            !apply_change(&tx, &lib, &rename, at).unwrap(),
+            "a tie is not newer"
+        );
+        let title: String = tx
+            .query_row("SELECT title FROM works WHERE id = ?1", [work], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(title, "First");
+    }
+
+    #[test]
+    fn a_change_keeps_the_versions_of_the_fields_it_lost() {
+        let device = Device::new();
+        let mut conn = device.0;
+        let lib = device.1;
+        let work = "01997c7e-0000-7000-8000-0000000000b2";
+        let (h1, h2, h3) = (
+            "0001727222222222-00000001-dev",
+            "0001727222222222-00000002-dev",
+            "0001727222222222-00000003-dev",
+        );
+        let tx = conn.transaction().unwrap();
+        let change = |action_create: bool, fields: Value| {
+            if action_create {
+                Change::create(Entity::Work, work, fields)
+            } else {
+                Change::update(Entity::Work, work, fields)
+            }
+        };
+        apply_change(
+            &tx,
+            &lib,
+            &change(true, json!({ "kind": "book", "title": "T1" })),
+            h1,
+        )
+        .unwrap();
+        apply_change(&tx, &lib, &change(false, json!({ "title": "T3" })), h3).unwrap();
+
+        // Older than the title, newer than the kind: only the kind is written...
+        let wrote = apply_change(
+            &tx,
+            &lib,
+            &change(false, json!({ "kind": "comic", "title": "T2" })),
+            h2,
+        )
+        .unwrap();
+
+        assert!(wrote);
+        let row: (String, String) = tx
+            .query_row("SELECT kind, title FROM works WHERE id = ?1", [work], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(row, ("comic".to_owned(), "T3".to_owned()));
+        // ...and the title keeps its version, so nothing between h2 and h3 can win later.
+        let version = |field| field_version(&tx, &lib, Entity::Work, work, field).unwrap();
+        assert_eq!(version("title").as_deref(), Some(h3));
+        assert_eq!(version("kind").as_deref(), Some(h2));
+    }
+
+    /// The laptop and the phone know each other, so the phone's key is registered
+    /// on a third device that shares the library.
+    fn third_device_that_knows_both() -> (Device, Device, Device) {
+        let (laptop, mut phone) = laptop_admin_phone_reader();
+        phone.pull_from(&laptop);
+        let mut laptop = laptop;
+        laptop.pull_from(&phone);
+        let mut other = Device::sharing(&laptop);
+        other.pull_from(&laptop);
+        (laptop, phone, other)
+    }
+
+    #[test]
+    fn a_registered_device_cannot_change_a_key_even_signing_with_its_own() {
+        let (laptop, phone, mut other) = third_device_that_knows_both();
+        let phone_key = ops::signing_key(&phone.0).unwrap().public_key();
+        assert!(
+            registered_keys(&other)
+                .iter()
+                .any(|(id, key)| *id == device_id_of(&phone) && *key == phone_key),
+            "the phone is registered"
+        );
+        let swap = |target: String| {
+            forged(
+                &phone,
+                vec![Change::update(
+                    Entity::Device,
+                    target,
+                    json!({ "public_key": "AAAA" }),
+                )],
+            )
+        };
+        let before = registered_keys(&other);
+
+        // The laptop's key, and the phone's own.
+        let report = merge(
+            &mut other.0,
+            vec![swap(device_id_of(&laptop)), swap(device_id_of(&phone))],
+        )
+        .unwrap();
+
+        assert_eq!(report.rejected, 2);
+        assert_eq!(registered_keys(&other), before);
+    }
+
+    #[test]
+    fn only_a_device_registering_itself_may_bring_its_own_key() {
+        let laptop = Device::new();
+        let stranger = Device::empty_for(&laptop);
+        let key = ops::signing_key(&stranger.0).unwrap().public_key();
+        let mut target = Device::sharing(&laptop);
+        let someone_else = "01997c7e-0000-7000-8000-0000000000c1";
+        let stranger_id = device_id_of(&stranger);
+
+        let for_another_device = forged(
+            &stranger,
+            vec![Change::update(
+                Entity::Device,
+                someone_else,
+                json!({ "public_key": key }),
+            )],
+        );
+        let updating_itself = forged(
+            &stranger,
+            vec![Change::update(
+                Entity::Device,
+                &stranger_id,
+                json!({ "public_key": key }),
+            )],
+        );
+        let registering_itself = forged(
+            &stranger,
+            vec![Change::create(
+                Entity::Device,
+                &stranger_id,
+                json!({ "public_key": key, "name": "Stranger" }),
+            )],
+        );
+
+        let a = merge(&mut target.0, vec![for_another_device]).unwrap();
+        let b = merge(&mut target.0, vec![updating_itself]).unwrap();
+        let c = merge(&mut target.0, vec![registering_itself]).unwrap();
+
+        assert_eq!(a.rejected, 1, "a key offered for another device");
+        assert_eq!(b.rejected, 1, "an update is not a registration");
+        assert_eq!(
+            c.rejected, 0,
+            "the registration itself is how a key becomes known"
+        );
+    }
 }

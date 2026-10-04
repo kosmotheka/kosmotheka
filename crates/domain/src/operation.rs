@@ -386,4 +386,23 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn an_intent_is_two_or_more_lowercase_words_joined_by_dots() {
+        for good in ["book.add", "copy.lend", "a_b.c_d.e"] {
+            assert!(is_valid_intent(good), "{good}");
+        }
+        for bad in [
+            "book",
+            "",
+            "book.",
+            ".add",
+            "a..b",
+            "Book.add",
+            "book.Add",
+            "book.add!",
+        ] {
+            assert!(!is_valid_intent(bad), "{bad}");
+        }
+    }
 }
