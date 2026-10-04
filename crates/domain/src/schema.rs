@@ -60,6 +60,10 @@ pub enum FieldType {
     Boolean,
     /// A whole number from 1 to 5.
     Rating,
+    /// A whole number of at least 1.
+    Count,
+    /// Thirteen ASCII digits, without hyphens.
+    Isbn13,
     /// Id of another entity; the database enforces that it exists.
     Ref(Entity),
 }
@@ -150,7 +154,7 @@ const EDITION_FIELDS: &[FieldSpec] = &[
     field("notes", FieldType::Text, false),
 ];
 const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
-    field("isbn13", FieldType::Text, false),
+    field("isbn13", FieldType::Isbn13, false),
     field("google_books_id", FieldType::Text, false),
     field("open_library_id", FieldType::Text, false),
 ];
@@ -236,7 +240,7 @@ const COPY_FIELDS: &[FieldSpec] = &[
     field("edition_id", FieldType::Ref(Entity::Edition), true),
     field("owner_id", FieldType::Ref(Entity::Member), false),
     field("format", FieldType::OneOf(FORMATS), true),
-    field("quantity", FieldType::Integer, true),
+    field("quantity", FieldType::Count, true),
     field("location", FieldType::Text, false),
     field("acquired_on", FieldType::Date, false),
     // A video game copy's platform: it belongs to the copy, not the edition.

@@ -212,6 +212,10 @@ fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
         FieldType::OneOf(allowed) => value.as_str().is_some_and(|s| allowed.contains(&s)),
         FieldType::Boolean => value.is_boolean(),
         FieldType::Rating => value.as_i64().is_some_and(|n| (1..=5).contains(&n)),
+        FieldType::Count => value.as_i64().is_some_and(|n| n >= 1),
+        FieldType::Isbn13 => value
+            .as_str()
+            .is_some_and(|s| s.len() == 13 && s.bytes().all(|b| b.is_ascii_digit())),
         FieldType::Ref(_) => value.as_str().is_some_and(|s| Uuid::parse_str(s).is_ok()),
     }
 }

@@ -18,4 +18,8 @@ enum FieldType
     case Boolean;
     /** A whole number from 1 to 5. */
     case Rating;
+    /** A whole number of at least 1. */
+    case Count;
+    /** Thirteen ASCII digits, without hyphens. */
+    case Isbn13;
 }

@@ -58,6 +58,8 @@ final class CatalogTablesTest extends KernelTestCase
                     FieldType::Integer => 'bigint',
                     FieldType::Boolean => 'boolean',
                     FieldType::Rating => 'integer',
+                    FieldType::Count => 'bigint',
+                    FieldType::Isbn13 => 'text',
                     default => 'text',
                 },
                 !$spec->required,

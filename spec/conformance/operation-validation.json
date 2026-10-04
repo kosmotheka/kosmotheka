@@ -664,6 +664,182 @@
     }
   },
   {
+    "name": "an ISBN-13 of thirteen digits",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "isbn13": "9788445073728"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "an ISBN-13 of twelve digits",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "isbn13": "978844507372"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "isbn13"
+    }
+  },
+  {
+    "name": "an ISBN-13 with a letter",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "isbn13": "978844507372X"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "isbn13"
+    }
+  },
+  {
+    "name": "an ISBN-13 with hyphens",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "edition.edit",
+      "changes": [
+        {
+          "entity": "book_details",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "isbn13": "978-84-450-7372"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "isbn13"
+    }
+  },
+  {
+    "name": "a quantity of one",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.edit",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "quantity": 1
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a quantity of zero",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.edit",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "quantity": 0
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "quantity"
+    }
+  },
+  {
+    "name": "a negative quantity",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.edit",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "quantity": -2
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "quantity"
+    }
+  },
+  {
     "name": "date that does not exist",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000001",

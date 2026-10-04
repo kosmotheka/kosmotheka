@@ -156,6 +156,8 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::Ref => \is_string($value) && $this->isUuid($value),
             FieldType::Boolean => \is_bool($value),
             FieldType::Rating => \is_int($value) && $value >= 1 && $value <= 5,
+            FieldType::Count => \is_int($value) && $value >= 1,
+            FieldType::Isbn13 => \is_string($value) && 1 === preg_match('/^[0-9]{13}$/D', $value),
         };
     }
 

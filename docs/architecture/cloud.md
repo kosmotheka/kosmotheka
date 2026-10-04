@@ -163,7 +163,7 @@ Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió
 | Booleanos | `INTEGER` 0 o 1 con `CHECK` | `BOOLEAN` | La operación lleva `true`/`false` |
 | Enteros | `INTEGER` (64 bits) | `BIGINT` | La operación admite cualquier entero de 64 bits |
 | Fechas (`acquired_on`, `status_on`) | `TEXT` | `TEXT` | La operación lleva `AAAA-MM-DD` y la fusión compara y guarda eso |
-| `CHECK (isbn13 ...)` y `quantity >= 1` | sí | no | `spec/` no los exige: una operación válida según `spec/` no debe romper la transacción de la fusión. Hueco de `spec/` anotado en el plan |
+| `CHECK (isbn13 ...)` y `quantity >= 1` | sí | no | Desde el 04/10/2026 son reglas de `spec/` (`isbn13`: trece dígitos; `quantity`: al menos 1), así que una operación que las incumple no pasa la validación y nunca llega a la fusión |
 | `UNIQUE (work_id, person_id, role)` en `work_contributors` | sí | sí (con `cloud_library_id`) | Regla del catálogo ya existente |
 | `CHECK` de `role`, `status` (marks y solicitudes), `rating` 1 a 5 | sí | sí | Están también en `spec/` |
 | Índices por nombre sin distinguir mayúsculas, `barcode` | sí | no | Son para la búsqueda de la app |

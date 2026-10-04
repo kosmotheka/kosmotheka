@@ -444,7 +444,12 @@
                 "additionalProperties": false,
                 "properties": {
                   "isbn13": {
-                    "$ref": "#/$defs/text"
+                    "description": "Thirteen digits, without hyphens.",
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[0-9]{13}$"
                   },
                   "google_books_id": {
                     "$ref": "#/$defs/text"
@@ -591,7 +596,9 @@
                     ]
                   },
                   "quantity": {
-                    "type": "integer"
+                    "description": "At least 1.",
+                    "type": "integer",
+                    "minimum": 1
                   },
                   "location": {
                     "$ref": "#/$defs/text"
@@ -862,7 +869,8 @@
                       {
                         "type": "null"
                       }
-                    ]                  }
+                    ]
+                  }
                 }
               }
             }

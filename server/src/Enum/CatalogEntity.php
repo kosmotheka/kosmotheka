@@ -157,7 +157,7 @@ enum CatalogEntity: string
                 'notes' => $text(),
             ],
             self::BookDetails => [
-                'isbn13' => $text(),
+                'isbn13' => new FieldSpec(FieldType::Isbn13, false),
                 'google_books_id' => $text(),
                 'open_library_id' => $text(),
             ],
@@ -174,7 +174,7 @@ enum CatalogEntity: string
                 'edition_id' => $ref(self::Edition, true),
                 'owner_id' => $ref(self::Member),
                 'format' => $oneOf(...self::FORMATS),
-                'quantity' => $integer(true),
+                'quantity' => new FieldSpec(FieldType::Count, true),
                 'location' => $text(),
                 'acquired_on' => new FieldSpec(FieldType::Date, false),
                 // A video game copy's platform: belongs to the copy, not the edition.
