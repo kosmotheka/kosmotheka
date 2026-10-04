@@ -68,9 +68,11 @@ Hace falta el servidor con el hub: `cd server && make up` (el contenedor de Merc
 
 ### Red local
 
-- [ ] **De servidor a cliente.** Empareja A y B por la red local (A sirve, B se conecta). Añade un libro en A. *Esperado:* el cliente es quien se conecta, así que B lo recibe cuando sincroniza: al abrirse, al volver a primer plano o tras un cambio propio. No hay aviso de servidor a cliente (límite conocido, el servidor local no abre conexión con quien le sincroniza).
+- [ ] **De servidor a cliente.** Empareja A y B por la red local (A sirve, B se conecta). Añade un libro en A. *Esperado:* con la app de B en primer plano y sin tocarla, el libro llega en 5 minutos como mucho; antes si B se abre, vuelve a primer plano o hace un cambio propio. No hay aviso de servidor a cliente (D88).
 - [ ] **De cliente a servidor.** Añade un libro en B, el cliente. *Esperado:* a los 2 segundos B lo envía y en A aparece sin tocar nada (la pantalla de A se recarga sola).
 - [ ] **Escanear una tanda en el móvil.** Sin sesión en la nube, el portátil muestra el QR y el móvil lo escanea (el portátil sirve). Con la app abierta en los dos, escanea cinco libros seguidos en el móvil sin cerrarla. *Esperado:* van apareciendo en el portátil mientras escaneas, sin tocarlo y sin cerrar ni volver a abrir la app del móvil. Si a la vez editas un libro en el portátil, el móvil lo recibe en su siguiente escaneo.
+- [ ] **Un móvil de puente.** El portátil sirve a tu móvil (con sesión en la nube) y tu móvil sirve al de tu hijo (sin cuenta). Añade un libro en el móvil de tu hijo. *Esperado:* llega a tu móvil a los 2 segundos y de ahí, sin tocar nada, al portátil y a la nube (y a otro dispositivo de tu cuenta).
+- [ ] **En segundo plano no pregunta.** Deja la app del cliente en segundo plano más de 5 minutos y añade un libro en el servidor. *Esperado:* no llega hasta que el cliente vuelve a primer plano (y entonces llega al momento).
 
 ### Sesión
 

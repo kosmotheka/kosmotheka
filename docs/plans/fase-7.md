@@ -211,6 +211,7 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 
 ## Fuera de esta fase
 
+- **Emparejar una vez (D88, abierta):** que los dispositivos de una biblioteca se reconozcan solos en la red local, sin emparejar cada pareja con un QR. El maintainer lo quiere hecho (04/10/2026); se trata después de esta fase o cuando él lo pida.
 - El panel de administración (D52), la web (D53) y las organizaciones (D59): Fase 11. Hasta entonces, comandos de consola.
 - Copias automáticas en la nube (D58 las deja fuera del roadmap) y Google Drive desde el móvil (aplazado en la Fase 4).
 - Otras redes sociales para entrar: solo email y Google (D77); se pueden añadir después.

@@ -82,6 +82,9 @@ function useDebounced<T>(value: T, delay: number): T {
   return debounced;
 }
 
+/** How often the LAN is asked while the app is in the foreground. */
+const LAN_POLL_MS = 5 * 60_000;
+
 export default function App() {
   const { t } = useTranslation();
   const { section, overlay } = useLocation();
@@ -187,9 +190,12 @@ export default function App() {
   // Quietly catch up with every reachable paired device and the cloud when the app opens,
   // and again when it comes back to the foreground (a phone arriving home), at most once a
   // minute. The LAN goes first and a cloud failure never gets in its way. The same pass
-  // runs at once, with no minute limit, after this device's own changes (`local-changed`).
-  // The cloud telling us something changed (`cloud-changed`) syncs only the cloud, and a
-  // paired device pushing to us (`library-changed`) only reloads.
+  // runs at once, with no minute limit, after this device's own changes (`local-changed`)
+  // and after a paired device pushes something new to us (`library-changed`), so this
+  // device passes it on to the others and to the cloud. The cloud telling us something
+  // changed (`cloud-changed`) syncs only the cloud. While the app is in the foreground, the
+  // LAN is also asked every five minutes, since a LAN server cannot reach its clients (D88);
+  // the cloud joins that pass only when the LAN brought something new.
   useEffect(() => {
     let last = 0;
     let running = false;
@@ -202,15 +208,17 @@ export default function App() {
         return was;
       },
     };
-    const pass = async () => {
+    const pass = async (lanOnly: boolean) => {
       let removed = 0;
-      let messages: string[];
+      let received = 0;
+      let messages: string[] = [];
       const status = await lanStatus().catch(() => null);
       for (const device of status?.servers ?? []) {
         const report = await syncDevice(device.deviceId).catch(() => null);
         removed += report?.removed.length ?? 0;
+        received += report?.received.received ?? 0;
       }
-      messages = await syncTheCloud(0);
+      if (!lanOnly || received > 0) messages = await syncTheCloud(0);
       if (removed > 0) messages = [t("sharing.removed", { count: removed }), ...messages];
       if (messages.length > 0) setNotice(messages.join(" "));
       // Reload even without changes: the sync indicator shows the new time.
@@ -229,7 +237,7 @@ export default function App() {
         again.take();
         do {
           last = Date.now();
-          await pass();
+          await pass(false);
         } while (again.take());
       } finally {
         running = false;
@@ -240,6 +248,18 @@ export default function App() {
       if (messages.length > 0) setNotice(messages.join(" "));
       reload();
     };
+    // Skipped while another pass runs: that one already asks the LAN.
+    const askTheLan = async () => {
+      if (running || document.visibilityState !== "visible") return;
+      running = true;
+      try {
+        await pass(true);
+      } finally {
+        running = false;
+      }
+      if (again.take()) void syncAll(true);
+    };
+    const timer = window.setInterval(() => void askTheLan(), LAN_POLL_MS);
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
       // Android may have killed the live socket while the app slept.
@@ -251,9 +271,13 @@ export default function App() {
     const unlisten = [
       listen("cloud-changed", () => void onCloudChanged()),
       listen("local-changed", () => void syncAll(true)),
-      listen("library-changed", () => reload()),
+      listen("library-changed", () => {
+        reload();
+        void syncAll(true);
+      }),
     ];
     return () => {
+      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
       unlisten.forEach((stop) => void stop.then((fn) => fn()));
     };

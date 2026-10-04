@@ -93,6 +93,7 @@
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
 | D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada |
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
+| D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 
 ---
 
@@ -1446,3 +1447,18 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - Una entidad que se quite del esquema en el futuro no puede dejar operaciones sin enviar en medio de una cadena (como pasó con `wish`, D61): habrá que convertirlas, no saltarlas.
 - Glosario: «operación anterior del autor» = `previous`.
 
+## D88 · Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local — `abierta`
+
+**Contexto:** hoy la confianza en la red local va de dos en dos: cada pareja de dispositivos se empareja con un QR (D13), uno hace de servidor y otro de cliente. En una familia con portátil, dos móviles con nube y el de un hijo sin cuenta, eso obliga a emparejar varias veces o deja una cadena que se corta: si el móvil que hace de puente se va de viaje, los demás dejan de hablarse aunque estén en la misma casa. El maintainer (04/10/2026): emparejar varias veces es una molestia para el usuario y por tanto un mal diseño de experiencia; **hay que resolverlo**, aunque no ahora.
+
+**Idea de partida:** cada dispositivo ya tiene su clave pública firmada dentro de cada biblioteca (D56, D73). Dos dispositivos que comparten una biblioteca podrían encontrarse solos en la red de casa y sincronizar esa biblioteca sin haberse emparejado entre ellos: se empareja una vez con cualquiera de la biblioteca y después se habla con quien esté.
+
+**Por decidir (con tests hostiles antes, como pide la batería de acceso):**
+- Quién deja entrar: ¿basta con estar en el registro de la biblioteca, o hace falta que un administrador lo haya aceptado (D73)?
+- Cómo se autentican dos dispositivos sin secreto compartido: TLS con la clave de cada uno, comprobada contra la que la biblioteca tiene registrada.
+- Cómo se encuentran: descubrimiento en la red local (mDNS) o direcciones que viajan con la biblioteca; qué se anuncia en una red que no es de casa (el nombre del dispositivo, nunca el de la biblioteca).
+- Un dispositivo retirado (D71) o con valla (D84, D87) deja de ser reconocido, también si aún no se ha enterado.
+- Qué hace de servidor: hoy un móvil solo escucha con la app abierta; ¿ambos lados pueden iniciar?
+- Cómo convive con el emparejamiento por QR de hoy, que sigue siendo la puerta de entrada.
+
+**Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3).
