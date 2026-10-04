@@ -1449,7 +1449,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 ## D88 · Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local — `abierta`
 
-**Contexto:** hoy la confianza en la red local va de dos en dos: cada pareja de dispositivos se empareja con un QR (D13), uno hace de servidor y otro de cliente. En una familia con portátil, dos móviles con nube y el de un hijo sin cuenta, eso obliga a emparejar varias veces o deja una cadena que se corta: si el móvil que hace de puente se va de viaje, los demás dejan de hablarse aunque estén en la misma casa. El maintainer (04/10/2026): emparejar varias veces es una molestia para el usuario y por tanto un mal diseño de experiencia; **hay que resolverlo**, aunque no ahora.
+**Contexto:** hoy la confianza en la red local va de dos en dos: cada pareja de dispositivos se empareja con un QR (D13), uno hace de servidor y otro de cliente. En una familia con portátil, dos móviles con nube y el de un hijo sin cuenta, eso obliga a emparejar varias veces o deja una cadena que se corta: si el móvil que hace de puente se va de viaje, los demás dejan de hablarse aunque estén en la misma casa. El maintainer (04/10/2026): emparejar varias veces es incómodo para el usuario y hay que mejorarlo; **se hará**, aunque no ahora.
 
 **Idea de partida:** cada dispositivo ya tiene su clave pública firmada dentro de cada biblioteca (D56, D73). Dos dispositivos que comparten una biblioteca podrían encontrarse solos en la red de casa y sincronizar esa biblioteca sin haberse emparejado entre ellos: se empareja una vez con cualquiera de la biblioteca y después se habla con quien esté.
 

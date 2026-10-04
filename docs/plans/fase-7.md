@@ -84,11 +84,19 @@ Rehecho el 03/10/2026 con D84 (aceptada). Antes, este apartado decía «mismas r
 ### 7.4 El servidor aplica y juzga
 
 - **SEG-018: cerrado con D87 (04/10/2026).** Cada operación encadena la anterior de su autor y las vallas apuntan a una operación, no a una fecha; ya no bloquea 7.4 ([D87](../DECISIONS.md), auditoría [2026-10-03-3](../audits/2026-10-03-3.md)).
-- **Primero los casos de fusión** que faltan, en `spec/conformance/merge.json`: campo a campo por HLC, el borrado gana, una operación repetida no cambia nada, el orden de llegada no importa y la referencia rota se salta. Pasan primero en Rust, contra `sync::merge`, y después en PHP. Ese día el servidor ejecuta también `library-merge.json`, que hoy solo pasa la app (auditoría CON-001).
-- **Antes de empezar, pruebas de mutación** (`cargo-mutants`) sobre `sync.rs`, `permissions` y `crates/domain`: dicen qué fallos no detectaría ningún test, justo lo que hay que tener cubierto antes de portar la fusión. Sin modelo para ejecutarlas; un agente ligero tría los mutantes que sobreviven (`docs/audits/README.md`, «Lo que no cubre todavía»).
-- **Tablas del catálogo en PostgreSQL**, espejo de las de SQLite, con clave `(cloud_library_id, id)` también en las foráneas (D41, con la clave de D84), y `field_versions` y `tombstones` por biblioteca.
-- **Motor con DBAL**, sin ORM, en `server/src/Sync/`: SQL directo en una transacción, guiado por `CatalogEntity`, como el motor de Rust por `schema.rs`.
-- **Permisos:** las mismas reglas que `crates/domain/src/permission.rs`, en PHP, con `permissions.json`; y recalcular la biblioteca desde el registro cuando llega algo tarde.
+
+**Dividido en seis partes el 04/10/2026**, para que ninguna quede a medias entre una sesión y otra. Cada una termina con todos los checks en verde y su commit, y la siguiente puede empezar otro día. Hasta 7.4.6 el servidor sigue funcionando como en 7.2: guarda y reparte el registro, sin juzgar.
+
+| Parte | Qué | Dónde | Hecha cuando |
+|---|---|---|---|
+| **7.4.1 Red de seguridad** | Pruebas de mutación (`cargo-mutants`, en Docker) sobre `sync.rs`, `permissions.rs` y `crates/domain`; un agente ligero tría los mutantes que sobreviven y se escriben los tests que faltan (`docs/audits/README.md`, «Lo que no cubre todavía») | `app/src-tauri`, `crates/domain` | Los supervivientes que importan tienen test; el resto, apuntado con su motivo |
+| **7.4.2 La fusión en `spec/`** | `spec/conformance/merge.json`: campo a campo por HLC, el borrado gana, una operación repetida no cambia nada, el orden de llegada no importa, la referencia rota se salta. Pasan en Rust contra `sync::merge` | `spec/`, `app/src-tauri` | Rust pasa los casos; PHP aún no los ejecuta (dicho en `spec/README.md`) |
+| **7.4.3 Tablas del catálogo** | Las tablas de SQLite en PostgreSQL, con clave `(cloud_library_id, id)` también en las foráneas (D41, D84), y `field_versions` y `tombstones` por biblioteca. Un test comprueba que coinciden con `CatalogEntity` y `schema.rs`. Nadie las escribe todavía | `server/` | Migración aplicada y el test de paridad en verde |
+| **7.4.4 Motor de fusión en PHP** | DBAL sin ORM en `server/src/Sync/`, guiado por `CatalogEntity`; pasa `merge.json` y `library-merge.json` (cierra CON-001). Un comando reconstruye las tablas de una biblioteca desde su registro | `server/` | Los dos ficheros de casos pasan en PHP; el comando reconstruye las fixtures |
+| **7.4.5 Permisos en PHP** | Las reglas de `crates/domain/src/permission.rs` con `permissions.json`: roles, peticiones, vallas por operación (D87) y retiradas; recalcular la biblioteca cuando llega algo tarde | `server/` | `permissions.json` pasa en PHP, con los casos de SEG-018 |
+| **7.4.6 Enchufarlo** | `push` aplica y juzga con el motor y los permisos; el servidor comprueba el rol de quien sube una biblioteca (SEG-013); batería de Jhonny ampliada, fixtures con tablas que se puedan mirar, documentación, y una pasada de auditoría `library-access` sobre el servidor | `server/`, `docs/` | Todo en verde, auditoría sin `crítica` ni `alta` abiertas |
+
+**Orden y cortes.** 7.4.1 y 7.4.2 son de Rust y `spec/`, y no tocan el servidor. 7.4.3 a 7.4.5 añaden código del servidor que nada usa todavía, así que no cambian lo que hace la nube. Solo 7.4.6 cambia su comportamiento. Si una parte crece más de lo previsto, se para y se habla antes de seguir.
 
 ### 7.5 La cuenta en la biblioteca
 
@@ -211,7 +219,7 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 
 ## Fuera de esta fase
 
-- **Emparejar una vez (D88, abierta):** que los dispositivos de una biblioteca se reconozcan solos en la red local, sin emparejar cada pareja con un QR. El maintainer lo quiere hecho (04/10/2026); se trata después de esta fase o cuando él lo pida.
+- **Emparejar una vez (D88, abierta):** que los dispositivos de una biblioteca se reconozcan solos en la red local, sin emparejar cada pareja con un QR. Es incómodo emparejar cada pareja y el maintainer quiere mejorarlo (04/10/2026); se trata después de esta fase o cuando él lo pida.
 - El panel de administración (D52), la web (D53) y las organizaciones (D59): Fase 11. Hasta entonces, comandos de consola.
 - Copias automáticas en la nube (D58 las deja fuera del roadmap) y Google Drive desde el móvil (aplazado en la Fase 4).
 - Otras redes sociales para entrar: solo email y Google (D77); se pueden añadir después.
