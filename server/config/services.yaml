@@ -9,6 +9,8 @@
 parameters:
     # Where the fixtures write the cast for the app (docs/development/fixtures.md).
     app.fixtures_cast_file: '%kernel.project_dir%/var/fixtures/cast.json'
+    # Who signs the Mercure tokens; the hub trusts it (MERCURE_TRUSTED_ISSUERS in docker-compose.yaml).
+    app.mercure_issuer: 'urn:kosmotheka:server'
 
 services:
     # default configuration for services in *this* file
@@ -31,6 +33,13 @@ services:
         bind:
             $secret: '%kernel.secret%'
 
+    # The subscriber tokens given to devices: its own key, never the publisher's.
+    App\Sync\HubSettings:
+        arguments:
+            $url: '%env(MERCURE_URL)%'
+            $subscriberKey: '%env(MERCURE_SUBSCRIBER_JWT_KEY)%'
+            $issuer: '%app.mercure_issuer%'
+
 when@dev:
     services:
         _defaults:
@@ -48,3 +57,7 @@ when@test:
             autoconfigure: true
         App\DataFixtures\:
             resource: '../src/DataFixtures/'
+        # Records what would be published, instead of calling a hub.
+        App\Tests\Support\RecordingHub:
+            public: true
+        Symfony\Component\Mercure\HubInterface: '@App\Tests\Support\RecordingHub'

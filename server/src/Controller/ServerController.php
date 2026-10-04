@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Sync\HubSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -13,7 +14,8 @@ use Symfony\Component\Routing\Attribute\Route;
  * What this server offers (D77: "the server says what it offers"), so the
  * app can decide what to show without hard-coding feature availability.
  * `signInWithGoogle` is the one obvious place to flip once that milestone
- * lands; `two_factor` reads TWO_FACTOR_ENABLED (D78).
+ * lands; `two_factor` reads TWO_FACTOR_ENABLED (D78) and `events` is
+ * whether a Mercure hub is configured (D75).
  */
 #[Route('/v1/server')]
 final class ServerController extends AbstractController
@@ -24,6 +26,7 @@ final class ServerController extends AbstractController
     public function __construct(
         #[Autowire(env: 'bool:TWO_FACTOR_ENABLED')]
         private readonly bool $twoFactorEnabled,
+        private readonly HubSettings $hub,
     ) {
     }
 
@@ -36,6 +39,7 @@ final class ServerController extends AbstractController
             'registration' => self::REGISTRATION,
             'sign_in_with_google' => self::SIGN_IN_WITH_GOOGLE,
             'two_factor' => $this->twoFactorEnabled,
+            'events' => $this->hub->isEnabled(),
         ]);
     }
 }

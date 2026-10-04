@@ -1268,6 +1268,24 @@ export function syncCloud(): Promise<CloudLibraryReport[]> {
   return invoke<CloudLibraryReport[]>("sync_cloud");
 }
 
+/** The live connection to the server's hub (D75). */
+export interface CloudConnection {
+  live: boolean;
+  /** `false` when the server has no hub or nobody is signed in: nothing to wait for. */
+  available: boolean;
+}
+
+/** For the first render; `cloud-connection` events keep it current. */
+export async function cloudConnection(): Promise<CloudConnection> {
+  const connection = await invoke<CloudConnection | null>("cloud_connection");
+  return connection ?? { live: false, available: false };
+}
+
+/** The app is back in the foreground: retry the live connection now. */
+export function cloudEventsWake(): Promise<void> {
+  return invoke("cloud_events_wake");
+}
+
 /** The cloud commands also fail with the account's errors: no connection is one of them. */
 export function isCloudOffline(error: unknown): boolean {
   return isCommandError(error) && error.kind === "account" && error.reason === "server_unavailable";

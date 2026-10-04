@@ -442,6 +442,7 @@ mod tests {
         let state = ServerState {
             database: database.clone(),
             pairing: Arc::new(Mutex::new(None)),
+            arrival: Arc::new(std::sync::OnceLock::new()),
         };
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let server =
@@ -503,6 +504,31 @@ mod tests {
         // A third sync has nothing to do.
         let again = sync(&phone, &server.device_id).await.unwrap();
         assert_eq!((again.received.received, again.sent), (0, 0));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_server_hears_of_a_push_that_brought_something_new() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let desk = serve().await;
+        let heard = Arc::new(AtomicUsize::new(0));
+        let counter = heard.clone();
+        let hook: super::super::server::ArrivalHook = Arc::new(move || {
+            counter.fetch_add(1, Ordering::SeqCst);
+        });
+        assert!(desk.state.arrival.set(hook).is_ok());
+        let phone = Database::in_memory();
+        let library = home(&desk.database);
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+
+        // The phone's first sync brings its key registration.
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(heard.load(Ordering::SeqCst), 1);
+        // Nothing new: nothing to tell.
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(heard.load(Ordering::SeqCst), 1);
+        add_to(&phone, &library, "On the phone");
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(heard.load(Ordering::SeqCst), 2);
     }
 
     #[tokio::test(flavor = "multi_thread")]

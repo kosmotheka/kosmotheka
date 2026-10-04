@@ -128,7 +128,21 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 
 **Cuándo escucha el servidor.** Solo cuando hace falta: si hay dispositivos que se sincronizan con este, o mientras se muestra un código de emparejamiento. El puerto se guarda para que los emparejados lo encuentren en el mismo sitio; si está ocupado, se usa otro. En Windows, la primera vez el cortafuegos preguntará si se permite.
 
-**Cuándo se sincroniza.** Al abrir la app y cada vez que vuelve a primer plano (como mucho una vez por minuto), con todos los dispositivos emparejados a los que se conecta, en silencio: si alguno no está, no pasa nada. También a mano, con «Sincronizar ahora».
+**Cuándo se sincroniza** (D75, hito 7.3). En silencio y sin preguntar cada cierto tiempo; si un dispositivo o la nube no responde, no pasa nada. También a mano, con «Sincronizar ahora».
+- **Al abrir la app y al volver a primer plano**, con todos los dispositivos emparejados a los que se conecta y con la nube, como mucho una vez por minuto.
+- **Tras cada cambio propio:** cada operación que este dispositivo registra despierta un aviso interno (`ops::local_change_burst`); el núcleo espera 2 segundos más para juntar una ráfaga y emite `local-changed`. La interfaz hace entonces la sincronización completa (red local y después nube) sin el límite del minuto; si ya había una en marcha, se repite una vez al terminar. Las operaciones que llegan de otros dispositivos pasan por `sync::merge`, que no registra nada, y nunca lo despiertan.
+- **Cuando la nube avisa** (`cloud-changed`): se sincroniza solo la nube, sin límite y con la misma regla de no solaparse (`runCloudSync` lo guarda y repite una vez).
+- **Cuando llega algo por la red local** (`library-changed`): un dispositivo emparejado hace `push` a este y trae operaciones nuevas; el servidor local avisa a la interfaz (`ServerState::arrival`, que fija la app al arrancar) y esta solo **recarga**, porque los datos ya están aplicados.
+
+**La conexión en directo con la nube** (`cloud/events.rs`, D75). Mientras hay sesión, el núcleo mantiene **una** conexión abierta con el hub Mercure del servidor, en `<servidor>/.well-known/mercure` (la dirección la construye la app, nunca sale de una respuesta, D84):
+1. Pide `GET /v1/cloud/events` (token del hub, temas y caducidad) y se suscribe a esos temas con `Authorization: Bearer`.
+2. Al conectar emite `cloud-connection` `{ live: true }` y un `cloud-changed` para ponerse al día de lo ocurrido mientras no escuchaba.
+3. Cada evento del hub (el contenido no se usa) emite `cloud-changed`, a lo sumo uno por segundo: el primero sale al momento y una ráfaga se junta en uno más.
+4. Un minuto antes de que caduque el token, se reconecta con uno nuevo, sin pasar por «sin conexión».
+5. Ante un error de red, el cierre del servidor o 90 segundos sin recibir nada (los latidos cuentan), emite `{ live: false }` y reintenta a 1, 2, 4… hasta 60 segundos. La interfaz llama a `cloud_events_wake` al volver a primer plano para saltarse la espera (Android puede haber matado el socket).
+6. Se detiene, hasta el siguiente inicio de sesión o arranque de la app, si el servidor no tiene hub (`events: false` en `GET /v1/server`, o `events_unavailable`) o si el servidor cierra la sesión o retira el dispositivo (la misma reacción que las demás llamadas de la nube).
+
+**Sin hub, todo sigue como antes (D18):** la app sincroniza al abrir, al volver a primer plano y tras cada cambio, y el indicador de «en directo» no aparece. La interfaz muestra una marca discreta junto al estado de sincronización, solo con sesión y con hub: «En directo» o «Sin conexión en directo».
 
 **Si el otro ha cambiado de dirección (D37).** Cuando ninguna dirección guardada responde, se recorre la subred propia (hasta 1022 direcciones, 64 a la vez) en los puertos que el otro usaba, pidiendo `GET /v1/hello` con el certificado fijado. Solo se acepta al que presenta ese certificado y el identificador de dispositivo esperado. Si aparece, se guarda la nueva dirección y se sincroniza. No se usa mDNS porque en Android exigiría código nativo para recibir multicast.
 

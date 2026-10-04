@@ -2,7 +2,7 @@
 //! paired clients or a pairing window is open.
 
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -30,10 +30,16 @@ use crate::sync::{self, MergeReport};
 
 pub const APP_ID: &str = "kosmotheka";
 
+/// Called when a client's push brought operations this device did not have yet.
+pub type ArrivalHook = Arc<dyn Fn() + Send + Sync>;
+
 #[derive(Clone)]
 pub struct ServerState {
     pub database: Database,
     pub pairing: Arc<Mutex<Option<PairingWindow>>>,
+    /// Set once by the app (it tells the UI to reload); read at each push, so it does
+    /// not matter whether the server started before or after it was set.
+    pub arrival: Arc<OnceLock<ArrivalHook>>,
 }
 
 pub struct RunningServer {
@@ -206,6 +212,12 @@ async fn push(
         let operations = only_shared_operations(request.operations, &shared);
         let report = sync::merge(&mut conn, operations)?;
         register_in_shared(&mut conn, &client)?;
+        drop(conn);
+        if report.received > 0
+            && let Some(arrival) = state.arrival.get()
+        {
+            arrival();
+        }
         Ok(Json(report))
     })
     .await

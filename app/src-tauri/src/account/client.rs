@@ -31,6 +31,20 @@ pub fn build_client() -> Result<reqwest::Client> {
         .map_err(|_| Error::account("server_unavailable"))
 }
 
+/// For a connection that stays open (the live notices): no total timeout, which would
+/// cut the stream, only one for connecting.
+pub fn build_streaming_client() -> Result<reqwest::Client> {
+    reqwest::Client::builder()
+        .user_agent(concat!(
+            "Kosmotheka/",
+            env!("CARGO_PKG_VERSION"),
+            " (+https://kosmotheka.app)"
+        ))
+        .connect_timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|_| Error::account("server_unavailable"))
+}
+
 #[derive(Deserialize)]
 struct ErrorBody {
     error: String,
@@ -126,6 +140,9 @@ pub struct ServerInfoWire {
     pub registration: bool,
     pub sign_in_with_google: bool,
     pub two_factor: bool,
+    /// Whether the server has the live-notices hub (D75). Older servers omit it.
+    #[serde(default)]
+    pub events: bool,
 }
 
 pub async fn server_info(client: &reqwest::Client, base: &str) -> Result<ServerInfoWire> {

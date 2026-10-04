@@ -23,6 +23,7 @@ final class ServerControllerTest extends WebTestCase
             'registration' => true,
             'sign_in_with_google' => false,
             'two_factor' => true,
+            'events' => true,
         ], json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR));
     }
 }

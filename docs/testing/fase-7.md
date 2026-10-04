@@ -41,3 +41,37 @@
 ### Avisos
 
 - [ ] **Biblioteca que ya no está en la nube.** Borra en la base la fila de `cloud_library` de una biblioteca subida y sincroniza. *Esperado:* el aviso de que ya no está en la nube; la biblioteca sigue en el dispositivo.
+
+## 7.3 · Avisos al momento
+
+Hace falta el servidor con el hub: `cd server && make up` (el contenedor de Mercure es `mercure_kosmotheka`). Dos dispositivos con la **misma cuenta** (A y B, cada uno con su carpeta de datos) y «Casa» ya subida y bajada en los dos.
+
+### Entre dos dispositivos de la cuenta
+
+- [ ] **Un cambio llega solo.** Con A y B abiertos, añade un libro en A y no toques nada en B. *Esperado:* en B aparece el libro en unos segundos, sin sincronizar a mano.
+- [ ] **El otro sentido.** Edita ese libro en B. *Esperado:* el cambio aparece en A en unos segundos.
+- [ ] **Una ráfaga.** En A añade cinco libros seguidos. *Esperado:* llegan todos a B; no se nota que sincronice cinco veces.
+- [ ] **La campanita.** Con roles en «Casa» y B administrando, haz en A (como lector) una petición. *Esperado:* el contador de la campanita de B sube sin tocar nada.
+- [ ] **El indicador.** Con sesión iniciada y el hub en marcha. *Esperado:* junto al estado de sincronización, una marca «En directo» (al pasar el cursor: «Los cambios de la nube llegan al momento»). Sin sesión, no hay marca.
+
+### Sin hub
+
+- [ ] **Parar el hub.** `docker stop mercure_kosmotheka`. *Esperado:* en unos segundos la marca pasa a «Sin conexión en directo». La app sigue funcionando.
+- [ ] **Sin hub, se sincroniza igual.** Con el hub parado, añade un libro en A. *Esperado:* a los pocos segundos sale de A hacia la nube (el cambio propio sincroniza a los 2 s); en B aparece al abrir la app o al volverla a primer plano, no antes.
+- [ ] **Volver a arrancarlo.** `docker start mercure_kosmotheka`. *Esperado:* en menos de un minuto la marca vuelve a «En directo» y B recibe lo que se hizo mientras tanto, sin tocar nada.
+- [ ] **Servidor sin hub.** Con un servidor que diga `events: false` en `GET /v1/server`. *Esperado:* no hay marca y la app se comporta como antes de este hito.
+
+### En el móvil
+
+- [ ] **Modo avión.** Con el móvil como B: activa el modo avión, haz un cambio en A, desactívalo. *Esperado:* al recuperar la red, la marca vuelve a «En directo» y el cambio llega solo.
+- [ ] **Volver a primer plano.** Deja la app en segundo plano unos minutos y vuelve a ella. *Esperado:* la marca está en «En directo» (o lo está en pocos segundos) y se pone al día.
+
+### Red local
+
+- [ ] **De servidor a cliente.** Empareja A y B por la red local (A sirve, B se conecta). Añade un libro en A. *Esperado:* el cliente es quien se conecta, así que B lo recibe cuando sincroniza: al abrirse, al volver a primer plano o tras un cambio propio. No hay aviso de servidor a cliente (límite conocido, el servidor local no abre conexión con quien le sincroniza).
+- [ ] **De cliente a servidor.** Añade un libro en B, el cliente. *Esperado:* a los 2 segundos B lo envía y en A aparece sin tocar nada (la pantalla de A se recarga sola).
+
+### Sesión
+
+- [ ] **Cerrar sesión.** Cierra sesión en A. *Esperado:* la marca desaparece y no queda ninguna conexión abierta (`docker logs mercure_kosmotheka` no muestra suscriptores de A).
+- [ ] **Quitar un dispositivo.** Desde B, quita A de la cuenta. *Esperado:* A se reinicia como una instalación nueva y deja de escuchar.

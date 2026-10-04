@@ -1,12 +1,15 @@
 import type { TFunction } from "i18next";
+import { listen } from "@tauri-apps/api/event";
 import { useSyncExternalStore } from "react";
 
 import {
+  type CloudConnection,
   type CloudLibraryReport,
   type CloudOutcome,
   type LibraryCloudStatus,
   type LibrarySummary,
   accountStatus,
+  cloudConnection,
   cloudErrorKey,
   cloudStatus,
   isCloudOffline,
@@ -28,6 +31,10 @@ export interface CloudState {
   syncedAt: Readonly<Record<string, number>>;
   /** What the last sync did to each library. */
   outcomes: Readonly<Record<string, CloudOutcome>>;
+  /** Connected to the server's hub: its changes arrive at once (D75). */
+  live: boolean;
+  /** The server has a hub and this device is signed in: «live» means something. */
+  available: boolean;
 }
 
 const initial: CloudState = {
@@ -37,6 +44,8 @@ const initial: CloudState = {
   errorKey: null,
   syncedAt: {},
   outcomes: {},
+  live: false,
+  available: false,
 };
 
 let state = initial;
@@ -75,33 +84,81 @@ export function recordSynced(report: CloudLibraryReport) {
 }
 
 let lastRunAt = 0;
+// A sync asked for while another one runs is not lost: it runs once more when that ends.
+const pending = {
+  marked: false,
+  /** Reads the mark and clears it. */
+  take() {
+    const was = this.marked;
+    this.marked = false;
+    return was;
+  },
+};
+
+// Read through a function so the checks after an `await` are not narrowed away.
+const isSyncing = () => state.syncing;
+
+/** Follows the live connection: the first state, then the core's `cloud-connection` events. */
+export function watchCloudConnection(): () => void {
+  let stopped = false;
+  void cloudConnection()
+    .then((connection) => !stopped && update(connection))
+    .catch(() => {});
+  const unlisten = listen<CloudConnection>("cloud-connection", (event) => update(event.payload));
+  return () => {
+    stopped = true;
+    void unlisten.then((stop) => stop());
+  };
+}
 
 /**
  * Syncs every cloud library of the account. Never throws: a cloud failure only updates
  * the indicator, since the app works without it. Returns what each library did, or `null`
- * when it did not run (signed out, already syncing, or run less than `minAgeMs` ago) or failed.
+ * when it did not run (signed out, run less than `minAgeMs` ago, or failed) or when another
+ * sync was running: a call with `minAgeMs` 0 then marks it to run once more, and the one
+ * running returns the reports of both.
  */
 export async function runCloudSync(minAgeMs = 0): Promise<CloudLibraryReport[] | null> {
-  if (state.syncing || Date.now() - lastRunAt < minAgeMs) return null;
+  if (isSyncing()) {
+    if (minAgeMs === 0) pending.marked = true;
+    return null;
+  }
+  if (Date.now() - lastRunAt < minAgeMs) return null;
   const account = await accountStatus().catch(() => null);
   if (!account?.signedIn) {
-    update({ ...initial, status: state.status.map((s) => ({ ...s, signedIn: false })) });
+    update({
+      ...initial,
+      status: state.status.map((s) => ({ ...s, signedIn: false })),
+      live: state.live,
+      available: state.available,
+    });
+    return null;
+  }
+  // Another call may have started while the account was being read.
+  if (isSyncing()) {
+    if (minAgeMs === 0) pending.marked = true;
     return null;
   }
   lastRunAt = Date.now();
   update({ syncing: true });
+  const all: CloudLibraryReport[] = [];
   try {
-    const reports = await syncCloud();
-    const now = Date.now();
-    const syncedAt = { ...state.syncedAt };
-    const outcomes: Record<string, CloudOutcome> = {};
-    for (const report of reports) {
-      outcomes[report.library] = report.outcome;
-      if (report.outcome === "synced") syncedAt[report.library] = now;
-    }
-    update({ offline: false, errorKey: null, syncedAt, outcomes });
-    return reports;
+    pending.take();
+    do {
+      const reports = await syncCloud();
+      all.push(...reports);
+      const now = Date.now();
+      const syncedAt = { ...state.syncedAt };
+      const outcomes: Record<string, CloudOutcome> = {};
+      for (const report of reports) {
+        outcomes[report.library] = report.outcome;
+        if (report.outcome === "synced") syncedAt[report.library] = now;
+      }
+      update({ offline: false, errorKey: null, syncedAt, outcomes });
+    } while (pending.take());
+    return all;
   } catch (error) {
+    pending.take();
     if (isCloudOffline(error)) update({ offline: true, errorKey: null });
     else update({ offline: false, errorKey: cloudErrorKey(error) });
     return null;
@@ -111,7 +168,7 @@ export async function runCloudSync(minAgeMs = 0): Promise<CloudLibraryReport[] |
   }
 }
 
-// Background syncs run every minute: each outcome is worth telling once per session.
+// Background syncs are frequent: each outcome is worth telling once per session.
 const told = new Set<string>();
 
 /**

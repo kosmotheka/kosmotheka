@@ -46,4 +46,7 @@ enum AccountErrorCode: string
     case NotFound = 'not_found';
     case SchemaVersion = 'schema_version';
     case InvalidRequest = 'invalid_request';
+
+    // Milestone 7.3: live notices.
+    case EventsUnavailable = 'events_unavailable';
 }

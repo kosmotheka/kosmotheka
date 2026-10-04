@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Radio } from "lucide-react";
 
+import { useAccount } from "@/lib/account";
 import { lanStatus } from "@/lib/api";
 import { useCloud } from "@/lib/cloud";
 import { navigate } from "@/lib/navigation";
@@ -80,6 +82,28 @@ function useLabel(status: Status | null) {
 
 const DOT = { muted: "bg-muted-foreground/60", success: "bg-success", warning: "bg-warning" };
 
+/**
+ * Connected to the server's hub or not (D75): small, and only when there is a hub to be
+ * connected to. Not live is not an error: the app still syncs on open and after changes.
+ */
+function LiveMark() {
+  const { t } = useTranslation();
+  const { signedIn } = useAccount();
+  const { live, available } = useCloud();
+  if (!signedIn || !available) return null;
+  const text = t(live ? "sync.live" : "sync.notLive");
+  return (
+    <span
+      className={cn("flex items-center", live ? "text-success" : "text-muted-foreground/70")}
+      title={t(live ? "sync.liveHint" : "sync.notLiveHint")}
+      role="img"
+      aria-label={text}
+    >
+      <Radio className="size-3.5" aria-hidden />
+    </span>
+  );
+}
+
 /** A dot and a short text. As a button, it opens "Sharing and devices". */
 export function SyncStatus({
   status,
@@ -97,6 +121,7 @@ export function SyncStatus({
     <>
       <span className={cn("size-1.5 shrink-0 rounded-full", DOT[label.tone])} aria-hidden />
       {label.text}
+      <LiveMark />
     </>
   );
   const classes = cn("flex items-center gap-1.5 text-xs text-muted-foreground", className);

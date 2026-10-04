@@ -1,6 +1,6 @@
 use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_fs::{FilePath, FsExt, OpenOptions};
 use url::Url;
 
@@ -13,6 +13,7 @@ use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
     IsbnCheck, TagSummary,
 };
+use crate::cloud::events::{Connection, EventsService};
 use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
@@ -955,8 +956,17 @@ pub fn remove_requirement(
 /// actually happened: either this call always resets (`give_device_away`), or it
 /// resets only when the server answered `device_removed` (every other call here).
 pub fn emit_if_reset<T>(app: &AppHandle, result: &Result<T>) {
-    if matches!(result, Err(Error::Account { code, .. }) if code == "device_removed") {
-        let _ = app.emit("device-reset", ());
+    if let Err(Error::Account { code, .. }) = result {
+        // The session is gone in all three: nothing left to listen to (D75).
+        if matches!(
+            code.as_str(),
+            "device_removed" | "signed_out_password_changed" | "invalid_token"
+        ) {
+            app.state::<EventsService>().stop();
+        }
+        if code == "device_removed" {
+            let _ = app.emit("device-reset", ());
+        }
     }
 }
 
@@ -1016,12 +1026,18 @@ pub async fn sign_in(
 ) -> Result<AccountUser> {
     let result = account::sign_in(&database, reset.context(), &email, &password, totp_code).await;
     emit_if_reset(&app, &result);
+    if result.is_ok() {
+        // Also restarts it for another account or server.
+        app.state::<EventsService>().start();
+    }
     result
 }
 
 #[tauri::command]
-pub async fn sign_out(database: State<'_, Database>) -> Result<()> {
-    account::sign_out(&database).await
+pub async fn sign_out(app: AppHandle, database: State<'_, Database>) -> Result<()> {
+    let result = account::sign_out(&database).await;
+    app.state::<EventsService>().stop();
+    result
 }
 
 #[tauri::command]
@@ -1092,6 +1108,9 @@ pub async fn delete_account(
 ) -> Result<()> {
     let result = account::delete_account(&database, reset.context(), &password).await;
     emit_if_reset(&app, &result);
+    if result.is_ok() {
+        app.state::<EventsService>().stop();
+    }
     result
 }
 
@@ -1189,6 +1208,7 @@ pub async fn give_device_away(
     reset: State<'_, ResetDeps>,
 ) -> Result<()> {
     let result = account::give_device_away(&database, reset.context()).await;
+    app.state::<EventsService>().stop();
     let _ = app.emit("device-reset", ());
     result
 }
@@ -1232,4 +1252,17 @@ pub async fn sync_cloud(
     let result = account::react_to_account_error(&database, reset.context(), result).await;
     emit_if_reset(&app, &result);
     result
+}
+
+/// The app is in the foreground again: Android may have killed the live connection,
+/// so a retry that is waiting for its backoff goes now.
+#[tauri::command]
+pub fn cloud_events_wake(events: State<'_, EventsService>) {
+    events.wake();
+}
+
+/// For the first render: is the live connection up, and does the server have one?
+#[tauri::command]
+pub fn cloud_connection(events: State<'_, EventsService>) -> Connection {
+    events.connection()
 }

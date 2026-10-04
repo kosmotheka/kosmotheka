@@ -557,7 +557,11 @@
     "lastSync": "Synced {{when}}",
     "never": "Not synced yet",
     "label": "Sync status: {{status}}. Open devices",
-    "offline": "Not connected to the cloud"
+    "offline": "Not connected to the cloud",
+    "live": "Live",
+    "notLive": "Not live",
+    "liveHint": "Changes from the cloud arrive at once",
+    "notLiveHint": "Changes from the cloud arrive when the app syncs"
   },
   "help": {
     "title": "Help",

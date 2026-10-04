@@ -35,6 +35,44 @@ pub fn ensure_device_id(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
+/// Woken every time this device records an operation of its own, so the app can sync
+/// the change soon (D75). Process-wide because recording happens deep in the call tree.
+/// Operations merged from other devices go through `sync::merge`, which never records,
+/// so they never wake it.
+static LOCAL_CHANGES: tokio::sync::Notify = tokio::sync::Notify::const_new();
+
+#[cfg(test)]
+thread_local! {
+    /// How many operations this test thread recorded: tests share the process-wide
+    /// notifier, so each one counts its own.
+    static RECORDED_ON_THIS_THREAD: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// Resolves after this device records an operation (a burst of them wakes it once).
+pub async fn local_change() {
+    LOCAL_CHANGES.notified().await;
+}
+
+/// Waits for a local change, then `gap` more to let a burst of them finish, and counts
+/// the whole burst as one.
+pub async fn local_change_burst(gap: std::time::Duration) {
+    local_change().await;
+    tokio::time::sleep(gap).await;
+    // Changes recorded while waiting left a permit: they belong to this burst.
+    let _ = tokio::time::timeout(std::time::Duration::ZERO, local_change()).await;
+}
+
+fn note_local_change() {
+    LOCAL_CHANGES.notify_one();
+    #[cfg(test)]
+    RECORDED_ON_THIS_THREAD.with(|count| count.set(count.get() + 1));
+}
+
+#[cfg(test)]
+pub(crate) fn recorded_on_this_thread() -> u32 {
+    RECORDED_ON_THIS_THREAD.with(std::cell::Cell::get)
+}
+
 pub fn record(
     tx: &Transaction<'_>,
     library: &str,
@@ -68,6 +106,7 @@ fn record_operation(
     match record_inner(tx, library, intent, changes, apply_changes) {
         Ok(operation) => {
             tx.execute_batch("RELEASE record")?;
+            note_local_change();
             Ok(operation)
         }
         Err(error) => {
@@ -655,6 +694,32 @@ mod tests {
             .unwrap();
         assert_eq!(name, "Tersoal");
         assert_eq!(logged_intent, "member.add");
+    }
+
+    #[tokio::test]
+    async fn recording_an_operation_wakes_the_local_change_notifier() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = active_library(&conn).unwrap();
+        let before = recorded_on_this_thread();
+        let tx = conn.transaction().unwrap();
+        record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                new_id(),
+                json!({ "name": "Tersoal" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        assert!(recorded_on_this_thread() > before);
+        // The permit is stored, so waiting after the fact still resolves.
+        tokio::time::timeout(std::time::Duration::from_secs(1), local_change())
+            .await
+            .expect("the notifier was woken");
     }
 
     #[test]

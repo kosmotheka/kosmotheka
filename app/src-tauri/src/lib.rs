@@ -24,9 +24,10 @@ mod series;
 mod settings;
 mod sync;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 use crate::account::ResetDeps;
+use crate::cloud::events::EventsService;
 use crate::covers::Covers;
 use crate::db::Database;
 use crate::device_reset::DataDir;
@@ -58,7 +59,26 @@ pub fn run() {
             app.manage(Lookup::new()?);
             app.manage(lan.clone());
             app.manage(DataDir(data_dir.clone()));
-            app.manage(ResetDeps::new(covers, lan.clone(), DataDir(data_dir)));
+            let reset_deps = ResetDeps::new(covers, lan.clone(), DataDir(data_dir));
+            app.manage(reset_deps.clone());
+            // Live notices from the cloud, while signed in (D75, milestone 7.3).
+            let events = EventsService::new(app.handle().clone(), database.clone(), reset_deps);
+            events.start_if_signed_in();
+            app.manage(events);
+            // A paired device that pushes something new: the UI reloads.
+            let arrival_handle = app.handle().clone();
+            lan.on_arrival(move || {
+                let _ = arrival_handle.emit("library-changed", ());
+            });
+            // This device's own changes: after a short wait to gather a burst, the UI
+            // syncs them out. Merges from other devices never wake it.
+            let local_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    ops::local_change_burst(std::time::Duration::from_secs(2)).await;
+                    let _ = local_handle.emit("local-changed", ());
+                }
+            });
             // Devices paired earlier can sync as soon as the app is open.
             let start_lan = lan.clone();
             tauri::async_runtime::spawn(async move {
@@ -185,7 +205,9 @@ pub fn run() {
             commands::give_device_away,
             commands::cloud_status,
             commands::upload_to_cloud,
-            commands::sync_cloud
+            commands::sync_cloud,
+            commands::cloud_events_wake,
+            commands::cloud_connection
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

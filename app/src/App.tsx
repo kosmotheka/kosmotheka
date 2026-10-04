@@ -51,6 +51,7 @@ import {
   type LibrarySummary,
   addToSeries,
   catalogOptions,
+  cloudEventsWake,
   getBook,
   lanStatus,
   listBooks,
@@ -58,7 +59,7 @@ import {
   setActiveLibrary,
 } from "@/lib/api";
 import { refreshAccount, useAccount } from "@/lib/account";
-import { cloudNotices, refreshCloudStatus, runCloudSync } from "@/lib/cloud";
+import { cloudNotices, refreshCloudStatus, runCloudSync, watchCloudConnection } from "@/lib/cloud";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
 import { syncDevice } from "@/lib/sync-errors";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
@@ -180,39 +181,82 @@ export default function App() {
     });
   }, [account.signedIn, syncTheCloud, reload]);
 
+  // The live connection to the server's hub (D75): the indicator follows it.
+  useEffect(() => watchCloudConnection(), []);
+
   // Quietly catch up with every reachable paired device and the cloud when the app opens,
   // and again when it comes back to the foreground (a phone arriving home), at most once a
-  // minute. The LAN goes first and a cloud failure never gets in its way.
+  // minute. The LAN goes first and a cloud failure never gets in its way. The same pass
+  // runs at once, with no minute limit, after this device's own changes (`local-changed`).
+  // The cloud telling us something changed (`cloud-changed`) syncs only the cloud, and a
+  // paired device pushing to us (`library-changed`) only reloads.
   useEffect(() => {
     let last = 0;
     let running = false;
-    const syncAll = async () => {
-      if (running || Date.now() - last < 60_000) return;
-      running = true;
-      last = Date.now();
+    const again = {
+      marked: false,
+      /** Reads the mark and clears it. */
+      take() {
+        const was = this.marked;
+        this.marked = false;
+        return was;
+      },
+    };
+    const pass = async () => {
       let removed = 0;
       let messages: string[];
-      try {
-        const status = await lanStatus().catch(() => null);
-        for (const device of status?.servers ?? []) {
-          const report = await syncDevice(device.deviceId).catch(() => null);
-          removed += report?.removed.length ?? 0;
-        }
-        messages = await syncTheCloud(0);
-      } finally {
-        running = false;
+      const status = await lanStatus().catch(() => null);
+      for (const device of status?.servers ?? []) {
+        const report = await syncDevice(device.deviceId).catch(() => null);
+        removed += report?.removed.length ?? 0;
       }
-      if (removed > 0) messages.unshift(t("sharing.removed", { count: removed }));
+      messages = await syncTheCloud(0);
+      if (removed > 0) messages = [t("sharing.removed", { count: removed }), ...messages];
       if (messages.length > 0) setNotice(messages.join(" "));
       // Reload even without changes: the sync indicator shows the new time.
       reload();
     };
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void syncAll();
+    // `force` skips the minute limit. A forced call while a pass runs is not dropped: it
+    // makes the pass run once more when it ends.
+    const syncAll = async (force: boolean) => {
+      if (running) {
+        if (force) again.marked = true;
+        return;
+      }
+      if (!force && Date.now() - last < 60_000) return;
+      running = true;
+      try {
+        again.take();
+        do {
+          last = Date.now();
+          await pass();
+        } while (again.take());
+      } finally {
+        running = false;
+      }
     };
-    void syncAll();
+    const onCloudChanged = async () => {
+      const messages = await syncTheCloud(0);
+      if (messages.length > 0) setNotice(messages.join(" "));
+      reload();
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      // Android may have killed the live socket while the app slept.
+      void cloudEventsWake().catch(() => {});
+      void syncAll(false);
+    };
+    void syncAll(false);
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    const unlisten = [
+      listen("cloud-changed", () => void onCloudChanged()),
+      listen("local-changed", () => void syncAll(true)),
+      listen("library-changed", () => reload()),
+    ];
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      unlisten.forEach((stop) => void stop.then((fn) => fn()));
+    };
   }, [reload, syncTheCloud, t]);
 
   const books = state.status === "ready" ? state.books : [];

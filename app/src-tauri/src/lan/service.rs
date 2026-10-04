@@ -2,14 +2,14 @@
 //! running server, which starts only when needed (paired clients or pairing open).
 
 use std::path::Path;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
 use serde::Serialize;
 use tokio::net::TcpListener;
 
 use super::identity::Identity;
 use super::pairing::{PAIRING_WINDOW, PairingCode, PairingWindow};
-use super::server::{self, RunningServer, ServerState};
+use super::server::{self, ArrivalHook, RunningServer, ServerState};
 use super::{
     KnownDevice, device_name, has_clients, list_devices, local_addresses, random_secret,
     store_port, stored_port,
@@ -26,6 +26,7 @@ pub struct LanService {
     identity: Arc<RwLock<Arc<Identity>>>,
     pairing: Arc<Mutex<Option<PairingWindow>>>,
     server: Arc<tokio::sync::Mutex<Option<RunningServer>>>,
+    arrival: Arc<OnceLock<ArrivalHook>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,7 +58,14 @@ impl LanService {
             identity: Arc::new(RwLock::new(Arc::new(identity))),
             pairing: Arc::new(Mutex::new(None)),
             server: Arc::new(tokio::sync::Mutex::new(None)),
+            arrival: Arc::new(OnceLock::new()),
         }
+    }
+
+    /// What to do when a paired device pushes something new to this one (the app tells
+    /// the UI to reload). Set once at startup; later calls do nothing.
+    pub fn on_arrival(&self, hook: impl Fn() + Send + Sync + 'static) {
+        let _ = self.arrival.set(Arc::new(hook));
     }
 
     fn identity(&self) -> Result<Arc<Identity>> {
@@ -93,6 +101,7 @@ impl LanService {
         let state = ServerState {
             database: self.database.clone(),
             pairing: self.pairing.clone(),
+            arrival: self.arrival.clone(),
         };
         let running = server::start(listener, self.identity()?.server_config()?, state)?;
         let port = running.address.port();

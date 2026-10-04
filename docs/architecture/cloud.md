@@ -27,13 +27,14 @@ Detalles que conviene saber al revisar:
 
 ## Rutas
 
-Todas bajo `/v1/cloud/libraries`, cortafuegos `api` (cabeceras `X-Device-Id` y `Authorization: Bearer`, como el resto de `/v1`), JSON. Los errores de negocio son `{"error": "<código>"}`, los de `AccountErrorCode` (el mismo listener que la API de cuentas).
+Todas bajo `/v1/cloud/libraries` (menos `events`, abajo), cortafuegos `api` (cabeceras `X-Device-Id` y `Authorization: Bearer`, como el resto de `/v1`), JSON. Los errores de negocio son `{"error": "<código>"}`, los de `AccountErrorCode` (el mismo listener que la API de cuentas).
 
 | Ruta | Cuerpo | Respuesta |
 |---|---|---|
 | `POST /v1/cloud/libraries` | — | `201 {"id": C}`. Crea `C` de la cuenta y su membresía |
 | `GET /v1/cloud/libraries` | — | `200 [{"id": C, "localLibraryId": …\|null}]`, las de la cuenta |
 | `POST /v1/cloud/libraries/{C}/pull` | `{"schemaVersion": n, "vector": {dispositivo: hlc}}` | `200 {"operations": [{"schemaVersion": n, "operation": {…}}], "vector": {…}}` |
+| `GET /v1/cloud/events` | — | `200 {"token": …, "topics": […], "expiresAt": …}`; ver [Avisos al momento](#avisos-al-momento-73). Sin Mercure: `409 {"error":"events_unavailable"}` |
 | `POST /v1/cloud/libraries/{C}/push` | `{"schemaVersion": n, "operations": [{"schemaVersion": n, "operation": {…}}]}` (máximo 1000; el de arriba es el de la base de datos del cliente, el de cada operación el de cuando se grabó) | `200 {"received": x, "known": y, "rejected": z}` |
 
 - **`pull`** devuelve las operaciones de `C` con HLC mayor que la entrada del vector para su autor (un autor que no aparece viene entero), ordenadas por HLC, y el vector propio de `C` (el mayor HLC de cada autor; siempre un objeto, aunque esté vacío). Es el protocolo de la red local ([sync.md](sync.md)) para una sola biblioteca.
@@ -75,6 +76,70 @@ Las aplica `App\Sync\CloudPush` (el controlador solo mapea). Todo el `push` va e
 | 8 · Dos subidas a la vez (`C1` y `C2`) | cliente y 7.5: el servidor ya soporta dos `C` con el mismo id local (costura 1 y 2); la fusión y el borrado de la sobrante no están hechos | — |
 
 Otros tests: `testUploadingALibraryLinksItAndStoresItsHistory`, `testALinkLateInTheBatchIsProcessedFirst`, `testPullingWithAnEmptyVectorReturnsEverythingInHlcOrder`, `testPullingWithAPartialVectorReturnsOnlyWhatIsNewer`, `testPushingTheSameOperationsTwiceChangesNothing`, `testADifferentSchemaVersionIsAConflictOnPullAndPush`, `testAnEmptyObjectOfFieldsSurvivesAndAListOfFieldsIsRejected`, `testDeletingTheAccountDeletesItsCloudLibraries`. Las operaciones firmadas las construye `src/DataFixtures/SigningDevice.php` (la usan también las fixtures) con la misma forma canónica que `OperationSignature`.
+
+## Avisos al momento (7.3)
+
+Decidido en D75: con la app abierta, el servidor avisa «hay algo nuevo en esta biblioteca» y la app sincroniza por el protocolo de siempre. **El aviso no lleva datos**; lo que el dispositivo puede ver lo decide siempre `pull`, con la tabla de acceso.
+
+### El hub
+
+- **Mercure 1.0** (`dunglas/mercure:v1.0.3`, fijada) en su propio contenedor, `mercure_kosmotheka` (172.194.0.14), porque PHP-FPM no mantiene conexiones abiertas. **No publica ningún puerto**: Symfony le publica por la red interna (`http://mercure_kosmotheka/.well-known/mercure`) y la app llega por nginx, en `<servidor>/.well-known/mercure` (`location` con `proxy_buffering off`, HTTP/1.1 y lectura de 24 h, para SSE). La ruta del token no envía la URL del hub: la app la construye.
+- Suscriptores anónimos **apagados**, API de suscripciones apagada y sin CORS (el cliente es Rust, no un navegador): son los valores por defecto del hub y no se tocan. **Latido (heartbeat): 40 s** (el hub manda una línea `:` cada 40 s para mantener viva la conexión; comprobado a mano).
+- **Dos claves HS256 distintas**: la del publicador (solo Symfony) y la del suscriptor (con la que se firman los tokens que se dan a los dispositivos). Un token de suscriptor nunca puede publicar. El hub confía en un emisor (`iss` = `urn:kosmotheka:server`) y exige la audiencia (`aud`) `http://mercure_kosmotheka/.well-known/mercure`, fijada en el hub con `resource_identifier` para que no dependa del `Host` de la petición; ese valor es también `MERCURE_URL`.
+- Los tokens son los de **Mercure 1.0** (RFC 9068): la autorización va en `authorization_details`, no en el antiguo `mercure.subscribe`. El hub rechaza los antiguos.
+
+### Temas
+
+Cadenas, nunca el id local de la biblioteca (D84):
+
+| Tema | Quién lo recibe | Cuándo se publica |
+|---|---|---|
+| `urn:kosmotheka:cloud-library:<C>` | Las cuentas con membresía en `C` | Tras un `push` cuya transacción se confirmó con `received > 0` |
+| `urn:kosmotheka:account:<id de usuario>` | Esa cuenta («tu lista de bibliotecas cambió») | Al crear una biblioteca de la nube para esa cuenta |
+
+Un `push` que solo trae operaciones conocidas o rechazadas no publica nada. Hoy no hay ruta para borrar una biblioteca de la nube (solo desaparece con la cuenta de su dueña, y entonces no queda a quién avisar), así que borrar no publica. Cuando 7.5 añada miembros, entrar o salir de una biblioteca avisará en el tema de la cuenta afectada.
+
+### `GET /v1/cloud/events`
+
+Mismo cortafuegos y cabeceras que el resto. **No lee nada del cliente**: ni cabeceras, ni consulta, ni cuerpo. Los temas salen de las filas de `membership` de la cuenta autenticada (la tabla de acceso, D84) y del id de la propia cuenta.
+
+`200 {"token": "<JWT>", "topics": [...], "expiresAt": "2026-10-04T18:30:00Z"}`. El JWT:
+
+- está firmado solo con la clave de suscriptor;
+- lleva `iss`, `aud`, `sub` (id de usuario), `client_id`, `iat`, `jti` y `exp` (1 hora);
+- su `authorization_details` tiene una sola entrada con `actions: ["subscribe"]` y un `{"match": <tema>}` por cada tema de `topics`; nada de `publish`.
+
+Sin Mercure: `409 {"error":"events_unavailable"}` (el mismo estado que `two_factor_unavailable`), y `GET /v1/server` dice `events: false`.
+
+### Lo que se publica
+
+Siempre **actualizaciones privadas** con datos `{}`, **después del commit** y nunca dentro de la transacción. Si el hub falla (caído, clave mala), se anota un aviso en el registro y la petición responde como siempre: **un aviso nunca hace fallar una sincronización**.
+
+### Sin Mercure (D18)
+
+`MERCURE_URL` vacío en `.env.local` (así viene en `.env`): el servidor no publica nada, la ruta del token responde `events_unavailable` y `GET /v1/server` anuncia `events: false`. La app sincroniza al abrirse, al volver a primer plano y tras cada cambio. Con la URL puesta y las claves vacías el servidor sí se considera con avisos y fallará al emitir el token: las dos cosas van juntas.
+
+### Caducidad del token y retirar el acceso
+
+El token dura **1 hora** y la app pide uno nuevo antes de que caduque. Si una cuenta pierde el acceso a una biblioteca (o un dispositivo se quita), hasta que el token caduque ese dispositivo todavía puede enterarse de **que** la biblioteca cambió, nunca de **qué** cambió: el aviso es `{}`, y el acceso a los datos lo sigue decidiendo `pull`, que ya no responde (`404`/`401`). El siguiente token ya no lleva el tema. (Un dispositivo quitado ni siquiera puede pedir otro: `401`.)
+
+### Dónde está en el código
+
+- `src/Sync/`: `HubSettings` (URL, clave de suscriptor, emisor), `NoticeTopic` (los temas), `EventsToken` (el token), `SyncNotifier` (publica; no lanza nunca). `CloudPush` y `CloudLibraryCreator` lo llaman tras confirmar.
+- `src/Controller/CloudEventsController.php` y el campo `events` de `ServerController`.
+- `config/packages/mercure.yaml` (el hub de publicación, protocolo 1.0) y `docker/docker-compose.yaml` y `docker/nginx/kosmotheka.local.conf` (el contenedor y el proxy).
+- Tests: `tests/Controller/CloudEventsControllerTest.php`, con `tests/Support/RecordingHub.php` en lugar del hub (entorno de test). Los casos hostiles: `testJhonnysTokenHoldsOnlyHisOwnTopicsWhateverIdsHeSends` (Jhonny conoce los ids de la familia y no recibe ninguno de sus temas, mande lo que mande), `testTheTokenIsSignedWithTheSubscriberKeyAndCannotPublish`, `testARemovedDeviceGetsNoToken`, `testASignedOutDeviceGetsNoToken`.
+
+### Comprobación manual del hub real
+
+Con `make up` y `make fixtures` (Ana tiene dos dispositivos; Jhonny, hostil, conoce los ids de la familia). Los tokens de dispositivo de las fixtures están en `server/var/fixtures/cast.json`. Por nginx, en el puerto 8095:
+
+1. **Anónimo:** `curl -i "http://localhost:8095/.well-known/mercure?match=urn:kosmotheka:cloud-library:<C>"` responde `401`.
+2. **Token de Ana:** `GET /v1/cloud/events` con las cabeceras de su dispositivo; `topics` trae su cuenta y la biblioteca García. Con ese token, `curl -N -H "Authorization: Bearer <token>" "http://localhost:8095/.well-known/mercure?match=<tema>"` mantiene la conexión abierta y muestra `:` cada 40 s.
+3. **Un aviso llega:** con esa conexión abierta, haz `push` de una operación nueva desde el otro dispositivo de Ana (hace falta firmarla; en los tests lo hace `SigningDevice`), o crea otra biblioteca con `POST /v1/cloud/libraries` y llega el aviso del tema de su cuenta. Se ve `id: urn:uuid:…` y `data: {}`.
+4. **Jhonny no oye a la familia:** su token (`GET /v1/cloud/events` como Jhonny) solo trae su cuenta y sus bibliotecas. Si se suscribe al tema de la familia, el hub responde `200` (así lo define el protocolo) pero la conexión no recibe nada cuando la familia hace `push`.
+
+Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió dos avisos `data: {}` (el `push` de su otro dispositivo, `received: 1`, y la biblioteca nueva); la conexión de Jhonny a `cloud-library:<García>` quedó abierta (`200`) con solo el latido; el latido llegó cada 40 s.
 
 ## Dónde está en el código
 

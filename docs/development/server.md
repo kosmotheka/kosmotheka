@@ -15,12 +15,19 @@
 ## Arrancar
 
 ```bash
+# Dos claves distintas para el hub de avisos (hito 7.3); van en docker/.env y en .env.local
+PUBLISHER_KEY=$(openssl rand -hex 32); SUBSCRIBER_KEY=$(openssl rand -hex 32)
 cd server/docker
 cp .env.dist .env        # solo la primera vez; .env no se versiona
+printf 'MERCURE_PUBLISHER_JWT_KEY=%s\nMERCURE_SUBSCRIBER_JWT_KEY=%s\n' "$PUBLISHER_KEY" "$SUBSCRIBER_KEY" >> .env
+# (.env.dist trae esas dos claves vacías: si ya las copiaste, edita las líneas en vez de añadir otras)
 cd ..
 cat > .env.local <<ENV   # solo la primera vez; tampoco se versiona
 DATABASE_URL="postgresql://kosmotheka:kosmotheka@db_kosmotheka:5432/kosmotheka?serverVersion=18&charset=utf8"
 APP_SECRET=$(openssl rand -hex 32)
+MERCURE_URL=http://mercure_kosmotheka/.well-known/mercure
+MERCURE_PUBLISHER_JWT_KEY=$PUBLISHER_KEY
+MERCURE_SUBSCRIBER_JWT_KEY=$SUBSCRIBER_KEY
 ENV
 make build               # solo la primera vez o si cambia un Dockerfile
 make up
@@ -40,6 +47,7 @@ Elegidos para no chocar con otros proyectos Docker de la máquina (Riddle, rpgut
 | `php_kosmotheka` | PHP 8.5-FPM, Composer, Xdebug (puerto 9001) | — | 172.194.0.11 |
 | `nginx_kosmotheka` | nginx, delante de PHP | 8095 | 172.194.0.12 |
 | `mailpit_kosmotheka` | Mailpit: captura todo el correo en desarrollo | 8097 (web) | 172.194.0.13 |
+| `mercure_kosmotheka` | Hub Mercure 1.0 (avisos al momento, D75) | — **ninguno publicado** | 172.194.0.14 |
 
 - Subred `172.194.0.0/24`; el proyecto Compose se llama `kosmotheka`.
 - El código de `server/` se monta en `/var/www/kosmotheka.local`; `spec/` se monta **en solo lectura** en `/var/www/spec`.
@@ -71,6 +79,21 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 `TWO_FACTOR_ENABLED` (por defecto `true` en `.env`) activa el alta de segundo factor (D78, `docs/architecture/accounts.md`) para cuentas nuevas; a `false` en un `.env.local`, `POST /v1/account/two-factor/setup` responde `two_factor_unavailable` y `GET /v1/server` anuncia `two_factor: false`. No afecta a una cuenta que ya lo tenga activado: se le sigue pidiendo al iniciar sesión.
 
 `TRUSTED_PROXIES` (por defecto `127.0.0.1` en desarrollo) le dice a Symfony qué proxys delante del servidor son de confianza para leer `X-Forwarded-For` y `X-Forwarded-Proto`: en producción, nginx y quizá un CDN. Se usa para que los limitadores de peticiones por IP (`config/packages/rate_limiter.yaml`) vean la IP real del cliente.
+
+## Avisos al momento: el hub de Mercure (hito 7.3)
+
+`mercure_kosmotheka` (`dunglas/mercure:v1.0.3`, fijada) manda a la app abierta un aviso «hay algo nuevo» (D75; el diseño, en `docs/architecture/cloud.md`, «Avisos al momento»). **No publica ningún puerto en el equipo**: Symfony le habla por la red de Docker y la app llega a través de nginx (`/.well-known/mercure`, por el 8095 en desarrollo).
+
+| Clave | Dónde | Para qué |
+|---|---|---|
+| `MERCURE_PUBLISHER_JWT_KEY` | `docker/.env` (el hub) y `.env.local` (Symfony) | Firma los tokens con que Symfony publica. Solo la usa el servidor |
+| `MERCURE_SUBSCRIBER_JWT_KEY` | los mismos dos | Firma los tokens de suscripción que se dan a los dispositivos. **Distinta de la anterior**: un token de suscriptor no puede publicar |
+| `MERCURE_URL` | `.env.local` (`.env` la trae vacía) | `http://mercure_kosmotheka/.well-known/mercure`. **Vacía = sin Mercure** (D18): no se publica nada y `GET /v1/server` dice `events: false` |
+
+- Cada clave se genera con `openssl rand -hex 32` (32 bytes o más) y **el mismo valor va en `docker/.env` y en `.env.local`**. El `docker-compose` se niega a arrancar sin ellas. Quien ya tenía el entorno montado: añade las dos claves y `MERCURE_URL`, y `make up`.
+- `.env.test` lleva claves y una URL falsas, solo para los tests (que no usan el hub real: `tests/Support/RecordingHub.php` apunta lo que se publicaría). Ningún valor real va al repositorio.
+- El emisor (`urn:kosmotheka:server`) y la audiencia (la misma `MERCURE_URL`) están fijos en `docker/docker-compose.yaml`; si cambias `MERCURE_URL`, cambia también `resource_identifier` allí.
+- Los suscriptores anónimos, la API de suscripciones y CORS vienen apagados por defecto en el hub y no se tocan. Latido: 40 s.
 
 ## Comandos habituales
 

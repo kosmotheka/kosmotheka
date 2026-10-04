@@ -1452,6 +1452,10 @@ mockIPC((cmd, args) => {
       mockAccountDetails = { ...mockAccountDetails, backupCodesLeft: 10 };
       return ACCOUNT_BACKUP_CODES;
     }
+    case "cloud_connection":
+      return { live: mockAccount.signedIn, available: mockAccount.signedIn };
+    case "cloud_events_wake":
+      return null;
     case "cloud_status":
       return libraries.map((library) => {
         const linked = cloudLinked.has(library.id);

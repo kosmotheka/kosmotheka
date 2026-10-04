@@ -42,6 +42,7 @@ final readonly class CloudPush
         private CloudOperationRepository $operations,
         private CloudDeviceKeyRepository $deviceKeys,
         private DeviceRepository $devices,
+        private SyncNotifier $notifier,
     ) {
     }
 
@@ -54,7 +55,14 @@ final readonly class CloudPush
         // one by one in apply(): history from before an update is still good.
         $this->schemaVersion->require($request->schemaVersion);
 
-        return $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request));
+        $result = $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request));
+
+        // After the commit, and only when something new was stored (D75).
+        if ($result->received > 0) {
+            $this->notifier->libraryChanged($library);
+        }
+
+        return $result;
     }
 
     private function apply(CloudLibrary $library, PushRequest $request): PushResult

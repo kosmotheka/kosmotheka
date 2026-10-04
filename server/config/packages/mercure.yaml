@@ -1,0 +1,16 @@
+mercure:
+    hubs:
+        default:
+            # Empty means Mercure is off (D18): see App\Sync\SyncNotifier.
+            url: '%env(default::MERCURE_URL)%'
+            # The hub speaks Mercure 1.0: tokens are RFC 9068 access tokens.
+            protocol_version: '1.0'
+            jwt:
+                secret: '%env(MERCURE_PUBLISHER_JWT_KEY)%'
+                algorithm: hmac.sha256
+                publish: '*'
+                # `aud` is the hub URL above.
+                claims:
+                    iss: '%app.mercure_issuer%'
+                    sub: 'kosmotheka-server'
+                    client_id: 'kosmotheka-server'

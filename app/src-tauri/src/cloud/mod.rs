@@ -7,6 +7,7 @@
 //! Network calls never hold the database guard: read, drop it, await, lock again.
 
 pub mod client;
+pub mod events;
 #[cfg(test)]
 mod tests;
 

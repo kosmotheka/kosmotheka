@@ -103,6 +103,12 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::TwoFactorUnavailable, 409);
     }
 
+    /** This server runs without a Mercure hub (D18, D75). */
+    public static function eventsUnavailable(): self
+    {
+        return new self(AccountErrorCode::EventsUnavailable, 409);
+    }
+
     public static function twoFactorAlreadyEnabled(): self
     {
         return new self(AccountErrorCode::TwoFactorAlreadyEnabled, 409);

@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final readonly class CloudLibraryCreator
 {
-    public function __construct(private EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager, private SyncNotifier $notifier)
     {
     }
 
@@ -25,6 +25,7 @@ final readonly class CloudLibraryCreator
         $this->entityManager->persist($library);
         $this->entityManager->persist(new Membership($owner, $library));
         $this->entityManager->flush();
+        $this->notifier->librariesOfAccountChanged($owner);
 
         return $library;
     }

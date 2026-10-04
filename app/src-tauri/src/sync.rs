@@ -943,6 +943,19 @@ mod tests {
     }
 
     #[test]
+    fn merging_operations_from_another_device_does_not_wake_the_local_change_notifier() {
+        let mut a = Device::new();
+        let mut b = Device::sharing(&a);
+        a.add("A", None, "Ana");
+
+        let before = ops::recorded_on_this_thread();
+        let report = b.pull_from(&a);
+
+        assert!(report.received > 0, "something was merged");
+        assert_eq!(ops::recorded_on_this_thread(), before);
+    }
+
+    #[test]
     fn syncing_again_changes_nothing() {
         let mut a = Device::new();
         let mut b = Device::sharing(&a);

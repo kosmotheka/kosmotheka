@@ -73,6 +73,7 @@ services:
             - ./nginx/kosmotheka.local.conf:/etc/nginx/sites-available/kosmotheka.local.conf:ro
         depends_on:
             - php_kosmotheka
+            - mercure_kosmotheka
         networks:
             default:
                 ipv4_address: 172.194.0.12
@@ -88,6 +89,34 @@ services:
         networks:
             default:
                 ipv4_address: 172.194.0.13
+
+    mercure_kosmotheka:
+        container_name: mercure_kosmotheka
+        # The live-notices hub (milestone 7.3, D75): a separate container because
+        # PHP-FPM cannot hold open connections. Pinned, so an upgrade is deliberate.
+        image: dunglas/mercure:v1.0.3
+        # No published port: the app reaches it through nginx
+        # (/.well-known/mercure), and Symfony publishes over the internal network.
+        environment:
+            # Plain HTTP inside the network; TLS is nginx's job. A catch-all site
+            # accepts any Host, so the audience is pinned below.
+            SERVER_NAME: ':80'
+            # Who may sign tokens (RFC 9068 `iss`), and the audience they carry
+            # (`aud`). Must match App\Sync\EventsToken::ISSUER and MERCURE_URL.
+            MERCURE_TRUSTED_ISSUERS: 'urn:kosmotheka:server'
+            MERCURE_EXTRA_DIRECTIVES: 'resource_identifier http://mercure_kosmotheka/.well-known/mercure'
+            # Two different keys: the one that publishes never goes to a client,
+            # and the one given out as subscriber tokens cannot publish.
+            MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:?set it in docker/.env (docs/development/server.md)}
+            MERCURE_PUBLISHER_JWT_ALG: HS256
+            MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:?set it in docker/.env (docs/development/server.md)}
+            MERCURE_SUBSCRIBER_JWT_ALG: HS256
+            # Not set, on purpose, because the defaults are the safe ones: anonymous
+            # subscribers off, subscriptions API off, no CORS (the client is native
+            # Rust, not a browser), heartbeat 40s.
+        networks:
+            default:
+                ipv4_address: 172.194.0.14
 
 volumes:
     db_kosmotheka:

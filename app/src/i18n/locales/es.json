@@ -571,7 +571,11 @@
     "lastSync": "Sincronizado {{when}}",
     "never": "Aún sin sincronizar",
     "label": "Estado de sincronización: {{status}}. Abrir dispositivos",
-    "offline": "Sin conexión con la nube"
+    "offline": "Sin conexión con la nube",
+    "live": "En directo",
+    "notLive": "Sin conexión en directo",
+    "liveHint": "Los cambios de la nube llegan al momento",
+    "notLiveHint": "Los cambios de la nube llegan al sincronizar"
   },
   "help": {
     "title": "Ayuda",
