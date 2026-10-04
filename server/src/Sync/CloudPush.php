@@ -193,6 +193,9 @@ final readonly class CloudPush
             $this->verifyAuthor($library, $pushed->operation, $payload);
         }
         $this->requirePrevious($library, $payload);
+        if ($this->operations->hasHlc($library, $payload->hlc)) {
+            throw new OperationRejectedException(OperationRejection::HlcTaken);
+        }
 
         return $this->operations->insertIfNew(
             $library,

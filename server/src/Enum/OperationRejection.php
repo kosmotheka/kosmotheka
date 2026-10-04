@@ -21,4 +21,6 @@ enum OperationRejection: string
     case NewerVersion = 'newer_version';
     /** Its previous operation is not stored here (yet), or is not an earlier one of the same author (D87). */
     case BrokenChain = 'broken_chain';
+    /** Another operation of this library already holds its HLC: only a modified app signs two with one time. */
+    case HlcTaken = 'hlc_taken';
 }

@@ -52,6 +52,15 @@ final class CloudOperationRepository extends ServiceEntityRepository
         return ['author' => $row['author_device_id'], 'hlc' => $row['hlc']];
     }
 
+    /** Whether another operation of this library holds the HLC (unique per library: it names its device). */
+    public function hasHlc(CloudLibrary $library, string $hlc): bool
+    {
+        return false !== $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT 1 FROM cloud_operation WHERE cloud_library_id = :library AND hlc = :hlc',
+            ['library' => $library->getId()->toRfc4122(), 'hlc' => $hlc],
+        );
+    }
+
     /**
      * Stores the operation as received, unless the library's log already has it.
      *

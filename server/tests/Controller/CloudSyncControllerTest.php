@@ -547,6 +547,24 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$honest])['body']);
     }
 
+    /** Two different operations with one HLC (only a modified app signs them): the second is refused, and the push goes on. */
+    public function testASecondOperationWithAnHlcAlreadyStoredIsRefused(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $own = $this->laptop->publisher(self::LOCAL, self::T + 30, 'own');
+        \assert(\is_string($own['id']));
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$own])['body']);
+        $add = static fn (string $name): array => [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => $name]]];
+        $first = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', $add('first'), previous: $own['id']);
+        $twin = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', $add('twin'), previous: $own['id']);
+        self::assertSame($first['hlc'], $twin['hlc']);
+        $before = $this->rows('cloud_operation');
+
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$first, $twin])['body']);
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$twin])['body']);
+        self::assertSame($before + 1, $this->rows('cloud_operation'));
+    }
+
     /** D87: the key `previous` is required, even when it is null. */
     public function testAnOperationWithoutThePreviousKeyIsRejected(): void
     {

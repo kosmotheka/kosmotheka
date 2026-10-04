@@ -27,6 +27,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'cloud_operation')]
 #[ORM\Index(name: 'idx_cloud_operation_cloud_library', columns: ['cloud_library_id'])]
 #[ORM\Index(name: 'idx_cloud_operation_author_hlc', columns: ['cloud_library_id', 'author_device_id', 'hlc'])]
+#[ORM\UniqueConstraint(name: 'uniq_cloud_operation_hlc', columns: ['cloud_library_id', 'hlc'])]
 final readonly class CloudOperation
 {
     public function __construct(

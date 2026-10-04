@@ -276,6 +276,7 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
             || operation.validate().is_err()
             || !signature_holds(tx, &operation)?
             || !previous_holds(tx, &operation)?
+            || hlc_taken(tx, &operation)?
         {
             held_back.insert(author);
             report.rejected += 1;
@@ -501,6 +502,16 @@ pub fn apply_change(
             Err(other)
         }
     }
+}
+
+/// Another operation already holds this HLC: only a modified app signs two with one
+/// time, and logging the second would fail the whole batch.
+fn hlc_taken(conn: &Connection, operation: &Operation) -> Result<bool> {
+    let hlc = operation.hlc.to_string();
+    Ok(conn
+        .query_row("SELECT 1 FROM operations WHERE hlc = ?1", [hlc], |_| Ok(()))
+        .optional()?
+        .is_some())
 }
 
 fn is_known(conn: &Connection, operation_id: &str) -> Result<bool> {
@@ -1839,6 +1850,25 @@ mod tests {
         assert!(laptop.titles().contains(&"One".to_owned()));
         assert!(laptop.titles().contains(&"Two".to_owned()));
         assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn two_operations_with_one_hlc_do_not_break_the_merge() {
+        let mut laptop = Device::new();
+        let mut phone = Device::sharing(&laptop);
+        laptop.add("Dune", None, "Tersoal");
+        laptop.sync_with(&mut phone);
+        let work = work_titled(&laptop, "Dune");
+        let last = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop)).unwrap();
+        // A modified app signs two different operations with the same time and counter.
+        let millis = now_millis();
+        let first = forged_edit(&laptop, &work, "Arrakis", millis, last.as_deref());
+        let twin = forged_edit(&laptop, &work, "Caladan", millis, last.as_deref());
+
+        let report = merge(&mut phone.0, vec![first, twin]).unwrap();
+
+        assert_eq!((report.received, report.rejected), (1, 1), "{report:?}");
+        assert_eq!(phone.titles().len(), 1);
     }
 
     #[test]
