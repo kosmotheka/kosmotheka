@@ -70,6 +70,7 @@ Hace falta el servidor con el hub: `cd server && make up` (el contenedor de Merc
 
 - [ ] **De servidor a cliente.** Empareja A y B por la red local (A sirve, B se conecta). Añade un libro en A. *Esperado:* el cliente es quien se conecta, así que B lo recibe cuando sincroniza: al abrirse, al volver a primer plano o tras un cambio propio. No hay aviso de servidor a cliente (límite conocido, el servidor local no abre conexión con quien le sincroniza).
 - [ ] **De cliente a servidor.** Añade un libro en B, el cliente. *Esperado:* a los 2 segundos B lo envía y en A aparece sin tocar nada (la pantalla de A se recarga sola).
+- [ ] **Escanear una tanda en el móvil.** Sin sesión en la nube, el portátil muestra el QR y el móvil lo escanea (el portátil sirve). Con la app abierta en los dos, escanea cinco libros seguidos en el móvil sin cerrarla. *Esperado:* van apareciendo en el portátil mientras escaneas, sin tocarlo y sin cerrar ni volver a abrir la app del móvil. Si a la vez editas un libro en el portátil, el móvil lo recibe en su siguiente escaneo.
 
 ### Sesión
 
