@@ -84,14 +84,14 @@ export function BackupsDialog({
   const passphraseOk = passphrase.length >= MIN_PASSPHRASE && passphrase === confirmation;
   const canBackup = !protect || passphraseOk;
   const zip = [{ name: t("data.backupFile"), extensions: ["zip"] }];
-  const age = [{ name: t("data.encryptedBackupFile"), extensions: ["age"] }];
+  const encrypted = [{ name: t("data.encryptedBackupFile"), extensions: ["kosmotheka"] }];
   const csv = [{ name: "CSV", extensions: ["csv"] }];
 
   const backup = () =>
     run(async () => {
       const path = await save({
-        defaultPath: `${slug(library)}-${today()}${protect ? ".kosmotheka.age" : ".zip"}`,
-        filters: protect ? age : zip,
+        defaultPath: `${slug(library)}-${today()}${protect ? ".kosmotheka" : ".zip"}`,
+        filters: protect ? encrypted : zip,
       });
       if (!path) return null;
       return t("data.backupDone", {
@@ -102,8 +102,8 @@ export function BackupsDialog({
   const backupDevice = () =>
     run(async () => {
       const path = await save({
-        defaultPath: `kosmotheka-${today()}${protect ? ".kosmotheka.age" : ".zip"}`,
-        filters: protect ? age : zip,
+        defaultPath: `kosmotheka-${today()}${protect ? ".kosmotheka" : ".zip"}`,
+        filters: protect ? encrypted : zip,
       });
       if (!path) return null;
       return t("data.deviceBackupDone", {
@@ -116,7 +116,7 @@ export function BackupsDialog({
       const path = await open({
         multiple: false,
         directory: false,
-        filters: [...zip, ...age],
+        filters: [...zip, ...encrypted],
       });
       if (!path) return null;
       setLocked(null);

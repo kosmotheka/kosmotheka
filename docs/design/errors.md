@@ -50,8 +50,9 @@ Son **avisos**, nunca errores: el alta sigue siendo posible a mano.
 
 | Código | Nivel | Mensaje | Qué hacer |
 |---|---|---|---|
-| `not_a_backup` | error | Este fichero no es una copia de seguridad de la app. | Elige un `.zip` o `.age` creado con «Guardar copia». Un CSV se carga con «Importar CSV». |
+| `not_a_backup` | error | Este fichero no es una copia de seguridad de la app. | Elige un `.zip` o `.kosmotheka` creado con «Guardar copia». Un CSV se carga con «Importar CSV». |
 | `unreadable` | error | La copia está dañada y no se puede leer. | Prueba con otra copia más antigua. Si la has pasado por correo o por la nube, descárgala de nuevo. |
+| `old_encrypted_backup` | error | Esta copia se hizo con una versión de desarrollo que usaba otro formato y no se puede abrir. | Solo las versiones de desarrollo del 3 de octubre de 2026 las crearon. Haz una copia nueva desde la app. |
 | `other_version` | error | Esta copia se hizo con otra versión de la app. | Actualiza la app a la última versión en este dispositivo e inténtalo de nuevo. |
 | `not_empty` | error | Solo se puede restaurar en un catálogo vacío. | Restaurar reemplazaría lo que tienes. Si quieres **juntar** catálogos, empareja los dispositivos en «Dispositivos». Si de verdad quieres restaurar, hazlo en una instalación nueva. |
 | `passphrase_needed` | error | Esta copia está protegida: escribe su contraseña. | La copia es un fichero cifrado (D86); la pantalla pide la contraseña. |

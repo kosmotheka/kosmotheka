@@ -427,6 +427,7 @@
       "not_empty": "Esta copia es de una versión anterior y solo se restaura sobre una biblioteca vacía. Crea una biblioteca nueva, ábrela y restáurala ahí.",
       "passphrase_needed": "Esta copia está protegida: escribe su contraseña.",
       "wrong_passphrase": "Contraseña incorrecta. No se ha restaurado nada.",
+      "old_encrypted_backup": "Esta copia se hizo con una versión de desarrollo que usaba otro formato y no se puede abrir.",
       "passphrase_empty": "Escribe una contraseña para la copia."
     },
     "csvTitle": "Hoja de cálculo de {{name}}",

@@ -6,8 +6,10 @@
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
 
-use age::secrecy::SecretString;
+use chacha20poly1305::aead::{Aead, KeyInit, Payload};
+use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use kosmotheka_domain::{Change, Entity};
+use rand::RngExt;
 use rusqlite::{Connection, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
@@ -57,8 +59,28 @@ const SINGLE_LIBRARY_VERSION: u32 = 2;
 const OLDEST_RESTORABLE_SCHEMA: i64 = 9;
 const DATA_FILE: &str = "backup.json";
 const COVERS_PREFIX: &str = "covers/";
-/// How every `age` file starts (D86); a plain backup is a zip and starts with `PK`.
-const AGE_HEADER: &[u8] = b"age-encryption.org/v1";
+
+// The encrypted envelope (D86), documented in docs/architecture/data-model.md:
+// magic | log_n (1) | r (4, BE) | p (4, BE) | salt (16) | nonce (12) | ciphertext + tag.
+// The whole header is the associated data, so changing any byte of it fails the tag.
+/// Name plus the format version byte. A plain backup is a zip and starts with `PK`.
+const MAGIC: &[u8] = b"kosmotheka-backup\x01";
+const SALT_LEN: usize = 16;
+const NONCE_LEN: usize = 12;
+const TAG_LEN: usize = 16;
+const HEADER_LEN: usize = MAGIC.len() + 1 + 4 + 4 + SALT_LEN + NONCE_LEN;
+/// OWASP's recommendation for scrypt.
+const SCRYPT_LOG_N: u8 = 17;
+const SCRYPT_R: u32 = 8;
+const SCRYPT_P: u32 = 1;
+/// The most a file may ask for on restore, so a crafted one cannot eat all memory:
+/// scrypt needs 128 · r · 2^log_n bytes, and ours ask for 128 MiB.
+const MAX_LOG_N: u8 = 20;
+const MAX_R: u32 = 16;
+const MAX_P: u32 = 4;
+const MAX_SCRYPT_MEMORY: u64 = 256 * 1024 * 1024;
+/// How a file from the development builds that used the `age` format starts.
+const OLD_AGE_HEADER: &[u8] = b"age-encryption.org/v1";
 
 pub(crate) type Rows = BTreeMap<String, Vec<Map<String, Value>>>;
 
@@ -124,8 +146,8 @@ pub fn all_libraries(conn: &Connection) -> Result<Vec<String>> {
         .collect::<rusqlite::Result<_>>()?)
 }
 
-/// With a passphrase the bytes written are the zip encrypted as an `age` file (D86),
-/// which the `age` tool opens without this app; without one, the plain zip.
+/// With a passphrase the bytes written are the zip inside the encrypted envelope (D86),
+/// which a short script opens without this app; without one, the plain zip.
 pub fn export(
     conn: &Connection,
     ids: &[String],
@@ -193,16 +215,79 @@ pub fn export(
     }
     let zip = zip.finish()?.into_inner();
     let bytes = match passphrase {
-        Some(passphrase) => age::encrypt(
-            &age::scrypt::Recipient::new(SecretString::from(passphrase.to_owned())),
-            &zip,
-        )
-        .map_err(|_| Error::BadBackup("unreadable"))?,
+        Some(passphrase) => seal(&zip, passphrase, SCRYPT_LOG_N, SCRYPT_R, SCRYPT_P)?,
         None => zip,
     };
     out.write_all(&bytes)?;
     out.flush()?;
     Ok(summary)
+}
+
+/// scrypt of the passphrase and the salt: a key that is used once, since every backup
+/// has its own salt.
+fn derive_key(passphrase: &str, salt: &[u8], log_n: u8, r: u32, p: u32) -> Result<[u8; 32]> {
+    let params = scrypt::Params::new(log_n, r, p).map_err(|_| Error::BadBackup("unreadable"))?;
+    let mut key = [0u8; 32];
+    scrypt::scrypt(passphrase.as_bytes(), salt, &params, &mut key)
+        .map_err(|_| Error::BadBackup("unreadable"))?;
+    Ok(key)
+}
+
+/// Wraps the zip in the envelope. The nonce is random: 96 bits are safe for a key that
+/// encrypts a single message.
+fn seal(zip: &[u8], passphrase: &str, log_n: u8, r: u32, p: u32) -> Result<Vec<u8>> {
+    let salt: [u8; SALT_LEN] = rand::rng().random();
+    let nonce: [u8; NONCE_LEN] = rand::rng().random();
+    let mut out = Vec::with_capacity(HEADER_LEN + zip.len() + TAG_LEN);
+    out.extend_from_slice(MAGIC);
+    out.push(log_n);
+    out.extend_from_slice(&r.to_be_bytes());
+    out.extend_from_slice(&p.to_be_bytes());
+    out.extend_from_slice(&salt);
+    out.extend_from_slice(&nonce);
+    let key = derive_key(passphrase, &salt, log_n, r, p)?;
+    let encrypted = ChaCha20Poly1305::new(&Key::from(key))
+        .encrypt(
+            &Nonce::from(nonce),
+            Payload {
+                msg: zip,
+                aad: &out,
+            },
+        )
+        .map_err(|_| Error::BadBackup("unreadable"))?;
+    out.extend_from_slice(&encrypted);
+    Ok(out)
+}
+
+/// Reads the envelope back. A file that asks for more than the limits is refused before
+/// scrypt runs; a wrong passphrase and a tampered file are indistinguishable.
+fn open(bytes: &[u8], passphrase: &str) -> Result<Vec<u8>> {
+    if bytes.len() < HEADER_LEN + TAG_LEN {
+        return Err(Error::BadBackup("unreadable"));
+    }
+    let (header, encrypted) = bytes.split_at(HEADER_LEN);
+    let fixed = &header[MAGIC.len()..];
+    let log_n = fixed[0];
+    let r = u32::from_be_bytes(fixed[1..5].try_into().expect("4 bytes"));
+    let p = u32::from_be_bytes(fixed[5..9].try_into().expect("4 bytes"));
+    let (salt, nonce) = fixed[9..].split_at(SALT_LEN);
+    if log_n > MAX_LOG_N
+        || r > MAX_R
+        || p > MAX_P
+        || (128 * u64::from(r)) << log_n > MAX_SCRYPT_MEMORY
+    {
+        return Err(Error::BadBackup("unreadable"));
+    }
+    let key = derive_key(passphrase, salt, log_n, r, p)?;
+    ChaCha20Poly1305::new(&Key::from(key))
+        .decrypt(
+            &Nonce::try_from(nonce).map_err(|_| Error::BadBackup("unreadable"))?,
+            Payload {
+                msg: encrypted,
+                aad: header,
+            },
+        )
+        .map_err(|_| Error::BadBackup("wrong_passphrase"))
 }
 
 /// Restores every library in the backup. Each one comes back with its own id, so a
@@ -221,21 +306,13 @@ pub fn restore(
     // Read whole for the same reason as `export`: reading a ZIP needs to seek.
     let mut bytes = Vec::new();
     input.read_to_end(&mut bytes)?;
-    if bytes.starts_with(AGE_HEADER) {
+    if bytes.starts_with(MAGIC) {
         let passphrase = passphrase
             .filter(|passphrase| !passphrase.is_empty())
             .ok_or(Error::BadBackup("passphrase_needed"))?;
-        bytes = age::decrypt(
-            &age::scrypt::Identity::new(SecretString::from(passphrase.to_owned())),
-            &bytes,
-        )
-        .map_err(|error| match error {
-            age::DecryptError::DecryptionFailed
-            | age::DecryptError::NoMatchingKeys
-            | age::DecryptError::KeyDecryptionFailed
-            | age::DecryptError::InvalidMac => Error::BadBackup("wrong_passphrase"),
-            _ => Error::BadBackup("unreadable"),
-        })?;
+        bytes = open(&bytes, passphrase)?;
+    } else if bytes.starts_with(OLD_AGE_HEADER) {
+        return Err(Error::BadBackup("old_encrypted_backup"));
     }
     let mut archive = ZipArchive::new(std::io::Cursor::new(bytes))
         .map_err(|_| Error::BadBackup("not_a_backup"))?;
@@ -1166,11 +1243,7 @@ mod tests {
             .unwrap();
             // The zip itself, and every file inside it once decrypted.
             let zip_bytes = match passphrase {
-                Some(passphrase) => age::decrypt(
-                    &age::scrypt::Identity::new(SecretString::from(passphrase.to_owned())),
-                    &out,
-                )
-                .unwrap(),
+                Some(passphrase) => open(&out, passphrase).unwrap(),
                 None => out.clone(),
             };
             let mut files = vec![out, zip_bytes.clone()];
@@ -1197,11 +1270,11 @@ mod tests {
     }
 
     #[test]
-    fn an_encrypted_backup_is_an_age_file_that_restores_with_its_passphrase() {
+    fn an_encrypted_backup_restores_with_its_passphrase() {
         let dir = temp("encrypted-round-trip");
-        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let file = export_one_book(&dir, "backup.kosmotheka", Some(PASSPHRASE));
         let bytes = std::fs::read(&file).unwrap();
-        assert!(bytes.starts_with(b"age-encryption.org/v1"));
+        assert!(bytes.starts_with(MAGIC));
         assert!(
             !contains(&bytes, b"Earthsea"),
             "the catalogue is not readable"
@@ -1228,31 +1301,156 @@ mod tests {
     }
 
     #[test]
-    fn a_wrong_passphrase_restores_nothing() {
+    fn the_header_has_the_documented_layout() {
+        let dir = temp("header-layout");
+        let file = export_one_book(&dir, "backup.kosmotheka", Some(PASSPHRASE));
+        let bytes = std::fs::read(&file).unwrap();
+
+        assert_eq!(&bytes[..17], b"kosmotheka-backup");
+        assert_eq!(bytes[17], 1, "format version");
+        assert_eq!(bytes[18], 17, "log_n");
+        assert_eq!(bytes[19..23], 8u32.to_be_bytes(), "r");
+        assert_eq!(bytes[23..27], 1u32.to_be_bytes(), "p");
+        // Salt 27..43 and nonce 43..55 are random: only their place is fixed.
+        assert_eq!(HEADER_LEN, 55);
+        assert_ne!(bytes[27..43], [0; 16]);
+        assert_ne!(bytes[43..55], [0; 12]);
+        // Everything after the header is the zip plus the 16-byte tag.
+        let zip = open(&bytes, PASSPHRASE).unwrap();
+        assert!(zip.starts_with(b"PK"));
+        assert_eq!(bytes.len(), 55 + zip.len() + 16);
+    }
+
+    #[test]
+    fn a_wrong_passphrase_or_a_tampered_file_restores_nothing() {
         let dir = temp("wrong-passphrase");
-        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let file = export_one_book(&dir, "backup.kosmotheka", Some(PASSPHRASE));
+        let original = std::fs::read(&file).unwrap();
         let covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();
         let libraries_before = all_libraries(&target).unwrap();
 
+        let mut attempts: Vec<(String, Vec<u8>, &str)> = vec![(
+            "wrong passphrase".into(),
+            original.clone(),
+            "not the passphrase",
+        )];
+        // r (low byte), p (low byte), salt, nonce, ciphertext and the last tag byte.
+        // Parameters flipped to values within the limits, so scrypt still runs.
+        for (what, at) in [
+            ("r", 22),
+            ("p", 26),
+            ("salt", 30),
+            ("nonce", 50),
+            ("ciphertext", HEADER_LEN + 10),
+            ("tag", original.len() - 1),
+        ] {
+            let mut bytes = original.clone();
+            bytes[at] ^= 0x02;
+            attempts.push((format!("flipped byte in {what}"), bytes, PASSPHRASE));
+        }
+        for (what, bytes, passphrase) in attempts {
+            let result = restore(
+                &mut target,
+                &to,
+                &covers,
+                bytes.as_slice(),
+                Some(passphrase),
+            );
+            assert!(
+                matches!(result, Err(Error::BadBackup("wrong_passphrase"))),
+                "{what}: {result:?}"
+            );
+            assert_eq!(all_libraries(&target).unwrap(), libraries_before);
+            assert!(titles(&target, &to).is_empty());
+        }
+    }
+
+    #[test]
+    fn parameters_above_the_limits_are_refused_without_running_scrypt() {
+        let dir = temp("scrypt-limits");
+        let file = export_one_book(&dir, "backup.kosmotheka", Some(PASSPHRASE));
+        let original = std::fs::read(&file).unwrap();
+        let covers = Covers::new(dir.join("target-covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+
+        for (log_n, r, p) in [
+            (30u8, 8u32, 1u32),
+            (17, 17, 1),
+            (17, 8, 5),
+            (17, u32::MAX, 1),
+            // Each within its own limit, but 2 GiB together.
+            (20, 16, 1),
+        ] {
+            let mut bytes = original.clone();
+            bytes[18] = log_n;
+            bytes[19..23].copy_from_slice(&r.to_be_bytes());
+            bytes[23..27].copy_from_slice(&p.to_be_bytes());
+            let started = std::time::Instant::now();
+            let result = restore(
+                &mut target,
+                &to,
+                &covers,
+                bytes.as_slice(),
+                Some(PASSPHRASE),
+            );
+            assert!(
+                matches!(result, Err(Error::BadBackup("unreadable"))),
+                "{log_n} {r} {p}: {result:?}"
+            );
+            assert!(started.elapsed() < std::time::Duration::from_millis(500));
+        }
+    }
+
+    #[test]
+    fn a_file_from_the_age_development_builds_is_named_as_such() {
+        let covers = Covers::new(temp("old-age").join("covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+
         let result = restore(
             &mut target,
             &to,
             &covers,
-            File::open(&file).unwrap(),
-            Some("not the passphrase"),
+            &b"age-encryption.org/v1\n-> scrypt"[..],
+            Some(PASSPHRASE),
         );
 
-        assert!(matches!(result, Err(Error::BadBackup("wrong_passphrase"))));
-        assert_eq!(all_libraries(&target).unwrap(), libraries_before);
-        assert!(titles(&target, &to).is_empty());
+        assert!(matches!(
+            result,
+            Err(Error::BadBackup("old_encrypted_backup"))
+        ));
+    }
+
+    #[test]
+    fn a_file_that_is_neither_a_zip_nor_an_envelope_is_not_a_backup() {
+        let covers = Covers::new(temp("garbage").join("covers")).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+
+        let result = restore(&mut target, &to, &covers, &b"hello"[..], None);
+
+        assert!(matches!(result, Err(Error::BadBackup("not_a_backup"))));
+    }
+
+    /// Writes a small encrypted backup for checking the format from outside the app
+    /// (docs/architecture/data-model.md). Run by hand:
+    /// `cargo test -p kosmotheka -- --ignored print_encrypted_backup_sample`.
+    #[test]
+    #[ignore = "fixture generator: run by hand when the format changes"]
+    fn print_encrypted_backup_sample() {
+        let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = export_one_book(&dir, "sample.kosmotheka", Some("the passphrase"));
+        println!("{}", file.display());
     }
 
     #[test]
     fn an_encrypted_backup_asks_for_its_passphrase() {
         let dir = temp("passphrase-needed");
-        let file = export_one_book(&dir, "backup.age", Some(PASSPHRASE));
+        let file = export_one_book(&dir, "backup.kosmotheka", Some(PASSPHRASE));
         let covers = Covers::new(dir.join("target-covers")).unwrap();
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();

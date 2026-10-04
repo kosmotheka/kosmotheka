@@ -889,7 +889,7 @@ mockIPC((cmd, args) => {
     case "plugin:dialog|save":
       return "/mock/kosmotheka-backup";
     case "plugin:dialog|open":
-      return "/mock/kosmotheka-encrypted.age";
+      return "/mock/kosmotheka-encrypted.kosmotheka";
     case "export_backup":
     case "export_device_backup": {
       if ((args as { passphrase?: string }).passphrase === "") {

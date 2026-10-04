@@ -90,18 +90,56 @@ La biblioteca activa es la guardada si aún existe y, si no, la primera por nomb
 
 Una copia es un zip con `backup.json` (catálogo de cada biblioteca e historial de operaciones) y `covers/`. **Nunca lleva secretos**: ni la semilla de la clave de firma, ni el token y la sesión de la cuenta, ni los secretos de emparejamiento (`known_servers`, `known_clients`), ni la identidad TLS; esos viven en `local_state`, en esas tablas y en la carpeta de datos, y la exportación no los lee. Lo garantiza el test `no_backup_carries_a_secret`, que exporta una copia sin cifrar y otra cifrada y busca cada secreto en sus bytes y en cada fichero de dentro.
 
-> **Pendiente (D86, 03/10/2026):** el formato `age` se sustituirá por `scrypt` + `chacha20poly1305` con un sobre propio documentado aquí, para no cargar la app con unas 70 dependencias. Lo que sigue describe el código actual.
+Por defecto la copia va **cifrada con contraseña** (D86): un fichero `.kosmotheka` con un sobre propio, sencillo y documentado aquí, cuyo contenido es el zip de siempre. Se construye con `scrypt` y ChaCha20-Poly1305 de RustCrypto (crates `scrypt` y `chacha20poly1305`). Una copia sin cifrar (zip) se sigue restaurando igual.
 
-Por defecto la copia va **cifrada con contraseña** (D86): el fichero es un fichero [`age`](https://age-encryption.org) (scrypt y ChaCha20-Poly1305, crate `age`) cuyo contenido es el zip de siempre. Empieza por `age-encryption.org/v1`; al restaurar, la app detecta esa cabecera y pide la contraseña. Una contraseña equivocada (`wrong_passphrase`) o ausente (`passphrase_needed`) no escribe nada. Una copia sin cifrar (zip) se sigue restaurando igual.
+**El sobre, byte a byte:**
 
-**Abrir una copia sin la app:**
+| Bytes | Contenido |
+|---|---|
+| 18 | Marca: el texto ASCII `kosmotheka-backup` seguido del byte `0x01` (versión 1 del formato) |
+| 1 | `log_n` de scrypt |
+| 4 | `r` de scrypt, entero sin signo, big-endian |
+| 4 | `p` de scrypt, entero sin signo, big-endian |
+| 16 | Sal, aleatoria |
+| 12 | Nonce, aleatorio |
+| el resto | El zip cifrado con ChaCha20-Poly1305 (IETF, RFC 8439), con su etiqueta de 16 bytes al final |
 
-```bash
-age -d backup.kosmotheka.age > backup.zip   # pide la contraseña
-unzip backup.zip
+- **Clave:** `scrypt(contraseña en bytes UTF-8, sal, log_n, r, p)` con salida de 32 bytes. Se escribe `log_n = 17, r = 8, p = 1` (la recomendación de OWASP para scrypt).
+- **Datos asociados:** toda la cabecera (los primeros 55 bytes, de la marca al nonce). Cambiar cualquier byte de ella hace que el descifrado falle.
+- **Nonce aleatorio:** un nonce de 96 bits al azar solo es un riesgo cuando una misma clave cifra muchísimos mensajes. Aquí la clave se usa **una sola vez** (cada copia lleva su propia sal, y por tanto su propia clave), así que no hay colisión que temer.
+- **Límites al restaurar:** la app rechaza, antes de ejecutar scrypt, un fichero con parámetros por encima de `log_n 20, r 16, p 4`, o que pida más de 256 MiB de memoria (scrypt usa 128 · r · 2^log_n bytes; las copias de la app piden 128 MiB), para que un fichero manipulado no pueda agotar la memoria de un móvil con el error genérico `unreadable`. Los parámetros más bajos se aceptan.
+- **Detección:** si el fichero empieza por la marca, está cifrado y la app pide la contraseña; si empieza por `PK`, es un zip sin cifrar. Una contraseña equivocada o un fichero alterado dan el mismo error, `wrong_passphrase` (no se distinguen), y una contraseña ausente `passphrase_needed`: en ambos casos no se escribe nada. Las copias cifradas con `age` de las versiones de desarrollo del 3 de octubre de 2026 no se pueden abrir y dan `old_encrypted_backup`.
+
+**Abrir una copia sin la app** (Python 3 con `cryptography`; `hashlib.scrypt` viene con Python). Escribe el zip junto al fichero, con la extensión `.zip` añadida:
+
+```python
+import hashlib, struct, sys
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+
+path, passphrase = sys.argv[1], sys.argv[2]
+data = open(path, "rb").read()
+
+magic = b"kosmotheka-backup\x01"           # 18 bytes: name + format version
+assert data.startswith(magic), "not an encrypted Kosmotheka backup"
+header = data[:55]                          # magic .. nonce, also the associated data
+log_n = data[18]
+r, p = struct.unpack(">II", data[19:27])
+salt, nonce = data[27:43], data[43:55]
+
+key = hashlib.scrypt(passphrase.encode(), salt=salt, n=2**log_n, r=r, p=p,
+                     maxmem=2**31 - 1, dklen=32)
+# Raises InvalidTag on a wrong passphrase or a modified file.
+zip_bytes = ChaCha20Poly1305(key).decrypt(nonce, data[55:], header)
+open(path + ".zip", "wb").write(zip_bytes)
 ```
 
-**La app no guarda la contraseña en ningún sitio. Si se pierde, la copia no se puede abrir** (ni con la app ni con `age`): hay que avisarlo antes de crearla. Exportar a CSV no se cifra.
+```bash
+python decrypt.py copia.kosmotheka "la contraseña"   # crea copia.kosmotheka.zip
+```
+
+El formato se comprobó así con una copia generada por la app (test `print_encrypted_backup_sample`, a mano) y un script como este en un contenedor de Docker, con versiones fijadas.
+
+**La app no guarda la contraseña en ningún sitio. Si se pierde, la copia no se puede abrir** (ni con la app ni con el script): hay que avisarlo antes de crearla. Exportar a CSV no se cifra.
 
 ## Ficheros fuera de la base de datos
 

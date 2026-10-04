@@ -413,6 +413,7 @@
       "not_empty": "This backup comes from an earlier version and only restores into an empty library. Create a new library, open it and restore it there.",
       "passphrase_needed": "This backup is protected: enter its password.",
       "wrong_passphrase": "Wrong password. Nothing was restored.",
+      "old_encrypted_backup": "This backup was made with a development version that used another format, and it cannot be opened.",
       "passphrase_empty": "Enter a password for the backup."
     },
     "csvTitle": "Spreadsheet of {{name}}",

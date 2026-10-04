@@ -24,3 +24,15 @@ cast_possible_wrap = "warn"
 cast_sign_loss = "warn"
 case_sensitive_file_extension_comparisons = "warn"
 unchecked_time_subtraction = "warn"
+
+# scrypt with 128 MiB of memory is unusably slow unoptimized (`tauri dev`, tests).
+[profile.dev.package.scrypt]
+opt-level = 3
+[profile.dev.package.salsa20]
+opt-level = 3
+[profile.dev.package.pbkdf2]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.hmac]
+opt-level = 3
