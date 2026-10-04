@@ -137,6 +137,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
 - **Plan de la fase:** [plans/fase-7.md](plans/fase-7.md), con hitos, propuestas y preguntas (01/10/2026).
 - **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
+- **Hecho: 7.2 Sincronizar con la nube** (04/10/2026): bibliotecas de la nube con id propio y tabla de acceso (D84), `pull` y `push`, subir una biblioteca con su historial, cadena de operaciones (D87) y copias cifradas sin `age` (D86).
 - **Registro con email** y código en la app, o con Google (D77); recuperación con código. Segundo factor opcional y desbloqueo con biometría (D78). La app entra en el servidor oficial o en otro.
 - **La cuenta en la biblioteca** (D76): se sube biblioteca a biblioteca; la cuenta se enlaza sola con su persona, y un móvil nuevo recibe sus bibliotecas con su rol.
 - Subir una biblioteca a la nube sin perder nada, historial incluido.
