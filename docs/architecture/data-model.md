@@ -10,6 +10,7 @@
 - **ISBN normalizado a ISBN-13** y sin guiones. Un ISBN-10 se convierte al darlo de alta; el ISBN-10 se puede recalcular cuando haga falta.
 - **Herencia por tablas** (D08): `editions` guarda lo común a cualquier catálogo y una tabla `<tipo>_details` lo específico de cada tipo. La música, el videojuego y «Otro» no tienen (la plataforma del videojuego va en el ejemplar): el artista es un contribuidor (`artist`) y el sello, la editorial.
 - **Todo pertenece a una biblioteca** (D46, D54, migración 9): cada tabla del catálogo lleva `library_id` y su clave es `(library_id, id)`. El mismo id en dos bibliotecas son dos filas distintas, y las referencias entre tablas incluyen la biblioteca. No hay clave foránea hacia `libraries`: un cambio se aplica aunque la fila de la biblioteca no haya llegado todavía.
+- **Al borrar, el borrado gana** (D89, migración 30): una referencia obligatoria entre tablas (`editions.work_id`, `copies.edition_id`, `work_contributors.person_id`…) es `ON DELETE CASCADE`; una opcional (`editions.publisher_id`, `copies.owner_id`, `devices.member_id`) se pone a `NULL` con un disparador (`SET NULL` también borraría `library_id`). Ver [sync.md](sync.md).
 
 ## Esquema
 

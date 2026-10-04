@@ -94,6 +94,7 @@
 | D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada |
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
+| D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 
 ---
 
@@ -1462,3 +1463,20 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - Cómo convive con el emparejamiento por QR de hoy, que sigue siendo la puerta de entrada.
 
 **Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3).
+
+## D89 · Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato — `aceptada`
+
+**Contexto:** DAT-006 (auditoría [2026-10-03-3](audits/2026-10-03-3.md)), reencontrado al escribir los casos de fusión de 7.4.2. Algunas claves foráneas no tienen regla al borrar (`editions.work_id`, `editions.publisher_id`, `copies.owner_id`, `work_contributors.person_id`). Borrar una fila a la que aún apunta otra falla en SQLite, el cambio se deshace sin lápida y el resultado depende del orden: si una obra se borra en un dispositivo mientras otro le añade una edición sin conexión, unos acaban sin la obra y otros con la obra y su edición. Hoy no se alcanza desde la interfaz, pero el servidor de 7.4 va a copiar la fusión y tiene que copiar la regla buena.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **El borrado gana** y lo que depende de lo borrado se borra o se queda sin ese dato | Es la regla de toda la fusión (el borrado gana, lo borrado no revive); sencilla de copiar a PHP y a PostgreSQL | Lo añadido a la vez a una fila que otro borró desaparece del catálogo |
+| Lo nuevo salva lo borrado (la edición nueva devuelve la obra) | No desaparece nada | Choca con las lápidas; mucho más difícil de hacer converger y de copiar |
+
+**Decisión** (el maintainer, 04/10/2026): **el borrado gana siempre.** Para cada referencia:
+- **Obligatoria** (la fila no tiene sentido sin la otra: las ediciones y ejemplares de una obra, los autores enlazados a una obra): **se borra con ella** (`ON DELETE CASCADE`).
+- **Opcional** (tiene sentido sola: el dueño de un ejemplar, la editorial de una edición): **se queda sin ese dato** (`ON DELETE SET NULL`). Un cambio que llega después y apunta a la fila ya borrada se aplica con ese campo vacío, para que el orden no importe.
+
+**Consecuencias:** cierra DAT-006. Una migración rehace las tablas afectadas con su regla; `schema.rs` y `CatalogEntity.php` dicen qué referencias son obligatorias u opcionales, y las tablas de PostgreSQL de 7.4.3 llevan las mismas reglas. Casos en `spec/conformance/merge.json`. Ninguna operación se pierde: siguen en el registro.

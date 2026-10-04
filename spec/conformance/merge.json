@@ -1273,5 +1273,688 @@
         "01997c7e-0000-7000-8000-00000000042e"
       ]
     }
+  },
+  {
+    "name": "a work deleted while another device adds an edition to it: neither stays",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000430",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000431",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000430"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000432",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "edition.add",
+        "changes": [
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a work deleted takes its edition and the copy of that edition with it, in any order",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000433",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000434",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220004-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000433"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000435",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "edition.add",
+        "changes": [
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000436",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "copy.add",
+        "changes": [
+          {
+            "entity": "copy",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+              "format": "paperback",
+              "quantity": 1
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000435"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a publisher deleted while another device creates an edition naming it: the edition stays without a publisher",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000437",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "publisher.add",
+        "changes": [
+          {
+            "entity": "publisher",
+            "id": "01997c7e-0000-7000-8000-0000000000b1",
+            "action": "create",
+            "fields": {
+              "name": "Minotauro"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000438",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "publisher.remove",
+        "changes": [
+          {
+            "entity": "publisher",
+            "id": "01997c7e-0000-7000-8000-0000000000b1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000437"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000439",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220004-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "edition.add",
+        "changes": [
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "title": "Dune",
+              "publisher_id": "01997c7e-0000-7000-8000-0000000000b1"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000439"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Dune"
+          }
+        },
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+            "title": "Dune"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a publisher deleted while another device updates an edition to name it: the rest of the update applies",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043b",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "publisher.add",
+        "changes": [
+          {
+            "entity": "publisher",
+            "id": "01997c7e-0000-7000-8000-0000000000b1",
+            "action": "create",
+            "fields": {
+              "name": "Minotauro"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043c",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220004-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "publisher.remove",
+        "changes": [
+          {
+            "entity": "publisher",
+            "id": "01997c7e-0000-7000-8000-0000000000b1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000043b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043d",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          },
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043e",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "edition.edit",
+        "changes": [
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "update",
+            "fields": {
+              "publisher_id": "01997c7e-0000-7000-8000-0000000000b1",
+              "subtitle": "Book one"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000043d"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Dune"
+          }
+        },
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+            "title": "Dune",
+            "subtitle": "Book one"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a member deleted while another device creates or updates a copy naming it as owner: the copy stays without an owner",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000043f",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.add",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-0000000000b2",
+            "action": "create",
+            "fields": {
+              "name": "Ana"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000440",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.remove",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-0000000000b2",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000043f"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000441",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          },
+          {
+            "entity": "edition",
+            "id": "01997c7e-0000-7000-8000-0000000000e1",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000442",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220004-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "copy.add",
+        "changes": [
+          {
+            "entity": "copy",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+              "owner_id": "01997c7e-0000-7000-8000-0000000000b2",
+              "format": "paperback",
+              "quantity": 1
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000441"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000443",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "copy.owner",
+        "changes": [
+          {
+            "entity": "copy",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "update",
+            "fields": {
+              "owner_id": "01997c7e-0000-7000-8000-0000000000b2",
+              "location": "Shelf"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000442"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      [
+        0,
+        2,
+        3,
+        4,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        3,
+        4
+      ],
+      [
+        0,
+        2,
+        3,
+        1,
+        4
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Dune"
+          }
+        },
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "fields": {
+            "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+            "title": "Dune"
+          }
+        },
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-0000000000c1",
+          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+            "format": "paperback",
+            "quantity": 1,
+            "location": "Shelf"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a person deleted while another device links them to a work: the link goes, the work stays",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000444",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "person.add",
+        "changes": [
+          {
+            "entity": "person",
+            "id": "01997c7e-0000-7000-8000-0000000000b3",
+            "action": "create",
+            "fields": {
+              "name": "Frank Herbert"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000445",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "person.remove",
+        "changes": [
+          {
+            "entity": "person",
+            "id": "01997c7e-0000-7000-8000-0000000000b3",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000444"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000446",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000447",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222220004-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.author",
+        "changes": [
+          {
+            "entity": "work_contributor",
+            "id": "01997c7e-0000-7000-8000-0000000000a4",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "person_id": "01997c7e-0000-7000-8000-0000000000b3",
+              "role": "author",
+              "position": 0
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000446"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Dune"
+          }
+        }
+      ],
+      "rejected": []
+    }
   }
 ]

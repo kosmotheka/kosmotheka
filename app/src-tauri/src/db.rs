@@ -39,6 +39,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0027_library_cloud.sql")),
     M::up(include_str!("../migrations/0028_forgotten_libraries.sql")),
     M::up(include_str!("../migrations/0029_operation_chain.sql")),
+    M::up(include_str!("../migrations/0030_delete_wins.sql")).foreign_key_check(),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -229,6 +230,132 @@ mod tests {
             spec["schemaVersion"].as_i64(),
             Some(crate::ops::schema_version(&conn).unwrap())
         );
+    }
+
+    /// D89: every reference between catalog tables says what happens when the row
+    /// it points to is deleted. A required one (NOT NULL) goes with it; an optional
+    /// one keeps the NO ACTION rule and a trigger clears it first (SET NULL would
+    /// also clear `library_id`).
+    #[test]
+    fn every_reference_between_catalog_tables_has_a_delete_rule() {
+        let conn = open_in_memory().unwrap();
+        let tables: Vec<String> = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        let mut optional = Vec::new();
+        for table in tables {
+            let mut statement = conn
+                .prepare(&format!(
+                    "SELECT \"from\", on_delete FROM pragma_foreign_key_list('{table}')
+                      WHERE \"from\" <> 'library_id'"
+                ))
+                .unwrap();
+            let keys: Vec<(String, String)> = statement
+                .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+                .unwrap()
+                .collect::<rusqlite::Result<_>>()
+                .unwrap();
+            for (column, rule) in keys {
+                if rule != "CASCADE" {
+                    optional.push((table.clone(), column, rule));
+                }
+            }
+        }
+        optional.sort();
+        let expected = [("copies", "owner_id"), ("editions", "publisher_id")]
+            .map(|(table, column)| (table.to_owned(), column.to_owned(), "NO ACTION".to_owned()));
+        assert_eq!(optional, expected);
+    }
+
+    #[test]
+    fn migration_30_keeps_its_rows_and_makes_a_delete_win() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        MIGRATIONS.to_version(&mut conn, 29).unwrap();
+        conn.execute_batch(
+            "INSERT INTO works (library_id, id, kind, title) VALUES ('l', 'w', 'book', 'Dune');
+             INSERT INTO people (library_id, id, name) VALUES ('l', 'p', 'Herbert');
+             INSERT INTO publishers (library_id, id, name) VALUES ('l', 'pub', 'Minotauro');
+             INSERT INTO members (library_id, id, name) VALUES ('l', 'm', 'Ana');
+             INSERT INTO work_contributors (library_id, id, work_id, person_id, role, position)
+                 VALUES ('l', 'c', 'w', 'p', 'author', 0);
+             INSERT INTO editions (library_id, id, work_id, title, publisher_id, barcode, notes)
+                 VALUES ('l', 'e', 'w', 'Dune', 'pub', '123', 'a note');
+             INSERT INTO book_details (library_id, edition_id, isbn13) VALUES ('l', 'e', '9780441172719');
+             INSERT INTO copies (library_id, id, edition_id, owner_id, format)
+                 VALUES ('l', 'k', 'e', 'm', 'ebook');
+             INSERT INTO search_index (library_id, edition_id, content) VALUES ('l', 'e', 'dune herbert');",
+        )
+        .unwrap();
+
+        migrate(&mut conn).unwrap();
+
+        for table in [
+            "works",
+            "people",
+            "publishers",
+            "members",
+            "work_contributors",
+            "editions",
+            "book_details",
+            "copies",
+            "search_index",
+        ] {
+            let rows: i64 = conn
+                .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(rows, 1, "{table} lost its row");
+        }
+        let (barcode, notes): (String, String) = conn
+            .query_row("SELECT barcode, notes FROM editions", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!((barcode.as_str(), notes.as_str()), ("123", "a note"));
+        let broken: i64 = conn
+            .query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(broken, 0);
+        let indexes: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type = 'index'
+                  AND name IN ('editions_work', 'editions_publisher', 'editions_barcode',
+                               'work_contributors_work')",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(indexes, 4);
+
+        // The rules themselves, with foreign keys on as in the running app.
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        conn.execute("DELETE FROM members", []).unwrap();
+        conn.execute("DELETE FROM publishers", []).unwrap();
+        let (owner, publisher): (Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT (SELECT owner_id FROM copies), (SELECT publisher_id FROM editions)",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((owner, publisher), (None, None));
+        conn.execute("DELETE FROM people", []).unwrap();
+        let links: i64 = conn
+            .query_row("SELECT count(*) FROM work_contributors", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(links, 0, "the link goes with the person");
+        conn.execute("DELETE FROM works", []).unwrap();
+        for table in ["editions", "copies", "book_details"] {
+            let rows: i64 = conn
+                .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(rows, 0, "{table} goes with the work");
+        }
     }
 
     #[test]

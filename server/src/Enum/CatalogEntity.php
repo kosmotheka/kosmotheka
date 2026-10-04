@@ -96,7 +96,7 @@ enum CatalogEntity: string
     public function fields(): array
     {
         $text = static fn (bool $required = false): FieldSpec => new FieldSpec(FieldType::Text, $required);
-        $ref = static fn (bool $required = false): FieldSpec => new FieldSpec(FieldType::Ref, $required);
+        $ref = static fn (self $target, bool $required = false): FieldSpec => new FieldSpec(FieldType::Ref, $required, [], $target);
         $integer = static fn (bool $required = false): FieldSpec => new FieldSpec(FieldType::Integer, $required);
         $oneOf = static fn (string ...$allowed): FieldSpec => new FieldSpec(FieldType::OneOf, true, array_values($allowed));
 
@@ -110,16 +110,16 @@ enum CatalogEntity: string
                 'can_share' => new FieldSpec(FieldType::Boolean, false),
             ],
             self::WorkContributor => [
-                'work_id' => $ref(true),
-                'person_id' => $ref(true),
+                'work_id' => $ref(self::Work, true),
+                'person_id' => $ref(self::Person, true),
                 'role' => $oneOf(...self::CONTRIBUTOR_ROLES),
                 'position' => $integer(true),
             ],
             self::Edition => [
-                'work_id' => $ref(true),
+                'work_id' => $ref(self::Work, true),
                 'title' => $text(true),
                 'subtitle' => $text(),
-                'publisher_id' => $ref(),
+                'publisher_id' => $ref(self::Publisher),
                 'published_year' => $integer(),
                 'language' => $text(),
                 'cover' => $text(),
@@ -141,8 +141,8 @@ enum CatalogEntity: string
             self::FilmDetails => ['duration_minutes' => $integer()],
             self::TvSeriesDetails => ['seasons' => $integer()],
             self::Copy => [
-                'edition_id' => $ref(true),
-                'owner_id' => $ref(),
+                'edition_id' => $ref(self::Edition, true),
+                'owner_id' => $ref(self::Member),
                 'format' => $oneOf(...self::FORMATS),
                 'quantity' => $integer(true),
                 'location' => $text(),
@@ -153,11 +153,11 @@ enum CatalogEntity: string
                 'seasons' => $text(),
             ],
             self::WorkTag => [
-                'work_id' => $ref(true),
-                'tag_id' => $ref(true),
+                'work_id' => $ref(self::Work, true),
+                'tag_id' => $ref(self::Tag, true),
             ],
             self::WorkGenre => [
-                'work_id' => $ref(true),
+                'work_id' => $ref(self::Work, true),
                 'genre' => $oneOf(...self::GENRES),
             ],
             self::Series => [
@@ -165,24 +165,24 @@ enum CatalogEntity: string
                 'ordered' => new FieldSpec(FieldType::Boolean, true),
             ],
             self::SeriesEntry => [
-                'series_id' => $ref(true),
-                'work_id' => $ref(true),
+                'series_id' => $ref(self::Series, true),
+                'work_id' => $ref(self::Work, true),
                 'position' => $integer(),
             ],
             self::WorkRelation => [
-                'work_id' => $ref(true),
-                'related_work_id' => $ref(true),
+                'work_id' => $ref(self::Work, true),
+                'related_work_id' => $ref(self::Work, true),
                 'relation' => $oneOf(...self::WORK_RELATIONS),
             ],
             self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
-            self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref(), 'trusted_through' => $text()],
+            self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref(self::Member), 'trusted_through' => $text()],
             self::ChangeRequest => [
                 'status' => new FieldSpec(FieldType::OneOf, false, ['accepted', 'rejected', 'withdrawn']),
                 'note' => $text(),
             ],
             self::Mark => [
-                'member_id' => $ref(true),
-                'work_id' => $ref(true),
+                'member_id' => $ref(self::Member, true),
+                'work_id' => $ref(self::Work, true),
                 'status' => new FieldSpec(FieldType::OneOf, false, self::MARK_STATUSES),
                 'status_on' => new FieldSpec(FieldType::Date, false),
                 'rating' => new FieldSpec(FieldType::Rating, false),

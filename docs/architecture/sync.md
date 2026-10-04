@@ -87,7 +87,8 @@ Para cada cambio de cada operación, en orden de HLC:
 | Modificar | **Campo a campo**: cada campo se escribe solo si la marca de la operación es posterior a la última que escribió ese campo |
 | Modificar una fila que no existe | Se ignora (fue borrada en cascada) |
 | Borrar | Se borra y se deja una **lápida** con la marca |
-| Referencia a una fila que ya no existe (un ejemplar de un libro borrado en otro dispositivo) | Se ignora el cambio |
+| Referencia **obligatoria** a una fila que ya no existe (un ejemplar de un libro borrado en otro dispositivo) | Se ignora el cambio: la fila habría desaparecido en cascada de todos modos |
+| Referencia **opcional** a una fila con lápida (la editorial de una edición, el dueño de un ejemplar) | El cambio se aplica con ese campo a `null` (D89) |
 
 Para aplicar «campo a campo» cada dispositivo guarda, por cada campo de cada fila, la marca HLC que lo escribió por última vez (tabla `field_versions`). Los borrados quedan en `tombstones`.
 
@@ -95,9 +96,14 @@ Al recibir operaciones, el reloj HLC local salta por delante de las marcas recib
 
 Nada de esto rompe una sincronización: un cambio que no se puede aplicar se salta y se cuenta, pero la operación queda registrada y se sigue reenviando a otros dispositivos.
 
-### Límite conocido: borrar un padre que tiene hijos sin cascada (DAT-006)
+### Borrar una fila de la que otras dependen (D89, DAT-006)
 
-Algunas claves foráneas no tienen `ON DELETE CASCADE`: `editions.work_id`, y las referencias a `publisher`, `member` (dueño) y `person`. Si un dispositivo borra la fila padre mientras otro le crea un hijo, el borrado choca con la clave foránea, `apply_change` lo deshace sin lápida y el resultado depende del orden de llegada. **Hoy no se alcanza desde la app**: añadir una edición crea siempre su obra, y no hay forma de borrar una persona, una editorial ni un miembro. **Antes de construir** «añadir una edición a una obra existente», «quitar un miembro», o borrar personas o editoriales, hay que arreglarlo (cascada o `SET NULL`, o que el borrado gane con su lápida) con un test de los dos órdenes y `assert_converged` (auditoría 2026-10-03-3).
+El borrado gana siempre, también sobre lo que otro dispositivo añade a la vez. Cada clave foránea entre tablas del catálogo tiene su regla:
+
+- **Referencia obligatoria** (`NOT NULL`: `editions.work_id`, `copies.edition_id`, `work_contributors.work_id` y `person_id`, las filas de `work_tags`, `series_entries`, `marks`, etc.): `ON DELETE CASCADE`. Lo que depende de la fila borrada se borra con ella, en cadena (una obra borrada se lleva sus ediciones y los ejemplares de esas ediciones). Las filas borradas en cascada **no dejan lápida propia**: un cambio que llega después para ellas se salta porque la fila no existe o porque su padre sí tiene lápida, y todos los dispositivos acaban igual.
+- **Referencia opcional** (`editions.publisher_id`, `copies.owner_id`, `devices.member_id`): la fila se queda sin ese dato. Como la clave foránea incluye `library_id` (que no puede ser nulo), `ON DELETE SET NULL` no sirve: un disparador (`publishers_delete_clears_editions`, `members_delete_clears_copies`, migración 30) pone solo la referencia a `NULL` antes de borrar al padre. Y un cambio que llega **después** del borrado y nombra a la fila borrada se aplica con ese campo a `null` (con su marca de versión, como cualquier campo), en vez de saltarse (`apply_change`, a partir de `schema.rs`: campos `Ref` no obligatorios).
+
+Los borrados locales (`ops::record`) y los recibidos pasan por las mismas reglas de la base de datos, así que dan el mismo resultado. Ninguna operación se pierde: siguen en el registro.
 
 ## Duplicados (D33)
 

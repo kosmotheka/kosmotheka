@@ -8,7 +8,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use kosmotheka_domain::{Action, Change, Entity, FieldType, Hlc, HlcClock, Operation, verify};
+use kosmotheka_domain::{
+    Action, Change, Entity, FieldSpec, FieldType, Hlc, HlcClock, Operation, verify,
+};
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
@@ -465,7 +467,7 @@ pub fn apply_change(
                     return Ok(false); // deleted in cascade with its parent
                 }
                 let mut newer = Map::new();
-                for (field, value) in &change.fields {
+                for (field, value) in &without_deleted_references(tx, library, change)? {
                     let stored = field_version(tx, library, entity, &change.id, field)?;
                     if stored.as_deref().is_none_or(|stored| stored < hlc) {
                         newer.insert(field.clone(), value.clone());
@@ -502,6 +504,31 @@ pub fn apply_change(
             Err(other)
         }
     }
+}
+
+/// The change's fields, with every optional reference to a row that was deleted set
+/// to null: the delete wins, and the rest of the change still applies, so the order
+/// the changes arrive in does not matter (D89). A required reference is left alone:
+/// its row would have been deleted with the one it points to anyway.
+fn without_deleted_references(
+    conn: &Connection,
+    library: &str,
+    change: &Change,
+) -> Result<Map<String, Value>> {
+    let mut fields = change.fields.clone();
+    for (name, value) in &mut fields {
+        if let Some(FieldSpec {
+            field_type: FieldType::Ref(target),
+            required: false,
+            ..
+        }) = change.entity.field(name)
+            && let Some(id) = value.as_str()
+            && is_tombstoned(conn, library, *target, id)?
+        {
+            *value = Value::Null;
+        }
+    }
+    Ok(fields)
 }
 
 /// Another operation already holds this HLC: only a modified app signs two with one
@@ -2738,6 +2765,103 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn record_changes(device: &mut Device, intent: &str, changes: Vec<Change>) {
+        let tx = device.0.transaction().unwrap();
+        ops::record(&tx, &device.1, intent, changes).unwrap();
+        tx.commit().unwrap();
+    }
+
+    /// D89: a delete wins over what another device adds meanwhile. Three devices:
+    /// the laptop deletes a work while the phone adds an edition and a copy to it,
+    /// and the tablet deletes a publisher the phone names. The devices meet in the
+    /// given order.
+    fn delete_wins_scenario(meeting: &[(usize, usize)]) {
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let edition_id = laptop.add("Dune", None, "Ana");
+        let work_id = catalog::get_book(&laptop.0, &lib, &edition_id)
+            .unwrap()
+            .work_id;
+        let publisher = ops::new_id();
+        record_changes(
+            &mut laptop,
+            "publisher.add",
+            vec![Change::create(
+                Entity::Publisher,
+                &publisher,
+                json!({ "name": "Minotauro" }),
+            )],
+        );
+        let mut phone = Device::sharing(&laptop);
+        let mut tablet = Device::sharing(&laptop);
+
+        record_changes(
+            &mut laptop,
+            "work.remove",
+            vec![Change::delete(Entity::Work, &work_id)],
+        );
+        let (new_edition, new_copy) = (ops::new_id(), ops::new_id());
+        record_changes(
+            &mut phone,
+            "edition.add",
+            vec![
+                Change::create(
+                    Entity::Edition,
+                    &new_edition,
+                    json!({ "work_id": work_id, "title": "Dune 2", "publisher_id": publisher }),
+                ),
+                Change::create(
+                    Entity::Copy,
+                    &new_copy,
+                    json!({ "edition_id": new_edition, "format": "ebook", "quantity": 1 }),
+                ),
+            ],
+        );
+        // An update of a row that the delete removes in cascade: no tombstone of its
+        // own, and the devices still agree.
+        record_changes(
+            &mut phone,
+            "edition.edit",
+            vec![Change::update(
+                Entity::Edition,
+                &new_edition,
+                json!({ "subtitle": "Revised" }),
+            )],
+        );
+        record_changes(
+            &mut tablet,
+            "publisher.remove",
+            vec![Change::delete(Entity::Publisher, &publisher)],
+        );
+
+        for &(from, to) in meeting {
+            let mut devices = [&mut laptop, &mut phone, &mut tablet];
+            let (low, high) = (from.min(to), from.max(to));
+            let (head, tail) = devices.split_at_mut(high);
+            head[low].sync_with(tail[0]);
+        }
+        // One more round so every device has seen everything.
+        laptop.sync_with(&mut phone);
+        phone.sync_with(&mut tablet);
+        laptop.sync_with(&mut tablet);
+        assert_converged(&[&laptop, &phone, &tablet]);
+
+        for table in ["works", "editions", "copies", "publishers"] {
+            let rows: i64 = laptop
+                .0
+                .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap();
+            assert_eq!(rows, 0, "{table} should be empty: the deletes won");
+        }
+    }
+
+    #[test]
+    fn a_delete_wins_whatever_the_order_the_devices_meet_in() {
+        delete_wins_scenario(&[(0, 1), (0, 2), (1, 2)]);
+        delete_wins_scenario(&[(1, 2), (0, 2), (0, 1)]);
+        delete_wins_scenario(&[(0, 2), (1, 2), (0, 1)]);
     }
 
     fn add_genre(conn: &mut Connection, library: &str, work_id: &str, genre: &str) {
