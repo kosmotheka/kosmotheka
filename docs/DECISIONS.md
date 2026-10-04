@@ -95,6 +95,7 @@
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
+| D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
 
 ---
 
@@ -1480,3 +1481,23 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - **Opcional** (tiene sentido sola: el dueño de un ejemplar, la editorial de una edición): **se queda sin ese dato** (`ON DELETE SET NULL`). Un cambio que llega después y apunta a la fila ya borrada se aplica con ese campo vacío, para que el orden no importe.
 
 **Consecuencias:** cierra DAT-006. Una migración rehace las tablas afectadas con su regla; `schema.rs` y `CatalogEntity.php` dicen qué referencias son obligatorias u opcionales, y las tablas de PostgreSQL de 7.4.3 llevan las mismas reglas. Casos en `spec/conformance/merge.json`. Ninguna operación se pierde: siguen en el registro.
+
+## D90 · Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com — `propuesta`
+
+**Contexto:** D03 y D04 prometen abrir el repositorio. El maintainer quiere enseñar el historial, pero sin publicar secretos que se hayan escapado ni la documentación interna de trabajo, y sin mantener dos repositorios. Además falta la documentación pública para usuarios, para quien aloje su servidor y para quien colabore.
+
+**Recomendación** (hablada el 04/10/2026; los detalles se deciden en la Fase 8):
+
+- **Un solo repositorio, con el historial.** Se reescribe una vez antes de hacerlo público:
+  1. Escanear todo el historial con `gitleaks` y `trufflehog` (con `docker run` y versión fijada), y buscar a mano IP y nombre del VPS, rutas locales y correos.
+  2. Quitar de todo el historial lo interno con `git filter-repo`. Candidatos: `docs/audits/` (hallazgos de seguridad), `docs/plans/` y `docs/historico/` (o publicarlos como diario de desarrollo), `docs/research/` y `docs/design/` (por las licencias de imágenes de terceros) y parte de `docs/publicacion/`. `DECISIONS.md` se publica.
+  3. Cambiar el autor de los commits por la dirección `noreply` de GitHub y quitar las líneas `Claude-Session:` de los mensajes.
+  4. Ensayarlo en una copia hasta que el resultado sea correcto. Guardar un `git bundle` del historial original fuera de GitHub.
+  5. Subir el historial limpio a un repositorio **nuevo, `kosmotheka/kosmotheka`**, en la organización, y hacerlo público. Al repositorio local se le cambia el remoto. El privado (`library`, en el perfil personal) se borra cuando el público esté comprobado. No se fuerza la subida sobre el privado ni se transfiere: GitHub conserva los commits sobrescritos, accesibles por su hash, y un secreto que se hubiera escapado seguiría ahí.
+- **La documentación interna sigue en el repo, pero ignorada:** una carpeta de trabajo dentro de `docs/` que está en `.gitignore`. Esa carpeta es **su propio repositorio git**, con un remoto privado, para que tenga historial y copia. También hay que mover ahí las rutas que usan `AGENTS.md` y las skills (`docs/plans/`, `docs/audits/`).
+- **Documentación pública en Markdown en el repo**, convertida en una web estática con un generador (se propone **Starlight**, de Astro: trae varios idiomas y búsqueda sin servidor). Se aloja nosotros mismos en **docs.kosmotheka.com**. Se organiza para tres públicos (usuarios, autoalojamiento, colaboradores) siguiendo Diátaxis, y en la raíz del repo van `README`, `CONTRIBUTING`, `CODE_OF_CONDUCT` y `SECURITY`.
+- **Despliegue automático, sin rsync:** la documentación y la landing (`web/`) se publican solas al cambiar `main`. Queda por decidir cómo: un `git pull` en el servidor o un workflow que construye y despliega. La documentación necesita compilarse; la landing, no.
+
+**Opciones descartadas:** convertir a HTML a mano; la wiki de GitHub (es un repo aparte, sin revisión por PR y mal para dos idiomas); servicios externos como ReadMe o Read the Docs (se prefiere alojarlo nosotros); empezar un repositorio sin historial.
+
+**Consecuencias:** el escaneo y la reescritura se hacen antes de abrir el repositorio (D03). La traducción de `docs/` al inglés (D02) pasa a ser la parte grande del trabajo. Los hashes de los commits cambian una vez.
