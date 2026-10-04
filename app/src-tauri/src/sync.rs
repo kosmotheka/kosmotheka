@@ -737,6 +737,7 @@ mod tests {
             .prepare(
                 "SELECT id FROM libraries UNION SELECT library_id FROM members
                   UNION SELECT library_id FROM editions
+                  UNION SELECT library_id FROM operations
                   ORDER BY 1",
             )
             .unwrap();
@@ -1491,7 +1492,10 @@ mod tests {
 
     /// Merge cases shared with every other implementation of the spec (the PHP
     /// server included): every delivery order must end in the same rows.
-    const MERGE_CASES: &str = include_str!("../../../spec/conformance/library-merge.json");
+    const MERGE_CASES: [&str; 2] = [
+        include_str!("../../../spec/conformance/library-merge.json"),
+        include_str!("../../../spec/conformance/merge.json"),
+    ];
 
     #[derive(serde::Deserialize)]
     struct MergeCase {
@@ -1504,6 +1508,9 @@ mod tests {
     #[derive(serde::Deserialize)]
     struct ExpectedRows {
         rows: Vec<ExpectedRow>,
+        /// When present, the ids of the operations the merge refuses (not stored) and
+        /// that every other one is taken. Absent: the cases do not say.
+        rejected: Option<Vec<String>>,
     }
 
     #[derive(serde::Deserialize, Debug, PartialEq)]
@@ -2600,7 +2607,10 @@ mod tests {
 
     #[test]
     fn merge_conformance_cases() {
-        let cases: Vec<MergeCase> = serde_json::from_str(MERGE_CASES).unwrap();
+        let cases: Vec<MergeCase> = MERGE_CASES
+            .iter()
+            .flat_map(|file| serde_json::from_str::<Vec<MergeCase>>(file).unwrap())
+            .collect();
         assert!(!cases.is_empty());
 
         // Every operation is signed (D56): each author registers the test key of
@@ -2651,7 +2661,12 @@ mod tests {
                 for &index in order {
                     let mut operation = case.operations[index].clone();
                     operation.signature = Some(key.sign(&operation));
-                    merge(
+                    let refused = case
+                        .expect
+                        .rejected
+                        .as_ref()
+                        .map(|ids| usize::from(ids.contains(&operation.id)));
+                    let report = merge(
                         &mut device.0,
                         vec![SyncOperation {
                             schema_version,
@@ -2659,6 +2674,13 @@ mod tests {
                         }],
                     )
                     .unwrap();
+                    if let Some(refused) = refused {
+                        assert_eq!(
+                            report.rejected, refused,
+                            "case '{}', delivery {order:?}: op {index} rejected or not",
+                            case.name
+                        );
+                    }
                 }
 
                 let mut rows = Vec::new();

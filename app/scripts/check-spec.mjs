@@ -25,5 +25,23 @@ for (const { name, operation, expect } of cases) {
     console.error(`MISMATCH: ${name}`, validate.errors?.[0] ?? "");
   }
 }
+// The operations of the merge and permission cases are valid operations too.
+let checked = 0;
+for (const file of ["library-merge", "merge", "permissions"]) {
+  const mergeCases = JSON.parse(
+    readFileSync(`${spec}conformance/${file}.json`, "utf8"),
+  );
+  for (const { name, operations } of mergeCases) {
+    for (const { unsigned, ...operation } of operations) {
+      checked++;
+      if (!validate(operation)) {
+        mismatches++;
+        console.error(`MISMATCH: ${file}: ${name}`, validate.errors?.[0] ?? "");
+      }
+    }
+  }
+}
 if (mismatches > 0) process.exit(1);
-console.log(`spec schema agrees with ${cases.length} conformance cases`);
+console.log(
+  `spec schema agrees with ${cases.length} conformance cases and ${checked} merge and permission operations`,
+);

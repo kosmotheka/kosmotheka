@@ -8,6 +8,7 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 | `conformance/operation-validation.json` | Operations with the expected validation result (`valid`, or `invalid` with an error code, change index and field) |
 | `conformance/signatures.json` | Signed operations with the canonical bytes and the verification result every implementation must get |
 | `conformance/library-merge.json` | Operations from several libraries, delivered in different orders, with the rows every order must end in |
+| `conformance/merge.json` | The merge rules inside one library (field by field, last writer, delete wins, repeated delivery, broken references, one HLC per operation), in the same shape |
 | `conformance/permissions.json` | Operations from devices with different roles, delivered in different orders, with which ones are applied and which become requests |
 | `conformance/draft/` | Cases for the next version of the format, when there are any. Not loaded by the implementations |
 
@@ -21,6 +22,8 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 - A **`mark`** (what one person notes about one work, D68) has an id derived from its person and work: the UUID v5, in the namespace `7b2f0c1e-4d8a-4f3e-9c61-2a5d8e0b4f17`, of the text `<member_id>:<work_id>` in lowercase. A mark change that sets `member_id` or `work_id` must set both, and its id must be the derived one (`wrong_id` otherwise). So the same person marking the same work on two devices writes the same row. A mark is **never deleted by a change** (`undeletable`): the tombstone would keep that id, and so that person, from ever marking the work again. Clearing a mark sets its fields to `null`, and creates send only the fields that are set, so an empty value does not overwrite what another device of the same person set. Marks go when their work or their person is deleted. Example: member `01997c7e-0000-7000-8000-000000000013` and work `01997c7e-0000-7000-8000-0000000000d1` give `9ae21929-1e26-5646-8c48-52cf10f8e911`.
 - A **rating** is a whole number from 1 to 5 (`wrong_type` otherwise).
 - A **text** value never contains U+0000, because PostgreSQL's JSONB cannot hold it (`wrong_type` otherwise). The six characters `\u0000` typed by a user are ordinary text.
+- An **intent** is two or more words joined by single dots; a word is one or more lowercase ASCII letters or underscores, and nothing else (no digits, no capitals, no line break after the last word): `book.add`, `a_b.c_d.e` (`invalid_intent` otherwise).
+- The **`hlc`** has the text form `<16 digits>-<8 hex digits>-<device>`, with a non-empty device. An operation whose `hlc` is not in that form is not an operation (it does not deserialize), so it has no validation case.
 - **Create** must include every required field of the entity.
 - **Required fields** can never be set to `null`.
 - **Dates** must exist on the calendar (`2026-02-30` is invalid).
@@ -40,7 +43,7 @@ Every operation is signed by the device that made it (the device in its `hlc`), 
 2. Write it as **canonical JSON** (RFC 8785): object keys sorted by UTF-16 code units, no whitespace, strings escaped only where JSON requires it (`\"`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`, and `\u00xx` in lowercase for the other control characters), everything else written as is, in UTF-8. Operations only contain strings, integers, booleans and nulls.
 3. Sign those bytes. `signature` is the 64-byte signature in base64url without padding.
 
-The public key of each device travels with the library as a **`device`** row (32 bytes, base64url without padding). A device registers itself in the first operation it signs in a library. Receivers check the signature against the key registered for the author; the first key registered for a device is the one that counts. Operations from before signatures existed carry none; how they are treated once a library has roles is still to be decided.
+The public key of each device travels with the library as a **`device`** row (32 bytes, base64url without padding). A device registers itself in the first operation it signs in a library. Receivers check the signature against the key registered for the author; the first key registered for a device is the one that counts. A key never changes: an operation that sets a different `public_key` on a registered device, its own included, is **refused**. A device that is not registered yet is known only through the `device` row it creates **for itself** in the operation (an update of its own row, or the row of another device, does not register it), and an operation from a device whose key cannot be found that way is refused. The permission cases pin this down with `rejected` operations. Operations from before signatures existed carry none; how they are treated once a library has roles is still to be decided.
 
 `conformance/signatures.json` has, for each case, the operation, the public key, the exact canonical text and the result: `valid`, or `invalid` with `missing`, `bad_key`, `malformed` or `mismatch`. The keys in it come from fixed test bytes and must never be used for anything else.
 
@@ -70,7 +73,7 @@ The merge cases (`conformance/library-merge.json`) are written without signature
 
 ## Running the conformance cases
 
-Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs` (validation) and `app/src-tauri/src/sync.rs` (merging); the PHP server runs the validation cases in `server/tests/Validator/` and will run the merge cases when it applies operations.
+Each implementation loads the files in `conformance/` (not `conformance/draft/`) in its test suite and checks that every case produces the expected result. The Rust implementation does this in `crates/domain/src/operation.rs` (validation), `crates/domain/src/signature.rs` (signatures) and `app/src-tauri/src/sync.rs` (merging and permissions, all four files). The PHP server runs the validation and signature cases today (`server/tests/Validator/`, `server/tests/Sync/`). It does **not** run `library-merge.json`, `merge.json` or `permissions.json` yet: it will when it applies operations (milestones 7.4.4 and 7.4.5 of `docs/plans/fase-7.md`), and until then the Rust runners are the only check of those rules.
 
 ## Merging operations from several libraries
 
@@ -79,6 +82,8 @@ Each implementation loads the files in `conformance/` (not `conformance/draft/`)
 - `operations`: full operations, with their library and HLC.
 - `deliveries`: orders in which to deliver them, as lists of indexes into `operations`. Each operation is delivered alone, in that order, as if it came in its own sync. **Every order must end in the same state.** Orders respect causality, as the sync protocol guarantees: a change to a row never arrives before the operation that created that row (a device always sends everything the other lacks, oldest first).
 - `expect.rows`: every catalog row that must exist afterwards, as `{ library, entity, id, fields }`. Rows not listed must not exist. Fields not listed must be null: an optional field nobody set, such as a member's `role`, is left out.
+- `expect.rejected` (optional): the ids of the operations that are **refused**, that is, not stored (see `previous` and the HLC rule below). When present, every other operation of the case must be taken, in every delivery. A skipped *change* (see below) is not a refused operation. When absent, the case does not say.
+- A delivery may **repeat an index**: the same operation delivered again, as a device that asks twice. The second time changes nothing and is not refused.
 
 Rules these cases pin down:
 
@@ -86,3 +91,14 @@ Rules these cases pin down:
 - Changes apply **even if the library row has not arrived yet**: the library is only the scope, not a parent row that must exist first.
 - **Deleting the library** leaves a tombstone for the whole library: its rows are removed, and any later change in that library is ignored, whatever its HLC. The delete wins, as it does for any row.
 
+## Merging operations within a library
+
+`conformance/merge.json` is the same kind of case with one library. Every operation in it has the `previous` of its author's chain and every delivery keeps each author's operations in order, except in the one case about two operations with the same HLC. Where an operation needs a row, that row's creation comes first in every delivery (causality, as above). The rules:
+
+- **Field by field.** A change to a row only touches the fields it names. Each field of each row remembers the HLC of the change that wrote it; a change writes a field only if its HLC is **greater** than the remembered one. Two devices that change different fields of one row keep both changes.
+- **Last writer per field.** The HLC text order decides: milliseconds, then counter, then the device id as text (a higher counter beats a higher device id in the same millisecond). The result is the same in any delivery order. A tie is not newer: the same HLC never overwrites a field.
+- **A change keeps the versions of the fields it lost.** A change that loses one field and wins another writes only the one it won and leaves the lost field's remembered HLC where it was, so a third change dated between the two cannot win the field later.
+- **Delete wins, with tombstones.** A delete removes the row and leaves a tombstone with the row's entity and id. Whatever arrives afterwards for that row is ignored, whatever its HLC: an update, or a create with the same id. A delete also beats an update that has a higher HLC, in either order of arrival. Rows that hang from the deleted one (its `work_tag`, `series_entry` and the like) go with it, but they get no tombstone of their own.
+- **Delivering an operation twice changes nothing.** An operation already stored is counted as known and skipped.
+- **A broken reference skips the change, not the operation.** Each change is applied on its own: an update of a row that does not exist (never created, or removed with its parent), and a create or update whose reference points to a row that does not exist (a `copy` of an edition nobody has, a `work_tag` of a work already deleted), write nothing: no row, no field version, no tombstone. The operation itself is stored and forwarded like any other, and its other changes apply.
+- **One HLC per operation.** HLCs are unique in a library's log: a second operation with an HLC already stored is **refused** (not stored), and so are the operations of its author that chain to it, because their `previous` is missing. Which of the two is kept depends on which arrives first; the case delivers the first one first. This is a rule about a modified app: an honest device never signs two operations with one clock reading.

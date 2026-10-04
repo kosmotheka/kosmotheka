@@ -14,7 +14,7 @@ final readonly class ResetPasswordRequest
         #[Assert\Email]
         public string $email,
         #[Assert\NotBlank]
-        #[Assert\Regex('/^[0-9]{6}$/')]
+        #[Assert\Regex('/^[0-9]{6}$/D')]
         public string $code,
         #[Assert\Length(min: 8, max: 4096)]
         public string $password,

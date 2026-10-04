@@ -231,6 +231,269 @@
     }
   },
   {
+    "name": "intent of three words with underscores",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "a_b.c_d.e",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "intent of one word only",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent that is empty",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent that ends with a dot",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent that starts with a dot",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": ".add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent with an empty word between dots",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "a..b",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent whose first word has a capital",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "Book.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent whose last word has a capital",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.Add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent with a symbol",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add!",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent with a digit",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add1",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
+    "name": "intent with a line break after the last word",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.add\n",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_intent"
+    }
+  },
+  {
     "name": "operation without changes",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000001",
@@ -256,6 +519,31 @@
         {
           "entity": "member",
           "id": "tersoal",
+          "action": "create",
+          "fields": {
+            "name": "Tersoal"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_id",
+      "change": 0
+    }
+  },
+  {
+    "name": "change id with a line break after the UUID",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.add",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000002\n",
           "action": "create",
           "fields": {
             "name": "Tersoal"
@@ -389,6 +677,32 @@
           "action": "update",
           "fields": {
             "acquired_on": "2026-02-30"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "acquired_on"
+    }
+  },
+  {
+    "name": "date with a line break after it",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000001",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.edit",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-000000000013",
+          "action": "update",
+          "fields": {
+            "acquired_on": "2026-02-03\n"
           }
         }
       ],

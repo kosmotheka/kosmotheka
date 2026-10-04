@@ -52,6 +52,45 @@
     "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
   },
   {
+    "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"},{\"action\":\"update\",\"entity\":\"tag\",\"fields\":{\"name\":\"classic\"},\"id\":\"01997c7e-0000-7000-8000-000000000062\"},{\"action\":\"delete\",\"entity\":\"publisher\",\"id\":\"01997c7e-0000-7000-8000-000000000063\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000303\",\"intent\":\"catalog.edit\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":\"01997c7e-0000-7000-8000-000000000301\"}",
+    "expect": {
+      "result": "valid"
+    },
+    "name": "several changes, separated by commas",
+    "operation": {
+      "changes": [
+        {
+          "action": "create",
+          "entity": "publisher",
+          "fields": {
+            "name": "Minotauro"
+          },
+          "id": "01997c7e-0000-7000-8000-000000000061"
+        },
+        {
+          "action": "update",
+          "entity": "tag",
+          "fields": {
+            "name": "classic"
+          },
+          "id": "01997c7e-0000-7000-8000-000000000062"
+        },
+        {
+          "action": "delete",
+          "entity": "publisher",
+          "id": "01997c7e-0000-7000-8000-000000000063"
+        }
+      ],
+      "hlc": "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
+      "id": "01997c7e-0000-7000-8000-000000000303",
+      "intent": "catalog.edit",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "previous": "01997c7e-0000-7000-8000-000000000301",
+      "signature": "g_eEwkDbV8WASnGYDG6xB-zyh8cis9tBP4NJqgHSCUnOCBMl7n1UE0mgBnQaXnbAMdpahArlL1XIU_DHczeVBg"
+    },
+    "publicKey": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+  },
+  {
     "canonical": "{\"changes\":[{\"action\":\"create\",\"entity\":\"publisher\",\"fields\":{\"name\":\"Minotauro (2)\"},\"id\":\"01997c7e-0000-7000-8000-000000000061\"}],\"hlc\":\"0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff\",\"id\":\"01997c7e-0000-7000-8000-000000000301\",\"intent\":\"publisher.add\",\"library\":\"01997c7e-0000-7000-8000-00000000aaaa\",\"previous\":null}",
     "expect": {
       "code": "mismatch",

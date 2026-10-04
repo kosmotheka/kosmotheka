@@ -1,0 +1,1277 @@
+[
+  {
+    "name": "two devices change different fields of one row and both changes stay",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000401",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000402",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.edit",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "kind": "comic"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000401"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000403",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Dune Messiah"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "comic",
+            "title": "Dune Messiah"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "the higher HLC wins a field whatever the order the changes arrive in",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000404",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "First"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000405",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Second by A"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000404"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000406",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Fourth by B"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000407",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222004-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Third by C"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        3,
+        1,
+        2
+      ],
+      [
+        0,
+        3,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Fourth by B"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "one millisecond and counter on two devices: the device id breaks the tie",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000408",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "First"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000409",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "From fa"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000408"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "From fb"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "From fb"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a higher counter beats a higher device id in the same millisecond",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040b",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "First"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040c",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000001-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "From fa"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000040b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040d",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "From fb"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "From fa"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a change that loses one field and wins another leaves the version of the lost one",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040e",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "T1"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000040f",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.edit",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "kind": "comic",
+              "title": "T2"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000040e"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000410",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222004-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "T3"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000411",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000005-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "T2b"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        0,
+        2,
+        1,
+        3
+      ],
+      [
+        0,
+        2,
+        3,
+        1
+      ],
+      [
+        0,
+        3,
+        1,
+        2
+      ],
+      [
+        0,
+        3,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "comic",
+            "title": "T3"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a delete beats an update with a higher HLC whatever the order",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000412",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000413",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000412"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000414",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Too late"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "an update that arrives after the delete does not bring the row back",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000415",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000416",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000415"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000417",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Before the delete"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a create with the id of a deleted row does not bring it back",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000418",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000419",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000418"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune again"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        2,
+        1
+      ],
+      [
+        2,
+        0,
+        1
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "delivering the same operation twice changes nothing",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041b",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041c",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Dune Messiah"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041d",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d2",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000041b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041e",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222004-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d2",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000041d"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3
+      ],
+      [
+        0,
+        1,
+        2,
+        3,
+        3,
+        2,
+        1,
+        0
+      ],
+      [
+        0,
+        2,
+        3,
+        1,
+        0,
+        1,
+        3,
+        2
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "Dune Messiah"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "an update of a row that was never created is skipped",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000041f",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Nothing to rename"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a row whose reference points to nothing is skipped",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000420",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "copy.add",
+        "changes": [
+          {
+            "entity": "copy",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+              "format": "paperback",
+              "quantity": 1
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0
+      ]
+    ],
+    "expect": {
+      "rows": [],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a change that points to nothing is skipped and the rest of its operation still applies",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000421",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "copy.add",
+        "changes": [
+          {
+            "entity": "copy",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+              "format": "paperback",
+              "quantity": 1
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-0000000000b1",
+            "action": "create",
+            "fields": {
+              "name": "Ana"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-0000000000b1",
+          "fields": {
+            "name": "Ana"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "a link to a work deleted elsewhere is skipped, or removed when the work goes",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000422",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000423",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000a1",
+            "action": "create",
+            "fields": {
+              "name": "classic"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000422"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000424",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222004-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000423"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000425",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "work.tag",
+        "changes": [
+          {
+            "entity": "work_tag",
+            "id": "01997c7e-0000-7000-8000-0000000000a2",
+            "action": "create",
+            "fields": {
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "tag_id": "01997c7e-0000-7000-8000-0000000000a1"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        1,
+        3,
+        2
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "tag",
+          "id": "01997c7e-0000-7000-8000-0000000000a1",
+          "fields": {
+            "name": "classic"
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "an update of a row removed with its parent is skipped",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000426",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000427",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "series.add",
+        "changes": [
+          {
+            "entity": "series",
+            "id": "01997c7e-0000-7000-8000-0000000000d3",
+            "action": "create",
+            "fields": {
+              "name": "Dune",
+              "ordered": true
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000426"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000428",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222003-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "series.add_work",
+        "changes": [
+          {
+            "entity": "series_entry",
+            "id": "01997c7e-0000-7000-8000-0000000000a3",
+            "action": "create",
+            "fields": {
+              "series_id": "01997c7e-0000-7000-8000-0000000000d3",
+              "work_id": "01997c7e-0000-7000-8000-0000000000d1",
+              "position": 1
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000427"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000429",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.remove",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "delete"
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000428"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000042a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222004-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "series.move",
+        "changes": [
+          {
+            "entity": "series_entry",
+            "id": "01997c7e-0000-7000-8000-0000000000a3",
+            "action": "update",
+            "fields": {
+              "position": 2
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      [
+        0,
+        1,
+        2,
+        4,
+        3
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "series",
+          "id": "01997c7e-0000-7000-8000-0000000000d3",
+          "fields": {
+            "name": "Dune",
+            "ordered": true
+          }
+        }
+      ],
+      "rejected": []
+    }
+  },
+  {
+    "name": "two operations with one HLC: the second is refused and so are the later ones of its author",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-00000000042b",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.add",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "create",
+            "fields": {
+              "kind": "book",
+              "title": "Dune"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000042c",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "First with this HLC"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000042b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000042d",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222005-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "Second with this HLC"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000042b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000042e",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222007-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "work.rename",
+        "changes": [
+          {
+            "entity": "work",
+            "id": "01997c7e-0000-7000-8000-0000000000d1",
+            "action": "update",
+            "fields": {
+              "title": "After the twin"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000042d"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        1,
+        3,
+        2
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "fields": {
+            "kind": "book",
+            "title": "First with this HLC"
+          }
+        }
+      ],
+      "rejected": [
+        "01997c7e-0000-7000-8000-00000000042d",
+        "01997c7e-0000-7000-8000-00000000042e"
+      ]
+    }
+  }
+]

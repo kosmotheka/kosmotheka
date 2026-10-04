@@ -26,7 +26,7 @@ final readonly class OperationPayload
     public const array SERIALIZATION_CONTEXT = [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false];
 
     /** Time, counter and device: `0001727222222222-00000003-<device id>`. */
-    public const string HLC_PATTERN = '/^[0-9]{16}-[0-9a-f]{8}-.+$/';
+    public const string HLC_PATTERN = '/^[0-9]{16}-[0-9a-f]{8}-.+$/D';
 
     /**
      * @param list<ChangePayload> $changes
@@ -41,7 +41,7 @@ final readonly class OperationPayload
         /** The latest operation of the same device in the same library when this one was made, null for the first (D87). The key is required. */
         public ?string $previous,
         /** Ed25519 signature of the author device (D56); none on operations from before phase 5. */
-        #[Assert\Regex('/^[A-Za-z0-9_-]{86}$/', message: 'Not an Ed25519 signature in base64url.')]
+        #[Assert\Regex('/^[A-Za-z0-9_-]{86}$/D', message: 'Not an Ed25519 signature in base64url.')]
         public ?string $signature = null,
     ) {
     }

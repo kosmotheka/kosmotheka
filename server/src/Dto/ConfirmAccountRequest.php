@@ -14,7 +14,7 @@ final readonly class ConfirmAccountRequest
         #[Assert\Email]
         public string $email,
         #[Assert\NotBlank]
-        #[Assert\Regex('/^[0-9]{6}$/')]
+        #[Assert\Regex('/^[0-9]{6}$/D')]
         public string $code,
     ) {
     }
