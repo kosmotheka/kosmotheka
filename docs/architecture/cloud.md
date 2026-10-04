@@ -141,6 +141,34 @@ Con `make up` y `make fixtures` (Ana tiene dos dispositivos; Jhonny, hostil, con
 
 Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió dos avisos `data: {}` (el `push` de su otro dispositivo, `received: 1`, y la biblioteca nueva); la conexión de Jhonny a `cloud-library:<García>` quedó abierta (`200`) con solo el latido; el latido llegó cada 40 s.
 
+## Tablas del catálogo (7.4.3)
+
+> Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. **Hasta 7.4.6 nadie las escribe ni las lee**: `push` y `pull` siguen trabajando solo con `cloud_operation`, y la nube se comporta exactamente como antes. Una migración (`Version20261004150000`), escrita a mano, sin entidades.
+
+- **Prefijo `catalog_`** en todas (`catalog_works`, `catalog_field_versions`…), para que nunca choquen con las tablas propias del servidor. `doctrine.yaml` lleva `schema_filter: '~^(?!catalog_)~'`: el ORM no las ve y `make migration` no propone borrarlas. `CatalogEntity::table()` da el nombre de la tabla de cada entidad.
+- **Clave `(cloud_library_id, id)`** en todas, con `cloud_library_id UUID NOT NULL REFERENCES cloud_library (id) ON DELETE CASCADE` (D41, D84): al borrar la biblioteca de la nube se borra su catálogo. **Toda clave foránea entre tablas del catálogo incluye `cloud_library_id`**, así que una fila no puede apuntar a otra biblioteca. Los ids son `TEXT`, como en la app.
+- **Reglas de borrado (D89):** referencia obligatoria, `ON DELETE CASCADE`; opcional, `ON DELETE SET NULL (columna)` (PostgreSQL 15 o más), que anula solo esa columna y nunca `cloud_library_id`. En SQLite eso hay que hacerlo con triggers (migración 0030); aquí lo hace la base de datos. Las opcionales son `editions.publisher_id`, `copies.owner_id` y `devices.member_id`.
+- **Tablas:** una por entidad de `CatalogEntity` (también `library`, con su nombre) y tres de contabilidad: `catalog_field_versions` (el último HLC que escribió cada campo), `catalog_tombstones` (las lápidas, D66) y `catalog_row_authors` (qué dispositivo creó cada fila, para que un editor borre solo lo creado por su persona, D45). Su `entity` es el valor de `CatalogEntity` (`work`), no el nombre de tabla de la app (`works`). Los HLC son `TEXT COLLATE "C"`, como en `cloud_operation`: el orden de bytes es el de la app. Sin claves foráneas: una versión o una lápida sobrevive a su fila.
+- **Fuera:** lo que en la app es local (`local_state`, `known_servers`, `known_clients`, `library_peers`, `leave_notices`, `request_notices`, `pending_owners`, `forgotten_libraries`, `search_index`), el registro (`operations`: aquí es `cloud_operation`) y las vallas (`device_fences`, `device_fence_chains`): se derivan del registro y llegan con los permisos de 7.4.5.
+- **Test de paridad** (`tests/Sync/CatalogTablesTest.php`): para cada `CatalogEntity`, la tabla tiene exactamente las columnas de sus campos más `id` y `cloud_library_id`, nulas justo cuando el campo es opcional, con el tipo que toca; cada referencia tiene su clave foránea **con `cloud_library_id`** y la regla de D89; las tablas `catalog_*` que hay son las de las entidades y la contabilidad, ni una más. Falla si se añade un campo sin columna o una columna sin campo.
+
+### Diferencias con SQLite
+
+| Qué | SQLite | PostgreSQL | Por qué |
+|---|---|---|---|
+| `library_id` | columna sin clave foránea a `libraries` | `cloud_library_id` con clave foránea a `cloud_library` | La biblioteca de la nube existe antes que su catálogo; el servidor nunca usa el id local (D84) |
+| Campos `cloud_library_id` y `cloud_server` de `library` | columnas de `libraries` | sin columna | El vínculo es el `cloud_library.id` del propio servidor; guardar el valor del cliente invitaría a fiarse de él. Su versión sí consta en `catalog_field_versions` |
+| `created_at` (works, editions, copies, libraries) | columna con valor por defecto | no existe | Es de la app; la nube tiene `received_at` en `cloud_operation` |
+| Detalles por tipo (`book_details`…) | clave `edition_id` | clave `id` (el de su edición) | La paridad dice «campos más `id`»; en `schema.rs` el id ya es el de la edición |
+| Booleanos | `INTEGER` 0 o 1 con `CHECK` | `BOOLEAN` | La operación lleva `true`/`false` |
+| Enteros | `INTEGER` (64 bits) | `BIGINT` | La operación admite cualquier entero de 64 bits |
+| Fechas (`acquired_on`, `status_on`) | `TEXT` | `TEXT` | La operación lleva `AAAA-MM-DD` y la fusión compara y guarda eso |
+| `CHECK (isbn13 ...)` y `quantity >= 1` | sí | no | `spec/` no los exige: una operación válida según `spec/` no debe romper la transacción de la fusión. Hueco de `spec/` anotado en el plan |
+| `UNIQUE (work_id, person_id, role)` en `work_contributors` | sí | sí (con `cloud_library_id`) | Regla del catálogo ya existente |
+| `CHECK` de `role`, `status` (marks y solicitudes), `rating` 1 a 5 | sí | sí | Están también en `spec/` |
+| Índices por nombre sin distinguir mayúsculas, `barcode` | sí | no | Son para la búsqueda de la app |
+| Índices de las claves foráneas | sí | sí | Para que los borrados en cascada no recorran la tabla |
+
 ## Dónde está en el código
 
 - `src/Controller/CloudController.php`: las cuatro rutas, sin lógica.

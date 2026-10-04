@@ -90,6 +90,36 @@ enum CatalogEntity: string
         'soul', 'metal', 'soundtrack',
     ];
 
+    /** The PostgreSQL table of the entity (milestone 7.4.3); `catalog_` keeps them apart from the server's own. */
+    public function table(): string
+    {
+        return 'catalog_'.match ($this) {
+            self::Library => 'libraries',
+            self::Work => 'works',
+            self::Person => 'people',
+            self::WorkContributor => 'work_contributors',
+            self::Edition => 'editions',
+            self::BookDetails => 'book_details',
+            self::ComicDetails => 'comic_details',
+            self::BoardgameDetails => 'boardgame_details',
+            self::FilmDetails => 'film_details',
+            self::TvSeriesDetails => 'tv_series_details',
+            self::Member => 'members',
+            self::Copy => 'copies',
+            self::Publisher => 'publishers',
+            self::Tag => 'tags',
+            self::WorkTag => 'work_tags',
+            self::WorkGenre => 'work_genres',
+            self::Series => 'series',
+            self::SeriesEntry => 'series_entries',
+            self::WorkRelation => 'work_relations',
+            self::Revocation => 'revocations',
+            self::Device => 'devices',
+            self::ChangeRequest => 'change_requests',
+            self::Mark => 'marks',
+        };
+    }
+
     /**
      * @return array<string, FieldSpec>
      */
