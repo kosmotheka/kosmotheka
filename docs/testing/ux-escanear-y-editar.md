@@ -47,3 +47,8 @@ Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tien
 
 - **LibraryThing** (app móvil): busca en Amazon y en más de 5000 bibliotecas. Es el listón de referencia, no una fuente: comprobar si sus servicios web siguen abiertos a terceros.
 - **Buscar con una foto de la portada** (Google Lens, bookidentifier.com, apps de Play): ya está en la Fase 10. Google Lens no tiene API pública. Vías posibles: reconocer el texto en el móvil (OCR local, sin red) y buscar con él, y la IA opcional para los casos difíciles (D19, D20).
+
+## Segunda prueba (05/10/2026)
+
+- **El código escaneado no era un ISBN:** `2401114882038` empieza por 2, el prefijo de los códigos internos de tienda. La app lo aceptó como ISBN porque solo comprueba la longitud y el dígito de control. Propuesta: exigir el prefijo 978 o 979 y avisar «Este código no es un ISBN; busca el que empieza por 978».
+- **La ficha no muestra el ISBN:** al abrirla no sale; en Editar sí está; tras guardar sin tocar nada aparece en la ficha; al volver a escanear (dice «Lo tienes», bien) y abrir la ficha, vuelve a no salir. Sin causa todavía: `get_book` lee `book_details.isbn13` igual para la ficha y para el formulario. Reproducir en el escritorio con estos pasos.

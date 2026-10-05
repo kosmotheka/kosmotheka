@@ -39,4 +39,20 @@ Campos MARC útiles: 245 (título), 100 (autoría), 264/260 (editorial y año), 
 
 - **La BNE es la mejor candidata** para libros editados en España: datos completos, rápida y sin clave, así que funcionaría también sin nube. Falta comprobar sus **condiciones de uso** para un servicio así y si limita las peticiones.
 - **Open Library ya encuentra estos libros**, pero sin autoría en la mitad. Pedir también la obra mejoraría el resultado sin añadir proveedores.
-- **Pendiente:** saber qué ISBN se escaneó en la prueba, porque Open Library e Inventaire sí tienen dos ediciones de ese libro. Si no lo encontró, puede ser otra edición o un fallo nuestro.
+- **El libro de la prueba no falló por las fuentes:** el código escaneado fue `2401114882038`, que **no es un ISBN**. Empieza por 2, el prefijo de los códigos internos de tienda (una etiqueta de precio), y la app lo aceptó porque `Isbn::parse` solo comprueba la longitud y el dígito de control, no el prefijo 978/979 (`crates/domain/src/isbn.rs`).
+
+## Equivalente en inglés: Library of Congress
+
+Probada con tres ISBN en inglés (*The Wise Man's Fear*, *The Hobbit*, *Project Hail Mary*): **3 de 3**, con título, autoría, editorial, año y páginas, entre 0,4 y 1,9 s. También busca por título (`dc.title`).
+
+```
+http://lx2.loc.gov:210/lcdb?version=1.1&operation=searchRetrieve&recordSchema=marcxml&query=bath.isbn=9780756404734
+```
+
+- **Solo responde por HTTP, sin cifrar** (el puerto 210 no acepta HTTPS). Desde el móvil, Android bloquea el tráfico sin cifrar por defecto y las búsquedas viajarían a la vista. Encaja mejor **a través del servidor**.
+- El MARC trae la puntuación de catalogación al final de los campos («The wise man's fear /», «Rothfuss, Patrick,»): hay que limpiarla, para la BNE también.
+- La British Library no se ha probado: su catálogo quedó muy limitado tras el ciberataque de 2023.
+
+## Propuesta de orden (por decidir)
+
+Para libros, consultar primero las bibliotecas nacionales según el idioma de la app (BNE en español, Library of Congress en inglés), después Open Library e Inventaire, y Google Books al final, solo con clave.
