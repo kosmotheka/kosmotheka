@@ -52,3 +52,9 @@ Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tien
 
 - **El código escaneado no era un ISBN:** `2401114882038` empieza por 2, el prefijo de los códigos internos de tienda. La app lo aceptó como ISBN porque solo comprueba la longitud y el dígito de control. Propuesta: exigir el prefijo 978 o 979 y avisar «Este código no es un ISBN; busca el que empieza por 978».
 - **La ficha no muestra el ISBN:** al abrirla no sale; en Editar sí está; tras guardar sin tocar nada aparece en la ficha; al volver a escanear (dice «Lo tienes», bien) y abrir la ficha, vuelve a no salir. Sin causa todavía: `get_book` lee `book_details.isbn13` igual para la ficha y para el formulario. Reproducir en el escritorio con estos pasos.
+
+## Hecho después (05/10/2026)
+
+- Un ISBN-13 tiene que empezar por 978 o 979 (`isbn_prefix`). Solo cambia la validación de lo que se escribe o escanea: el formato de las operaciones en `spec/` no cambia, así que los datos ya guardados siguen sincronizando.
+- El escáner de «¿Lo tengo?» salta los códigos de tienda con un aviso y sigue con la cámara abierta, y tiene un botón «Escribir el número».
+- La Biblioteca Nacional de España es el primer proveedor de libros.

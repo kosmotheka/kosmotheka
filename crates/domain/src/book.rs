@@ -400,6 +400,8 @@ pub enum ErrorCode {
     IsbnLength,
     IsbnCharacter,
     IsbnChecksum,
+    /// A valid EAN-13 that does not start with 978 or 979.
+    IsbnPrefix,
     /// Another edition already has this ISBN.
     IsbnInUse,
     /// Not an https URL on a known cover host.
@@ -424,6 +426,7 @@ impl From<IsbnError> for ErrorCode {
             IsbnError::InvalidLength => ErrorCode::IsbnLength,
             IsbnError::InvalidCharacter => ErrorCode::IsbnCharacter,
             IsbnError::InvalidChecksum => ErrorCode::IsbnChecksum,
+            IsbnError::NotBookland => ErrorCode::IsbnPrefix,
         }
     }
 }

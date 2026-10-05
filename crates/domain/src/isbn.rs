@@ -14,6 +14,9 @@ pub enum IsbnError {
     InvalidCharacter,
     #[error("the ISBN check digit does not match")]
     InvalidChecksum,
+    /// A valid EAN-13 outside the 978 and 979 ranges, such as a shop's price label.
+    #[error("an ISBN-13 starts with 978 or 979")]
+    NotBookland,
 }
 
 impl Isbn {
@@ -52,6 +55,9 @@ fn parse_isbn13(cleaned: &str) -> Result<Isbn, IsbnError> {
     let digits = to_digits(cleaned)?;
     if isbn13_check_digit(&digits[..12]) != digits[12] {
         return Err(IsbnError::InvalidChecksum);
+    }
+    if !(cleaned.starts_with("978") || cleaned.starts_with("979")) {
+        return Err(IsbnError::NotBookland);
     }
     Ok(Isbn(cleaned.to_owned()))
 }
@@ -143,6 +149,11 @@ mod tests {
             Err(IsbnError::InvalidChecksum)
         );
         assert_eq!(Isbn::parse("0306406153"), Err(IsbnError::InvalidChecksum));
+    }
+
+    #[test]
+    fn rejects_a_shop_label() {
+        assert_eq!(Isbn::parse("2401114882038"), Err(IsbnError::NotBookland));
     }
 
     #[test]

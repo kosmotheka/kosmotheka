@@ -15,22 +15,46 @@ export class CameraDenied extends Error {}
 export type ScanTarget = "barcode" | "qr";
 
 let target: ScanTarget | null = null;
+/** Set when the last code read was not an ISBN, such as a shop's price label. */
+let notIsbn = false;
+/** Set when the person closed the camera to type the number instead. */
+let typing = false;
 const listeners = new Set<() => void>();
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
 function setTarget(next: ScanTarget | null) {
   target = next;
   document.documentElement.classList.toggle("scanning", next !== null);
-  listeners.forEach((listener) => listener());
+  notify();
 }
 
 export function useScanTarget(): ScanTarget | null {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => target,
-  );
+  return useSyncExternalStore(subscribe, () => target);
+}
+
+export function useNotIsbn(): boolean {
+  return useSyncExternalStore(subscribe, () => notIsbn);
+}
+
+/** Closes the camera so the person can type the number. */
+export async function typeInstead() {
+  typing = true;
+  await cancelScan();
+}
+
+/** True once after the person chose to type instead of scanning. */
+export function wantsToType(): boolean {
+  const wanted = typing;
+  typing = false;
+  return wanted;
 }
 
 // Settles the pending scan from our side. The Android plugin's `cancel` clears
@@ -93,9 +117,24 @@ async function scan(
   }
 }
 
-/** Opens the camera and returns the scanned ISBN, or null if the user cancelled. */
-export function scanIsbn(): Promise<string | null> {
-  return scan((scanner) => [scanner.Format.EAN13], "barcode");
+/**
+ * Opens the camera and returns the scanned ISBN, or null if the user cancelled. Codes
+ * outside 978 and 979, such as a shop's price label, are skipped with a notice and the
+ * camera opens again, since the book's own barcode is usually nearby.
+ */
+export async function scanIsbn(): Promise<string | null> {
+  typing = false;
+  try {
+    for (;;) {
+      const code = await scan((scanner) => [scanner.Format.EAN13], "barcode");
+      if (code === null || /^97[89]/.test(code)) return code;
+      notIsbn = true;
+      notify();
+    }
+  } finally {
+    notIsbn = false;
+    notify();
+  }
 }
 
 /**

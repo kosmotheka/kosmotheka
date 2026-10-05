@@ -29,7 +29,7 @@ import {
   requestMissing,
 } from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
-import { CameraDenied, scanIsbn } from "@/lib/scanner";
+import { CameraDenied, scanIsbn, wantsToType } from "@/lib/scanner";
 
 /** "Do I have it?": answered from the local catalog, so it works offline. */
 export function CheckPage({
@@ -110,6 +110,7 @@ export function CheckPage({
     try {
       const scanned = await scanIsbn();
       if (scanned) await run(scanned);
+      else if (wantsToType()) setTimeout(() => input.current?.focus(), 0);
     } catch (e) {
       setError(e instanceof CameraDenied ? t("check.cameraDenied") : String(e));
     }

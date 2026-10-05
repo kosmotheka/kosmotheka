@@ -136,6 +136,7 @@ type FieldErrorCode =
   | "isbn_length"
   | "isbn_character"
   | "isbn_checksum"
+  | "isbn_prefix"
   | "isbn_in_use"
   | "invalid_cover_url"
   | "invalid_format"

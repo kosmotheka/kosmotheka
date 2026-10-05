@@ -211,6 +211,7 @@
     "isbn_length": "An ISBN has 10 or 13 digits.",
     "isbn_character": "An ISBN may only contain digits (and a final X).",
     "isbn_checksum": "This ISBN is not valid: check for a typo.",
+    "isbn_prefix": "This is not an ISBN: ISBNs start with 978 or 979. Look for the number next to the book's barcode.",
     "internal": "Something went wrong: {{message}}",
     "isbn_in_use": "Another book in the catalog already has this ISBN.",
     "invalid_cover_url": "This cover address is not allowed.",
@@ -1697,6 +1698,8 @@
     }
   },
   "scanner": {
+    "notIsbn": "That's a shop label, not the ISBN. Aim at the code that starts with 978 or 979.",
+    "type": "Type the number",
     "close": "Close the camera",
     "barcodeHint": "Point at the barcode",
     "qrHint": "Point at the code on the other device"

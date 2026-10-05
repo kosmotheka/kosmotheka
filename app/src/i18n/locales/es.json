@@ -225,6 +225,7 @@
     "isbn_length": "Un ISBN tiene 10 o 13 dígitos.",
     "isbn_character": "Un ISBN solo puede tener dígitos (y una X final).",
     "isbn_checksum": "Este ISBN no es válido: revisa si hay una errata.",
+    "isbn_prefix": "Esto no es un ISBN: los ISBN empiezan por 978 o 979. Busca el número junto al código de barras del libro.",
     "internal": "Algo ha fallado: {{message}}",
     "isbn_in_use": "Otro libro del catálogo ya tiene este ISBN.",
     "invalid_cover_url": "Esta dirección de portada no está permitida.",
@@ -1711,6 +1712,8 @@
     }
   },
   "scanner": {
+    "notIsbn": "Eso es una etiqueta de la tienda, no el ISBN. Apunta al código que empieza por 978 o 979.",
+    "type": "Escribir el número",
     "close": "Cerrar la cámara",
     "barcodeHint": "Apunta al código de barras",
     "qrHint": "Apunta al código del otro dispositivo"

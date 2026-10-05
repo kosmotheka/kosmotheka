@@ -1,8 +1,8 @@
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { Keyboard, X } from "lucide-react";
 
-import { cancelScan, useScanTarget } from "@/lib/scanner";
+import { cancelScan, typeInstead, useNotIsbn, useScanTarget } from "@/lib/scanner";
 
 /**
  * Drawn over the camera while the barcode plugin scans windowed (see `lib/scanner.ts`).
@@ -11,6 +11,7 @@ import { cancelScan, useScanTarget } from "@/lib/scanner";
 export function ScannerOverlay() {
   const { t } = useTranslation();
   const target = useScanTarget();
+  const notIsbn = useNotIsbn();
   if (!target) return null;
 
   const frame = target === "qr" ? "aspect-square w-[68vw]" : "aspect-[3/2] w-[80vw]";
@@ -30,9 +31,20 @@ export function ScannerOverlay() {
       <div
         className={`${frame} max-w-[420px] rounded-3xl border-[3px] border-white/90 shadow-[0_0_0_100vmax_rgb(0_0_0/45%)]`}
       />
-      <p className="mt-8 rounded-full bg-black/50 px-4 py-2 text-sm font-medium">
-        {t(target === "qr" ? "scanner.qrHint" : "scanner.barcodeHint")}
+      <p className="mt-8 max-w-[80vw] rounded-2xl bg-black/50 px-4 py-2 text-center text-sm font-medium">
+        {t(
+          target === "qr" ? "scanner.qrHint" : notIsbn ? "scanner.notIsbn" : "scanner.barcodeHint",
+        )}
       </p>
+      {target === "barcode" && (
+        <button
+          type="button"
+          onClick={() => void typeInstead()}
+          className="absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] flex items-center gap-2 rounded-full bg-black/50 px-5 py-3 text-sm font-medium"
+        >
+          <Keyboard className="size-5" /> {t("scanner.type")}
+        </button>
+      )}
     </div>,
     document.body,
   );
