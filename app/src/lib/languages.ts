@@ -38,6 +38,7 @@ export const LANGUAGE_CODES = [
   "ms",
   "vi",
   "th",
+  "zh",
   "ja",
   "ko",
   "sw",
