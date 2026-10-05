@@ -211,8 +211,8 @@
       "notice": "«Otro» no tiene datos propios. Lo que quieras apuntar (fabricante, referencia, estado…) va en las notas."
     },
     "placeholders": {
-      "language": "es, en…",
-      "location": "Salón, estantería 2, balda 3"
+      "location": "Salón, estantería 2, balda 3",
+      "noLanguage": "Sin indicar"
     },
     "cancel": "Cancelar",
     "save": "Guardar",

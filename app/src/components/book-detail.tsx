@@ -85,6 +85,7 @@ import {
   genreLabel,
 } from "@/lib/kinds";
 import { openOverlay } from "@/lib/navigation";
+import { languageName } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -673,7 +674,7 @@ function NeedsSection({ book }: { book: BookDetail }) {
 
 /** The "Datos" rows for a work, per kind (Design's WorkDetail/DetailPanel lists). Rows with
  * no value are skipped rather than shown as "—", except book kept its earlier row set. */
-function datosRows(book: BookDetail, t: TFunction): [string, string | null][] {
+function datosRows(book: BookDetail, t: TFunction, ui: string): [string, string | null][] {
   const code = book.barcode ? ([t("book.data.code"), book.barcode] as [string, string]) : null;
   const rows: [string, string | null][] = (() => {
     switch (book.kind) {
@@ -682,7 +683,7 @@ function datosRows(book: BookDetail, t: TFunction): [string, string | null][] {
           [t("form.people.author"), contributorNames(book, "author")],
           [t("form.fields.publisher"), book.publisher],
           [t("form.fields.isbn"), book.isbn13],
-          [t("form.fields.language"), book.language],
+          [t("form.fields.language"), book.language && languageName(book.language, ui)],
         ];
       case "comic":
         return [
@@ -759,7 +760,7 @@ function EditionSection({
   onFormChange: (form: EditionForm | null) => void;
   onSaved: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
   const [kindChangePlan, setKindChangePlan] = useState<KindChangePlan | null>(null);
@@ -847,7 +848,7 @@ function EditionSection({
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-sm">
-        {datosRows(book, t).map(([label, value]) => (
+        {datosRows(book, t, i18n.resolvedLanguage ?? "en").map(([label, value]) => (
           <div key={label} className="contents">
             <dt className="text-muted-foreground">{label}</dt>
             <dd className="text-pretty">{value}</dd>

@@ -59,6 +59,7 @@ import {
   VIDEOGAME_PLATFORMS,
   genreLabel,
 } from "@/lib/kinds";
+import { LANGUAGE_CODES, languageName } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 
 // Form state keeps every value as typed text; conversion happens on submit.
@@ -770,12 +771,7 @@ export function EditionFields({
           <div className="grid grid-cols-[2fr_1fr] gap-4">
             {publisherField("form.fields.publisher")}
             <Field id="language" label={t("form.fields.language")}>
-              <Input
-                id="language"
-                placeholder={t("form.placeholders.language")}
-                value={value.language}
-                onChange={(e) => set("language", e.target.value)}
-              />
+              <LanguageSelect value={value.language} onChange={(v) => set("language", v)} />
             </Field>
           </div>
           <div className="space-y-2">
@@ -1454,5 +1450,42 @@ export function RequiresField({
         </div>
       )}
     </div>
+  );
+}
+
+/** Radix Select cannot hold an empty value, so "not set" has its own. */
+const NO_LANGUAGE = "-";
+
+/**
+ * The common languages by name, in the app's language. A code stored by an older
+ * version or a provider that is not in the list stays selectable, so nothing is lost.
+ */
+function LanguageSelect({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+  const { t, i18n } = useTranslation();
+  const ui = i18n.resolvedLanguage ?? "en";
+  const codes: string[] = [...LANGUAGE_CODES];
+  if (value && !codes.includes(value)) codes.push(value);
+  const options = codes
+    .map((code) => ({ code, name: languageName(code, ui) }))
+    .sort((a, b) => a.name.localeCompare(b.name, ui));
+  return (
+    <Select
+      value={value || NO_LANGUAGE}
+      onValueChange={(v) => onChange(v === NO_LANGUAGE ? "" : v)}
+    >
+      <SelectTrigger id="language" className="w-full">
+        <span className="truncate">
+          {value ? languageName(value, ui) : t("form.placeholders.noLanguage")}
+        </span>
+      </SelectTrigger>
+      <SelectContent position="popper" className="max-h-72">
+        <SelectItem value={NO_LANGUAGE}>{t("form.placeholders.noLanguage")}</SelectItem>
+        {options.map(({ code, name }) => (
+          <SelectItem key={code} value={code}>
+            {name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -197,8 +197,8 @@
       "notice": "“Other” has no details of its own. Anything you want to note (maker, reference, condition…) goes in the notes."
     },
     "placeholders": {
-      "language": "en, es…",
-      "location": "Living room, shelf 2, row 3"
+      "location": "Living room, shelf 2, row 3",
+      "noLanguage": "Not set"
     },
     "cancel": "Cancel",
     "save": "Save",
