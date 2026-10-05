@@ -34,10 +34,13 @@ import { CameraDenied, scanIsbn } from "@/lib/scanner";
 /** "Do I have it?": answered from the local catalog, so it works offline. */
 export function CheckPage({
   desktop,
+  version,
   onChanged,
   onOpenBook,
 }: {
   desktop: boolean;
+  /** Changes whenever the catalog does. */
+  version: number;
   onChanged: () => void;
   /** Opens a book, switching to its library if it is in another one. */
   onOpenBook: (libraryId: string, editionId: string) => void;
@@ -58,8 +61,12 @@ export function CheckPage({
   const [wishTitle, setWishTitle] = useState("");
   const [wished, setWished] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // Set by "I bought it" until the next scan, so the answer is checked
+  // again once the catalog changes, instead of still saying "You don't have it".
+  const recheck = useRef<string | null>(null);
 
   const reset = () => {
+    recheck.current = null;
     setCheck(null);
     setOnline(null);
     setOffline(false);
@@ -74,6 +81,11 @@ export function CheckPage({
     try {
       const result = await checkIsbn(value);
       setCheck(result);
+      const missing = result.missing[0];
+      if (missing) {
+        setWished(true);
+        setWishTitle(missing.title);
+      }
       if (result.books.length === 0) {
         // Online data only improves the answer; without coverage it simply is not there.
         setLookingUp(true);
@@ -81,7 +93,7 @@ export function CheckPage({
           .then((found) => {
             if (found.found) {
               setOnline(found);
-              setWishTitle(found.title ?? "");
+              if (!missing) setWishTitle(found.title ?? "");
             }
           })
           .catch(() => setOffline(true))
@@ -153,8 +165,18 @@ export function CheckPage({
     onChanged();
   };
 
-  const bought = () =>
-    check &&
+  useEffect(() => {
+    if (recheck.current) void checkIsbn(recheck.current).then(setCheck);
+  }, [version]);
+
+  const submitWish = (event: SubmitEvent) => {
+    event.preventDefault();
+    void wish();
+  };
+
+  const bought = () => {
+    if (!check) return;
+    recheck.current = check.isbn13;
     openOverlay({
       name: "add",
       prefill: {
@@ -164,6 +186,7 @@ export function CheckPage({
         found: online ?? undefined,
       },
     });
+  };
 
   const owned = check && check.books.length > 0;
   const big = "h-[52px] rounded-[14px] text-[15px]";
@@ -310,13 +333,16 @@ export function CheckPage({
                     {online.authors.join(", ")}
                   </span>
                 ) : null}
-                <Input
-                  aria-label={t("form.fields.title")}
-                  placeholder={t("check.wishTitle")}
-                  className="h-10"
-                  value={wishTitle}
-                  onChange={(e) => setWishTitle(e.target.value)}
-                />
+                <form id="wish" onSubmit={submitWish}>
+                  <Input
+                    aria-label={t("form.fields.title")}
+                    placeholder={t("check.wishTitle")}
+                    className="h-10"
+                    enterKeyHint="done"
+                    value={wishTitle}
+                    onChange={(e) => setWishTitle(e.target.value)}
+                  />
+                </form>
               </div>
             </div>
             <div className="mt-1 flex flex-col gap-2.5">
@@ -325,7 +351,7 @@ export function CheckPage({
                   <Bookmark className="size-4" /> {t("check.alreadyWished")}
                 </p>
               ) : (
-                <Button className={big} disabled={!wishTitle.trim()} onClick={() => void wish()}>
+                <Button type="submit" form="wish" className={big} disabled={!wishTitle.trim()}>
                   <Bookmark /> {t("check.addWish")}
                 </Button>
               )}

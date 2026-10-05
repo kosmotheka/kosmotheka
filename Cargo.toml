@@ -3,7 +3,7 @@ resolver = "3"
 members = ["app/src-tauri", "crates/domain"]
 
 [workspace.package]
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 authors = ["Tersoal <6338830+Tersoal@users.noreply.github.com>"]

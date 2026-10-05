@@ -634,7 +634,10 @@ export function syncErrorKey(error: unknown): string {
 
 export interface IsbnCheck {
   isbn13: string;
+  /** Editions with at least one copy. */
   books: BookSummary[];
+  /** Editions with no copy yet, in "Missing" (D61). */
+  missing: BookSummary[];
 }
 
 /** Local only: works without coverage. */

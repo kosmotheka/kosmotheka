@@ -350,6 +350,7 @@ export default function App() {
     section === "check" ? (
       <CheckPage
         desktop={desktop}
+        version={version}
         onChanged={reload}
         onOpenBook={(libraryId, editionId) => void openBookIn(libraryId, editionId)}
       />

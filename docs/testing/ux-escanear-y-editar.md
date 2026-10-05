@@ -1,0 +1,44 @@
+# UX: escanear un libro que no está y editar una ficha
+
+Prueba del maintainer en el móvil (versión 0.1.4 de prueba interna, 05/10/2026). Libro: *El temor de un hombre sabio*, que ningún proveedor encuentra por ISBN.
+
+## Lo que pasó
+
+1. **Escanear un ISBN desconocido.** «¿Lo tengo?» dice «No lo tienes» y ofrece un campo «Título para acordarte» con tres botones: «Apuntar como me falta» (destacado), «Lo he comprado» y «Escanear otro».
+   - Esperaba un botón **Guardar**. No se entiende que «Apuntar como me falta» es lo que guarda el título.
+   - **Intro en el teclado no hace nada:** el campo de título no está en un `<form>` (`app/src/pages/check-page.tsx`).
+2. **«Lo he comprado»** abre el formulario de alta con el ISBN y el título. La búsqueda por ISBN no encuentra nada (ningún proveedor tiene ese ISBN). El ISBN sí venía relleno.
+3. **Guardar** vuelve a «¿Lo tengo?», con el aviso de guardado, pero la pantalla **sigue diciendo «No lo tienes»** para ese ISBN. La comprobación no se repite después de guardar.
+4. **Añadir buscando por título** encuentra el libro en un proveedor en inglés (no lo quería) y en uno en español que **solo trae el título**.
+5. **Editar desde la ficha:** el ISBN sí estaba guardado. Al buscar, Google Books dice **cuota agotada** (la clave compartida).
+6. **El formulario de edición se abre debajo de la ficha.** El botón Guardar queda abajo del todo; al subir, el dedo vuelve a pulsar el lápiz, y el formulario se cierra sin guardar.
+
+## Propuestas (por hablar)
+
+| # | Problema | Propuesta |
+|---|---|---|
+| 1 | No se sabe cómo guardar lo escaneado | Un único botón principal claro («Guardar en Me falta»), e Intro en el título hace lo mismo |
+| 2 | Tres botones al mismo nivel | Principal: guardar en «Me falta»; secundario: «Lo he comprado»; «Escanear otro» como enlace o en la barra |
+| 3 | Tras guardar sigue «No lo tienes» | Volver a comprobar el ISBN al guardar, o pasar directamente a escanear otro |
+| 4 | Resultados en otro idioma o sin datos | Ordenar por el idioma de la app y por cantidad de datos; agrupar resultados de la misma obra |
+| 5 | Cuota de Google Books agotada | Ya hay clave propia en Ajustes, pero nadie la va a poner. El maintainer prefiere buscar a través del servidor, pidiendo permiso y explicando que es solo para eso; acepta, si no hay otra, una clave del proyecto en la app. Ojo: el plan gratuito de Google Books se agota pronto con muchos usuarios, así que no debe ser la fuente principal |
+| 6 | Editar debajo de la ficha | En el móvil, editar es una **pantalla propia**, con Guardar arriba donde estaba el lápiz, y Atrás pregunta si hay cambios sin guardar |
+
+## Hecho (05/10/2026)
+
+- Intro en el título guarda en «Me falta», y el botón se llama «Guardar en Me falta» (propuesta 1).
+- Después de «Lo he comprado» y guardar, la pantalla vuelve a comprobar el ISBN (propuesta 3).
+
+- Una obra en «Me falta» ya no cuenta como «Lo tienes»: `check_isbn` separa las que tienen ejemplar de las que faltan, y la pantalla dice «No lo tienes · Ya está en Me falta». Versión 0.1.5.
+
+## Fuentes de libros en español, por probar
+
+Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tiene una API o datos abiertos (no solo una web), sus condiciones de uso y cuántos libros españoles encuentra de verdad, con una lista de ISBN de prueba (entre ellos *El temor de un hombre sabio*).
+
+| Fuente | Qué es | Por comprobar |
+|---|---|---|
+| Base de datos de libros editados en España (Ministerio de Cultura, agencia del ISBN) | Todo lo editado en España, por título o ISBN | Si hay API o descarga; si no, leer la web es frágil |
+| TodosTusLibros (CEGAL, librerías) | Libros editados en España y su disponibilidad | API y condiciones |
+| BiblioScan | Identifica un libro por ISBN | Qué es y de dónde saca los datos |
+| Google Books | Ya lo usamos | La cuota (propuesta 5) |
+| *Añadida:* Biblioteca Nacional de España (datos.bne.es) | Catálogo de la BNE como datos abiertos | Probar el acceso y la cobertura |

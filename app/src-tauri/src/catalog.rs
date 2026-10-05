@@ -1251,20 +1251,25 @@ pub fn list_books_everywhere(conn: &Connection, filter: &BookFilter) -> Result<V
 #[serde(rename_all = "camelCase")]
 pub struct IsbnCheck {
     pub isbn13: String,
+    /// Editions with at least one copy: "you have it".
     pub books: Vec<BookSummary>,
+    /// Editions with no copy yet, in "Missing" (D61): still "you don't have it".
+    pub missing: Vec<BookSummary>,
 }
 
 /// Looks in every library on the device: "do I have it?" is about the household, not one list.
 pub fn check_isbn(conn: &Connection, raw: &str) -> Result<IsbnCheck> {
     let isbn = Isbn::parse(raw)
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
-    let filter = BookFilter {
+    let with = |holding| BookFilter {
         query: Some(isbn.as_str().to_owned()),
+        holding: Some(holding),
         ..BookFilter::default()
     };
     Ok(IsbnCheck {
         isbn13: isbn.as_str().to_owned(),
-        books: list_books_everywhere(conn, &filter)?,
+        books: list_books_everywhere(conn, &with(Holding::Owned))?,
+        missing: list_books_everywhere(conn, &with(Holding::Missing))?,
     })
 }
 
@@ -1779,10 +1784,29 @@ mod tests {
         assert_eq!(owned.books.len(), 1);
         assert_eq!(owned.books[0].owners, vec!["Ana"]);
 
-        let missing = check_isbn(&conn, "9780140328721").unwrap();
-        assert!(missing.books.is_empty());
+        let unknown = check_isbn(&conn, "9780140328721").unwrap();
+        assert!(unknown.books.is_empty());
+        assert!(unknown.missing.is_empty());
 
         assert!(matches!(check_isbn(&conn, "12"), Err(Error::Validation(_))));
+    }
+
+    #[test]
+    fn check_isbn_does_not_count_a_missing_work_as_owned() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        create_missing(
+            &mut conn,
+            &lib,
+            &edition("Missing", Some("9780765350374"), &["Someone"]),
+            None,
+        )
+        .unwrap();
+
+        let check = check_isbn(&conn, "9780765350374").unwrap();
+        assert!(check.books.is_empty());
+        assert_eq!(check.missing.len(), 1);
+        assert_eq!(check.missing[0].title, "Missing");
     }
 
     #[test]
