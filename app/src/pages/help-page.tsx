@@ -1,10 +1,18 @@
 import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
 const TOPICS = ["share", "away", "pairing", "backups", "lost", "search"] as const;
 
 /** Short answers, one folded topic each. Cloud, roles and requests join as they are built. */
-export function HelpPage({ desktop }: { desktop: boolean }) {
+export function HelpPage({
+  desktop,
+  onShowWelcome,
+}: {
+  desktop: boolean;
+  onShowWelcome: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="flex max-w-2xl flex-col gap-3">
@@ -27,6 +35,9 @@ export function HelpPage({ desktop }: { desktop: boolean }) {
           </details>
         ))}
       </div>
+      <Button variant="outline" className="self-start" onClick={onShowWelcome}>
+        {t("help.showWelcome")}
+      </Button>
     </div>
   );
 }

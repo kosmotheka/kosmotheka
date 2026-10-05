@@ -135,6 +135,8 @@ pub fn run() {
             commands::forget_device,
             commands::check_isbn,
             commands::is_mobile,
+            commands::welcome_seen,
+            commands::set_welcome_seen,
             commands::app_lock_enabled,
             commands::set_app_lock,
             commands::app_lock_after,

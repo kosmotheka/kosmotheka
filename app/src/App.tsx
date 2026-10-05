@@ -28,6 +28,7 @@ import {
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { PairDialog } from "@/components/pair-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
+import { WELCOME_VERSION, WelcomeDialog } from "@/components/welcome-dialog";
 import { NewSeriesDialog } from "@/components/new-series-dialog";
 import { RequestNotices } from "@/components/request-notices";
 import { RequestsContext, useRequestsState } from "@/components/requests-context";
@@ -53,6 +54,8 @@ import {
   catalogOptions,
   cloudEventsWake,
   getBook,
+  setWelcomeSeen,
+  welcomeSeen,
   lanStatus,
   listBooks,
   listLibraries,
@@ -94,6 +97,14 @@ export default function App() {
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [welcome, setWelcome] = useState(false);
+  useEffect(() => {
+    void welcomeSeen().then((seen) => setWelcome(seen < WELCOME_VERSION));
+  }, []);
+  const closeWelcome = () => {
+    setWelcome(false);
+    void setWelcomeSeen(WELCOME_VERSION);
+  };
   const [version, setVersion] = useState(0);
   const [searching, setSearching] = useState(false);
   const [everywhere, setEverywhere] = useState(false);
@@ -367,7 +378,7 @@ export default function App() {
     ) : section === "series" ? (
       <SeriesPage desktop={desktop} version={version} />
     ) : section === "help" ? (
-      <HelpPage desktop={desktop} />
+      <HelpPage desktop={desktop} onShowWelcome={() => setWelcome(true)} />
     ) : (
       <CatalogPage
         state={state}
@@ -535,6 +546,7 @@ export default function App() {
             desktop={desktop}
             onOpenChange={(open) => !open && closeOverlay()}
           />
+          <WelcomeDialog open={welcome} onDone={closeWelcome} />
           <ProvidersDialog
             open={overlay?.name === "providers"}
             onOpenChange={(open) => !open && closeOverlay()}

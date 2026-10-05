@@ -635,7 +635,8 @@
           "Google Books funciona mejor con una clave propia, que se pone en Ajustes."
         ]
       }
-    }
+    },
+    "showWelcome": "Ver la bienvenida"
   },
   "types": {
     "all": "Todo",
@@ -1717,5 +1718,34 @@
     "close": "Cerrar la cámara",
     "barcodeHint": "Apunta al código de barras",
     "qrHint": "Apunta al código del otro dispositivo"
+  },
+  "welcome": {
+    "next": "Siguiente",
+    "skip": "Saltar",
+    "start": "Empezar",
+    "local": {
+      "title": "Tu biblioteca, en tu dispositivo",
+      "body": "Kosmotheka guarda tu catálogo en este dispositivo. Funciona sin cuenta y sin conexión, y tus datos no salen de aquí salvo que tú lo pidas."
+    },
+    "scan": {
+      "title": "Escanea el código de barras",
+      "body": "Con la cámara añades un libro en un momento o compruebas si ya lo tienes, por ejemplo en una librería. En los libros, busca el código que empieza por 978 o 979."
+    },
+    "search": {
+      "title": "Catálogos públicos para rellenar las fichas",
+      "body": "Para rellenar los datos de una obra, la app pregunta a estos catálogos públicos. Solo se envía lo que buscas (un ISBN, un código o un título), nunca tu catálogo ni tus datos. Puedes apagar el que quieras.",
+      "later": "Puedes cambiarlo cuando quieras en Ajustes → Proveedores de datos. Sin ellos, todo se puede añadir a mano."
+    },
+    "share": {
+      "title": "Compártela si quieres",
+      "body": "Puedes emparejar otros dispositivos de casa por la red local, o crear una cuenta para sincronizar a través de la nube. Es opcional: lo tienes en el menú cuando quieras."
+    },
+    "sources": {
+      "bne": "Libros editados en España",
+      "open_library": "Libros de todo el mundo",
+      "inventaire": "Ediciones y portadas",
+      "wikidata": "Libros, películas, juegos y más",
+      "music_brainz": "Discos y sus portadas"
+    }
   }
 }

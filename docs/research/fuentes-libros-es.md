@@ -37,7 +37,7 @@ Campos MARC útiles: 245 (título), 100 (autoría), 264/260 (editorial y año), 
 
 ## Conclusiones provisionales
 
-- **La BNE es la mejor candidata** para libros editados en España: datos completos, rápida y sin clave, así que funcionaría también sin nube. Falta comprobar sus **condiciones de uso** para un servicio así y si limita las peticiones.
+- **La BNE es la mejor candidata** para libros editados en España: datos completos, rápida y sin clave, así que funcionaría también sin nube. **Condiciones (comprobadas el 05/10/2026):** los datos del catálogo están bajo **CC0**, de uso gratuito y sin autorización previa, y el SRU es uno de los métodos oficiales de descarga de registros ([suministro de registros](https://www.bne.es/es/servicios/servicios-para-bibliotecarios/suministro-registros), [datos enlazados](https://www.bne.es/es/catalogos/datos-enlazados-bne)). No publica un límite de peticiones: la app hace una consulta por búsqueda y se identifica con su User-Agent. Integrada el mismo día.
 - **Open Library ya encuentra estos libros**, pero sin autoría en la mitad. Pedir también la obra mejoraría el resultado sin añadir proveedores.
 - **El libro de la prueba no falló por las fuentes:** el código escaneado fue `2401114882038`, que **no es un ISBN**. Empieza por 2, el prefijo de los códigos internos de tienda (una etiqueta de precio), y la app lo aceptó porque `Isbn::parse` solo comprueba la longitud y el dígito de control, no el prefijo 978/979 (`crates/domain/src/isbn.rs`).
 

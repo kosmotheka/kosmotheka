@@ -36,6 +36,7 @@ let mockSettings: Settings = { apiKeys: {}, disabledSources: [] };
 // The biometric plugin itself cannot be mocked through IPC, so the switch always
 // shows as unavailable here; `?lock` renders the lock screen directly instead.
 let mockAppLock = false;
+let mockWelcomeSeen = 0;
 let mockAppLockAfter = 60;
 
 const HOME = "01997c7e-0000-7000-8000-00000000a0e1";
@@ -975,6 +976,11 @@ mockIPC((cmd, args) => {
       };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
+    case "welcome_seen":
+      return mockWelcomeSeen;
+    case "set_welcome_seen":
+      mockWelcomeSeen = (args as { version: number }).version;
+      return null;
     case "app_lock_enabled":
       return mockAppLock;
     case "set_app_lock":
@@ -989,8 +995,8 @@ mockIPC((cmd, args) => {
     case "check_isbn": {
       const isbn = (args as { isbn: string }).isbn.replace(/\D/g, "");
       return isbn.startsWith("97884")
-        ? { isbn13: isbn, books: [] }
-        : { isbn13: isbn, books: [bookAt(0)] };
+        ? { isbn13: isbn, books: [], missing: [] }
+        : { isbn13: isbn, books: [bookAt(0)], missing: [] };
     }
     case "lookup_isbn":
       throw new Error("offline");

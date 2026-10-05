@@ -658,6 +658,15 @@ export function appLockEnabled(): Promise<boolean> {
   return invoke<boolean>("app_lock_enabled");
 }
 
+/** The version of the first-run welcome this device has seen (D91); 0 when none. */
+export function welcomeSeen(): Promise<number> {
+  return invoke<number>("welcome_seen");
+}
+
+export function setWelcomeSeen(version: number): Promise<void> {
+  return invoke("set_welcome_seen", { version });
+}
+
 export function setAppLock(enabled: boolean): Promise<void> {
   return invoke("set_app_lock", { enabled });
 }

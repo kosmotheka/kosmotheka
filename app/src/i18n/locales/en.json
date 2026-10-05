@@ -621,7 +621,8 @@
           "Google Books works better with your own key, set in Settings."
         ]
       }
-    }
+    },
+    "showWelcome": "See the welcome again"
   },
   "types": {
     "all": "All",
@@ -1703,5 +1704,34 @@
     "close": "Close the camera",
     "barcodeHint": "Point at the barcode",
     "qrHint": "Point at the code on the other device"
+  },
+  "welcome": {
+    "next": "Next",
+    "skip": "Skip",
+    "start": "Get started",
+    "local": {
+      "title": "Your library, on your device",
+      "body": "Kosmotheka keeps your catalog on this device. It works without an account or a connection, and your data stays here unless you ask otherwise."
+    },
+    "scan": {
+      "title": "Scan the barcode",
+      "body": "Use the camera to add a book in a moment or to check whether you already have it, say in a bookshop. On books, look for the code that starts with 978 or 979."
+    },
+    "search": {
+      "title": "Public catalogs to fill in the details",
+      "body": "To fill in a work's details, the app asks these public catalogs. Only what you search for is sent (an ISBN, a code or a title), never your catalog or your data. Turn off any you like.",
+      "later": "You can change this any time in Settings → Data providers. Without them, everything can be added by hand."
+    },
+    "share": {
+      "title": "Share it if you like",
+      "body": "You can pair other devices at home over the local network, or create an account to sync through the cloud. It's optional: it's in the menu whenever you want it."
+    },
+    "sources": {
+      "bne": "Books published in Spain",
+      "open_library": "Books from around the world",
+      "inventaire": "Editions and covers",
+      "wikidata": "Books, films, games and more",
+      "music_brainz": "Records and their covers"
+    }
   }
 }

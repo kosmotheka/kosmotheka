@@ -88,6 +88,20 @@ pub fn api_key(conn: &Connection, provider: &str) -> Result<Option<String>> {
     Ok(load(conn)?.api_keys.remove(provider))
 }
 
+const WELCOME_SEEN_KEY: &str = "welcome_seen";
+
+/// The version of the first-run welcome this device has seen (D91); 0 when none.
+/// A welcome that adds a search service raises its version, so it shows again.
+pub fn welcome_seen(conn: &Connection) -> Result<u32> {
+    Ok(read_state(conn, WELCOME_SEEN_KEY)?
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(0))
+}
+
+pub fn set_welcome_seen(conn: &Connection, version: u32) -> Result<()> {
+    write_state(conn, WELCOME_SEEN_KEY, Some(&version.to_string()))
+}
+
 const APP_LOCK_KEY: &str = "app_lock";
 
 /// Whether the fingerprint/face lock is on (D78). Off by default, like the key being absent.
@@ -208,6 +222,15 @@ mod tests {
             }
             other => panic!("expected a validation error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn the_welcome_is_unseen_until_marked() {
+        let conn = db::open_in_memory().unwrap();
+        assert_eq!(welcome_seen(&conn).unwrap(), 0);
+
+        set_welcome_seen(&conn, 1).unwrap();
+        assert_eq!(welcome_seen(&conn).unwrap(), 1);
     }
 
     #[test]
