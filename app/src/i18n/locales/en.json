@@ -274,7 +274,13 @@
       "seasons_other": "{{count}} seasons"
     },
     "requiresNotice": "Needs **{{title}}**, which you don't have. Without it, you can't use this one.",
-    "seeWork": "See {{title}}"
+    "seeWork": "See {{title}}",
+    "editing": "Edit",
+    "discard": {
+      "title": "Discard your changes?",
+      "body": "What you changed on this page won't be saved.",
+      "confirm": "Discard"
+    }
   },
   "copies": {
     "empty": "No copies: this edition is in the catalog but nobody owns it.",

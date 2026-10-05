@@ -288,7 +288,13 @@
       "seasons_other": "{{count}} temporadas"
     },
     "requiresNotice": "Necesita **{{title}}**, que no tienes. Sin él no se puede usar.",
-    "seeWork": "Ver {{title}}"
+    "seeWork": "Ver {{title}}",
+    "editing": "Editar",
+    "discard": {
+      "title": "¿Descartar los cambios?",
+      "body": "Lo que has cambiado en esta ficha no se guardará.",
+      "confirm": "Descartar"
+    }
   },
   "copies": {
     "empty": "Sin ejemplares: esta edición está en el catálogo, pero nadie la tiene.",

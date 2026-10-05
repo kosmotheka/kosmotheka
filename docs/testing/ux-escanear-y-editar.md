@@ -65,3 +65,19 @@ Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tien
 - **La portada «se perdía» al guardar:** sí se descargaba y se guardaba, pero no se veía. El permiso para mostrar imágenes locales (`assetProtocol.scope` en `tauri.conf.json`) solo cubre la carpeta de datos por defecto, y la prueba usaba otra (`KOSMOTHEKA_DATA_DIR`). Solo pasaba con esa variable, en desarrollo. Arreglado: al arrancar se permite la carpeta de portadas real. Comprobado en el escritorio.
 - Las portadas que tardan en llegar ya no dejan un hueco que parece definitivo: la caja late hasta que llega la imagen.
 - El idioma salía como código («es») y se escribía a mano. Ahora el formulario tiene un **selector** con unos cuarenta idiomas por su nombre, en el idioma de la app (con `Intl.DisplayNames`, sin tabla propia), y la ficha muestra el nombre. Se sigue guardando el código ISO 639-1. Un código que no esté en la lista, o un texto libre de antes, se conserva y se puede elegir. Incluye el chino. Pendiente de probar en Android, donde el desplegable es una lista larga sin buscador.
+
+## Editar en su propia pantalla (05/10/2026)
+
+Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulario, con «Guardar» arriba, donde estaba el lápiz (en el móvil, una X a la izquierda para cancelar). Al guardar o cancelar se vuelve a la ficha **en la misma pestaña** que estaba, así que ya no cambia de pestaña según cómo se llegue. Cancelar con cambios pregunta antes de descartarlos.
+
+## Pendiente
+
+- **Botón atrás de Android mientras se edita:** hoy cierra la ficha entera y se pierde lo escrito. Debería cancelar la edición (y preguntar si hay cambios), con una entrada propia en el historial, como el escáner.
+- **Datos principales a la vista:** el ISBN y la editorial siguen en la pestaña «Datos». Valorar mostrarlos en la cabecera de la ficha.
+- **Ordenar los resultados de búsqueda** por el idioma de la app y por cantidad de datos, y agrupar los de la misma obra (propuesta 4).
+- **Open Library sin autoría:** pedir también la obra cuando la edición no trae autores.
+- **Búsqueda a través del servidor** (D91), con límite por IP, y la **Library of Congress** para inglés (solo HTTP). Con la 7.4. Al añadirla, subir `WELCOME_VERSION` y añadirla a la bienvenida.
+- **La primera búsqueda de la sesión** falló una vez en todas las fuentes a la vez; vigilar si se repite.
+- **Selector de idioma en Android:** si la lista larga se hace pesada, cambiarlo por uno con buscador.
+- **Leer el ISBN impreso con la cámara:** plugin libre de Tauri en su propio repositorio (Fase 10).
+- **Validar el idioma en `spec/`:** hoy es texto libre en el formato de las operaciones; el formulario ya solo guarda códigos.

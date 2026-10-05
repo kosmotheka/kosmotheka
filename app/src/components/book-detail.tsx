@@ -170,10 +170,27 @@ export function BookDetailView({
     onChanged();
   };
 
+  const [editStart, setEditStart] = useState<EditionForm | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  // Editing takes the whole page, with Save where the pencil was; the tab underneath
+  // stays as it was, so leaving the form always lands where the person started.
   const edit = () => {
     if (!book) return;
-    setTab("details");
-    setEditing(editionFormFrom(book));
+    const form = editionFormFrom(book);
+    setEditStart(form);
+    setEditing(form);
+  };
+
+  const stopEditing = () => {
+    setEditing(null);
+    setEditStart(null);
+    setConfirmDiscard(false);
+  };
+
+  const cancelEdit = () => {
+    if (JSON.stringify(editing) !== JSON.stringify(editStart)) setConfirmDiscard(true);
+    else stopEditing();
   };
 
   /** «Lo tengo» / «Pedir que se añada» on a missing work (D61): straight to the copy form.
@@ -258,7 +275,17 @@ export function BookDetailView({
           {t("errors.internal", { message: loadError })}
         </p>
       )}
-      {book && (
+      {book && editing && (
+        <div className={cn("pt-2 pb-8", desktop ? "px-5" : "px-4")}>
+          <EditionSection
+            book={book}
+            form={editing}
+            onFormChange={(form) => (form ? setEditing(form) : stopEditing())}
+            onSaved={changed}
+          />
+        </div>
+      )}
+      {book && !editing && (
         <div className={cn("flex flex-col gap-5 pb-8", desktop ? "px-5" : "px-4")}>
           <Hero book={book} desktop={desktop} />
           <RequiresNotice book={book} />
@@ -309,12 +336,7 @@ export function BookDetailView({
               />
             </TabsContent>
             <TabsContent value="details" className="pt-4">
-              <EditionSection
-                book={book}
-                form={editing}
-                onFormChange={setEditing}
-                onSaved={changed}
-              />
+              <EditionSection book={book} form={null} onFormChange={setEditing} onSaved={changed} />
             </TabsContent>
             <TabsContent value="history" className="pt-4">
               <HistoryList editionId={book.editionId} version={version} />
@@ -322,6 +344,14 @@ export function BookDetailView({
           </Tabs>
         </div>
       )}
+      <ConfirmButton
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title={t("book.discard.title")}
+        description={t("book.discard.body")}
+        confirmLabel={t("book.discard.confirm")}
+        onConfirm={stopEditing}
+      />
       <ConfirmButton
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
@@ -359,17 +389,30 @@ export function BookDetailView({
       >
         <div className="flex h-14 shrink-0 items-center gap-1.5 px-4">
           <span className="flex-1 text-[13px] text-muted-foreground">
-            {book ? t(`types.${book.kind}`) : null}
+            {editing ? t("book.editing") : book ? t(`types.${book.kind}`) : null}
           </span>
-          {!reader && (
-            <Button variant="outline" size="sm" onClick={edit} disabled={!book}>
-              <Pencil /> {t("book.edit")}
-            </Button>
+          {editing ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                {t("form.cancel")}
+              </Button>
+              <Button size="sm" type="submit" form={EDIT_FORM_ID}>
+                {t("form.save")}
+              </Button>
+            </>
+          ) : (
+            <>
+              {!reader && (
+                <Button variant="outline" size="sm" onClick={edit} disabled={!book}>
+                  <Pencil /> {t("book.edit")}
+                </Button>
+              )}
+              {moreMenu}
+              <Button variant="ghost" size="icon-sm" aria-label={t("book.close")} onClick={onClose}>
+                <X />
+              </Button>
+            </>
           )}
-          {moreMenu}
-          <Button variant="ghost" size="icon-sm" aria-label={t("book.close")} onClick={onClose}>
-            <X />
-          </Button>
         </div>
         <div className="flex-1 overflow-y-auto">{body}</div>
       </aside>
@@ -388,25 +431,36 @@ export function BookDetailView({
             variant="ghost"
             size="icon-lg"
             className="size-12 rounded-full"
-            aria-label={t("book.back")}
-            onClick={onClose}
+            aria-label={editing ? t("form.cancel") : t("book.back")}
+            onClick={editing ? cancelEdit : onClose}
           >
-            <ArrowLeft className="size-[22px]" />
+            {editing ? <X className="size-[22px]" /> : <ArrowLeft className="size-[22px]" />}
           </Button>
-          <span className="flex-1" />
-          {!reader && (
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              className="size-12 rounded-full"
-              aria-label={t("book.edit")}
-              onClick={edit}
-              disabled={!book}
-            >
-              <Pencil className="size-5" />
-            </Button>
+          {editing ? (
+            <>
+              <span className="flex-1 text-[17px] font-semibold">{t("book.editing")}</span>
+              <Button type="submit" form={EDIT_FORM_ID} className="mr-3 h-10 rounded-full px-5">
+                {t("form.save")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="flex-1" />
+              {!reader && (
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  className="size-12 rounded-full"
+                  aria-label={t("book.edit")}
+                  onClick={edit}
+                  disabled={!book}
+                >
+                  <Pencil className="size-5" />
+                </Button>
+              )}
+              {moreMenu}
+            </>
           )}
-          {moreMenu}
         </header>
         <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">{body}</div>
       </ScreenDialogContent>
@@ -749,6 +803,9 @@ function datosRows(book: BookDetail, t: TFunction, ui: string): [string, string 
   return rows.filter(([, value]) => value !== null);
 }
 
+/** The edit form's id, so the Save button in the page header can submit it. */
+const EDIT_FORM_ID = "edit-edition";
+
 function EditionSection({
   book,
   form,
@@ -770,7 +827,7 @@ function EditionSection({
 
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
-    if (!form) return;
+    if (!form || saving) return;
     setSaving(true);
     errors.clear();
     try {
@@ -798,7 +855,7 @@ function EditionSection({
 
   if (form) {
     return (
-      <form onSubmit={(e) => void save(e)} noValidate className="space-y-4">
+      <form id={EDIT_FORM_ID} onSubmit={(e) => void save(e)} noValidate className="space-y-4">
         <EditionFields
           value={form}
           onChange={onFormChange}
@@ -812,22 +869,7 @@ function EditionSection({
             {t("errors.internal", { message: errors.message })}
           </p>
         )}
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              errors.clear();
-              setCopyFormatChanges({});
-              onFormChange(null);
-            }}
-          >
-            {t("form.cancel")}
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? t("form.saving") : t("form.save")}
-          </Button>
-        </div>
+        {saving && <p className="text-sm text-muted-foreground">{t("form.saving")}</p>}
         {kindChangePlan && (
           <ChangeKindDialog
             book={book}
