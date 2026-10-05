@@ -96,6 +96,7 @@
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
+| D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | propuesta |
 
 ---
 
@@ -1501,3 +1502,27 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 **Opciones descartadas:** convertir a HTML a mano; la wiki de GitHub (es un repo aparte, sin revisión por PR y mal para dos idiomas); servicios externos como ReadMe o Read the Docs (se prefiere alojarlo nosotros); empezar un repositorio sin historial.
 
 **Consecuencias:** el escaneo y la reescritura se hacen antes de abrir el repositorio (D03). La traducción de `docs/` al inglés (D02) pasa a ser la parte grande del trabajo. Los hashes de los commits cambian una vez.
+
+## D91 · Bienvenida al primer arranque, con los servicios externos explicados y desactivables — `propuesta`
+
+**Contexto:** las búsquedas en catálogos externos mejoran mucho el alta (las bibliotecas nacionales, [fuentes-libros-es.md](research/fuentes-libros-es.md)). Algunas solo pueden ir a través del servidor (la Library of Congress solo responde por HTTP sin cifrar). Hoy la app ya consulta Open Library, Inventaire, Wikidata y MusicBrainz desde el móvil, y solo lo dice la política de privacidad. El maintainer quiere activarlas por defecto para que la experiencia sea buena, pero **siendo totalmente transparente**: esconderlo en la política de privacidad es una trampa, porque nadie la lee.
+
+**Opciones:**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Activado por defecto y solo en la política de privacidad | La mejor experiencia sin esfuerzo | Nadie se entera: no es transparente |
+| Pedir permiso la primera vez que se busca | Se pide justo cuando hace falta | Interrumpe el alta, que es el momento de más prisa |
+| **Bienvenida al primer arranque** | Explica, deja elegir y no interrumpe después | Unas pantallas más al instalar |
+
+**Recomendación:** unas pocas pantallas al primer arranque, que se pueden saltar y volver a ver desde Ayuda:
+1. Qué es Kosmotheka y que **los datos se quedan en el dispositivo**.
+2. Que se puede **escanear** el código de barras.
+3. **Servicios de búsqueda:** qué servicios se consultan, qué se envía (solo lo que buscas: un ISBN, un código o un título) y cuáles van a través de nuestro servidor. Cada uno con su interruptor, **activados por defecto**, y un enlace a Ajustes › Proveedores para cambiarlo después.
+4. Opcional: sincronizar con otros dispositivos o con la nube, sin obligar a nada.
+
+Si una versión añade un servicio nuevo, quien ya tiene la app ve solo esa pantalla otra vez, con el servicio nuevo marcado. La política de privacidad dice lo mismo, con más detalle.
+
+**Por decidir:** si la búsqueda a través del servidor exige cuenta o vale sin ella (sin cuenta, el servidor necesita límites por IP para no ser un intermediario abierto); y si hace falta algo más que esto para el RGPD, ya que el servidor vería las búsquedas y la IP.
+
+**Consecuencias:** la búsqueda a través del servidor (prevista en [proveedores.md](research/proveedores.md) para los servicios con clave) también sirve para las fuentes sin HTTPS. Las pantallas siguen el diseño de la app y llevan sus textos en `en` y `es`.
