@@ -33,10 +33,18 @@ export function useScanTarget(): ScanTarget | null {
   );
 }
 
+// Settles the pending scan from our side. The Android plugin's `cancel` clears
+// its saved call before rejecting it, so the plugin's `scan` never settles.
+let settlePending: (() => void) | null = null;
+
 /** Closes the camera; the pending scan resolves to null. */
 export async function cancelScan() {
   const scanner = await import("@tauri-apps/plugin-barcode-scanner");
-  await scanner.cancel();
+  try {
+    await scanner.cancel();
+  } finally {
+    settlePending?.();
+  }
 }
 
 async function scan(
@@ -59,11 +67,20 @@ async function scan(
   window.addEventListener("popstate", onBack, { once: true });
   setTarget(shown);
   try {
-    const result = await scanner.scan({ formats: formats(scanner), windowed: true });
-    return result.content || null;
+    const cancelled = new Promise<null>((resolve) => {
+      settlePending = () => {
+        resolve(null);
+      };
+    });
+    const result = await Promise.race([
+      scanner.scan({ formats: formats(scanner), windowed: true }),
+      cancelled,
+    ]);
+    return result?.content || null;
   } catch {
     return null; // cancelled or closed
   } finally {
+    settlePending = null;
     setTarget(null);
     window.removeEventListener("popstate", onBack);
     // Drop our entry before the caller navigates, so its next step lands on top.
