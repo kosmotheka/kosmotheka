@@ -96,7 +96,7 @@
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
-| D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | propuesta |
+| D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 
 ---
 
@@ -1503,7 +1503,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 **Consecuencias:** el escaneo y la reescritura se hacen antes de abrir el repositorio (D03). La traducción de `docs/` al inglés (D02) pasa a ser la parte grande del trabajo. Los hashes de los commits cambian una vez.
 
-## D91 · Bienvenida al primer arranque, con los servicios externos explicados y desactivables — `propuesta`
+## D91 · Bienvenida al primer arranque, con los servicios externos explicados y desactivables — `aceptada`
 
 **Contexto:** las búsquedas en catálogos externos mejoran mucho el alta (las bibliotecas nacionales, [fuentes-libros-es.md](research/fuentes-libros-es.md)). Algunas solo pueden ir a través del servidor (la Library of Congress solo responde por HTTP sin cifrar). Hoy la app ya consulta Open Library, Inventaire, Wikidata y MusicBrainz desde el móvil, y solo lo dice la política de privacidad. El maintainer quiere activarlas por defecto para que la experiencia sea buena, pero **siendo totalmente transparente**: esconderlo en la política de privacidad es una trampa, porque nadie la lee.
 
@@ -1523,6 +1523,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 Si una versión añade un servicio nuevo, quien ya tiene la app ve solo esa pantalla otra vez, con el servicio nuevo marcado. La política de privacidad dice lo mismo, con más detalle.
 
-**Por decidir:** si la búsqueda a través del servidor exige cuenta o vale sin ella (sin cuenta, el servidor necesita límites por IP para no ser un intermediario abierto); y si hace falta algo más que esto para el RGPD, ya que el servidor vería las búsquedas y la IP.
+**Decisión** (el maintainer, 05/10/2026): se acepta la bienvenida, y se hace ya, sin pasar por Claude Design.
+- **Buscar a través del servidor no exige cuenta**, pero lleva un límite de peticiones por IP: quien use la app normalmente no lo nota.
+- **Protección de datos:** avisar en la bienvenida y en la política de privacidad, y poder desactivar cada servicio, basta para un proyecto gratuito y libre cuyo único fin es mejorar el alta.
 
 **Consecuencias:** la búsqueda a través del servidor (prevista en [proveedores.md](research/proveedores.md) para los servicios con clave) también sirve para las fuentes sin HTTPS. Las pantallas siguen el diseño de la app y llevan sus textos en `en` y `es`.
