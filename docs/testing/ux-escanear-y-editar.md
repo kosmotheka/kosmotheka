@@ -62,5 +62,6 @@ Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tien
 ## Prueba en el escritorio (05/10/2026)
 
 - Buscar `9788499899619` en «Añadir»: el primer resultado es de la **BNE** (título, autoría, editorial, año), con la portada de Open Library. La primera búsqueda de la sesión dio «No se pudo consultar» para la BNE, Google Books y Open Library a la vez, y al repetir funcionó: parece un fallo puntual de red al arrancar, pero conviene vigilarlo.
-- **La portada se pierde al guardar:** el formulario la muestra, pero la obra queda sin portada en el catálogo y en la ficha. Por investigar (¿falla la descarga, o la portada del resultado combinado no llega al guardar?).
+- **La portada «se perdía» al guardar:** sí se descargaba y se guardaba, pero no se veía. El permiso para mostrar imágenes locales (`assetProtocol.scope` en `tauri.conf.json`) solo cubre la carpeta de datos por defecto, y la prueba usaba otra (`KOSMOTHEKA_DATA_DIR`). Solo pasaba con esa variable, en desarrollo. Arreglado: al arrancar se permite la carpeta de portadas real. Comprobado en el escritorio.
+- Las portadas que tardan en llegar ya no dejan un hueco que parece definitivo: la caja late hasta que llega la imagen.
 - El idioma sale como código («es») en la pestaña Datos, en vez de «Español».

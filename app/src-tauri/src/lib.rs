@@ -54,6 +54,10 @@ pub fn run() {
             // Not worth failing the start over: the next rename tries again.
             let _ = lan::refresh_device_name(&mut *database.lock()?);
             let covers = Covers::new(data_dir.join("covers"))?;
+            // The config's scope names the default folder; a data folder set with
+            // KOSMOTHEKA_DATA_DIR keeps its covers elsewhere, and they must show too.
+            app.asset_protocol_scope()
+                .allow_directory(covers.dir(), false)?;
             app.manage(database.clone());
             app.manage(covers.clone());
             app.manage(Lookup::new()?);

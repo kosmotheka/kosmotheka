@@ -31,6 +31,8 @@ export function Cover({
 }) {
   const [localSrc, setLocalSrc] = useState<{ file: string; src: string } | null>(null);
   const [broken, setBroken] = useState<string | null>(null);
+  // Remote covers can take a while: the box pulses until the image has arrived.
+  const [loaded, setLoaded] = useState<string | null>(null);
 
   useEffect(() => {
     if (!file) return;
@@ -60,8 +62,14 @@ export function Cover({
     );
   }
   return (
-    <div className={box}>
-      <img src={src} alt={alt} className="size-full object-cover" onError={() => setBroken(src)} />
+    <div className={cn(box, loaded !== src && "animate-pulse")}>
+      <img
+        src={src}
+        alt={alt}
+        className={cn("size-full object-cover", loaded !== src && "opacity-0")}
+        onLoad={() => setLoaded(src)}
+        onError={() => setBroken(src)}
+      />
     </div>
   );
 }
