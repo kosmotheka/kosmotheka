@@ -17,6 +17,7 @@ import {
 
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
+import { useDesktop } from "@/components/shell/use-desktop";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -1462,12 +1463,31 @@ const NO_LANGUAGE = "-";
  */
 function LanguageSelect({ value, onChange }: { value: string; onChange: (code: string) => void }) {
   const { t, i18n } = useTranslation();
+  const desktop = useDesktop();
   const ui = i18n.resolvedLanguage ?? "en";
   const codes: string[] = [...LANGUAGE_CODES];
   if (value && !codes.includes(value)) codes.push(value);
   const options = codes
     .map((code) => ({ code, name: languageName(code, ui) }))
     .sort((a, b) => a.name.localeCompare(b.name, ui));
+  // On a phone the system's own picker: a long list scrolls and opens reliably there.
+  if (!desktop) {
+    return (
+      <select
+        id="language"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+      >
+        <option value="">{t("form.placeholders.noLanguage")}</option>
+        {options.map(({ code, name }) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </select>
+    );
+  }
   return (
     <Select
       value={value || NO_LANGUAGE}

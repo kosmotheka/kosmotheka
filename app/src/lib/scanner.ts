@@ -15,8 +15,6 @@ export class CameraDenied extends Error {}
 export type ScanTarget = "barcode" | "qr";
 
 let target: ScanTarget | null = null;
-/** Set when the last code read was not an ISBN, such as a shop's price label. */
-let notIsbn = false;
 /** Set when the person closed the camera to type the number instead. */
 let typing = false;
 const listeners = new Set<() => void>();
@@ -38,10 +36,6 @@ function setTarget(next: ScanTarget | null) {
 
 export function useScanTarget(): ScanTarget | null {
   return useSyncExternalStore(subscribe, () => target);
-}
-
-export function useNotIsbn(): boolean {
-  return useSyncExternalStore(subscribe, () => notIsbn);
 }
 
 /** Closes the camera so the person can type the number. */
@@ -117,24 +111,28 @@ async function scan(
   }
 }
 
+/** Set when the last scan read a code that is not an ISBN, such as a shop's price label. */
+let notIsbn = false;
+
 /**
- * Opens the camera and returns the scanned ISBN, or null if the user cancelled. Codes
- * outside 978 and 979, such as a shop's price label, are skipped with a notice and the
- * camera opens again, since the book's own barcode is usually nearby.
+ * Opens the camera and returns the scanned ISBN, or null if the user cancelled or the
+ * code was not an ISBN (see `readNotIsbn`). Scanning again right away would keep reading
+ * the same big label, so the caller offers to type the small printed number instead.
  */
 export async function scanIsbn(): Promise<string | null> {
   typing = false;
-  try {
-    for (;;) {
-      const code = await scan((scanner) => [scanner.Format.EAN13], "barcode");
-      if (code === null || /^97[89]/.test(code)) return code;
-      notIsbn = true;
-      notify();
-    }
-  } finally {
-    notIsbn = false;
-    notify();
-  }
+  notIsbn = false;
+  const code = await scan((scanner) => [scanner.Format.EAN13], "barcode");
+  if (code === null || /^97[89]/.test(code)) return code;
+  notIsbn = true;
+  return null;
+}
+
+/** True once after `scanIsbn` read a code that is not an ISBN. */
+export function readNotIsbn(): boolean {
+  const was = notIsbn;
+  notIsbn = false;
+  return was;
 }
 
 /**

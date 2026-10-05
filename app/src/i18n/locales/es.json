@@ -1719,7 +1719,7 @@
     }
   },
   "scanner": {
-    "notIsbn": "Eso es una etiqueta de la tienda, no el ISBN. Apunta al código que empieza por 978 o 979.",
+    "notIsbn": "Eso era una etiqueta de la tienda, no el ISBN. Escribe el número pequeño que empieza por 978 o 979, o vuelve a escanear apuntando a su código.",
     "type": "Escribir el número",
     "close": "Cerrar la cámara",
     "barcodeHint": "Apunta al código de barras",

@@ -29,7 +29,7 @@ import {
   requestMissing,
 } from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
-import { CameraDenied, scanIsbn, wantsToType } from "@/lib/scanner";
+import { CameraDenied, readNotIsbn, scanIsbn, wantsToType } from "@/lib/scanner";
 
 /** "Do I have it?": answered from the local catalog, so it works offline. */
 export function CheckPage({
@@ -60,6 +60,7 @@ export function CheckPage({
   const [canScan, setCanScan] = useState(false);
   const [wishTitle, setWishTitle] = useState("");
   const [wished, setWished] = useState(false);
+  const [notIsbn, setNotIsbn] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   // Set by "I bought it" until the next scan, so the answer is checked
   // again once the catalog changes, instead of still saying "You don't have it".
@@ -108,9 +109,13 @@ export function CheckPage({
 
   const scan = async () => {
     try {
+      setNotIsbn(false);
       const scanned = await scanIsbn();
       if (scanned) await run(scanned);
-      else if (wantsToType()) setTimeout(() => input.current?.focus(), 0);
+      else if (readNotIsbn()) {
+        setNotIsbn(true);
+        setTimeout(() => input.current?.focus(), 0);
+      } else if (wantsToType()) setTimeout(() => input.current?.focus(), 0);
     } catch (e) {
       setError(e instanceof CameraDenied ? t("check.cameraDenied") : String(e));
     }
@@ -214,7 +219,11 @@ export function CheckPage({
       <div className="flex w-full max-w-xl flex-col gap-4">
         {!check && (
           <>
-            <p className="text-sm text-muted-foreground">{t("check.description")}</p>
+            {notIsbn ? (
+              <p className="rounded-[14px] border p-3 text-sm">{t("scanner.notIsbn")}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("check.description")}</p>
+            )}
             {canScan && (
               <Button className={big} onClick={() => void scan()}>
                 <ScanBarcode /> {t("check.scan")}

@@ -1705,7 +1705,7 @@
     }
   },
   "scanner": {
-    "notIsbn": "That's a shop label, not the ISBN. Aim at the code that starts with 978 or 979.",
+    "notIsbn": "That was a shop label, not the ISBN. Type the small number that starts with 978 or 979, or scan again aiming at its code.",
     "type": "Type the number",
     "close": "Close the camera",
     "barcodeHint": "Point at the barcode",
