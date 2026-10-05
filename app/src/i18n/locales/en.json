@@ -300,6 +300,7 @@
     "unreachable": "Could not reach {{source}}.",
     "failed": "The search failed. Check your connection.",
     "sources": {
+      "bne": "National Library of Spain",
       "google_books": "Google Books",
       "open_library": "Open Library",
       "inventaire": "Inventaire",
@@ -1166,6 +1167,7 @@
     "noSources": "By hand",
     "descriptions": {
       "book": {
+        "bne": "Books published in Spain, with authors and publisher",
         "open_library": "Title, authors and ISBN",
         "inventaire": "Spanish editions and covers",
         "wikidata": "Works and authorship",

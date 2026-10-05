@@ -1,0 +1,844 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.2</version>
+  <numberOfRecords>5</numberOfRecords>
+  <records>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01614cam a22004092u 4500</leader>
+          <controlfield tag="001">991007050369708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105841.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171218s2011    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788401352836</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788401352836</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6080492</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="240">
+            <subfield code="a">The wise man's fear</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="3" tag="245">
+            <subfield code="a">El temor de un hombre sabio</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Plaza &amp; Janés</subfield>
+            <subfield code="c">2011</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">1802 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Exitos</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Crónica del asesino de reyes</subfield>
+            <subfield code="v">Volumen 2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos importados</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Penguin Random House Grupo Editorial España"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Fantasía</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Aventura</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Rovira Ortega, Gemma</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">El temor de un hombre sabio</subfield>
+            <subfield code="h">1197 p.</subfield>
+            <subfield code="z">978-84-01-33963-9</subfield>
+            <subfield code="w">991033120299708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=2074733e-e485-41fd-a5b5-29e71bce9359</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 01</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6080492</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6080492</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6080492-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">18/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531390285940008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007050369708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007050369708606</recordIdentifier>
+      <recordPosition>1</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01690nam a2200433 c 4500</leader>
+          <controlfield tag="001">991039409959708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20251210055737.0</controlfield>
+          <controlfield tag="008">130207s2013    sp a   | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="015">
+            <subfield code="a">MON12</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 28653-2012</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-9989-961-9</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)828391074</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a5313694</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rda</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="240">
+            <subfield code="a">The wise man's fear</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="3" tag="245">
+            <subfield code="a">El temor de un hombre sabio</subfield>
+            <subfield code="c">[Patrick Rothfuss] ; traducción de Gemma Rovira</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">Primera edición en Debolsillo</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">[Barcelona]</subfield>
+            <subfield code="b">Debolsillo,</subfield>
+            <subfield code="c">[2013]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1196 páginas</subfield>
+            <subfield code="b">mapa (color)</subfield>
+            <subfield code="c">19 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Texto</subfield>
+            <subfield code="2">rdacontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">rdamedia</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="338">
+            <subfield code="a">volumen</subfield>
+            <subfield code="2">rdacarrier</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Biblioteca Patrick Rothfuss</subfield>
+            <subfield code="v">3</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Bestseller</subfield>
+            <subfield code="v">827/3</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="594">
+            <subfield code="a">"Crónica del asesino de Reyes. Segundo día"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Rovira Ortega, Gemma</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="i">Contenida en obra</subfield>
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="t">The kingkiller chronicle</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">MON1302</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2013</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a5313694</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">5313694</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">DL/2153039</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1104344703</subfield>
+            <subfield code="l">CONSERVACI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">NO_PRESTA</subfield>
+            <subfield code="u">7/2/2013</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">12/898077</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1104344704</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">18/2/2013</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991039409959708606</subfield>
+            <subfield code="8">221292136000008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">12/898077</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991039409959708606</subfield>
+            <subfield code="8">221292136020008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2153039</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991039409959708606</recordIdentifier>
+      <recordPosition>2</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01781nam a2200421 c 4500</leader>
+          <controlfield tag="001">991033120299708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20251210050209.0</controlfield>
+          <controlfield tag="008">111201s2011    sp a   | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="015">
+            <subfield code="a">MON11</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 33949-2011</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-01-33963-9</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)796345028</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a5139329</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rda</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="240">
+            <subfield code="a">The wise man's fear</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="3" tag="245">
+            <subfield code="a">El temor de un hombre sabio</subfield>
+            <subfield code="c">Patrick Rothfuss ; traducción de Gemma Rovira</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">Primera edición</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="1" tag="264">
+            <subfield code="a">[Barcelona]</subfield>
+            <subfield code="b">Plaza &amp; Janés,</subfield>
+            <subfield code="c">[2011]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1197 páginas</subfield>
+            <subfield code="b">mapa (color)</subfield>
+            <subfield code="c">23 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Texto</subfield>
+            <subfield code="2">rdacontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">rdamedia</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="338">
+            <subfield code="a">volumen</subfield>
+            <subfield code="2">rdacarrier</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="594">
+            <subfield code="a">"Crónica del asesino de Reyes. Segundo día"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Rovira Ortega, Gemma</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="i">Contenida en obra</subfield>
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="t">The kingkiller chronicle</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">MON1202</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2011</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a5139329</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">5139329</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">DL/2049260</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1103406235</subfield>
+            <subfield code="l">CONSERVACI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">NO_PRESTA</subfield>
+            <subfield code="u">1/12/2011</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">12/820896</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1103406236</subfield>
+            <subfield code="d">26/3/2012</subfield>
+            <subfield code="e">12/3/2012</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="n">2</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">1/12/2011</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">AHMO/642814</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1103406237</subfield>
+            <subfield code="d">14/11/2012</subfield>
+            <subfield code="e">6/11/2012</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="n">3</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">1/12/2011</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991033120299708606</subfield>
+            <subfield code="8">221282182180008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">12/820896</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991033120299708606</subfield>
+            <subfield code="8">221282182200008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2049260</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991033120299708606</recordIdentifier>
+      <recordPosition>3</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01567nam a2200397 c 4500</leader>
+          <controlfield tag="001">991034761769708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20251210081403.0</controlfield>
+          <controlfield tag="008">120329s2011    sp     | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="015">
+            <subfield code="a">MON11</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">NA 2787-2011</subfield>
+            <subfield code="b">Oficina Depósito Legal Navarra</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-672-4580-6</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)796276286</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a5185297</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rda</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="240">
+            <subfield code="a">The wise man's fear</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="3" tag="245">
+            <subfield code="a">El temor de un hombre sabio</subfield>
+            <subfield code="c">Patrick Rothfuss ; traducción de Gemma Rovira</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="1" tag="264">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Círculo de Lectores,</subfield>
+            <subfield code="c">[2011]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1197 páginas</subfield>
+            <subfield code="b">mapa (color)</subfield>
+            <subfield code="c">22 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Texto</subfield>
+            <subfield code="2">rdacontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">rdamedia</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="338">
+            <subfield code="a">volumen</subfield>
+            <subfield code="2">rdacarrier</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="594">
+            <subfield code="a">"Crónica del asesino de Reyes, segundo día"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Rovira Ortega, Gemma</subfield>
+            <subfield code="e">traductor14trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="i">Contenida en obra</subfield>
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="t">The kingkiller chronicle</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">MON1203</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2011</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a5185297</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">5185297</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">DL/2076133</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1103503097</subfield>
+            <subfield code="l">CONSERVACI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">NO_PRESTA</subfield>
+            <subfield code="u">10/4/2012</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">12/832997</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1103503098</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">10/4/2012</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991034761769708606</subfield>
+            <subfield code="8">221058401280008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">12/832997</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991034761769708606</subfield>
+            <subfield code="8">221058401300008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2076133</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991034761769708606</recordIdentifier>
+      <recordPosition>4</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01458nam a2200349 c 4500</leader>
+          <controlfield tag="001">991061109740108606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260805091635.0</controlfield>
+          <controlfield tag="008">250402r20252013sp     | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 682-2025</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-663-7830-7</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)1569807366</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rda</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="e">autor</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="240">
+            <subfield code="a">The wise man's fear</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="3" tag="245">
+            <subfield code="a">El temor de un hombre sabio</subfield>
+            <subfield code="c">Patrick Rothfuss ; traducción de Gemma Rovira</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">Marzo de 2025</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="1" tag="264">
+            <subfield code="a">[Barcelona]</subfield>
+            <subfield code="b">Debolsillo</subfield>
+            <subfield code="c">[2025]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="4" tag="264">
+            <subfield code="c">©2025</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1196 páginas</subfield>
+            <subfield code="c">20 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">texto</subfield>
+            <subfield code="2">rdacontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">rdamedia</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="338">
+            <subfield code="a">volumen</subfield>
+            <subfield code="2">rdacarrier</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">"Crónica del asesino de Reyes. Segundo día"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="7" tag="655">
+            <subfield code="a">Novelas fantásticas</subfield>
+            <subfield code="2">tgfbne</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Rovira Ortega, Gemma</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="i">Contenida en obra</subfield>
+            <subfield code="a">Rothfuss, Patrick</subfield>
+            <subfield code="d">1973-</subfield>
+            <subfield code="t">The kingkiller chronicle</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="1" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=268b7021-506a-415d-b999-f4d9c5f21ad4</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2025</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991061109740108606</subfield>
+            <subfield code="8">221367549570008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">11/356005</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991061109740108606</subfield>
+            <subfield code="8">221367549610008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2982880</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531399990470008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991061109740108606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991061109740108606</recordIdentifier>
+      <recordPosition>5</recordPosition>
+    </record>
+  </records>
+  <extraResponseData xmlns:xb="http://www.exlibris.com/repository/search/xmlbeans/">
+    <xb:exact>true</xb:exact>
+    <xb:responseDate>2026-10-05T21:11:02+0200</xb:responseDate>
+  </extraResponseData>
+</searchRetrieveResponse>

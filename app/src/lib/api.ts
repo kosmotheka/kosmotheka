@@ -387,7 +387,7 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
 }
 
 export type Source =
-  "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata" | "game_upc";
+  "bne" | "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata" | "game_upc";
 
 export interface LookupResult {
   isbn13: string;

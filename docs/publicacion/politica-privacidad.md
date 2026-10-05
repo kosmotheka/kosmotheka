@@ -26,7 +26,7 @@ Si emparejas dos dispositivos (con un código QR), se sincronizan directamente e
 
 ## Búsquedas en catálogos externos
 
-Para rellenar los datos de una obra, la aplicación puede consultar catálogos públicos: Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave en Ajustes. En esas consultas solo se envía lo que buscas (un ISBN, un código de barras o un título), nunca tu catálogo ni datos personales. Cada servicio tiene su propia política de privacidad. Estas búsquedas son opcionales: la aplicación funciona sin ellas.
+Para rellenar los datos de una obra, la aplicación puede consultar catálogos públicos: Biblioteca Nacional de España, Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave en Ajustes. En esas consultas solo se envía lo que buscas (un ISBN, un código de barras o un título), nunca tu catálogo ni datos personales. Cada servicio tiene su propia política de privacidad. Estas búsquedas son opcionales: la aplicación funciona sin ellas.
 
 ## Cámara
 

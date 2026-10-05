@@ -1,6 +1,7 @@
 //! Book data from external catalogues, looked up by ISBN (D26). Every provider is
 //! optional: failures become warnings and never block the user (D18).
 
+pub mod bne;
 pub mod candidate;
 pub mod gameupc;
 pub mod google;
@@ -35,6 +36,7 @@ pub struct Metadata {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Source {
+    Bne,
     GoogleBooks,
     OpenLibrary,
     Inventaire,
@@ -48,6 +50,7 @@ impl Source {
     /// serialization above.
     pub fn id(self) -> &'static str {
         match self {
+            Source::Bne => "bne",
             Source::GoogleBooks => "google_books",
             Source::OpenLibrary => "open_library",
             Source::Inventaire => "inventaire",
@@ -174,7 +177,11 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
     candidate.external_id = match source {
         Source::GoogleBooks => result.google_books_id.clone(),
         Source::OpenLibrary => result.open_library_id.clone(),
-        Source::Inventaire | Source::MusicBrainz | Source::Wikidata | Source::GameUpc => None,
+        Source::Bne
+        | Source::Inventaire
+        | Source::MusicBrainz
+        | Source::Wikidata
+        | Source::GameUpc => None,
     };
     candidate
 }
@@ -204,7 +211,11 @@ impl Lookup {
         google_api_key: Option<&str>,
         disabled: &BTreeSet<String>,
     ) -> LookupResult {
-        let (google, open_library) = tokio::join!(
+        let (bne, google, open_library) = tokio::join!(
+            maybe(
+                disabled.contains(Source::Bne.id()),
+                bne::lookup(&self.client, isbn),
+            ),
             maybe(
                 disabled.contains(Source::GoogleBooks.id()),
                 google::lookup(&self.client, isbn, google_api_key),
@@ -214,7 +225,7 @@ impl Lookup {
                 openlibrary::lookup(&self.client, isbn),
             ),
         );
-        merge(isbn, google, open_library)
+        merge(isbn, bne, google, open_library)
     }
 
     /// Title search: books, music, and now everything Wikidata covers (films,
@@ -231,7 +242,11 @@ impl Lookup {
         }
         match kind {
             Kind::Book => {
-                let (open_library, inventaire, wikidata) = tokio::join!(
+                let (bne, open_library, inventaire, wikidata) = tokio::join!(
+                    maybe_vec(
+                        disabled.contains(Source::Bne.id()),
+                        bne::search(&self.client, query),
+                    ),
                     maybe_vec(
                         disabled.contains(Source::OpenLibrary.id()),
                         openlibrary::search(&self.client, query),
@@ -246,6 +261,7 @@ impl Lookup {
                     ),
                 );
                 collect_candidates(vec![
+                    (Source::Bne, bne),
                     (Source::OpenLibrary, open_library),
                     (Source::Inventaire, inventaire),
                     // Last: the other two providers are book-specific and
@@ -423,9 +439,15 @@ pub fn http_client() -> reqwest::Result<reqwest::Client> {
         .build()
 }
 
-/// Field by field, Google Books first (better Spanish coverage), then Open Library.
-/// The cover prefers Open Library, whose large images beat Google's thumbnails.
-pub fn merge(isbn: &Isbn, google: ProviderResult, open_library: ProviderResult) -> LookupResult {
+/// Field by field: the National Library of Spain first (librarian-cataloged,
+/// best for Spanish editions), then Google Books, then Open Library. The cover
+/// prefers Open Library, whose large images beat Google's thumbnails (the BNE has none).
+pub fn merge(
+    isbn: &Isbn,
+    bne: ProviderResult,
+    google: ProviderResult,
+    open_library: ProviderResult,
+) -> LookupResult {
     let mut result = LookupResult {
         isbn13: isbn.as_str().to_owned(),
         ..LookupResult::default()
@@ -445,20 +467,26 @@ pub fn merge(isbn: &Isbn, google: ProviderResult, open_library: ProviderResult) 
             None
         }
     };
+    let bne = found(Source::Bne, bne).unwrap_or_default();
     let google = found(Source::GoogleBooks, google).unwrap_or_default();
     let open_library = found(Source::OpenLibrary, open_library).unwrap_or_default();
 
     result.found = !result.sources.is_empty();
-    result.title = google.title.or(open_library.title);
-    result.subtitle = google.subtitle.or(open_library.subtitle);
-    result.authors = if google.authors.is_empty() {
-        open_library.authors
-    } else {
-        google.authors
-    };
-    result.publisher = google.publisher.or(open_library.publisher);
-    result.published_year = google.published_year.or(open_library.published_year);
-    result.language = google.language.or(open_library.language);
+    result.title = bne.title.or(google.title).or(open_library.title);
+    result.subtitle = bne.subtitle.or(google.subtitle).or(open_library.subtitle);
+    result.authors = [bne.authors, google.authors, open_library.authors]
+        .into_iter()
+        .find(|authors| !authors.is_empty())
+        .unwrap_or_default();
+    result.publisher = bne
+        .publisher
+        .or(google.publisher)
+        .or(open_library.publisher);
+    result.published_year = bne
+        .published_year
+        .or(google.published_year)
+        .or(open_library.published_year);
+    result.language = bne.language.or(google.language).or(open_library.language);
     result.cover_url = open_library.cover_url.or(google.cover_url);
     result.google_books_id = google.external_id;
     result.open_library_id = open_library.external_id;
@@ -520,7 +548,7 @@ mod tests {
             ..Metadata::default()
         };
 
-        let result = merge(&isbn(), Ok(Some(google)), Ok(Some(open_library)));
+        let result = merge(&isbn(), Ok(None), Ok(Some(google)), Ok(Some(open_library)));
 
         assert!(result.found);
         assert_eq!(result.title.as_deref(), Some("Fantastic Mr. Fox"));
@@ -542,13 +570,48 @@ mod tests {
     }
 
     #[test]
+    fn merge_prefers_bne_text_and_fills_gaps_from_the_others() {
+        let bne = Metadata {
+            title: Some("El temor de un hombre sabio".into()),
+            authors: vec!["Patrick Rothfuss".into()],
+            publisher: Some("Plaza & Janés".into()),
+            ..Metadata::default()
+        };
+        let google = Metadata {
+            title: Some("The Wise Man's Fear".into()),
+            authors: vec!["P. Rothfuss".into()],
+            publisher: Some("Other".into()),
+            published_year: Some(2012),
+            cover_url: Some("https://books.google.com/thumb".into()),
+            ..Metadata::default()
+        };
+
+        let result = merge(&isbn(), Ok(Some(bne)), Ok(Some(google)), Ok(None));
+
+        assert_eq!(result.title.as_deref(), Some("El temor de un hombre sabio"));
+        assert_eq!(result.authors, vec!["Patrick Rothfuss"]);
+        assert_eq!(result.publisher.as_deref(), Some("Plaza & Janés"));
+        assert_eq!(result.published_year, Some(2012), "gap filled from Google");
+        assert_eq!(
+            result.cover_url.as_deref(),
+            Some("https://books.google.com/thumb")
+        );
+        assert_eq!(result.sources, vec![Source::Bne, Source::GoogleBooks]);
+    }
+
+    #[test]
     fn a_failing_provider_becomes_a_warning() {
         let open_library = Metadata {
             title: Some("T".into()),
             ..Metadata::default()
         };
 
-        let result = merge(&isbn(), Err(ProviderError::Quota), Ok(Some(open_library)));
+        let result = merge(
+            &isbn(),
+            Ok(None),
+            Err(ProviderError::Quota),
+            Ok(Some(open_library)),
+        );
 
         assert!(result.found);
         assert_eq!(result.title.as_deref(), Some("T"));
@@ -563,7 +626,7 @@ mod tests {
 
     #[test]
     fn nothing_found_anywhere() {
-        let result = merge(&isbn(), Ok(None), Ok(None));
+        let result = merge(&isbn(), Ok(None), Ok(None), Ok(None));
         assert!(!result.found);
         assert!(result.warnings.is_empty());
         assert_eq!(result.isbn13, "9780140328721");
@@ -637,6 +700,17 @@ mod live {
         let candidates = openlibrary::search(&client, "dune").await.unwrap();
         println!("open library: {candidates:#?}");
         assert!(!candidates.is_empty());
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_bne_finds_a_spanish_isbn() {
+        let client = http_client().unwrap();
+        let isbn = Isbn::parse("9788401339639").unwrap();
+        let metadata = bne::lookup(&client, &isbn).await.unwrap().unwrap();
+        println!("bne: {metadata:#?}");
+        assert_eq!(metadata.language.as_deref(), Some("es"));
+        assert_eq!(metadata.authors, vec!["Patrick Rothfuss"]);
     }
 
     #[tokio::test]

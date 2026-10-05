@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
-  book: ["open_library", "inventaire", "wikidata", "google_books"],
+  book: ["bne", "open_library", "inventaire", "wikidata", "google_books"],
   comic: ["wikidata"],
   boardgame: ["wikidata", "game_upc"],
   film: ["wikidata"],

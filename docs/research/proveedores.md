@@ -14,7 +14,8 @@
 
 | Tipo | Proveedor | Busca por | Clave | Condiciones | Notas |
 |---|---|---|---|---|---|
-| **Libros** | [Open Library](https://openlibrary.org/developers/api) | ISBN, título, autor | No | Datos abiertos | Integrado (D26). Huecos en ediciones españolas |
+| **Libros** | [Biblioteca Nacional de España](https://bne.alma.exlibrisgroup.com/) (SRU del catálogo Alma) | ISBN, título | No | Datos del catálogo público | Sin clave; SRU del catálogo Alma; integrado el 05/10/2026. Primer proveedor de libros: manda en ediciones españolas; sin portadas |
+| | [Open Library](https://openlibrary.org/developers/api) | ISBN, título, autor | No | Datos abiertos | Integrado (D26). Huecos en ediciones españolas |
 | | [Google Books](https://developers.google.com/books/docs/v1/using) | ISBN, título, autor | Sí, en la práctica | ~1.000 peticiones al día con clave; sin clave comparte una cuota global que se agota | Integrado (D26), con clave opcional. Mejor en español |
 | | [Inventaire](https://data.inventaire.io/) | ISBN, título | No | Datos CC0, federado con Wikidata | Consulta las bibliotecas nacionales británica, francesa y **española**. Candidato para ediciones españolas |
 | **Juegos de mesa** | [BoardGameGeek](https://boardgamegeek.com/using_the_xml_api) (API XML) | Título | **Token obligatorio desde julio de 2025**, previa solicitud | [Prohibido el uso comercial](https://boardgamegeek.com/wiki/page/XML_API_Terms_of_Use) sin licencia | La referencia; también tiene expansiones y versiones |

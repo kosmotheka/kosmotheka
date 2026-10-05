@@ -180,7 +180,7 @@ pub fn parse_author(author: &Value) -> Option<String> {
 
 /// Open Library uses three-letter MARC codes; the app uses two-letter ISO 639-1
 /// codes where they exist, as Google Books does.
-fn language_code(marc: &str) -> String {
+pub(super) fn language_code(marc: &str) -> String {
     let iso = match marc {
         "eng" => "en",
         "spa" => "es",

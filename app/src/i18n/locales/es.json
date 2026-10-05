@@ -314,6 +314,7 @@
     "unreachable": "No se pudo consultar {{source}}.",
     "failed": "La búsqueda ha fallado. Revisa la conexión.",
     "sources": {
+      "bne": "Biblioteca Nacional de España",
       "google_books": "Google Books",
       "open_library": "Open Library",
       "inventaire": "Inventaire",
@@ -1180,6 +1181,7 @@
     "noSources": "A mano",
     "descriptions": {
       "book": {
+        "bne": "Libros editados en España, con autoría y editorial",
         "open_library": "Título, autoría e ISBN",
         "inventaire": "Ediciones en español y portadas",
         "wikidata": "Obras y autorías",
