@@ -39,6 +39,11 @@ Propuestas por el maintainer. Antes de incluir ninguna hay que comprobar si tien
 |---|---|---|
 | Base de datos de libros editados en España (Ministerio de Cultura, agencia del ISBN) | Todo lo editado en España, por título o ISBN | Si hay API o descarga; si no, leer la web es frágil |
 | TodosTusLibros (CEGAL, librerías) | Libros editados en España y su disponibilidad | API y condiciones |
-| BiblioScan | Identifica un libro por ISBN | Qué es y de dónde saca los datos |
+| BiblioScan | Herramienta para librerías de segunda mano que venden en Amazon (escaneo de baldas, precios de Keepa) | Tiene API (`/api-docs`), con clave `bsk_` por cuenta y créditos de pago. No encaja: cada persona necesitaría su cuenta de pago |
 | Google Books | Ya lo usamos | La cuota (propuesta 5) |
 | *Añadida:* Biblioteca Nacional de España (datos.bne.es) | Catálogo de la BNE como datos abiertos | Probar el acceso y la cobertura |
+
+## Otras ideas de la misma búsqueda
+
+- **LibraryThing** (app móvil): busca en Amazon y en más de 5000 bibliotecas. Es el listón de referencia, no una fuente: comprobar si sus servicios web siguen abiertos a terceros.
+- **Buscar con una foto de la portada** (Google Lens, bookidentifier.com, apps de Play): ya está en la Fase 10. Google Lens no tiene API pública. Vías posibles: reconocer el texto en el móvil (OCR local, sin red) y buscar con él, y la IA opcional para los casos difíciles (D19, D20).
