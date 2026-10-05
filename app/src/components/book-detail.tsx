@@ -396,7 +396,7 @@ export function BookDetailView({
               <Button variant="ghost" size="sm" onClick={cancelEdit}>
                 {t("form.cancel")}
               </Button>
-              <Button size="sm" type="submit" form={EDIT_FORM_ID}>
+              <Button key="save" size="sm" type="submit" form={EDIT_FORM_ID}>
                 {t("form.save")}
               </Button>
             </>
@@ -439,7 +439,14 @@ export function BookDetailView({
           {editing ? (
             <>
               <span className="flex-1 text-[17px] font-semibold">{t("book.editing")}</span>
-              <Button type="submit" form={EDIT_FORM_ID} className="mr-3 h-10 rounded-full px-5">
+              {/* Its own key: reusing the pencil's <button> would turn the very tap that
+                  opened the form into a submit of it. */}
+              <Button
+                key="save"
+                type="submit"
+                form={EDIT_FORM_ID}
+                className="mr-3 h-10 rounded-full px-5"
+              >
                 {t("form.save")}
               </Button>
             </>

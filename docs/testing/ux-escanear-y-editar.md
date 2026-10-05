@@ -79,7 +79,6 @@ Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulari
 - **Búsqueda a través del servidor** (D91), con límite por IP, y la **Library of Congress** para inglés (solo HTTP). Con la 7.4. Al añadirla, subir `WELCOME_VERSION` y añadirla a la bienvenida.
 - **La primera búsqueda de la sesión** falló una vez en todas las fuentes a la vez; vigilar si se repite.
 - **Selectores nativos en el móvil:** el de idioma ya usa el del sistema. Falta el de géneros (selección múltiple) y revisar los demás desplegables, que en Android se cierran solos la primera vez.
-- **Al editar en Android «falla y se cierra»** (0.1.5, segunda prueba): no se reproduce con los datos de prueba; hace falta el registro del móvil (`adb logcat`) o los pasos exactos.
 - **Leer el ISBN impreso con la cámara:** plugin libre de Tauri en su propio repositorio (Fase 10).
 - **Validar el idioma en `spec/`:** hoy es texto libre en el formato de las operaciones; el formulario ya solo guarda códigos.
 
@@ -87,3 +86,5 @@ Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulari
 
 - **El escáner «se volvía loco»:** con la etiqueta de tienda más grande que el ISBN, seguir escaneando volvía a leer la etiqueta una y otra vez. Ahora, al leer un código que no es un ISBN, la cámara se cierra y «¿Lo tengo?» explica qué ha pasado y deja el cursor en el campo para escribir el número; «Escanear» vuelve a intentarlo.
 - **Selector de idioma:** en el móvil, el del sistema.
+- **Al editar en el móvil, el formulario se abría y se cerraba solo** (0.1.5): el lápiz y «Guardar» ocupan el mismo sitio de la cabecera, React reutilizaba el mismo `<button>`, y el toque que abría el formulario acababa enviándolo. Reproducido en Chrome sin ventana con un toque real (CDP `Input.dispatchTouchEvent`); arreglado dando a «Guardar» su propia `key`. Versión 0.1.6.
+- **«Sin autores»** en el libro de la prueba (*El temor de un hombre sabio*, Plaza & Janés 2011, con el subtítulo de la BNE): por investigar. La BNE trae la autoría en el campo 100 en los registros probados; quizá falló la BNE y llegó solo Open Library, cuya edición no trae autores.
