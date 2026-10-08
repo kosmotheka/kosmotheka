@@ -46,7 +46,7 @@
 | D38 | Un servidor aloja varias bibliotecas desde el principio | aceptada |
 | D39 | Biblioteca en la nube: sincroniza con la nube y por la red local | aceptada |
 | D40 | La app conoce y aplica los permisos; el servidor los vuelve a comprobar | reemplazada por D55 |
-| D41 | Filas del catálogo en el servidor: clave `(library_id, id)` | aceptada |
+| D41 | Filas del catálogo en el servidor: clave `(library_id, id)` | aceptada (precisada por D92) |
 | D42 | Registro abierto en el servidor | aceptada |
 | D43 | Invitaciones de un solo uso que caducan en 24 horas | aceptada |
 | D44 | El lector escribe solo lo suyo: deseos y lecturas | reemplazada por D55 |
@@ -97,6 +97,7 @@
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
+| D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada |
 
 ---
 
@@ -533,6 +534,8 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 **Por qué no «dejar hacer y deshacer después»** (lo que planteaba D05): con «el borrado gana» (D32), un borrado aplicado en local no se puede deshacer limpiamente, porque la lápida impediría recrear la fila. Si una app legítima nunca genera operaciones prohibidas, no hay nada que deshacer. Lo que un rol no puede hacer directamente se hace como **solicitud** (hito 3.4): por ejemplo, «pido borrar este libro», que es una operación permitida y que un administrador aprueba.
 
 ## D41 · Filas del catálogo en el servidor: clave `(library_id, id)` — `aceptada`
+
+> **Precisada por [D92](#d92--catálogo-del-servidor-con-doctrine-orm-cada-fila-lleva-una-clave-propia-del-servidor--aceptada) (08/10/2026):** `(library_id, id)` sigue siendo único en cada tabla, pero deja de ser la clave primaria y ya no va en las claves foráneas.
 
 **Contexto:** en PostgreSQL todas las tablas del catálogo llevan `library_id` (D38). Los ids son UUID v7 generados en cada dispositivo y en la práctica no se repiten, pero el servidor recibe ids de clientes que no controla.
 
@@ -1528,3 +1531,45 @@ Si una versión añade un servicio nuevo, quien ya tiene la app ve solo esa pant
 - **Protección de datos:** avisar en la bienvenida y en la política de privacidad, y poder desactivar cada servicio, basta para un proyecto gratuito y libre cuyo único fin es mejorar el alta.
 
 **Consecuencias:** la búsqueda a través del servidor (prevista en [proveedores.md](research/proveedores.md) para los servicios con clave) también sirve para las fuentes sin HTTPS. Las pantallas siguen el diseño de la app y llevan sus textos en `en` y `es`.
+
+## D92 · Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor — `aceptada`
+
+**Contexto:** el plan de 7.4.4 era escribir el motor de fusión con DBAL y sin ORM, y las tablas `catalog_*` de 7.4.3 se hicieron con una migración a mano, ocultas al ORM. El maintainer lo cuestionó (07/10/2026): es saltarse Doctrine y repartir SQL por la lógica de negocio, y PHP no tiene por qué copiar a Rust. Se hicieron dos pruebas con código (`server/spike/`, 07 y 08/10/2026) para decidir con datos.
+
+Lo que salió con la clave de D41, `(cloud_library_id, id)`, también dentro de las claves foráneas:
+- El ORM **no puede escribir** una fila con una referencia opcional vacía: pone `NULL` en `cloud_library_id`, que comparte con la referencia.
+- El ORM **lee mal sin avisar**: «ediciones sin editorial» dio 0 cuando había 2.801.
+- `ON DELETE SET NULL (columna)` (D89) hay que escribirlo a mano, y el diff de migraciones propone deshacerlo cada vez.
+- La herencia en una tabla no encaja: los ids los elige el cliente, y dos filas con el mismo id y distinto tipo chocan o se leen con la clase equivocada.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Mantener D41 y todo el catálogo con DBAL | La base de datos impide por sí sola que una fila apunte a otra biblioteca; no se rehace 7.4.3 | Sin ORM en el catálogo, ni para leer: SQL a mano en el motor, los permisos y todo lo que venga |
+| **Clave propia del servidor en cada fila** | Doctrine normal: entidades, repositorios, DQL, migraciones generadas y `SET NULL` sin SQL a mano. El mismo escenario de 17 pasos dio el mismo estado que con DBAL | La base de datos ya no impide sola que una fila apunte a otra biblioteca; se rehace la migración de 7.4.3 |
+
+**Decisión** (el maintainer, 08/10/2026):
+- **Una entidad de Doctrine por tabla del catálogo**, en `server/src/Entity/Catalog/`. Las tablas y columnas siguen siendo las de la app, con los mismos nombres.
+- **Cada fila lleva una clave propia del servidor** (`key`, UUID v7), que es su clave primaria. El id de la app (`id`) sigue en su columna y es **único dentro de su biblioteca**: `UNIQUE (cloud_library_id, id)`. Así se mantiene lo que D41 buscaba: una biblioteca nunca pisa filas de otra.
+- **Las claves foráneas son de una columna**, a la clave del servidor (`work_key`, `publisher_key`…). Las reglas de borrado de D89 son `CASCADE` y `SET NULL` normales.
+- **La clave del servidor nunca sale del servidor.** Entre la app y la nube solo viajan operaciones, con los ids de la app; `spec/`, las firmas y la app no cambian. El motor traduce el id de la app a la fila, siempre dentro de la biblioteca.
+- **Un solo motor de fusión, escrito con el ORM**, detrás de una interfaz. Sirve igual para un `push` de pocas operaciones que para reconstruir una biblioteca desde su registro; al reconstruir agrupa los `flush`.
+- **DBAL queda como salida** si la carga masiva lo pide (la primera subida de una biblioteca muy grande): sería otra implementación de la misma interfaz, obligada a pasar los mismos casos de `spec/` y la misma prueba de carga. No se escribe ahora.
+
+**Medidas de la prueba** (biblioteca inventada de 20.000 libros: 22.401 operaciones, 78.575 filas y 220.360 versiones de campo; mismo estado final en todos los motores):
+
+| Motor | Reconstruir desde el registro | Un `push` de dos operaciones |
+|---|---|---|
+| DBAL, clave de D41 | 105 s | 11 ms |
+| DBAL, clave propia | 111 s | 11 ms |
+| ORM, clave propia, `flush` cada 100 operaciones | 188 s | 22 ms |
+| ORM, clave propia, `flush` en cada operación | 1.003 s | 20 ms |
+
+**Propuesta dentro de la decisión** (se construye en 7.4.3 y el maintainer la revisa con el código delante; puede cambiarse por una comprobación en las entidades si resulta más limpia): un **disparador por referencia**, escrito a mano en la migración, que rechaza una fila que apunte a una fila de otra biblioteca. Es la red de seguridad que antes daba la clave foránea compuesta. En la prueba, un motor con un fallo plantado a propósito coló una fila cruzada sin el disparador y fue rechazado con él; el diff de migraciones no lo ve.
+
+**Consecuencias:**
+- Precisa [D41](#d41--filas-del-catálogo-en-el-servidor-clave-library_id-id--aceptada-precisada-por-d92): la pareja `(biblioteca, id)` sigue siendo única, pero no es la clave primaria ni va en las claves foráneas.
+- Encaja con D84: el servidor decide con sus propias claves, nunca con un id del cliente.
+- Se rehace la migración de 7.4.3 (nadie usa esas tablas) y cambia el plan de 7.4.4: ver [plans/fase-7.md](plans/fase-7.md) y el encargo en [plans/encargo-7.4-catalogo-orm.md](plans/encargo-7.4-catalogo-orm.md).
+- Los `CHECK` de `role`, `status` y `rating` no se llevan a las tablas nuevas: son reglas de `spec/` y una operación que las incumple no pasa la validación. Confirmado por el maintainer el 08/10/2026, igual que el nombre `key`.
+- La prueba de carga con una biblioteca grande inventada pasa a ser un test del servidor, que se repite antes de dar 7.4 por hecho.
+- `server/AGENTS.md` deja de decir «DBAL para las tablas del catálogo».

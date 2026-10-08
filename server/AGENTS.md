@@ -94,7 +94,7 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 - Autowiring and autoconfiguration; controllers extend `AbstractController`.
 - New capabilities come from `composer require` and the Flex recipe. Do not hand-edit `config/bundles.php` or hand-write a bundle's base config.
 - Before hand-writing infrastructure (locks, rate limiting, HTTP clients, password hashing, tokens), check whether a Symfony component covers it. It usually does.
-- **Persistence:** Doctrine ORM for accounts, libraries, memberships, devices and invitations. Plain DBAL for the catalog tables that operations write to, because the engine applies field-level changes with savepoints, as the Rust client does (Phase 7).
+- **Persistence:** Doctrine ORM for everything, the catalog included (D92): one entity per catalog table in `src/Entity/Catalog/`, each with a key of the server's own; the app's id is only unique inside its library. The merge engine writes through the ORM too. Plain SQL only where the ORM cannot do the job, kept inside one class and said in a comment (`CloudOperationRepository`, whose JSON must stay byte-faithful). Do not copy the Rust client's shape: same rules, PHP's own patterns.
 - **Schema changes always go through a migration** (`make migration`, then `make migrate`), never `doctrine:schema:update`. Remove the generated comments and fill in `getDescription()`. Name indexes explicitly.
 
 ## Environment files

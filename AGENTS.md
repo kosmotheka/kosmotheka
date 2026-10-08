@@ -92,6 +92,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |
 | biblioteca | `library` | On the server, the unit that owns data (D38) |
+| clave del servidor (de una fila del catálogo) | `key` | On the server only: the primary key of a catalog row (D92). The app's `id` is unique inside its library and is what operations carry; the `key` never leaves the server |
 | usuario (cuenta) | `user` | An account on the server |
 | membresía | `membership` | On the server, links a user (account) to a `member` of a library (D76). The role is always the member's, never copied here. Keep it distinct from `member` |
 | rol: administrador · editor · lector | `admin` · `editor` · `reader` | |

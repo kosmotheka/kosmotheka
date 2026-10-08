@@ -5,14 +5,38 @@ declare(strict_types=1);
 namespace App\Enum;
 
 use App\Dto\FieldSpec;
+use App\Entity\Catalog\BoardgameDetails;
+use App\Entity\Catalog\BookDetails;
+use App\Entity\Catalog\CatalogRow;
+use App\Entity\Catalog\ChangeRequest;
+use App\Entity\Catalog\ComicDetails;
+use App\Entity\Catalog\Copy;
+use App\Entity\Catalog\Device;
+use App\Entity\Catalog\Edition;
+use App\Entity\Catalog\FilmDetails;
+use App\Entity\Catalog\Library;
+use App\Entity\Catalog\Mark;
+use App\Entity\Catalog\Member;
+use App\Entity\Catalog\Person;
+use App\Entity\Catalog\Publisher;
+use App\Entity\Catalog\Revocation;
+use App\Entity\Catalog\Series;
+use App\Entity\Catalog\SeriesEntry;
+use App\Entity\Catalog\Tag;
+use App\Entity\Catalog\TvSeriesDetails;
+use App\Entity\Catalog\Work;
+use App\Entity\Catalog\WorkContributor;
+use App\Entity\Catalog\WorkGenre;
+use App\Entity\Catalog\WorkRelation;
+use App\Entity\Catalog\WorkTag;
 
 /**
  * Which catalog entities operations may change, and the fields each one
  * accepts. Mirrors spec/operation.schema.json and crates/domain/src/schema.rs;
  * keep the three in sync (the conformance cases catch most drifts).
  *
- * "Catalog entity", not "entity": these are rows the operations touch, not
- * Doctrine entities.
+ * "Catalog entity", not "entity": it names what an operation changes in the
+ * app's vocabulary; the Doctrine class of each one is entityClass() (D92).
  */
 enum CatalogEntity: string
 {
@@ -117,6 +141,40 @@ enum CatalogEntity: string
             self::Device => 'devices',
             self::ChangeRequest => 'change_requests',
             self::Mark => 'marks',
+        };
+    }
+
+    /**
+     * The Doctrine entity of the row (D92).
+     *
+     * @return class-string<CatalogRow>
+     */
+    public function entityClass(): string
+    {
+        return match ($this) {
+            self::Library => Library::class,
+            self::Work => Work::class,
+            self::Person => Person::class,
+            self::WorkContributor => WorkContributor::class,
+            self::Edition => Edition::class,
+            self::BookDetails => BookDetails::class,
+            self::ComicDetails => ComicDetails::class,
+            self::BoardgameDetails => BoardgameDetails::class,
+            self::FilmDetails => FilmDetails::class,
+            self::TvSeriesDetails => TvSeriesDetails::class,
+            self::Member => Member::class,
+            self::Copy => Copy::class,
+            self::Publisher => Publisher::class,
+            self::Tag => Tag::class,
+            self::WorkTag => WorkTag::class,
+            self::WorkGenre => WorkGenre::class,
+            self::Series => Series::class,
+            self::SeriesEntry => SeriesEntry::class,
+            self::WorkRelation => WorkRelation::class,
+            self::Revocation => Revocation::class,
+            self::Device => Device::class,
+            self::ChangeRequest => ChangeRequest::class,
+            self::Mark => Mark::class,
         };
     }
 
