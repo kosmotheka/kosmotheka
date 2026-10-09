@@ -3,7 +3,7 @@
 
 use reqwest::Method;
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::{CloudApi, CloudLibrary, Pulled, PushReport};
 use crate::account::{self, client::Auth, client::build_client, client::send_json};
@@ -116,6 +116,20 @@ impl CloudApi for HttpCloud {
         )
         .await
         .map_err(cloud_error)
+    }
+
+    async fn link(&self, cloud: &str, link: &SyncOperation) -> Result<()> {
+        let body = serde_json::to_value(link).map_err(|_| Error::Cloud("invalid_request"))?;
+        let _linked: Value = send_json(
+            &self.client,
+            Method::POST,
+            &self.url(&format!("/{cloud}/link")),
+            self.auth(),
+            Some(&body),
+        )
+        .await
+        .map_err(cloud_error)?;
+        Ok(())
     }
 
     async fn push(

@@ -115,7 +115,7 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertSame(2, $this->rowsIn('(SELECT DISTINCT owner_id FROM cloud_library WHERE local_library_id = '.$this->quote(Cast::DEFAULT_LOCAL).') owners'));
         self::assertContains($this->idOfLibraryOwnedBy(Cast::KENJI), $withDefaultId);
         // Neither one holds the other's history.
-        self::assertSame(5, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
+        self::assertSame(4, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
         self::assertSame(2, $this->operationsIn(array_first(array_diff($withDefaultId, [$this->idOfLibraryOwnedBy(Cast::KENJI)])) ?? self::fail('Jhonny has no library with the default id.')));
     }
 
@@ -197,8 +197,8 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertSame(15, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
-        // 14 + 5 + 13 + 2: nothing of another local id, unsigned or forged got in.
-        self::assertSame(36, $this->rowsIn('cloud_operation'));
+        // 14 + 4 + 13 + 2: nothing of another local id, unsigned or forged got in.
+        self::assertSame(35, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void

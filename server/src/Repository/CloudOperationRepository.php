@@ -66,15 +66,15 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Stores the operation as received, unless the library's log already has it.
+     * Stores the operation as received, unless the library's log already has it (then nothing changes, who uploaded it included).
      *
      * @return bool whether it was stored (false: it was already known)
      */
-    public function insertIfNew(CloudLibrary $library, string $operationId, string $authorDeviceId, string $hlc, int $schemaVersion, string $bodyJson, ?string $previous = null): bool
+    public function insertIfNew(CloudLibrary $library, string $operationId, string $authorDeviceId, string $hlc, int $schemaVersion, string $bodyJson, ?string $previous = null, ?string $pushedByUserId = null, ?string $pushedByDeviceId = null): bool
     {
         $inserted = $this->getEntityManager()->getConnection()->executeStatement(
-            'INSERT INTO cloud_operation (cloud_library_id, operation_id, author_device_id, hlc, schema_version, body, received_at, previous)
-             VALUES (:library, :operation, :author, :hlc, :schema, CAST(:body AS JSONB), :received, :previous)
+            'INSERT INTO cloud_operation (cloud_library_id, operation_id, author_device_id, hlc, schema_version, body, received_at, previous, pushed_by_user_id, pushed_by_device_id)
+             VALUES (:library, :operation, :author, :hlc, :schema, CAST(:body AS JSONB), :received, :previous, :pushedByUser, :pushedByDevice)
              ON CONFLICT (cloud_library_id, operation_id) DO NOTHING',
             [
                 'library' => $library->getId()->toRfc4122(),
@@ -85,6 +85,8 @@ final class CloudOperationRepository extends ServiceEntityRepository
                 'body' => $bodyJson,
                 'received' => new \DateTimeImmutable('now', new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
                 'previous' => $previous,
+                'pushedByUser' => $pushedByUserId,
+                'pushedByDevice' => $pushedByDeviceId,
             ],
         );
 

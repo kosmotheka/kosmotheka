@@ -111,6 +111,7 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 | Conceder/retirar `ROLE_SUPER_ADMIN` (D51) | `make console C="app:user:super-admin correo@ejemplo.com"` (`--revoke` para retirarlo) |
 | Bloquear/desbloquear una cuenta (D51) | `make console C="app:user:block correo@ejemplo.com"` (`--undo` para desbloquear) |
 | Reconstruir el catálogo de una biblioteca de la nube desde su registro (7.4.4) | `make console C="app:catalog:rebuild <id de la biblioteca de la nube>"` |
+| Reconstruir el catálogo de **todas** las bibliotecas de la nube, de una en una (7.4.6). **Se ejecuta una vez al desplegar 7.4.6**: las operaciones guardadas antes no están juzgadas y no hay catálogo | `make console C="app:catalog:rebuild --all"` |
 | Prueba de carga del motor de fusión (no entra en `make check`) | `make stress BOOKS=5000 LIMIT=600`; se repite dos veces al año, ver «Revisión periódica de la carga» en [cloud.md](../architecture/cloud.md) |
 | Retirar el segundo factor de una cuenta (D78) | `make console C="app:user:two-factor-disable correo@ejemplo.com"` |
 

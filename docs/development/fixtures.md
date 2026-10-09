@@ -45,20 +45,21 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | Escenario | Dónde mirar | Qué se ve y qué demuestra |
 |---|---|---|
 | **Ana sube «Biblioteca García»** | `cloud_library` (la fila de Ana: `local_library_id` = el id García) y `membership` | La biblioteca ya está enlazada y Ana es su única membresía |
-| | `cloud_operation` de esa biblioteca: 13 filas (15 con las dos de abajo) | La historia entera: registro de dispositivos (cada uno el suyo) y la asignación de los móviles a Ana y a Hugo por el portátil de Ana, que administra; creación, tres miembros con sus roles, dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. `body` es la operación tal como llegó, firma incluida |
+| | `cloud_operation` de esa biblioteca: 13 filas (15 con las dos de abajo) | La historia entera: registro de dispositivos (cada uno el suyo) y la asignación de los móviles a Ana y a Hugo por el portátil de Ana, que administra; creación, tres miembros con sus roles (el de Ana y su portátil van en la misma operación: una fila no puede apuntar a un miembro que aún no existe), dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. Desde 7.4.6 la nube las juzga al guardarlas y deja el catálogo en las tablas `catalog_*`; una de las 13 queda en `request` (abajo). `body` es la operación tal como llegó, firma incluida |
 | | `cloud_operation` con `body @> '{"changes":[{"entity":"mark"}]}'` y `…"change_request"…` | Una marca de Hugo y una solicitud suya: las firmó el móvil de Hugo y llegaron a la nube por Ana |
+| | `cloud_operation` con `status = 'request'` y `body::text LIKE '%Ficciones%'` (y `catalog_works` sin esa obra) | Hugo, que es lector, intenta añadir un libro: la operación queda guardada, en petición, y el catálogo de la nube no la tiene |
 | | `cloud_device_key` de esa biblioteca: 3 filas | Las claves de portátil de Ana, móvil de Ana y móvil de Hugo, registradas al verse su primera operación |
 | **Lucía no tiene cuenta** | `user`: nadie se llama Lucía; `device`: ningún dispositivo suyo | Un hijo no aparece en la tabla de acceso |
 | | `cloud_operation` con `body @> '{"changes":[{"entity":"member","fields":{"name":"Lucía"}}]}'` y los `copy` con su `owner_id` | Sus ejemplares y su fila de miembro están en las operaciones, nada más |
 | **El móvil de Ana añade un libro más tarde** | `cloud_operation`, autor = id del móvil de Ana | Una operación firmada con la clave que el móvil registró en la subida |
-| **Kenji sube su biblioteca con el id por defecto** | `cloud_library`: la de Kenji con `local_library_id = 00000000-0000-7000-8000-000000000001`; 5 operaciones | Un id local fijo es un id local más |
+| **Kenji sube su biblioteca con el id por defecto** | `cloud_library`: la de Kenji con `local_library_id = 00000000-0000-7000-8000-000000000001`; 4 operaciones (el miembro de Kenji y su portátil van en la primera) | Un id local fijo es un id local más |
 | **Hugo no tiene acceso a la nube** | `membership` (5 filas, ninguna de Hugo) | Hasta 7.5 un lector no recibe la biblioteca por la nube; sigue por la red local |
 
 ## Costuras de D84 (cada una deja filas visibles)
 
 | Costura | Dónde mirar | Qué demuestra |
 |---|---|---|
-| **2 · Mismo id local, dos bibliotecas** | `cloud_library` con `local_library_id = '00000000-0000-7000-8000-000000000001'`: **dos filas**, dueños Kenji y Jhonny. Y con el id García: otras dos (Ana y Jhonny) | Dos desconocidos con el id fijo no se funden: cada uno tiene su `C` y su historia (5 operaciones frente a 2) |
+| **2 · Mismo id local, dos bibliotecas** | `cloud_library` con `local_library_id = '00000000-0000-7000-8000-000000000001'`: **dos filas**, dueños Kenji y Jhonny. Y con el id García: otras dos (Ana y Jhonny) | Dos desconocidos con el id fijo no se funden: cada uno tiene su `C` y su historia (4 operaciones frente a 2) |
 | **1 · Ids de operación robados** | `SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1`: **13 filas** | El mismo `operation_id` está en la biblioteca de Ana y en la de Jhonny (que las subió con los ids de ella): la clave es `(cloud_library_id, operation_id)`, así que Jhonny no pudo «ocupar» los ids de la familia ni estorbarla |
 | **6 · Un dispositivo es su id junto con su clave** (SEG-016) | `device WHERE device_id = '<id del móvil de Ana>'`: **dos filas**, una de Ana y otra de Jhonny, con `public_key` distinta | Quien inicia sesión con el id público de otro dispositivo, pero con su propia clave, no se lo quita: tiene una fila aparte |
 | **4 · Claves de firma dentro de cada `C`** | `cloud_device_key WHERE device_id = '<id del portátil de Ana>'`: **tres filas** (biblioteca de Ana, copia de Jhonny de la García, biblioteca por defecto de Jhonny) | En la de Ana la clave es la de Ana; en la biblioteca por defecto de Jhonny, el mismo id lleva la clave de Jhonny. Una clave registrada en su `C` no vale en otra |
@@ -129,7 +130,7 @@ Esto es lo que informó el ejemplo en la última ejecución; las fixtures son de
 |---|---|---|
 | `ana-laptop`, `ana-phone` | `Downloaded`: recibe 15 operaciones y no rechaza ninguna | «Biblioteca García», enlazada a su biblioteca de nube (`0199a3b2-…`), además de la primera biblioteca vacía con la que nace cada dispositivo (id aleatorio, D85) |
 | `hugo-phone` | sin bibliotecas en la nube | Sesión iniciada y solo su primera biblioteca vacía («Mi biblioteca», id aleatorio). Hasta el hito 7.5 solo la cuenta dueña recibe la biblioteca por la nube (no tiene membresía) |
-| `kenji-laptop` | `Downloaded`: recibe 5 operaciones | Su biblioteca de nube **baja**, con el id local que le dio la fixture. Antes de D85 no bajaba: la app traía siempre «Mi biblioteca» con el id fijo, que era justo el de la de Kenji, y D84, con razón, no las mezclaba. Ahora su dispositivo nace con una biblioteca de id aleatorio y no choca con nada |
+| `kenji-laptop` | `Downloaded`: recibe 4 operaciones | Su biblioteca de nube **baja**, con el id local que le dio la fixture. Antes de D85 no bajaba: la app traía siempre «Mi biblioteca» con el id fijo, que era justo el de la de Kenji, y D84, con razón, no las mezclaba. Ahora su dispositivo nace con una biblioteca de id aleatorio y no choca con nada |
 | `jhonny-phone`, `jhonny-as-ana-phone` | `NotLinked` para las dos bibliotecas de nube que ve: la copia que hizo de la García y la del id por defecto | Se baja, se comprueba que su registro no la enlaza a esa nube y se retira (`rejected 1` en cada una): no se queda nada de ellas |
 
 **Las fixtures del servidor conservan a propósito el id fijo antiguo** (`00000000-0000-7000-8000-000000000001`): ya no es el id de «Mi biblioteca» de nadie (D85), pero sirve de «id que dos desconocidos comparten» para probar la puerta de la nube y las costuras 2 y 4 (D84). La app ya no puede producirlo; por eso `server/` no cambia con D85.
@@ -138,7 +139,7 @@ El enlace de las fixtures nombra el servidor `http://localhost:8095` (`SigningDe
 
 ### Lo que la app rechaza (hallazgo, sin resolver)
 
-En los dos dispositivos de Ana llegan las 15 operaciones y no se rechaza ninguna. La marca de Hugo se aplica (cada persona lleva las suyas, D68) y su petición queda como petición, porque Hugo lee. Una primera versión de las fixtures hacía que cada móvil dijera en su propio registro de quién era; eso es cosa de quien administra (D73), así que los dispositivos lo dejaban en petición y luego rechazaban lo que firmaban esos móviles. Se corrigió el 03/10/2026: el servidor lo guardaba porque hasta 7.4 no juzga permisos, y fue la app, al abrir los dispositivos, la que lo descubrió.
+En los dos dispositivos de Ana llegan las 15 operaciones y no se rechaza ninguna (una de ellas, el libro de Hugo, la nube también la guardó como petición). La marca de Hugo se aplica (cada persona lleva las suyas, D68) y su petición queda como petición, porque Hugo lee. Una primera versión de las fixtures hacía que cada móvil dijera en su propio registro de quién era; eso es cosa de quien administra (D73), así que los dispositivos lo dejaban en petición y luego rechazaban lo que firmaban esos móviles. Se corrigió el 03/10/2026: el servidor lo guardaba porque hasta 7.4 no juzga permisos, y fue la app, al abrir los dispositivos, la que lo descubrió.
 
 ## Cuando cambian las reglas
 

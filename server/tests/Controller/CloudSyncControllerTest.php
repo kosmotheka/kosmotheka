@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\DataFixtures\SigningDevice;
+use App\Entity\CloudLibrary;
+use App\Entity\Membership;
+use App\Entity\User;
 use App\Sync\OperationSignature;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\Spec;
 use Doctrine\DBAL\Connection;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -99,6 +103,467 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
         self::assertSame(4, $this->rows('cloud_operation'));
         self::assertSame(1, $this->rows('cloud_device_key'));
+    }
+
+    /**
+     * The app uploads a library in batches of 1000 (PUSH_BATCH), in HLC order, and the link is the last operation:
+     * the first batches arrive before the library is linked.
+     */
+    public function testALibraryUploadedInBatchesOf1000WithTheLinkLastIsStoredWhole(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $operations = $this->largeLibrary($cloud);
+        self::assertCount(2_500, $operations);
+
+        $linked = $this->link($this->familySession, $cloud, $operations[2_499]);
+        $reports = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
+
+        self::assertSame(Response::HTTP_OK, $linked['status']);
+        self::assertSame([
+            ['received' => 1_000, 'known' => 0, 'rejected' => 0],
+            ['received' => 1_000, 'known' => 0, 'rejected' => 0],
+            ['received' => 500, 'known' => 0, 'rejected' => 0],
+        ], $reports);
+        self::assertSame(2_500, $this->rows('cloud_operation'));
+    }
+
+    // ------------------------------------------------ the link route (2b) ---
+
+    public function testTheLinkRouteLinksTheLibraryWithoutStoringTheOperationAndRepeatingItChangesNothing(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+
+        $first = $this->link($this->familySession, $cloud, $link);
+        $second = $this->link($this->familySession, $cloud, $link);
+
+        self::assertSame(Response::HTTP_OK, $first['status']);
+        self::assertSame(['localLibraryId' => self::LOCAL], $first['body']);
+        self::assertSame($first, $second);
+        self::assertSame(0, $this->rows('cloud_operation'));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testALinkedLibraryRefusesALinkToAnotherLocalId(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 1));
+
+        $other = $this->link($this->familySession, $cloud, $this->laptop->link('00000000-0000-7000-8000-000000000002', $cloud, self::T + 2));
+
+        self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $other);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testSomeoneWithoutAccessCannotLinkTheFamilysLibrary(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+
+        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
+
+        self::assertSame(['status' => Response::HTTP_NOT_FOUND, 'body' => ['error' => 'not_found']], $response);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testSomeoneWithAccessWhoIsNotTheOwnerCannotLink(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $this->shareWithJhonny($cloud);
+
+        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
+
+        self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testADeviceRemovedFromTheOwnersAccountCannotSignTheLink(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+        $phone = SigningDevice::fromSession($phoneSession);
+        $this->call('DELETE', '/v1/account/devices/'.$phoneSession['device_id'], $this->familySession);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $response = $this->link($this->familySession, $cloud, $phone->link(self::LOCAL, $cloud, self::T + 1));
+
+        self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testALinkThatIsNotThisLibrarysIsRefused(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
+        $forgery = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $forgery['signature'] = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        $refused = [
+            'another cloud library' => $this->laptop->link(self::LOCAL, $jhonnyCloud, self::T + 2),
+            'not a link' => $this->laptop->publisher(self::LOCAL, self::T + 3),
+            'a registration' => $this->laptop->registration(self::LOCAL, self::T + 4),
+            'a bad signature' => $forgery,
+        ];
+
+        foreach ($refused as $what => $operation) {
+            self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $this->link($this->familySession, $cloud, $operation), $what);
+        }
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testTheLinkRouteNeedsABodyOfTheRightShape(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+
+        $response = $this->call('POST', "/v1/cloud/libraries/$cloud/link", $this->familySession, ['operation' => 'nope']);
+
+        self::assertSame(['status' => Response::HTTP_BAD_REQUEST, 'body' => ['error' => 'invalid_request']], $response);
+    }
+
+    /**
+     * A previous version of the app links with the batch that carries the link. With 1000 operations a batch
+     * it uploads nothing the first time: this is what the link route is for.
+     */
+    public function testWithoutTheLinkRouteTheFirstPassOfALargeLibraryStoresNothingAndTheSecondStoresAll(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $operations = $this->largeLibrary($cloud);
+
+        $firstPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
+        self::assertSame([['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 500]], $firstPass);
+        self::assertSame(0, $this->rows('cloud_operation'));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+
+        $secondPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
+        self::assertSame([['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 500, 'known' => 0, 'rejected' => 0]], $secondPass);
+        self::assertSame(2_500, $this->rows('cloud_operation'));
+    }
+
+    // ------------------------------------- who may upload a library (D93) ---
+
+    private const string ADMIN_MEMBER = '00000000-0000-7000-8000-0000000000a1';
+    private const string READER_MEMBER = '00000000-0000-7000-8000-0000000000a2';
+
+    /**
+     * The history of a family with roles: an administrator, a reader, and the administrator's device.
+     *
+     * @return array<string, mixed>
+     */
+    private function rolesOf(SigningDevice $admin, int $time = 0): array
+    {
+        return $admin->sign(self::LOCAL, self::T + $time, 'family.roles', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
+            ['entity' => 'device', 'id' => $admin->id, 'action' => 'create', 'fields' => ['public_key' => $admin->publicKey, 'name' => 'Admin device', 'member_id' => self::ADMIN_MEMBER]],
+        ]);
+    }
+
+    /**
+     * The administrator says whose the reader's device is.
+     *
+     * @return array<string, mixed>
+     */
+    private function assignmentOf(SigningDevice $admin, SigningDevice $reader, int $time): array
+    {
+        return $admin->sign(self::LOCAL, self::T + $time, 'device.assign', [
+            ['entity' => 'device', 'id' => $reader->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]],
+        ]);
+    }
+
+    private function assertNotLinkedAndNothingStored(string $cloud, int $operations = 0): void
+    {
+        self::assertSame($operations, $this->rows('cloud_operation'));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    public function testAReaderUploadingTheWholeLibraryWithItsRolesAndHisOwnLinkIsTurnedDown(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $operations = [
+            $this->rolesOf($admin),
+            $this->laptop->registration(self::LOCAL, self::T + 1),
+            $this->assignmentOf($admin, $this->laptop, 2),
+            $this->laptop->link(self::LOCAL, $cloud, self::T + 3),
+        ];
+
+        $response = $this->push($this->familySession, $cloud, $operations);
+
+        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $response);
+        $this->assertNotLinkedAndNothingStored($cloud);
+        self::assertSame([], $this->statuses());
+    }
+
+    public function testAReaderWhoLinksByTheRouteStoresTheBatchesWithoutTheLinkAndNotTheOneWithIt(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $withoutLink = [$this->rolesOf($admin), $this->laptop->registration(self::LOCAL, self::T + 1), $this->assignmentOf($admin, $this->laptop, 2)];
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 3);
+        $later = $this->laptop->publisher(self::LOCAL, self::T + 4);
+
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        $first = $this->push($this->familySession, $cloud, $withoutLink);
+        $second = $this->push($this->familySession, $cloud, [$later, $link]);
+
+        self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $first['body']);
+        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $second);
+        self::assertSame(3, $this->rows('cloud_operation'));
+        self::assertSame(['applied' => 3], $this->statuses());
+    }
+
+    public function testAReaderWhoUploadsTheCopyWithoutRolesFirstIsTurnedDownWhenTheRolesArrive(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $copy = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T + 1), $this->laptop->link(self::LOCAL, $cloud, self::T + 3)]);
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $copy['body']);
+        self::assertSame(['applied' => 2], $this->statuses());
+
+        $roles = $this->push($this->familySession, $cloud, [$this->rolesOf($admin), $this->assignmentOf($admin, $this->laptop, 2)]);
+
+        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $roles);
+        self::assertSame(2, $this->rows('cloud_operation'));
+        self::assertSame(['applied' => 2], $this->statuses());
+    }
+
+    public function testAnAdministratorUploadingHerLibraryWithRolesLinksItAndHerLinkIsApplied(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $roles = $this->laptop->sign(self::LOCAL, self::T, 'family.roles', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop', 'member_id' => self::ADMIN_MEMBER]],
+        ]);
+
+        $response = $this->push($this->familySession, $cloud, [$roles, $this->laptop->link(self::LOCAL, $cloud, self::T + 1)]);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 2, 'known' => 0, 'rejected' => 0]], $response);
+        self::assertSame(['applied' => 2], $this->statuses());
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+    }
+
+    /**
+     * The link is the operation the server checked when it linked the library, not the first stored one that looks like it:
+     * a reader with access who stores a link-shaped operation of his own before the owner's arrives must not block the library.
+     */
+    public function testAReadersLinkShapedOperationStoredBeforeTheOwnersLinkBlocksNothing(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+        $phone = SigningDevice::fromSession($phoneSession);
+        $this->shareWithJhonny($cloud);
+        $registration = $phone->registration(self::LOCAL, self::T);
+        $ownersLink = $phone->link(self::LOCAL, $cloud, self::T + 1);
+        $roles = $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
+            ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
+        ]);
+        $assignment = $phone->sign(self::LOCAL, self::T + 6, 'device.assign', [['entity' => 'device', 'id' => $this->jhonny->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]]]);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $ownersLink)['status']);
+
+        // The reader stores, first, an operation of his own that has the shape of a link.
+        $readersRegistration = $this->jhonny->registration(self::LOCAL, self::T + 5);
+        $readersLink = $this->jhonny->link(self::LOCAL, $cloud, self::T + 10);
+        $first = $this->push($this->jhonnySession, $cloud, [$readersRegistration, $readersLink]);
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $first['body']);
+
+        $owners = $this->push($this->familySession, $cloud, [$registration, $ownersLink, $roles, $assignment]);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 4, 'known' => 0, 'rejected' => 0]], $owners);
+        $statuses = self::getContainer()->get(Connection::class)->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
+        self::assertIsString($ownersLink['id']);
+        self::assertIsString($readersLink['id']);
+        self::assertSame('applied', $statuses[$ownersLink['id']]);
+        self::assertSame('request', $statuses[$readersLink['id']]);
+        // And the library still takes pushes.
+        self::assertSame(Response::HTTP_OK, $this->push($this->familySession, $cloud, [$phone->publisher(self::LOCAL, self::T + 20)])['status']);
+    }
+
+    public function testAnyoneUploadsALibraryWithoutRoles(): void
+    {
+        $cloud = $this->createCloudLibrary($this->jhonnySession);
+
+        $response = $this->push($this->jhonnySession, $cloud, $this->upload($this->jhonny, $cloud));
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 4, 'known' => 0, 'rejected' => 0]], $response);
+        self::assertSame(['applied' => 4], $this->statuses());
+    }
+
+    // ------------------------------------------- Jhonny's battery, with roles ---
+    /**
+     * The family's cloud library with roles: its administrator is a second device of the account (the phone),
+     * the laptop is a reader. Linked by the phone.
+     *
+     * @return array{string, SigningDevice} the cloud library id and the phone
+     */
+    private function familyWithRoles(): array
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+        $phone = SigningDevice::fromSession($phoneSession);
+        $response = $this->push($this->familySession, $cloud, [
+            $phone->registration(self::LOCAL, self::T),
+            $phone->link(self::LOCAL, $cloud, self::T + 1),
+            $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
+                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+                ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
+                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
+            ]),
+            $this->laptop->registration(self::LOCAL, self::T + 3),
+            $phone->sign(self::LOCAL, self::T + 4, 'device.assign', [
+                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]],
+            ]),
+        ]);
+        self::assertSame(['received' => 5, 'known' => 0, 'rejected' => 0], $response['body']);
+        self::assertSame(['applied' => 5], $this->statuses());
+
+        return [$cloud, $phone];
+    }
+
+    /**
+     * Everything the cloud holds of one library that an operation could change.
+     *
+     * @return array<string, mixed>
+     */
+    private function snapshotOf(string $cloud): array
+    {
+        $connection = self::getContainer()->get(Connection::class);
+        $snapshot = ['statuses' => $connection->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = ? ORDER BY operation_id', [$cloud])];
+        foreach (['catalog_members' => 'id, role, name', 'catalog_devices' => 'id, member_key, name', 'catalog_publishers' => 'id, name'] as $table => $columns) {
+            $snapshot[$table] = $connection->fetchAllAssociative("SELECT $columns FROM $table WHERE cloud_library_id = ? ORDER BY id", [$cloud]);
+        }
+
+        return $snapshot;
+    }
+
+    public function testJhonnyUploadsHisLibraryWithTheFamilysDeviceAndMemberIdsAndTheFamilysLibraryDoesNotChange(): void
+    {
+        [$familyCloud, $phone] = $this->familyWithRoles();
+        $before = $this->snapshotOf($familyCloud);
+        $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
+
+        // Everything he knows of the family's: ids of devices and members, the administrator's role among them.
+        $response = $this->push($this->jhonnySession, $jhonnyCloud, [
+            $this->jhonny->registration(self::LOCAL, self::T + 50),
+            $this->jhonny->link(self::LOCAL, $jhonnyCloud, self::T + 51),
+            $this->jhonny->sign(self::LOCAL, self::T + 52, 'forged.fence', [
+                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'trusted_through' => Uuid::v7()->toRfc4122()]],
+            ]),
+            $this->jhonny->sign(self::LOCAL, self::T + 53, 'forged.member', [
+                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Jhonny is admin', 'role' => 'admin', 'can_share' => true]],
+            ]),
+            $this->jhonny->sign(self::LOCAL, self::T + 54, 'forged.device', [
+                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['name' => 'stolen id', 'member_id' => self::ADMIN_MEMBER]],
+            ]),
+            $this->jhonny->publisher(self::LOCAL, self::T + 55, 'Jhonny publisher'),
+        ]);
+
+        self::assertSame(['received' => 6, 'known' => 0, 'rejected' => 0], $response['body']);
+        self::assertSame($before, $this->snapshotOf($familyCloud));
+        // His own library is judged by its own log: his forged member makes roles there, and his device is nobody's in them.
+        self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status IS NULL', [$jhonnyCloud]));
+        self::assertGreaterThan(0, $this->requestsIn($jhonnyCloud));
+    }
+
+    public function testAReaderOfTheFamilyUploadsAChangeSignedByHimItIsStoredAsARequestAndTheCatalogDoesNotChange(): void
+    {
+        [$cloud] = $this->familyWithRoles();
+        $before = $this->snapshotOf($cloud);
+
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 10, 'By a reader')]);
+
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $response['body']);
+        $after = $this->snapshotOf($cloud);
+        self::assertSame(['applied' => 5, 'request' => 1], $this->statuses());
+        self::assertSame($before['catalog_publishers'], $after['catalog_publishers']);
+        self::assertSame($before['catalog_members'], $after['catalog_members']);
+        self::assertSame($before['catalog_devices'], $after['catalog_devices']);
+    }
+
+    /** SEG-014 through the route: the editor's backdated edit lands in the window of the fence of her demotion. */
+    public function testADemotedEditorsBackdatedChangeIsARequest(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
+        $phone = SigningDevice::fromSession($phoneSession);
+        $editor = '00000000-0000-7000-8000-0000000000a3';
+        $known = $this->laptop->registration(self::LOCAL, self::T + 3);
+        $beforeTheDemotion = [
+            $phone->registration(self::LOCAL, self::T),
+            $phone->link(self::LOCAL, $cloud, self::T + 1),
+            $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
+                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+                ['entity' => 'member', 'id' => $editor, 'action' => 'create', 'fields' => ['name' => 'Editor', 'role' => 'editor']],
+                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
+            ]),
+            $known,
+            $phone->sign(self::LOCAL, self::T + 4, 'device.assign', [['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $editor]]]),
+        ];
+        $lastKnown = $this->laptop->publisher(self::LOCAL, self::T + 10, 'Known to the administrator');
+        \assert(\is_string($lastKnown['id']));
+        $demotion = $phone->sign(self::LOCAL, self::T + 20, 'member.role', [
+            ['entity' => 'member', 'id' => $editor, 'action' => 'update', 'fields' => ['role' => 'reader']],
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['trusted_through' => $lastKnown['id']]],
+        ]);
+        $backdated = $this->laptop->publisher(self::LOCAL, self::T + 15, 'Backdated');
+        self::assertSame(['received' => 7, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [...$beforeTheDemotion, $lastKnown, $demotion])['body']);
+        self::assertSame(['applied' => 7], $this->statuses());
+
+        $response = $this->push($this->familySession, $cloud, [$backdated]);
+
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $response['body']);
+        self::assertSame(['applied' => 7, 'request' => 1], $this->statuses());
+        self::assertSame(1, $this->publishersIn($cloud));
+    }
+
+    /** 7.4.6: the log keeps who uploaded each operation, apart from who signed it. */
+    public function testEachStoredOperationKeepsTheAccountAndDeviceThatUploadedIt(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $this->shareWithJhonny($cloud);
+        $third = SigningDevice::generate();
+        $registration = $third->registration(self::LOCAL, self::T + 10);
+        $byFamily = $this->push($this->familySession, $cloud, [$registration]);
+        $byJhonny = $this->push($this->jhonnySession, $cloud, [$third->publisher(self::LOCAL, self::T + 11, 'by Jhonny')]);
+        self::assertSame(1, $byFamily['body']['received']);
+        self::assertSame(1, $byJhonny['body']['received']);
+
+        // The same operation again, from the other account: known, and it still counts for whoever sent it first.
+        $again = $this->push($this->jhonnySession, $cloud, [$registration]);
+        self::assertSame(1, $again['body']['known']);
+
+        $stored = $this->uploaders($third->id);
+        self::assertSame([
+            [$this->userId('family@example.com'), $this->familySession['device_id']],
+            [$this->userId('jhonny@example.com'), $this->jhonnySession['device_id']],
+        ], $stored);
+        self::assertSame([[$this->userId('family@example.com'), $this->familySession['device_id']]], array_values(array_unique($this->uploaders($this->laptop->id), \SORT_REGULAR)));
+    }
+
+    public function testALogRowKeepsItsDataWhenTheUploadersAccountIsDeleted(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $this->shareWithJhonny($cloud);
+        $third = SigningDevice::generate();
+        $this->push($this->jhonnySession, $cloud, [$third->registration(self::LOCAL, self::T + 10)]);
+
+        $this->call('DELETE', '/v1/account', $this->jhonnySession, ['password' => 'correct horse battery']);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        self::assertSame([[null, $this->jhonnySession['device_id']]], $this->uploaders($third->id));
+    }
+
+    /** 7.4.6: what a push stores is judged and applied to the catalog, all in its transaction. */
+    public function testAPushJudgesAndAppliesWhatItStores(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+
+        self::assertSame(['applied' => 4], $this->statuses());
+        self::assertSame(2, $this->rows('catalog_publishers'));
+        self::assertSame(1, $this->rows('catalog_devices'));
+
+        $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 10)]);
+        self::assertSame(['applied' => 5], $this->statuses());
+        self::assertSame(3, $this->rows('catalog_publishers'));
     }
 
     public function testALinkLateInTheBatchIsProcessedFirst(): void
@@ -712,6 +1177,101 @@ final class CloudSyncControllerTest extends WebTestCase
         $keys = self::getContainer()->get(Connection::class)->fetchFirstColumn('SELECT public_key FROM cloud_device_key WHERE device_id = ?', [$device]);
 
         return array_map(static fn (mixed $key): string => \is_string($key) ? $key : '', $keys);
+    }
+
+    /**
+     * A registration, 2498 publishers and the link, in HLC order: what the app uploads, link last.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function largeLibrary(string $cloud): array
+    {
+        $operations = [$this->laptop->registration(self::LOCAL, self::T)];
+        for ($n = 1; $n < 2_499; ++$n) {
+            $operations[] = $this->laptop->publisher(self::LOCAL, self::T + $n, "Editorial $n");
+        }
+        $operations[] = $this->laptop->link(self::LOCAL, $cloud, self::T + 2_499);
+
+        return $operations;
+    }
+
+    /**
+     * @param array{headers: array<string, string>} $session
+     * @param array<string, mixed>                  $operation
+     *
+     * @return array{status: int, body: array<mixed>}
+     */
+    private function link(array $session, string $cloud, array $operation): array
+    {
+        return $this->call('POST', "/v1/cloud/libraries/$cloud/link", $session, ['schemaVersion' => $this->schemaVersion(), 'operation' => $operation]);
+    }
+
+    /** Gives Jhonny's account access to the family's cloud library, as the sharing of 7.5 will. */
+    private function shareWithJhonny(string $cloud): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $user = $em->getRepository(User::class)->findOneBy(['email' => 'jhonny@example.com']) ?? self::fail('No Jhonny.');
+        $library = $em->find(CloudLibrary::class, Uuid::fromString($cloud)) ?? self::fail('No library.');
+        $em->persist(new Membership($user, $library));
+        $em->flush();
+    }
+
+    /**
+     * How many operations of the log ended in each state; `none` for those not judged.
+     *
+     * @return array<string, int>
+     */
+    private function statuses(): array
+    {
+        $counts = [];
+        $rows = self::getContainer()->get(Connection::class)->fetchAllNumeric('SELECT COALESCE(status, \'none\'), COUNT(*) FROM cloud_operation GROUP BY 1 ORDER BY 1');
+        foreach ($rows as [$status, $count]) {
+            \assert(\is_string($status) && \is_int($count));
+            $counts[$status] = $count;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @param list<string> $params
+     */
+    private function scalarCount(string $sql, array $params = []): int
+    {
+        $count = self::getContainer()->get(Connection::class)->fetchOne($sql, $params);
+        \assert(\is_int($count));
+
+        return $count;
+    }
+
+    private function requestsIn(string $cloud): int
+    {
+        return $this->scalarCount("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]);
+    }
+
+    private function publishersIn(string $cloud): int
+    {
+        return $this->scalarCount('SELECT COUNT(*) FROM catalog_publishers WHERE cloud_library_id = ?', [$cloud]);
+    }
+
+    private function userId(string $email): string
+    {
+        $id = self::getContainer()->get(Connection::class)->fetchOne('SELECT id FROM "user" WHERE email = ?', [$email]);
+        \assert(\is_string($id));
+
+        return $id;
+    }
+
+    /**
+     * Who uploaded each operation signed by a device, in HLC order.
+     *
+     * @return list<array{0: ?string, 1: ?string}> user id and device id
+     */
+    private function uploaders(string $author): array
+    {
+        $rows = self::getContainer()->get(Connection::class)->fetchAllNumeric('SELECT pushed_by_user_id, pushed_by_device_id FROM cloud_operation WHERE author_device_id = ? ORDER BY hlc', [$author]);
+
+        return array_map(static fn (array $row): array => [\is_string($row[0]) ? $row[0] : null, \is_string($row[1]) ? $row[1] : null], $rows);
     }
 
     /**

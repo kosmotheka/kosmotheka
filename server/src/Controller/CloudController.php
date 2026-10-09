@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Dto\PullRequest;
+use App\Dto\PushedOperation;
 use App\Dto\PushRequest;
 use App\Entity\CloudLibrary;
 use App\Entity\User;
 use App\Repository\CloudLibraryRepository;
+use App\Security\CurrentDevice;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
+use App\Sync\CloudLink;
 use App\Sync\CloudPull;
 use App\Sync\CloudPush;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,7 +38,9 @@ final class CloudController extends AbstractController
         private readonly CloudLibraryCreator $creator,
         private readonly CloudLibraryRepository $libraries,
         private readonly CloudPull $cloudPull,
+        private readonly CloudLink $cloudLink,
         private readonly CloudPush $cloudPush,
+        private readonly CurrentDevice $currentDevice,
     ) {
     }
 
@@ -67,12 +72,22 @@ final class CloudController extends AbstractController
         return new JsonResponse($this->cloudPull->pull($library, $payload));
     }
 
+    /** Links the library to its local id before the history is uploaded (D93); the operation itself comes with the log. */
+    #[Route('/{id}/link', methods: ['POST'])]
+    public function link(string $id, Request $request): JsonResponse
+    {
+        $library = $this->access->require($id, $this->currentUser());
+        $this->cloudLink->linkFrom($library, PushedOperation::fromJson($request->getContent()));
+
+        return new JsonResponse(['localLibraryId' => $library->getLocalLibraryId()]);
+    }
+
     #[Route('/{id}/push', methods: ['POST'])]
     public function push(string $id, Request $request): JsonResponse
     {
         $library = $this->access->require($id, $this->currentUser());
 
-        return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()))->toArray());
+        return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());
     }
 
     private function currentUser(): User

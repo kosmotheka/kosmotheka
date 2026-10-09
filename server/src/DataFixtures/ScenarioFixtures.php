@@ -10,6 +10,7 @@ use App\Dto\PushResult;
 use App\Entity\CloudLibrary;
 use App\Entity\Device;
 use App\Entity\User;
+use App\Repository\DeviceRepository;
 use App\Security\AccountException;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
@@ -41,6 +42,7 @@ final class ScenarioFixtures extends Fixture
         private readonly CloudLibraryCreator $creator,
         private readonly CloudLibraryAccess $access,
         private readonly CloudPush $cloudPush,
+        private readonly DeviceRepository $devices,
         private readonly SchemaVersion $schemaVersion,
         private readonly Connection $connection,
         private readonly ScenarioReport $report,
@@ -95,13 +97,14 @@ final class ScenarioFixtures extends Fixture
         $member = static fn (string $name): string => Cast::id("member:$name");
 
         $operations = [
+            // The member comes before the device that names it, in the same operation: a row cannot point at one that is not there yet.
             $this->operation($laptop, $local, 0, 'device.register', [
+                $this->create('member', 'ana', ['name' => 'Ana', 'role' => 'admin', 'can_share' => true]),
                 $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana')], $laptop->id),
             ]),
             $this->operation($laptop, $local, 1, 'library.create', [
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca García']],
             ]),
-            $this->operation($laptop, $local, 2, 'member.add', [$this->create('member', 'ana', ['name' => 'Ana', 'role' => 'admin', 'can_share' => true])]),
             $this->operation($laptop, $local, 3, 'member.add', [$this->create('member', 'hugo', ['name' => 'Hugo', 'role' => 'reader'])]),
             // Lucía is a child with no account and no device: she is only a row here.
             $this->operation($laptop, $local, 4, 'member.add', [$this->create('member', 'lucia', ['name' => 'Lucía'])]),
@@ -126,6 +129,8 @@ final class ScenarioFixtures extends Fixture
                 'fields' => ['member_id' => $member('hugo'), 'work_id' => Cast::id('work:cien-anos'), 'status' => 'finished', 'status_on' => '2025-09-20', 'rating' => 4, 'favorite' => true],
             ]]),
             $this->operation($hugosPhone, $local, 31, 'request.add', [$this->create('change_request', 'hugo-wants-another-book', ['note' => 'Can we buy the next one by García Márquez?'])]),
+            // ...and a book is not his to add: it is stored in the log as a request, and the catalog never gets it.
+            $this->operation($hugosPhone, $local, 32, 'book.add', $this->book('hugos-wish', 'Ficciones', 'Jorge Luis Borges', '9780802130303', $member('hugo'), 'Salón')),
             $this->operation($laptop, $local, 60, 'library.link', [[
                 'entity' => 'library',
                 'id' => $local,
@@ -162,12 +167,12 @@ final class ScenarioFixtures extends Fixture
         $local = Cast::DEFAULT_LOCAL;
         $operations = [
             $this->operation($laptop, $local, 0, 'device.register', [
+                $this->create('member', 'kenji', ['name' => 'Kenji', 'role' => 'admin']),
                 $this->create('device', 'kenji-laptop', ['public_key' => $laptop->publicKey, 'name' => "Kenji's laptop", 'member_id' => Cast::id('member:kenji')], $laptop->id),
             ]),
             $this->operation($laptop, $local, 1, 'library.create', [
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca Tanaka']],
             ]),
-            $this->operation($laptop, $local, 2, 'member.add', [$this->create('member', 'kenji', ['name' => 'Kenji', 'role' => 'admin'])]),
             $this->operation($laptop, $local, 3, 'book.add', $this->book('kokoro', 'Kokoro', 'Natsume Sōseki', '9780804818957', Cast::id('member:kenji'), 'Estantería')),
             $this->operation($laptop, $local, 4, 'library.link', [[
                 'entity' => 'library',
@@ -357,6 +362,8 @@ final class ScenarioFixtures extends Fixture
     private function push(CloudLibrary $library, array $operations): PushResult
     {
         $version = $this->schemaVersion->current();
+        // Every scenario uploads from a device of the library's owner.
+        $uploader = $this->devices->findOneBy(['user' => $library->getOwner()]) ?? throw new \LogicException('The owner of the library has no device.');
 
         return $this->cloudPush->push($library, new PushRequest($version, array_map(
             static function (array $operation) use ($version): PushedOperation {
@@ -366,7 +373,7 @@ final class ScenarioFixtures extends Fixture
                 return new PushedOperation($version, $decoded);
             },
             $operations,
-        )));
+        )), $uploader);
     }
 
     /**

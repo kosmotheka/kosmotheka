@@ -153,4 +153,16 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::InvalidRequest, 400);
     }
+
+    /** The link operation sent to the link route is not this library's own, or is not signed by a device of its owner (D93). */
+    public static function linkRejected(): self
+    {
+        return new self(AccountErrorCode::LinkRejected, 422);
+    }
+
+    /** The log a push would leave says the library's own link was not allowed: the push is undone (D93). */
+    public static function linkNotAllowed(): self
+    {
+        return new self(AccountErrorCode::LinkNotAllowed, 403);
+    }
 }

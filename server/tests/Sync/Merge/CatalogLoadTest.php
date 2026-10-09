@@ -4,11 +4,21 @@ declare(strict_types=1);
 
 namespace App\Tests\Sync\Merge;
 
+use App\Dto\ChangePayload;
+use App\Dto\OperationPayload;
+use App\Dto\PushedOperation;
+use App\Dto\PushRequest;
+use App\Dto\PushResult;
+use App\Entity\CloudDeviceKey;
 use App\Entity\CloudLibrary;
+use App\Entity\Device;
 use App\Enum\CatalogEntity;
 use App\Repository\CloudOperationRepository;
+use App\Sync\CloudPush;
 use App\Sync\Merge\CatalogMerge;
+use App\Sync\OperationSignature;
 use App\Sync\Permission\CatalogJudge;
+use App\Sync\SchemaVersion;
 use App\Tests\Support\CatalogRows;
 use App\Tests\Support\CatalogState;
 use App\Tests\Support\Judged;
@@ -78,16 +88,21 @@ final class CatalogLoadTest extends KernelTestCase
         self::assertSame(0, self::getContainer()->get(CloudOperationRepository::class)->countByStatus($library)['request'], 'every operation of the history is allowed');
         $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
 
+        if ($this->flag('STRESS_ANALYZE')) {
+            // VACUUM cannot run inside the test's transaction; ANALYZE can, and tells whether statistics are what makes pushes slow.
+            foreach (['cloud_operation', ...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases())] as $table) {
+                $this->em->getConnection()->executeStatement("ANALYZE $table");
+            }
+        }
+
+        // The pushes go through CloudPush as a device would send them: signed, chained to a key the log knows.
+        $uploader = $this->uploader($library);
         $pushes = [];
         for ($n = 0; $n < 30; ++$n) {
             $started = hrtime(true);
-            $this->em->wrapInTransaction(function () use ($library, $n, $roles): void {
-                $judged = $this->judged($library);
-                foreach (LibraryHistory::push($n, $roles) as $operation) {
-                    $judged->deliver($operation);
-                }
-            });
+            $result = $this->push($library, $uploader, LibraryHistory::push($n, $roles));
             $pushes[] = (hrtime(true) - $started) / 1e6;
+            self::assertSame(2, $result->received);
         }
         sort($pushes);
 
@@ -221,6 +236,55 @@ final class CatalogLoadTest extends KernelTestCase
         $judge->settle($library);
 
         return [$applied, $blocks];
+    }
+
+    /** The device that uploads: one of the library's owner, which also knows the keys of the history's authors. */
+    private function uploader(CloudLibrary $library): Device
+    {
+        $library->link(LibraryHistory::LIBRARY);
+        foreach ([LibraryHistory::ADMIN_DEVICE, LibraryHistory::EDITOR_DEVICE] as $author) {
+            $this->em->persist(new CloudDeviceKey($library, $author, $this->publicKey()));
+        }
+        $uploader = new Device(bin2hex(random_bytes(16)), $library->getOwner(), 'Uploader', $this->publicKey());
+        $this->em->persist($uploader);
+        $this->em->flush();
+
+        return $uploader;
+    }
+
+    /**
+     * @param list<OperationPayload> $operations
+     */
+    private function push(CloudLibrary $library, Device $uploader, array $operations): PushResult
+    {
+        $version = self::getContainer()->get(SchemaVersion::class)->current();
+        $secret = sodium_crypto_sign_secretkey(sodium_crypto_sign_seed_keypair(str_repeat("\x01", 32)));
+        $entries = [];
+        foreach ($operations as $operation) {
+            $body = json_decode(json_encode([
+                'id' => $operation->id,
+                'library' => $operation->library,
+                'hlc' => $operation->hlc,
+                'intent' => $operation->intent,
+                'changes' => array_map(static fn (ChangePayload $change): array => array_filter([
+                    'entity' => $change->entity->value,
+                    'id' => $change->id,
+                    'action' => $change->action->value,
+                    'fields' => [] === $change->fields ? null : $change->fields,
+                ], static fn (mixed $value): bool => null !== $value), $operation->changes),
+                'previous' => $operation->previous,
+            ], \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
+            \assert($body instanceof \stdClass);
+            $body->signature = sodium_bin2base64(sodium_crypto_sign_detached(new OperationSignature()->canonical($body), $secret), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+            $entries[] = new PushedOperation($version, $body);
+        }
+
+        return self::getContainer()->get(CloudPush::class)->push($library, new PushRequest($version, $entries), $uploader);
+    }
+
+    private function publicKey(): string
+    {
+        return sodium_bin2base64(sodium_crypto_sign_publickey(sodium_crypto_sign_seed_keypair(str_repeat("\x01", 32))), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
     }
 
     private function setTriggers(bool $on): void

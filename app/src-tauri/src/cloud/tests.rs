@@ -24,11 +24,16 @@ struct CloudState {
     created: usize,
     pulls: usize,
     pushes: usize,
+    links: usize,
+    /// How many operations one push request carries, as the real client cuts them;
+    /// zero for all at once.
+    batch: usize,
 }
 
 /// Enforces only what the client is tested against: membership by account,
-/// operations unique per cloud library, and a cloud library that takes only the
-/// local id its link operation names.
+/// operations unique per cloud library, a cloud library that takes only the
+/// local id its link operation names, and an operation that waits for the previous
+/// one of its author (D87).
 #[derive(Clone, Default)]
 struct FakeCloud(Arc<Mutex<CloudState>>);
 
@@ -53,6 +58,14 @@ impl FakeCloud {
 
     fn created(&self) -> usize {
         self.0.lock().unwrap().created
+    }
+
+    fn links(&self) -> usize {
+        self.0.lock().unwrap().links
+    }
+
+    fn push_in_batches_of(&self, batch: usize) {
+        self.0.lock().unwrap().batch = batch;
     }
 
     fn calls(&self) -> (usize, usize) {
@@ -166,6 +179,26 @@ impl CloudApi for FakeApi {
         })
     }
 
+    async fn link(&self, cloud: &str, link: &SyncOperation) -> Result<()> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.links += 1;
+        let library = state
+            .libraries
+            .get_mut(cloud)
+            .filter(|library| library.owner == self.account)
+            .ok_or(Error::Cloud("not_found"))?;
+        if !is_link_to(link, cloud) {
+            return Err(Error::Cloud("invalid_request"));
+        }
+        match &library.local {
+            Some(local) if *local != link.operation.library => Err(Error::Cloud("already_linked")),
+            _ => {
+                library.local = Some(link.operation.library.clone());
+                Ok(())
+            }
+        }
+    }
+
     async fn push(
         &self,
         cloud: &str,
@@ -174,27 +207,36 @@ impl CloudApi for FakeApi {
     ) -> Result<PushReport> {
         let mut state = self.cloud.0.lock().unwrap();
         state.pushes += 1;
+        let batch = state.batch;
         let library = state
             .libraries
             .get_mut(cloud)
             .filter(|library| library.owner == self.account)
             .ok_or(Error::Cloud("not_found"))?;
         let mut report = PushReport::default();
-        if library.local.is_none()
-            && let Some(link) = operations.iter().find(|synced| is_link_to(synced, cloud))
-        {
-            library.local = Some(link.operation.library.clone());
-        }
-        for synced in operations {
-            if library.operations.contains_key(&synced.operation.id) {
-                report.known += 1;
-            } else if library.local.as_deref() == Some(synced.operation.library.as_str()) {
-                library
-                    .operations
-                    .insert(synced.operation.id.clone(), synced.clone());
-                report.received += 1;
-            } else {
-                report.rejected += 1;
+        let size = if batch == 0 { usize::MAX } else { batch };
+        for request in operations.chunks(size) {
+            if library.local.is_none()
+                && let Some(link) = request.iter().find(|synced| is_link_to(synced, cloud))
+            {
+                library.local = Some(link.operation.library.clone());
+            }
+            for synced in request {
+                let operation = &synced.operation;
+                let follows = operation
+                    .previous
+                    .as_ref()
+                    .is_none_or(|previous| library.operations.contains_key(previous));
+                if library.operations.contains_key(&operation.id) {
+                    report.known += 1;
+                } else if follows && library.local.as_deref() == Some(operation.library.as_str()) {
+                    library
+                        .operations
+                        .insert(operation.id.clone(), synced.clone());
+                    report.received += 1;
+                } else {
+                    report.rejected += 1;
+                }
             }
         }
         Ok(report)
@@ -389,6 +431,40 @@ async fn a_long_log_is_pushed_in_an_order_where_every_previous_goes_first() {
         seen.insert(operation.id.clone());
     }
     assert_eq!((report.sent, report.rejected), (log.len(), 0));
+}
+
+#[tokio::test]
+async fn a_library_bigger_than_one_push_goes_up_whole_the_first_time() {
+    // The link is the newest operation, so it travels in the last request, and the
+    // cloud takes nothing before the link: the client links first, on its own call.
+    let cloud = FakeCloud::default();
+    cloud.push_in_batches_of(100);
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+    for n in 0..300 {
+        add(&ana, &library, &format!("Book {n}"));
+    }
+
+    let report = upload(&ana, &api, &library).await.unwrap();
+
+    let c = cloud.only_library();
+    let log = sync::library_log(&ana.lock().unwrap(), &library).unwrap();
+    assert_eq!((report.sent, report.rejected), (log.len(), 0));
+    assert_eq!(cloud.operation_ids(&c), log_ids(&ana, &library));
+    assert_eq!(cloud.links(), 1);
+}
+
+#[tokio::test]
+async fn a_library_already_in_the_cloud_is_not_linked_again() {
+    let cloud = FakeCloud::default();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+    upload(&ana, &api, &library).await.unwrap();
+
+    add(&ana, &library, "The Tombs of Atuan");
+    sync_library(&ana, &api, &library).await.unwrap();
+
+    assert_eq!(cloud.links(), 1);
 }
 
 #[tokio::test]

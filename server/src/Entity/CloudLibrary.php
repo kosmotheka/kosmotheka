@@ -26,6 +26,10 @@ final class CloudLibrary
     #[ORM\Column(length: 36, nullable: true)]
     private ?string $localLibraryId = null;
 
+    /** The operation that links the library (D93): the one CloudLink checked when it linked it, whether or not it is stored yet. */
+    #[ORM\Column(type: 'uuid', nullable: true)]
+    private ?Uuid $linkOperationId = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -51,6 +55,17 @@ final class CloudLibrary
     public function getLocalLibraryId(): ?string
     {
         return $this->localLibraryId;
+    }
+
+    public function getLinkOperationId(): ?Uuid
+    {
+        return $this->linkOperationId;
+    }
+
+    /** Remembers which operation links the library (the one CloudLink checked); the first one stays. */
+    public function noteLinkOperation(Uuid $operationId): void
+    {
+        $this->linkOperationId ??= $operationId;
     }
 
     public function isLinked(): bool

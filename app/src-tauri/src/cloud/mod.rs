@@ -22,7 +22,7 @@ use crate::error::{Error, Result};
 use crate::sync::{self, LibraryVectors, MergeReport, SyncOperation, VersionVector};
 use crate::{libraries, ops, people};
 
-/// The four calls the client needs, behind a trait so tests run against an in-memory
+/// The five calls the client needs, behind a trait so tests run against an in-memory
 /// cloud instead of the network.
 #[allow(async_fn_in_trait)]
 pub trait CloudApi {
@@ -36,6 +36,9 @@ pub trait CloudApi {
         schema_version: i64,
         vector: &VersionVector,
     ) -> Result<Pulled>;
+    /// Ties the cloud library to the local one with the signed link operation, which
+    /// the server checks and does not store: it comes with the log, in its place.
+    async fn link(&self, cloud: &str, link: &SyncOperation) -> Result<()>;
     /// `schema_version` is this database's; each operation carries the one it was recorded at.
     async fn push(
         &self,
@@ -202,8 +205,8 @@ pub fn status(database: &Database) -> Result<Vec<LibraryCloudStatus>> {
     Ok(statuses)
 }
 
-/// Takes a library to the cloud: creates its cloud id, records the signed link and
-/// sends the whole log (the link is in it). Every check comes before anything is
+/// Takes a library to the cloud: creates its cloud id, records the signed link,
+/// links the cloud library with it and sends the whole log (the link is in it). Every check comes before anything is
 /// created or written, so a refusal changes nothing.
 pub async fn upload<A: CloudApi>(
     database: &Database,
@@ -331,6 +334,15 @@ async fn push_missing<A: CloudApi>(
     };
     if to_send.is_empty() {
         return Ok(());
+    }
+    // The link is the newest operation of an upload and the cloud takes nothing before
+    // it, so it goes first on its own. It is in what is left to send only until the
+    // cloud stores it.
+    if let Some(link) = to_send
+        .iter()
+        .find(|synced| links_to(&synced.operation, cloud))
+    {
+        api.link(cloud, link).await?;
     }
     let pushed = api.push(cloud, schema_version, &to_send).await?;
     report.sent += to_send.len();

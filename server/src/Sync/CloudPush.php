@@ -14,10 +14,11 @@ use App\Entity\Device;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\OperationRejection;
+use App\Enum\OperationStatus;
 use App\Repository\CloudDeviceKeyRepository;
 use App\Repository\CloudOperationRepository;
-use App\Repository\DeviceRepository;
 use App\Security\AccountException;
+use App\Sync\Permission\CatalogJudge;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -25,7 +26,8 @@ use Doctrine\ORM\EntityManagerInterface;
  * The rules for what a cloud library accepts (D84; docs/architecture/cloud.md).
  * It judges each operation only by what it says (structure, library, signature),
  * never by when it arrives (seam 7), and it neither reads ids from the client to
- * decide access nor judges roles (milestone 7.4). The caller has already checked
+ * decide access. What it stores is handed to the CatalogJudge, which applies it or leaves it as a request
+ * (milestone 7.4.6); the roles are the judge's business, not this class's. The caller has already checked
  * access (App\Sync\CloudLibraryAccess).
  *
  * Until the library is linked, only the link operation may enter (seam 3):
@@ -41,21 +43,24 @@ final readonly class CloudPush
         private OperationSignature $signature,
         private CloudOperationRepository $operations,
         private CloudDeviceKeyRepository $deviceKeys,
-        private DeviceRepository $devices,
+        private CloudLink $link,
         private SyncNotifier $notifier,
+        private CatalogJudge $judge,
     ) {
     }
 
     /**
+     * @param Device $pushedBy the device the request was authenticated with: who uploaded, never what the request says
+     *
      * @throws AccountException when the client's database is on another schema version
      */
-    public function push(CloudLibrary $library, PushRequest $request): PushResult
+    public function push(CloudLibrary $library, PushRequest $request, Device $pushedBy): PushResult
     {
         // A client on another version does not sync at all (D31). What each operation was recorded at is judged
         // one by one in apply(): history from before an update is still good.
         $this->schemaVersion->require($request->schemaVersion);
 
-        $result = $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request));
+        $result = $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request, $pushedBy));
 
         // After the commit, and only when something new was stored (D75).
         if ($result->received > 0) {
@@ -65,7 +70,7 @@ final readonly class CloudPush
         return $result;
     }
 
-    private function apply(CloudLibrary $library, PushRequest $request): PushResult
+    private function apply(CloudLibrary $library, PushRequest $request, Device $pushedBy): PushResult
     {
         // One push at a time per library: linking and registering a key check first and write after.
         // The refresh also brings the link state as it is now, not as it was when the library was loaded.
@@ -93,7 +98,13 @@ final readonly class CloudPush
                 if (!$payload instanceof OperationPayload) {
                     throw new OperationRejectedException(OperationRejection::Malformed);
                 }
-                $this->accept($library, $pushed, $payload, $verifiedLink) ? ++$received : ++$known;
+                if ($this->accept($library, $pushed, $payload, $verifiedLink, $pushedBy)) {
+                    ++$received;
+                    // In HLC order, as `take` needs; a stored operation is judged even when it ends as a request.
+                    $this->judge->take($library, $payload);
+                } else {
+                    ++$known;
+                }
             } catch (OperationRejectedException) {
                 ++$rejected;
                 if (null !== $author) {
@@ -102,7 +113,25 @@ final readonly class CloudPush
             }
         }
 
+        $this->judge->settle($library);
+        $this->requireLinkAllowed($library);
+
         return new PushResult($received, $known, $rejected);
+    }
+
+    /**
+     * The library's own log must not contradict its link (D93): if the operation that links it ended as a
+     * request, its author could not link it, and this push is undone whole. Checked in every push, because
+     * one that brings the roles can turn a link applied before into a request.
+     *
+     * @throws AccountException `link_not_allowed`, which undoes the push's transaction
+     */
+    private function requireLinkAllowed(CloudLibrary $library): void
+    {
+        $link = $library->getLinkOperationId()?->toRfc4122();
+        if (null !== $link && OperationStatus::Request === ($this->operations->statusesOf($library, [$link])[$link] ?? null)) {
+            throw AccountException::linkNotAllowed();
+        }
     }
 
     /**
@@ -156,11 +185,11 @@ final readonly class CloudPush
     private function linkWith(CloudLibrary $library, array $entries): ?string
     {
         foreach ($entries as ['pushed' => $pushed, 'payload' => $payload]) {
-            if (!$payload instanceof OperationPayload || !$this->isLink($library, $payload)) {
+            if (!$payload instanceof OperationPayload || !$this->link->isLink($library, $payload)) {
                 continue;
             }
             try {
-                $this->link($library, $pushed, $payload);
+                $this->link->link($library, $pushed, $payload);
 
                 return $payload->id;
             } catch (OperationRejectedException) {
@@ -176,7 +205,7 @@ final readonly class CloudPush
      *
      * @throws OperationRejectedException
      */
-    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?string $verifiedLink): bool
+    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?string $verifiedLink, Device $pushedBy): bool
     {
         if ($this->operations->has($library, $payload->id)) {
             return false;
@@ -205,6 +234,8 @@ final readonly class CloudPush
             $pushed->schemaVersion,
             json_encode($pushed->operation, \JSON_THROW_ON_ERROR),
             $payload->previous,
+            $pushedBy->getUser()->getId()->toRfc4122(),
+            $pushedBy->getDeviceId(),
         );
     }
 
@@ -224,26 +255,6 @@ final readonly class CloudPush
         if (null === $previous || $previous['author'] !== $this->author($payload) || $previous['hlc'] >= $payload->hlc) {
             throw new OperationRejectedException(OperationRejection::BrokenChain);
         }
-    }
-
-    /**
-     * @throws OperationRejectedException unless this is the library's own link, signed by a device of its owner
-     */
-    private function link(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): void
-    {
-        if (!$this->isLink($library, $payload)) {
-            throw new OperationRejectedException(OperationRejection::NotLinked);
-        }
-
-        // The owner's own account devices, found by the account and the id from the HLC, never by the id alone.
-        $device = $this->devices->findOneOfUser($library->getOwner(), $this->author($payload));
-        if (!$device instanceof Device || $device->isRemoved()) {
-            throw new OperationRejectedException(OperationRejection::UnknownKey);
-        }
-        $this->verify($pushed->operation, $device->getPublicKey());
-
-        $library->link($payload->library);
-        $this->entityManager->flush();
     }
 
     /**
@@ -320,20 +331,6 @@ final readonly class CloudPush
         }
 
         return null;
-    }
-
-    private function isLink(CloudLibrary $library, OperationPayload $payload): bool
-    {
-        foreach ($payload->changes as $change) {
-            $cloudId = $change->fields['cloud_library_id'] ?? null;
-            if (CatalogEntity::Library === $change->entity && ChangeAction::Update === $change->action
-                && strtolower($change->id) === strtolower($payload->library)
-                && \is_string($cloudId) && strtolower($cloudId) === $library->getId()->toRfc4122()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /** The device in the HLC: what follows the time and the counter. */

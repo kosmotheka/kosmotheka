@@ -74,8 +74,8 @@ db-test: ## Migrates the test database (idempotent)
 	$(CONSOLE) doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration $(END)
 
 .PHONY: stress
-stress: ## Load test (not in make check). make stress BOOKS=5000 LIMIT=600 [NO_TRIGGERS=1] [ROLES=1] [FILTER=testWhatOnePushAsks]
-	$(PHP) STRESS_BOOKS=$(BOOKS) STRESS_NO_TRIGGERS=$(NO_TRIGGERS) STRESS_ROLES=$(ROLES) timeout -k 10 $(LIMIT) php -d memory_limit=-1 bin/phpunit --group stress $(if $(FILTER),--filter $(FILTER)) $(END)
+stress: ## Load test (not in make check). make stress BOOKS=5000 LIMIT=600 [NO_TRIGGERS=1] [ROLES=1] [ANALYZE=1] [FILTER=testWhatOnePushAsks]
+	$(PHP) STRESS_BOOKS=$(BOOKS) STRESS_NO_TRIGGERS=$(NO_TRIGGERS) STRESS_ROLES=$(ROLES) STRESS_ANALYZE=$(ANALYZE) timeout -k 10 $(LIMIT) php -d memory_limit=-1 bin/phpunit --group stress $(if $(FILTER),--filter $(FILTER)) $(END)
 
 .PHONY: test
 test: ## Runs the suite (usage: make test ARGS="--filter testAppliesAnOperation")

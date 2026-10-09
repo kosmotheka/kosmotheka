@@ -98,6 +98,7 @@
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
+| D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
 
 ---
 
@@ -1593,3 +1594,26 @@ Lo que se sabe que cambia: la tabla guardaba las versiones de las filas borradas
 - La prueba de carga con una biblioteca grande inventada pasa a ser un test del servidor, que se repite antes de dar 7.4 por hecho.
 - `server/AGENTS.md` deja de decir «DBAL para las tablas del catálogo».
 - Revisión del 09/10/2026: `server/AGENTS.md` dice que el motor de fusión es el único sitio del catálogo con SQL; encargo en [historico/encargo-7.4-motor-dbal.md](historico/encargo-7.4-motor-dbal.md).
+
+## D93 · La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía — `aceptada`
+
+Aceptada el 09/10/2026. Cierra el diseño de SEG-013 (auditoría [2026-10-03-2](audits/2026-10-03-2.md)); se construye en 7.4.6.
+
+**Contexto.** SEG-013 pedía que el servidor comprobara el rol de quien sube una biblioteca, porque solo lo comprobaba la app. Desde entonces han cambiado dos cosas. Con D84 un id de biblioteca ya no es de la primera cuenta que lo sube: cada subida crea una biblioteca de la nube con id propio. Y con 7.4.5 el servidor juzga cada operación con las mismas reglas que la app, en las que enlazar una biblioteca es un cambio de la fila `library`, que con roles solo puede hacer un administrador. El servidor no puede saber más que lo que dice el registro que le suben: una app modificada puede subir solo la parte que no tiene roles.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Ninguna regla nueva: SEG-013 queda cubierto por D84 | Sin código | La nube puede quedarse con una biblioteca enlazada por un lector, con el registro que lo dice dentro |
+| Deshacer el `push` que deja el enlace en petición | Usa lo que el juez ya calcula; la nube nunca guarda un registro que contradice su propio enlace | No impide la copia parcial sin roles |
+
+**Decisión.** La segunda. Si al terminar un `push`, con la biblioteca ya juzgada, la operación que enlaza esa biblioteca de la nube está en petición, el `push` entero se deshace: no se guarda nada de él. El servidor responde con un error de la petición entera, no con operaciones rechazadas una a una, para no romper la regla de DAT-001 (una operación no se rechaza por el orden en que llega).
+
+**Lo que se acepta.** Quien sube con una app modificada solo la parte del registro sin roles obtiene una biblioteca de la nube suya, en su cuenta. Ya tenía esos datos, ningún otro dispositivo adopta ese enlace (para ellos es una petición) y la familia puede subir la suya aparte. Es lo mismo que D73 acepta en la red local. Si después sube las operaciones que dan los roles, el `push` se deshace.
+
+**Enlazar es un paso propio (añadido el 09/10/2026, aceptado).** Al preparar 7.4.6 un test mostró que una biblioteca de más de 1.000 operaciones no entraba a la primera: la app envía el registro en orden de HLC y en lotes de 1.000, el enlace es la operación más nueva, y el servidor no acepta nada antes del enlace. Se arreglaba sola en la segunda sincronización, pero la primera informaba de todo rechazado. Ahora la app envía primero la operación de enlace firmada a una ruta propia (`POST /v1/cloud/libraries/{id}/link`); el servidor la comprueba como antes (firma de un dispositivo de la cuenta dueña) y enlaza sin guardarla, y después llegan los lotes. Las versiones anteriores de la app siguen funcionando como hasta ahora.
+
+**Por qué no se comprueba el rol antes de guardar nada.** Quién puede subir una biblioteca está escrito dentro de lo que se sube: los roles son operaciones del registro y cambian a lo largo de él, así que hasta tener el registro el servidor no puede saberlo. Con lotes, cuando llega el enlace (el último) los lotes anteriores ya están guardados. Lo que se deshace es solo el `push` que trae el enlace. **No se vacía la biblioteca:** se pensó y se descartó, porque no protege de nada que no se consiga igual subiendo el registro sin los roles, y añadiría un borrado. Lo que queda es la misma copia privada que se acepta abajo, sin operación de enlace.
+
+**Consecuencias.** D84 no cambia. SEG-013 se cierra cuando 7.4.6 tenga la regla y su test hostil. La app no cambia: ya comprueba el permiso antes de crear la biblioteca en la nube, así que una app sin modificar nunca recibe ese error.

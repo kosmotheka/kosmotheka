@@ -27,6 +27,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: CloudOperationRepository::class)]
 #[ORM\Table(name: 'cloud_operation')]
 #[ORM\Index(name: 'idx_cloud_operation_cloud_library', columns: ['cloud_library_id'])]
+#[ORM\Index(name: 'idx_cloud_operation_pushed_by_user', columns: ['pushed_by_user_id'])]
 #[ORM\Index(name: 'idx_cloud_operation_author_hlc', columns: ['cloud_library_id', 'author_device_id', 'hlc'])]
 #[ORM\UniqueConstraint(name: 'uniq_cloud_operation_hlc', columns: ['cloud_library_id', 'hlc'])]
 final readonly class CloudOperation
@@ -57,6 +58,13 @@ final readonly class CloudOperation
         /** What the permission rules made of it; null while it is stored and not yet judged. Written with DQL. */
         #[ORM\Column(length: 16, nullable: true, enumType: OperationStatus::class)]
         private ?OperationStatus $status = null,
+        /** The account that uploaded it, which is not always its author's (an operation can reach the cloud from another device first). Null once the account is deleted. */
+        #[ORM\ManyToOne(targetEntity: User::class)]
+        #[ORM\JoinColumn(name: 'pushed_by_user_id', nullable: true, onDelete: 'SET NULL', foreignKeyName: 'fk_cloud_operation_pushed_by_user')]
+        private ?User $pushedByUser = null,
+        /** The app's id of the device that made the push; no foreign key, so removing the device keeps the fact. */
+        #[ORM\Column(length: 36, nullable: true)]
+        private ?string $pushedByDeviceId = null,
     ) {
     }
 
@@ -98,6 +106,16 @@ final readonly class CloudOperation
     public function getStatus(): ?OperationStatus
     {
         return $this->status;
+    }
+
+    public function getPushedByUser(): ?User
+    {
+        return $this->pushedByUser;
+    }
+
+    public function getPushedByDeviceId(): ?string
+    {
+        return $this->pushedByDeviceId;
     }
 
     public function getReceivedAt(): \DateTimeImmutable
