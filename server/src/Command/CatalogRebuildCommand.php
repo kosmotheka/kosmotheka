@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Entity\CloudLibrary;
 use App\Repository\CloudOperationRepository;
 use App\Sync\Permission\CatalogJudge;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -82,8 +83,10 @@ final class CatalogRebuildCommand extends Command
             } catch (\Throwable $e) {
                 ++$failed;
                 $io->writeln(\sprintf('%s: FAILED, %s', $id->toRfc4122(), $e->getMessage()));
-                // A failed transaction closes the manager; the next library needs an open one.
+                // A failed transaction closes the manager; the next library needs an open one, and nothing the
+                // failed one left queued.
                 $this->registry->resetManager();
+                $this->judge->reset();
             }
             $this->entityManager->clear();
         }
@@ -100,7 +103,11 @@ final class CatalogRebuildCommand extends Command
     private function rebuild(CloudLibrary $library): string
     {
         $start = hrtime(true);
-        $this->entityManager->wrapInTransaction(fn () => $this->judge->rebuild($library));
+        $this->entityManager->wrapInTransaction(function () use ($library): void {
+            // The same lock as a push, which would otherwise be judged against a catalog that is being rewritten.
+            $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
+            $this->judge->rebuild($library);
+        });
         ['applied' => $applied, 'request' => $requests] = $this->operations->countByStatus($library);
 
         return \sprintf('Applied %d operations, %d left as requests, in %.1f s.', $applied, $requests, (hrtime(true) - $start) / 1e9);

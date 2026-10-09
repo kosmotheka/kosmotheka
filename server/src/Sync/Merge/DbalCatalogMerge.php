@@ -357,6 +357,11 @@ final class DbalCatalogMerge implements CatalogMerge
         $this->rows[$library] = $this->tombstones[$library] = $this->authors[$library] = [];
     }
 
+    public function reset(): void
+    {
+        $this->queue = $this->rows = $this->tombstones = $this->libraryDeleted = $this->authors = [];
+    }
+
     private function run(): void
     {
         $queue = $this->queue;

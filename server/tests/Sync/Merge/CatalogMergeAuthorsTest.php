@@ -46,6 +46,22 @@ final class CatalogMergeAuthorsTest extends KernelTestCase
         self::assertSame(['tag|tag-1' => self::FIRST], $this->authors());
     }
 
+    /** DAT-008: what a library that failed left queued must not be written with the next one. */
+    public function testAfterAResetNothingOfTheFailedLibraryIsWritten(): void
+    {
+        $rows = new CatalogRows($this->em);
+        $failed = $rows->cloudLibrary();
+        $next = $rows->cloudLibrary();
+        $this->em->flush();
+
+        $this->merge->apply($failed, Ops::operation(Ops::hlc(1, 0, self::FIRST), [Ops::create(CatalogEntity::Tag, 'tag-1', ['name' => 'Tehanu'])]));
+        $this->merge->reset();
+        $this->merge->apply($next, Ops::operation(Ops::hlc(2, 0, self::SECOND), [Ops::create(CatalogEntity::Tag, 'tag-2', ['name' => 'Atuan'])]));
+        $this->merge->flush();
+
+        self::assertSame(['tag|tag-2' => self::SECOND], $this->authors());
+    }
+
     public function testTheFirstCreateCountsInTheSameFlushToo(): void
     {
         $library = new CatalogRows($this->em)->cloudLibrary();

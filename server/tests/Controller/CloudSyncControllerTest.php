@@ -378,6 +378,73 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(Response::HTTP_OK, $this->push($this->familySession, $cloud, [$phone->publisher(self::LOCAL, self::T + 20)])['status']);
     }
 
+    /** SEG-022: the push that links skipped the signature of whatever carried the link's id. */
+    public function testAForgedOperationWithTheLinksIdDoesNotEnterInItsPlace(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $roles = $this->rolesOf($admin);
+        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
+        $assignment = $this->assignmentOf($admin, $this->laptop, 2);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 4);
+        self::assertIsString($link['id']);
+        // In the administrator's name and without her key: "the reader's device is an administrator's", dated before the link.
+        $forged = SigningDevice::generate($admin->id)->sign(self::LOCAL, self::T + 3, 'device.assign', [
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
+        ], $link['id'], null);
+
+        $response = $this->push($this->familySession, $cloud, [$roles, $registration, $assignment, $link, $forged]);
+
+        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $response);
+        $this->assertNotLinkedAndNothingStored($cloud);
+    }
+
+    /** SEG-022, by the route: the link is not stored yet, and an operation of the reader's own takes its id. */
+    public function testAnOperationThatIsNotTheLinkCannotTakeItsIdAfterTheLinkRoute(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $roles = $this->rolesOf($admin);
+        $assignment = $this->assignmentOf($admin, $this->laptop, 2);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 3);
+        self::assertIsString($link['id']);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        // Signed by the reader himself and dated before the roles, so the rules would apply it.
+        $disguised = $this->laptop->sign(self::LOCAL, self::T - 1, 'device.register', [
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop']],
+        ], $link['id'], null);
+
+        $response = $this->push($this->familySession, $cloud, [$roles, $assignment, $disguised, $link]);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 2, 'known' => 0, 'rejected' => 2]], $response);
+        self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE operation_id = ?', [$link['id']]));
+    }
+
+    /** SEG-024: a library linked before the link was remembered learns it when the link arrives, by either way in. */
+    public function testALibraryLinkedBeforeTheLinkWasRememberedLearnsItFromThePushAndFromTheRoute(): void
+    {
+        $connection = self::getContainer()->get(Connection::class);
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $registration = $this->laptop->registration(self::LOCAL, self::T);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        $forget = static fn (): int|string => $connection->executeStatement('UPDATE cloud_library SET link_operation_id = NULL WHERE id = ?', [$cloud]);
+        $remembered = static fn (): mixed => $connection->fetchOne('SELECT link_operation_id FROM cloud_library WHERE id = ?', [$cloud]);
+
+        $forget();
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        self::assertSame($link['id'], $remembered());
+
+        $forget();
+        // Another device's operation with the shape of a link is not remembered; the owner's is.
+        $this->shareWithJhonny($cloud);
+        $strangers = $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration(self::LOCAL, self::T + 2), $this->jhonny->link(self::LOCAL, $cloud, self::T + 3)]);
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $strangers['body']);
+        self::assertNull($remembered());
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$registration, $link])['body']);
+        self::assertSame($link['id'], $remembered());
+    }
+
     public function testAnyoneUploadsALibraryWithoutRoles(): void
     {
         $cloud = $this->createCloudLibrary($this->jhonnySession);

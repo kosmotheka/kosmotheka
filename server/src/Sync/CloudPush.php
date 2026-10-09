@@ -180,9 +180,9 @@ final readonly class CloudPush
      *
      * @param list<array{pushed: PushedOperation, payload: ?OperationPayload, hlc: string, author: ?string}> $entries
      *
-     * @return ?string the id of that operation, already verified; null when none links the library
+     * @return ?PushedOperation that operation, already verified; null when none links the library
      */
-    private function linkWith(CloudLibrary $library, array $entries): ?string
+    private function linkWith(CloudLibrary $library, array $entries): ?PushedOperation
     {
         foreach ($entries as ['pushed' => $pushed, 'payload' => $payload]) {
             if (!$payload instanceof OperationPayload || !$this->link->isLink($library, $payload)) {
@@ -191,7 +191,7 @@ final readonly class CloudPush
             try {
                 $this->link->link($library, $pushed, $payload);
 
-                return $payload->id;
+                return $pushed;
             } catch (OperationRejectedException) {
                 // Judged again, and counted, in its place.
             }
@@ -205,7 +205,7 @@ final readonly class CloudPush
      *
      * @throws OperationRejectedException
      */
-    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?string $verifiedLink, Device $pushedBy): bool
+    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?PushedOperation $verifiedLink, Device $pushedBy): bool
     {
         if ($this->operations->has($library, $payload->id)) {
             return false;
@@ -218,7 +218,17 @@ final readonly class CloudPush
         if (strtolower($payload->library) !== $library->getLocalLibraryId()) {
             throw new OperationRejectedException(OperationRejection::OtherLibrary);
         }
-        if ($payload->id !== $verifiedLink) {
+        // The entry that just linked the library was verified with its account's key, and only that entry: an id
+        // says nothing about who wrote an operation (SEG-022).
+        $isTheLink = $pushed === $verifiedLink;
+        $remembered = $library->getLinkOperationId()?->toRfc4122();
+        if (!$isTheLink && strtolower($payload->id) === $remembered && !$this->link->holds($library, $pushed, $payload)) {
+            // The id remembered as the link's is the link's alone, or D93 would look at another operation.
+            throw new OperationRejectedException(OperationRejection::BadSignature);
+        }
+        // A device's key never changes, whoever signs the change (as in the app's signature_holds).
+        $this->refuseKeyChanges($library, $payload);
+        if (!$isTheLink) {
             $this->verifyAuthor($library, $pushed->operation, $payload);
         }
         $this->requirePrevious($library, $payload);
@@ -226,7 +236,7 @@ final readonly class CloudPush
             throw new OperationRejectedException(OperationRejection::HlcTaken);
         }
 
-        return $this->operations->insertIfNew(
+        $stored = $this->operations->insertIfNew(
             $library,
             $payload->id,
             $this->author($payload),
@@ -237,6 +247,12 @@ final readonly class CloudPush
             $pushedBy->getUser()->getId()->toRfc4122(),
             $pushedBy->getDeviceId(),
         );
+        // A library linked before the link was remembered (7.4.6) learns it when its link arrives (SEG-024).
+        if ($stored && null === $remembered && $this->link->holds($library, $pushed, $payload)) {
+            $this->link->note($library, $payload);
+        }
+
+        return $stored;
     }
 
     /**
@@ -269,9 +285,6 @@ final readonly class CloudPush
         $author = $this->author($payload);
         $registered = $this->deviceKeys->findOneInLibrary($library, $author)?->getPublicKey();
         $declared = $this->declaredKey($payload, $author);
-
-        // A device's key never changes, whoever signs the change (as in the app's signature_holds).
-        $this->refuseKeyChanges($library, $payload);
 
         if (null !== $registered) {
             if (null !== $declared && !hash_equals($registered, $declared)) {

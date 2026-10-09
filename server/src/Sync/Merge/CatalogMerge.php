@@ -30,4 +30,7 @@ interface CatalogMerge
 
     /** Removes the whole catalog of the library and its bookkeeping, tombstones included. */
     public function clear(CloudLibrary $library): void;
+
+    /** Drops what is pending and remembered without writing it: after a failure, so nothing of it reaches the next library. */
+    public function reset(): void;
 }

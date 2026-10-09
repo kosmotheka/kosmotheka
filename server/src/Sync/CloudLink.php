@@ -55,6 +55,8 @@ final readonly class CloudLink
                     if (strtolower($payload->library) !== $library->getLocalLibraryId()) {
                         throw new OperationRejectedException(OperationRejection::OtherLibrary);
                     }
+                    // A library linked before the link was remembered (7.4.6) learns it here.
+                    $this->note($library, $payload);
 
                     return;
                 }
@@ -76,12 +78,33 @@ final readonly class CloudLink
         $this->bind($library, $payload);
     }
 
+    /**
+     * Whether this is the library's link, signed by a device of its owner: what an operation must be to be stored
+     * under the id remembered as the link's. A device removed since then still counts; it signed while it could.
+     */
+    public function holds(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): bool
+    {
+        try {
+            $this->signedByOwner($library, $pushed, $payload);
+
+            return true;
+        } catch (OperationRejectedException) {
+            return false;
+        }
+    }
+
+    /** Remembers the link of a library that has none remembered; the caller has checked the operation. */
+    public function note(CloudLibrary $library, OperationPayload $payload): void
+    {
+        $library->noteLinkOperation(Uuid::fromString($payload->id));
+        $this->entityManager->flush();
+    }
+
     /** Links the library and remembers which operation did: the one whose signature was just checked (D93), whenever it is stored. */
     private function bind(CloudLibrary $library, OperationPayload $payload): void
     {
         $library->link($payload->library);
-        $library->noteLinkOperation(Uuid::fromString($payload->id));
-        $this->entityManager->flush();
+        $this->note($library, $payload);
     }
 
     public function isLink(CloudLibrary $library, OperationPayload $payload): bool
@@ -103,13 +126,23 @@ final readonly class CloudLink
      */
     private function check(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): void
     {
+        if ($this->signedByOwner($library, $pushed, $payload)->isRemoved()) {
+            throw new OperationRejectedException(OperationRejection::UnknownKey);
+        }
+    }
+
+    /**
+     * @throws OperationRejectedException
+     */
+    private function signedByOwner(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): Device
+    {
         if (!$this->isLink($library, $payload)) {
             throw new OperationRejectedException(OperationRejection::NotLinked);
         }
 
         // The owner's own account devices, found by the account and the id from the HLC, never by the id alone.
         $device = $this->devices->findOneOfUser($library->getOwner(), explode('-', $payload->hlc, 3)[2]);
-        if (!$device instanceof Device || $device->isRemoved()) {
+        if (!$device instanceof Device) {
             throw new OperationRejectedException(OperationRejection::UnknownKey);
         }
         try {
@@ -117,5 +150,7 @@ final readonly class CloudLink
         } catch (InvalidSignatureException) {
             throw new OperationRejectedException(OperationRejection::BadSignature);
         }
+
+        return $device;
     }
 }

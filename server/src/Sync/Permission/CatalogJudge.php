@@ -107,6 +107,13 @@ final class CatalogJudge
         }
     }
 
+    /** Forgets what a batch that failed left behind, here and in the merge, so the next library starts clean. */
+    public function reset(): void
+    {
+        $this->merge->reset();
+        $this->newest = $this->late = [];
+    }
+
     private function judge(CloudLibrary $library, OperationPayload $operation): OperationStatus
     {
         if (!Permissions::isAllowed($operation, new CatalogLibraryView($this->entityManager, $library))) {
