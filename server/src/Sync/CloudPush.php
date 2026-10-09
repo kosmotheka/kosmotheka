@@ -204,6 +204,7 @@ final readonly class CloudPush
             $payload->hlc,
             $pushed->schemaVersion,
             json_encode($pushed->operation, \JSON_THROW_ON_ERROR),
+            $payload->previous,
         );
     }
 

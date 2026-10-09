@@ -14,6 +14,10 @@ use App\Enum\CatalogEntity;
  */
 final class LibraryHistory
 {
+    /** With roles, the administrator writes the even books and the editor the odd ones (and what they delete). */
+    public const string ADMIN_DEVICE = '01997c7e-0000-7000-8000-0000000000fa';
+    public const string EDITOR_DEVICE = '01997c7e-0000-7000-8000-0000000000fb';
+
     public const int MEMBERS = 5;
     public const int PUBLISHERS = 50;
     public const int PEOPLE = 100;
@@ -22,23 +26,32 @@ final class LibraryHistory
     public const int PUSHES_FROM = 100_000_000;
 
     /**
+     * @param bool $roles whether the library has roles: an administrator and an editor, two devices each of a person
+     *
      * @return \Generator<int, OperationPayload>
      */
-    public static function operations(int $books): \Generator
+    public static function operations(int $books, bool $roles = false): \Generator
     {
         $clock = 0;
-        $members = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Member, "m$i", ['name' => "Persona $i", 'role' => 0 === $i ? 'admin' : 'reader']), range(0, self::MEMBERS - 1));
+        $roleOf = static fn (int $i): array => $roles ? ['role' => match ($i) {
+            0 => 'admin', 1 => 'editor', default => 'reader'
+        }, 'can_share' => false] : [];
+        $members = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Member, "m$i", ['name' => "Persona $i"] + $roleOf($i)), range(0, self::MEMBERS - 1));
+        $devices = $roles ? [
+            Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => 'k', 'name' => 'Admin', 'member_id' => 'm0']),
+            Ops::create(CatalogEntity::Device, self::EDITOR_DEVICE, ['public_key' => 'k', 'name' => 'Editor', 'member_id' => 'm1']),
+        ] : [];
         $publishers = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Publisher, "p$i", ['name' => "Editorial $i"]), range(0, self::PUBLISHERS - 1));
         $people = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Person, "pe$i", ['name' => "Autora $i"]), range(0, self::PEOPLE - 1));
-        yield Ops::operation(Ops::hlc(++$clock), [...$members, ...$publishers, ...$people]);
+        yield self::operation(++$clock, self::ADMIN_DEVICE, [...$members, ...$devices, ...$publishers, ...$people]);
         for ($i = 0; $i < $books; ++$i) {
-            yield Ops::operation(Ops::hlc(++$clock), self::book("$i", 0 === $i % 7 ? null : 'p'.($i % self::PUBLISHERS), 'm'.($i % self::MEMBERS), 1950 + $i % 70, $i % self::PEOPLE));
+            yield self::operation(++$clock, self::author($i, $roles), self::book("$i", 0 === $i % 7 ? null : 'p'.($i % self::PUBLISHERS), 'm'.($i % self::MEMBERS), 1950 + $i % 70, $i % self::PEOPLE));
         }
         for ($i = 0; $i < $books; $i += 10) {
-            yield Ops::operation(Ops::hlc(++$clock), [Ops::update(CatalogEntity::Edition, "e$i", ['title' => "Libro $i (corregido)", 'published_year' => 2000])]);
+            yield self::operation(++$clock, self::author($i, $roles), [Ops::update(CatalogEntity::Edition, "e$i", ['title' => "Libro $i (corregido)", 'published_year' => 2000])]);
         }
         for ($i = 5; $i < $books; $i += 50) {
-            yield Ops::operation(Ops::hlc(++$clock), [Ops::delete(CatalogEntity::Work, "w$i")]);
+            yield self::operation(++$clock, self::author($i, $roles), [Ops::delete(CatalogEntity::Work, "w$i")]);
         }
     }
 
@@ -47,12 +60,25 @@ final class LibraryHistory
      *
      * @return list<OperationPayload>
      */
-    public static function push(int $n): array
+    public static function push(int $n, bool $roles = false): array
     {
         return [
-            Ops::operation(Ops::hlc(self::PUSHES_FROM + 2 * $n), self::book("new-$n", 'p3', 'm1', 2024, $n % self::PEOPLE)),
-            Ops::operation(Ops::hlc(self::PUSHES_FROM + 2 * $n + 1), [Ops::update(CatalogEntity::Edition, 'e'.(100 + $n), ['title' => "Retocado $n"])]),
+            self::operation(self::PUSHES_FROM + 2 * $n, self::author($n, $roles), self::book("new-$n", 'p3', 'm1', 2024, $n % self::PEOPLE)),
+            self::operation(self::PUSHES_FROM + 2 * $n + 1, self::author($n, $roles), [Ops::update(CatalogEntity::Edition, 'e'.(100 + $n), ['title' => "Retocado $n"])]),
         ];
+    }
+
+    private static function author(int $book, bool $roles): string
+    {
+        return $roles && 1 === $book % 2 ? self::EDITOR_DEVICE : self::ADMIN_DEVICE;
+    }
+
+    /**
+     * @param list<ChangePayload> $changes
+     */
+    private static function operation(int $time, string $device, array $changes): OperationPayload
+    {
+        return Ops::operation(Ops::hlc($time, 0, $device), $changes, signature: Judged::SIGNATURE);
     }
 
     /**

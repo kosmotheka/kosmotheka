@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Entity\Catalog;
 
 use App\Entity\Catalog\CatalogRow;
+use App\Entity\Catalog\Fence;
+use App\Entity\Catalog\FenceChain;
 use App\Entity\Catalog\RowAuthor;
 use App\Entity\Catalog\Tombstone;
 use App\Enum\CatalogEntity;
@@ -25,6 +27,8 @@ final class CatalogSchemaTest extends KernelTestCase
     private const array BOOKKEEPING = [
         Tombstone::class => 'catalog_tombstones',
         RowAuthor::class => 'catalog_row_authors',
+        Fence::class => 'catalog_device_fences',
+        FenceChain::class => 'catalog_device_fence_chains',
     ];
 
     /** D84: the link of a library is the cloud library itself, so these two have no column. */
@@ -200,11 +204,12 @@ final class CatalogSchemaTest extends KernelTestCase
             self::assertSame($table, $this->em->getClassMetadata($class)->getTableName());
             self::assertContains('cloud_library_id -> cloud_library(id) cascade', $this->foreignKeys($table), $table);
         }
-        foreach (['catalog_tombstones'] as $table) {
+        foreach (['catalog_tombstones', 'catalog_device_fences'] as $table) {
+            $column = 'catalog_device_fences' === $table ? 'until_hlc' : 'hlc';
             $collation = $this->db->fetchOne(
-                "SELECT collation_name FROM information_schema.columns
-                  WHERE table_schema = current_schema() AND table_name = :t AND column_name = 'hlc'",
-                ['t' => $table],
+                'SELECT collation_name FROM information_schema.columns
+                  WHERE table_schema = current_schema() AND table_name = :t AND column_name = :c',
+                ['t' => $table, 'c' => $column],
             );
             self::assertSame('C', $collation, $table);
         }

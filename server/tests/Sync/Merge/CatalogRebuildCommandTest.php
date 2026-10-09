@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Sync\Merge;
 
+use App\Entity\Catalog\Fence;
+use App\Entity\Catalog\FenceChain;
 use App\Entity\CloudLibrary;
 use App\Repository\CloudOperationRepository;
 use App\Sync\Merge\CatalogMerge;
 use App\Sync\OperationReader;
+use App\Sync\Permission\CatalogJudge;
 use App\Tests\Support\CatalogState;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -47,12 +50,17 @@ final class CatalogRebuildCommandTest extends WebTestCase
             $this->rebuild($id);
             $first = $this->stateOf($id);
             self::assertNotSame([], $first['rows'], $id);
+            $statuses = $this->statusesOf($id);
+            // The fixtures have roles, so the log holds operations that were allowed and operations that became requests.
+            self::assertContains('applied', $statuses, $id);
 
             $this->oneByOne($id);
             self::assertEquals($first, $this->stateOf($id), 'one by one: '.$id);
+            self::assertSame($statuses, $this->statusesOf($id), 'one by one, statuses: '.$id);
 
             $this->rebuild($id);
             self::assertEquals($first, $this->stateOf($id), 'again: '.$id);
+            self::assertSame($statuses, $this->statusesOf($id), 'again, statuses: '.$id);
         }
     }
 
@@ -72,26 +80,44 @@ final class CatalogRebuildCommandTest extends WebTestCase
         $tester = new CommandTester(new Application($this->client->getKernel())->find('app:catalog:rebuild'));
         $tester->execute(['cloud-library' => $id]);
         $tester->assertCommandIsSuccessful();
-        self::assertMatchesRegularExpression('/Applied \d+ operations, skipped \d+ changes/', $tester->getDisplay());
+        self::assertMatchesRegularExpression('/Applied \d+ operations, \d+ left as requests/', $tester->getDisplay());
         $this->em->clear();
     }
 
+    /** Judges the log operation by operation, as pushes would, instead of replaying it in one go. */
     private function oneByOne(string $id): void
     {
         $merge = self::getContainer()->get(CatalogMerge::class);
+        $judge = self::getContainer()->get(CatalogJudge::class);
         $operations = self::getContainer()->get(CloudOperationRepository::class);
         $reader = self::getContainer()->get(OperationReader::class);
         $library = $this->library($id);
 
         $merge->clear($library);
+        foreach ([Fence::class, FenceChain::class] as $class) {
+            $this->em->createQuery(\sprintf('DELETE FROM %s x WHERE x.cloudLibrary = :library', $class))->setParameter('library', $library->getId(), 'uuid')->execute();
+        }
         $after = '';
         while ([] !== $page = $operations->findPage($library, $after, 7)) {
             foreach ($page as ['hlc' => $after, 'operation' => $operation]) {
-                $merge->apply($library, $reader->read($operation));
-                $merge->flush();
+                $judge->take($library, $reader->read($operation));
             }
         }
         $this->em->clear();
+    }
+
+    /**
+     * @return array<string, string> status of each operation of the library, by id
+     */
+    private function statusesOf(string $id): array
+    {
+        $statuses = [];
+        foreach (self::getContainer()->get(Connection::class)->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = :id', ['id' => $id]) as $operation => $status) {
+            $statuses[(string) $operation] = \is_string($status) ? $status : 'none';
+        }
+        ksort($statuses);
+
+        return $statuses;
     }
 
     /**

@@ -16,17 +16,17 @@ final class Ops
     /** The fixed device of the made-up operations; the HLC text is what the merge compares. */
     private const string DEVICE = '01997c7e-0000-7000-8000-0000000000fa';
 
-    public static function hlc(int $time, int $counter = 0): string
+    public static function hlc(int $time, int $counter = 0, string $device = self::DEVICE): string
     {
-        return \sprintf('%016d-%08x-%s', $time, $counter, self::DEVICE);
+        return \sprintf('%016d-%08x-%s', $time, $counter, $device);
     }
 
     /**
      * @param list<ChangePayload> $changes
      */
-    public static function operation(string $hlc, array $changes, string $library = 'library-local-id'): OperationPayload
+    public static function operation(string $hlc, array $changes, string $library = 'library-local-id', ?string $signature = null): OperationPayload
     {
-        return new OperationPayload(Uuid::v7()->toRfc4122(), $library, $hlc, 'test', $changes, null);
+        return new OperationPayload(Uuid::v7()->toRfc4122(), $library, $hlc, 'test', $changes, null, $signature);
     }
 
     /**

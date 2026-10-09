@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Sync\Merge;
 
-use App\Command\CatalogRebuildCommand;
 use App\Entity\CloudLibrary;
 use App\Enum\CatalogEntity;
+use App\Repository\CloudOperationRepository;
 use App\Sync\Merge\CatalogMerge;
+use App\Sync\Permission\CatalogJudge;
 use App\Tests\Support\CatalogRows;
 use App\Tests\Support\CatalogState;
+use App\Tests\Support\Judged;
+use App\Tests\Support\JudgedTestTrait;
 use App\Tests\Support\LibraryHistory;
 use App\Tests\Support\Ops;
 use App\Tests\Support\QueryLogStatement;
@@ -23,6 +26,11 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  */
 final class CatalogLoadTest extends KernelTestCase
 {
+    use JudgedTestTrait;
+
+    /** Operations applied between two flushes, as a push or a rebuild would. */
+    private const int FLUSH_EVERY = 100;
+
     private EntityManagerInterface $em;
     private CatalogMerge $merge;
 
@@ -37,7 +45,7 @@ final class CatalogLoadTest extends KernelTestCase
     {
         $batched = $this->library();
         $single = $this->library();
-        $this->ingest($batched, 300, CatalogRebuildCommand::FLUSH_EVERY);
+        $this->ingest($batched, 300, self::FLUSH_EVERY);
         $this->ingest($single, 300, 1);
 
         $state = CatalogState::of($this->em, $batched);
@@ -46,8 +54,10 @@ final class CatalogLoadTest extends KernelTestCase
     }
 
     /**
-     * `make stress BOOKS=… LIMIT=…`. STRESS_NO_TRIGGERS=1 switches the same-library triggers off inside the
-     * test's own transaction (DAMA rolls it back), only to compare.
+     * `make stress BOOKS=… LIMIT=…`. The operations go through the judge, one `take` each and a `settle` every
+     * FLUSH_EVERY, as pushes will. STRESS_ROLES=1 gives the library an administrator and an editor who writes
+     * half of it, so every operation is judged against roles. STRESS_NO_TRIGGERS=1 switches the same-library
+     * triggers off inside the test's own transaction (DAMA rolls it back), only to compare.
      */
     #[Group('stress')]
     public function testALargeLibrary(): void
@@ -55,25 +65,27 @@ final class CatalogLoadTest extends KernelTestCase
         $books = $this->stressBooks();
         $library = $this->library();
         $noTriggers = $this->flag('STRESS_NO_TRIGGERS');
+        $roles = $this->flag('STRESS_ROLES');
         if ($noTriggers) {
             $this->setTriggers(false);
         }
 
         $start = hrtime(true);
-        [$operations, $blocks] = $this->ingestTimed($library, $books);
+        [$operations, $blocks] = $this->ingestJudged($library, $books, $roles);
         $rebuild = (hrtime(true) - $start) / 1e9;
         $state = CatalogState::of($this->em, $library);
-        $this->assertCounts($state, $books);
+        $this->assertCounts($state, $books, $roles);
+        self::assertSame(0, self::getContainer()->get(CloudOperationRepository::class)->countByStatus($library)['request'], 'every operation of the history is allowed');
         $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
 
         $pushes = [];
         for ($n = 0; $n < 30; ++$n) {
             $started = hrtime(true);
-            $this->em->wrapInTransaction(function () use ($library, $n): void {
-                foreach (LibraryHistory::push($n) as $operation) {
-                    $this->merge->apply($library, $operation);
+            $this->em->wrapInTransaction(function () use ($library, $n, $roles): void {
+                $judged = $this->judged($library);
+                foreach (LibraryHistory::push($n, $roles) as $operation) {
+                    $judged->deliver($operation);
                 }
-                $this->merge->flush();
             });
             $pushes[] = (hrtime(true) - $started) / 1e6;
         }
@@ -83,8 +95,8 @@ final class CatalogLoadTest extends KernelTestCase
             $this->setTriggers(true);
         }
         fwrite(\STDERR, \sprintf(
-            "\nSTRESS books=%d triggers=%s: %d operations, %d rows, %d versions · rebuild %.1f s · first 1000 operations %.1f s, last 1000 %.1f s · push of 2 operations (one transaction): median %.1f ms, worst %.1f ms · peak %d MB\n",
-            $books, $noTriggers ? 'off' : 'on', $operations, array_sum(CatalogState::countsPerEntity($state)), \count($state['versions']),
+            "\nSTRESS books=%d roles=%s triggers=%s: %d operations, %d rows, %d versions · judged %.1f s · first 1000 operations %.1f s, last 1000 %.1f s · push of 2 operations (one transaction): median %.1f ms, worst %.1f ms · peak %d MB\n",
+            $books, $roles ? 'yes' : 'no', $noTriggers ? 'off' : 'on', $operations, array_sum(CatalogState::countsPerEntity($state)), \count($state['versions']),
             $rebuild, $blocks[0] ?? 0, [] === $blocks ? 0 : end($blocks), $pushes[14], $pushes[29], memory_get_peak_usage(true) / 1_048_576,
         ));
         self::assertTrue($this->em->isOpen());
@@ -95,7 +107,8 @@ final class CatalogLoadTest extends KernelTestCase
     public function testWhatOnePushAsks(): void
     {
         $library = $this->library();
-        $this->ingestTimed($library, $this->stressBooks());
+        $roles = $this->flag('STRESS_ROLES');
+        $this->ingestJudged($library, $this->stressBooks(), $roles);
 
         // A new kernel, so the merge prepares its statements again and the log sees them (DAMA keeps the same connection).
         self::ensureKernelShutdown();
@@ -109,8 +122,8 @@ final class CatalogLoadTest extends KernelTestCase
         $native->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [QueryLogStatement::class]);
         QueryLogStatement::reset();
         $this->em->wrapInTransaction(function () use ($library): void {
-            $this->merge->apply($library, Ops::operation(Ops::hlc(LibraryHistory::PUSHES_FROM), [Ops::update(CatalogEntity::Work, 'w100', ['title' => 'Otro título'])]));
-            $this->merge->flush();
+            $push = Ops::operation(Ops::hlc(LibraryHistory::PUSHES_FROM, 0, LibraryHistory::ADMIN_DEVICE), [Ops::update(CatalogEntity::Work, 'w100', ['title' => 'Otro título'])], signature: Judged::SIGNATURE);
+            $this->judged($library)->deliver($push);
         });
         $log = QueryLogStatement::log();
         $native->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [\PDOStatement::class]);
@@ -119,11 +132,11 @@ final class CatalogLoadTest extends KernelTestCase
         foreach ($log as $i => $query) {
             $out .= \sprintf("%2d %6.2f ms  %s\n", $i + 1, $query['ms'], preg_replace('/\s+/', ' ', $query['sql']));
         }
-        $selects = array_filter($log, static fn (array $q): bool => str_starts_with($q['sql'], 'SELECT'));
+        $selects = array_filter($log, static fn (array $q): bool => str_starts_with($q['sql'], 'SELECT') || str_starts_with($q['sql'], 'UPDATE'));
         usort($selects, static fn (array $a, array $b): int => $b['ms'] <=> $a['ms']);
         if ([] !== $selects) {
             $slowest = $selects[0];
-            $out .= \sprintf("\nMost expensive SELECT (%.2f ms): %s\n", $slowest['ms'], $slowest['sql']);
+            $out .= \sprintf("\nMost expensive SELECT or UPDATE (%.2f ms): %s\n", $slowest['ms'], $slowest['sql']);
             $out .= "EXPLAIN (ANALYZE, BUFFERS) with its own parameters:\n";
             $values = array_values($slowest['params']);
             $explain = preg_replace_callback('/\?/', static function () use (&$values, $connection): string {
@@ -146,26 +159,34 @@ final class CatalogLoadTest extends KernelTestCase
     }
 
     /**
-     * Applies the history as the rebuild command does: a flush every FLUSH_EVERY operations.
+     * Stores the history in the log (what the pushes did) and judges it operation by operation, settling the
+     * library every FLUSH_EVERY. Only the judging is timed.
      *
-     * @return array{int, list<float>} operations applied, and the seconds each block of 1000 took
+     * @return array{int, list<float>} operations judged, and the seconds each block of 1000 took
      */
-    private function ingestTimed(CloudLibrary $library, int $books): array
+    private function ingestJudged(CloudLibrary $library, int $books, bool $roles): array
     {
+        $judged = $this->judged($library);
+        $history = iterator_to_array(LibraryHistory::operations($books, $roles), false);
+        foreach ($history as $operation) {
+            $judged->store($operation);
+        }
+        $judge = self::getContainer()->get(CatalogJudge::class);
+
         $applied = 0;
         $blocks = [];
         $mark = hrtime(true);
-        foreach (LibraryHistory::operations($books) as $operation) {
-            $this->merge->apply($library, $operation);
-            if (0 === ++$applied % CatalogRebuildCommand::FLUSH_EVERY) {
-                $this->merge->flush();
+        foreach ($history as $operation) {
+            $judge->take($library, $operation);
+            if (0 === ++$applied % self::FLUSH_EVERY) {
+                $judge->settle($library);
             }
             if (0 === $applied % 1000) {
                 $blocks[] = (hrtime(true) - $mark) / 1e9;
                 $mark = hrtime(true);
             }
         }
-        $this->merge->flush();
+        $judge->settle($library);
 
         return [$applied, $blocks];
     }
@@ -207,13 +228,14 @@ final class CatalogLoadTest extends KernelTestCase
     /**
      * @param array{rows: array<string, array<string, mixed>>, versions: array<string, string>, tombstones: array<string, string>} $state
      */
-    private function assertCounts(array $state, int $books): void
+    private function assertCounts(array $state, int $books, bool $roles = false): void
     {
         ['kept' => $kept, 'deleted' => $deleted] = LibraryHistory::expectedBooks($books);
 
         self::assertSame([
             'book_details' => $kept,
             'copy' => $kept,
+            ...($roles ? ['device' => 2] : []),
             'edition' => $kept,
             'member' => LibraryHistory::MEMBERS,
             'person' => LibraryHistory::PEOPLE,

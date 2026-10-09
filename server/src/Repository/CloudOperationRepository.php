@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Catalog\FenceChain;
 use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
+use App\Enum\OperationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Uid\NilUuid;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * The operation log of the cloud libraries. SQL rather than the ORM, for the
@@ -66,11 +70,11 @@ final class CloudOperationRepository extends ServiceEntityRepository
      *
      * @return bool whether it was stored (false: it was already known)
      */
-    public function insertIfNew(CloudLibrary $library, string $operationId, string $authorDeviceId, string $hlc, int $schemaVersion, string $bodyJson): bool
+    public function insertIfNew(CloudLibrary $library, string $operationId, string $authorDeviceId, string $hlc, int $schemaVersion, string $bodyJson, ?string $previous = null): bool
     {
         $inserted = $this->getEntityManager()->getConnection()->executeStatement(
-            'INSERT INTO cloud_operation (cloud_library_id, operation_id, author_device_id, hlc, schema_version, body, received_at)
-             VALUES (:library, :operation, :author, :hlc, :schema, CAST(:body AS JSONB), :received)
+            'INSERT INTO cloud_operation (cloud_library_id, operation_id, author_device_id, hlc, schema_version, body, received_at, previous)
+             VALUES (:library, :operation, :author, :hlc, :schema, CAST(:body AS JSONB), :received, :previous)
              ON CONFLICT (cloud_library_id, operation_id) DO NOTHING',
             [
                 'library' => $library->getId()->toRfc4122(),
@@ -80,6 +84,7 @@ final class CloudOperationRepository extends ServiceEntityRepository
                 'schema' => $schemaVersion,
                 'body' => $bodyJson,
                 'received' => new \DateTimeImmutable('now', new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                'previous' => $previous,
             ],
         );
 
@@ -172,5 +177,100 @@ final class CloudOperationRepository extends ServiceEntityRepository
         }
 
         return $vector;
+    }
+
+    /**
+     * The greatest HLC among the operations the permission rules already judged (D73): what the library
+     * had before the one being judged now. Null when none was judged.
+     */
+    public function newestJudgedHlc(CloudLibrary $library): ?string
+    {
+        $newest = $this->getEntityManager()->createQuery(\sprintf('SELECT MAX(o.hlc) FROM %s o WHERE o.cloudLibrary = :library AND o.status IS NOT NULL', CloudOperation::class))
+            ->setParameter('library', $library->getId(), 'uuid')->getSingleScalarResult();
+
+        return \is_string($newest) ? $newest : null;
+    }
+
+    public function setStatus(CloudLibrary $library, string $operationId, OperationStatus $status): void
+    {
+        $this->getEntityManager()->createQuery(\sprintf('UPDATE %s o SET o.status = :status WHERE o.cloudLibrary = :library AND o.operationId = :id', CloudOperation::class))
+            ->setParameter('status', $status)->setParameter('library', $library->getId(), 'uuid')->setParameter('id', Uuid::fromString($operationId), 'uuid')->execute();
+    }
+
+    /**
+     * What each of the operations came to, by id; an id without a judged operation is left out.
+     *
+     * @param list<string> $operationIds
+     *
+     * @return array<string, OperationStatus>
+     */
+    public function statusesOf(CloudLibrary $library, array $operationIds): array
+    {
+        if ([] === $operationIds) {
+            return [];
+        }
+        $rows = $this->getEntityManager()->createQuery(\sprintf('SELECT o.operationId AS id, o.status AS status FROM %s o WHERE o.cloudLibrary = :library AND o.operationId IN (:ids)', CloudOperation::class))
+            ->setParameter('library', $library->getId(), 'uuid')->setParameter('ids', $operationIds, ArrayParameterType::STRING)->getScalarResult();
+
+        $statuses = [];
+        foreach ($rows as $row) {
+            // A scalar query gives the raw column values: text for the uuid and for the status.
+            if (\is_array($row) && \is_string($row['id']) && \is_string($row['status']) && null !== ($status = OperationStatus::tryFrom($row['status']))) {
+                $statuses[Uuid::fromString($row['id'])->toRfc4122()] = $status;
+            }
+        }
+
+        return $statuses;
+    }
+
+    /**
+     * How many operations of the library ended each way.
+     *
+     * @return array{applied: int, request: int}
+     */
+    public function countByStatus(CloudLibrary $library): array
+    {
+        $count = fn (OperationStatus $status): int => (int) $this->getEntityManager()->createQuery(\sprintf('SELECT COUNT(o.operationId) FROM %s o WHERE o.cloudLibrary = :library AND o.status = :status', CloudOperation::class))
+            ->setParameter('library', $library->getId(), 'uuid')->setParameter('status', $status)->getSingleScalarResult();
+
+        return ['applied' => $count(OperationStatus::Applied), 'request' => $count(OperationStatus::Request)];
+    }
+
+    /**
+     * The operations of one author in the library with the one they chain to (D87), by id.
+     *
+     * @return array<string, ?string> operation id => its previous
+     */
+    public function previousOf(CloudLibrary $library, string $deviceId): array
+    {
+        $rows = $this->getEntityManager()->createQuery(\sprintf('SELECT o.operationId AS id, o.previous AS previous FROM %s o WHERE o.cloudLibrary = :library AND o.authorDeviceId = :device', CloudOperation::class))
+            ->setParameter('library', $library->getId(), 'uuid')->setParameter('device', $deviceId)->getScalarResult();
+
+        $chain = [];
+        foreach ($rows as $row) {
+            if (\is_array($row) && \is_string($row['id'])) {
+                $chain[Uuid::fromString($row['id'])->toRfc4122()] = \is_string($row['previous']) ? Uuid::fromString($row['previous'])->toRfc4122() : null;
+            }
+        }
+
+        return $chain;
+    }
+
+    /**
+     * Whether the library's log holds an operation of the device that a fence puts under suspicion: dated
+     * before it, neither `through` nor in the chain noted for the fence. Judged before the fence was known,
+     * it has to be judged again.
+     */
+    public function hasOperationUnderFence(CloudLibrary $library, string $deviceId, string $until, ?Uuid $through, Uuid $fenceOperation): bool
+    {
+        $found = $this->getEntityManager()->createQuery(\sprintf(
+            'SELECT 1 FROM %s o WHERE o.cloudLibrary = :library AND o.authorDeviceId = :device AND o.hlc < :until AND o.operationId <> :through
+               AND NOT EXISTS (SELECT 1 FROM %s c WHERE c.cloudLibrary = :library AND c.fenceOperationId = :fence AND c.deviceId = :device AND c.operationId = o.operationId)',
+            CloudOperation::class,
+            FenceChain::class,
+        ))->setParameter('library', $library->getId(), 'uuid')->setParameter('device', $deviceId)->setParameter('until', $until)
+            ->setParameter('through', $through ?? new NilUuid(), 'uuid')->setParameter('fence', $fenceOperation, 'uuid')->setMaxResults(1)->getResult();
+
+        return [] !== $found;
     }
 }

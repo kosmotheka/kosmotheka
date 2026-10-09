@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\OperationStatus;
 use App\Repository\CloudOperationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -50,6 +51,12 @@ final readonly class CloudOperation
         private \stdClass $body,
         #[ORM\Column]
         private \DateTimeImmutable $receivedAt,
+        /** The `previous` of the operation (D87), kept apart from the body so a fence can walk the chain. */
+        #[ORM\Column(type: 'uuid', nullable: true)]
+        private ?Uuid $previous = null,
+        /** What the permission rules made of it; null while it is stored and not yet judged. Written with DQL. */
+        #[ORM\Column(length: 16, nullable: true, enumType: OperationStatus::class)]
+        private ?OperationStatus $status = null,
     ) {
     }
 
@@ -81,6 +88,16 @@ final readonly class CloudOperation
     public function getBody(): \stdClass
     {
         return $this->body;
+    }
+
+    public function getPrevious(): ?Uuid
+    {
+        return $this->previous;
+    }
+
+    public function getStatus(): ?OperationStatus
+    {
+        return $this->status;
     }
 
     public function getReceivedAt(): \DateTimeImmutable

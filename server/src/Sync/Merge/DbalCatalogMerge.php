@@ -44,6 +44,9 @@ final class DbalCatalogMerge implements CatalogMerge
     /** @var array<string, bool> by cloud library */
     private array $libraryDeleted = [];
 
+    /** @var array<string, array<string, true>> rows of the cloud library whose author is known, by entity and id */
+    private array $authors = [];
+
     /** @var list<SqlStatement> */
     private array $queue = [];
 
@@ -55,13 +58,20 @@ final class DbalCatalogMerge implements CatalogMerge
     {
         $id = $library->getId()->toRfc4122();
 
-        return array_map(fn (ChangePayload $change): ChangeOutcome => $this->change($id, $operation->hlc, $change), $operation->changes);
+        return array_map(function (ChangePayload $change) use ($id, $operation): ChangeOutcome {
+            $outcome = $this->change($id, $operation->hlc, $change);
+            if (ChangeOutcome::Written === $outcome && ChangeAction::Create === $change->action) {
+                $this->noteAuthor($id, $operation->hlc, $change);
+            }
+
+            return $outcome;
+        }, $operation->changes);
     }
 
     public function flush(): void
     {
         $this->run();
-        $this->rows = $this->tombstones = $this->libraryDeleted = [];
+        $this->rows = $this->tombstones = $this->libraryDeleted = $this->authors = [];
     }
 
     public function clear(CloudLibrary $library): void
@@ -312,6 +322,28 @@ final class DbalCatalogMerge implements CatalogMerge
         return $this->libraryDeleted[$library] ??= null !== $this->sql->first(Tombstone::class, ['hlc'], ['cloudLibrary' => $library, 'entity' => CatalogEntity::Library->value]);
     }
 
+    /**
+     * Remembers which device created a row (D45): the first create counts, a later create of the same row is an edit.
+     * Whether one is noted already is asked of the database and remembered until the next flush, like a tombstone.
+     */
+    private function noteAuthor(string $library, string $hlc, ChangePayload $change): void
+    {
+        $rowId = $this->rowId($change->entity, $change->id);
+        if (isset($this->authors[$library][$rowId])) {
+            return;
+        }
+        $this->authors[$library][$rowId] = true;
+        $known = null !== $this->sql->first(RowAuthor::class, ['deviceId'], ['cloudLibrary' => $library, 'entity' => $change->entity->value, 'entityId' => $change->id]);
+        if (!$known) {
+            $this->queue[] = $this->sql->insert(RowAuthor::class, [
+                'cloudLibrary' => $library,
+                'entity' => $change->entity->value,
+                'entityId' => $change->id,
+                'deviceId' => explode('-', $hlc, 3)[2] ?? '',
+            ]);
+        }
+    }
+
     /** Everything of the library except the cloud library itself and its log. */
     private function wipe(string $library): void
     {
@@ -322,7 +354,7 @@ final class DbalCatalogMerge implements CatalogMerge
             $this->queue[] = $this->sql->delete($class, ['cloudLibrary' => $library]);
         }
         $this->run();
-        $this->rows[$library] = $this->tombstones[$library] = [];
+        $this->rows[$library] = $this->tombstones[$library] = $this->authors[$library] = [];
     }
 
     private function run(): void
