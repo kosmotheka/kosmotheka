@@ -19,7 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * A made-up library, applied in batches like a rebuild and one operation at a time like pushes: the
- * catalog must be the same. The big one (`make stress`) also times it (D92: it decides whether the ORM is enough).
+ * catalog must be the same. The big one (`make stress`) also times it (D92: it decides whether the engine is fast enough).
  */
 final class CatalogLoadTest extends KernelTestCase
 {
@@ -47,7 +47,7 @@ final class CatalogLoadTest extends KernelTestCase
 
     /**
      * `make stress BOOKS=… LIMIT=…`. STRESS_NO_TRIGGERS=1 switches the same-library triggers off inside the
-     * test's own transaction (DAMA rolls it back) and STRESS_NO_ANALYZE=1 skips every ANALYZE, both only to compare.
+     * test's own transaction (DAMA rolls it back), only to compare.
      */
     #[Group('stress')]
     public function testALargeLibrary(): void
@@ -55,22 +55,17 @@ final class CatalogLoadTest extends KernelTestCase
         $books = $this->stressBooks();
         $library = $this->library();
         $noTriggers = $this->flag('STRESS_NO_TRIGGERS');
-        $noAnalyze = $this->flag('STRESS_NO_ANALYZE');
         if ($noTriggers) {
             $this->setTriggers(false);
         }
 
         $start = hrtime(true);
-        [$operations, $blocks] = $this->ingestTimed($library, $books, !$noAnalyze);
+        [$operations, $blocks] = $this->ingestTimed($library, $books);
         $rebuild = (hrtime(true) - $start) / 1e9;
         $state = CatalogState::of($this->em, $library);
         $this->assertCounts($state, $books);
         $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
 
-        // Pushes are measured on analyzed tables, as in production (the rebuild's transaction is long, a push's is not).
-        if (!$noAnalyze) {
-            $this->analyze();
-        }
         $pushes = [];
         for ($n = 0; $n < 30; ++$n) {
             $started = hrtime(true);
@@ -88,8 +83,8 @@ final class CatalogLoadTest extends KernelTestCase
             $this->setTriggers(true);
         }
         fwrite(\STDERR, \sprintf(
-            "\nSTRESS books=%d analyze=%s triggers=%s: %d operations, %d rows, %d versions · rebuild %.1f s · first 1000 operations %.1f s, last 1000 %.1f s · push of 2 operations (one transaction): median %.1f ms, worst %.1f ms · peak %d MB\n",
-            $books, $noAnalyze ? 'no' : 'yes', $noTriggers ? 'off' : 'on', $operations, array_sum(CatalogState::countsPerEntity($state)), \count($state['versions']),
+            "\nSTRESS books=%d triggers=%s: %d operations, %d rows, %d versions · rebuild %.1f s · first 1000 operations %.1f s, last 1000 %.1f s · push of 2 operations (one transaction): median %.1f ms, worst %.1f ms · peak %d MB\n",
+            $books, $noTriggers ? 'off' : 'on', $operations, array_sum(CatalogState::countsPerEntity($state)), \count($state['versions']),
             $rebuild, $blocks[0] ?? 0, [] === $blocks ? 0 : end($blocks), $pushes[14], $pushes[29], memory_get_peak_usage(true) / 1_048_576,
         ));
         self::assertTrue($this->em->isOpen());
@@ -100,11 +95,14 @@ final class CatalogLoadTest extends KernelTestCase
     public function testWhatOnePushAsks(): void
     {
         $library = $this->library();
-        $this->ingestTimed($library, $this->stressBooks(), true);
-        $this->em->clear();
-        $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
-        $this->analyze();
+        $this->ingestTimed($library, $this->stressBooks());
 
+        // A new kernel, so the merge prepares its statements again and the log sees them (DAMA keeps the same connection).
+        self::ensureKernelShutdown();
+        self::bootKernel();
+        $this->em = self::getContainer()->get(EntityManagerInterface::class);
+        $this->merge = self::getContainer()->get(CatalogMerge::class);
+        $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
         $connection = $this->em->getConnection();
         $native = $connection->getNativeConnection();
         \assert($native instanceof \PDO);
@@ -148,11 +146,11 @@ final class CatalogLoadTest extends KernelTestCase
     }
 
     /**
-     * Applies the history as the rebuild command does: a flush every FLUSH_EVERY operations and an ANALYZE every ANALYZE_EVERY.
+     * Applies the history as the rebuild command does: a flush every FLUSH_EVERY operations.
      *
      * @return array{int, list<float>} operations applied, and the seconds each block of 1000 took
      */
-    private function ingestTimed(CloudLibrary $library, int $books, bool $analyze): array
+    private function ingestTimed(CloudLibrary $library, int $books): array
     {
         $applied = 0;
         $blocks = [];
@@ -161,9 +159,6 @@ final class CatalogLoadTest extends KernelTestCase
             $this->merge->apply($library, $operation);
             if (0 === ++$applied % CatalogRebuildCommand::FLUSH_EVERY) {
                 $this->merge->flush();
-                if ($analyze && 0 === $applied % CatalogRebuildCommand::ANALYZE_EVERY) {
-                    $this->analyze();
-                }
             }
             if (0 === $applied % 1000) {
                 $blocks[] = (hrtime(true) - $mark) / 1e9;
@@ -175,14 +170,9 @@ final class CatalogLoadTest extends KernelTestCase
         return [$applied, $blocks];
     }
 
-    private function analyze(): void
-    {
-        $this->em->getConnection()->executeStatement('ANALYZE catalog_field_versions, catalog_tombstones, catalog_row_authors');
-    }
-
     private function setTriggers(bool $on): void
     {
-        $tables = [...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases()), 'catalog_field_versions', 'catalog_tombstones', 'catalog_row_authors'];
+        $tables = [...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases()), 'catalog_tombstones', 'catalog_row_authors'];
         foreach ($tables as $table) {
             $this->em->getConnection()->executeStatement(\sprintf('ALTER TABLE %s %s TRIGGER USER', $table, $on ? 'ENABLE' : 'DISABLE'));
         }
@@ -226,8 +216,10 @@ final class CatalogLoadTest extends KernelTestCase
             'copy' => $kept,
             'edition' => $kept,
             'member' => LibraryHistory::MEMBERS,
+            'person' => LibraryHistory::PEOPLE,
             'publisher' => LibraryHistory::PUBLISHERS,
             'work' => $kept,
+            'work_contributor' => $kept,
         ], CatalogState::countsPerEntity($state));
         self::assertCount($deleted, $state['tombstones']);
     }

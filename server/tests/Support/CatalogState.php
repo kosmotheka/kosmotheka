@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Support;
 
 use App\Entity\Catalog\CatalogRow;
-use App\Entity\Catalog\FieldVersion;
 use App\Entity\Catalog\Tombstone;
 use App\Entity\CloudLibrary;
 use App\Enum\CatalogEntity;
@@ -14,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Everything the merge keeps for a cloud library, in a form two libraries can be compared by: the rows
- * with their references as app ids, the version of every field and the tombstones. It leaves nothing managed.
+ * with their references as app ids, the version of every field (kept in the row) and the tombstones. It leaves nothing managed.
  */
 final class CatalogState
 {
@@ -25,6 +24,7 @@ final class CatalogState
     {
         $loaded = [];
         $rows = [];
+        $versions = [];
         foreach (CatalogEntity::cases() as $entity) {
             $metadata = $entityManager->getClassMetadata($entity->entityClass());
             foreach ($entityManager->getRepository($entity->entityClass())->findBy(['cloudLibrary' => $library]) as $row) {
@@ -40,15 +40,13 @@ final class CatalogState
                     $fields[$key] = $value instanceof CatalogRow ? $value->getId() : $value;
                 }
                 $rows[$entity->value.'|'.$row->getId()] = $fields;
+                foreach ($row->getVersions() as $field => $hlc) {
+                    $versions[$entity->value.'|'.$row->getId().'|'.$field] = $hlc;
+                }
             }
         }
         ksort($rows);
 
-        $versions = [];
-        foreach ($entityManager->getRepository(FieldVersion::class)->findBy(['cloudLibrary' => $library]) as $version) {
-            $loaded[] = $version;
-            $versions[$version->getEntity().'|'.$version->getEntityId().'|'.$version->getField()] = $version->getHlc();
-        }
         ksort($versions);
 
         $tombstones = [];

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Entity\Catalog;
 
 use App\Entity\Catalog\CatalogRow;
-use App\Entity\Catalog\FieldVersion;
 use App\Entity\Catalog\RowAuthor;
 use App\Entity\Catalog\Tombstone;
 use App\Enum\CatalogEntity;
@@ -24,7 +23,6 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class CatalogSchemaTest extends KernelTestCase
 {
     private const array BOOKKEEPING = [
-        FieldVersion::class => 'catalog_field_versions',
         Tombstone::class => 'catalog_tombstones',
         RowAuthor::class => 'catalog_row_authors',
     ];
@@ -75,7 +73,7 @@ final class CatalogSchemaTest extends KernelTestCase
     #[DataProvider('entities')]
     public function testEveryTableHasExactlyTheColumnsOfItsFields(CatalogEntity $entity): void
     {
-        $expected = ['key' => ['uuid', false], 'cloud_library_id' => ['uuid', false], 'id' => ['text', false]];
+        $expected = ['key' => ['uuid', false], 'versions' => ['jsonb', false], 'cloud_library_id' => ['uuid', false], 'id' => ['text', false]];
         foreach ($entity->fields() as $name => $spec) {
             if (CatalogEntity::Library === $entity && \in_array($name, self::NOT_STORED, true)) {
                 continue;
@@ -202,7 +200,7 @@ final class CatalogSchemaTest extends KernelTestCase
             self::assertSame($table, $this->em->getClassMetadata($class)->getTableName());
             self::assertContains('cloud_library_id -> cloud_library(id) cascade', $this->foreignKeys($table), $table);
         }
-        foreach (['catalog_field_versions', 'catalog_tombstones'] as $table) {
+        foreach (['catalog_tombstones'] as $table) {
             $collation = $this->db->fetchOne(
                 "SELECT collation_name FROM information_schema.columns
                   WHERE table_schema = current_schema() AND table_name = :t AND column_name = 'hlc'",
@@ -210,6 +208,12 @@ final class CatalogSchemaTest extends KernelTestCase
             );
             self::assertSame('C', $collation, $table);
         }
+    }
+
+    /** The version of each field lives in its row (the `versions` column), not in a table of its own. */
+    public function testThereIsNoTableOfFieldVersions(): void
+    {
+        self::assertFalse($this->db->createSchemaManager()->tablesExist(['catalog_field_versions']));
     }
 
     public function testTheMappingIsValidAndTheDatabaseMatchesIt(): void

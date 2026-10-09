@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Sync\Merge;
 
 use App\Entity\Catalog\Edition;
-use App\Entity\Catalog\FieldVersion;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeOutcome;
 use App\Sync\Merge\CatalogMerge;
@@ -56,10 +55,7 @@ final class CatalogMergeReferencesTest extends KernelTestCase
         $edition = $this->em->getRepository(Edition::class)->findOneBy(['id' => 'e1']) ?? self::fail('The edition is gone.');
         self::assertSame('x', $edition->getSubtitle());
         self::assertNull($edition->getPublisher());
-        $versions = [];
-        foreach ($this->em->getRepository(FieldVersion::class)->findBy(['entity' => 'edition', 'entityId' => 'e1']) as $version) {
-            $versions[$version->getField()] = $version->getHlc();
-        }
+        $versions = $edition->getVersions();
         self::assertSame($hlc(2), $versions['subtitle'] ?? null);
         self::assertSame($hlc(3), $versions['publisher_id'] ?? null);
     }

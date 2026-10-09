@@ -8,7 +8,6 @@ use App\Entity\Catalog\BookDetails;
 use App\Entity\Catalog\ComicDetails;
 use App\Entity\Catalog\Copy;
 use App\Entity\Catalog\Edition;
-use App\Entity\Catalog\FieldVersion;
 use App\Entity\Catalog\Member;
 use App\Entity\Catalog\Publisher;
 use App\Entity\Catalog\RowAuthor;
@@ -152,7 +151,6 @@ final class CatalogRowsTest extends KernelTestCase
         foreach ([$gone, $kept] as $library) {
             $work = $this->rows->row(Work::class, $library, 'w1', ['kind' => 'book', 'title' => 'Dune']);
             $this->rows->row(Edition::class, $library, 'e1', ['work' => $work, 'title' => 'Dune']);
-            $this->em->persist(new FieldVersion($library, 'work', 'w1', 'title', '1'));
             $this->em->persist(new Tombstone($library, 'work', 'w9', '2'));
             $this->em->persist(new RowAuthor($library, 'work', 'w1', 'device'));
         }
@@ -160,7 +158,7 @@ final class CatalogRowsTest extends KernelTestCase
 
         $this->db->executeStatement('DELETE FROM cloud_library WHERE id = :id', ['id' => $gone->getId()->toRfc4122()]);
 
-        foreach (['catalog_works', 'catalog_editions', 'catalog_field_versions', 'catalog_tombstones', 'catalog_row_authors'] as $table) {
+        foreach (['catalog_works', 'catalog_editions', 'catalog_tombstones', 'catalog_row_authors'] as $table) {
             self::assertSame(
                 [$kept->getId()->toRfc4122()],
                 $this->db->fetchFirstColumn(\sprintf('SELECT cloud_library_id FROM %s', $table)),

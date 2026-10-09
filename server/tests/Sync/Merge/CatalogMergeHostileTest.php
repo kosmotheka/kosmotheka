@@ -15,7 +15,6 @@ use App\Sync\OperationReader;
 use App\Sync\OperationRejectedException;
 use App\Tests\Support\CatalogRows;
 use App\Tests\Support\Ops;
-use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -66,9 +65,6 @@ final class CatalogMergeHostileTest extends KernelTestCase
 
         self::assertSame([ChangeOutcome::Skipped], $outcome);
         self::assertTrue($this->em->isOpen());
-        self::assertSame(0, $this->em->getRepository(Work::class)->count([]));
-        self::assertSame(0, self::getContainer()->get(Connection::class)->fetchOne('SELECT count(*) FROM catalog_field_versions'));
-        // The tables are still there.
         self::assertSame(0, $this->em->getRepository(Work::class)->count([]));
     }
 
@@ -158,5 +154,49 @@ final class CatalogMergeHostileTest extends KernelTestCase
 
         self::assertTrue($this->em->isOpen());
         self::assertSame(1, $this->em->getRepository(WorkContributor::class)->count([]));
+    }
+
+    public function testSqlInAnIdAndATitleIsStoredAsText(): void
+    {
+        $text = "x'); DROP TABLE catalog_works; --";
+        $other = $this->rows->cloudLibrary();
+        $this->rows->row(Work::class, $other, 'w1', ['kind' => 'book', 'title' => 'Untouched']);
+        $library = $this->rows->cloudLibrary();
+        $this->em->flush();
+
+        $outcome = [
+            ...$this->merge->apply($library, Ops::operation(Ops::hlc(1), [Ops::create(CatalogEntity::Work, $text, ['kind' => 'book', 'title' => $text])])),
+            ...$this->merge->apply($library, Ops::operation(Ops::hlc(2), [Ops::update(CatalogEntity::Work, $text, ['title' => $text.'2'])])),
+        ];
+        $this->merge->flush();
+
+        self::assertSame([ChangeOutcome::Written, ChangeOutcome::Written], $outcome);
+        $this->em->clear();
+        $stored = $this->em->getRepository(Work::class)->findOneBy(['cloudLibrary' => $library]) ?? self::fail('The work is gone.');
+        self::assertSame($text, $stored->getId());
+        self::assertSame($text.'2', $stored->getTitle());
+        // The tables are there, and the other library has what it had.
+        $others = $this->em->getRepository(Work::class)->findBy(['cloudLibrary' => $other]);
+        self::assertCount(1, $others);
+        self::assertSame('Untouched', $others[0]->getTitle());
+        self::assertSame(2, $this->em->getRepository(Work::class)->count([]));
+    }
+
+    public function testARowCreatedAndUpdatedInTheSameFlushEndsWithTheRightValuesAndVersions(): void
+    {
+        $library = $this->rows->cloudLibrary();
+        $this->em->flush();
+
+        $this->merge->apply($library, Ops::operation(Ops::hlc(1), [Ops::create(CatalogEntity::Work, 'w1', ['kind' => 'book', 'title' => 'Dune'])]));
+        $this->merge->apply($library, Ops::operation(Ops::hlc(3), [Ops::update(CatalogEntity::Work, 'w1', ['title' => 'Dune Messiah'])]));
+        // Older than the title above, newer than the creation: only the kind may change.
+        $this->merge->apply($library, Ops::operation(Ops::hlc(2), [Ops::update(CatalogEntity::Work, 'w1', ['title' => 'Old', 'kind' => 'comic'])]));
+        $this->merge->flush();
+
+        $this->em->clear();
+        $work = $this->em->getRepository(Work::class)->findOneBy(['cloudLibrary' => $library]) ?? self::fail('The work is gone.');
+        self::assertSame('Dune Messiah', $work->getTitle());
+        self::assertSame('comic', $work->getKind());
+        self::assertEquals(['kind' => Ops::hlc(2), 'title' => Ops::hlc(3)], $work->getVersions());
     }
 }

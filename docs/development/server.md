@@ -110,6 +110,8 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 | Trabajador que ejecuta la purga cada hora | `make worker` (o `make console C="messenger:consume scheduler_default -vv"`) |
 | Conceder/retirar `ROLE_SUPER_ADMIN` (D51) | `make console C="app:user:super-admin correo@ejemplo.com"` (`--revoke` para retirarlo) |
 | Bloquear/desbloquear una cuenta (D51) | `make console C="app:user:block correo@ejemplo.com"` (`--undo` para desbloquear) |
+| Reconstruir el catálogo de una biblioteca de la nube desde su registro (7.4.4) | `make console C="app:catalog:rebuild <id de la biblioteca de la nube>"` |
+| Prueba de carga del motor de fusión (no entra en `make check`) | `make stress BOOKS=5000 LIMIT=600`; se repite dos veces al año, ver «Revisión periódica de la carga» en [cloud.md](../architecture/cloud.md) |
 | Retirar el segundo factor de una cuenta (D78) | `make console C="app:user:two-factor-disable correo@ejemplo.com"` |
 
 ### El worker de tareas programadas (hito 7.1, parte 3)

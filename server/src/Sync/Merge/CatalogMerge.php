@@ -11,7 +11,7 @@ use App\Enum\ChangeOutcome;
 /**
  * Applies operations to the catalog of a cloud library under the merge rules of
  * spec/README.md (D92). Callers depend on this interface, so the implementation
- * (today the ORM) can change without touching them.
+ * (today DbalCatalogMerge) can change without touching them.
  *
  * It never opens or closes a transaction: the caller does.
  */

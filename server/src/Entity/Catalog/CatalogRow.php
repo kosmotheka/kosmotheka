@@ -20,6 +20,14 @@ abstract class CatalogRow
     #[ORM\Column(name: 'key', type: 'uuid')]
     private Uuid $key;
 
+    /**
+     * Field name => HLC that wrote it last. Kept in the row, so a merge reads and writes both at once.
+     *
+     * @var array<string, string>
+     */
+    #[ORM\Column(name: 'versions', type: Types::JSON, options: ['jsonb' => true])]
+    private array $versions = [];
+
     public function __construct(
         #[ORM\ManyToOne(targetEntity: CloudLibrary::class)]
         #[ORM\JoinColumn(name: 'cloud_library_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_catalog_row_cloud_library')]
@@ -43,5 +51,21 @@ abstract class CatalogRow
     public function getId(): string
     {
         return $this->id;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getVersions(): array
+    {
+        return $this->versions;
+    }
+
+    /**
+     * @param array<string, string> $versions
+     */
+    public function setVersions(array $versions): void
+    {
+        $this->versions = $versions;
     }
 }

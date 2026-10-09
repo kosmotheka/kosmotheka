@@ -97,7 +97,7 @@
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
-| D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada |
+| D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 
 ---
 
@@ -1564,12 +1564,32 @@ Lo que salió con la clave de D41, `(cloud_library_id, id)`, también dentro de 
 | ORM, clave propia, `flush` cada 100 operaciones | 188 s | 22 ms |
 | ORM, clave propia, `flush` en cada operación | 1.003 s | 20 ms |
 
-**Propuesta dentro de la decisión** (se construye en 7.4.3 y el maintainer la revisa con el código delante; puede cambiarse por una comprobación en las entidades si resulta más limpia): un **disparador por referencia**, escrito a mano en la migración, que rechaza una fila que apunte a una fila de otra biblioteca. Es la red de seguridad que antes daba la clave foránea compuesta. En la prueba, un motor con un fallo plantado a propósito coló una fila cruzada sin el disparador y fue rechazado con él; el diff de migraciones no lo ve.
+**Revisión del 09/10/2026** (el maintainer, con las medidas del motor ya escrito): las entidades, la clave propia y las claves foráneas se quedan; cambian dos puntos de la decisión.
+
+- **El motor de fusión se escribe con DBAL, no con el ORM.** Era la salida prevista y la carga la pidió: el motor con el ORM reconstruía 20.000 libros en unos 450 s. La base de datos ejecuta esas mismas sentencias en una fracción (19 a 27 s de 86 s con 5.000 libros); el resto era trabajo de Doctrine por cada objeto.
+- **Un solo motor**, para el `push` y para reconstruir. Dos motores serían las mismas reglas en dos sitios.
+- **El SQL no se escribe a mano por tabla:** una sola clase lo construye desde los metadatos de las entidades (`ClassMetadata`): tablas, columnas y tipos salen del mapeo, nunca del cliente, y los valores van siempre como parámetros. Esa clase es el único sitio del motor con SQL. Las sentencias se guardan en una cola y se ejecutan en el `flush`, dentro de la transacción de quien llama.
+- **Las versiones de los campos pasan a una columna JSON de la fila** (`versions`: campo → HLC) y desaparece la tabla `catalog_field_versions`. Un cambio pasa a ser una sola sentencia que guarda sus campos y sus relojes a la vez.
+- **Sin estado en memoria entre operaciones:** el motor lee de la base de datos cada fila que toca. Llevar la biblioteca entera en memoria al reconstruir bajaba de 76 a 30 s con 20.000 libros, a cambio de 165 MB y de imitar en PHP el borrado en cascada; no compensa para bibliotecas que serán de unos cientos de libros.
+
+Medidas de la prueba (`server/spike/v4`, misma biblioteca inventada, sin disparadores, 144 de 144 entregas de `merge.json` y `library-merge.json`, y el mismo estado final que el motor con el ORM):
+
+| Libros | ORM, tabla de versiones | ORM, versiones en JSON | DBAL, versiones en JSON |
+|---|---|---|---|
+| 2.000 | 29,3 s | 17,1 s | 7,6 s |
+| 5.000 | 73,5 s | 41,4 s | 18,6 s |
+| 20.000 | 438 a 455 s (test de carga) | 174,5 s | 76,0 s |
+| Un `push` de dos operaciones | 20 a 27 ms | 12 a 18 ms | 5 a 6 ms |
+
+Lo que se sabe que cambia: la tabla guardaba las versiones de las filas borradas en cascada (la app también las guarda) y la columna no puede. No se nota en uso legítimo: una fila borrada en cascada no se puede actualizar (no existe) ni volver a crear (su fila padre tiene lápida). Queda un resquicio teórico, sin test, con una app modificada que reutilice un id en una tabla con dos padres. Las versiones nunca viajan a las apps (`pull` solo lee `cloud_operation`). El `ANALYZE` periódico de la reconstrucción deja de hacer falta: venía de la tabla de versiones.
+
+**Propuesta dentro de la decisión** (se construye en 7.4.3 y el maintainer la revisa con el código delante; puede cambiarse por una comprobación en las entidades si resulta más limpia): un **disparador por referencia**, escrito a mano en la migración, que rechaza una fila que apunte a una fila de otra biblioteca. Es la red de seguridad que antes daba la clave foránea compuesta. En la prueba, un motor con un fallo plantado a propósito coló una fila cruzada sin el disparador y fue rechazado con él; el diff de migraciones no lo ve. **Aceptada el 09/10/2026:** los disparadores se quedan. Con el motor de DBAL cuestan entre un 12 y un 18 % de una reconstrucción (14,1 frente a 12,6 s con 2.000 libros; 145,6 frente a 126,4 s con 20.000), y son la segunda barrera si el motor tiene un fallo.
 
 **Consecuencias:**
 - Precisa [D41](#d41--filas-del-catálogo-en-el-servidor-clave-library_id-id--aceptada-precisada-por-d92): la pareja `(biblioteca, id)` sigue siendo única, pero no es la clave primaria ni va en las claves foráneas.
 - Encaja con D84: el servidor decide con sus propias claves, nunca con un id del cliente.
-- Se rehace la migración de 7.4.3 (nadie usa esas tablas) y cambia el plan de 7.4.4: ver [plans/fase-7.md](plans/fase-7.md) y el encargo en [plans/encargo-7.4-catalogo-orm.md](plans/encargo-7.4-catalogo-orm.md).
+- Se rehace la migración de 7.4.3 (nadie usa esas tablas) y cambia el plan de 7.4.4: ver [plans/fase-7.md](plans/fase-7.md) y el encargo en [historico/encargo-7.4-catalogo-orm.md](historico/encargo-7.4-catalogo-orm.md).
 - Los `CHECK` de `role`, `status` y `rating` no se llevan a las tablas nuevas: son reglas de `spec/` y una operación que las incumple no pasa la validación. Confirmado por el maintainer el 08/10/2026, igual que el nombre `key`.
 - La prueba de carga con una biblioteca grande inventada pasa a ser un test del servidor, que se repite antes de dar 7.4 por hecho.
 - `server/AGENTS.md` deja de decir «DBAL para las tablas del catálogo».
+- Revisión del 09/10/2026: `server/AGENTS.md` dice que el motor de fusión es el único sitio del catálogo con SQL; encargo en [historico/encargo-7.4-motor-dbal.md](historico/encargo-7.4-motor-dbal.md).

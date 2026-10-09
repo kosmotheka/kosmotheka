@@ -25,14 +25,8 @@ use Symfony\Component\Uid\Uuid;
 #[AsCommand(name: 'app:catalog:rebuild', description: 'Rebuilds the catalog of a cloud library from its operation log')]
 final class CatalogRebuildCommand extends Command
 {
-    /** Operations applied between two flushes; the catalog is the same whatever this is, only the speed changes. */
+    /** Operations applied between two flushes: it bounds the queue of statements. The catalog is the same whatever this is. */
     public const int FLUSH_EVERY = 100;
-
-    /**
-     * Operations between two ANALYZE of the bookkeeping tables: often enough that the planner never sees
-     * them far bigger than it was told (a multiple of FLUSH_EVERY), rare enough to cost nothing next to the merge.
-     */
-    public const int ANALYZE_EVERY = 500;
 
     /** Operations read from the log at a time. */
     private const int PAGE = 500;
@@ -91,29 +85,12 @@ final class CatalogRebuildCommand extends Command
                 $after = $hlc;
                 if (0 === ++$applied % self::FLUSH_EVERY) {
                     $this->merge->flush();
-                    // The process is ours: the memory of the unit of work can go too.
-                    $this->entityManager->clear();
-                    $library = $this->library($id);
-                    if (0 === $applied % self::ANALYZE_EVERY) {
-                        $this->analyze();
-                    }
                 }
             }
         }
         $this->merge->flush();
-        $this->analyze();
 
         return [$applied, $skipped];
-    }
-
-    /**
-     * Inside this one long transaction the tables just filled have no statistics (neither ANALYZE nor
-     * autovacuum sees rows that are not committed), and the planner then reads every version of the library
-     * through the index on `cloud_library_id` instead of the primary key. Plain SQL, nothing from outside.
-     */
-    private function analyze(): void
-    {
-        $this->entityManager->getConnection()->executeStatement('ANALYZE catalog_field_versions, catalog_tombstones, catalog_row_authors');
     }
 
     private function library(string $id): CloudLibrary
