@@ -102,6 +102,38 @@ final class CatalogLoadTest extends KernelTestCase
         self::assertTrue($this->em->isOpen());
     }
 
+    /**
+     * `make stress FILTER=testRebuildingALibraryThatHasACatalog`. What `app:catalog:rebuild` does to a library whose
+     * catalog is already written: it deletes it and writes it again in the same transaction, so the second
+     * writing works in front of the rows the first one left dead.
+     */
+    #[Group('stress')]
+    public function testRebuildingALibraryThatHasACatalog(): void
+    {
+        $books = $this->stressBooks();
+        $library = $this->library();
+        $roles = $this->flag('STRESS_ROLES');
+
+        $start = hrtime(true);
+        $this->ingestJudged($library, $books, $roles);
+        $first = (hrtime(true) - $start) / 1e9;
+        $state = CatalogState::of($this->em, $library);
+
+        $judge = self::getContainer()->get(CatalogJudge::class);
+        $rebuilds = [];
+        for ($n = 0; $n < 3; ++$n) {
+            $start = hrtime(true);
+            $judge->rebuild($library);
+            $rebuilds[] = (hrtime(true) - $start) / 1e9;
+        }
+
+        self::assertEquals($state, CatalogState::of($this->em, $library));
+        fwrite(\STDERR, \sprintf(
+            "\nREBUILD books=%d roles=%s: judged as pushes %.1f s · rebuilt over its own catalog %s s\n",
+            $books, $roles ? 'yes' : 'no', $first, implode(', ', array_map(static fn (float $s): string => \sprintf('%.1f', $s), $rebuilds)),
+        ));
+    }
+
     /** What one simple push (one field of one work) asks the database, and the most expensive of it, explained. */
     #[Group('stress')]
     public function testWhatOnePushAsks(): void
@@ -122,7 +154,7 @@ final class CatalogLoadTest extends KernelTestCase
         $native->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [QueryLogStatement::class]);
         QueryLogStatement::reset();
         $this->em->wrapInTransaction(function () use ($library): void {
-            $push = Ops::operation(Ops::hlc(LibraryHistory::PUSHES_FROM, 0, LibraryHistory::ADMIN_DEVICE), [Ops::update(CatalogEntity::Work, 'w100', ['title' => 'Otro título'])], signature: Judged::SIGNATURE);
+            $push = Ops::operation(Ops::hlc(LibraryHistory::PUSHES_FROM, 0, LibraryHistory::ADMIN_DEVICE), [Ops::update(CatalogEntity::Work, LibraryHistory::id('w', 100), ['title' => 'Otro título'])], signature: Judged::SIGNATURE);
             $this->judged($library)->deliver($push);
         });
         $log = QueryLogStatement::log();

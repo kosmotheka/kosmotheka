@@ -166,7 +166,7 @@ Queda como tarea **dos veces al año** (la primera, antes de abrir la nube a má
 1. `make stress` con 2.000, 5.000 y 20.000 libros, tres pasadas de cada, y comparar con la tabla de arriba.
 2. **Con las tablas llenas**, que es lo que hoy no se mide: reconstruir una biblioteca de 2.000 libros cuando las tablas `catalog_*` ya tienen del orden de un millón de filas de otras bibliotecas, confirmadas y con estadísticas. Es el caso que importa si la nube crece: que el coste de una biblioteca normal no dependa del tamaño total de las tablas. Hace falta un modo nuevo de `make stress` que llene antes las tablas; no existe todavía.
 3. En producción, apuntar lo que tarda `app:catalog:rebuild` (lo imprime al acabar) cada vez que se use, junto con el número de filas de `catalog_works`.
-4. Comparar una pasada tras `VACUUM` con una sin él (la pista del 09/10/2026: tras `VACUUM` sale siempre la tanda rápida), y medir una reconstrucción de una biblioteca que ya tiene catálogo, que es la que deja filas muertas delante.
+4. Comparar una pasada tras `VACUUM` con una sin él (la pista del 09/10/2026: tras `VACUUM` sale siempre la tanda rápida), y repetir la medida de reconstruir una biblioteca que ya tiene catálogo (`FILTER=testRebuildingALibraryThatHasACatalog`), que es la que deja filas muertas delante. La primera medida está en «Permisos en el servidor».
 5. Si aparece la tanda lenta, activar `auto_explain` con `log_nested_statements` en esa sesión para ver el plan de la sentencia que crece; es el dato que falta.
 
 Un `push` sencillo (cambiar el título de una obra) hace 4 sentencias, de 0,4 a 0,8 ms cada una: la lápida de la biblioteca, la lápida de la fila, la fila con sus versiones y un `UPDATE` de los campos y `versions`.
@@ -223,7 +223,21 @@ Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió
 - Un `ANALYZE cloud_operation` después de guardar el registro y antes de juzgar no cambia nada (28,4 y 44,6 s con él; 31,1 y 46,1 s sin él): la explicación de las estadísticas del registro **no se sostiene**.
 - Vuelven a salir dos tandas, como con el motor solo: unos 28 a 32 s (plano: 14 s las primeras 1.000 operaciones y 14 s las últimas) o unos 43 a 48 s (17 a 19 s las primeras y 26 s las últimas). El `push` las sigue: 19 a 27 ms o 43 a 46 ms.
 - Con un `VACUUM` de la base de datos de pruebas justo antes de la pasada, tres de tres salieron rápidas (30,4, 30,4 y 32,4 s). Sin él, siete de ocho salieron lentas. Las pasadas anteriores, deshechas por DAMA, dejan decenas de miles de filas muertas, y el autovacuum trabaja sobre ellas mientras corre la siguiente (8 a 10 tablas limpiadas durante cada pasada lenta, aunque una pasada lenta no tuvo ninguna).
-- Es una pista, no una causa demostrada. Importa para producción: `app:catalog:rebuild` borra el catálogo de la biblioteca y lo vuelve a escribir en la misma transacción, así que también trabaja con sus propias filas muertas delante. Queda para la revisión periódica de la carga.
+- Es una pista, no una causa demostrada. Importa para producción: `app:catalog:rebuild` borra el catálogo de la biblioteca y lo vuelve a escribir en la misma transacción, así que también trabaja con sus propias filas muertas delante.
+
+**Reconstruir una biblioteca que ya tiene catálogo** (09/10/2026, `make stress BOOKS=2000 FILTER=testRebuildingALibraryThatHasACatalog`, sin roles). El test juzga la biblioteca como lo harían los `push` y después la reconstruye tres veces seguidas con `CatalogJudge::rebuild`, todo en la transacción de la prueba:
+
+| Antes de la pasada | Juzgar como `push` | 1.ª reconstrucción | 2.ª | 3.ª |
+|---|---|---|---|---|
+| `VACUUM` | 30,0 s | 45,9 s | 49,2 s | 51,5 s |
+| nada | 28,5 s | 54,9 s | 86,1 s | 97,7 s |
+| `VACUUM` | 29,3 s | 47,0 s | 49,3 s | 52,4 s |
+| nada | 29,6 s | 73,4 s | 86,3 s | 98,4 s |
+
+- Reconstruir sobre un catálogo ya escrito cuesta entre 1,5 y 2,5 veces lo que costó escribirlo, y cada reconstrucción en la misma transacción cuesta más que la anterior. Con la base de datos recién limpiada la subida es pequeña (unos 3 s por vuelta); sin limpiar es grande.
+- Esto apoya la pista de las filas muertas: lo que frena es el trabajo delante de filas borradas que nadie ha limpiado todavía. Sigue sin estar separado cuánto de la primera reconstrucción es eso y cuánto es lo que la reconstrucción hace de más (lee el registro por tramos, valida cada operación al leerla y recorre el registro una vez más para buscar las vallas).
+- En producción cada reconstrucción va en su propia transacción y el autovacuum limpia entre una y otra, así que el caso real es la primera columna: de 46 a 73 s para 2.000 libros. Es una orden de mantenimiento, no algo que espere una persona, pero en 7.4.6 hay que reconstruir cada biblioteca una vez al enchufar el juez: se hace de una en una.
+- La variante con roles (`ROLES=1`) no se puede reconstruir todavía: el lector de operaciones rechaza la biblioteca inventada (comprobado). La causa más probable, sin comprobar, es que crea los dos dispositivos en una sola operación y solo el propio dispositivo puede crearse. Hay que rehacerla antes de medirla.
 
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
