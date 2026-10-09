@@ -6,7 +6,7 @@ Registro vivo. Cada identificador es fijo y no se reutiliza. El procedimiento es
 |---|---|---|---|---|---|---|---|---|
 | CAL-001 | descartado | baja | Parámetro `only` siempre vacío (falso: `notices` le pasa un filtro) | `requests.rs:91` | coordinador | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CAL-002 | resuelto | baja | Siete traducciones sin uso: `cloud.outcome.*` | `app/src/i18n/locales/*.json` | facts | 2026-10-03 | 2026-10-04 | [2026-10-03-3](2026-10-03-3.md) |
-| CON-001 | abierto | media | `library-merge.json` solo lo ejecuta Rust | `spec/conformance/library-merge.json` | facts | 2026-10-03 | | [2026-10-03](2026-10-03.md) |
+| CON-001 | resuelto | media | `library-merge.json` solo lo ejecuta Rust | `spec/conformance/library-merge.json` | facts | 2026-10-03 | 2026-10-08 (7.4.4) | [2026-10-03](2026-10-03.md) |
 | CON-002 | resuelto | media | `duplicate_library` registrado y sin pantalla | `lib.rs:149` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-003 | resuelto | baja | 177 traducciones sin uso aparente (solo 9 de verdad; el resto, claves dinámicas) | `app/src/i18n/locales` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |
 | CON-004 | resuelto | media | La lista de géneros del JSON Schema no es la de Rust ni la de PHP (anterior a la 6.7) | `spec/operation.schema.json` | facts | 2026-10-03 | 2026-10-03 | [2026-10-03](2026-10-03.md) |

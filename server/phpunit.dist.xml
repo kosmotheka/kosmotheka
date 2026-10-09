@@ -17,6 +17,13 @@
         <server name="SHELL_VERBOSITY" value="-1" />
     </php>
 
+    <!-- The load test with 20,000 books takes minutes: `make stress` runs it. -->
+    <groups>
+        <exclude>
+            <group>stress</group>
+        </exclude>
+    </groups>
+
     <testsuites>
         <testsuite name="Project Test Suite">
             <directory>tests</directory>

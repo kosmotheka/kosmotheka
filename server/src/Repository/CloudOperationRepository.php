@@ -129,6 +129,31 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * A stretch of the library's log in HLC order: the operations after `$afterHlc` ('' for the start).
+     * Read by stretches so a big library never has to fit in memory (the catalog rebuild).
+     *
+     * @return list<array{hlc: string, operation: \stdClass}>
+     */
+    public function findPage(CloudLibrary $library, string $afterHlc, int $limit): array
+    {
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT hlc, CAST(body AS TEXT) AS body FROM cloud_operation
+              WHERE cloud_library_id = :library AND hlc > :after ORDER BY hlc LIMIT :limit',
+            ['library' => $library->getId()->toRfc4122(), 'after' => $afterHlc, 'limit' => $limit],
+        );
+
+        $page = [];
+        foreach ($rows as $row) {
+            \assert(\is_string($row['hlc']) && \is_string($row['body']));
+            $operation = json_decode($row['body'], false, flags: \JSON_THROW_ON_ERROR);
+            \assert($operation instanceof \stdClass);
+            $page[] = ['hlc' => $row['hlc'], 'operation' => $operation];
+        }
+
+        return $page;
+    }
+
+    /**
      * The library's own vector: the greatest HLC of each author.
      *
      * @return array<string, string>

@@ -144,6 +144,12 @@ enum CatalogEntity: string
         };
     }
 
+    /** Whether the row is the details of an edition (same id as its edition). */
+    public function isDetails(): bool
+    {
+        return \in_array($this, [self::BookDetails, self::ComicDetails, self::BoardgameDetails, self::FilmDetails, self::TvSeriesDetails], true);
+    }
+
     /**
      * The Doctrine entity of the row (D92).
      *

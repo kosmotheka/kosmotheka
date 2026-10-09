@@ -123,7 +123,42 @@ Siempre **actualizaciones privadas** con datos `{}`, **después del commit** y n
 
 El token dura **1 hora** y la app pide uno nuevo antes de que caduque. Si una cuenta pierde el acceso a una biblioteca (o un dispositivo se quita), hasta que el token caduque ese dispositivo todavía puede enterarse de **que** la biblioteca cambió, nunca de **qué** cambió: el aviso es `{}`, y el acceso a los datos lo sigue decidiendo `pull`, que ya no responde (`404`/`401`). El siguiente token ya no lleva el tema. (Un dispositivo quitado ni siquiera puede pedir otro: `401`.)
 
-### Dónde está en el código
+### Motor de fusión (7.4.4)
+
+> Aplica una operación al catálogo de una biblioteca de la nube con las entidades de [Tablas del catálogo](#tablas-del-catálogo-743-rehecho-por-d92) y el `EntityManager`, sin SQL. **Hasta 7.4.6 nadie lo llama desde el `push`**: `CloudPush` y `CloudPull` no cambian y la nube se comporta como antes.
+
+- **Dónde:** `server/src/Sync/Merge/`. `CatalogMerge` es la interfaz (`apply`, `flush`, `clear`) y `OrmCatalogMerge` la implementación con el ORM (D92: si la carga masiva lo pidiera, otra implementación con DBAL tendría que pasar los mismos casos). `apply` devuelve un `ChangeOutcome` (`Written` o `Skipped`) por cada cambio.
+- **Qué reglas:** las de [`spec/README.md`](../../spec/README.md) (apartados «Merging operations from several libraries» y «Merging operations within a library»), que ejecutan `spec/conformance/merge.json` y `library-merge.json` contra el motor, en cada orden de entrega, volcando al final y tras cada operación (`server/tests/Sync/Merge/MergeConformanceTest.php`). El caso de HLC repetido es del `push` (7.4.6), y un test comprueba que la lista de casos saltados es exactamente la de los que traen `rejected`.
+- **Guiado por `CatalogEntity`:** la clase sale de `entityClass()`, los campos de `fields()`, y los valores se leen y escriben con los metadatos de Doctrine. Nada del cliente llega a un nombre de clase, propiedad o campo, y toda búsqueda de una fila lleva su biblioteca de la nube: un id de la app nunca se resuelve fuera de ella. Un campo que no está en la lista salta el cambio entero.
+- **Se comprueba antes de escribir.** Si un `flush` falla, Doctrine cierra el `EntityManager` y la petición entera se pierde. Por eso toda restricción de las tablas (`NOT NULL`, claves foráneas, `UNIQUE`, tipo de la columna, disparadores) tiene su regla en el motor, que la juzga antes de persistir; la base de datos es la red de debajo, nunca lo que decide. Como en la app (`apply_change`), esas comprobaciones valen solo para los campos que ganan por HLC: un campo que pierde no se escribe y no puede hacer que se salte el cambio. Los tests comprueban que, tras cada caso de `spec/` y cada test hostil, el `EntityManager` sigue abierto.
+- **En memoria:** el motor recuerda las filas, versiones y lápidas que ha tocado desde el último `flush` y las busca ahí antes de ir a la base de datos. Tras un borrado hace `flush` y desvincula con `detach()` lo que cargó (la base de datos ha borrado en cascada o anulado referencias), pero nunca llama a `EntityManager::clear()`: en 7.4.6 compartirá el `EntityManager` con la cuenta y la biblioteca de la petición. No abre ni cierra transacciones. Quien cargue filas del catálogo por su cuenta debe desvincularlas antes del siguiente `flush` del motor.
+- **Comando:** `app:catalog:rebuild <id de la biblioteca de la nube>` borra el catálogo y la contabilidad de esa biblioteca y aplica su registro (`cloud_operation`) en orden de HLC, leyéndolo por tramos y volcando cada 100 operaciones (`CatalogRebuildCommand::FLUSH_EVERY`), todo en una transacción. Cada 500 (`ANALYZE_EVERY`) y al terminar ejecuta `ANALYZE` de `catalog_field_versions`, `catalog_tombstones` y `catalog_row_authors`: dentro de una transacción tan larga las tablas recién llenadas no tienen estadísticas (ni `ANALYZE` ni autovacuum ven filas sin confirmar) y el planificador recorre todas las versiones de la biblioteca por el índice de `cloud_library_id` en vez de usar la clave primaria. Es la única SQL a mano; el motor sigue sin ella. Imprime operaciones aplicadas, cambios saltados y tiempo. Reconstruir dos veces, o aplicar el registro de una en una, deja el mismo catálogo (`CatalogRebuildCommandTest`, con las fixtures).
+- **Carga:** `make stress` (`CatalogLoadTest`, grupo `stress`, fuera de `make check`) reconstruye una biblioteca inventada de 20.000 libros y mide la mediana de 30 `push` de dos operaciones sobre ella. En la suite normal, una de 300 libros comprueba que aplicar por lotes y de una en una da el mismo catálogo.
+
+### Lo que midió la carga (08/10/2026)
+
+`make stress BOOKS=… LIMIT=…` (`NO_TRIGGERS=1` apaga los disparadores dentro de la transacción del test, `NO_ANALYZE=1` salta todo `ANALYZE`, `FILTER=testWhatOnePushAsks` lista las consultas de un `push`). Todo ocurre dentro de la transacción única de DAMA, sin commit; el `push` son dos operaciones en una transacción (un savepoint). Reconstruir imita el comando: `flush` cada 100 operaciones y `ANALYZE` cada 500.
+
+| Libros | Operaciones | `ANALYZE` | Disparadores | Reconstruir | Primeras / últimas 1.000 operaciones | `push` (mediana / peor) | Memoria |
+|---|---|---|---|---|---|---|---|
+| 2.000 | 2.241 | sí | sí | 36,3 s | 17,8 / 17,3 s | 26,8 / 31,6 ms | 104 MB |
+| 2.000 | 2.241 | sí | no | 32,3 s | 15,2 / 16,0 s | 23,5 / 28,3 ms | 104 MB |
+| 2.000 | 2.241 | no | sí | 37,0 s | 16,8 / 16,5 s | 51,4 / 55,0 ms | 104 MB |
+| 5.000 | 5.601 | sí | sí | 86,4 s | 17,5 / 16,7 s | 27,0 / 35,0 ms | 190 MB |
+| 5.000 | 5.601 | sí | no | 89,5 s | 16,2 / 18,9 s | 27,6 / 33,4 ms | 190 MB |
+| 5.000 | 5.601 | no | sí | 195,1 s | 17,4 / 50,6 s | 84,4 / 98,0 ms | 190 MB |
+| 20.000 | 22.401 | sí | sí | 454,6 s | 17,5 / 6,3 s | 34,9 / 40,6 ms | 611 MB |
+| 20.000 | 22.401 | sí | no | 438,0 s | 16,2 / 6,4 s | 34,0 / 42,1 ms | 611 MB |
+
+(Las últimas 1.000 operaciones de 20.000 son sobre todo borrados de obras, mucho más baratos.) Sin `ANALYZE`, dentro de la transacción larga el planificador elige el índice de `cloud_library_id` de `catalog_field_versions` en vez de la clave primaria y recorre todas las versiones de la biblioteca: el coste por operación crece con el tamaño (17 → 50 s por cada 1.000 operaciones a 5.000 libros). Con `ANALYZE` es casi plano (unos 15 a 20 ms por operación). Los disparadores cuestan poco (unos 4 a 12 % de la reconstrucción).
+
+La memoria es la del test entero (guarda el estado completo para compararlo); el motor solo ocupa unos 20 a 26 MB.
+
+Un `push` sencillo (cambiar el título de una obra) hace 5 consultas, todas por índice (0,26 a 0,64 ms cada una): la lápida, la fila, las versiones de la fila y dos `UPDATE` (versión y fila). Referencia de la prueba del 08/10/2026: 188 s y 22 ms con 20.000 libros.
+
+**Decidido el 09/10/2026:** no basta. La base de datos ejecuta esas mismas sentencias en 19 a 27 s con 5.000 libros; el resto del tiempo es Doctrine. El motor se reescribe con DBAL (SQL generado desde los metadatos de las entidades) y las versiones de los campos pasan a una columna JSON de cada fila; los tests de este apartado se quedan y son la red del cambio.
+
+## Dónde está en el código
 
 - `src/Sync/`: `HubSettings` (URL, clave de suscriptor, emisor), `NoticeTopic` (los temas), `EventsToken` (el token), `SyncNotifier` (publica; no lanza nunca). `CloudPush` y `CloudLibraryCreator` lo llaman tras confirmar.
 - `src/Controller/CloudEventsController.php` y el campo `events` de `ServerController`.
