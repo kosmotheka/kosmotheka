@@ -14,6 +14,7 @@ use App\Repository\DeviceRepository;
 use App\Security\AccountException;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
+use App\Sync\CloudLink;
 use App\Sync\CloudPush;
 use App\Sync\SchemaVersion;
 use App\Validator\ValidOperationValidator;
@@ -42,6 +43,7 @@ final class ScenarioFixtures extends Fixture
         private readonly CloudLibraryCreator $creator,
         private readonly CloudLibraryAccess $access,
         private readonly CloudPush $cloudPush,
+        private readonly CloudLink $cloudLink,
         private readonly DeviceRepository $devices,
         private readonly SchemaVersion $schemaVersion,
         private readonly Connection $connection,
@@ -98,9 +100,10 @@ final class ScenarioFixtures extends Fixture
 
         $operations = [
             // The member comes before the device that names it, in the same operation: a row cannot point at one that is not there yet.
+            // The step that gives the first role is the seal (D94): the laptop fences its own device, here with no previous operation.
             $this->operation($laptop, $local, 0, 'device.register', [
                 $this->create('member', 'ana', ['name' => 'Ana', 'role' => 'admin', 'can_share' => true]),
-                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana')], $laptop->id),
+                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana'), 'trusted_through' => ''], $laptop->id),
             ]),
             $this->operation($laptop, $local, 1, 'library.create', [
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca García']],
@@ -168,7 +171,7 @@ final class ScenarioFixtures extends Fixture
         $operations = [
             $this->operation($laptop, $local, 0, 'device.register', [
                 $this->create('member', 'kenji', ['name' => 'Kenji', 'role' => 'admin']),
-                $this->create('device', 'kenji-laptop', ['public_key' => $laptop->publicKey, 'name' => "Kenji's laptop", 'member_id' => Cast::id('member:kenji')], $laptop->id),
+                $this->create('device', 'kenji-laptop', ['public_key' => $laptop->publicKey, 'name' => "Kenji's laptop", 'member_id' => Cast::id('member:kenji'), 'trusted_through' => ''], $laptop->id),
             ]),
             $this->operation($laptop, $local, 1, 'library.create', [
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca Tanaka']],
@@ -194,10 +197,12 @@ final class ScenarioFixtures extends Fixture
         $scenario = 'Seam 1: Jhonny pushes the Garcías\' operation ids into his own library';
         $library = $this->creator->create($jhonny);
         $link = Cast::jhonnyPhone()->link(Cast::GARCIA_LOCAL, $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-garcia-id'));
-        $this->expectStored($this->push($library, [$link]), 1, $scenario);
+        // By the link route and not stored: pushed with the Garcías' history his link would fall under the seal (D94)
+        // and be a request, and the push would be undone (D93). The history is what this seam is about.
+        $this->cloudLink->linkFrom($library, $this->pushed($link));
 
         $this->expectStored($this->push($library, $garcia->operations), \count($garcia->operations), $scenario);
-        $this->report->add($scenario, \sprintf('loaded: Jhonny\'s library %s, linked to the Garcías\' local id, holds %d of their operations under the same ids', $library->getId()->toRfc4122(), \count($garcia->operations)));
+        $this->report->add($scenario, \sprintf('loaded: Jhonny\'s library %s, linked to the Garcías\' local id by the link route, holds %d of their operations under the same ids', $library->getId()->toRfc4122(), \count($garcia->operations)));
         $this->report->add($scenario, 'the Garcías\' own copy is untouched: the same operation_id is in two cloud libraries');
     }
 
@@ -365,15 +370,18 @@ final class ScenarioFixtures extends Fixture
         // Every scenario uploads from a device of the library's owner.
         $uploader = $this->devices->findOneBy(['user' => $library->getOwner()]) ?? throw new \LogicException('The owner of the library has no device.');
 
-        return $this->cloudPush->push($library, new PushRequest($version, array_map(
-            static function (array $operation) use ($version): PushedOperation {
-                $decoded = json_decode(json_encode($operation, \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
-                \assert($decoded instanceof \stdClass);
+        return $this->cloudPush->push($library, new PushRequest($version, array_map($this->pushed(...), $operations)), $uploader);
+    }
 
-                return new PushedOperation($version, $decoded);
-            },
-            $operations,
-        )), $uploader);
+    /**
+     * @param array<string, mixed> $operation
+     */
+    private function pushed(array $operation): PushedOperation
+    {
+        $decoded = json_decode(json_encode($operation, \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
+        \assert($decoded instanceof \stdClass);
+
+        return new PushedOperation($this->schemaVersion->current(), $decoded);
     }
 
     /**

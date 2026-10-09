@@ -10,7 +10,7 @@ El commit `bc244b9`. El servidor tiene el motor de fusión (`server/src/Sync/Mer
 
 **Qué no cambia:** lo que la app ve. `pull` sigue repartiendo todas las operaciones del registro, aplicadas o en petición, porque cada dispositivo las juzga por su cuenta (D73). `PushResult` sigue contando `received`, `known` y `rejected`; una operación que queda en petición está guardada y cuenta como `received`.
 
-Referencias: `app/src-tauri/src/sync.rs` (`merge_in`), `spec/README.md` («Permissions»), `docs/architecture/cloud.md` («Permisos en el servidor»), y el encargo anterior en [`docs/historico/encargo-7.4.5-permisos.md`](../historico/encargo-7.4.5-permisos.md).
+Referencias: `app/src-tauri/src/sync.rs` (`merge_in`), `spec/README.md` («Permissions»), `docs/architecture/cloud.md` («Permisos en el servidor»), y el encargo anterior en [`docs/historico/encargo-7.4.5-permisos.md`](encargo-7.4.5-permisos.md).
 
 ## Reglas
 

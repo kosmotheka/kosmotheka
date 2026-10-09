@@ -30,7 +30,8 @@ final class LibraryHistory
     public const int PUSHES_FROM = 100_000_000;
 
     /**
-     * @param bool $roles whether the library has roles: an administrator and an editor, two devices each of a person
+     * @param bool $roles whether the library has roles: an administrator and an editor, two devices each of a person; the first
+     *                    operation that gives them is a seal (D94), the administrator's device fencing itself
      *
      * @return \Generator<int, OperationPayload>
      */
@@ -42,7 +43,7 @@ final class LibraryHistory
         }, 'can_share' => false] : [];
         $members = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Member, self::id('m', $i), ['name' => "Persona $i"] + $roleOf($i)), range(0, self::MEMBERS - 1));
         $devices = $roles ? [
-            Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => 'k', 'name' => 'Admin', 'member_id' => self::id('m', 0)]),
+            Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => 'k', 'name' => 'Admin', 'member_id' => self::id('m', 0), 'trusted_through' => '']),
             Ops::create(CatalogEntity::Device, self::EDITOR_DEVICE, ['public_key' => 'k', 'name' => 'Editor', 'member_id' => self::id('m', 1)]),
         ] : [];
         $publishers = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Publisher, self::id('p', $i), ['name' => "Editorial $i"]), range(0, self::PUBLISHERS - 1));

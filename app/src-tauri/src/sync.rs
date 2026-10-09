@@ -318,6 +318,11 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         if status == ops::Status::Applied && permissions::note_fences(tx, &operation)? {
             arrived_late.insert(library.to_owned());
         }
+        // A seal that is a request here may be the one that puts the operations before it
+        // under a fence, and with them out of the way the seal stands (D94): judge again.
+        if status == ops::Status::Request && permissions::is_seal(&operation) {
+            arrived_late.insert(library.to_owned());
+        }
         received.push(operation.id.clone());
         report.received += 1;
     }
@@ -3167,6 +3172,271 @@ mod tests {
             .query_row("SELECT count(*) FROM device_fences", [], |r| r.get(0))
             .unwrap();
         assert_eq!(fences, 0);
+    }
+
+    /// An operation signed by `device` with a modified app: any intent, HLC and previous.
+    fn forged_at(
+        device: &Device,
+        intent: &str,
+        changes: Vec<Change>,
+        millis: u64,
+        previous: Option<&str>,
+    ) -> SyncOperation {
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: device.1.clone(),
+            hlc: Hlc {
+                millis,
+                counter: 0,
+                device: device_id_of(device),
+            },
+            intent: intent.into(),
+            changes,
+            previous: previous.map(str::to_owned),
+            signature: None,
+        };
+        operation.signature = Some(ops::signing_key(&device.0).unwrap().sign(&operation));
+        SyncOperation {
+            schema_version: ops::schema_version(&device.0).unwrap(),
+            operation,
+        }
+    }
+
+    fn operations_with_intent(device: &Device, intent: &str) -> Vec<String> {
+        device
+            .0
+            .prepare("SELECT id FROM operations WHERE library_id = ?1 AND intent = ?2 ORDER BY hlc")
+            .unwrap()
+            .query_map([&device.1, intent], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    fn seals_in(device: &Device) -> i64 {
+        device
+            .0
+            .query_row(
+                "SELECT count(*) FROM device_seals WHERE library_id = ?1",
+                [&device.1],
+                |row| row.get(0),
+            )
+            .unwrap()
+    }
+
+    /// The laptop and the phone are administrators and nobody ever sealed the library:
+    /// a library that got its roles before D94.
+    fn two_administrators_without_a_seal() -> (Device, Device) {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("admin"), true).unwrap();
+        phone.pull_from(&laptop);
+        assert_eq!(seals_in(&laptop), 0, "set_role seals nothing");
+        (laptop, phone)
+    }
+
+    #[test]
+    fn turning_roles_on_seals_the_library_naming_every_device_it_knows() {
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
+        laptop.add("Dune", None, "Tersoal");
+        phone.add("Tehanu", None, "Hugo");
+        laptop.pull_from(&phone);
+        let (laptop_id, phone_id) = (device_id_of(&laptop), device_id_of(&phone));
+        let laptop_last = ops::latest_of(&laptop.0, &lib, &laptop_id).unwrap();
+        let phone_last = ops::latest_of(&laptop.0, &lib, &phone_id).unwrap();
+
+        crate::people::start_roles(&mut laptop.0, &lib, "Tersoal", &[]).unwrap();
+
+        let roles = operations_with_intent(&laptop, "member.roles");
+        assert_eq!(roles.len(), 1);
+        assert_eq!(seals_in(&laptop), 1);
+        let marks: Vec<(String, String)> = laptop
+            .0
+            .prepare(
+                "SELECT device_id, through FROM device_fences WHERE operation_id = ?1
+                  ORDER BY device_id",
+            )
+            .unwrap()
+            .query_map([&roles[0]], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        let mut expected = vec![
+            (laptop_id, laptop_last.unwrap()),
+            (phone_id, phone_last.unwrap()),
+        ];
+        expected.sort();
+        assert_eq!(
+            marks, expected,
+            "every device, the author's with its previous"
+        );
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &roles[0]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_stranger_cannot_date_a_takeover_before_the_activation() {
+        // SEG-025: a device the administrator has not heard of signs, dated before the
+        // activation, an operation that makes it an administrator. Without the seal it
+        // is believed (nobody has a role yet) and the true activation becomes a request.
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        laptop.add("Dune", None, "Tersoal");
+        let mut stranger = Device::sharing(&laptop);
+        stranger.add("Hello", None, "Mallory");
+        let mallory = ops::new_id();
+        let grab = forged_at(
+            &stranger,
+            "member.roles",
+            vec![
+                Change::create(
+                    Entity::Member,
+                    &mallory,
+                    json!({ "name": "Mallory", "role": "admin", "can_share": true }),
+                ),
+                Change::update(
+                    Entity::Device,
+                    device_id_of(&stranger),
+                    json!({ "member_id": mallory }),
+                ),
+            ],
+            now_millis(),
+            ops::latest_of(&stranger.0, &lib, &device_id_of(&stranger))
+                .unwrap()
+                .as_deref(),
+        );
+        std::thread::sleep(std::time::Duration::from_millis(5));
+
+        crate::people::start_roles(&mut laptop.0, &lib, "Tersoal", &[]).unwrap();
+        let activation = operations_with_intent(&laptop, "member.roles").remove(0);
+        let mut batch = everything_from(&stranger);
+        batch.push(grab.clone());
+        merge(&mut laptop.0, batch).unwrap();
+
+        assert_eq!(status_of_id(&laptop, &grab.operation.id), "request");
+        assert_eq!(status_of_id(&laptop, &activation), "applied");
+        assert_eq!(
+            crate::people::list_people(&laptop.0, &lib).unwrap().my_role,
+            Some("admin".to_owned())
+        );
+        let stranger_role: Option<String> = laptop
+            .0
+            .query_row(
+                "SELECT m.role FROM devices d JOIN members m
+                   ON m.library_id = d.library_id AND m.id = d.member_id
+                  WHERE d.library_id = ?1 AND d.id = ?2",
+                [&lib, &device_id_of(&stranger)],
+                |row| row.get(0),
+            )
+            .optional()
+            .unwrap();
+        assert_eq!(stranger_role, None, "the stranger stays a device of nobody");
+        assert_converged(&[&laptop]);
+    }
+
+    #[test]
+    fn a_library_with_roles_and_no_seal_is_sealed_once() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+
+        let seals = operations_with_intent(&laptop, "library.seal");
+        assert_eq!(
+            seals.len(),
+            1,
+            "a second session finds the seal and does nothing"
+        );
+        assert_eq!(seals_in(&laptop), 1);
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &seals[0]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    /// Why the seal waits for a sync session (D94): it believes of each device only what
+    /// the sealer holds. An administrator's device that has been away and sealed on start
+    /// would turn what the others did meanwhile into requests.
+    #[test]
+    fn a_device_that_was_away_seals_after_merging_and_keeps_what_the_others_did() {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let meanwhile = phone.add("The Farthest Shore", None, "Hugo");
+        let added = operations_with_intent(&phone, "book.add").pop().unwrap();
+
+        laptop.pull_from(&phone);
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        assert_eq!(operations_with_intent(&laptop, "library.seal").len(), 1);
+        for device in [&laptop, &phone] {
+            assert_eq!(status_of_id(device, &added), "applied");
+        }
+        assert!(!meanwhile.is_empty());
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_seal_written_before_merging_leaves_what_the_others_did_as_requests() {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        phone.add("The Farthest Shore", None, "Hugo");
+        let added = operations_with_intent(&phone, "book.add").pop().unwrap();
+
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        for device in [&laptop, &phone] {
+            assert_eq!(status_of_id(device, &added), "request");
+        }
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_device_that_is_not_an_administrators_does_not_seal() {
+        let (laptop, mut phone) = laptop_admin_phone_reader();
+        let before = operations_with_intent(&phone, "library.seal");
+
+        permissions::seal_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
+
+        assert_eq!(operations_with_intent(&phone, "library.seal"), before);
+        assert_eq!(seals_in(&phone), 0);
+        assert!(operations_with_intent(&laptop, "library.seal").is_empty());
+    }
+
+    #[test]
+    fn a_library_without_roles_is_not_sealed() {
+        let mut device = Device::new();
+        device.add("Dune", None, "Tersoal");
+
+        permissions::seal_if_missing(&mut device.0, std::slice::from_ref(&device.1)).unwrap();
+
+        assert!(operations_with_intent(&device, "library.seal").is_empty());
+    }
+
+    #[test]
+    fn two_administrators_who_seal_at_once_without_having_seen_each_other_converge_on_the_later_seal()
+     {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        permissions::seal_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        // The later seal does not know the earlier one, so it fences it like anything else
+        // its administrator had not received: the earlier is a request, the later stands.
+        let seals = operations_with_intent(&laptop, "library.seal");
+        assert_eq!(seals.len(), 2);
+        for device in [&laptop, &phone] {
+            assert_eq!(status_of_id(device, &seals[0]), "request");
+            assert_eq!(status_of_id(device, &seals[1]), "applied");
+            assert_eq!(seals_in(device), 1);
+        }
+        assert_converged(&[&laptop, &phone]);
+        // A later session finds an applied seal and writes none.
+        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        assert_eq!(operations_with_intent(&laptop, "library.seal").len(), 2);
     }
 
     #[test]

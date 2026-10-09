@@ -90,6 +90,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | operación anterior (del mismo autor) | `previous` | Field of an operation: the id of its author's previous operation in that library, or null (D87) |
 | valla (sobre un dispositivo) | `fence` | Set by the operation that takes power away from a device: what the device dated before it, beyond the operation named in `trusted_through`, is not believed (D84, D87) |
 | estado de una operación: aplicada · petición | `applied` · `request` | A `request` is an operation its author was not allowed to make (D73). Not a `change_request`, which is the row that resolves it |
+| sello | `seal` | An applied operation that fences its own author's device; it fences every device, named or not (D94) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |

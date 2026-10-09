@@ -269,7 +269,10 @@ pub fn start_roles(
             json!({ "member_id": member }),
         ));
     }
+    // The step seals the library (D94): of every device, only what this one had counts.
     let tx = conn.transaction()?;
+    ops::ensure_registered(&tx, library)?;
+    permissions::seal_changes(&tx, library, &mut changes)?;
     ops::record(&tx, library, "member.roles", changes)?;
     tx.commit()?;
     Ok(member)
@@ -666,6 +669,8 @@ mod tests {
         // The library is the laptop's; the phone receives it before writing in it.
         pull(&mut phone, &laptop, &lib);
         catalog::create_book(&mut phone, &lib, &book("Tehanu"), None).unwrap();
+        // Synced before the roles are turned on: the seal (D94) believes of the phone only what the laptop had.
+        pull(&mut laptop, &phone, &lib);
         let member = start_roles(&mut laptop, &lib, "Tersoal", &[]).unwrap();
         pull(&mut laptop, &phone, &lib);
         let phone_id = ops::device_id(&phone).unwrap();

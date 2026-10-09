@@ -7,6 +7,7 @@ namespace App\Sync\Permission;
 use App\Dto\OperationPayload;
 use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
+use App\Entity\Catalog\Seal;
 use App\Entity\CloudLibrary;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
@@ -25,7 +26,7 @@ use Symfony\Component\Uid\Uuid;
  * Before it asks anything of the database the merge has nothing queued: every `apply` is followed by a
  * `flush`, so the view reads what the merge wrote.
  *
- * @phpstan-type FenceCandidate array{operation: string, device: string, through: string, until: string}
+ * @phpstan-type FenceCandidate array{operation: string, author: string, device: string, through: string, until: string}
  */
 final class CatalogJudge
 {
@@ -67,6 +68,11 @@ final class CatalogJudge
         $this->operations->setStatus($library, $operation->id, $status);
         // After the status, so an operation of the fenced device already in the log is seen.
         if (OperationStatus::Applied === $status && $this->noteFences($library, $operation)) {
+            $this->late[$id] = true;
+        }
+        // A seal that is a request here may be the one that puts the operations before it under a fence, and
+        // with them out of the way the seal stands (D94): judge again.
+        if (OperationStatus::Request === $status && $this->isSeal($operation)) {
             $this->late[$id] = true;
         }
 
@@ -133,7 +139,7 @@ final class CatalogJudge
     private function replay(CloudLibrary $library, array $fences): void
     {
         $this->merge->clear($library);
-        foreach ([Fence::class, FenceChain::class] as $class) {
+        foreach ([Fence::class, FenceChain::class, Seal::class] as $class) {
             $this->entityManager->createQuery(\sprintf('DELETE FROM %s x WHERE x.cloudLibrary = :library', $class))
                 ->setParameter('library', $library->getId(), 'uuid')->execute();
         }
@@ -174,11 +180,17 @@ final class CatalogJudge
         foreach ($operation->changes as $change) {
             $through = $change->fields['trusted_through'] ?? null;
             if (CatalogEntity::Device === $change->entity && ChangeAction::Delete !== $change->action && \is_string($through)) {
-                $fences[] = ['operation' => $operation->id, 'device' => $change->id, 'through' => $through, 'until' => $operation->hlc];
+                $fences[] = ['operation' => $operation->id, 'author' => Permissions::author($operation), 'device' => $change->id, 'through' => $through, 'until' => $operation->hlc];
             }
         }
 
         return $fences;
+    }
+
+    /** Whether the operation fences its own author's device: a seal (D94), if it is applied. */
+    private function isSeal(OperationPayload $operation): bool
+    {
+        return array_any($this->fencesOf($operation), static fn (array $fence): bool => $fence['device'] === $fence['author']);
     }
 
     /**
@@ -192,6 +204,10 @@ final class CatalogJudge
             $this->insertFence($library, $fence);
             $through = Uuid::isValid($fence['through']) ? Uuid::fromString($fence['through']) : null;
             $late = $this->operations->hasOperationUnderFence($library, $fence['device'], $fence['until'], $through, Uuid::fromString($fence['operation'])) || $late;
+        }
+        // A seal also puts under suspicion what the devices it does not name did before it.
+        if ($this->isSeal($operation)) {
+            return $this->operations->hasOperationUnderSeal($library, $operation->hlc, Uuid::fromString($operation->id)) || $late;
         }
 
         return $late;
@@ -214,6 +230,14 @@ final class CatalogJudge
         }
 
         $noted = [new Fence($library, $operation, $fence['device'], $fence['through'], $fence['until'])];
+        // A fence on the author's own device makes the operation a seal (D94).
+        if ($fence['device'] === $fence['author']) {
+            $sealed = $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s s WHERE s.cloudLibrary = :library AND s.operationId = :operation', Seal::class))
+                ->setParameter('library', $library->getId(), 'uuid')->setParameter('operation', $operation, 'uuid')->getResult();
+            if ([] === $sealed) {
+                $noted[] = new Seal($library, $operation, $fence['until']);
+            }
+        }
         $previous = $this->operations->previousOf($library, $fence['device']);
         $seen = [];
         $current = Uuid::isValid($fence['through']) ? Uuid::fromString($fence['through'])->toRfc4122() : null;

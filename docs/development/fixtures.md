@@ -45,7 +45,7 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | Escenario | Dónde mirar | Qué se ve y qué demuestra |
 |---|---|---|
 | **Ana sube «Biblioteca García»** | `cloud_library` (la fila de Ana: `local_library_id` = el id García) y `membership` | La biblioteca ya está enlazada y Ana es su única membresía |
-| | `cloud_operation` de esa biblioteca: 13 filas (15 con las dos de abajo) | La historia entera: registro de dispositivos (cada uno el suyo) y la asignación de los móviles a Ana y a Hugo por el portátil de Ana, que administra; creación, tres miembros con sus roles (el de Ana y su portátil van en la misma operación: una fila no puede apuntar a un miembro que aún no existe), dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. Desde 7.4.6 la nube las juzga al guardarlas y deja el catálogo en las tablas `catalog_*`; una de las 13 queda en `request` (abajo). `body` es la operación tal como llegó, firma incluida |
+| | `cloud_operation` de esa biblioteca: 13 filas (15 con las dos de abajo) | La historia entera: registro de dispositivos (cada uno el suyo) y la asignación de los móviles a Ana y a Hugo por el portátil de Ana, que administra; creación, tres miembros con sus roles (el de Ana y su portátil van en la misma operación: una fila no puede apuntar a un miembro que aún no existe, y esa operación es el **sello** (D94): el portátil se pone valla a sí mismo con `trusted_through` vacío, porque aún no tiene operación anterior), dos libros (obra, autor, editorial, edición, ejemplar) y el enlace. Desde 7.4.6 la nube las juzga al guardarlas y deja el catálogo en las tablas `catalog_*`; una de las 13 queda en `request` (abajo). `body` es la operación tal como llegó, firma incluida |
 | | `cloud_operation` con `body @> '{"changes":[{"entity":"mark"}]}'` y `…"change_request"…` | Una marca de Hugo y una solicitud suya: las firmó el móvil de Hugo y llegaron a la nube por Ana |
 | | `cloud_operation` con `status = 'request'` y `body::text LIKE '%Ficciones%'` (y `catalog_works` sin esa obra) | Hugo, que es lector, intenta añadir un libro: la operación queda guardada, en petición, y el catálogo de la nube no la tiene |
 | | `cloud_device_key` de esa biblioteca: 3 filas | Las claves de portátil de Ana, móvil de Ana y móvil de Hugo, registradas al verse su primera operación |
@@ -60,7 +60,7 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | Costura | Dónde mirar | Qué demuestra |
 |---|---|---|
 | **2 · Mismo id local, dos bibliotecas** | `cloud_library` con `local_library_id = '00000000-0000-7000-8000-000000000001'`: **dos filas**, dueños Kenji y Jhonny. Y con el id García: otras dos (Ana y Jhonny) | Dos desconocidos con el id fijo no se funden: cada uno tiene su `C` y su historia (4 operaciones frente a 2) |
-| **1 · Ids de operación robados** | `SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1`: **13 filas** | El mismo `operation_id` está en la biblioteca de Ana y en la de Jhonny (que las subió con los ids de ella): la clave es `(cloud_library_id, operation_id)`, así que Jhonny no pudo «ocupar» los ids de la familia ni estorbarla |
+| **1 · Ids de operación robados** | `SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1`: **13 filas** | El mismo `operation_id` está en la biblioteca de Ana y en la de Jhonny (que las subió con los ids de ella; su enlace va por la ruta `link`, que no guarda la operación: subido junto con la historia de la familia, con sus roles y su sello, quedaría en petición por estar fechado antes del sello y el `push` se deshará, D93 y D94): la clave es `(cloud_library_id, operation_id)`, así que Jhonny no pudo «ocupar» los ids de la familia ni estorbarla |
 | **6 · Un dispositivo es su id junto con su clave** (SEG-016) | `device WHERE device_id = '<id del móvil de Ana>'`: **dos filas**, una de Ana y otra de Jhonny, con `public_key` distinta | Quien inicia sesión con el id público de otro dispositivo, pero con su propia clave, no se lo quita: tiene una fila aparte |
 | **4 · Claves de firma dentro de cada `C`** | `cloud_device_key WHERE device_id = '<id del portátil de Ana>'`: **tres filas** (biblioteca de Ana, copia de Jhonny de la García, biblioteca por defecto de Jhonny) | En la de Ana la clave es la de Ana; en la biblioteca por defecto de Jhonny, el mismo id lleva la clave de Jhonny. Una clave registrada en su `C` no vale en otra |
 | **7 · No rechazar por el orden de llegada** (DAT-001) | `cloud_operation` de Ana: la del portátil a `…+2900 min` y la del móvil a `…+3000 min`, la antigua con `received_at` posterior | Una operación más antigua que otra de **otro** autor, llegada después, se guarda. Con la cadena de D87 no puede llegar tarde una anterior del mismo autor: esperaría |
@@ -86,7 +86,7 @@ Cada uno se ejecuta en la carga **y la carga se detiene si alguno entra**: que `
 | `device` | 6 |
 | `cloud_library` | 5 (Ana, Kenji, tres de Jhonny) |
 | `membership` | 5 (una por biblioteca) |
-| `cloud_operation` | 36 (García 15, Tanaka 5, Jhonny 14 + 2) |
+| `cloud_operation` | 34 (García 15, Tanaka 4, Jhonny 13 + 2) |
 | `cloud_device_key` | 8 |
 
 ## Abrir los dispositivos en la app

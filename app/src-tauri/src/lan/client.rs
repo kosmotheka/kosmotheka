@@ -260,6 +260,8 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
             only_shared_operations(pulled.operations, &shared),
         )?;
         register_in_shared(&mut conn, device_id)?;
+        // With what the peer had already merged, and before working out what to send it (D94).
+        crate::permissions::seal_if_missing(&mut conn, &shared)?;
         let theirs = only_shared(pulled.vectors, &shared);
         (
             received,

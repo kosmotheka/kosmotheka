@@ -6,6 +6,7 @@ namespace App\Tests\Sync\Merge;
 
 use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
+use App\Entity\Catalog\Seal;
 use App\Entity\CloudLibrary;
 use App\Enum\CatalogEntity;
 use App\Repository\CloudOperationRepository;
@@ -161,7 +162,7 @@ final class CatalogRebuildCommandTest extends WebTestCase
     {
         $connection = self::getContainer()->get(Connection::class);
         $connection->executeStatement('UPDATE cloud_operation SET status = NULL');
-        foreach ([...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases()), 'catalog_tombstones', 'catalog_row_authors', 'catalog_device_fences', 'catalog_device_fence_chains'] as $table) {
+        foreach ([...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases()), 'catalog_tombstones', 'catalog_row_authors', 'catalog_device_fences', 'catalog_device_fence_chains', 'catalog_device_seals'] as $table) {
             $connection->executeStatement("DELETE FROM $table");
         }
         $this->em->clear();
@@ -199,7 +200,7 @@ final class CatalogRebuildCommandTest extends WebTestCase
         $library = $this->library($id);
 
         $merge->clear($library);
-        foreach ([Fence::class, FenceChain::class] as $class) {
+        foreach ([Fence::class, FenceChain::class, Seal::class] as $class) {
             $this->em->createQuery(\sprintf('DELETE FROM %s x WHERE x.cloudLibrary = :library', $class))->setParameter('library', $library->getId(), 'uuid')->execute();
         }
         $after = '';

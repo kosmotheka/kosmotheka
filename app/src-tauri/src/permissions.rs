@@ -101,6 +101,12 @@ impl LibraryView for SqlView<'_> {
                     AND NOT EXISTS (SELECT 1 FROM device_fence_chains c
                                      WHERE c.library_id = ?1 AND c.fence_operation_id = f.operation_id
                                        AND c.device_id = ?2 AND c.operation_id = ?4))
+                     OR EXISTS (SELECT 1 FROM device_seals s
+                                 WHERE s.library_id = ?1 AND ?3 < s.until_hlc
+                                   AND NOT EXISTS (SELECT 1 FROM device_fences f
+                                                    WHERE f.library_id = ?1
+                                                      AND f.operation_id = s.operation_id
+                                                      AND f.device_id = ?2))
                      OR EXISTS (SELECT 1 FROM revocations r
                                   JOIN field_versions v
                                     ON v.library_id = r.library_id AND v.entity = 'revocations'
@@ -258,8 +264,73 @@ pub fn fence_changes(conn: &Connection, library: &str, devices: &[String]) -> Re
     Ok(changes)
 }
 
+/// Turns `changes` into a seal (D94): a fence for every device registered in the library
+/// and for this one, each with the newest operation this device holds of it (this
+/// device's own is its `previous`). A change that already updates a device row gets the
+/// fence as one more field, so no row is touched twice in an operation. Whoever
+/// calls it must have registered this device first, so the mark is the true last one.
+pub fn seal_changes(conn: &Connection, library: &str, changes: &mut Vec<Change>) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    let mut devices: Vec<String> = conn
+        .prepare("SELECT id FROM devices WHERE library_id = ?1 ORDER BY id")?
+        .query_map([library], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    if !devices.contains(&me) {
+        devices.push(me);
+    }
+    for device in devices {
+        let mark = serde_json::Value::String(fence_mark(conn, library, &device)?);
+        let update = changes.iter_mut().find(|change| {
+            change.entity == Entity::Device
+                && change.action == Action::Update
+                && change.id == device
+        });
+        match update {
+            Some(change) => {
+                change.fields.insert("trusted_through".into(), mark);
+            }
+            None => changes.push(Change::update(
+                Entity::Device,
+                &device,
+                serde_json::json!({ "trusted_through": mark }),
+            )),
+        }
+    }
+    Ok(())
+}
+
+/// A library that got its roles before seals existed is sealed by an administrator's
+/// device (D94), once: nothing is written where a seal is already applied, nor on a
+/// device that is not an administrator's. Called when a sync session has merged what
+/// the other side had, never on start: a seal believes of each device only what this
+/// one holds, and a device that has been away would fence what the others did meanwhile.
+pub fn seal_if_missing(conn: &mut Connection, libraries: &[String]) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    for library in libraries {
+        let sealed: bool = conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM device_seals s
+                              JOIN operations o ON o.library_id = s.library_id AND o.id = s.operation_id
+                             WHERE s.library_id = ?1 AND o.status = 'applied')",
+            [library],
+            |row| row.get(0),
+        )?;
+        let admin = SqlView::new(conn, library).role_of_device(&me) == Some(Role::Admin);
+        if sealed || !admin || !has_roles(conn, library)? {
+            continue;
+        }
+        let tx = conn.transaction()?;
+        ops::ensure_registered(&tx, library)?;
+        let mut changes = Vec::new();
+        seal_changes(&tx, library, &mut changes)?;
+        ops::record(&tx, library, "library.seal", changes)?;
+        tx.commit()?;
+    }
+    Ok(())
+}
+
 /// A fence an operation of the log sets (D84, D87), not yet known to be honoured.
 struct Fence {
+    author: String,
     device: String,
     through: String,
     until: String,
@@ -278,6 +349,7 @@ fn fences_of(operation: &Operation) -> Vec<Fence> {
         .filter_map(|change| {
             let through = change.fields.get("trusted_through")?.as_str()?;
             Some(Fence {
+                author: operation.hlc.device.clone(),
                 device: change.id.clone(),
                 through: through.to_owned(),
                 until: operation.hlc.to_string(),
@@ -285,6 +357,13 @@ fn fences_of(operation: &Operation) -> Vec<Fence> {
             })
         })
         .collect()
+}
+
+/// Whether the operation fences its own author's device: a seal (D94), if it is applied.
+pub fn is_seal(operation: &Operation) -> bool {
+    fences_of(operation)
+        .iter()
+        .any(|fence| fence.device == fence.author)
 }
 
 /// Notes the fence and the operations it still counts. Worked out here, once,
@@ -304,6 +383,13 @@ fn insert_fence(conn: &Connection, library: &str, fence: &Fence) -> Result<()> {
             fence.operation_id
         ],
     )?;
+    if fence.device == fence.author {
+        conn.execute(
+            "INSERT OR IGNORE INTO device_seals (library_id, operation_id, until_hlc)
+             VALUES (?1, ?2, ?3)",
+            params![library, fence.operation_id, fence.until],
+        )?;
+    }
     conn.execute(
         "INSERT OR IGNORE INTO device_fence_chains
             (library_id, fence_operation_id, device_id, operation_id)
@@ -324,8 +410,9 @@ fn insert_fence(conn: &Connection, library: &str, fence: &Fence) -> Result<()> {
 /// fence was known, it has to be judged again.
 pub fn note_fences(conn: &Connection, operation: &Operation) -> Result<bool> {
     let mut late = false;
-    for fence in fences_of(operation) {
-        insert_fence(conn, &operation.library, &fence)?;
+    let fences = fences_of(operation);
+    for fence in &fences {
+        insert_fence(conn, &operation.library, fence)?;
         late |= conn.query_row(
             "SELECT EXISTS (SELECT 1 FROM operations o
               WHERE o.library_id = ?1 AND o.device_id = ?2 AND o.replicable = 1
@@ -340,6 +427,18 @@ pub fn note_fences(conn: &Connection, operation: &Operation) -> Result<bool> {
                 fence.through,
                 fence.operation_id
             ],
+            |row| row.get::<_, bool>(0),
+        )?;
+    }
+    if is_seal(operation) {
+        // A seal also puts under suspicion what the devices it does not name did before it.
+        late |= conn.query_row(
+            "SELECT EXISTS (SELECT 1 FROM operations o
+              WHERE o.library_id = ?1 AND o.replicable = 1 AND o.hlc < ?2 AND o.id <> ?3
+                AND NOT EXISTS (SELECT 1 FROM device_fences f
+                                 WHERE f.library_id = ?1 AND f.operation_id = ?3
+                                   AND f.device_id = o.device_id))",
+            params![operation.library, operation.hlc.to_string(), operation.id],
             |row| row.get::<_, bool>(0),
         )?;
     }

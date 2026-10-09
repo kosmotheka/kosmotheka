@@ -12,6 +12,7 @@ use App\Entity\Catalog\Mark;
 use App\Entity\Catalog\Member;
 use App\Entity\Catalog\Revocation;
 use App\Entity\Catalog\RowAuthor;
+use App\Entity\Catalog\Seal;
 use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
 use App\Enum\CatalogEntity;
@@ -120,6 +121,18 @@ final readonly class CatalogLibraryView implements LibraryView
         ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)
             ->setParameter('hlc', $operation->hlc)->setParameter('operationText', $operation->id)->setParameter('operation', Uuid::fromString($operation->id), 'uuid')->setMaxResults(1)->getResult();
         if ([] !== $fences) {
+            return true;
+        }
+
+        // Under a seal (D94) that does not name the author: a seal fences every device, and of one it does
+        // not name nothing dated before it is believed.
+        $seals = $this->entityManager->createQuery(\sprintf(
+            'SELECT 1 FROM %s s WHERE s.cloudLibrary = :library AND :hlc < s.untilHlc
+               AND NOT EXISTS (SELECT 1 FROM %s f WHERE f.cloudLibrary = :library AND f.operationId = s.operationId AND f.deviceId = :device)',
+            Seal::class,
+            Fence::class,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setParameter('hlc', $operation->hlc)->setMaxResults(1)->getResult();
+        if ([] !== $seals) {
             return true;
         }
 

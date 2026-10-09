@@ -43,6 +43,9 @@ pub trait LibraryView {
     /// dated before the operation that took the author's power away, and neither
     /// the last one the administrator had nor one of its ancestors through
     /// `previous`. Such an operation cannot be honest.
+    /// Also when it is dated before an applied seal (D94) that does not name its author:
+    /// a seal fences the device of its own author, so it fences every device, and the
+    /// ones it does not name have no operation it believes before it.
     /// Also after a revocation of the author still in force at its HLC (D71): a
     /// revoked device writes nothing, even through a device that has not heard of it yet.
     fn fenced(&self, operation: &Operation) -> bool;

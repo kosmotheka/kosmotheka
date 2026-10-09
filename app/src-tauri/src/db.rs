@@ -40,6 +40,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0028_forgotten_libraries.sql")),
     M::up(include_str!("../migrations/0029_operation_chain.sql")),
     M::up(include_str!("../migrations/0030_delete_wins.sql")).foreign_key_check(),
+    M::up(include_str!("../migrations/0031_seals.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 

@@ -546,6 +546,7 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
     conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM row_authors WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM device_fences WHERE library_id = ?1", [library])?;
+    conn.execute("DELETE FROM device_seals WHERE library_id = ?1", [library])?;
     conn.execute(
         "DELETE FROM device_fence_chains WHERE library_id = ?1",
         [library],

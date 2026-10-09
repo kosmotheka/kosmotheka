@@ -310,7 +310,13 @@ async fn pull_and_merge<A: CloudApi>(
         .into_iter()
         .partition(|synced| synced.operation.library == library);
     report.rejected += dropped.len();
-    let merged: MergeReport = sync::merge(&mut *database.lock()?, kept)?;
+    let merged: MergeReport = {
+        let mut conn = database.lock()?;
+        let merged = sync::merge(&mut conn, kept)?;
+        // With what the cloud had already merged; push_missing then sends the seal (D94).
+        crate::permissions::seal_if_missing(&mut conn, &[library.to_owned()])?;
+        merged
+    };
     report.received += merged.received;
     report.rejected += merged.rejected;
     Ok(pulled.vector)

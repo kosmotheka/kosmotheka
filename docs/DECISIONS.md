@@ -99,6 +99,7 @@
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
+| D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
 
 ---
 
@@ -1507,6 +1508,13 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 **Consecuencias:** el escaneo y la reescritura se hacen antes de abrir el repositorio (D03). La traducción de `docs/` al inglés (D02) pasa a ser la parte grande del trabajo. Los hashes de los commits cambian una vez.
 
+**El método de auditoría se publica; sus resultados, no (añadido el 09/10/2026, propuesta; lo pide el maintainer).** La comunidad tiene que poder auditar la app por su cuenta y también revisar y mejorar cómo la auditamos nosotros.
+
+- **Público: el qué y el cómo.** El método (hoy `docs/audits/README.md`), los temas con sus preguntas, las reglas de revisión y de triaje, los scripts que preparan la instantánea, los escáneres y los hechos, la escala de gravedad y confianza, y lo que la auditoría no cubre todavía.
+- **Privado: lo que salió de nuestro proceso.** Los informes de cada pasada, el registro de hallazgos y los descartes siguen siendo candidatos a salir del historial, como ya decía esta decisión, y viven en la carpeta de trabajo.
+- **Sin atarse a una herramienta.** La documentación dice que nosotros usamos Claude, y separa dos partes. La **determinista** (escáneres con versión fijada, hechos, contratos entre capas, paquetes de contexto) la ejecuta cualquiera con Docker y da el mismo resultado; se documenta cada salida y cómo interpretarla. La **de juicio** (revisar un paquete con las preguntas de su tema) se describe como un procedimiento que puede seguir una persona o cualquier asistente, Codex por ejemplo: qué se le da, qué se le pregunta, qué formato devuelve y cómo se verifica lo que dice.
+- **Acordado con el maintainer el 09/10/2026, por hacer antes de abrir el repositorio:** los scripts leen hoy `docs/audits/descartes.md` y el último informe, que serán privados, así que tienen que funcionar sin ellos; el método y la skill nombran hallazgos concretos (SEG-…) como ejemplo, y se cambian por ejemplos inventados; y el modelo de amenazas (`amenazas.md`) **se publica**, después de repasarlo.
+
 ## D91 · Bienvenida al primer arranque, con los servicios externos explicados y desactivables — `aceptada`
 
 **Contexto:** las búsquedas en catálogos externos mejoran mucho el alta (las bibliotecas nacionales, [fuentes-libros-es.md](research/fuentes-libros-es.md)). Algunas solo pueden ir a través del servidor (la Library of Congress solo responde por HTTP sin cifrar). Hoy la app ya consulta Open Library, Inventaire, Wikidata y MusicBrainz desde el móvil, y solo lo dice la política de privacidad. El maintainer quiere activarlas por defecto para que la experiencia sea buena, pero **siendo totalmente transparente**: esconderlo en la política de privacidad es una trampa, porque nadie la lee.
@@ -1616,4 +1624,37 @@ Aceptada el 09/10/2026. Cierra el diseño de SEG-013 (auditoría [2026-10-03-2](
 
 **Por qué no se comprueba el rol antes de guardar nada.** Quién puede subir una biblioteca está escrito dentro de lo que se sube: los roles son operaciones del registro y cambian a lo largo de él, así que hasta tener el registro el servidor no puede saberlo. Con lotes, cuando llega el enlace (el último) los lotes anteriores ya están guardados. Lo que se deshace es solo el `push` que trae el enlace. **No se vacía la biblioteca:** se pensó y se descartó, porque no protege de nada que no se consiga igual subiendo el registro sin los roles, y añadiría un borrado. Lo que queda es la misma copia privada que se acepta abajo, sin operación de enlace.
 
+**Sin salida cuando el enlace acaba en petición (SEG-023, aceptado el 09/10/2026; pendiente de retomar).** Si unos roles con fecha anterior al enlace llegan después (alguien los activó sin conexión antes de que otra persona subiera la biblioteca), el enlace pasa a petición en la app y en la nube. La app deja de ver la biblioteca como enlazada y la de la nube queda huérfana: responde `403 link_not_allowed` a todo `push` y no hay ruta para borrarla ni volver a enlazarla. No se pierden datos y la administradora puede subir la biblioteca de nuevo, a otra de la nube. Se acepta así por ahora; **se retoma cuando se construya el borrado de bibliotecas de la nube**, que es la salida natural. El caso hostil (antedatar los roles) lo cierra D94.
+
 **Consecuencias.** D84 no cambia. SEG-013 se cierra cuando 7.4.6 tenga la regla y su test hostil. La app no cambia: ya comprueba el permiso antes de crear la biblioteca en la nube, así que una app sin modificar nunca recibe ese error.
+
+## D94 · Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más — `aceptada`
+
+Aceptada el 09/10/2026. Cierra el diseño de SEG-025; se construye en 7.4.7.
+
+**Contexto.** La regla 1 de los permisos (`spec/README.md`, D73) dice que mientras nadie tiene rol todos pueden todo, y cada operación se juzga con los roles de su fecha. La fecha la pone el autor. Un dispositivo emparejado con la app modificada puede firmar hoy una operación fechada antes de la activación de los roles, y se le cree. Comprobado el 09/10/2026 por la ruta de `push`, con dos sondas:
+
+- un lector fecha su enlace a la nube antes de los roles: queda aplicado y la regla de D93 no lo ve;
+- un dispositivo fecha antes de la activación una operación que crea un miembro administrador y se asigna a él: queda aplicada, la activación de verdad pasa a petición y el dispositivo se queda de administrador.
+
+Las reglas son las mismas en la app, así que ocurre igual por la red local. Las vallas de D84 y D87 ya resuelven esto mismo cuando se quita poder a alguien, pero solo para sus dispositivos y solo en ese momento.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. La activación pone valla a todos los dispositivos, nombrados o no | Reutiliza las vallas; cierra la toma de control y el enlace antedatado, en la app y en la nube | Cambio de protocolo. Lo editado sin conexión antes de activar y no sincronizado queda en petición |
+| B. Solo el servidor: D93 exige que el autor del enlace sea administrador hoy | Pequeño | No toca la toma de control; bloquea a quien subió sin roles y después dejó de ser administrador |
+| C. Vallas solo para los dispositivos ya registrados al activar | Sin regla nueva en el juez | No cubre un dispositivo emparejado después, que es el caso probado |
+
+**Decisión.** La A, con esta forma:
+
+- **Sello.** Es una operación aplicada que pone valla (`trusted_through`) al dispositivo de su propio autor. Solo un administrador, o cualquiera mientras no hay roles, puede escribirla; nadie más toca su propia valla. No hace falta ningún campo nuevo en la operación.
+- **Qué hace un sello.** Además de las vallas que nombra, vale para todo dispositivo que no nombra: una operación fechada antes del sello se cree solo si es la que el sello marca para su autor o una anterior suya por `previous`. La demás se juzga como de nadie (D84), con roles o sin ellos. Un dispositivo que el sello no nombra no tiene ninguna operación creíble anterior al sello.
+- **Quién sella.** La app, en la operación que da el primer rol: nombra todos los dispositivos registrados, con la última operación que tiene de cada uno, y al propio autor con su operación anterior.
+- **Bibliotecas que ya tienen roles.** Su activación no lleva sello. La app de un administrador las sella sola una vez, **al terminar de fusionar lo recibido en una sincronización** (red local o nube), si el registro no tiene ningún sello aplicado. No al arrancar (corregido el 10/10/2026, al revisar 7.4.7): un sello solo cree de cada dispositivo lo que tiene quien sella, y un dispositivo que lleva tiempo sin sincronizar dejaría en petición lo que los demás hicieron entretanto. Mientras no sincroniza, la biblioteca sigue sin sello, como antes. No se añade un campo ni se cambia lo ya firmado.
+- **Solo cuentan los sellos aplicados**, como las vallas: un sello falso antedatado cae bajo el sello de verdad, queda en petición y deja de contar. Se calcula con la misma repetición hasta que el resultado no cambia que ya usan las vallas.
+
+**Lo que se acepta.** Lo que un dispositivo honrado hizo sin conexión antes del sello, y el administrador que sella no había recibido, queda en petición: no se pierde y un administrador lo acepta. Es el mismo coste que D84 ya acepta al degradar. Una biblioteca que nunca activa roles no tiene sello y sigue como hasta ahora.
+
+**Consecuencias.** Cambian `spec/README.md` («Roles and permissions»), `permissions.json` (casos hostiles nuevos), el juez de Rust y el de PHP, y `spec/sync.json` sube de versión: una app sin actualizar juzgaría distinto y no debe sincronizar. D73, D84 y D87 no cambian; esto añade una regla sobre ellas. Con el sello, la regla de D93 vuelve a valer contra quien antedata su enlace, y SEG-013 y SEG-025 se cierran cuando 7.4.7 tenga los casos hostiles en verde.

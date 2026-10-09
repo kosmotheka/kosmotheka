@@ -582,6 +582,82 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(1, $this->publishersIn($cloud));
     }
 
+    /**
+     * SEG-025 through the route: a device the administrator has not heard of signs, dated before the activation, an
+     * operation that makes it an administrator. The activation seals the library and the takeover falls (D94).
+     */
+    public function testADeviceThatDatesATakeoverBeforeTheSealedActivationDoesNotGetIt(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $mallory = '00000000-0000-7000-8000-0000000000a9';
+        $adminRegistration = $admin->registration(self::LOCAL, self::T);
+        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
+        $takeover = $this->laptop->sign(self::LOCAL, self::T + 5, 'family.roles', [
+            ['entity' => 'member', 'id' => $mallory, 'action' => 'create', 'fields' => ['name' => 'Mallory', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $mallory]],
+        ]);
+        $activation = $this->sealedActivationOf($admin, self::T + 10, $adminRegistration);
+        $demotion = $this->laptop->sign(self::LOCAL, self::T + 20, 'member.role', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'update', 'fields' => ['role' => 'reader']],
+        ]);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 30))['status']);
+
+        $response = $this->push($this->familySession, $cloud, [$adminRegistration, $registration, $takeover, $activation, $demotion]);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 5, 'known' => 0, 'rejected' => 0]], $response);
+        self::assertSame(['applied' => 3, 'request' => 2], $this->statuses());
+        $statuses = self::getContainer()->get(Connection::class)->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
+        self::assertIsString($takeover['id']);
+        self::assertIsString($activation['id']);
+        self::assertIsString($demotion['id']);
+        self::assertSame('request', $statuses[$takeover['id']] ?? null);
+        self::assertSame('applied', $statuses[$activation['id']] ?? null);
+        self::assertSame('request', $statuses[$demotion['id']] ?? null);
+        self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM catalog_members WHERE cloud_library_id = ? AND name = ?', [$cloud, 'Mallory']));
+        self::assertSame(1, $this->scalarCount('SELECT COUNT(*) FROM catalog_members WHERE cloud_library_id = ? AND role = ?', [$cloud, 'admin']));
+    }
+
+    /**
+     * D93 with D94: a reader uploads the whole register, roles and seal included, and his own link dated before the seal.
+     * No roles stood at that date, but the seal does not name his device: his link is a request and the push is undone.
+     */
+    public function testAReaderUploadingTheSealedRegisterWithHisLinkDatedBeforeTheSealIsTurnedDown(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $admin = SigningDevice::generate();
+        $adminRegistration = $admin->registration(self::LOCAL, self::T);
+        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 5);
+        $activation = $this->sealedActivationOf($admin, self::T + 10, $adminRegistration);
+        $assignment = $this->assignmentOf($admin, $this->laptop, 11);
+
+        $response = $this->push($this->familySession, $cloud, [$adminRegistration, $registration, $link, $activation, $assignment]);
+
+        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $response);
+        $this->assertNotLinkedAndNothingStored($cloud);
+        self::assertSame([], $this->statuses());
+    }
+
+    /**
+     * The activation of a family as the app writes it since D94: the administrator, a reader, and the seal. The seal fences
+     * the administrator's own device with its previous operation and names nobody else.
+     *
+     * @param array<string, mixed> $registration the administrator's previous operation
+     *
+     * @return array<string, mixed>
+     */
+    private function sealedActivationOf(SigningDevice $admin, int $time, array $registration): array
+    {
+        \assert(\is_string($registration['id']));
+
+        return $admin->sign(self::LOCAL, $time, 'family.roles', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
+            ['entity' => 'device', 'id' => $admin->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'trusted_through' => $registration['id']]],
+        ]);
+    }
+
     /** 7.4.6: the log keeps who uploaded each operation, apart from who signed it. */
     public function testEachStoredOperationKeepsTheAccountAndDeviceThatUploadedIt(): void
     {

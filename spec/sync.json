@@ -1,4 +1,4 @@
 {
   "description": "What every device and server must agree on to sync (D31). schemaVersion is the app's database version: devices and servers on a different one do not sync. The app checks it against its migrations in a test.",
-  "schemaVersion": 30
+  "schemaVersion": 31
 }

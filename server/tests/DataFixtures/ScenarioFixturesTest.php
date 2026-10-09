@@ -197,8 +197,8 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertSame(15, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
-        // 14 + 4 + 13 + 2: nothing of another local id, unsigned or forged got in.
-        self::assertSame(35, $this->rowsIn('cloud_operation'));
+        // 15 (the Garcías) + 4 (Kenji) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
+        self::assertSame(34, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void

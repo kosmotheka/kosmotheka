@@ -8,6 +8,7 @@ use App\Entity\Catalog\CatalogRow;
 use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
 use App\Entity\Catalog\RowAuthor;
+use App\Entity\Catalog\Seal;
 use App\Entity\Catalog\Tombstone;
 use App\Enum\CatalogEntity;
 use App\Enum\FieldType;
@@ -29,6 +30,7 @@ final class CatalogSchemaTest extends KernelTestCase
         RowAuthor::class => 'catalog_row_authors',
         Fence::class => 'catalog_device_fences',
         FenceChain::class => 'catalog_device_fence_chains',
+        Seal::class => 'catalog_device_seals',
     ];
 
     /** D84: the link of a library is the cloud library itself, so these two have no column. */
@@ -204,8 +206,8 @@ final class CatalogSchemaTest extends KernelTestCase
             self::assertSame($table, $this->em->getClassMetadata($class)->getTableName());
             self::assertContains('cloud_library_id -> cloud_library(id) cascade', $this->foreignKeys($table), $table);
         }
-        foreach (['catalog_tombstones', 'catalog_device_fences'] as $table) {
-            $column = 'catalog_device_fences' === $table ? 'until_hlc' : 'hlc';
+        foreach (['catalog_tombstones', 'catalog_device_fences', 'catalog_device_seals'] as $table) {
+            $column = 'catalog_tombstones' === $table ? 'hlc' : 'until_hlc';
             $collation = $this->db->fetchOne(
                 'SELECT collation_name FROM information_schema.columns
                   WHERE table_schema = current_schema() AND table_name = :t AND column_name = :c',

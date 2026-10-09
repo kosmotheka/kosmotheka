@@ -548,6 +548,40 @@ fn laptop_admin_phone_reader() -> (Database, Database, String) {
 }
 
 #[tokio::test]
+async fn a_session_with_the_cloud_seals_a_library_that_had_roles_and_no_seal_and_sends_the_seal() {
+    let cloud = FakeCloud::default();
+    let api = cloud.api("tersoal");
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let seals = |device: &Database| -> Vec<String> {
+        device
+            .lock()
+            .unwrap()
+            .prepare("SELECT id FROM operations WHERE library_id = ?1 AND intent = 'library.seal'")
+            .unwrap()
+            .query_map([&lib], |row| row.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    };
+    upload(&laptop, &api, &lib).await.unwrap();
+
+    sync_library(&laptop, &api, &lib).await.unwrap();
+    sync_library(&laptop, &api, &lib).await.unwrap();
+
+    let sealed = seals(&laptop);
+    assert_eq!(sealed.len(), 1, "once, and not again in the next session");
+    assert!(
+        cloud
+            .operation_ids(&cloud.only_library())
+            .contains(&sealed[0])
+    );
+    // The reader's device has sessions too, and seals nothing.
+    lan_sync(&laptop, &phone, &lib);
+    assert_eq!(seals(&phone), sealed);
+    assert_converged(&[&laptop, &phone], &lib);
+}
+
+#[tokio::test]
 async fn a_reader_cannot_upload_but_the_administrator_can() {
     let cloud = FakeCloud::default();
     let (laptop, phone, lib) = laptop_admin_phone_reader();
