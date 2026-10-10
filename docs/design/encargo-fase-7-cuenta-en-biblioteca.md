@@ -48,7 +48,8 @@ Situación: Laura inicia sesión con su cuenta en la tablet de casa, que en la b
 
 7. Errores y estados (para docs/design/errors.md)
 Proponed el texto, en español e inglés, de:
-- Has dejado de tener acceso a esta biblioteca en la nube (te quitaron o saliste desde otro dispositivo). Sigue en este dispositivo hasta que la borres; ya no se sincroniza.
+- Te han retirado el acceso a esta biblioteca y se ha borrado de este dispositivo (la app lo ha comprobado con la orden de quien administra).
+- La nube dice que ya no tienes acceso a esta biblioteca, pero la app no ha podido comprobarlo: la biblioteca sigue en este dispositivo y ha dejado de sincronizarse con la nube. Habla con quien la administra.
 - Esta biblioteca solo puede subirla quien la administra.
 - Este dispositivo no puede sincronizar esta biblioteca con la nube: hay otro dispositivo registrado con su mismo nombre interno. No se pierde nada; lo arregla quien administra quitando ese dispositivo y vinculando este de nuevo. (Es un caso muy raro; el texto debe tranquilizar y decir a quién acudir.)
 - Otra cuenta ya está enlazada con esta persona en esta biblioteca.
@@ -60,7 +61,7 @@ Las pantallas nuevas y las que cambian (CloudPick, ajustes de la biblioteca, per
 
 ## Notas para quien construya las pantallas (hito 7.5.5)
 
-- El punto 6 depende del hito 7.5.4 (retirar el acceso), que aún no está construido: sus textos pueden cambiar.
+- El punto 6 ya está construido por dentro (hitos 7.5.4a y 7.5.4b, D98): `people::withdraw_person` y `restore_person` existen sin comando de Tauri ni pantalla; los avisos `cloud.notice.removed` y `accessWithdrawn` ya tienen texto provisional.
 - La etiqueta «por la nube» del punto 5 necesita saber quién firmó la vinculación de cada dispositivo; hoy la app no lo expone a las pantallas.
 - El caso del punto 4 lo devuelve el servidor en `conflicts` al reclamar (`POST /v1/cloud/libraries/claim`); la app todavía no lo guarda ni lo enseña.
 - El texto de `cloud.pick.intro` («Solo las que puedes compartir») ya es falso desde 7.5.2b-1 y se corrige al construir estas pantallas.
