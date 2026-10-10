@@ -11,6 +11,7 @@ use App\Entity\CloudLibrary;
 use App\Entity\User;
 use App\Repository\CloudLibraryRepository;
 use App\Security\CurrentDevice;
+use App\Sync\CloudIdentityIssuer;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
 use App\Sync\CloudLink;
@@ -37,6 +38,7 @@ final class CloudController extends AbstractController
         private readonly CloudLibraryAccess $access,
         private readonly CloudLibraryCreator $creator,
         private readonly CloudLibraryRepository $libraries,
+        private readonly CloudIdentityIssuer $identity,
         private readonly CloudPull $cloudPull,
         private readonly CloudLink $cloudLink,
         private readonly CloudPush $cloudPush,
@@ -49,17 +51,22 @@ final class CloudController extends AbstractController
     {
         $library = $this->creator->create($this->currentUser());
 
-        return new JsonResponse(['id' => $library->getId()->toRfc4122()], Response::HTTP_CREATED);
+        return new JsonResponse(['id' => $library->getId()->toRfc4122()] + $this->identityOf($library), Response::HTTP_CREATED);
     }
 
     #[Route('', methods: ['GET'])]
     public function list(): JsonResponse
     {
         return new JsonResponse(array_map(
-            static fn (CloudLibrary $library): array => [
-                'id' => $library->getId()->toRfc4122(),
-                'localLibraryId' => $library->getLocalLibraryId(),
-            ],
+            function (CloudLibrary $library): array {
+                // A library from before the server had a secret gets its cloud device the first time it is listed.
+                $this->identity->ensure($library);
+
+                return [
+                    'id' => $library->getId()->toRfc4122(),
+                    'localLibraryId' => $library->getLocalLibraryId(),
+                ] + $this->identityOf($library);
+            },
             $this->libraries->findAllAccessibleBy($this->currentUser()),
         ));
     }
@@ -88,6 +95,17 @@ final class CloudController extends AbstractController
         $library = $this->access->require($id, $this->currentUser());
 
         return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());
+    }
+
+    /**
+     * What the app needs to name the cloud in the library (D95): the id of its device and its public key,
+     * or nulls. The private key is not here and never leaves the server, not even encrypted.
+     *
+     * @return array{cloudDeviceId: ?string, cloudPublicKey: ?string}
+     */
+    private function identityOf(CloudLibrary $library): array
+    {
+        return ['cloudDeviceId' => $library->getCloudDeviceId()?->toRfc4122(), 'cloudPublicKey' => $library->getCloudPublicKey()];
     }
 
     private function currentUser(): User

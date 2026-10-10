@@ -40,6 +40,11 @@ services:
             $subscriberKey: '%env(MERCURE_SUBSCRIBER_JWT_KEY)%'
             $issuer: '%app.mercure_issuer%'
 
+    # Encrypts the private key of each cloud library (D95); empty means no cloud identity (D18).
+    App\Security\CloudKeyVault:
+        arguments:
+            $secret: '%env(CLOUD_KEY_SECRET)%'
+
 when@dev:
     services:
         _defaults:

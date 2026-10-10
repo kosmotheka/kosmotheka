@@ -179,7 +179,16 @@ fn record_inner(
     }
     for change in &operation.changes {
         if apply_changes {
-            apply(tx, library, change)?;
+            match apply(tx, library, change) {
+                // A fence on a device that is not registered here yet (the cloud's, D95): the merge skips a
+                // change to a row that is not there, and so does this; the fence is read from the operation.
+                Err(Error::MissingRow { .. })
+                    if change.entity == Entity::Device && change.action == Action::Update =>
+                {
+                    continue;
+                }
+                other => other?,
+            }
         }
         crate::permissions::note_author(tx, library, change, &device_id)?;
         write_versions(tx, library, change, &hlc_text)?;

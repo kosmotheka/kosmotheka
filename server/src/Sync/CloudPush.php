@@ -21,6 +21,7 @@ use App\Security\AccountException;
 use App\Sync\Permission\CatalogJudge;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * The rules for what a cloud library accepts (D84; docs/architecture/cloud.md).
@@ -46,6 +47,8 @@ final readonly class CloudPush
         private CloudLink $link,
         private SyncNotifier $notifier,
         private CatalogJudge $judge,
+        #[Autowire(lazy: true)]
+        private CloudAuthor $author,
     ) {
     }
 
@@ -60,7 +63,14 @@ final readonly class CloudPush
         // one by one in apply(): history from before an update is still good.
         $this->schemaVersion->require($request->schemaVersion);
 
-        $result = $this->entityManager->wrapInTransaction(fn (): PushResult => $this->apply($library, $request, $pushedBy));
+        $result = $this->entityManager->wrapInTransaction(function () use ($library, $request, $pushedBy): PushResult {
+            $result = $this->applyLocked($library, $request->operations, $pushedBy);
+            // The library has just been linked and names its cloud device: the device registers itself, last (D95).
+            // Not counted in the answer: the counts are the client's operations.
+            $this->author->registerIfNamed($library);
+
+            return $result;
+        });
 
         // After the commit, and only when something new was stored (D75).
         if ($result->received > 0) {
@@ -70,14 +80,21 @@ final readonly class CloudPush
         return $result;
     }
 
-    private function apply(CloudLibrary $library, PushRequest $request, Device $pushedBy): PushResult
+    /**
+     * Stores and judges the operations, inside the transaction the caller has opened. The same path for what a
+     * device uploads and for what the cloud signs itself (CloudAuthor): no operation enters by another one.
+     *
+     * @param list<PushedOperation> $operations
+     * @param ?Device               $pushedBy   the device the upload was authenticated with; null for what the server itself signs
+     */
+    public function applyLocked(CloudLibrary $library, array $operations, ?Device $pushedBy): PushResult
     {
         // One push at a time per library: linking and registering a key check first and write after.
         // The refresh also brings the link state as it is now, not as it was when the library was loaded.
         $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
 
         $entries = [];
-        foreach ($request->operations as $pushed) {
+        foreach ($operations as $pushed) {
             $entries[] = $this->read($pushed);
         }
 
@@ -205,7 +222,7 @@ final readonly class CloudPush
      *
      * @throws OperationRejectedException
      */
-    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?PushedOperation $verifiedLink, Device $pushedBy): bool
+    private function accept(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload, ?PushedOperation $verifiedLink, ?Device $pushedBy): bool
     {
         if ($this->operations->has($library, $payload->id)) {
             return false;
@@ -227,7 +244,7 @@ final readonly class CloudPush
             throw new OperationRejectedException(OperationRejection::BadSignature);
         }
         // A device's key never changes, whoever signs the change (as in the app's signature_holds).
-        $this->refuseKeyChanges($library, $payload);
+        $this->link->refuseKeyChanges($library, $payload);
         if (!$isTheLink) {
             $this->verifyAuthor($library, $pushed->operation, $payload);
         }
@@ -244,8 +261,8 @@ final readonly class CloudPush
             $pushed->schemaVersion,
             json_encode($pushed->operation, \JSON_THROW_ON_ERROR),
             $payload->previous,
-            $pushedBy->getUser()->getId()->toRfc4122(),
-            $pushedBy->getDeviceId(),
+            $pushedBy?->getUser()->getId()->toRfc4122(),
+            $pushedBy?->getDeviceId(),
         );
         // A library linked before the link was remembered (7.4.6) learns it when its link arrives (SEG-024).
         if ($stored && null === $remembered && $this->link->holds($library, $pushed, $payload)) {
@@ -312,23 +329,6 @@ final readonly class CloudPush
             $this->signature->verify($operation, $publicKey);
         } catch (InvalidSignatureException) {
             throw new OperationRejectedException(OperationRejection::BadSignature);
-        }
-    }
-
-    /**
-     * @throws OperationRejectedException when a `device` change offers another key than the registered one
-     */
-    private function refuseKeyChanges(CloudLibrary $library, OperationPayload $payload): void
-    {
-        foreach ($payload->changes as $change) {
-            $offered = $change->fields['public_key'] ?? null;
-            if (CatalogEntity::Device !== $change->entity || !\is_string($offered)) {
-                continue;
-            }
-            $registered = $this->deviceKeys->findOneInLibrary($library, $change->id)?->getPublicKey();
-            if (null !== $registered && !hash_equals($registered, $offered)) {
-                throw new OperationRejectedException(OperationRejection::KeyChanged);
-            }
         }
     }
 

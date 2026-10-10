@@ -28,7 +28,8 @@ use crate::{libraries, ops, people};
 pub trait CloudApi {
     /// Base URL of the server this account lives on.
     fn server(&self) -> &str;
-    async fn create_library(&self) -> Result<String>;
+    /// Creates the cloud library; the answer carries its id and, if the server has a secret, the cloud's device (D95).
+    async fn create_library(&self) -> Result<CloudLibrary>;
     async fn list_libraries(&self) -> Result<Vec<CloudLibrary>>;
     async fn pull(
         &self,
@@ -53,6 +54,23 @@ pub struct CloudLibrary {
     pub id: String,
     /// Nobody links it until the first push brings the link operation.
     pub local_library_id: Option<String>,
+    /// The cloud's own device in this library and its public key (D95); none when the server has no secret.
+    pub cloud_device_id: Option<String>,
+    pub cloud_public_key: Option<String>,
+}
+
+impl CloudLibrary {
+    /// The id of the cloud's device, if the server gave one **and** it derives from the key it gave (rule 12 of
+    /// `spec/README.md`). A server that lies about it gains nothing, and is not followed.
+    fn trusted_cloud_device(&self) -> Option<&str> {
+        let (id, key) = self
+            .cloud_device_id
+            .as_deref()
+            .zip(self.cloud_public_key.as_deref())?;
+        kosmotheka_domain::cloud_device_id(key)
+            .is_some_and(|derived| derived.eq_ignore_ascii_case(id))
+            .then_some(id)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -167,12 +185,14 @@ fn has_unsigned_history(conn: &Connection, library: &str) -> Result<bool> {
     )?)
 }
 
-fn link_change(library: &str, cloud: &str, server: &str) -> Change {
-    Change::update(
-        Entity::Library,
-        library,
-        json!({ "cloud_library_id": cloud, "cloud_server": server }),
-    )
+/// The link, which also names the cloud's device when the server gave one (D76, D95). The device's own row is
+/// not here: only a device creates its row, so the cloud registers itself.
+fn link_change(library: &str, cloud: &str, server: &str, cloud_device: Option<&str>) -> Change {
+    let mut fields = json!({ "cloud_library_id": cloud, "cloud_server": server });
+    if let Some(device) = cloud_device {
+        fields["cloud_device_id"] = json!(device);
+    }
+    Change::update(Entity::Library, library, fields)
 }
 
 /// Local only, no network: what each library can do about the cloud.
@@ -228,13 +248,15 @@ pub async fn upload<A: CloudApi>(
         }
         ensure_not_linked(&conn, library)?;
         // Linking is a change to the library row: with roles on, administrators only.
-        let probe = vec![link_change(library, "pending", &server)];
+        let probe = vec![link_change(library, "pending", &server, None)];
         if !ops::would_allow(&conn, library, probe)? {
             return Err(Error::NotAllowed);
         }
     }
 
-    let cloud = api.create_library().await?;
+    let created = api.create_library().await?;
+    let cloud = created.id.clone();
+    let cloud_device = created.trusted_cloud_device().map(str::to_owned);
 
     {
         let mut conn = database.lock()?;
@@ -245,7 +267,12 @@ pub async fn upload<A: CloudApi>(
             &tx,
             library,
             "library.cloud",
-            vec![link_change(library, &cloud, &server)],
+            vec![link_change(
+                library,
+                &cloud,
+                &server,
+                cloud_device.as_deref(),
+            )],
         )?;
         tx.commit()?;
     }

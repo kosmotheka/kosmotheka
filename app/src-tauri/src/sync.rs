@@ -3238,8 +3238,15 @@ mod tests {
 
     #[test]
     fn the_cloud_s_power_reaching_a_device_after_what_it_did_changes_nothing_in_the_end() {
-        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let (mut laptop, _phone) = laptop_admin_phone_reader();
         let lib = laptop.1.clone();
+        // The cloud: a device whose id is the one its key gives (D95).
+        let mut phone = Device::sharing(&laptop);
+        permissions::become_a_cloud_device(&phone.0, 7);
+        let tx = phone.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        laptop.pull_from(&phone);
         let phone_id = device_id_of(&phone);
         let mut tablet = Device::sharing(&laptop);
         let tx = tablet.0.transaction().unwrap();
@@ -3318,6 +3325,77 @@ mod tests {
         assert_eq!(
             ops::status_of(&laptop.0, &link.id).unwrap(),
             ops::Status::Applied
+        );
+    }
+
+    /// D95: the id of the cloud is tied to its key. A modified app registers the cloud's id with a key of its
+    /// own before the real registration, over the LAN, and signs with it: where that registration arrived first,
+    /// the key registered for the id is not the one the id derives from, so it has no power.
+    #[test]
+    fn the_clouds_id_registered_with_another_key_gives_no_cloud_power() {
+        let (mut laptop, _phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let cloud_id = kosmotheka_domain::cloud_device_id(
+            &kosmotheka_domain::DeviceKey::from_seed([7; 32]).public_key(),
+        )
+        .unwrap();
+        let laura = ops::new_id();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &laura,
+                json!({ "name": "Laura", "role": "editor", "can_share": false }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        crate::people::name_cloud_device(&mut laptop.0, &lib, &cloud_id).unwrap();
+
+        // The impostor holds the cloud's id and a key of its own; it skips every local check.
+        let impostor = Device::sharing(&laptop);
+        ops::set_identity(&impostor.0, &cloud_id, [9; 32]).unwrap();
+        let key = ops::signing_key(&impostor.0).unwrap().public_key();
+        let now = u64::try_from(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
+        )
+        .unwrap()
+            + 60_000;
+        let registration = forged_at(
+            &impostor,
+            "device.register",
+            vec![Change::create(
+                Entity::Device,
+                &cloud_id,
+                json!({ "public_key": key, "name": "The cloud, he says" }),
+            )],
+            now,
+            None,
+        );
+        let account = forged_at(
+            &impostor,
+            "member.account",
+            vec![Change::update(
+                Entity::Member,
+                &laura,
+                json!({ "account_id": ops::new_id() }),
+            )],
+            now + 1,
+            Some(&registration.operation.id),
+        );
+        let account_id = account.operation.id.clone();
+
+        merge(&mut laptop.0, vec![registration, account]).unwrap();
+
+        assert_eq!(
+            ops::status_of(&laptop.0, &account_id).unwrap(),
+            ops::Status::Request
         );
     }
 

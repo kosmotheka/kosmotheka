@@ -95,6 +95,17 @@ Las cuentas envían correo (código de confirmación, recuperación de contrase�
 - El emisor (`urn:kosmotheka:server`) y la audiencia (la misma `MERCURE_URL`) están fijos en `docker/docker-compose.yaml`; si cambias `MERCURE_URL`, cambia también `resource_identifier` allí.
 - Los suscriptores anónimos, la API de suscripciones y CORS vienen apagados por defecto en el hub y no se tocan. Latido: 40 s.
 
+## La clave de la nube (hito 7.5.2a)
+
+Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La clave privada se guarda en la base de datos **cifrada** con un secreto del servidor que no está en la base:
+
+| Variable | Dónde | Qué es |
+|---|---|---|
+| `CLOUD_KEY_SECRET` | `.env.local` (`.env` la trae vacía; `.env.test` trae un valor de prueba que no sirve fuera de los tests) | 32 bytes aleatorios en base64. **Vacía = sin identidad de nube** (D18): el servidor funciona como antes, las bibliotecas no tienen dispositivo de nube y la API devuelve nulos |
+
+- Se genera con `openssl rand -base64 32`. En producción la define el entorno (7.9) y entra en las copias de seguridad **aparte de la base de datos**: una copia de la base sin el secreto no permite firmar.
+- **Perderla deja a la nube sin poder firmar** en las bibliotecas ya creadas (la clave cifrada no se puede abrir; el servidor lo dice con una excepción, no con datos basura). Cambiarla tiene el mismo efecto. Las bibliotecas creadas con el secreto vacío reciben su identidad la primera vez que se listan o se enlazan, si el secreto ya está definido.
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

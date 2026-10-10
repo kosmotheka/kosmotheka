@@ -62,8 +62,13 @@ fn cloud_error(error: Error) -> Error {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CreatedWire {
     id: String,
+    #[serde(default)]
+    cloud_device_id: Option<String>,
+    #[serde(default)]
+    cloud_public_key: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -71,6 +76,10 @@ struct CreatedWire {
 struct ListedWire {
     id: String,
     local_library_id: Option<String>,
+    #[serde(default)]
+    cloud_device_id: Option<String>,
+    #[serde(default)]
+    cloud_public_key: Option<String>,
 }
 
 impl CloudApi for HttpCloud {
@@ -78,12 +87,17 @@ impl CloudApi for HttpCloud {
         &self.base
     }
 
-    async fn create_library(&self) -> Result<String> {
+    async fn create_library(&self) -> Result<CloudLibrary> {
         let created: CreatedWire =
             send_json(&self.client, Method::POST, &self.url(""), self.auth(), None)
                 .await
                 .map_err(cloud_error)?;
-        Ok(created.id)
+        Ok(CloudLibrary {
+            id: created.id,
+            local_library_id: None,
+            cloud_device_id: created.cloud_device_id,
+            cloud_public_key: created.cloud_public_key,
+        })
     }
 
     async fn list_libraries(&self) -> Result<Vec<CloudLibrary>> {
@@ -96,6 +110,8 @@ impl CloudApi for HttpCloud {
             .map(|wire| CloudLibrary {
                 id: wire.id,
                 local_library_id: wire.local_library_id,
+                cloud_device_id: wire.cloud_device_id,
+                cloud_public_key: wire.cloud_public_key,
             })
             .collect())
     }

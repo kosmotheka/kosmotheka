@@ -162,6 +162,21 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * The newest operation (by HLC) a device signed in the library: what its next one chains to.
+     *
+     * @return ?array{id: string, hlc: string}
+     */
+    public function latestOf(CloudLibrary $library, string $deviceId): ?array
+    {
+        $row = $this->getEntityManager()->createQuery(\sprintf('SELECT o.operationId AS id, o.hlc AS hlc FROM %s o WHERE o.cloudLibrary = :library AND o.authorDeviceId = :device ORDER BY o.hlc DESC', CloudOperation::class))
+            ->setParameter('library', $library->getId(), 'uuid')->setParameter('device', $deviceId)->setMaxResults(1)->getOneOrNullResult();
+
+        return \is_array($row) && \is_string($row['hlc']) && (\is_string($row['id']) || $row['id'] instanceof Uuid)
+            ? ['id' => $row['id'] instanceof Uuid ? $row['id']->toRfc4122() : Uuid::fromString($row['id'])->toRfc4122(), 'hlc' => $row['hlc']]
+            : null;
+    }
+
+    /**
      * The library's own vector: the greatest HLC of each author.
      *
      * @return array<string, string>

@@ -4,7 +4,9 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use kosmotheka_domain::{Change, CopyInput, EditionInput, Entity, Format, ValidBook};
+use kosmotheka_domain::{
+    Change, CopyInput, DeviceKey, EditionInput, Entity, Format, Hlc, Operation, ValidBook,
+};
 use serde_json::{Map, Value, json};
 
 use super::*;
@@ -12,10 +14,31 @@ use crate::catalog;
 
 // --- The fake cloud --------------------------------------------------------
 
+/// The cloud's own device in a fake library: a key pair, and the id that key gives (D95).
+struct FakeIdentity {
+    seed: u8,
+    id: String,
+    public_key: String,
+}
+
+impl FakeIdentity {
+    fn new(seed: u8) -> Self {
+        let public_key = DeviceKey::from_seed([seed; 32]).public_key();
+        Self {
+            seed,
+            id: kosmotheka_domain::cloud_device_id(&public_key).unwrap(),
+            public_key,
+        }
+    }
+}
+
 struct FakeLibrary {
     owner: String,
     local: Option<String>,
     operations: BTreeMap<String, SyncOperation>,
+    identity: Option<FakeIdentity>,
+    /// Whether the cloud has registered itself in the log.
+    registered: bool,
 }
 
 #[derive(Default)]
@@ -28,6 +51,10 @@ struct CloudState {
     /// How many operations one push request carries, as the real client cuts them;
     /// zero for all at once.
     batch: usize,
+    /// A server with no secret: its libraries get no cloud device.
+    without_identity: bool,
+    /// A server that names a cloud device whose id is not the one its key gives.
+    lying: bool,
 }
 
 /// Enforces only what the client is tested against: membership by account,
@@ -64,6 +91,24 @@ impl FakeCloud {
         self.0.lock().unwrap().links
     }
 
+    /// A server with an empty secret (D18): it gives its libraries no cloud device.
+    fn without_identity(self) -> Self {
+        self.0.lock().unwrap().without_identity = true;
+        self
+    }
+
+    /// A server that lies: the id it gives its cloud device does not derive from the key it gives.
+    fn lying(self) -> Self {
+        self.0.lock().unwrap().lying = true;
+        self
+    }
+
+    fn identity_of(&self, cloud: &str) -> Option<(String, String)> {
+        let state = self.0.lock().unwrap();
+        let identity = state.libraries[cloud].identity.as_ref()?;
+        Some((identity.id.clone(), identity.public_key.clone()))
+    }
+
     fn push_in_batches_of(&self, batch: usize) {
         self.0.lock().unwrap().batch = batch;
     }
@@ -73,12 +118,37 @@ impl FakeCloud {
         (state.pulls, state.pushes)
     }
 
+    /// The ids the devices wrote; the cloud's own operations (its registration) are not among them.
     fn operation_ids(&self, cloud: &str) -> Vec<String> {
-        self.0.lock().unwrap().libraries[cloud]
+        let state = self.0.lock().unwrap();
+        let library = &state.libraries[cloud];
+        let cloud_device = library
+            .identity
+            .as_ref()
+            .map(|identity| identity.id.as_str());
+        library
             .operations
-            .keys()
-            .cloned()
+            .iter()
+            .filter(|(_, synced)| Some(synced.operation.hlc.device.as_str()) != cloud_device)
+            .map(|(id, _)| id.clone())
             .collect()
+    }
+
+    /// The operations the cloud signed itself, oldest first.
+    fn cloud_operations(&self, cloud: &str) -> Vec<Operation> {
+        let state = self.0.lock().unwrap();
+        let library = &state.libraries[cloud];
+        let Some(identity) = &library.identity else {
+            return Vec::new();
+        };
+        let mut own: Vec<Operation> = library
+            .operations
+            .values()
+            .filter(|synced| synced.operation.hlc.device == identity.id)
+            .map(|synced| synced.operation.clone())
+            .collect();
+        own.sort_by(|a, b| a.hlc.cmp(&b.hlc));
+        own
     }
 
     fn only_library(&self) -> String {
@@ -99,6 +169,59 @@ impl FakeCloud {
     }
 }
 
+impl FakeLibrary {
+    /// What the real server does at the end of the push that names its cloud device (D95): the device
+    /// registers itself, signed with its own key, with the newest HLC of the log.
+    fn register_the_cloud(&mut self, server: &str) {
+        let Some(identity) = self.identity.as_ref().filter(|_| !self.registered) else {
+            return;
+        };
+        let names_it = self.operations.values().any(|synced| {
+            synced.operation.changes.iter().any(|change| {
+                change.entity == Entity::Library
+                    && change.fields.get("cloud_device_id").and_then(Value::as_str)
+                        == Some(identity.id.as_str())
+            })
+        });
+        let (Some(local), true) = (self.local.clone(), names_it) else {
+            return;
+        };
+        let newest = self
+            .operations
+            .values()
+            .map(|synced| synced.operation.hlc.millis)
+            .max()
+            .unwrap_or_default();
+        let schema_version = self.operations.values().next().unwrap().schema_version;
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: local,
+            hlc: Hlc {
+                millis: newest + 1,
+                counter: 0,
+                device: identity.id.clone(),
+            },
+            intent: "device.register".into(),
+            changes: vec![Change::create(
+                Entity::Device,
+                &identity.id,
+                json!({ "public_key": identity.public_key, "name": server.trim_start_matches("https://") }),
+            )],
+            previous: None,
+            signature: None,
+        };
+        operation.signature = Some(DeviceKey::from_seed([identity.seed; 32]).sign(&operation));
+        self.operations.insert(
+            operation.id.clone(),
+            SyncOperation {
+                schema_version,
+                operation,
+            },
+        );
+        self.registered = true;
+    }
+}
+
 fn is_link_to(synced: &SyncOperation, cloud: &str) -> bool {
     synced.operation.changes.iter().any(|change| {
         change.entity == Entity::Library
@@ -115,19 +238,34 @@ impl CloudApi for FakeApi {
         &self.server
     }
 
-    async fn create_library(&self) -> Result<String> {
+    async fn create_library(&self) -> Result<CloudLibrary> {
         let mut state = self.cloud.0.lock().unwrap();
         let id = ops::new_id();
         state.created += 1;
+        let mut identity = (!state.without_identity)
+            .then(|| FakeIdentity::new(100 + u8::try_from(state.created).unwrap()));
+        if let Some(identity) = identity.as_mut().filter(|_| state.lying) {
+            identity.id = ops::new_id();
+        }
+        let listed = CloudLibrary {
+            id: id.clone(),
+            local_library_id: None,
+            cloud_device_id: identity.as_ref().map(|identity| identity.id.clone()),
+            cloud_public_key: identity
+                .as_ref()
+                .map(|identity| identity.public_key.clone()),
+        };
         state.libraries.insert(
-            id.clone(),
+            id,
             FakeLibrary {
                 owner: self.account.clone(),
                 local: None,
                 operations: BTreeMap::new(),
+                identity,
+                registered: false,
             },
         );
-        Ok(id)
+        Ok(listed)
     }
 
     async fn list_libraries(&self) -> Result<Vec<CloudLibrary>> {
@@ -139,6 +277,14 @@ impl CloudApi for FakeApi {
             .map(|(id, library)| CloudLibrary {
                 id: id.clone(),
                 local_library_id: library.local.clone(),
+                cloud_device_id: library
+                    .identity
+                    .as_ref()
+                    .map(|identity| identity.id.clone()),
+                cloud_public_key: library
+                    .identity
+                    .as_ref()
+                    .map(|identity| identity.public_key.clone()),
             })
             .collect())
     }
@@ -239,6 +385,7 @@ impl CloudApi for FakeApi {
                 }
             }
         }
+        library.register_the_cloud(&self.server);
         Ok(report)
     }
 }
@@ -367,6 +514,13 @@ fn unwrap_err<T: std::fmt::Debug>(result: Result<T>) -> Error {
     result.expect_err("expected an error")
 }
 
+/// Uploads, and runs the session after it: the cloud registers itself at the end of the push that names it
+/// (D95), and the uploader hears of it in the next one.
+async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) {
+    upload(device, api, library).await.unwrap();
+    sync_library(device, api, library).await.unwrap();
+}
+
 // --- Tests -----------------------------------------------------------------
 
 #[tokio::test]
@@ -393,7 +547,7 @@ async fn uploading_links_the_library_and_sends_its_whole_log() {
         vec![Change::update(
             Entity::Library,
             &library,
-            json!({ "cloud_library_id": c, "cloud_server": api.server })
+            json!({ "cloud_library_id": c, "cloud_server": api.server, "cloud_device_id": cloud.identity_of(&c).unwrap().0 })
         )]
     );
     assert_eq!(cloud.operation_ids(&c), log_ids(&ana, &library));
@@ -602,7 +756,7 @@ async fn a_reader_cannot_upload_but_the_administrator_can() {
 async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
     let cloud = FakeCloud::default();
     let (ana, library) = device_with_family();
-    upload(&ana, &cloud.api("ana"), &library).await.unwrap();
+    upload_settled(&ana, &cloud.api("ana"), &library).await;
     let phone = Database::in_memory();
 
     let reports = sync_all(&phone, &cloud.api("ana")).await.unwrap();
@@ -662,9 +816,7 @@ async fn a_new_device_of_the_account_downloads_its_first_library() {
     let laptop = Database::in_memory();
     let library = first_library(&laptop);
     add(&laptop, &library, "Dune");
-    upload(&laptop, &cloud.api("kenji"), &library)
-        .await
-        .unwrap();
+    upload_settled(&laptop, &cloud.api("kenji"), &library).await;
     let phone = Database::in_memory();
     assert_ne!(first_library(&phone), library);
 
@@ -778,7 +930,7 @@ async fn a_link_signed_by_a_reader_of_the_family_is_not_adopted() {
     let cloud = FakeCloud::default();
     let (laptop, phone, lib) = laptop_admin_phone_reader();
     let api = cloud.api("ana");
-    let hugos = api.create_library().await.unwrap();
+    let hugos = api.create_library().await.unwrap().id;
     cloud
         .0
         .lock()
@@ -858,7 +1010,7 @@ async fn a_library_that_arrives_without_its_link_is_removed_again() {
     let cloud = FakeCloud::default();
     let api = cloud.api("ana");
     let (stranger, other) = device_with_family();
-    let c = api.create_library().await.unwrap();
+    let c = api.create_library().await.unwrap().id;
     let all = sync::operations_since(
         &stranger.lock().unwrap(),
         &LibraryVectors::from([(other.clone(), VersionVector::new())]),
@@ -882,7 +1034,7 @@ async fn a_library_that_arrives_without_its_link_is_removed_again() {
 async fn a_week_offline_then_both_paths(cloud_first: bool) {
     let cloud = FakeCloud::default();
     let (laptop, library) = device_with_family();
-    upload(&laptop, &cloud.api("ana"), &library).await.unwrap();
+    upload_settled(&laptop, &cloud.api("ana"), &library).await;
     // The phone only ever talks over the LAN; the tablet only to the cloud.
     let phone = Database::in_memory();
     lan_sync(&laptop, &phone, &library);
@@ -930,10 +1082,11 @@ async fn a_week_offline_then_both_paths(cloud_first: bool) {
         .1
         .len();
     assert_eq!(titles, 7);
-    assert_eq!(
-        cloud.operation_ids(&cloud.only_library()),
-        log_ids(&laptop, &library)
-    );
+    let mut devices_log = log_ids(&laptop, &library);
+    for own in cloud.cloud_operations(&cloud.only_library()) {
+        devices_log.retain(|id| *id != own.id);
+    }
+    assert_eq!(cloud.operation_ids(&cloud.only_library()), devices_log);
 }
 
 #[tokio::test]
@@ -976,4 +1129,133 @@ async fn a_library_the_account_no_longer_lists_is_skipped_and_reported() {
 
     assert_eq!(reports.len(), 1);
     assert_eq!(reports[0].outcome, Outcome::MissingInCloud);
+}
+
+#[tokio::test]
+async fn uploading_names_the_cloud_and_its_registration_comes_back_with_its_key() {
+    let cloud = FakeCloud::default();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+
+    upload_settled(&ana, &api, &library).await;
+
+    let c = cloud.only_library();
+    let (id, key) = cloud.identity_of(&c).unwrap();
+    assert_eq!(
+        kosmotheka_domain::cloud_device_id(&key).as_deref(),
+        Some(id.as_str())
+    );
+    // The library row names it, and the device row (its registration, signed by the cloud) holds its key.
+    let conn = ana.lock().unwrap();
+    let named: Option<String> = conn
+        .query_row(
+            "SELECT cloud_device_id FROM libraries WHERE id = ?1",
+            [&library],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(named.as_deref(), Some(id.as_str()));
+    let registered: String = conn
+        .query_row(
+            "SELECT public_key FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&library, &id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(registered, key);
+    let own = cloud.cloud_operations(&c);
+    assert_eq!(own.len(), 1);
+    kosmotheka_domain::verify(&own[0], &key).unwrap();
+    assert_eq!(
+        ops::status_of(&conn, &own[0].id).unwrap(),
+        ops::Status::Applied
+    );
+    // The library trusts it as its cloud: the id and the registered key agree.
+    assert_eq!(
+        crate::permissions::SqlView::new(&conn, &library).cloud_device_for_tests(),
+        Some(id)
+    );
+}
+
+#[tokio::test]
+async fn a_server_with_no_secret_gets_the_upload_it_always_had() {
+    let cloud = FakeCloud::default().without_identity();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+
+    upload_settled(&ana, &api, &library).await;
+
+    let c = cloud.only_library();
+    let log = sync::library_log(&ana.lock().unwrap(), &library).unwrap();
+    let link = log.iter().find(|op| op.intent == "library.cloud").unwrap();
+    assert_eq!(
+        link.changes,
+        vec![Change::update(
+            Entity::Library,
+            &library,
+            json!({ "cloud_library_id": c, "cloud_server": api.server })
+        )]
+    );
+    assert!(cloud.cloud_operations(&c).is_empty());
+}
+
+#[tokio::test]
+async fn a_server_whose_cloud_id_does_not_come_from_its_key_is_not_named() {
+    let cloud = FakeCloud::default().lying();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+
+    upload_settled(&ana, &api, &library).await;
+
+    let conn = ana.lock().unwrap();
+    let named: Option<String> = conn
+        .query_row(
+            "SELECT cloud_device_id FROM libraries WHERE id = ?1",
+            [&library],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(named, None);
+    assert!(
+        link_of(&conn, &library)
+            .unwrap()
+            .unwrap()
+            .cloud_library
+            .is_some(),
+        "it still goes up"
+    );
+}
+
+#[tokio::test]
+async fn taking_the_cloud_away_after_uploading_fences_its_registration() {
+    let cloud = FakeCloud::default();
+    let api = cloud.api("ana");
+    let (ana, library) = device_with_family();
+    upload_settled(&ana, &api, &library).await;
+    let c = cloud.only_library();
+    let (id, _) = cloud.identity_of(&c).unwrap();
+    let registration = cloud.cloud_operations(&c)[0].id.clone();
+
+    crate::people::remove_cloud_device(&mut ana.lock().unwrap(), &library).unwrap();
+
+    let conn = ana.lock().unwrap();
+    let mark: String = conn
+        .query_row(
+            "SELECT through FROM device_fences WHERE library_id = ?1 AND device_id = ?2",
+            [&library, &id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        mark, registration,
+        "what the administrator had of the cloud is its registration"
+    );
+    let named: Option<String> = conn
+        .query_row(
+            "SELECT cloud_device_id FROM libraries WHERE id = ?1",
+            [&library],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(named, None);
 }

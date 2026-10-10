@@ -75,10 +75,10 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertCount(2, $garcia, 'The Garcías\' own copy and the one Jhonny made of its ids.');
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         self::assertContains($ana, $garcia);
-        // 13 of the upload, 1 of the phone and the laptop's older one.
-        self::assertSame(15, $this->operationsIn($ana));
-        // Three authors registered their keys: the laptop, the phone and Hugo's phone.
-        self::assertSame(3, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
+        // 13 of the upload, 1 of the phone, the laptop's older one and the cloud's own registration (D95).
+        self::assertSame(16, $this->operationsIn($ana));
+        // Three authors registered their keys: the laptop, the phone and Hugo's phone; and the cloud's device, since the library was created (D95).
+        self::assertSame(4, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
         // Hugo's mark and request, and Ana's roles, are in the history as operations.
         self::assertSame(1, $this->operationsWithChange($ana, 'mark'));
         self::assertSame(1, $this->operationsWithChange($ana, 'change_request'));
@@ -115,7 +115,7 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertSame(2, $this->rowsIn('(SELECT DISTINCT owner_id FROM cloud_library WHERE local_library_id = '.$this->quote(Cast::DEFAULT_LOCAL).') owners'));
         self::assertContains($this->idOfLibraryOwnedBy(Cast::KENJI), $withDefaultId);
         // Neither one holds the other's history.
-        self::assertSame(4, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
+        self::assertSame(5, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
         self::assertSame(2, $this->operationsIn(array_first(array_diff($withDefaultId, [$this->idOfLibraryOwnedBy(Cast::KENJI)])) ?? self::fail('Jhonny has no library with the default id.')));
     }
 
@@ -131,7 +131,7 @@ final class ScenarioFixturesTest extends WebTestCase
             'SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = :library AND operation_id IN (SELECT operation_id FROM cloud_operation WHERE cloud_library_id = :ana)',
             ['library' => $jhonnys, 'ana' => $ana],
         ));
-        self::assertSame(15, $this->operationsIn($ana));
+        self::assertSame(16, $this->operationsIn($ana));
     }
 
     public function testTwoDeviceRowsShareAnId(): void
@@ -194,11 +194,11 @@ final class ScenarioFixturesTest extends WebTestCase
 
         self::assertCount(1, $unlinked, 'Jhonny\'s library with no link: created, never filled.');
         self::assertSame(0, $this->operationsIn($unlinked[0]));
-        self::assertSame(15, $this->operationsIn($ana));
+        self::assertSame(16, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
-        // 15 (the Garcías) + 4 (Kenji) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
-        self::assertSame(34, $this->rowsIn('cloud_operation'));
+        // 16 (the Garcías, with the cloud's registration) + 5 (Kenji, same) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
+        self::assertSame(36, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void
@@ -221,14 +221,15 @@ final class ScenarioFixturesTest extends WebTestCase
     }
 
     /**
-     * The operation ids, HLCs and bodies, except the link: its body names the cloud id the server chose.
+     * The operation ids, HLCs and bodies, except the link (its body names the cloud id the server chose) and what the
+     * cloud signs itself (its ids and times are the server's, new on every load).
      *
      * @return list<array<string, mixed>>
      */
     private function operationFingerprint(): array
     {
         return $this->connection->fetchAllAssociative(
-            'SELECT operation_id, hlc, CAST(body AS TEXT) AS body FROM cloud_operation WHERE body->>\'intent\' <> \'library.link\' ORDER BY operation_id, hlc',
+            'SELECT operation_id, hlc, CAST(body AS TEXT) AS body FROM cloud_operation WHERE body->>\'intent\' <> \'library.link\' AND author_device_id NOT IN (SELECT cloud_device_id::text FROM cloud_library WHERE cloud_device_id IS NOT NULL) ORDER BY operation_id, hlc',
         );
     }
 

@@ -18,6 +18,7 @@ use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
 use App\Enum\CatalogEntity;
 use App\Enum\Role;
+use App\Sync\CloudDeviceId;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -155,7 +156,8 @@ final readonly class CatalogLibraryView implements LibraryView
         return false;
     }
 
-    public function cloudDevice(): ?string
+    /** The id `library.cloud_device_id` holds now, whether or not that device is registered with the right key. */
+    public function namedCloudDevice(): ?string
     {
         $row = $this->entityManager->createQuery(\sprintf(
             'SELECT l.cloudDeviceId FROM %s l WHERE l.cloudLibrary = :library',
@@ -163,6 +165,23 @@ final readonly class CatalogLibraryView implements LibraryView
         ))->setParameter('library', $this->library->getId(), 'uuid')->setMaxResults(1)->getOneOrNullResult();
 
         return \is_array($row) && \is_string($row['cloudDeviceId']) && '' !== $row['cloudDeviceId'] ? $row['cloudDeviceId'] : null;
+    }
+
+    public function cloudDevice(): ?string
+    {
+        $named = $this->namedCloudDevice();
+        if (null === $named) {
+            return null;
+        }
+
+        // Only if the key registered for that device in the library is the one its id derives from (D95).
+        $key = $this->entityManager->createQuery(\sprintf(
+            'SELECT d.publicKey FROM %s d WHERE d.cloudLibrary = :library AND LOWER(d.id) = :device',
+            Device::class,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', strtolower($named))->setMaxResults(1)->getOneOrNullResult();
+        $derived = \is_array($key) && \is_string($key['publicKey']) ? CloudDeviceId::fromPublicKey($key['publicKey']) : null;
+
+        return null !== $derived && $derived === strtolower($named) ? $named : null;
     }
 
     public function memberExists(string $member): bool

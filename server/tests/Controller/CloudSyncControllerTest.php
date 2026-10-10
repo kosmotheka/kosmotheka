@@ -80,16 +80,14 @@ final class CloudSyncControllerTest extends WebTestCase
         $response = $this->call('GET', '/v1/cloud/libraries', $this->familySession);
 
         self::assertSame(Response::HTTP_OK, $response['status']);
-        self::assertSame([['id' => $familyCloud, 'localLibraryId' => self::LOCAL]], $response['body']);
+        self::assertSame([['id' => $familyCloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
     }
 
     public function testAFreshLibraryIsListedWithoutALocalId(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
 
-        $response = $this->call('GET', '/v1/cloud/libraries', $this->familySession);
-
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $response['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testUploadingALibraryLinksItAndStoresItsHistory(): void
@@ -102,7 +100,8 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(Response::HTTP_OK, $response['status']);
         self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
         self::assertSame(4, $this->rows('cloud_operation'));
-        self::assertSame(1, $this->rows('cloud_device_key'));
+        // The laptop's, and the cloud device's, registered since the library was created (D95).
+        self::assertSame(2, $this->rows('cloud_device_key'));
     }
 
     /**
@@ -141,7 +140,7 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(['localLibraryId' => self::LOCAL], $first['body']);
         self::assertSame($first, $second);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
     }
 
     public function testALinkedLibraryRefusesALinkToAnotherLocalId(): void
@@ -152,7 +151,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $other = $this->link($this->familySession, $cloud, $this->laptop->link('00000000-0000-7000-8000-000000000002', $cloud, self::T + 2));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $other);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
     }
 
     public function testSomeoneWithoutAccessCannotLinkTheFamilysLibrary(): void
@@ -162,7 +161,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_NOT_FOUND, 'body' => ['error' => 'not_found']], $response);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testSomeoneWithAccessWhoIsNotTheOwnerCannotLink(): void
@@ -173,7 +172,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testADeviceRemovedFromTheOwnersAccountCannotSignTheLink(): void
@@ -187,7 +186,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $response = $this->link($this->familySession, $cloud, $phone->link(self::LOCAL, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testALinkThatIsNotThisLibrarysIsRefused(): void
@@ -206,7 +205,7 @@ final class CloudSyncControllerTest extends WebTestCase
         foreach ($refused as $what => $operation) {
             self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $this->link($this->familySession, $cloud, $operation), $what);
         }
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testTheLinkRouteNeedsABodyOfTheRightShape(): void
@@ -230,7 +229,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $firstPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
         self::assertSame([['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 500]], $firstPass);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
 
         $secondPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
         self::assertSame([['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 500, 'known' => 0, 'rejected' => 0]], $secondPass);
@@ -271,7 +270,7 @@ final class CloudSyncControllerTest extends WebTestCase
     private function assertNotLinkedAndNothingStored(string $cloud, int $operations = 0): void
     {
         self::assertSame($operations, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     public function testAReaderUploadingTheWholeLibraryWithItsRolesAndHisOwnLinkIsTurnedDown(): void
@@ -337,7 +336,7 @@ final class CloudSyncControllerTest extends WebTestCase
 
         self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 2, 'known' => 0, 'rejected' => 0]], $response);
         self::assertSame(['applied' => 2], $this->statuses());
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
     }
 
     /**
@@ -1007,8 +1006,8 @@ final class CloudSyncControllerTest extends WebTestCase
             self::assertSame(['error' => 'not_found'], $response['body']);
         }
         self::assertSame($before, $this->rows('cloud_operation'));
-        self::assertSame(1, $this->rows('cloud_device_key'));
-        self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $this->jhonnySession)['body']);
+        self::assertSame(2, $this->rows('cloud_device_key'));
+        self::assertSame([], $this->listing($this->jhonnySession));
     }
 
     /** Battery 3. */
@@ -1066,7 +1065,7 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(1, $forOther['body']['rejected']);
         self::assertSame(1, $foreign['body']['rejected']);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     /** Battery 6. */
@@ -1228,7 +1227,7 @@ final class CloudSyncControllerTest extends WebTestCase
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     /** SEG-021: a change of another library row never reaches isLink; the structure rules refuse it. */
@@ -1246,7 +1245,7 @@ final class CloudSyncControllerTest extends WebTestCase
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
     /** SEG-019 (part 1): a registered device changing its own key. */
@@ -1273,6 +1272,102 @@ final class CloudSyncControllerTest extends WebTestCase
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $response['body']);
         self::assertSame([$phone->publicKey], $this->storedKeys($phone->id));
+    }
+
+    // ------------------------------------------- the cloud's identity (7.5.2a) ---
+
+    /** D95: nobody with access to a library may take the id of its cloud device, with a key of their own. */
+    public function testAMemberCannotRegisterTheCloudsIdWithAKeyOfHisOwn(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $this->shareWithJhonny($cloud);
+        $identity = $this->identityOf($cloud);
+        $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration(self::LOCAL, self::T + 10)]);
+
+        $response = $this->push($this->jhonnySession, $cloud, [$this->jhonny->sign(self::LOCAL, self::T + 11, 'device.register', [[
+            'entity' => 'device',
+            'id' => $identity['id'],
+            'action' => 'create',
+            'fields' => ['public_key' => $this->jhonny->publicKey, 'name' => 'The cloud, he says'],
+        ]])]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $response['body']);
+        self::assertSame([$identity['key']], $this->storedKeys($identity['id']));
+    }
+
+    public function testAMemberCannotSignInTheNameOfTheCloudDevice(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $this->shareWithJhonny($cloud);
+        $identity = $this->identityOf($cloud);
+        $impostor = SigningDevice::generate($identity['id']);
+
+        $unregistered = $this->push($this->jhonnySession, $cloud, [$impostor->publisher(self::LOCAL, self::T + 10)]);
+        $registering = $this->push($this->jhonnySession, $cloud, [$impostor->registration(self::LOCAL, self::T + 11)]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $unregistered['body']);
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $registering['body']);
+        self::assertSame([$identity['key']], $this->storedKeys($identity['id']));
+        self::assertSame(4, $this->rows('cloud_operation'));
+    }
+
+    public function testALinkThatNamesTheCloudWithAnotherKeyDoesNotLinkTheLibrary(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $identity = $this->identityOf($cloud);
+        $other = SigningDevice::generate();
+        $forged = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [
+            ['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]],
+            ['entity' => 'device', 'id' => $identity['id'], 'action' => 'create', 'fields' => ['public_key' => $other->publicKey, 'name' => 'kosmotheka.test']],
+        ]);
+
+        $byRoute = $this->link($this->familySession, $cloud, $forged);
+        $byPush = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $forged]);
+
+        self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $byRoute);
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $byPush['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null, 'cloudDeviceId' => $identity['id'], 'cloudPublicKey' => $identity['key']]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame(0, $this->rows('cloud_operation'));
+        self::assertSame([$identity['key']], $this->storedKeys($identity['id']));
+    }
+
+    public function testNeitherTheAnswersNorTheDatabaseHoldTheCloudsPrivateKeyInTheClear(): void
+    {
+        $created = $this->call('POST', '/v1/cloud/libraries', $this->familySession);
+        $listed = $this->call('GET', '/v1/cloud/libraries', $this->familySession);
+
+        self::assertSame(['id', 'cloudDeviceId', 'cloudPublicKey'], array_keys($created['body']));
+        $first = $listed['body'][0] ?? null;
+        self::assertIsArray($first);
+        self::assertSame(['id', 'localLibraryId', 'cloudDeviceId', 'cloudPublicKey'], array_keys($first));
+        $row = self::getContainer()->get(Connection::class)->fetchAssociative('SELECT cloud_public_key, cloud_secret_key FROM cloud_library');
+        self::assertIsArray($row);
+        $stored = $row['cloud_secret_key'];
+        $public = $row['cloud_public_key'];
+        self::assertIsString($stored);
+        self::assertIsString($public);
+        self::assertNotSame('', $stored);
+        // Not a private key at all: no 64 bytes of libsodium that belong to the public key.
+        $bytes = sodium_base642bin($stored, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+        self::assertTrue(\SODIUM_CRYPTO_SIGN_SECRETKEYBYTES !== \strlen($bytes) || sodium_crypto_sign_publickey_from_secretkey($bytes) !== sodium_base642bin($public, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING));
+        foreach ([$created, $listed] as $response) {
+            $json = json_encode($response['body'], \JSON_THROW_ON_ERROR);
+            self::assertStringNotContainsString($stored, $json);
+            self::assertStringNotContainsString('secret', strtolower($json));
+        }
+    }
+
+    public function testSomeoneWithoutAccessDoesNotSeeTheCloudIdOfTheFamilysLibrary(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $identity = $this->identityOf($cloud);
+
+        $listed = $this->call('GET', '/v1/cloud/libraries', $this->jhonnySession);
+        $pull = $this->pull($this->jhonnySession, $cloud, []);
+
+        self::assertSame([], $listed['body']);
+        self::assertSame(['status' => Response::HTTP_NOT_FOUND, 'body' => ['error' => 'not_found']], $pull);
+        self::assertStringNotContainsString($identity['id'], json_encode([$listed, $pull], \JSON_THROW_ON_ERROR));
     }
 
     // ----------------------------------------------------------- helpers ---
@@ -1415,6 +1510,45 @@ final class CloudSyncControllerTest extends WebTestCase
         $rows = self::getContainer()->get(Connection::class)->fetchAllNumeric('SELECT pushed_by_user_id, pushed_by_device_id FROM cloud_operation WHERE author_device_id = ? ORDER BY hlc', [$author]);
 
         return array_map(static fn (array $row): array => [\is_string($row[0]) ? $row[0] : null, \is_string($row[1]) ? $row[1] : null], $rows);
+    }
+
+    /**
+     * What the owner's list says of each library apart from its cloud device: the id and the local id.
+     *
+     * @param array{headers: array<string, string>} $session
+     *
+     * @return list<array{id: mixed, localLibraryId: mixed}>
+     */
+    private function listing(array $session): array
+    {
+        $listed = [];
+        foreach ($this->call('GET', '/v1/cloud/libraries', $session)['body'] as $library) {
+            \assert(\is_array($library));
+            $listed[] = ['id' => $library['id'] ?? null, 'localLibraryId' => $library['localLibraryId'] ?? null];
+        }
+
+        return $listed;
+    }
+
+    /**
+     * The identity the server gave a cloud library, as the list of its owner shows it.
+     *
+     * @return array{id: string, key: string}
+     */
+    private function identityOf(string $cloud): array
+    {
+        foreach ($this->call('GET', '/v1/cloud/libraries', $this->familySession)['body'] as $library) {
+            if (\is_array($library) && ($library['id'] ?? null) === $cloud) {
+                $id = $library['cloudDeviceId'] ?? null;
+                $key = $library['cloudPublicKey'] ?? null;
+                self::assertIsString($id);
+                self::assertIsString($key);
+
+                return ['id' => $id, 'key' => $key];
+            }
+        }
+
+        self::fail('The library is not listed.');
     }
 
     /**

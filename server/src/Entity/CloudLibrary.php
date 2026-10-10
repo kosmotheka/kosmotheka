@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\CloudLibraryRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -29,6 +30,18 @@ final class CloudLibrary
     /** The operation that links the library (D93): the one CloudLink checked when it linked it, whether or not it is stored yet. */
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $linkOperationId = null;
+
+    /** The id of the device that is the cloud in this library (D95): the server's own, random, and fixed for good. Null when the server has no secret. */
+    #[ORM\Column(type: 'uuid', nullable: true)]
+    private ?Uuid $cloudDeviceId = null;
+
+    /** Ed25519, base64url without padding, like every public key. */
+    #[ORM\Column(length: 43, nullable: true)]
+    private ?string $cloudPublicKey = null;
+
+    /** The private key of the cloud device, encrypted by CloudKeyVault; it never leaves the server, not even encrypted. */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $cloudSecretKey = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -83,6 +96,41 @@ final class CloudLibrary
         }
 
         $this->localLibraryId = strtolower($localLibraryId);
+    }
+
+    public function getCloudDeviceId(): ?Uuid
+    {
+        return $this->cloudDeviceId;
+    }
+
+    public function getCloudPublicKey(): ?string
+    {
+        return $this->cloudPublicKey;
+    }
+
+    public function getCloudSecretKey(): ?string
+    {
+        return $this->cloudSecretKey;
+    }
+
+    public function hasCloudIdentity(): bool
+    {
+        return $this->cloudDeviceId instanceof Uuid;
+    }
+
+    /**
+     * @param string $sealedSecretKey the private key as CloudKeyVault::seal() gave it
+     *
+     * @throws \LogicException when it already has one: the identity never changes once generated
+     */
+    public function giveCloudIdentity(Uuid $deviceId, string $publicKey, string $sealedSecretKey): void
+    {
+        if ($this->hasCloudIdentity()) {
+            throw new \LogicException('This cloud library already has its cloud device.');
+        }
+        $this->cloudDeviceId = $deviceId;
+        $this->cloudPublicKey = $publicKey;
+        $this->cloudSecretKey = $sealedSecretKey;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

@@ -86,8 +86,8 @@ Cada uno se ejecuta en la carga **y la carga se detiene si alguno entra**: que `
 | `device` | 6 |
 | `cloud_library` | 5 (Ana, Kenji, tres de Jhonny) |
 | `membership` | 5 (una por biblioteca) |
-| `cloud_operation` | 34 (García 15, Tanaka 4, Jhonny 13 + 2) |
-| `cloud_device_key` | 8 |
+| `cloud_operation` | 36 (García 16, Tanaka 5, Jhonny 13 + 2; la nube de cada biblioteca que nombra a la suya se registra con una operación propia) |
+| `cloud_device_key` | 10 (las 8 de antes y la de la nube de Ana y la de Kenji) |
 
 ## Abrir los dispositivos en la app
 

@@ -343,7 +343,7 @@ pub fn name_cloud_device(conn: &mut Connection, library: &str, device: &str) -> 
         json!({ "cloud_device_id": device }),
     )];
     if let Some(old) = old.filter(|old| !old.eq_ignore_ascii_case(device)) {
-        changes.extend(permissions::fence_changes(&tx, library, &[old])?);
+        changes.push(permissions::fence_cloud_change(&tx, library, &old)?);
     }
     ops::record(&tx, library, "library.cloud", changes)?;
     tx.commit()?;
@@ -351,7 +351,7 @@ pub fn name_cloud_device(conn: &mut Connection, library: &str, device: &str) -> 
 }
 
 /// Takes the cloud's power away: `cloud_device_id` is emptied and, in the same
-/// operation, the cloud device is fenced with the newest operation of it this device
+/// operation, the cloud device is fenced (also if it is not registered here yet) with the newest operation of it this device
 /// holds, so nothing it dated before and this device never saw is believed (D84, D87).
 /// Does nothing if the library names no cloud.
 #[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
@@ -365,7 +365,7 @@ pub fn remove_cloud_device(conn: &mut Connection, library: &str) -> Result<()> {
         library,
         json!({ "cloud_device_id": null }),
     )];
-    changes.extend(permissions::fence_changes(&tx, library, &[old])?);
+    changes.push(permissions::fence_cloud_change(&tx, library, &old)?);
     ops::record(&tx, library, "library.cloud", changes)?;
     tx.commit()?;
     Ok(())
@@ -752,6 +752,7 @@ mod tests {
     fn laptop_with_a_cloud_phone() -> (Connection, Connection, String, String) {
         let mut laptop = db::open_in_memory().unwrap();
         let mut phone = db::open_in_memory().unwrap();
+        permissions::become_a_cloud_device(&phone, 7);
         let lib = ops::active_library(&laptop).unwrap();
         pull(&mut phone, &laptop, &lib);
         // The cloud registers itself as a device of the library. Synced before the roles
@@ -847,6 +848,43 @@ mod tests {
         assert_eq!(
             ops::latest_of(&laptop, &lib, &ops::device_id(&laptop).unwrap()).unwrap(),
             before
+        );
+    }
+
+    #[test]
+    fn taking_the_power_from_a_cloud_never_registered_here_fences_it_all_the_same() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut cloud = db::open_in_memory().unwrap();
+        permissions::become_a_cloud_device(&cloud, 7);
+        let lib = ops::active_library(&laptop).unwrap();
+        let admin = start_roles(&mut laptop, &lib, "Tersoal", &[]).unwrap();
+        assert_ne!(admin, "");
+        let mut changes = Vec::new();
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let laura =
+            member_changes(&laptop, &lib, &laura, Some("editor"), None, &mut changes).unwrap();
+        let tx = laptop.transaction().unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+        // The library names the cloud before the cloud has written anything in it.
+        let cloud_id = ops::device_id(&cloud).unwrap();
+        name_cloud_device(&mut laptop, &lib, &cloud_id).unwrap();
+        pull(&mut cloud, &laptop, &lib);
+        let tx = cloud.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        let account = write_account(&mut cloud, &lib, &laura);
+
+        // The administrator takes the power away without having seen any of it.
+        remove_cloud_device(&mut laptop, &lib).unwrap();
+        pull(&mut laptop, &cloud, &lib);
+
+        assert_eq!(
+            ops::status_of(&laptop, &account).unwrap(),
+            ops::Status::Request
         );
     }
 

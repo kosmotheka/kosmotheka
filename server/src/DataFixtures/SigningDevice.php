@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Sync\OperationSignature;
+use App\Sync\OperationSigner;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -151,11 +152,9 @@ final readonly class SigningDevice
      */
     private function signature(array $operation): string
     {
-        $decoded = json_decode(json_encode($operation, \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
-        \assert($decoded instanceof \stdClass && '' !== $this->secretKey);
-        $canonical = new OperationSignature()->canonical($decoded);
+        \assert('' !== $this->secretKey);
 
-        return self::encode(sodium_crypto_sign_detached($canonical, $this->secretKey));
+        return new OperationSigner(new OperationSignature())->sign($operation, $this->secretKey);
     }
 
     private static function fromKeyPair(string $id, string $keyPair, ?string $seed = null): self

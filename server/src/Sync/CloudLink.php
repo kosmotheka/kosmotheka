@@ -11,6 +11,7 @@ use App\Entity\Device;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\OperationRejection;
+use App\Repository\CloudDeviceKeyRepository;
 use App\Repository\DeviceRepository;
 use App\Security\AccountException;
 use Doctrine\DBAL\LockMode;
@@ -31,6 +32,8 @@ final readonly class CloudLink
         private OperationSignature $signature,
         private DeviceRepository $devices,
         private SchemaVersion $schemaVersion,
+        private CloudDeviceKeyRepository $deviceKeys,
+        private CloudIdentityIssuer $identity,
     ) {
     }
 
@@ -45,6 +48,8 @@ final readonly class CloudLink
         $this->entityManager->wrapInTransaction(function () use ($library, $pushed): void {
             // The same lock as a push, so a push and a link never decide on the same state.
             $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
+            // A library from before the server had a secret gets its cloud device when it is linked, if not before.
+            $this->identity->ensure($library);
             try {
                 if ($pushed->schemaVersion > $this->schemaVersion->current()) {
                     throw new OperationRejectedException(OperationRejection::NewerVersion);
@@ -126,8 +131,31 @@ final readonly class CloudLink
      */
     private function check(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): void
     {
+        // The link may name the cloud's device (D95), and it can only name it with the key the server registered.
+        $this->refuseKeyChanges($library, $payload);
         if ($this->signedByOwner($library, $pushed, $payload)->isRemoved()) {
             throw new OperationRejectedException(OperationRejection::UnknownKey);
+        }
+    }
+
+    /**
+     * A `device` change that offers another key than the one registered for that id in this library is refused,
+     * whoever signs it (as in the app's signature_holds): a device's key never changes, and the cloud's is
+     * registered from the day the library exists.
+     *
+     * @throws OperationRejectedException with `KeyChanged`
+     */
+    public function refuseKeyChanges(CloudLibrary $library, OperationPayload $payload): void
+    {
+        foreach ($payload->changes as $change) {
+            $offered = $change->fields['public_key'] ?? null;
+            if (CatalogEntity::Device !== $change->entity || !\is_string($offered)) {
+                continue;
+            }
+            $registered = $this->deviceKeys->findOneInLibrary($library, $change->id)?->getPublicKey();
+            if (null !== $registered && !hash_equals($registered, $offered)) {
+                throw new OperationRejectedException(OperationRejection::KeyChanged);
+            }
         }
     }
 

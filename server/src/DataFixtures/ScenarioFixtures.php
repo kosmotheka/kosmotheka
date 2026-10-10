@@ -22,6 +22,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\DBAL\Connection;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * The cloud as a story (docs/development/fixtures.md): the normal cases and
@@ -134,12 +135,7 @@ final class ScenarioFixtures extends Fixture
             $this->operation($hugosPhone, $local, 31, 'request.add', [$this->create('change_request', 'hugo-wants-another-book', ['note' => 'Can we buy the next one by García Márquez?'])]),
             // ...and a book is not his to add: it is stored in the log as a request, and the catalog never gets it.
             $this->operation($hugosPhone, $local, 32, 'book.add', $this->book('hugos-wish', 'Ficciones', 'Jorge Luis Borges', '9780802130303', $member('hugo'), 'Salón')),
-            $this->operation($laptop, $local, 60, 'library.link', [[
-                'entity' => 'library',
-                'id' => $local,
-                'action' => 'update',
-                'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER],
-            ]]),
+            $this->operation($laptop, $local, 60, 'library.link', $this->linkChanges($local, $library)),
         ];
 
         $this->expectStored($this->push($library, $operations), \count($operations), $scenario);
@@ -162,6 +158,24 @@ final class ScenarioFixtures extends Fixture
         $this->report->add($scenario, 'loaded: 1 operation, signed by the key the phone registered in the upload');
     }
 
+    /**
+     * The changes of the operation that links a library: the link, and, if the server gave the cloud library a
+     * device, its name in the library row (7.5.2a, D95). The cloud's own `device` row is not here: spec/ lets a
+     * device row be created only by that device (`other_device`), so who writes it is still to be decided.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function linkChanges(string $local, CloudLibrary $library): array
+    {
+        $fields = ['cloud_library_id' => $library->getId()->toRfc4122(), 'cloud_server' => SigningDevice::SERVER];
+        $device = $library->getCloudDeviceId();
+        if ($device instanceof Uuid) {
+            $fields['cloud_device_id'] = $device->toRfc4122();
+        }
+
+        return [['entity' => 'library', 'id' => $local, 'action' => 'update', 'fields' => $fields]];
+    }
+
     private function kenjiUploadsHisDefaultLibrary(User $kenji): void
     {
         $scenario = 'Familia Tanaka: Kenji uploads his library with the default id';
@@ -177,12 +191,7 @@ final class ScenarioFixtures extends Fixture
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca Tanaka']],
             ]),
             $this->operation($laptop, $local, 3, 'book.add', $this->book('kokoro', 'Kokoro', 'Natsume Sōseki', '9780804818957', Cast::id('member:kenji'), 'Estantería')),
-            $this->operation($laptop, $local, 4, 'library.link', [[
-                'entity' => 'library',
-                'id' => $local,
-                'action' => 'update',
-                'fields' => ['cloud_library_id' => $library->getId()->toRfc4122(), 'cloud_server' => SigningDevice::SERVER],
-            ]]),
+            $this->operation($laptop, $local, 4, 'library.link', $this->linkChanges($local, $library)),
         ];
 
         $this->expectStored($this->push($library, $operations), \count($operations), $scenario);

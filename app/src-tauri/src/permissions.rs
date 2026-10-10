@@ -124,7 +124,8 @@ impl LibraryView for SqlView<'_> {
     }
 
     fn cloud_device(&self) -> Option<String> {
-        self.conn
+        let named: String = self
+            .conn
             .query_row(
                 "SELECT cloud_device_id FROM libraries WHERE id = ?1",
                 [self.library],
@@ -134,7 +135,21 @@ impl LibraryView for SqlView<'_> {
             .ok()
             .flatten()
             .flatten()
-            .filter(|device| !device.is_empty())
+            .filter(|device| !device.is_empty())?;
+        // Only if the key registered for that device in the library is the one its id derives from (D95).
+        let key: String = self
+            .conn
+            .query_row(
+                "SELECT public_key FROM devices WHERE library_id = ?1 AND lower(id) = lower(?2)",
+                [self.library, &named],
+                |row| row.get(0),
+            )
+            .optional()
+            .ok()
+            .flatten()?;
+        kosmotheka_domain::cloud_device_id(&key)
+            .filter(|derived| derived.eq_ignore_ascii_case(&named))
+            .map(|_| named)
     }
 
     fn member_exists(&self, member: &str) -> bool {
@@ -168,6 +183,14 @@ impl LibraryView for SqlView<'_> {
             .optional()
             .ok()
             .flatten()
+    }
+}
+
+#[cfg(test)]
+impl SqlView<'_> {
+    /// `LibraryView::cloud_device` for tests that do not import the trait.
+    pub fn cloud_device_for_tests(&self) -> Option<String> {
+        self.cloud_device()
     }
 }
 
@@ -297,6 +320,18 @@ pub fn fence_changes(conn: &Connection, library: &str, devices: &[String]) -> Re
         }
     }
     Ok(changes)
+}
+
+/// The fence of the cloud device when its power is taken away (D84, D95): like `fence_changes`, but also when
+/// the device is not registered in this library yet, with the empty mark. The library may name the cloud
+/// before it has written anything; if its registration and what it signed arrive after the withdrawal, dated
+/// before it, nothing of that may be believed.
+pub fn fence_cloud_change(conn: &Connection, library: &str, device: &str) -> Result<Change> {
+    Ok(Change::update(
+        Entity::Device,
+        device,
+        serde_json::json!({ "trusted_through": fence_mark(conn, library, device)? }),
+    ))
 }
 
 /// Turns `changes` into a seal (D94): a fence for every device registered in the library
@@ -510,6 +545,16 @@ fn replay(
         ops::set_status(tx, &operation.id, status)?;
     }
     Ok(())
+}
+
+/// Makes this blank device the cloud of a library in a test: its id is the one its key gives (D95), the only
+/// kind of device `library.cloud_device_id` can name with effect. Call it before the device writes anything.
+#[cfg(test)]
+pub fn become_a_cloud_device(conn: &Connection, seed: u8) -> String {
+    let key = kosmotheka_domain::DeviceKey::from_seed([seed; 32]);
+    let id = kosmotheka_domain::cloud_device_id(&key.public_key()).unwrap();
+    ops::set_identity(conn, &id, [seed; 32]).unwrap();
+    id
 }
 
 #[cfg(test)]
