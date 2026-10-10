@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
 use crate::lan;
+use crate::libraries;
 use crate::ops::{self, new_id};
 use crate::permissions;
 
@@ -28,6 +29,8 @@ pub struct Person {
     pub name: String,
     pub role: Option<String>,
     pub can_share: bool,
+    /// The person may no longer reach the library (D98); they stay in the catalog.
+    pub access_withdrawn: bool,
     pub devices: Vec<PersonDevice>,
     /// Other libraries on this device where the same person is (same member id).
     pub elsewhere: Vec<String>,
@@ -64,7 +67,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
     };
     let mut people: Vec<Person> = conn
         .prepare(
-            "SELECT id, name, role, can_share FROM members
+            "SELECT id, name, role, can_share, coalesce(access_withdrawn, 0) FROM members
               WHERE library_id = ?1 ORDER BY name COLLATE NOCASE, id",
         )?
         .query_map([library], |row| {
@@ -73,6 +76,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
                 name: row.get(1)?,
                 role: row.get(2)?,
                 can_share: row.get::<_, Option<i64>>(3)?.unwrap_or(0) != 0,
+                access_withdrawn: row.get::<_, i64>(4)? != 0,
                 devices: Vec::new(),
                 elsewhere: Vec::new(),
             })
@@ -640,10 +644,70 @@ pub fn remove_device(conn: &mut Connection, device: &str) -> Result<usize> {
     Ok(libraries.len())
 }
 
+/// Echar a una persona (D98): their access is withdrawn and they stay in the catalog. **One** operation
+/// (`member.withdraw`) writes the mark, and for each device of theirs takes the person away (with the
+/// vouched key), fences it (D84, D87) and withdraws its access (D71), so those devices remove the
+/// library when they next connect, over the local network or through the cloud. Not the last
+/// administrator, and not the person this device belongs to.
+#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
+pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    if permissions::person_of_device(conn, library, &me)?.as_deref() == Some(member) {
+        return Err(Error::NotAllowed);
+    }
+    if is_last_admin(conn, library, member)? {
+        return Err(Error::LastAdmin);
+    }
+    let tx = conn.transaction()?;
+    let devices: Vec<(String, String)> = tx
+        .prepare(
+            "SELECT id, name FROM devices WHERE library_id = ?1 AND member_id = ?2 ORDER BY id",
+        )?
+        .query_map([library, member], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut changes = vec![Change::update(
+        Entity::Member,
+        member,
+        json!({ "access_withdrawn": true }),
+    )];
+    for (device, name) in &devices {
+        // One change per device row: no person, no vouched key, and the fence.
+        let mut fields = permissions::assignment_fields(&tx, library, device, None)?;
+        fields["trusted_through"] = json!(permissions::fence_mark(&tx, library, device)?);
+        changes.push(Change::update(Entity::Device, device, fields));
+        changes.extend(libraries::revocation_change(&tx, library, device, name)?);
+    }
+    ops::record(&tx, library, "member.withdraw", changes)?;
+    for (device, _) in &devices {
+        libraries::forget_peer(&tx, library, device)?;
+    }
+    tx.commit()?;
+    Ok(())
+}
+
+/// Gives the access back: only removes the mark (D98). The devices stay without their person and
+/// the revocations stay; whoever administers links a device again, the usual way.
+#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
+pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
+    let tx = conn.transaction()?;
+    ops::record(
+        &tx,
+        library,
+        "member.restore",
+        vec![Change::update(
+            Entity::Member,
+            member,
+            json!({ "access_withdrawn": false }),
+        )],
+    )?;
+    tx.commit()?;
+    Ok(())
+}
+
 fn is_last_admin(conn: &Connection, library: &str, member: &str) -> Result<bool> {
     let (admins, this_one): (i64, bool) = conn.query_row(
         "SELECT count(*), coalesce(max(id = ?2), 0) FROM members
-          WHERE library_id = ?1 AND role = 'admin'",
+          WHERE library_id = ?1 AND role = 'admin' AND coalesce(access_withdrawn, 0) = 0",
         [library, member],
         |row| Ok((row.get(0)?, row.get(1)?)),
     )?;

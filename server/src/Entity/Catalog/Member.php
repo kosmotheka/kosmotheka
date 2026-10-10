@@ -27,6 +27,10 @@ final class Member extends CatalogRow
     #[ORM\Column(name: 'account_id', type: Types::TEXT, nullable: true)]
     private ?string $accountId = null;
 
+    /** The person may no longer reach the library (D98); null reads as false. */
+    #[ORM\Column(name: 'access_withdrawn', type: Types::BOOLEAN, nullable: true)]
+    private ?bool $accessWithdrawn = null;
+
     public function getName(): string
     {
         return $this->name;
@@ -65,5 +69,15 @@ final class Member extends CatalogRow
     public function setAccountId(?string $accountId): void
     {
         $this->accountId = $accountId;
+    }
+
+    public function getAccessWithdrawn(): ?bool
+    {
+        return $this->accessWithdrawn;
+    }
+
+    public function setAccessWithdrawn(?bool $accessWithdrawn): void
+    {
+        $this->accessWithdrawn = $accessWithdrawn;
     }
 }

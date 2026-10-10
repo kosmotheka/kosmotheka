@@ -3753,6 +3753,157 @@ mod tests {
         }
     }
 
+    fn member_row(device: &Device, member: &str) -> (Option<i64>, String) {
+        device
+            .0
+            .query_row(
+                "SELECT access_withdrawn, name FROM members WHERE library_id = ?1 AND id = ?2",
+                [&device.1, member],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap()
+    }
+
+    fn device_row(device: &Device, id: &str) -> (Option<String>, Option<String>, Option<String>) {
+        device
+            .0
+            .query_row(
+                "SELECT member_id, vouched_key, trusted_through FROM devices WHERE library_id = ?1 AND id = ?2",
+                [&device.1, id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap()
+    }
+
+    /// D98: one operation leaves the person in the catalog and their devices without person, fenced and revoked.
+    #[test]
+    fn withdrawing_a_person_leaves_their_devices_without_person_fenced_and_revoked() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let phone_id = device_id_of(&phone);
+
+        crate::people::withdraw_person(&mut laptop.0, &lib, &hugo).unwrap();
+
+        let steps = operations_with_intent(&laptop, "member.withdraw");
+        assert_eq!(steps.len(), 1, "one operation");
+        assert_eq!(
+            member_row(&laptop, &hugo),
+            (Some(1), "Hugo".to_owned()),
+            "the name stays"
+        );
+        let (person, key, fence) = device_row(&laptop, &phone_id);
+        assert_eq!((person, key), (None, None));
+        assert!(fence.is_some(), "fenced");
+        assert!(
+            !crate::lan::revocations_of(&laptop.0, &lib, &phone_id)
+                .unwrap()
+                .is_empty()
+        );
+        let people = crate::people::list_people(&laptop.0, &lib).unwrap();
+        assert!(
+            people
+                .people
+                .iter()
+                .any(|p| p.id == hugo && p.access_withdrawn && p.devices.is_empty())
+        );
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &steps[0]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn the_last_administrator_and_oneself_are_not_withdrawn_and_the_withdrawn_do_not_count() {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let tersoal = crate::marks::my_member(&laptop.0, &lib).unwrap().unwrap();
+        assert!(
+            matches!(
+                crate::people::withdraw_person(&mut laptop.0, &lib, &tersoal),
+                Err(crate::error::Error::NotAllowed)
+            ),
+            "oneself"
+        );
+
+        crate::people::withdraw_person(&mut laptop.0, &lib, &hugo).unwrap();
+
+        // Hugo is an administrator no more for this count: Tersoal is the last one.
+        assert!(matches!(
+            crate::people::set_role(&mut laptop.0, &lib, &tersoal, Some("editor"), false),
+            Err(crate::error::Error::LastAdmin)
+        ));
+        phone.pull_from(&laptop);
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn giving_the_access_back_gives_nothing_back_by_itself() {
+        let (mut laptop, _phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &_phone);
+        let phone_id = device_id_of(&_phone);
+        crate::people::withdraw_person(&mut laptop.0, &lib, &hugo).unwrap();
+
+        crate::people::restore_person(&mut laptop.0, &lib, &hugo).unwrap();
+
+        assert_eq!(member_row(&laptop, &hugo).0, Some(0));
+        assert_eq!(
+            device_row(&laptop, &phone_id).0,
+            None,
+            "the device is still nobody's"
+        );
+        assert!(
+            !crate::lan::revocations_of(&laptop.0, &lib, &phone_id)
+                .unwrap()
+                .is_empty(),
+            "and still revoked"
+        );
+    }
+
+    /// D98: what the expelled signs after the withdrawal is a request, in whatever order it arrives.
+    #[test]
+    fn what_the_expelled_signs_after_the_withdrawal_is_a_request_in_every_order() {
+        let (mut laptop, phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let phone_id = device_id_of(&phone);
+        crate::people::withdraw_person(&mut laptop.0, &lib, &hugo).unwrap();
+        let tag = forged_at(
+            &phone,
+            "tag.add",
+            vec![Change::create(
+                Entity::Tag,
+                ops::new_id(),
+                json!({ "name": "Earthsea" }),
+            )],
+            now_millis() + 1_000,
+            ops::latest_of(&phone.0, &lib, &phone_id)
+                .unwrap()
+                .as_deref(),
+        );
+        merge(&mut laptop.0, vec![tag.clone()]).unwrap();
+        let everything: Vec<SyncOperation> = everything_from(&laptop)
+            .into_iter()
+            .filter(|op| op.operation.id != tag.operation.id)
+            .chain([tag.clone()])
+            .collect();
+        let (by_phone, others): (Vec<_>, Vec<_>) = everything
+            .into_iter()
+            .partition(|op| op.operation.hlc.device == phone_id);
+        let mut first = Device::empty_for(&laptop);
+        merge(&mut first.0, by_phone.clone()).unwrap();
+        merge(&mut first.0, others.clone()).unwrap();
+        let mut last = Device::empty_for(&laptop);
+        merge(&mut last.0, others).unwrap();
+        merge(&mut last.0, by_phone).unwrap();
+
+        for device in [&laptop, &first, &last] {
+            assert_eq!(status_of_id(device, &tag.operation.id), "request");
+        }
+        assert_converged(&[&laptop, &first, &last]);
+    }
+
     #[test]
     fn the_same_hlc_does_not_overwrite_a_field() {
         let device = Device::new();

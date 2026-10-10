@@ -36,7 +36,8 @@ pub trait LibraryView {
     /// as `device`: who asked may withdraw what they asked for.
     fn requested_by_same_person(&self, request: &str, device: &str) -> bool;
     /// The person (member id) `device` belongs to, if any. A device whose `vouched_key` is set
-    /// and is not the key it is registered with belongs to nobody (D96).
+    /// and is not the key it is registered with belongs to nobody (D96), and neither does one
+    /// of a person whose access was withdrawn (D98).
     fn member_of_device(&self, device: &str) -> Option<String>;
     /// Whether the `member_id` of `device` is set, whatever its `vouched_key` says. The
     /// cloud's rule asks this, not `member_of_device`: it only links devices of nobody (D76).
@@ -59,6 +60,8 @@ pub trait LibraryView {
     fn member_exists(&self, member: &str) -> bool;
     /// Whether the person `member` has an `account_id`.
     fn member_has_account(&self, member: &str) -> bool;
+    /// Whether the person `member` has had their access withdrawn (D98).
+    fn member_access_withdrawn(&self, member: &str) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -133,7 +136,9 @@ fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool
                 && text("vouched_key").is_some()
                 && !change.id.eq_ignore_ascii_case(author)
                 && !view.device_has_member_id(&change.id)
-                && text("member_id").is_some_and(|member| view.member_has_account(member))
+                && text("member_id").is_some_and(|member| {
+                    view.member_has_account(member) && !view.member_access_withdrawn(member)
+                })
         }
         _ => false,
     }
@@ -178,7 +183,13 @@ fn change_allowed(
         }
         Entity::Device | Entity::Library | Entity::Revocation => false,
         // Nobody gives more than they have.
-        Entity::Member if touches("role") || touches("can_share") => false,
+        // `access_withdrawn` goes with `role` (D98): whoever may not give a role may not echar a person
+        // or give the access back, the person themself included.
+        Entity::Member
+            if touches("role") || touches("can_share") || touches("access_withdrawn") =>
+        {
+            false
+        }
         // Each person keeps their own marks, whatever their role (D68).
         Entity::Mark => {
             let Some(me) = view.member_of_device(author).filter(|_| someone) else {
@@ -246,6 +257,9 @@ mod tests {
         }
         fn member_has_account(&self, member: &str) -> bool {
             member == MY_MEMBER
+        }
+        fn member_access_withdrawn(&self, _: &str) -> bool {
+            false
         }
         fn mark_member(&self, _: &str) -> Option<String> {
             Some(

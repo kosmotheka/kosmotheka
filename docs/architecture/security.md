@@ -60,6 +60,7 @@ Lo mismo se hace una vez para todos al activar los roles en una biblioteca: desd
 - **En casa**, dos dispositivos se emparejan con un código QR que se enseña en pantalla. A partir de ahí hablan cifrado y cada uno reconoce al otro por su certificado, no por su dirección en la red.
 - **Quién puede dar una biblioteca a otro dispositivo:** quien la administra o quien tiene «Puede compartir».
 - **Retirar el acceso:** quien administra puede decir que un dispositivo ya no recibe una biblioteca; los demás dejan de entregársela. Lo que ese dispositivo ya tenía copiado no se le puede quitar.
+- **Echar a una persona:** quien administra puede decir que una persona ya no entra en la biblioteca. Sus dispositivos dejan de contar como suyos y se les retira el acceso, de modo que borran la biblioteca al conectar; su nombre y lo suyo (sus libros, sus préstamos) se quedan. Si vuelve, quien administra le devuelve el acceso y le vuelve a vincular un dispositivo. No se puede echar al último administrador.
 
 *Construida. Nombres: emparejamiento, `can_share`, retirada (`revocation`).*
 

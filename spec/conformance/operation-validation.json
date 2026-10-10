@@ -1547,6 +1547,78 @@
     }
   },
   {
+    "name": "member with the access withdrawn",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001b0",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.withdraw",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "access_withdrawn": true
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "member with the access given back",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001b1",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.restore",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "access_withdrawn": false
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "access_withdrawn that is not true or false",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001b2",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.withdraw",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "access_withdrawn": "yes"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "access_withdrawn"
+    }
+  },
+  {
     "name": "device assigned to a member",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000127",

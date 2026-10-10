@@ -347,6 +347,10 @@
                     "description": "Whether the member may share the library with other devices or people (D55).",
                     "$ref": "#/$defs/boolean"
                   },
+                  "access_withdrawn": {
+                    "description": "The person may no longer reach the library, from any device or through their account (D98); they stay in the catalog. Written by whoever may write `role`. Null or absent reads as false.",
+                    "$ref": "#/$defs/boolean"
+                  },
                   "account_id": {
                     "description": "A random id of the account linked to this person (D76); the email never travels. Only the cloud device writes it, and never when the member is created.",
                     "anyOf": [

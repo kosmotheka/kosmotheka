@@ -86,6 +86,22 @@ final class PermissionsTest extends TestCase
         self::assertFalse(Permissions::isAllowed($linkAlone, $cloud), 'member_id alone');
     }
 
+    public function testOnlyAnAdministratorWritesAccessWithdrawn(): void
+    {
+        $member = '01997c7e-0000-7000-8000-000000000013';
+        $withdraw = fn (bool $value): OperationPayload => $this->op([Ops::update(CatalogEntity::Member, $member, ['access_withdrawn' => $value])]);
+
+        foreach ([true, false] as $value) {
+            self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Editor)), 'an editor');
+            self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Reader, samePerson: true)), 'a reader, the person themself');
+            self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(null)), 'a device of nobody');
+            self::assertTrue(Permissions::isAllowed($withdraw($value), $this->view(Role::Admin)));
+            self::assertFalse(Permissions::isAllowed($withdraw($value), new FakeView(roles: true, cloud: true)), 'the cloud');
+        }
+        $born = $this->op([Ops::create(CatalogEntity::Member, $member, ['name' => 'Hugo', 'access_withdrawn' => true])]);
+        self::assertFalse(Permissions::isAllowed($born, $this->view(Role::Editor)), 'not at creation');
+    }
+
     public function testAnUnsignedOperationIsNeverAllowed(): void
     {
         $add = $this->op([Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Tehanu'])]);

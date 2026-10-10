@@ -72,7 +72,8 @@ final class Permissions
                 && 0 !== strcasecmp($change->id, $author)
                 && !$view->deviceHasMemberId($change->id)
                 && \is_string($change->fields['member_id'] ?? null) && '' !== $change->fields['member_id']
-                && $view->memberHasAccount($change->fields['member_id']),
+                && $view->memberHasAccount($change->fields['member_id'])
+                && !$view->memberAccessWithdrawn($change->fields['member_id']),
             default => false,
         };
     }
@@ -118,7 +119,7 @@ final class Permissions
                 return false;
                 // Nobody gives more than they have.
             case CatalogEntity::Member:
-                if ($touches('role') || $touches('can_share')) {
+                if ($touches('role') || $touches('can_share') || $touches('access_withdrawn')) {
                     return false;
                 }
                 break;

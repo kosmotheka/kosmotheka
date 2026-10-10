@@ -363,12 +363,8 @@ pub fn revoke_access(conn: &mut Connection, id: &str, device_id: &str) -> Result
     ensure_exists(conn, id)?;
     let name = lan::known_device_name(conn, device_id)?.unwrap_or_else(|| device_id.to_owned());
     let tx = conn.transaction()?;
-    if lan::revocations_of(&tx, id, device_id)?.is_empty() {
-        let mut changes = vec![Change::create(
-            Entity::Revocation,
-            new_id(),
-            json!({ "device_id": device_id, "device_name": name }),
-        )];
+    if let Some(revocation) = revocation_change(&tx, id, device_id, &name)? {
+        let mut changes = vec![revocation];
         // The revoked device is fenced in the same operation (D84).
         changes.extend(crate::permissions::fence_changes(
             &tx,
@@ -377,11 +373,35 @@ pub fn revoke_access(conn: &mut Connection, id: &str, device_id: &str) -> Result
         )?);
         ops::record(&tx, id, "library.revoke", changes)?;
     }
-    tx.execute(
-        "DELETE FROM library_peers WHERE library_id = ?1 AND device_id = ?2",
-        [id, device_id],
-    )?;
+    forget_peer(&tx, id, device_id)?;
     tx.commit()?;
+    Ok(())
+}
+
+/// The change that withdraws a device's access (D71), unless it already is withdrawn. Shared with
+/// echar a una persona (D98), which writes it together with the rest of its step.
+pub fn revocation_change(
+    conn: &Connection,
+    library: &str,
+    device_id: &str,
+    name: &str,
+) -> Result<Option<Change>> {
+    if !lan::revocations_of(conn, library, device_id)?.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(Change::create(
+        Entity::Revocation,
+        new_id(),
+        json!({ "device_id": device_id, "device_name": name }),
+    )))
+}
+
+/// This device stops sharing the library with `device_id` over the local network.
+pub fn forget_peer(conn: &Connection, library: &str, device_id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM library_peers WHERE library_id = ?1 AND device_id = ?2",
+        [library, device_id],
+    )?;
     Ok(())
 }
 

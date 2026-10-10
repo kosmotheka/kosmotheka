@@ -682,6 +682,51 @@ mod tests {
         assert_eq!(titles_in(&phone, &club), vec!["Club book"]);
     }
 
+    /// D98: echar a una persona reaches their device by the road of D71: it removes the library when it syncs.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn withdrawing_a_person_removes_the_library_from_their_device_when_it_syncs() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        // The phone registers itself in the club by writing in it, and the desk hears of it.
+        add_to(&phone, &club, "Phone's book");
+        sync(&phone, &server.device_id).await.unwrap();
+        let phone_id = id_of(&phone);
+        let hugo = ops::new_id();
+        {
+            let mut conn = desk.database.lock().unwrap();
+            crate::people::start_roles(&mut conn, &club, "Ana", &[]).unwrap();
+            let tx = conn.transaction().unwrap();
+            ops::record(
+                &tx,
+                &club,
+                "member.add",
+                vec![kosmotheka_domain::Change::create(
+                    kosmotheka_domain::Entity::Member,
+                    &hugo,
+                    serde_json::json!({ "name": "Hugo", "role": "editor" }),
+                )],
+            )
+            .unwrap();
+            tx.commit().unwrap();
+            crate::people::assign_device(&mut conn, &club, &phone_id, Some(&hugo)).unwrap();
+        }
+        sync(&phone, &server.device_id).await.unwrap();
+        assert!(has_library(&phone, &club));
+
+        crate::people::withdraw_person(&mut desk.database.lock().unwrap(), &club, &hugo).unwrap();
+        let report = sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(report.removed, vec![club.clone()]);
+        assert!(!has_library(&phone, &club));
+        assert!(
+            has_library(&desk.database, &club),
+            "the desk keeps it, and Hugo stays in it"
+        );
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn a_revoked_device_is_refused_its_old_offer() {
         let (desk, club) = desk_with_club().await;

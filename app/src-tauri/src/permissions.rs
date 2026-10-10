@@ -31,13 +31,16 @@ impl<'a> SqlView<'a> {
     }
 }
 
-/// SQL for the person of the `devices` row aliased `d` (D96): its `member_id`, unless it
-/// carries a `vouched_key` other than the key it is registered with, which makes it
-/// nobody's. Compared byte by byte, like `public_key`.
+/// SQL for the person of the `devices` row aliased `d` (D96, D98): its `member_id`, unless it carries a
+/// `vouched_key` other than the key it is registered with, or the person had their access withdrawn,
+/// which makes it nobody's. Compared byte by byte, like `public_key`.
 pub fn person_of(d: &str) -> String {
     format!(
-        "CASE WHEN {d}.vouched_key IS NULL OR {d}.vouched_key = '' \
-         OR {d}.vouched_key = {d}.public_key THEN {d}.member_id END"
+        "CASE WHEN ({d}.vouched_key IS NULL OR {d}.vouched_key = '' \
+         OR {d}.vouched_key = {d}.public_key) \
+         AND NOT EXISTS (SELECT 1 FROM members wd WHERE wd.library_id = {d}.library_id \
+                         AND wd.id = {d}.member_id AND wd.access_withdrawn = 1) \
+         THEN {d}.member_id END"
     )
 }
 
@@ -71,7 +74,7 @@ pub fn assignment_fields(
     Ok(serde_json::json!({ "member_id": member, "vouched_key": key }))
 }
 
-/// The person `device` belongs to in `library`, with the rule of D96. A device that is
+/// The person `device` belongs to in `library`, with the rules of D96 and D98. A device that is
 /// not registered, or whose vouched key is not its own, belongs to nobody.
 pub fn person_of_device(conn: &Connection, library: &str, device: &str) -> Result<Option<String>> {
     Ok(conn
@@ -232,6 +235,17 @@ impl LibraryView for SqlView<'_> {
                 |row| row.get(0),
             )
             .unwrap_or(false)
+    }
+
+    fn member_access_withdrawn(&self, member: &str) -> bool {
+        self.conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM members
+                  WHERE library_id = ?1 AND id = ?2 AND access_withdrawn = 1)",
+                [self.library, member],
+                |row| row.get(0),
+            )
+            .unwrap_or(true)
     }
 
     fn mark_member(&self, id: &str) -> Option<String> {

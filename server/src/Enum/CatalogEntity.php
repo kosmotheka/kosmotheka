@@ -203,6 +203,7 @@ enum CatalogEntity: string
                 'role' => new FieldSpec(FieldType::OneOf, false, self::ROLES),
                 'can_share' => new FieldSpec(FieldType::Boolean, false),
                 'account_id' => $text(),
+                'access_withdrawn' => new FieldSpec(FieldType::Boolean, false),
             ],
             self::WorkContributor => [
                 'work_id' => $ref(self::Work, true),

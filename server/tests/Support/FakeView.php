@@ -54,6 +54,11 @@ final readonly class FakeView implements LibraryView
         return $this->role instanceof Role;
     }
 
+    public function memberAccessWithdrawn(string $member): bool
+    {
+        return false;
+    }
+
     public function markMember(string $id): string
     {
         return $this->samePerson ? self::MY_MEMBER : self::OTHER_MEMBER;

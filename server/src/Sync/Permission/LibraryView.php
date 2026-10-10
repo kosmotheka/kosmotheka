@@ -29,7 +29,7 @@ interface LibraryView
 
     /**
      * The person (member id) `$device` belongs to, if any. A device whose `vouched_key` is set and is not the key
-     * it is registered with belongs to nobody (D96).
+     * it is registered with belongs to nobody (D96), and so does a device of a person whose access was withdrawn (D98).
      */
     public function memberOfDevice(string $device): ?string;
 
@@ -59,4 +59,7 @@ interface LibraryView
 
     /** Whether the person `$member` has an `account_id`. */
     public function memberHasAccount(string $member): bool;
+
+    /** Whether the person `$member` has had their access withdrawn (D98). */
+    public function memberAccessWithdrawn(string $member): bool;
 }

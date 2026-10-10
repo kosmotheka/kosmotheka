@@ -34,10 +34,10 @@ use Symfony\Component\Uid\Uuid;
 final readonly class CatalogLibraryView implements LibraryView
 {
     /**
-     * A device belongs to its person only if it carries no `vouched_key`, or the one it is registered with (D96).
+     * A device belongs to its person only if it carries no `vouched_key`, or the one it is registered with (D96), and the person still has access (D98).
      * Byte by byte, like `public_key`.
      */
-    private const string VOUCHED = " AND (d.vouchedKey IS NULL OR d.vouchedKey = '' OR d.vouchedKey = d.publicKey)";
+    private const string VOUCHED = " AND (d.vouchedKey IS NULL OR d.vouchedKey = '' OR d.vouchedKey = d.publicKey) AND (m.accessWithdrawn IS NULL OR m.accessWithdrawn = false)";
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -110,6 +110,12 @@ final readonly class CatalogLibraryView implements LibraryView
     {
         return [] !== $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s d WHERE d.cloudLibrary = :library AND d.id = :device AND d.member IS NOT NULL', Device::class))
             ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setMaxResults(1)->getResult();
+    }
+
+    public function memberAccessWithdrawn(string $member): bool
+    {
+        return [] !== $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member AND m.accessWithdrawn = true', Member::class))
+            ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('member', $member)->setMaxResults(1)->getResult();
     }
 
     public function markMember(string $id): ?string

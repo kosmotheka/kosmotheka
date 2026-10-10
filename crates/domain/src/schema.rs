@@ -183,6 +183,7 @@ const MEMBER_FIELDS: &[FieldSpec] = &[
     field("role", FieldType::OneOf(ROLES), false),
     field("can_share", FieldType::Boolean, false),
     field("account_id", FieldType::Text, false),
+    field("access_withdrawn", FieldType::Boolean, false),
 ];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const TAG_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
