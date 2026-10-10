@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EllipsisVertical, Info, Trash2 } from "lucide-react";
+import { EllipsisVertical, Info, Trash2, UserRoundCheck, UserRoundMinus } from "lucide-react";
 
 import { Avatar, Switch } from "@/components/people/role-parts";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
@@ -21,21 +21,55 @@ import { cn } from "@/lib/utils";
 export function PersonSheet({
   person,
   library,
-  lastAdmin,
   onClose,
   onSave,
   onRemoveDevice,
+  onWithdraw,
+  onRestore,
 }: {
   person: Person;
   library: string;
-  lastAdmin: boolean;
   onClose: () => void;
   onSave: (role: Role, canShare: boolean) => void;
   onRemoveDevice: (device: PersonDevice) => void;
+  onWithdraw: () => void;
+  onRestore: () => void;
 }) {
   const { t } = useTranslation();
   const [role, setRole] = useState<Role>(person.role ?? "reader");
   const [canShare, setCanShare] = useState(person.canShare);
+  const lastAdmin = person.lastAdmin;
+  const isMe = person.devices.some((d) => d.thisDevice);
+
+  if (person.accessWithdrawn) {
+    // No role to change and no device to assign while they have no access (D98): only to give it back.
+    return (
+      <SheetOrDialog
+        open
+        desktop={false}
+        onClose={onClose}
+        title={person.name}
+        description={t("people.noAccess")}
+        icon={<Avatar name={person.name} size={48} />}
+      >
+        <p className="flex gap-2 text-[13px] leading-snug text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0" />
+          <span>{t("people.noAccess")}</span>
+        </p>
+        <p className="text-sm leading-relaxed text-pretty">
+          {t("people.restore.then", { person: person.name })}
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Button variant="outline" className="h-12" onClick={onClose}>
+            {t("common.close")}
+          </Button>
+          <Button className="h-12" onClick={onRestore}>
+            <UserRoundCheck /> {t("people.restore.menu")}
+          </Button>
+        </div>
+      </SheetOrDialog>
+    );
+  }
 
   return (
     <SheetOrDialog
@@ -146,6 +180,15 @@ export function PersonSheet({
             ))}
           </div>
         </>
+      )}
+      {!isMe && (
+        <Button
+          variant="outline"
+          className="h-12 text-destructive hover:text-destructive"
+          onClick={onWithdraw}
+        >
+          <UserRoundMinus /> {t("people.kick.menu", { library })}
+        </Button>
       )}
       <div className="grid grid-cols-2 gap-2.5">
         <Button variant="outline" className="h-12" onClick={onClose}>

@@ -175,6 +175,8 @@ pub fn run() {
             commands::set_role,
             commands::assign_device,
             commands::remove_device,
+            commands::withdraw_person,
+            commands::restore_person,
             commands::duplicate_library,
             commands::list_series,
             commands::get_series,

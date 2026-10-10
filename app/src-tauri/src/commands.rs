@@ -711,6 +711,23 @@ pub fn assign_device(
     people::assign_device(&mut conn, &library, &device, member.as_deref())
 }
 
+/// Sends a person away from the active library (D98): their devices lose it and their account stops
+/// getting it. They stay in the catalog.
+#[tauri::command]
+pub fn withdraw_person(database: State<'_, Database>, member: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::withdraw_person(&mut conn, &library, &member)
+}
+
+/// Takes the mark off a person sent away (D98). It gives nothing back by itself.
+#[tauri::command]
+pub fn restore_person(database: State<'_, Database>, member: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::restore_person(&mut conn, &library, &member)
+}
+
 /// A lost device: out of every library, wherever it is (D58).
 #[tauri::command]
 pub fn remove_device(database: State<'_, Database>, device: String) -> Result<usize> {

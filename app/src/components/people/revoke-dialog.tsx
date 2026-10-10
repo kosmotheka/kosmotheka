@@ -31,6 +31,7 @@ export function RevokeDialog({
   const { t } = useTranslation();
   const libraries = useLibraries();
   const nameOf = useLibraryName();
+  const library = nameOf(libraries.active);
   const candidates = person?.devices.filter((d) => !d.thisDevice) ?? [];
   const [chosen, setChosen] = useState<string | null>(null);
   const [receives, setReceives] = useState<Record<string, string[]>>({});
@@ -49,6 +50,8 @@ export function RevokeDialog({
     nameOf(libraries.all.find((l) => l.id === id)),
   );
   const others = person.devices.filter((d) => d.id !== device.id);
+  // Rust refuses it (SEG-036): said before, not as an error after.
+  const blocked = device.lastDeviceOfLastAdmin;
 
   const remove = async () => {
     setBusy(true);
@@ -80,6 +83,12 @@ export function RevokeDialog({
       }
     >
       <p className="text-sm text-muted-foreground">{t("people.revoke.why")}</p>
+      {blocked && (
+        <div className="flex flex-col gap-2 text-sm leading-relaxed text-pretty">
+          <p>{t("people.revoke.lastBody", { person: person.name, library })}</p>
+          <p className="text-[13px] text-muted-foreground">{t("people.revoke.lastNote")}</p>
+        </div>
+      )}
       {!fixed && candidates.length > 1 && (
         <div role="radiogroup" className="flex flex-col divide-y rounded-xl border">
           {candidates.map((d) => (
@@ -105,30 +114,41 @@ export function RevokeDialog({
           ))}
         </div>
       )}
-      <div className="flex flex-col gap-2 text-sm leading-relaxed text-pretty">
+      <div
+        className={cn(
+          "flex flex-col gap-2 text-sm leading-relaxed text-pretty",
+          blocked && "hidden",
+        )}
+      >
         <p>
           {names.length > 0
             ? t("people.revoke.loses", { libraries: names.join(", ") })
             : t("people.revoke.losesAll")}
         </p>
+        <p>{t("people.revoke.role", { person: person.name, library })}</p>
         <p className="text-[13px] text-muted-foreground">
           {t("people.revoke.after")}
           {others[0] &&
             ` ${t("people.revoke.stays", { person: person.name, device: others[0].name })}`}
         </p>
+        <p className="text-[13px] text-muted-foreground">
+          {t("people.revoke.tip", { person: person.name })}
+        </p>
       </div>
       <div className={cn("flex gap-2", desktop ? "justify-end" : "flex-col-reverse")}>
         <Button variant="outline" className={cn(!desktop && "h-12")} onClick={onClose}>
-          {t("common.cancel")}
+          {blocked ? t("common.close") : t("common.cancel")}
         </Button>
-        <Button
-          variant="destructive"
-          className={cn(!desktop && "h-12")}
-          disabled={busy}
-          onClick={() => void remove()}
-        >
-          <Trash2 /> {t("people.revoke.confirm", { device: device.name })}
-        </Button>
+        {!blocked && (
+          <Button
+            variant="destructive"
+            className={cn(!desktop && "h-12")}
+            disabled={busy}
+            onClick={() => void remove()}
+          >
+            <Trash2 /> {t("people.revoke.confirm", { device: device.name })}
+          </Button>
+        )}
       </div>
     </SheetOrDialog>
   );

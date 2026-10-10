@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { AccessDialog } from "@/components/people/access-dialog";
 import { ActivateDialog } from "@/components/people/activate-dialog";
 import { PersonSheet } from "@/components/people/person-sheet";
 import { Avatar, DeviceChip, RoleLegend, RoleMenu, Switch } from "@/components/people/role-parts";
@@ -59,6 +60,9 @@ export function PeoplePage({
   const [reloads, setReloads] = useState(0);
   const [activating, setActivating] = useState(false);
   const [sheet, setSheet] = useState<Person | null>(null);
+  const [access, setAccess] = useState<{ person: Person; mode: "withdraw" | "restore" } | null>(
+    null,
+  );
   const [revoking, setRevoking] = useState<{ person: Person; device?: PersonDevice } | null>(null);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
@@ -87,8 +91,9 @@ export function PeoplePage({
     act(() => setRole(person.id, role, canShare));
 
   const isAdmin = people?.myRole === "admin";
-  const admins = people?.people.filter((p) => p.role === "admin") ?? [];
-  const lastAdmin = (person: Person) => person.role === "admin" && admins.length === 1;
+  // Somebody sent away has no access (D98): they are neither shown as administering nor offered devices.
+  const withAccess = people?.people.filter((p) => !p.accessWithdrawn) ?? [];
+  const admins = withAccess.filter((p) => p.role === "admin");
 
   const header = desktop ? (
     <div className="flex items-end gap-4">
@@ -143,7 +148,7 @@ export function PeoplePage({
     );
   }
 
-  const others = people.people.filter((p) => p.role !== "admin");
+  const others = withAccess.filter((p) => p.role !== "admin");
   const adminName = admins[0]?.name ?? "";
   const myRole = people.myRole;
   const warning = isAdmin && people.loneAdmin && (
@@ -195,8 +200,12 @@ export function PeoplePage({
     </p>
   );
 
-  const personMenu = (person: Person) =>
-    isAdmin && person.devices.some((d) => !d.thisDevice) ? (
+  const personMenu = (person: Person) => {
+    if (!isAdmin) return null;
+    const isMe = person.devices.some((d) => d.thisDevice);
+    const removable = person.devices.some((d) => !d.thisDevice);
+    if (!person.accessWithdrawn && !removable && isMe) return null;
+    return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -208,12 +217,31 @@ export function PeoplePage({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setRevoking({ person })}>
-            {t("people.revoke.menu")}
-          </DropdownMenuItem>
+          {person.accessWithdrawn ? (
+            <DropdownMenuItem onSelect={() => setAccess({ person, mode: "restore" })}>
+              {t("people.restore.menu")}
+            </DropdownMenuItem>
+          ) : (
+            <>
+              {removable && (
+                <DropdownMenuItem onSelect={() => setRevoking({ person })}>
+                  {t("people.revoke.menu")}
+                </DropdownMenuItem>
+              )}
+              {!isMe && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => setAccess({ person, mode: "withdraw" })}
+                >
+                  {t("people.kick.menu", { library })}
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
-    ) : null;
+    );
+  };
 
   const name = (person: Person) => (
     <span className="text-[15px] font-medium sm:text-sm">
@@ -242,10 +270,12 @@ export function PeoplePage({
             <Avatar name={person.name} />
             {name(person)}
           </div>
-          {isAdmin ? (
+          {person.accessWithdrawn ? (
+            <span className="col-span-3 text-sm text-muted-foreground">{t("people.noAccess")}</span>
+          ) : isAdmin ? (
             <RoleMenu
               role={person.role}
-              lastAdmin={lastAdmin(person)}
+              lastAdmin={person.lastAdmin}
               onChange={(role) => void changeRole(person, role)}
             />
           ) : (
@@ -253,7 +283,7 @@ export function PeoplePage({
               {person.role ? t(`people.roles.${person.role}`) : t("people.noRole")}
             </span>
           )}
-          {isAdmin ? (
+          {person.accessWithdrawn ? null : isAdmin ? (
             <Switch
               checked={person.canShare}
               label={t("people.canShareOf", { person: person.name })}
@@ -264,11 +294,13 @@ export function PeoplePage({
               {person.canShare ? t("people.yes") : t("people.no")}
             </span>
           )}
-          <div className="flex flex-wrap gap-1.5">
-            {person.devices.map((device) => (
-              <DeviceChip key={device.id} device={device} />
-            ))}
-          </div>
+          {person.accessWithdrawn ? null : (
+            <div className="flex flex-wrap gap-1.5">
+              {person.devices.map((device) => (
+                <DeviceChip key={device.id} device={device} />
+              ))}
+            </div>
+          )}
           {personMenu(person) ?? <span />}
         </div>
       ))}
@@ -288,12 +320,16 @@ export function PeoplePage({
           <Avatar name={person.name} size={40} />
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             {name(person)}
-            <span className="text-[13px]">
-              {person.role ? t(`people.roles.${person.role}`) : t("people.noRole")}
-              {person.canShare && (
-                <span className="text-muted-foreground"> · {t("people.canShareShort")}</span>
-              )}
-            </span>
+            {person.accessWithdrawn ? (
+              <span className="text-[13px] text-muted-foreground">{t("people.noAccess")}</span>
+            ) : (
+              <span className="text-[13px]">
+                {person.role ? t(`people.roles.${person.role}`) : t("people.noRole")}
+                {person.canShare && (
+                  <span className="text-muted-foreground"> · {t("people.canShareShort")}</span>
+                )}
+              </span>
+            )}
             <span className="flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
               {person.devices.map((device) => (
                 <span key={device.id} className="flex items-center gap-1">
@@ -326,7 +362,7 @@ export function PeoplePage({
               {t("people.countsAsReaderLong")}
             </span>
           </span>
-          {isAdmin && people.people.length > 0 && (
+          {isAdmin && withAccess.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -334,7 +370,7 @@ export function PeoplePage({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {people.people.map((person) => (
+                {withAccess.map((person) => (
                   <DropdownMenuItem
                     key={person.id}
                     onSelect={() => void act(() => assignDevice(device.id, person.id))}
@@ -375,7 +411,6 @@ export function PeoplePage({
         <PersonSheet
           person={sheet}
           library={library}
-          lastAdmin={lastAdmin(sheet)}
           onClose={() => setSheet(null)}
           onSave={(role, canShare) => {
             const person = sheet;
@@ -386,6 +421,30 @@ export function PeoplePage({
             const person = sheet;
             setSheet(null);
             setRevoking({ person, device });
+          }}
+          onWithdraw={() => {
+            const person = sheet;
+            setSheet(null);
+            setAccess({ person, mode: "withdraw" });
+          }}
+          onRestore={() => {
+            const person = sheet;
+            setSheet(null);
+            setAccess({ person, mode: "restore" });
+          }}
+        />
+      )}
+      {access && (
+        <AccessDialog
+          person={access.person}
+          mode={access.mode}
+          library={library}
+          desktop={desktop}
+          onClose={() => setAccess(null)}
+          onDone={(message) => {
+            setAccess(null);
+            onNotice(message);
+            reload();
           }}
         />
       )}

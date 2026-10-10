@@ -912,7 +912,32 @@
       "after": "No recibirá más cambios y lo que envíe no contará. Si vuelve a conectarse, se borrarán de él estas bibliotecas.",
       "stays": "{{person}} sigue con su {{device}}.",
       "confirm": "Quitar {{device}}",
-      "done": "{{device}} quitado."
+      "done": "{{device}} quitado.",
+      "role": "Dejará de tener el rol de {{person}} en {{library}}. La nube no se lo devolverá sola, aunque siga con la sesión abierta.",
+      "tip": "Si lo ha perdido, conviene además que {{person}} lo quite de «Mis dispositivos» en su cuenta, o que cambie la contraseña.",
+      "lastBody": "{{person}} es la única persona que administra {{library}} y puede actuar, y este es su único dispositivo. Sin él nadie podría cambiar los permisos ni dar acceso a dispositivos nuevos.",
+      "lastNote": "Primero nombra a otra persona administradora, o vincula otro dispositivo de {{person}}."
+    },
+    "noAccess": "Sin acceso · sus libros siguen siendo suyos",
+    "kick": {
+      "menu": "Quitar de {{library}}",
+      "title": "¿Quitar a {{person}} de {{library}}?",
+      "body": "Dejará de poder entrar, ni con sus dispositivos ni con su cuenta. Sus dispositivos borran la biblioteca la próxima vez que se conecten.",
+      "keeps": "Su nombre sigue en {{library}}: sus libros siguen siendo suyos y se conservan sus préstamos y lo que marcó. Lo que ya haya copiado fuera de la app no se le puede quitar.",
+      "foot": "Podrás devolverle el acceso más tarde.",
+      "confirm": "Quitar a {{person}}",
+      "done": "{{person}} ya no tiene acceso a {{library}}.",
+      "lastTitle": "{{person}} es la única que puede administrar {{library}}",
+      "lastBody": "Si se va, nadie podría cambiar los permisos ni dar acceso a dispositivos nuevos.",
+      "lastNote": "Primero nombra a otra persona administradora que tenga un dispositivo."
+    },
+    "restore": {
+      "menu": "Devolver el acceso",
+      "title": "¿Devolver a {{person}} el acceso a {{library}}?",
+      "body": "Podrá volver a entrar en {{library}}, pero no se le devuelve nada por sí solo.",
+      "then": "Después, vincula de nuevo un dispositivo suyo.",
+      "confirm": "Devolver el acceso",
+      "done": "{{person}} tiene de nuevo acceso a {{library}}. Vincula un dispositivo suyo para que pueda entrar."
     },
     "errors": {
       "not_allowed": "No tienes permiso para hacer esto en esta biblioteca.",

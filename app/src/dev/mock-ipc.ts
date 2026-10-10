@@ -570,7 +570,12 @@ let mockDevices: AccountDevice[] = [
   },
 ];
 
-const dev = (id: string, name: string, thisDevice = false) => ({ id, name, thisDevice });
+const dev = (id: string, name: string, thisDevice = false) => ({
+  id,
+  name,
+  thisDevice,
+  lastDeviceOfLastAdmin: false,
+});
 const people: People = {
   hasRoles: !params.has("noroles"),
   myRole: params.has("reader") ? "reader" : "admin",
@@ -581,6 +586,8 @@ const people: People = {
       name: "Ana",
       role: "admin",
       canShare: true,
+      accessWithdrawn: false,
+      lastAdmin: true,
       devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
       elsewhere: ["Club de rol"],
     },
@@ -589,6 +596,8 @@ const people: People = {
       name: "Laura",
       role: "editor",
       canShare: true,
+      accessWithdrawn: false,
+      lastAdmin: false,
       devices: [dev("phone", "Móvil de Laura")],
       elsewhere: [],
     },
@@ -597,6 +606,8 @@ const people: People = {
       name: "Hugo",
       role: "reader",
       canShare: false,
+      accessWithdrawn: params.has("withdrawn"),
+      lastAdmin: false,
       devices: [
         dev("hugo-phone", "Móvil de Hugo", params.has("reader")),
         dev("tablet", "Tablet Lenovo"),
@@ -606,6 +617,9 @@ const people: People = {
   ],
   unassigned: [dev("kitchen", "Tablet de la cocina")],
 };
+// `?withdrawn` sends Hugo away (D98): no access, no devices, still in the catalog.
+if (params.has("withdrawn"))
+  people.people = people.people.map((p) => (p.id === "hugo" ? { ...p, devices: [] } : p));
 if (params.has("noroles")) {
   people.people = people.people.map((p) => ({ ...p, role: null, devices: [] }));
   people.unassigned = [

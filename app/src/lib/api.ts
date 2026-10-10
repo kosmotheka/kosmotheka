@@ -748,6 +748,8 @@ export interface PersonDevice {
   name: string;
   /** The device this app runs on. */
   thisDevice: boolean;
+  /** Removing it would leave nobody who administers and can act: Rust refuses (SEG-036). */
+  lastDeviceOfLastAdmin: boolean;
 }
 
 export interface Person {
@@ -755,6 +757,10 @@ export interface Person {
   name: string;
   role: Role | null;
   canShare: boolean;
+  /** Sent away (D98): no access, but they stay in the catalog with their books. */
+  accessWithdrawn: boolean;
+  /** The last administrator who can act: not demoted nor sent away (D58, SEG-036). */
+  lastAdmin: boolean;
   devices: PersonDevice[];
   /** Other libraries on this device where the same person is. */
   elsewhere: string[];
@@ -808,6 +814,16 @@ export function setRole(member: string, role: Role | null, canShare: boolean): P
 
 export function assignDevice(device: string, member: string | null): Promise<void> {
   return invoke("assign_device", { device, member });
+}
+
+/** Sends a person away from the active library (D98). They stay in the catalog. */
+export function withdrawPerson(member: string): Promise<void> {
+  return invoke("withdraw_person", { member });
+}
+
+/** Takes the mark off a person sent away: it gives nothing back by itself (D98). */
+export function restorePerson(member: string): Promise<void> {
+  return invoke("restore_person", { member });
 }
 
 /** A lost device: out of every library, wherever it is. Returns how many. */

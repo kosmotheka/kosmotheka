@@ -20,6 +20,8 @@ pub struct PersonDevice {
     pub name: String,
     /// The device this app runs on.
     pub this_device: bool,
+    /// Removing it would leave the library without an administrator who can act (SEG-036): refused.
+    pub last_device_of_last_admin: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -31,6 +33,8 @@ pub struct Person {
     pub can_share: bool,
     /// The person may no longer reach the library (D98); they stay in the catalog.
     pub access_withdrawn: bool,
+    /// The last administrator who can act: they cannot be demoted nor withdrawn (D58, SEG-036).
+    pub last_admin: bool,
     pub devices: Vec<PersonDevice>,
     /// Other libraries on this device where the same person is (same member id).
     pub elsewhere: Vec<String>,
@@ -64,6 +68,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
         id: id.to_owned(),
         name: name.to_owned(),
         this_device: id == me,
+        last_device_of_last_admin: false,
     };
     let mut people: Vec<Person> = conn
         .prepare(
@@ -77,6 +82,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
                 role: row.get(2)?,
                 can_share: row.get::<_, Option<i64>>(3)?.unwrap_or(0) != 0,
                 access_withdrawn: row.get::<_, i64>(4)? != 0,
+                last_admin: false,
                 devices: Vec::new(),
                 elsewhere: Vec::new(),
             })
@@ -89,11 +95,20 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
             None => unassigned.push(device(id, name)),
         }
     }
-    let admins: Vec<&Person> = people
+    // A withdrawn administrator no longer administers (D98).
+    let lone_admin = people
         .iter()
-        .filter(|p| p.role.as_deref() == Some("admin"))
-        .collect();
-    let lone_admin = admins.len() == 1;
+        .filter(|p| p.role.as_deref() == Some("admin") && !p.access_withdrawn)
+        .count()
+        == 1;
+    if let [only] = acting_admins(conn, library)?.as_slice() {
+        for person in people.iter_mut().filter(|p| &p.id == only) {
+            person.last_admin = true;
+            if let [device] = person.devices.as_mut_slice() {
+                device.last_device_of_last_admin = true;
+            }
+        }
+    }
     for person in &mut people {
         person.elsewhere = libraries_of(conn, &person.id, library)?;
     }
@@ -492,7 +507,8 @@ pub fn pairing_owners(conn: &Connection, device: &str) -> Result<PairingOwners> 
         if !listed.has_roles || listed.my_role.as_deref() != Some("admin") {
             continue;
         }
-        for person in listed.people {
+        // Somebody sent away is not offered a new device: they come back by being given the access first.
+        for person in listed.people.into_iter().filter(|p| !p.access_withdrawn) {
             let index = match people.iter().position(|c| c.id == person.id) {
                 Some(index) => index,
                 None => {
@@ -666,7 +682,6 @@ pub fn remove_device(conn: &mut Connection, device: &str) -> Result<usize> {
 /// vouched key), fences it (D84, D87) and withdraws its access (D71), so those devices remove the
 /// library when they next connect, over the local network or through the cloud. Not the last
 /// administrator, and not the person this device belongs to.
-#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
 pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
     let me = ops::device_id(conn)?;
     if permissions::person_of_device(conn, library, &me)?.as_deref() == Some(member) {
@@ -716,7 +731,6 @@ pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Re
 
 /// Gives the access back: only removes the mark (D98). The devices stay without their person and
 /// the revocations stay; whoever administers links a device again, the usual way.
-#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
 pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
     let tx = conn.transaction()?;
     // Devices the withdrawal did not name still point at the person; cut them off first, in the
@@ -736,11 +750,11 @@ pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Res
     Ok(())
 }
 
-/// Whether `member` is the last administrator **who can act** (D58, SEG-036): with access, and
-/// with at least one device that is theirs. One with no device cannot sign anything, so if the
-/// others were taken away nobody could change permissions again.
-fn is_last_admin(conn: &Connection, library: &str, member: &str) -> Result<bool> {
-    let acting: Vec<String> = conn
+/// The administrators who can act (D58, SEG-036): with access, and with at least one device that is
+/// theirs. One with no device cannot sign anything, so if the others were taken away nobody could
+/// change permissions again.
+fn acting_admins(conn: &Connection, library: &str) -> Result<Vec<String>> {
+    Ok(conn
         .prepare(&format!(
             "SELECT m.id FROM members m
               WHERE m.library_id = ?1 AND m.role = 'admin' AND coalesce(m.access_withdrawn, 0) = 0
@@ -749,8 +763,12 @@ fn is_last_admin(conn: &Connection, library: &str, member: &str) -> Result<bool>
             permissions::person_of("d")
         ))?
         .query_map([library], |row| row.get(0))?
-        .collect::<rusqlite::Result<_>>()?;
-    Ok(acting.len() == 1 && acting[0] == member)
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+/// Whether `member` is the only administrator who can act.
+fn is_last_admin(conn: &Connection, library: &str, member: &str) -> Result<bool> {
+    Ok(matches!(acting_admins(conn, library)?.as_slice(), [only] if only == member))
 }
 
 #[cfg(test)]
@@ -832,6 +850,60 @@ mod tests {
         let result = set_role(&mut conn, &lib, &member, Some("editor"), false);
 
         assert!(matches!(result, Err(Error::LastAdmin)));
+    }
+
+    /// An administrator nobody has a device of (and one who has been withdrawn) does not count as one who
+    /// could take over: the screens ask Rust who the last one is instead of counting people.
+    fn with_a_ghost_administrator() -> (Connection, String, String, String) {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let me = start_roles(&mut conn, &lib, "Tersoal", &[]).unwrap();
+        let ghost = new_id();
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &ghost,
+                json!({ "name": "Ghost", "role": "admin" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        (conn, lib, me, ghost)
+    }
+
+    #[test]
+    fn the_last_administrator_who_can_act_is_marked_with_her_last_device() {
+        let (conn, lib, me, ghost) = with_a_ghost_administrator();
+
+        let listed = list_people(&conn, &lib).unwrap();
+
+        let person = |id: &str| listed.people.iter().find(|p| p.id == id).unwrap();
+        assert!(person(&me).last_admin, "the ghost cannot sign anything");
+        assert!(!person(&ghost).last_admin);
+        assert_eq!(person(&me).devices.len(), 1);
+        assert!(person(&me).devices[0].last_device_of_last_admin);
+        assert!(!listed.people.iter().all(|p| p.last_admin));
+    }
+
+    #[test]
+    fn a_withdrawn_administrator_neither_counts_for_the_warning_nor_is_offered_a_device() {
+        let (mut conn, lib, _me, ghost) = with_a_ghost_administrator();
+        assert!(!list_people(&conn, &lib).unwrap().lone_admin);
+        let phone = db::open_in_memory().unwrap();
+        let phone_id = ops::device_id(&phone).unwrap();
+        lan::share_library(&conn, &lib, &phone_id).unwrap();
+        assert_eq!(pairing_owners(&conn, &phone_id).unwrap().people.len(), 2);
+
+        withdraw_person(&mut conn, &lib, &ghost).unwrap();
+
+        assert!(list_people(&conn, &lib).unwrap().lone_admin);
+        let owners = pairing_owners(&conn, &phone_id).unwrap();
+        assert_eq!(owners.people.len(), 1);
+        assert!(owners.people[0].me);
     }
 
     #[test]

@@ -898,7 +898,32 @@
       "after": "It will get no more changes and what it sends will not count. If it connects again, these libraries will be erased from it.",
       "stays": "{{person}} keeps their {{device}}.",
       "confirm": "Remove {{device}}",
-      "done": "{{device}} removed."
+      "done": "{{device}} removed.",
+      "role": "It will no longer have {{person}}’s role in {{library}}. The cloud won’t give it back on its own, even if it is still signed in.",
+      "tip": "If it is lost, {{person}} should also remove it from “My devices” in their account, or change their password.",
+      "lastBody": "{{person}} is the only one who administers {{library}} and can act, and this is their only device. Without it nobody could change permissions or give access to new devices.",
+      "lastNote": "First make someone else an administrator, or link another device of {{person}}."
+    },
+    "noAccess": "No access · their books are still theirs",
+    "kick": {
+      "menu": "Remove from {{library}}",
+      "title": "Remove {{person}} from {{library}}?",
+      "body": "They will no longer be able to get in, with their devices or with their account. Their devices remove the library the next time they connect.",
+      "keeps": "Their name stays in {{library}}: their books are still theirs, and their loans and marks are kept. Anything they already copied outside the app can’t be taken back.",
+      "foot": "You can give their access back later.",
+      "confirm": "Remove {{person}}",
+      "done": "{{person}} no longer has access to {{library}}.",
+      "lastTitle": "{{person}} is the only one who can administer {{library}}",
+      "lastBody": "If they leave, nobody could change permissions or give access to new devices.",
+      "lastNote": "First make someone else an administrator who has a device."
+    },
+    "restore": {
+      "menu": "Give access back",
+      "title": "Give {{person}} access to {{library}} again?",
+      "body": "They will be able to come back into {{library}}, but nothing is given back by itself.",
+      "then": "Then link one of their devices again.",
+      "confirm": "Give access back",
+      "done": "{{person}} has access to {{library}} again. Link one of their devices so they can get in."
     },
     "errors": {
       "not_allowed": "You are not allowed to do this in this library.",
