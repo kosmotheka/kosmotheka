@@ -867,6 +867,8 @@
     },
     "yourRole": "Tu rol en {{library}}: {{role}}.",
     "yourRoleNone": "Este dispositivo no es de ninguna persona en {{library}}: cuenta como lector.",
+    "noPerson": "Pide a quien administra que diga de quién es este dispositivo.",
+    "noPersonCloud": "Pide a quien administra que diga de quién es este dispositivo, y entrarás también por la nube.",
     "adminDecides": "Los permisos los cambia {{admin}}, que la administra.",
     "more": "Más opciones de {{person}}",
     "deviceOptions": "Opciones de {{device}}",
@@ -1670,6 +1672,22 @@
       "title": "Este dispositivo tiene la sesión iniciada en otra cuenta.",
       "help": "Para usarlo con esta, déjalo antes a otra persona en Ajustes › Este dispositivo: queda como recién instalado."
     },
+    "linkRejected": {
+      "title": "La nube no ha aceptado el enlace de esta biblioteca.",
+      "help": "No se ha subido nada. Inténtalo de nuevo; si se repite, avisa a quien administra la biblioteca."
+    },
+    "linkNotAllowed": {
+      "title": "Esta biblioteca solo puede subirla quien la administra.",
+      "help": "Mientras, sigue compartiéndose por la red de casa."
+    },
+    "eventsUnavailable": {
+      "title": "Este servidor no envía avisos al momento.",
+      "help": "Los cambios llegan cuando la app sincroniza."
+    },
+    "accessWithdrawn": {
+      "title": "La nube dice que ya no tienes acceso a esta biblioteca.",
+      "help": "Habla con quien la administra."
+    },
     "deviceKeyMismatch": {
       "title": "Tu cuenta conoce este dispositivo con otra clave.",
       "help": "Quítalo de tu cuenta desde otro dispositivo, en Cuenta › Mis dispositivos, y vuelve a entrar aquí."
@@ -1683,26 +1701,46 @@
       "not_signed_in": "Inicia sesión en tu cuenta para usar la nube.",
       "unsigned_history": "Esta biblioteca tiene cambios de antes de que existieran las firmas, así que no puede subir a la nube. Duplícala como nueva y sube esa.",
       "already_linked": "Esta biblioteca ya está en una nube.",
-      "offline": "Sin conexión con la nube."
+      "offline": "Sin conexión con la nube.",
+      "link_rejected": "La nube no ha aceptado el enlace de esta biblioteca. No se ha subido nada; inténtalo de nuevo.",
+      "link_not_allowed": "Esta biblioteca solo puede subirla quien la administra. Mientras, sigue compartiéndose por la red de casa.",
+      "events_unavailable": "Este servidor no envía avisos al momento: los cambios llegan cuando la app sincroniza.",
+      "access_withdrawn": "La nube dice que ya no tienes acceso a esta biblioteca.",
+      "no_cloud_device": "Este servidor no puede dar ese poder a la nube en esta biblioteca."
+    },
+    "autolink": {
+      "label": "La nube puede dar acceso a dispositivos nuevos",
+      "on": "Encendido: el móvil nuevo de alguien de casa con cuenta entra solo, con el rol de esa persona.",
+      "off": "Apagado: cada dispositivo nuevo lo vincula a mano quien administra, como sin nube.",
+      "readonly": "Lo cambia quien administra {{library}}",
+      "offTitle": "¿Apagar el acceso por la nube en {{library}}?",
+      "offBody": "Los dispositivos que ya están en la biblioteca siguen igual. Los nuevos tendrás que vincularlos tú a mano, aunque su persona tenga cuenta.",
+      "offConfirm": "Apagar",
+      "pickLabel": "La nube puede dar acceso a mis dispositivos nuevos",
+      "pickHint": "Un móvil nuevo de alguien de casa con cuenta entra solo, con el rol de esa persona. Puedes cambiarlo en los ajustes de cada biblioteca."
     },
     "notice": {
+      "joinedOne": "Ya estás en «{{name}}» en la nube. Como {{as}}.",
+      "joinedMany_one": "Ya estás en {{count}} biblioteca en la nube · {{list}}",
+      "joinedMany_other": "Ya estás en {{count}} bibliotecas en la nube · {{list}}",
       "downloaded": "{{name}} ha bajado de tu nube.",
       "libraryConflict": "«{{name}}» no se ha bajado de la nube: este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se ha mezclado nada.",
       "missingInCloud": "{{name}} ya no está en tu cuenta de la nube. Sigue en este dispositivo.",
       "deletedHere": "Borraste en este dispositivo una biblioteca que sigue en tu nube. No se descargó otra vez.",
-      "removed": "Te retiraron el acceso a una biblioteca y se ha quitado de este dispositivo.",
-      "accessWithdrawn": "La nube dice que te retiraron el acceso a «{{name}}», pero no ha mostrado una prueba que este dispositivo acepte. No se ha quitado nada, y ya no se sincroniza con la nube.",
+      "removed": "Ya no estás en «{{name}}». Quien la administra te ha retirado el acceso, y la biblioteca se ha borrado de este dispositivo. Si crees que es un error, habla con quien la administra; para volver, pídele que vincule este dispositivo otra vez.",
+      "accessWithdrawn": "«{{name}}» ha dejado de sincronizarse con la nube. La nube dice que ya no tienes acceso, pero este dispositivo no ha podido comprobarlo. La biblioteca sigue aquí y por la red de casa. Habla con quien la administra.",
       "notLinked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró.",
       "failed": "«{{name}}» no se ha podido sincronizar con la nube esta vez. Las demás sí. Se volverá a intentar."
     },
     "pick": {
       "title": "¿Qué bibliotecas subes a la nube?",
       "signedInAs": "Has entrado como {{name}}",
-      "intro": "Solo las que puedes compartir. Las demás siguen como hasta ahora, por la red de casa.",
+      "lead": "Las que no subas siguen como hasta ahora, por la red de casa.",
+      "noRoles": "Sin personas ni roles",
       "signedOut": "Inicia sesión en tu cuenta para subir bibliotecas a la nube.",
       "inCloud": "ya está en la nube",
       "otherServer": "En una nube de otro servidor",
-      "locked": "Eres lector: la sube quien administra.",
+      "notAdmin": "La sube quien la administra",
       "unsigned": "Tiene cambios de antes de que existieran las firmas y no puede subir tal cual. Una copia sí.",
       "duplicate": "Duplicar como nueva",
       "duplicated": "Creada «{{name}}». Está marcada, así que ya puedes subirla.",

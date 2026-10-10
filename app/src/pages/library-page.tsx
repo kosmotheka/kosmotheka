@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { AutolinkSwitch } from "@/components/cloud/autolink-switch";
 import { CloudStateLine, useCloudRows } from "@/components/cloud/cloud-state";
 import { ConfirmButton } from "@/components/confirm-button";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
@@ -234,6 +235,10 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
               )}
             </div>
           </section>
+        )}
+
+        {cloudRow?.status.linkedHere && (
+          <AutolinkSwitch status={cloudRow.status} library={nameOf(library)} desktop={desktop} />
         )}
 
         <section className="flex flex-col border-t pt-2">

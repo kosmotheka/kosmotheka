@@ -344,8 +344,7 @@ pub fn set_role(
 }
 
 /// The device `library.cloud_device_id` names now, if any (D76, D95).
-#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
-fn cloud_device_of(conn: &Connection, library: &str) -> Result<Option<String>> {
+pub(crate) fn cloud_device_of(conn: &Connection, library: &str) -> Result<Option<String>> {
     Ok(conn
         .query_row(
             "SELECT cloud_device_id FROM libraries WHERE id = ?1",

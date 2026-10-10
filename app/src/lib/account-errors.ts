@@ -209,6 +209,30 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         titleKey: "accountErrors.schemaVersion.title",
         helpKey: "accountErrors.schemaVersion.help",
       };
+    case "link_rejected":
+      return {
+        level: "error",
+        titleKey: "accountErrors.linkRejected.title",
+        helpKey: "accountErrors.linkRejected.help",
+      };
+    case "link_not_allowed":
+      return {
+        level: "info",
+        titleKey: "accountErrors.linkNotAllowed.title",
+        helpKey: "accountErrors.linkNotAllowed.help",
+      };
+    case "events_unavailable":
+      return {
+        level: "info",
+        titleKey: "accountErrors.eventsUnavailable.title",
+        helpKey: "accountErrors.eventsUnavailable.help",
+      };
+    case "access_withdrawn":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.accessWithdrawn.title",
+        helpKey: "accountErrors.accessWithdrawn.help",
+      };
     default:
       return null;
   }

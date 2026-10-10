@@ -1257,9 +1257,28 @@ pub async fn upload_to_cloud(
     database: State<'_, Database>,
     reset: State<'_, ResetDeps>,
     library_id: String,
+    autolink: bool,
 ) -> Result<LibraryReport> {
     let result = match HttpCloud::connect(&database) {
-        Ok(api) => cloud::upload(&database, &api, &library_id).await,
+        Ok(api) => cloud::upload_with(&database, &api, &library_id, autolink).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+/// Gives the cloud the power to link new devices of the library (D76), or takes it away.
+#[tauri::command]
+pub async fn set_cloud_power(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    library_id: String,
+    on: bool,
+) -> Result<()> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => cloud::set_cloud_power(&database, &api, &library_id, on).await,
         Err(error) => Err(error),
     };
     let result = account::react_to_account_error(&database, reset.context(), result).await;

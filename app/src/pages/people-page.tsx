@@ -38,6 +38,7 @@ import {
   permissionErrorKey,
   setRole,
 } from "@/lib/api";
+import { useCloud } from "@/lib/cloud";
 import { leaveSection, openOverlay } from "@/lib/navigation";
 
 /**
@@ -64,6 +65,9 @@ export function PeoplePage({
     null,
   );
   const [revoking, setRevoking] = useState<{ person: Person; device?: PersonDevice } | null>(null);
+  const cloudStatus = useCloud().status.find((s) => s.library === libraries.active?.id);
+  // Signed in and the library is in the cloud: being someone here also opens it through the cloud.
+  const inCloud = cloudStatus?.signedIn === true && cloudStatus.linkedHere;
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
@@ -196,6 +200,7 @@ export function PeoplePage({
           ? t("people.yourRole", { library, role: t(`people.roles.${myRole}`) })
           : t("people.yourRoleNone", { library })}{" "}
         {adminName && t("people.adminDecides", { admin: adminName })}
+        {!myRole && ` ${t(inCloud ? "people.noPersonCloud" : "people.noPerson")}`}
       </span>
     </p>
   );

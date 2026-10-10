@@ -1247,7 +1247,16 @@ export function giveDeviceAway(): Promise<void> {
 // --- The cloud (D84, hito 7.2) ---
 
 type CloudErrorReason =
-  "not_found" | "schema_version" | "not_signed_in" | "unsigned_history" | "already_linked";
+  | "not_found"
+  | "schema_version"
+  | "not_signed_in"
+  | "unsigned_history"
+  | "already_linked"
+  | "no_cloud_device"
+  | "access_withdrawn";
+
+/** Account errors that come with a cloud call and have their own text under `cloud.errors`. */
+const CLOUD_ACCOUNT_REASONS = ["link_rejected", "link_not_allowed", "events_unavailable"];
 
 export type CloudOutcome =
   | "synced"
@@ -1271,6 +1280,10 @@ export interface CloudLibraryReport {
   rejected: number;
   /** With outcome "failed": the code of the error, when it has one. */
   error?: string;
+  /** With outcome "removed": the library's name, which is gone by the time it is told. */
+  libraryName?: string;
+  /** The account was let into this library as this person, the first time this device heard of it (D76). */
+  joined?: { person: string; role: Role | null };
 }
 
 export interface LibraryCloudStatus {
@@ -1284,6 +1297,12 @@ export interface LibraryCloudStatus {
   /** Its log has operations without a signature: «Duplicate as new» instead (D58). */
   unsignedHistory: boolean;
   canUpload: boolean;
+  /** This device administers it, or it has no roles: only then it uploads it or changes the cloud's power. */
+  administers: boolean;
+  /** It has roles; without them there are no people to link accounts to. */
+  hasRoles: boolean;
+  /** The cloud may link new devices of linked accounts to their person (D76). */
+  cloudPower: boolean;
 }
 
 /** Local only, no network. */
@@ -1292,8 +1311,13 @@ export function cloudStatus(): Promise<LibraryCloudStatus[]> {
 }
 
 /** Takes a library to the cloud of this account. */
-export function uploadToCloud(libraryId: string): Promise<CloudLibraryReport> {
-  return invoke<CloudLibraryReport>("upload_to_cloud", { libraryId });
+export function uploadToCloud(libraryId: string, autolink: boolean): Promise<CloudLibraryReport> {
+  return invoke<CloudLibraryReport>("upload_to_cloud", { libraryId, autolink });
+}
+
+/** Lets the cloud link new devices of this library (D76), or stops it. Only who administers it. */
+export function setCloudPower(libraryId: string, on: boolean): Promise<void> {
+  return invoke("set_cloud_power", { libraryId, on });
 }
 
 /** One report per library of the account. */
@@ -1327,6 +1351,12 @@ export function isCloudOffline(error: unknown): boolean {
 /** Translation key for a failed cloud command. */
 export function cloudErrorKey(error: unknown): string {
   if (isCommandError(error) && error.kind === "cloud") return `cloud.errors.${error.reason}`;
+  if (
+    isCommandError(error) &&
+    error.kind === "account" &&
+    CLOUD_ACCOUNT_REASONS.includes(error.reason)
+  )
+    return `cloud.errors.${error.reason}`;
   if (isCloudOffline(error)) return "cloud.errors.offline";
   return "cloud.errors.unknown";
 }

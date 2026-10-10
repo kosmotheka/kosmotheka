@@ -430,6 +430,14 @@ Después: crea `C` en el servidor, registra con `ops::record` la operación `lib
 
 Una sesión, como `lan::client::sync_once`: `pull` con el vector del dispositivo para esa biblioteca; **se queda solo con las operaciones cuya `library` sea esa** (las demás se descartan y cuentan como rechazadas: el servidor no es de fiar para decir de qué biblioteca es una operación); `sync::merge`; y `push` de lo que a `C` le falta según el vector que devolvió (`operations_since`). El informe dice recibidas, enviadas y rechazadas (las descartadas, las que `merge` rechazó y las que rechazó la nube).
 
+### La nube en la biblioteca: interruptor y avisos (7.5.5b)
+
+- **Qué hace la subida con la nube (D76, D95).** `upload_with(…, autolink)` escribe `cloud_device_id` en la operación de enlace solo si `autolink` y el id que da la API sale de la clave que da la API; `upload` es `upload_with(…, true)`. Sin la casilla la biblioteca sube sin nombrar a la nube, que no se registra ni vincula nada.
+- **El interruptor de los ajustes** (`cloud::set_cloud_power`, comando `set_cloud_power`). Solo quien administra (`people::administers`: con roles, un administrador; sin roles, cualquiera, y entonces no hay personas a las que vincular nada); otra persona recibe `NotAllowed` sin escribir nada (test `a_reader_cannot_give_or_take_the_cloud_s_power`). Encender pide el id de la nube al servidor (`list_libraries`, creído solo si sale de su clave) y llama a `people::name_cloud_device`; apagar, a `people::remove_cloud_device` (con su valla). Después sincroniza esa biblioteca, para que la nube se registre o deje de creerse. Quitar o poner el poder no toca los dispositivos que ya están. `LibraryCloudStatus.cloud_power` dice si la biblioteca nombra a una nube.
+- **Qué muestra la pantalla de subir** viene de `LibraryCloudStatus`: `administers` (las que no administras, sin casilla) y `has_roles` («Sin personas ni roles»). La interfaz no decide ningún permiso.
+- **«Ya estás en … en la nube» (`LibraryReport.joined`).** Lo decide Rust en `sync_all`: la biblioteca está entre las que `claim` devuelve en `linked` (la primera llamada o la de después de subir), la sesión no la ha bajado de nuevo y es **la primera vez** que este dispositivo lo oye. «La primera vez» es una marca local (`local_state`, clave `cloud_joined.<biblioteca>`; nunca una operación) y no se avisa si este mismo dispositivo escribió el enlace con la nube (quien subió no «entra»). El informe lleva la persona y su rol en esa biblioteca. Un dispositivo ya enlazado antes de esta versión lo oirá una vez.
+- **Una biblioteca retirada** (`removed`) lleva ahora su nombre en el informe (`library_name`), porque ya no existe cuando la pantalla lo cuenta.
+
 ### `sync_all()`
 
 Lista las `C` de la cuenta y, para cada una:

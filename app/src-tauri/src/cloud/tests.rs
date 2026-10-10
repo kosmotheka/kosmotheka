@@ -2252,3 +2252,134 @@ async fn a_library_cut_while_it_comes_down_is_a_result_and_the_others_still_come
     assert!(libraries::library_exists(&conn, &libs[1]).unwrap());
     assert!(libraries::library_exists(&conn, &libs[2]).unwrap());
 }
+
+fn cloud_power(device: &Database, library: &str) -> bool {
+    status(device)
+        .unwrap()
+        .iter()
+        .find(|s| s.library == library)
+        .unwrap()
+        .cloud_power
+}
+
+/// D76: the box of the upload screen says the truth. Off, the link does not name the cloud; later the
+/// switch of the library gives it the power (and the cloud registers itself), and takes it away again.
+#[tokio::test]
+async fn the_cloud_gets_the_power_only_if_the_upload_said_so_and_the_switch_changes_it() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let api = cloud.api("tersoal").on(&laptop);
+
+    upload_with(&laptop, &api, &lib, false).await.unwrap();
+    sync_library(&laptop, &api, &lib).await.unwrap();
+
+    assert!(!cloud_power(&laptop, &lib), "off: the link names nobody");
+    assert!(cloud.cloud_operations(&cloud.only_library()).is_empty());
+
+    set_cloud_power(&laptop, &api, &lib, true).await.unwrap();
+    assert!(cloud_power(&laptop, &lib));
+    sync_library(&laptop, &api, &lib).await.unwrap();
+    assert!(
+        !cloud.cloud_operations(&cloud.only_library()).is_empty(),
+        "the cloud registers itself once named"
+    );
+
+    set_cloud_power(&laptop, &api, &lib, false).await.unwrap();
+    assert!(!cloud_power(&laptop, &lib));
+    lan_sync(&laptop, &phone, &lib);
+    assert!(!cloud_power(&phone, &lib), "and the family hears of it");
+}
+
+/// Hostile: a reader (Hugo's phone, with a vouched device) cannot give or take the cloud's power, by the
+/// switch or by a modified app calling the command: nothing is written.
+#[tokio::test]
+async fn a_reader_cannot_give_or_take_the_cloud_s_power() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    let hugo = cloud.api("hugo").on(&phone);
+    sync_all(&phone, &hugo).await.unwrap();
+    assert!(cloud_power(&phone, &lib));
+    let before = log_ids(&phone, &lib);
+
+    let off = set_cloud_power(&phone, &hugo, &lib, false).await;
+    let on = set_cloud_power(&phone, &hugo, &lib, true).await;
+
+    assert!(matches!(off, Err(Error::NotAllowed)), "{off:?}");
+    assert!(matches!(on, Err(Error::NotAllowed)), "{on:?}");
+    assert!(cloud_power(&phone, &lib));
+    assert_eq!(log_ids(&phone, &lib), before);
+}
+
+/// D76: the account is let into a library the device already had, as Hugo, a reader; it is said once.
+#[tokio::test]
+async fn being_let_into_a_library_by_the_cloud_is_told_once_and_not_to_who_uploaded_it() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    let hugo = cloud.api("hugo").on(&phone);
+
+    let first = sync_all(&phone, &hugo).await.unwrap();
+    let again = sync_all(&phone, &hugo).await.unwrap();
+    let uploader = sync_all(&laptop, &tersoal).await.unwrap();
+
+    let joined = |reports: &[LibraryReport]| reports.iter().find_map(|r| r.joined.clone());
+    assert_eq!(
+        joined(&first),
+        Some(Joined {
+            person: "Hugo".into(),
+            role: Some("reader".into())
+        })
+    );
+    assert_eq!(joined(&again), None, "once");
+    assert_eq!(joined(&uploader), None, "who uploaded it was not let in");
+}
+
+/// D98: the report of a library removed keeps its name, which the screen no longer has.
+#[tokio::test]
+async fn a_library_removed_by_the_cloud_keeps_its_name_in_the_report() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    libraries::rename_library(&mut laptop.lock().unwrap(), &lib, "Casa").unwrap();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    let hugo = cloud.api("hugo").on(&phone);
+    sync_all(&phone, &hugo).await.unwrap();
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    people::remove_device(&mut laptop.lock().unwrap(), &phone_id).unwrap();
+    sync_library(&laptop, &tersoal, &lib).await.unwrap();
+
+    let reports = sync_all(&phone, &hugo).await.unwrap();
+
+    let removed = reports
+        .iter()
+        .find(|r| r.outcome == Outcome::Removed)
+        .unwrap();
+    assert_eq!(removed.library_name.as_deref(), Some("Casa"));
+}
+
+/// The upload screen asks Rust who administers and whether there are roles; it decides nothing itself.
+#[tokio::test]
+async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let plain = Database::in_memory();
+    let own = first_library(&plain);
+    let of = |device: &Database, library: &str| {
+        let status = status(device)
+            .unwrap()
+            .into_iter()
+            .find(|s| s.library == library)
+            .unwrap();
+        (status.administers, status.has_roles, status.cloud_power)
+    };
+
+    assert_eq!(of(&laptop, &lib), (true, true, false));
+    assert_eq!(of(&phone, &lib), (false, true, false), "a reader");
+    assert_eq!(
+        of(&plain, &own),
+        (true, false, false),
+        "no people, no roles"
+    );
+}

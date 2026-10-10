@@ -5,6 +5,7 @@ import { CircleAlert, CircleCheck, Copy, Loader2, Lock, LogIn } from "lucide-rea
 import { Tick } from "@/components/libraries/library-checklist";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
+import { Switch } from "@/components/people/role-parts";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/lib/account";
 import {
@@ -43,6 +44,8 @@ export function CloudPickDialog({
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
+  // On by default, as in the design (D76): the cloud may link the new devices of accounts already in the library.
+  const [autolink, setAutolink] = useState(true);
 
   // Each time it opens, start from what can go up, all ticked.
   if (open && !seeded) {
@@ -89,7 +92,7 @@ export function CloudPickDialog({
       state[id] = "uploading";
       setProgress({ ...state });
       try {
-        recordSynced(await uploadToCloud(id));
+        recordSynced(await uploadToCloud(id, autolink));
         state[id] = "done";
         uploaded += 1;
       } catch (e) {
@@ -123,6 +126,7 @@ export function CloudPickDialog({
     const works = t("nav.works", { count: library.works });
     if (status.linkedHere) return `${works} · ${t("cloud.pick.inCloud")}`;
     if (status.cloudLibrary) return t("cloud.pick.otherServer");
+    if (status.canUpload && !status.hasRoles) return `${works} · ${t("cloud.pick.noRoles")}`;
     return works;
   };
 
@@ -158,7 +162,7 @@ export function CloudPickDialog({
                 {t("cloud.pick.signedInAs", { name: account.user.name })}
               </span>
             )}
-            <p className="text-sm text-pretty text-muted-foreground">{t("cloud.pick.intro")}</p>
+            <p className="text-sm text-pretty text-muted-foreground">{t("cloud.pick.lead")}</p>
           </div>
 
           {copied && (
@@ -238,16 +242,35 @@ export function CloudPickDialog({
                       </Button>
                     </div>
                   )}
-                  {!inCloud && !status.unsignedHistory && !status.cloudLibrary && (
-                    <p className="pl-[34px] text-[13px] text-pretty text-muted-foreground">
-                      {t("cloud.pick.locked")}
-                    </p>
-                  )}
+                  {!inCloud &&
+                    !status.unsignedHistory &&
+                    !status.cloudLibrary &&
+                    !status.administers && (
+                      <p className="pl-[34px] text-[13px] text-pretty text-muted-foreground">
+                        {t("cloud.pick.notAdmin")}
+                      </p>
+                    )}
                 </div>
               );
             })}
           </div>
           {error && <p className="text-[13px] text-destructive">{error}</p>}
+
+          {chosen.length > 0 && progress === null && (
+            <div className="flex items-center gap-3.5 rounded-2xl border px-3.5 py-3">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[15px] font-medium">{t("cloud.autolink.pickLabel")}</span>
+                <span className="text-[13px] text-pretty text-muted-foreground">
+                  {t("cloud.autolink.pickHint")}
+                </span>
+              </span>
+              <Switch
+                checked={autolink}
+                label={t("cloud.autolink.pickLabel")}
+                onChange={setAutolink}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2.5">
             {finished ? (

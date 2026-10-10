@@ -182,17 +182,42 @@ export function cloudNotices(
   once: boolean,
 ): string[] {
   const messages: string[] = [];
+  // Rust says it only the first time (D76): no need to remember it here.
+  const nameOf = (id: string, given?: string) =>
+    given || libraries.find((l) => l.id === id)?.name || t("nav.myLibrary");
+  const joined = reports.flatMap(({ library, joined: who }) =>
+    who
+      ? [
+          {
+            name: nameOf(library),
+            as: [who.person, who.role && t(`people.roles.${who.role}`).toLocaleLowerCase()]
+              .filter(Boolean)
+              .join(" · "),
+          },
+        ]
+      : [],
+  );
+  if (joined.length === 1) {
+    messages.push(t("cloud.notice.joinedOne", joined[0]));
+  } else if (joined.length > 1) {
+    messages.push(
+      t("cloud.notice.joinedMany", {
+        count: joined.length,
+        list: joined.map((j) => `«${j.name}», ${j.as}`).join("; "),
+      }),
+    );
+  }
   for (const report of reports) {
     const key = `${report.outcome}:${report.library}`;
     if (once && report.outcome !== "downloaded" && told.has(key)) continue;
-    const name = libraries.find((l) => l.id === report.library)?.name || t("nav.myLibrary");
+    const name = nameOf(report.library, report.libraryName);
     const message = (
       {
         downloaded: () => t("cloud.notice.downloaded", { name }),
         library_conflict: () => t("cloud.notice.libraryConflict", { name }),
         missing_in_cloud: () => t("cloud.notice.missingInCloud", { name }),
         deleted_here: () => t("cloud.notice.deletedHere"),
-        removed: () => t("cloud.notice.removed"),
+        removed: () => t("cloud.notice.removed", { name }),
         access_withdrawn: () => t("cloud.notice.accessWithdrawn", { name }),
         not_linked: () => t("cloud.notice.notLinked"),
         failed: () => t("cloud.notice.failed", { name }),

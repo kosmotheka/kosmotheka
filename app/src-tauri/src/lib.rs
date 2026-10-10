@@ -213,6 +213,7 @@ pub fn run() {
             commands::give_device_away,
             commands::cloud_status,
             commands::upload_to_cloud,
+            commands::set_cloud_power,
             commands::sync_cloud,
             commands::cloud_events_wake,
             commands::cloud_connection

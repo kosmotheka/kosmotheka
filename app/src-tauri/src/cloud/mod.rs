@@ -152,6 +152,20 @@ pub struct LibraryReport {
     /// With `Outcome::Failed`: the code of the error, when it has one the UI can translate.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// The library's name, kept for `Removed`, when the library is gone by the time the UI tells it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub library_name: Option<String>,
+    /// The account has just been let into this library as this device's person (D76), the first time this
+    /// device hears of it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub joined: Option<Joined>,
+}
+
+/// Who this device's account became in a library the cloud let it into without an invitation.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Joined {
+    pub person: String,
+    pub role: Option<String>,
 }
 
 impl LibraryReport {
@@ -175,6 +189,8 @@ impl LibraryReport {
             sent: 0,
             rejected: 0,
             error: None,
+            library_name: None,
+            joined: None,
         }
     }
 }
@@ -193,6 +209,14 @@ pub struct LibraryCloudStatus {
     /// «Duplicate as new»).
     pub unsigned_history: bool,
     pub can_upload: bool,
+    /// This device administers the library (or it has no roles): only then it can upload it or change who
+    /// the cloud may link (D76).
+    pub administers: bool,
+    /// The library has roles. Without them there are no people to link accounts to.
+    pub has_roles: bool,
+    /// The library names a cloud device: the cloud may say that a new device of a linked account is its
+    /// person's (D76, D95).
+    pub cloud_power: bool,
 }
 
 struct Link {
@@ -260,6 +284,9 @@ pub fn status(database: &Database) -> Result<Vec<LibraryCloudStatus>> {
         let is_linked = link.as_ref().is_some_and(|l| l.cloud_library.is_some());
         statuses.push(LibraryCloudStatus {
             can_upload: signed_in && administers && !unsigned_history && !is_linked,
+            administers,
+            has_roles: crate::permissions::has_roles(&conn, &library)?,
+            cloud_power: people::cloud_device_of(&conn, &library)?.is_some(),
             cloud_library: link.as_ref().and_then(|l| l.cloud_library.clone()),
             cloud_server: link.and_then(|l| l.cloud_server),
             linked_here,
@@ -279,6 +306,17 @@ pub async fn upload<A: CloudApi>(
     database: &Database,
     api: &A,
     library: &str,
+) -> Result<LibraryReport> {
+    upload_with(database, api, library, true).await
+}
+
+/// `upload`, choosing whether the library names the cloud as a device that may link new ones (D76): the box
+/// of the upload screen. Without it each new device is linked by hand, as without the cloud.
+pub async fn upload_with<A: CloudApi>(
+    database: &Database,
+    api: &A,
+    library: &str,
+    autolink: bool,
 ) -> Result<LibraryReport> {
     let server = api.server().to_owned();
     {
@@ -305,7 +343,10 @@ pub async fn upload<A: CloudApi>(
 
     let created = api.create_library().await?;
     let cloud = created.id.clone();
-    let cloud_device = created.trusted_cloud_device().map(str::to_owned);
+    let cloud_device = created
+        .trusted_cloud_device()
+        .filter(|_| autolink)
+        .map(str::to_owned);
 
     {
         let mut conn = database.lock()?;
@@ -326,6 +367,53 @@ pub async fn upload<A: CloudApi>(
         tx.commit()?;
     }
     sync_library(database, api, library).await
+}
+
+/// Gives the cloud the power to say whose a new device is (D76, D95), or takes it away: the switch in the
+/// settings of a library that is in the cloud. Only whoever administers it (`people::administers`); the
+/// change is a signed operation like any other, so the judge has the last word on who may make it.
+pub async fn set_cloud_power<A: CloudApi>(
+    database: &Database,
+    api: &A,
+    library: &str,
+    on: bool,
+) -> Result<()> {
+    let (cloud, named) = {
+        let conn = database.lock()?;
+        if !people::administers(&conn, library)? {
+            return Err(Error::NotAllowed);
+        }
+        let link = link_of(&conn, library)?.ok_or_else(|| Error::MissingRow {
+            entity: "library",
+            id: library.to_owned(),
+        })?;
+        let cloud = link
+            .cloud_library
+            .clone()
+            .filter(|cloud| link.is(cloud, api.server()))
+            .ok_or(Error::Cloud("not_found"))?;
+        (cloud, people::cloud_device_of(&conn, library)?)
+    };
+    if on == named.is_some() {
+        return Ok(());
+    }
+    if on {
+        // The cloud's device id is the server's word, believed only if it derives from the key it gives (D95).
+        let listing = api.list_libraries().await?;
+        let device = listing
+            .libraries
+            .iter()
+            .find(|listed| listed.id == cloud)
+            .and_then(|listed| listed.trusted_cloud_device())
+            .map(str::to_owned)
+            .ok_or(Error::Cloud("no_cloud_device"))?;
+        people::name_cloud_device(&mut *database.lock()?, library, &device)?;
+    } else {
+        people::remove_cloud_device(&mut *database.lock()?, library)?;
+    }
+    // Sent now, so the cloud registers itself (or stops being believed) without waiting for a change.
+    sync_library(database, api, library).await?;
+    Ok(())
 }
 
 fn ensure_not_linked(conn: &Connection, library: &str) -> Result<()> {
@@ -393,11 +481,21 @@ fn cut_off(
     cloud: &str,
     proofs: &[SyncOperation],
 ) -> Result<LibraryReport> {
-    let removed = {
+    let (removed, name) = {
         let mut conn = database.lock()?;
-        lan::remove_if_proved(&mut conn, library, proofs, "the cloud")?
+        let name: Option<String> = conn
+            .query_row(
+                "SELECT name FROM libraries WHERE id = ?1",
+                [library],
+                |row| row.get(0),
+            )
+            .optional()?;
+        (
+            lan::remove_if_proved(&mut conn, library, proofs, "the cloud")?,
+            name,
+        )
     };
-    Ok(LibraryReport::new(
+    let mut report = LibraryReport::new(
         library,
         Some(cloud),
         if removed {
@@ -405,7 +503,11 @@ fn cut_off(
         } else {
             Outcome::AccessWithdrawn
         },
-    ))
+    );
+    if removed {
+        report.library_name = name;
+    }
+    Ok(report)
 }
 
 /// Pulls `cloud` and merges only the operations of `library`: the server's word
@@ -507,7 +609,7 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
     // Before listing, so a library this account was just given access to is in the list. A server that
     // does not know the route, or a network that fails here, must not stop the session: the list says
     // what there is.
-    let _ = api.claim().await;
+    let mut joined_in: Vec<String> = api.claim().await.map(|c| c.linked).unwrap_or_default();
     let listing = api.list_libraries().await?;
     let (listed, withdrawn) = (listing.libraries, listing.withdrawn);
     let server = api.server();
@@ -595,6 +697,7 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
     if reports.iter().any(|report| report.sent > 0)
         && let Ok(claimed) = api.claim().await
     {
+        joined_in.extend(claimed.linked);
         for cloud in claimed.devices {
             let Some(local) = reports
                 .iter()
@@ -627,7 +730,49 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             ));
         }
     }
+    // The accounts let in meanwhile, told the first time this device hears of it.
+    for report in &mut reports {
+        let Some(cloud) = report.cloud_library.as_deref() else {
+            continue;
+        };
+        if joined_in.iter().any(|id| id == cloud)
+            && matches!(report.outcome, Outcome::Synced | Outcome::Downloaded)
+        {
+            let joined = note_joined(&*database.lock()?, &report.library)?;
+            // A library that came down in this session already has its own notice.
+            report.joined = joined.filter(|_| report.outcome == Outcome::Synced);
+        }
+    }
     Ok(reports)
+}
+
+/// The first time this device learns that its account was let into `library` (D76): who it is there, unless
+/// this device itself linked the library to the cloud (then nobody let it in). The mark is local state, never an
+/// operation.
+fn note_joined(conn: &Connection, library: &str) -> Result<Option<Joined>> {
+    let mark = format!("cloud_joined.{library}");
+    if ops::read_state(conn, &mark)?.is_some() {
+        return Ok(None);
+    }
+    ops::write_state(conn, &mark, Some("1"))?;
+    let me = ops::device_id(conn)?;
+    let uploaded_here: bool = conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM operations
+          WHERE library_id = ?1 AND device_id = ?2 AND intent = 'library.cloud')",
+        [library, &me],
+        |row| row.get(0),
+    )?;
+    if uploaded_here {
+        return Ok(None);
+    }
+    Ok(people::list_people(conn, library)?
+        .people
+        .into_iter()
+        .find(|person| person.devices.iter().any(|d| d.this_device))
+        .map(|person| Joined {
+            person: person.name,
+            role: person.role,
+        }))
 }
 
 fn linked_libraries(conn: &Connection) -> Result<Vec<(String, Link)>> {

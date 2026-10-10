@@ -123,6 +123,22 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 - `invite_invalid`: pantalla propia al abrir el enlace.
 - El servidor no dice cuántos intentos quedan ni si un email ya tiene cuenta: crear cuenta siempre pasa a la pantalla del código, y si el email ya tenía cuenta le llega un correo avisando.
 
+## La cuenta dentro de la biblioteca (Fase 7, 2.ª tanda)
+
+Propuestos por Design el 10/10/2026 ([original](screens/cloud-family/errors-fase-7b.md)); aquí solo los que la app muestra, con el código **real** (los nombres de Design no valen). Construidos en el hito 7.5.5b.
+
+| Código de Design | Código real | Nivel | Dónde y cómo |
+|---|---|---|---|
+| `access_revoked_wiped` | resultado `removed` de la sesión con la nube (la retirada comprobada) | info | Aviso tras sincronizar (`cloud.notice.removed`), con el nombre de la biblioteca que Rust guarda en el informe. Design pedía una pantalla propia con «Ir a mis bibliotecas»: la app lo dice con un aviso. El texto junta también `device.removed_by_admin` |
+| `access_revoked_unverified` | resultado `access_withdrawn` de la sesión | aviso | Aviso tras sincronizar (`cloud.notice.accessWithdrawn`); la biblioteca sigue aquí y deja de sincronizarse con la nube |
+| `upload_admin_only` | `link_not_allowed` (403 del servidor al enlazar) o `not_allowed` (la app, antes de llamar) | info | `accountErrors.linkNotAllowed` y `cloud.errors.link_not_allowed`. Sin «Pídeselo a {nombre}»: la app no sabe a quién |
+| — (sin equivalente en Design) | `link_rejected` | error | `accountErrors.linkRejected`: el servidor rechaza el enlace firmado de la biblioteca |
+| — | `events_unavailable` | info | `accountErrors.eventsUnavailable`: el servidor no tiene avisos al momento |
+| — | `access_withdrawn` (error, `403` con pruebas) | aviso | `accountErrors.accessWithdrawn`, `cloud.errors.access_withdrawn` |
+| — | `no_cloud_device` (solo de la app) | error | `cloud.errors.no_cloud_device`: el servidor no da identidad a la nube y no se puede dar ese poder |
+
+Sin código real todavía (no se inventan; son del hito 7.5.5c): `device_duplicate`, `person_account_taken` y `cloud_link_disabled`. Los textos nuevos que no son errores (`cloud_pick.*`, `joined.*`, `autolink.*`, `device.no_person`) están en las claves `cloud.pick.*`, `cloud.notice.joined*`, `cloud.autolink.*` y `people.noPerson*` de los ficheros de idioma.
+
 ## Errores internos
 
 | Código | Nivel | Mensaje | Qué hacer |

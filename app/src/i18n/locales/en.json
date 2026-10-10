@@ -853,6 +853,8 @@
     },
     "yourRole": "Your role in {{library}}: {{role}}.",
     "yourRoleNone": "This device belongs to nobody in {{library}}: it counts as a reader.",
+    "noPerson": "Ask whoever administers it to say whose this device is.",
+    "noPersonCloud": "Ask whoever administers it to say whose this device is, and you will also get in through the cloud.",
     "adminDecides": "{{admin}}, who administers it, changes permissions.",
     "more": "More options for {{person}}",
     "deviceOptions": "Options for {{device}}",
@@ -1659,6 +1661,22 @@
     "deviceKeyMismatch": {
       "title": "Your account knows this device with another key.",
       "help": "Remove it from your account on another device, in Account › My devices, and sign in here again."
+    },
+    "linkRejected": {
+      "title": "The cloud did not accept this library’s link.",
+      "help": "Nothing was uploaded. Try again; if it repeats, tell whoever administers the library."
+    },
+    "linkNotAllowed": {
+      "title": "Only whoever administers this library can upload it.",
+      "help": "Meanwhile, it keeps sharing over your home network."
+    },
+    "eventsUnavailable": {
+      "title": "This server does not send live updates.",
+      "help": "Changes arrive when the app syncs."
+    },
+    "accessWithdrawn": {
+      "title": "The cloud says you no longer have access to this library.",
+      "help": "Talk to whoever administers it."
     }
   },
   "cloud": {
@@ -1669,26 +1687,46 @@
       "not_signed_in": "Sign in to your account to use the cloud.",
       "unsigned_history": "This library has changes from before signing existed, so it cannot go to the cloud. Duplicate it as a new library and upload that one.",
       "already_linked": "This library is already in a cloud.",
-      "offline": "Not connected to the cloud."
+      "offline": "Not connected to the cloud.",
+      "link_rejected": "The cloud did not accept this library’s link. Nothing was uploaded; try again.",
+      "link_not_allowed": "Only whoever administers this library can upload it. Meanwhile, it keeps sharing over your home network.",
+      "events_unavailable": "This server does not send live updates: changes arrive when the app syncs.",
+      "access_withdrawn": "The cloud says you no longer have access to this library.",
+      "no_cloud_device": "This server cannot give the cloud that power in this library."
+    },
+    "autolink": {
+      "label": "The cloud can give access to new devices",
+      "on": "On: a new phone belonging to someone at home with an account gets in on its own, with that person’s role.",
+      "off": "Off: whoever manages the library links each new device by hand, as without the cloud.",
+      "readonly": "Changed by whoever manages {{library}}",
+      "offTitle": "Turn off cloud access for {{library}}?",
+      "offBody": "Devices already in the library stay as they are. You will have to link new ones by hand, even if their person has an account.",
+      "offConfirm": "Turn off",
+      "pickLabel": "The cloud can give access to my new devices",
+      "pickHint": "A new phone belonging to someone at home with an account gets in on its own, with that person’s role. You can change this in each library’s settings."
     },
     "notice": {
+      "joinedOne": "You are now in “{{name}}” in the cloud. As {{as}}.",
+      "joinedMany_one": "You are now in {{count}} library in the cloud · {{list}}",
+      "joinedMany_other": "You are now in {{count}} libraries in the cloud · {{list}}",
       "downloaded": "{{name}} came down from your cloud.",
       "libraryConflict": "«{{name}}» was not brought down from the cloud: this device already has a different library that the app identifies the same way. Nothing was mixed.",
       "missingInCloud": "{{name}} is no longer in your cloud account. It stays on this device.",
       "deletedHere": "You deleted a library on this device that is still in your cloud. It was not downloaded again.",
-      "removed": "Your access to a library was withdrawn, so it was removed from this device.",
-      "accessWithdrawn": "The cloud says your access to “{{name}}” was withdrawn, but showed no proof this device accepts. Nothing was removed, and it is no longer synced with the cloud.",
+      "removed": "You are no longer in “{{name}}”. Whoever administers it withdrew your access, and the library was deleted from this device. If you think it is a mistake, talk to whoever administers it; to come back, ask them to link this device again.",
+      "accessWithdrawn": "“{{name}}” stopped syncing with the cloud. The cloud says you no longer have access, but this device could not confirm it. The library stays here and on your home network. Talk to whoever administers it.",
       "notLinked": "The cloud offered a library that was not properly linked. It was ignored.",
       "failed": "“{{name}}” could not be synced with the cloud this time. The other libraries were. It will be tried again."
     },
     "pick": {
       "title": "Which libraries do you want in the cloud?",
       "signedInAs": "Signed in as {{name}}",
-      "intro": "Only the ones you can share. The rest keep working as before, over your home network.",
+      "lead": "The ones you do not upload keep working as before, over your home network.",
+      "noRoles": "No people or roles",
       "signedOut": "Sign in to your account to take libraries to the cloud.",
       "inCloud": "already in the cloud",
       "otherServer": "In a cloud on another server",
-      "locked": "You are a reader: whoever administers it uploads it.",
+      "notAdmin": "Uploaded by whoever administers it",
       "unsigned": "It has changes from before signing existed, so it cannot go up as it is. A copy can.",
       "duplicate": "Duplicate as new",
       "duplicated": "Created “{{name}}”. It is ticked, so you can upload it now.",
