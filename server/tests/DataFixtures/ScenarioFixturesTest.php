@@ -75,14 +75,14 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertCount(2, $garcia, 'The Garcías\' own copy and the one Jhonny made of its ids.');
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         self::assertContains($ana, $garcia);
-        // 13 of the upload, 1 of the phone, the laptop's older one and the cloud's own registration (D95).
-        self::assertSame(16, $this->operationsIn($ana));
+        // 13 of the upload, 1 of the phone, the laptop's older one, the cloud's own registration (D95) and its note of Hugo's account (7.5.2b-2).
+        self::assertSame(17, $this->operationsIn($ana));
         // Three authors registered their keys: the laptop, the phone and Hugo's phone; and the cloud's device, since the library was created (D95).
         self::assertSame(4, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
         // Hugo's mark and request, and Ana's roles, are in the history as operations.
         self::assertSame(1, $this->operationsWithChange($ana, 'mark'));
         self::assertSame(1, $this->operationsWithChange($ana, 'change_request'));
-        self::assertSame(3, $this->operationsWithChange($ana, 'member'));
+        self::assertSame(4, $this->operationsWithChange($ana, 'member'));
         self::assertSame(1, $this->operationsWithChange($ana, 'member', ['role' => 'admin']));
         self::assertSame(1, $this->operationsWithChange($ana, 'member', ['role' => 'reader']));
     }
@@ -99,12 +99,17 @@ final class ScenarioFixturesTest extends WebTestCase
         self::assertSame(0, $this->rowsIn('device WHERE name LIKE \'Luc%\''));
     }
 
-    public function testHugoHasAnAccountAndADeviceButNoCloudAccessYet(): void
+    public function testHugoClaimedHisAccessThroughHisVouchedPhone(): void
     {
-        // Until 7.5 the only membership is the owner's.
-        self::assertSame(5, $this->rowsIn('membership'));
-        self::assertSame(0, $this->rowsIn('membership m JOIN "user" u ON u.id = m.user_id WHERE u.email = '.$this->quote(Cast::HUGO)));
-        self::assertSame([], $this->listLibraries(Cast::hugoPhone())['body']);
+        // Ana's, Kenji's and Jhonny's two owner rows, and Hugo's, made by the claim (7.5.2b-2).
+        self::assertSame(6, $this->rowsIn('membership'));
+        self::assertSame(1, $this->rowsIn('membership m JOIN "user" u ON u.id = m.user_id WHERE m.member_id IS NOT NULL AND u.email = '.$this->quote(Cast::HUGO)));
+        $listed = $this->listLibraries(Cast::hugoPhone())['body'];
+        self::assertCount(1, $listed);
+        \assert(\is_array($listed[0]));
+        self::assertSame(Cast::GARCIA_LOCAL, $listed[0]['localLibraryId'] ?? null);
+        // The cloud wrote that Hugo has an account: his public id, not his email.
+        self::assertSame(1, $this->rowsIn('catalog_members WHERE id = '.$this->quote(Cast::id('member:hugo')).' AND account_id IS NOT NULL'));
     }
 
     public function testKenjiUploadsTheDefaultLibraryAndJhonnyUsesTheSameLocalId(): void
@@ -131,7 +136,7 @@ final class ScenarioFixturesTest extends WebTestCase
             'SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = :library AND operation_id IN (SELECT operation_id FROM cloud_operation WHERE cloud_library_id = :ana)',
             ['library' => $jhonnys, 'ana' => $ana],
         ));
-        self::assertSame(16, $this->operationsIn($ana));
+        self::assertSame(17, $this->operationsIn($ana));
     }
 
     public function testTwoDeviceRowsShareAnId(): void
@@ -194,11 +199,11 @@ final class ScenarioFixturesTest extends WebTestCase
 
         self::assertCount(1, $unlinked, 'Jhonny\'s library with no link: created, never filled.');
         self::assertSame(0, $this->operationsIn($unlinked[0]));
-        self::assertSame(16, $this->operationsIn($ana));
+        self::assertSame(17, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
-        // 16 (the Garcías, with the cloud's registration) + 5 (Kenji, same) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
-        self::assertSame(36, $this->rowsIn('cloud_operation'));
+        // 17 (the Garcías, with the cloud's registration and its note of Hugo's account) + 5 (Kenji, same) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
+        self::assertSame(37, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void

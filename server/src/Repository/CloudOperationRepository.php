@@ -162,6 +162,24 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Whether the library's log already holds a request of the cloud that tried to say `$memberId` is the
+     * account `$accountId` (`member.link_account`): the cloud does not ask again, or every claim would add one.
+     */
+    public function hasRefusedAccountLink(CloudLibrary $library, string $cloudDeviceId, string $memberId, string $accountId): bool
+    {
+        $probe = json_encode([
+            'intent' => 'member.link_account',
+            'changes' => [['entity' => 'member', 'id' => $memberId, 'fields' => ['account_id' => $accountId]]],
+        ], \JSON_THROW_ON_ERROR);
+
+        return false !== $this->getEntityManager()->getConnection()->fetchOne(
+            "SELECT 1 FROM cloud_operation WHERE cloud_library_id = :library AND author_device_id = :author
+                AND status = 'request' AND body @> CAST(:probe AS jsonb) LIMIT 1",
+            ['library' => $library->getId()->toRfc4122(), 'author' => $cloudDeviceId, 'probe' => $probe],
+        );
+    }
+
+    /**
      * The newest operation (by HLC) a device signed in the library: what its next one chains to.
      *
      * @return ?array{id: string, hlc: string}

@@ -34,6 +34,8 @@ impl FakeIdentity {
 
 struct FakeLibrary {
     owner: String,
+    /// Accounts the claim gave access to.
+    members: Vec<String>,
     local: Option<String>,
     operations: BTreeMap<String, SyncOperation>,
     identity: Option<FakeIdentity>,
@@ -68,6 +70,8 @@ struct FakeApi {
     cloud: FakeCloud,
     account: String,
     server: String,
+    /// The id and key of the device signed in with this account, for `claim`.
+    device: Option<(String, String)>,
 }
 
 impl FakeCloud {
@@ -80,6 +84,7 @@ impl FakeCloud {
             cloud: self.clone(),
             account: account.to_owned(),
             server: server.to_owned(),
+            device: None,
         }
     }
 
@@ -169,7 +174,52 @@ impl FakeCloud {
     }
 }
 
+impl FakeApi {
+    /// The account signs in with this database's device (its id and key), as the server would know it.
+    fn on(mut self, database: &Database) -> Self {
+        let conn = database.lock().unwrap();
+        self.device = Some((
+            ops::device_id(&conn).unwrap(),
+            ops::signing_key(&conn).unwrap().public_key(),
+        ));
+        self
+    }
+}
+
 impl FakeLibrary {
+    fn has_access(&self, account: &str) -> bool {
+        self.owner == account || self.members.iter().any(|member| member == account)
+    }
+
+    /// The small version of the server's rule (D96): the device is a person's in the log, with its own key
+    /// registered and vouched. The last writer of each field wins, as in the catalog.
+    fn vouches_for(&self, id: &str, key: &str) -> bool {
+        let mut changes: Vec<(&Hlc, &Change)> = self
+            .operations
+            .values()
+            .flat_map(|synced| {
+                synced
+                    .operation
+                    .changes
+                    .iter()
+                    .map(|c| (&synced.operation.hlc, c))
+            })
+            .filter(|(_, change)| change.entity == Entity::Device && change.id == id)
+            .collect();
+        changes.sort_by(|a, b| a.0.cmp(b.0));
+        let last = |field: &str| {
+            changes
+                .iter()
+                .rev()
+                .find_map(|(_, change)| change.fields.get(field))
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+        };
+        last("public_key").as_deref() == Some(key)
+            && last("vouched_key").as_deref() == Some(key)
+            && last("member_id").is_some()
+    }
+
     /// What the real server does at the end of the push that names its cloud device (D95): the device
     /// registers itself, signed with its own key, with the newest HLC of the log.
     fn register_the_cloud(&mut self, server: &str) {
@@ -259,6 +309,7 @@ impl CloudApi for FakeApi {
             id,
             FakeLibrary {
                 owner: self.account.clone(),
+                members: Vec::new(),
                 local: None,
                 operations: BTreeMap::new(),
                 identity,
@@ -268,12 +319,30 @@ impl CloudApi for FakeApi {
         Ok(listed)
     }
 
+    async fn claim(&self) -> Result<Claimed> {
+        let mut state = self.cloud.0.lock().unwrap();
+        let Some((id, key)) = &self.device else {
+            return Ok(Claimed::default());
+        };
+        let mut claimed = Claimed::default();
+        for (cloud, library) in state.libraries.iter_mut() {
+            if library.local.is_some()
+                && !library.has_access(&self.account)
+                && library.vouches_for(id, key)
+            {
+                library.members.push(self.account.clone());
+                claimed.linked.push(cloud.clone());
+            }
+        }
+        Ok(claimed)
+    }
+
     async fn list_libraries(&self) -> Result<Vec<CloudLibrary>> {
         let state = self.cloud.0.lock().unwrap();
         Ok(state
             .libraries
             .iter()
-            .filter(|(_, library)| library.owner == self.account)
+            .filter(|(_, library)| library.has_access(&self.account))
             .map(|(id, library)| CloudLibrary {
                 id: id.clone(),
                 local_library_id: library.local.clone(),
@@ -300,7 +369,7 @@ impl CloudApi for FakeApi {
         let library = state
             .libraries
             .get(cloud)
-            .filter(|library| library.owner == self.account)
+            .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
         let mut operations: Vec<SyncOperation> = library
             .operations
@@ -331,7 +400,7 @@ impl CloudApi for FakeApi {
         let library = state
             .libraries
             .get_mut(cloud)
-            .filter(|library| library.owner == self.account)
+            .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
         if !is_link_to(link, cloud) {
             return Err(Error::Cloud("invalid_request"));
@@ -357,7 +426,7 @@ impl CloudApi for FakeApi {
         let library = state
             .libraries
             .get_mut(cloud)
-            .filter(|library| library.owner == self.account)
+            .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
         let mut report = PushReport::default();
         let size = if batch == 0 { usize::MAX } else { batch };
@@ -799,6 +868,91 @@ async fn an_editor_who_may_share_cannot_upload_and_the_server_receives_nothing()
             .find(|s| s.library == lib)
             .unwrap()
             .can_upload
+    );
+}
+
+/// 7.5.2b-2 (D76, D96): Hugo's phone, assigned and vouched, has the library over the LAN; his own account
+/// claims it, is let in, adopts the cloud link and converges with the laptop that uploaded.
+#[tokio::test]
+async fn a_second_account_whose_device_is_assigned_and_vouched_syncs_the_library_it_has_over_the_lan()
+ {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    // The laptop vouches for the old assignments at the end of its first sessions.
+    upload_settled(&laptop, &tersoal, &lib).await;
+    let c = cloud.only_library();
+    assert!(
+        laptop
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT count(*) FROM devices WHERE library_id = ?1 AND member_id IS NOT NULL AND vouched_key IS NULL",
+                [&lib],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap()
+            == 0
+    );
+    assert_eq!(
+        link_of(&phone.lock().unwrap(), &lib)
+            .unwrap()
+            .and_then(|l| l.cloud_library),
+        None
+    );
+    let hugo = cloud.api("hugo").on(&phone);
+    assert!(
+        hugo.list_libraries().await.unwrap().is_empty(),
+        "no access before the claim"
+    );
+
+    let reports = sync_all(&phone, &hugo).await.unwrap();
+
+    assert_eq!(reports.len(), 1);
+    assert_eq!(link(&phone, &lib).0.as_deref(), Some(c.as_str()));
+    sync_library(&laptop, &tersoal, &lib).await.unwrap();
+    sync_library(&phone, &hugo, &lib).await.unwrap();
+    assert_converged(&[&laptop, &phone], &lib);
+}
+
+/// A device that has the library over the LAN but belongs to nobody gets nothing from the cloud.
+#[tokio::test]
+async fn a_device_of_nobody_that_has_the_library_over_the_lan_gets_nothing_from_the_cloud() {
+    let cloud = FakeCloud::default();
+    let (laptop, _phone, lib) = laptop_admin_phone_reader();
+    upload_settled(&laptop, &cloud.api("tersoal").on(&laptop), &lib).await;
+    let tablet = Database::in_memory();
+    lan_sync(&laptop, &tablet, &lib);
+    {
+        // It only registers itself: a device of nobody is a reader and may write no more.
+        let mut conn = tablet.lock().unwrap();
+        let tx = conn.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+    }
+    lan_sync(&laptop, &tablet, &lib);
+    let before = log_ids(&tablet, &lib);
+
+    let c = cloud.only_library();
+    let (pulls, pushes) = cloud.calls();
+
+    let reports = sync_all(&tablet, &cloud.api("mallory").on(&tablet))
+        .await
+        .unwrap();
+
+    // The LAN already told it the link, but the cloud does not know it: nothing is pulled or pushed.
+    assert!(reports.iter().all(|r| r.outcome == Outcome::MissingInCloud));
+    assert_eq!(cloud.calls(), (pulls, pushes));
+    assert_eq!(log_ids(&tablet, &lib), before);
+    let tablet_id = ops::device_id(&tablet.lock().unwrap()).unwrap();
+    assert!(
+        !cloud.operation_ids(&c).iter().any(|id| {
+            sync::library_log(&tablet.lock().unwrap(), &lib)
+                .unwrap()
+                .iter()
+                .any(|op| &op.id == id && op.hlc.device == tablet_id)
+        }),
+        "nothing of the tablet reached the cloud"
     );
 }
 

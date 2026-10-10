@@ -140,6 +140,10 @@ Cuerpo: `{current_password, new_password}`. Limitada por `login` (por IP). Contr
 
 Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOutAllExcept()`, una actualización masiva (DQL `UPDATE`) en vez de cargar cada `Device` en memoria.
 
+## El id público de la cuenta (7.5.2b-2, D76)
+
+`user.account_id` es un UUID v4 aleatorio, único, que se genera al crear la cuenta y no cambia nunca (la migración `Version20261010082211` da uno distinto a cada cuenta que ya existía). Es lo **único de la cuenta que viaja con una biblioteca**: `member.account_id` lo escribe la nube cuando enlaza a esa persona con la cuenta (`AccountLinker`, `docs/architecture/cloud.md`). No es la clave primaria (`user.id`) ni sale del correo: quien lee la biblioteca no aprende ni el correo ni el id interno de nadie.
+
 ## Borrado de cuenta
 
 `DELETE /v1/account` (autenticada). Cuerpo: `{password}`. Limitada por `login` (por IP). Contraseña incorrecta → **401** `invalid_credentials`; cuenta sin contraseña → **409** `no_password`. Si acierta, borra la cuenta (`EntityManager::remove`) y responde **204**. Los dispositivos y códigos de la cuenta se borran en cascada a nivel de base de datos (`ON DELETE CASCADE`).

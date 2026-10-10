@@ -12,6 +12,7 @@ use App\Entity\Device;
 use App\Entity\User;
 use App\Repository\DeviceRepository;
 use App\Security\AccountException;
+use App\Sync\AccountLinker;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
 use App\Sync\CloudLink;
@@ -44,6 +45,7 @@ final class ScenarioFixtures extends Fixture
         private readonly CloudLibraryCreator $creator,
         private readonly CloudLibraryAccess $access,
         private readonly CloudPush $cloudPush,
+        private readonly AccountLinker $linker,
         private readonly CloudLink $cloudLink,
         private readonly DeviceRepository $devices,
         private readonly SchemaVersion $schemaVersion,
@@ -104,7 +106,7 @@ final class ScenarioFixtures extends Fixture
             // The step that gives the first role is the seal (D94): the laptop fences its own device, here with no previous operation.
             $this->operation($laptop, $local, 0, 'device.register', [
                 $this->create('member', 'ana', ['name' => 'Ana', 'role' => 'admin', 'can_share' => true]),
-                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana'), 'trusted_through' => ''], $laptop->id),
+                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana'), 'vouched_key' => $laptop->publicKey, 'trusted_through' => ''], $laptop->id),
             ]),
             $this->operation($laptop, $local, 1, 'library.create', [
                 ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca García']],
@@ -120,8 +122,8 @@ final class ScenarioFixtures extends Fixture
             ]),
             // A device registers itself; saying whose it is, once roles are on, is the administrator's (D73).
             $this->operation($laptop, $local, 7, 'device.assign', [
-                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => $member('ana')]],
-                ['entity' => 'device', 'id' => $hugosPhone->id, 'action' => 'update', 'fields' => ['member_id' => $member('hugo')]],
+                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => $member('ana'), 'vouched_key' => $phone->publicKey]],
+                ['entity' => 'device', 'id' => $hugosPhone->id, 'action' => 'update', 'fields' => ['member_id' => $member('hugo'), 'vouched_key' => $hugosPhone->publicKey]],
             ]),
             $this->operation($laptop, $local, 10, 'book.add', $this->book('cien-anos', 'Cien años de soledad', 'Gabriel García Márquez', '9780060883287', $member('ana'), 'Salón')),
             $this->operation($laptop, $local, 11, 'book.add', $this->book('principito', 'El principito', 'Antoine de Saint-Exupéry', '9780156012195', $member('lucia'), 'Cuarto de Lucía')),
@@ -142,7 +144,22 @@ final class ScenarioFixtures extends Fixture
         $this->report->add($scenario, \sprintf('loaded: cloud library %s linked to local id %s, %d operations (3 authors, 3 members, 2 books, a mark and a request of Hugo)', $cloud, $local, \count($operations)));
         $this->report->add($scenario, 'Lucía has no account and no device: her copies are rows of the library operations, nothing else');
 
+        $this->hugoClaimsHisAccess($this->devices->findOneBy(['deviceId' => $hugosPhone->id]) ?? throw new \LogicException('Hugo\'s phone is not signed in.'), $cloud, $scenario);
+
         return new Uploaded($library, $operations);
+    }
+
+    /**
+     * Hugo's phone is his, with the key the administrator vouched for: his account claims it, as the app does when
+     * it opens a session, and gets his access and the cloud's note that he has an account (7.5.2b-2).
+     */
+    private function hugoClaimsHisAccess(Device $phone, string $cloud, string $scenario): void
+    {
+        $answer = $this->linker->claim($phone);
+        if ([$cloud] !== $answer['linked']) {
+            throw new \LogicException('Hugo\'s account was not linked to «Biblioteca García».');
+        }
+        $this->report->add($scenario, 'loaded: Hugo\'s account claims his phone: a membership as Hugo, and the cloud writes member.account_id of Hugo (member.link_account)');
     }
 
     /** A later push, by another device of the same account. */

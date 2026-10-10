@@ -5,7 +5,7 @@ use reqwest::Method;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::{CloudApi, CloudLibrary, Pulled, PushReport};
+use super::{Claimed, CloudApi, CloudLibrary, Pulled, PushReport};
 use crate::account::{self, client::Auth, client::build_client, client::send_json};
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -114,6 +114,18 @@ impl CloudApi for HttpCloud {
                 cloud_public_key: wire.cloud_public_key,
             })
             .collect())
+    }
+
+    async fn claim(&self) -> Result<Claimed> {
+        send_json(
+            &self.client,
+            Method::POST,
+            &self.url("/claim"),
+            self.auth(),
+            None,
+        )
+        .await
+        .map_err(cloud_error)
     }
 
     async fn pull(

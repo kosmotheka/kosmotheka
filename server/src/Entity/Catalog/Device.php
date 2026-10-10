@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\AssociationOverrides([new ORM\AssociationOverride(name: 'cloudLibrary', joinColumns: [new ORM\JoinColumn(name: 'cloud_library_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_catalog_devices_cloud_library')])])]
 #[ORM\Index(name: 'idx_catalog_devices_cloud_library', columns: ['cloud_library_id'])]
 #[ORM\Index(name: 'idx_catalog_devices_member_key', columns: ['member_key'])]
+#[ORM\Index(name: 'idx_catalog_devices_vouched_key', columns: ['vouched_key'])]
 final class Device extends CatalogRow
 {
     #[ORM\Column(name: 'public_key', type: Types::TEXT)]

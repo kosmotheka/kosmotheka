@@ -16,6 +16,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: MembershipRepository::class)]
 #[ORM\Table(name: 'membership')]
 #[ORM\UniqueConstraint(name: 'uniq_membership_user_cloud_library', columns: ['user_id', 'cloud_library_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_membership_cloud_library_member', columns: ['cloud_library_id', 'member_id'])]
 #[ORM\Index(name: 'idx_membership_user', columns: ['user_id'])]
 #[ORM\Index(name: 'idx_membership_cloud_library', columns: ['cloud_library_id'])]
 final class Membership
@@ -34,9 +35,9 @@ final class Membership
         #[ORM\ManyToOne(targetEntity: CloudLibrary::class)]
         #[ORM\JoinColumn(name: 'cloud_library_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_membership_cloud_library')]
         private readonly CloudLibrary $cloudLibrary,
-        /** The library's `member` row this account is (D76); set from milestone 7.5. */
+        /** The library's `member` row this account is (D76); set once, by AccountLinker (7.5.2b-2); one account per person in a library. */
         #[ORM\Column(type: 'uuid', nullable: true)]
-        private readonly ?Uuid $memberId = null,
+        private ?Uuid $memberId = null,
     ) {
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -60,6 +61,19 @@ final class Membership
     public function getMemberId(): ?Uuid
     {
         return $this->memberId;
+    }
+
+    /**
+     * Says which person this account is, once (the owner's row is made before the library has persons).
+     *
+     * @throws \LogicException when the row already names another person
+     */
+    public function linkTo(Uuid $memberId): void
+    {
+        if ($this->memberId instanceof Uuid && !$this->memberId->equals($memberId)) {
+            throw new \LogicException('This membership already names another person.');
+        }
+        $this->memberId = $memberId;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

@@ -11,6 +11,7 @@ use App\Entity\CloudLibrary;
 use App\Entity\User;
 use App\Repository\CloudLibraryRepository;
 use App\Security\CurrentDevice;
+use App\Sync\AccountLinker;
 use App\Sync\CloudIdentityIssuer;
 use App\Sync\CloudLibraryAccess;
 use App\Sync\CloudLibraryCreator;
@@ -43,6 +44,7 @@ final class CloudController extends AbstractController
         private readonly CloudLink $cloudLink,
         private readonly CloudPush $cloudPush,
         private readonly CurrentDevice $currentDevice,
+        private readonly AccountLinker $linker,
     ) {
     }
 
@@ -69,6 +71,16 @@ final class CloudController extends AbstractController
             },
             $this->libraries->findAllAccessibleBy($this->currentUser()),
         ));
+    }
+
+    /**
+     * Links this account with its person in every library where the device it signed in with is already that
+     * person's, with a vouched key (D76, D96). It takes no input: a body, if any, is ignored (D84).
+     */
+    #[Route('/claim', methods: ['POST'])]
+    public function claim(): JsonResponse
+    {
+        return new JsonResponse($this->linker->claim($this->currentDevice->get()));
     }
 
     #[Route('/{id}/pull', methods: ['POST'])]

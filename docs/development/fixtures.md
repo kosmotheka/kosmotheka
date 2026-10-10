@@ -31,7 +31,7 @@ Las cuentas tienen la contraseña `fixtures-only` (solo existe en esta base de p
 | Quién | Qué tiene |
 |---|---|
 | **Ana** (`ana@garcia.test`) | Administradora de la familia García. Dos dispositivos: portátil y móvil |
-| **Hugo** (`hugo@garcia.test`) | Lector. Cuenta y móvil, pero **sin membresía** en la nube: hasta 7.5 la única fila de `membership` es la de la dueña |
+| **Hugo** (`hugo@garcia.test`) | Lector. Cuenta y móvil; su móvil está asignado a su persona **con la clave avalada** (D96), y su cuenta se enlaza con él por `claim` (7.5.2b-2): tiene membresía y recibe la biblioteca por la nube |
 | **Lucía** | Hija de los García. Es un `member` de la biblioteca **sin cuenta y sin dispositivo**: solo existe como fila dentro de las operaciones |
 | **Kenji** (`kenji@tanaka.test`) | Administrador de la familia Tanaka, con una biblioteca de id local **fijo por defecto** (`00000000-0000-7000-8000-000000000001`) |
 | **Jhonny** (`jhonny@example.test`) | Hostil. Conoce los ids de los García (biblioteca, operaciones, dispositivos). Tiene su móvil y tres bibliotecas en la nube |
@@ -53,7 +53,7 @@ Todo entra por los servicios reales (`CloudLibraryCreator`, `CloudPush`, `CloudL
 | | `cloud_operation` con `body @> '{"changes":[{"entity":"member","fields":{"name":"Lucía"}}]}'` y los `copy` con su `owner_id` | Sus ejemplares y su fila de miembro están en las operaciones, nada más |
 | **El móvil de Ana añade un libro más tarde** | `cloud_operation`, autor = id del móvil de Ana | Una operación firmada con la clave que el móvil registró en la subida |
 | **Kenji sube su biblioteca con el id por defecto** | `cloud_library`: la de Kenji con `local_library_id = 00000000-0000-7000-8000-000000000001`; 4 operaciones (el miembro de Kenji y su portátil van en la primera) | Un id local fijo es un id local más |
-| **Hugo no tiene acceso a la nube** | `membership` (5 filas, ninguna de Hugo) | Hasta 7.5 un lector no recibe la biblioteca por la nube; sigue por la red local |
+| **Hugo reclama su acceso (7.5.2b-2)** | `membership` (6 filas, una de Hugo con `member_id` = su persona); `catalog_members.account_id` de Hugo escrito por la nube (`member.link_account`, aplicada, firmada por la nube) | Su móvil es de Hugo con la clave avalada: `AccountLinker::claim` le da el acceso (que no el rol: sigue siendo lector) y la nube anota su cuenta. Los móviles y el portátil de Ana llevan también su `vouched_key` |
 
 ## Costuras de D84 (cada una deja filas visibles)
 
@@ -139,7 +139,7 @@ El enlace de las fixtures nombra el servidor `http://localhost:8095` (`SigningDe
 
 ### Lo que la app rechaza (hallazgo, sin resolver)
 
-En los dos dispositivos de Ana llegan las 15 operaciones y no se rechaza ninguna (una de ellas, el libro de Hugo, la nube también la guardó como petición). La marca de Hugo se aplica (cada persona lleva las suyas, D68) y su petición queda como petición, porque Hugo lee. Una primera versión de las fixtures hacía que cada móvil dijera en su propio registro de quién era; eso es cosa de quien administra (D73), así que los dispositivos lo dejaban en petición y luego rechazaban lo que firmaban esos móviles. Se corrigió el 03/10/2026: el servidor lo guardaba porque hasta 7.4 no juzga permisos, y fue la app, al abrir los dispositivos, la que lo descubrió.
+En los dos dispositivos de Ana llegan las 15 operaciones de dispositivos (desde 7.5 la nube suma las suyas, su registro y la nota `member.link_account` de la cuenta de Hugo; esas no se han recontado aquí con las fixtures de la app) y no se rechaza ninguna (una de ellas, el libro de Hugo, la nube también la guardó como petición). La marca de Hugo se aplica (cada persona lleva las suyas, D68) y su petición queda como petición, porque Hugo lee. Una primera versión de las fixtures hacía que cada móvil dijera en su propio registro de quién era; eso es cosa de quien administra (D73), así que los dispositivos lo dejaban en petición y luego rechazaban lo que firmaban esos móviles. Se corrigió el 03/10/2026: el servidor lo guardaba porque hasta 7.4 no juzga permisos, y fue la app, al abrir los dispositivos, la que lo descubrió.
 
 ## Cuando cambian las reglas
 

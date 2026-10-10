@@ -31,6 +31,9 @@ pub trait CloudApi {
     /// Creates the cloud library; the answer carries its id and, if the server has a secret, the cloud's device (D95).
     async fn create_library(&self) -> Result<CloudLibrary>;
     async fn list_libraries(&self) -> Result<Vec<CloudLibrary>>;
+    /// Asks the server to link this account with its person wherever this device is already that person's
+    /// with a vouched key (D76, D96). Sends nothing: the server knows the device from the session.
+    async fn claim(&self) -> Result<Claimed>;
     async fn pull(
         &self,
         cloud: &str,
@@ -47,6 +50,13 @@ pub trait CloudApi {
         schema_version: i64,
         operations: &[SyncOperation],
     ) -> Result<PushReport>;
+}
+
+/// What a claim linked: cloud library ids, and those where the account is already another person.
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+pub struct Claimed {
+    pub linked: Vec<String>,
+    pub conflicts: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -390,6 +400,10 @@ async fn push_missing<A: CloudApi>(
 /// Syncs every library of the account: the ones linked here, and the ones this
 /// device does not have yet, which come down.
 pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<LibraryReport>> {
+    // Before listing, so a library this account was just given access to is in the list. A server that
+    // does not know the route, or a network that fails here, must not stop the session: the list says
+    // what there is.
+    let _ = api.claim().await;
     let listed = api.list_libraries().await?;
     let server = api.server();
     let linked = linked_libraries(&*database.lock()?)?;

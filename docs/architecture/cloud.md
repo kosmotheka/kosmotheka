@@ -270,6 +270,38 @@ Cada biblioteca de la nube tiene un dispositivo propio, «la nube»: un id, un p
 - **`App\Sync\CloudAuthor::author(biblioteca, intención, cambios)`** firma una operación suya y la entrega a `CloudPush::applyLocked`, **el mismo camino que un `push`** (lectura con `OperationReader`, firma contra la clave registrada, cadena, HLC único, `take` y `settle` del juez): ningún atajo, si una regla del `push` cambia vale para lo que firma la nube. Exige una transacción abierta (toma el bloqueo dentro) y una biblioteca enlazada con identidad; si no, `CloudAuthorException`. `previous` es la operación anterior de la nube en esa biblioteca y el HLC es la hora del servidor, nunca menor que la más nueva del registro (con el reloj parado o hacia atrás sube el contador). `pushed_by_*` queda vacío. Lo que **puede** hacer lo decide el juez, no esta clase: sin ser la nombrada, lo que firma queda en petición. La firma es `OperationSigner`, que también usan las fixtures y los tests; un test comprueba que firma byte a byte lo que `spec/conformance/signatures.json` guarda (Ed25519 es determinista), que es lo que la app verifica.
 - **App:** `upload` comprueba que el id que da la API sale de la clave que da la API; si es así lo escribe en el cambio de la fila `library` de la operación de enlace (`cloud_device_id`, la casilla de D76 marcada por defecto); si no, o si el servidor no da identidad, sube como siempre. No crea ninguna fila `device` (solo ese dispositivo crea la suya). Quitar o cambiar la nube (`people::remove_cloud_device`, `name_cloud_device`) pone la valla del dispositivo de la nube **siempre**, también si aún no está registrado en esa biblioteca (marca vacía): si su registro y algo firmado llegan después, fechados antes de la retirada, quedan en petición.
 
+## El enlace de la cuenta con su persona (7.5.2b-2, D76, D96)
+
+`POST /v1/cloud/libraries/claim`, autenticada con el dispositivo actual, **sin cuerpo** (si llega alguno se ignora: ningún id del cliente decide nada, D84). Sin límite de peticiones propio, como el resto de las rutas de la nube (no tienen ninguno; el `RequestLimiter` es de las cuentas). La hace `App\Sync\AccountLinker`. La app la llama al principio de cada `sync_all` (que es también lo que corre al iniciar sesión), antes de listar; si falla, la sesión sigue con lo que haya.
+
+**Candidatas**, en una consulta DQL: las bibliotecas **enlazadas** con una fila `device` de id `D` (sin distinguir mayúsculas), `public_key` y `vouched_key` iguales a la clave `K` del dispositivo autenticado, y persona (índice `idx_catalog_devices_vouched_key`). Una asignación sin clave avalada **no** enlaza, aunque el juez la siga creyendo para el rol (D96).
+
+```
+SELECT l FROM CloudLibrary l
+ WHERE l.localLibraryId IS NOT NULL
+   AND EXISTS (SELECT 1 FROM Catalog\Device d
+                WHERE d.cloudLibrary = l AND d.vouchedKey = :key AND d.publicKey = :key
+                  AND LOWER(d.id) = :device AND d.member IS NOT NULL)
+ ORDER BY l.createdAt
+```
+
+**Por cada candidata**, con el bloqueo de la biblioteca (el de `push`) y releyendo dentro de él, siendo `M` la persona del dispositivo:
+
+| Situación | Qué se hace |
+|---|---|
+| Hay una retirada (`revocation`) para `D` | Nada |
+| Otra cuenta ya está enlazada con `M` | Nada (una persona, una cuenta; `UNIQUE (cloud_library_id, member_id)`) |
+| La cuenta no tiene fila de `membership` | Se crea, con `member_id` = `M` |
+| Tiene fila con `member_id` vacío (quien subió la biblioteca) | Se rellena (`Membership::linkTo`, una vez) |
+| Tiene fila con `M` | Nada |
+| Tiene fila con otra persona | Nada; la biblioteca sale en `conflicts` |
+
+Respuesta `200 {"linked": [...], "conflicts": [...]}`: solo ids de bibliotecas a las que la cuenta tiene acceso al terminar; idempotente.
+
+**Qué da el enlace y qué no.** Da acceso (`pull`, `push`) a la biblioteca; **no da rol**: el rol es el de la persona en el catálogo, y lo que sube un lector sigue siendo una petición. No vincula dispositivos nuevos (7.5.3), no baja una biblioteca que el dispositivo no tiene (7.5.3), no quita el acceso (7.5.4) ni invita (7.6).
+
+**Anotar la cuenta en la biblioteca.** Con la fila enlazada con `M` y `member.account_id` de `M` distinto del `account_id` de la cuenta, la nube escribe `member.link_account` (un `update` de `member` con solo `account_id`) con `CloudAuthor::author`, y avisa a los demás dispositivos como un `push`. **Solo si tiene el poder** en esa biblioteca en ese momento (la biblioteca la nombra en `cloud_device_id` y está registrada con la clave de la que sale su id: `CatalogLibraryView::cloudDevice()`); si no, el acceso se da y no se escribe nada. Para no llenar el registro de peticiones, si el registro ya tiene una petición de la nube con ese mismo `member.link_account` (misma persona, misma cuenta: `CloudOperationRepository::hasRefusedAccountLink`, contención `@>` sobre el `body` jsonb) no se vuelve a escribir.
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.

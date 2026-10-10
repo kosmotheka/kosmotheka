@@ -15,11 +15,19 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
+#[ORM\UniqueConstraint(name: 'uniq_user_account_id', columns: ['account_id'])]
 final class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     private Uuid $id;
+
+    /**
+     * The only thing of the account that travels with a library (`member.account_id`, D76): random, so it says
+     * nothing of the email or of the primary key. Never changes.
+     */
+    #[ORM\Column(type: 'uuid')]
+    private Uuid $accountId;
 
     /** Null for a Google-only account (later milestone). */
     #[ORM\Column(nullable: true)]
@@ -63,12 +71,18 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         private string $locale,
     ) {
         $this->id = Uuid::v7();
+        $this->accountId = Uuid::v4();
         $this->createdAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
 
     public function getId(): Uuid
     {
         return $this->id;
+    }
+
+    public function getAccountId(): Uuid
+    {
+        return $this->accountId;
     }
 
     public function getEmail(): string
