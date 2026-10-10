@@ -582,6 +582,13 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Consecuencias:** la app debe explicar, al escanear una invitación caducada o ya usada, que se pida otra al administrador (entrada nueva en `docs/design/errors.md` cuando se implemente, en la Fase 7).
 
+**Enmienda (10/10/2026, aceptada), al preparar el hito 7.6:**
+
+- **Invita quien administra la biblioteca.** Antes se decía «quien puede compartir»; desde la enmienda de D76 solo sube una biblioteca a la nube quien la administra, y dar un rol es suyo (D73). «Puede compartir» se queda para la red local.
+- **Quien entra por invitación entra como lector.** La invitación no lleva rol. Un enlace viaja por un chat o un correo y entra quien lo abre primero: si diera más, un enlace filtrado dejaría editar, y uno de administrador dejaría echar a quien invitó, que es definitivo (D98). Además, sin elegir rol la invitación es más simple de crear y de construir.
+- **Quien administra recibe un aviso cuando alguien acepta su invitación**, y le cambia el rol desde Personas cuando quiera, ya viendo quién ha entrado.
+- Pendiente de decidir: invitar a una persona que ya está en la biblioteca, y las bibliotecas sin personas ni roles.
+
 ## D44 · El lector escribe solo lo suyo: deseos y lecturas — `reemplazada por D55`
 
 > Reemplazada el 25/09/2026 por D55 (roles y peticiones) y D61 (deseos y lecturas por persona).

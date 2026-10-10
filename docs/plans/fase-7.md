@@ -34,7 +34,7 @@ Cada hito deja la app y el servidor funcionando, con sus tests, y se prueba ante
 | **7.3 Avisos al momento** | Con la app abierta, el servidor avisa en cuanto hay algo nuevo en una biblioteca y la app sincroniza (D75). Sustituye a preguntar cada cierto tiempo. Por la red local, un cambio se envía al momento a los dispositivos a la vista | `server/` (Mercure), `app/` |
 | **7.4 El servidor aplica y juzga** | El motor de fusión y los permisos de D73 en PHP, con las tablas del catálogo en PostgreSQL (D41); recalcular una biblioteca cuando llega algo tarde. Antes: los casos de fusión que faltan, en `spec/`, pasando en Rust | `spec/`, `server/` |
 | **7.5 La cuenta en la biblioteca** | Enlazar una cuenta con una persona; un dispositivo nuevo de la misma cuenta entra en las bibliotecas de esa persona sin que nadie lo vincule a mano; recuperar el control con el email (D58). Retirar el acceso de una persona, al momento (D71) | `spec/`, `crates/domain`, `server/`, `app/` |
-| **7.6 Invitar con un enlace** | Un enlace de un solo uso que caduca en 24 horas (D43), para una persona nueva o para una que ya está en la biblioteca, con el rol que elige quien invita. El QR sigue igual | `server/`, `app/` |
+| **7.6 Invitar con un enlace** | Un enlace de un solo uso que caduca en 24 horas (D43), para una persona nueva, que entra como lector (D43, enmienda del 10/10/2026). El QR sigue igual | `server/`, `app/` |
 | **7.7 Registro de actividad** | La tabla de solo añadir de D66, con hora del servidor, IP y app; su plazo y la purga | `server/` |
 | **7.8 Proveedores con clave** | BoardGameGeek, TMDB, IGDB o RAWG y Comic Vine a través del servidor, que pone las claves (D62); se activan solos al conectarse | `server/`, `app/src-tauri/src/metadata` |
 | **7.9 Producción** | Imágenes y `docker-compose` de producción (D48), despliegue en el VPS, copias de PostgreSQL, y la guía para quien monte su propio servidor | `server/docker/`, `docs/` |
@@ -144,7 +144,7 @@ Propuestas para construirlo:
 
 ### 7.6 Invitar con un enlace
 
-- Quien puede compartir crea la invitación: si la persona es nueva, una operación firmada crea su fila `member` con el rol elegido (un rol nunca se hereda, D73), y el servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad.
+- **Quien administra** crea la invitación (D43, enmienda del 10/10/2026): una operación firmada crea la fila `member` de la persona nueva **como lector**, siempre; la invitación no lleva rol. El servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad. Quien administra recibe un aviso cuando se acepta y cambia el rol desde Personas. Pendiente de decidir: invitar a quien ya está en la biblioteca, y las bibliotecas sin roles.
 - Al abrirla, la app pide crear la cuenta o iniciar sesión; el servidor enlaza la cuenta con esa persona (7.5) y la biblioteca llega entera.
 - El enlace da exactamente eso: entrar una vez, como esa persona, con ese rol. Un enlace usado o caducado no da nada y la app lo explica (D43).
 
