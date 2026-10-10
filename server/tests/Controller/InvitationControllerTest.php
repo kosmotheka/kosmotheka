@@ -437,6 +437,27 @@ final class InvitationControllerTest extends WebTestCase
         self::assertNull($this->memberOf($cloud, 'nora@example.com'));
     }
 
+    /** An account thrown out of the library does not come back by a link to copy, only by an email meant for it (D43, D98). */
+    public function testAnAccountThatWasThrownOutDoesNotComeBackByALinkToCopyOnlyByAnEmailMeantForIt(): void
+    {
+        $cloud = $this->world();
+        $marta = $this->joinAs('marta@example.com', self::MARTA);
+        $this->laptopSigns('member.withdraw', [['entity' => 'member', 'id' => self::MARTA, 'action' => 'update', 'fields' => ['access_withdrawn' => true]]]);
+        // The cloud cuts the account the next time it asks for anything.
+        $this->call('GET', '/v1/cloud/libraries', $marta);
+        self::assertNull($this->memberOf($cloud, 'marta@example.com'));
+        $link = $this->tokenOf($this->invite($this->family, $cloud, self::NORA, 'link'));
+
+        self::assertSame(['error' => 'invitation_not_for_this_account'], $this->accept($marta, $link)['body']);
+        self::assertNull($this->memberOf($cloud, 'marta@example.com'));
+        // The link is not spent: whoever it was for can still use it.
+        self::assertSame(200, $this->accept($this->account('nora@example.com'), $link)['status']);
+
+        $this->invite($this->family, $cloud, self::EVA, 'email', 'marta@example.com');
+        self::assertSame(200, $this->accept($marta, $this->tokenInMail())['status']);
+        self::assertSame(self::EVA, $this->memberOf($cloud, 'marta@example.com'));
+    }
+
     /** 7 · who invited stops administering, or is thrown out, before it is accepted. */
     public function testAnInvitationDiesWithTheAdministratorWhoMadeItWhenTheyAreDemoted(): void
     {

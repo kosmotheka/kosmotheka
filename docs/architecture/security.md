@@ -115,7 +115,7 @@ Dicho claro, para que nadie lo dé por supuesto:
 
 - **Quien administra el servidor puede leer las bibliotecas subidas a él.** No hay cifrado de extremo a extremo. Por eso la nube es opcional, se puede instalar un servidor propio, y subir es una decisión de quien administra la biblioteca.
 - **Quien puede leer una biblioteca puede copiarla.** Ningún rol lo impide.
-- **Un enlace para copiar lo usa quien lo abra primero**, sea quien sea. Por eso solo da el rol más bajo, solo a una persona nueva, vale una vez y caduca en un día; si hace falta más seguridad, se invita por correo.
+- **Un enlace para copiar lo usa quien lo abra primero**, sea quien sea. La única excepción es una cuenta a la que echaron de esa biblioteca: esa no entra con un enlace para copiar, solo con una invitación por correo dirigida a ella. Por eso solo da el rol más bajo, solo a una persona nueva, vale una vez y caduca en un día; si hace falta más seguridad, se invita por correo.
 - **Un dispositivo retirado conserva lo que ya tenía**, aunque la nube ya no le entregue nada más y su app borre la biblioteca al ver la prueba. Una app modificada puede negarse a borrarla.
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.

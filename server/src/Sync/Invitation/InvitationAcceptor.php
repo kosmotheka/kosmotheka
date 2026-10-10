@@ -71,6 +71,11 @@ final readonly class InvitationAcceptor
             if ($membership instanceof Membership && !$membership->isWithdrawn() && $membership->getMemberId() instanceof Uuid) {
                 throw AccountException::invitationAccountAlreadyInLibrary();
             }
+            // An account thrown out of this library comes back only by an email meant for it: a link to copy is for
+            // whoever opens it first, and nobody decided that this account returns (D43, D98).
+            if ($membership instanceof Membership && $membership->isWithdrawn() && InvitationKind::Link === $found->getKind()) {
+                throw AccountException::invitationNotForThisAccount();
+            }
             if ($membership instanceof Membership) {
                 $membership->linkTo($member);
             } else {

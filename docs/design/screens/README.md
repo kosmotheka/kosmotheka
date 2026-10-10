@@ -45,3 +45,10 @@ En las carpetas de bibliotecas, en `cloud-account/` y en `cloud-family/`, `ds-ba
 - «Por la nube» y «vinculado por Ana» salen de `PersonDevice.linkedByCloud` y `linkedBy` (7.5.5c). Si se quita el poder a la nube, la etiqueta se pierde.
 - Los códigos de error de `errors-fase-7b.md` son nombres de Design; los del servidor son otros (`access_withdrawn`, `link_not_allowed`…). Manda el servidor.
 - «No se puede echar al último administrador» ya es, desde SEG-036, «al último que tiene algún dispositivo», y vale también para quitarle su único dispositivo: el diálogo que lo explica debe cubrir los dos casos.
+
+**Diferencias de `cloud-account/Invite` con lo decidido** (D43, enmienda del 10/10/2026), a resolver al construir las pantallas del hito 7.6 **sin otro encargo a Design** (lo decidió el maintainer: es una variación pequeña):
+- El diseño tiene un solo enlace con un selector de rol («Rol · Lector · Cambiar»). Ya no se elige rol: hay **dos formas de invitar**, «Por correo» (se escribe el correo; quien ya está en la biblioteca conserva su rol, quien es nuevo entra como lector) y «Copiar enlace» (solo para una persona nueva, siempre lectora). El selector de rol desaparece.
+- A una persona que ya está en la biblioteca solo se le ofrece «Por correo»; a quien administra, a quien tiene el acceso retirado y a quien ya tiene cuenta no se les ofrece invitar.
+- Antes de invitar, la pantalla comprueba que la biblioteca está en la nube, tiene personas y roles, y que «La nube puede dar acceso a dispositivos nuevos» está encendido; si falta algo, lo dice y lleva a arreglarlo.
+- Se mantienen: «Vale una vez, hasta mañana a las 18:20», «Compartir…», «Está aquí: usar el QR», anular desde Personas y «ya tiene un enlace sin usar».
+- Al abrir un enlace, la app no sabe quién invita: enseña la biblioteca, y nada de las personas que hay en ella.
