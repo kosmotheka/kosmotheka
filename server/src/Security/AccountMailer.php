@@ -70,6 +70,34 @@ final readonly class AccountMailer
         $this->send($user, 'two_factor_disabled.subject', 'two_factor_disabled.body', [], false);
     }
 
+    /**
+     * The invitation to a library (D43), to an address that may have no account. Fixed text in the language of the
+     * account that invites, plain text only; the only thing that comes from the one who invites is the library's
+     * name, cleaned (`libraryNameForMail`), and nothing of their name or email goes in the subject or the body. The
+     * limits are the invitation's own (`RequestLimiter::consumeInvitationEmail*`), taken by the caller.
+     */
+    public function sendInvitation(string $to, string $locale, string $libraryName, string $link): void
+    {
+        $this->deliver($to, $locale, 'invitation.subject', 'invitation.body', [
+            '%library%' => self::libraryNameForMail($libraryName),
+            '%link%' => $link,
+        ]);
+    }
+
+    /**
+     * A library's name written by whoever administers it, made safe to quote in a plain-text email: control
+     * characters and line breaks out, anything that looks like an address out (it would be a link in somebody
+     * else's words), and short.
+     */
+    public static function libraryNameForMail(string $name): string
+    {
+        $name = preg_replace('/[\p{C}\p{Zl}\p{Zp}]+/u', ' ', $name) ?? '';
+        $name = preg_replace('~\S*(?:://|www\.)\S*~iu', ' ', $name) ?? '';
+        $name = trim((string) preg_replace('/\s+/u', ' ', $name));
+
+        return mb_strimwidth($name, 0, 60, '…');
+    }
+
     /** @param array<string, string|int> $parameters */
     private function send(User $user, string $subjectKey, string $bodyKey, array $parameters, bool $limited = true): void
     {
@@ -77,13 +105,18 @@ final readonly class AccountMailer
             $this->requestLimiter->consumeEmailPerAddress($user->getEmail());
         }
 
-        $locale = $user->getLocale();
+        $this->deliver($user->getEmail(), $user->getLocale(), $subjectKey, $bodyKey, $parameters);
+    }
+
+    /** @param array<string, string|int> $parameters */
+    private function deliver(string $to, string $locale, string $subjectKey, string $bodyKey, array $parameters): void
+    {
         $subject = $this->translator->trans($subjectKey, [], 'emails', $locale);
         $body = $this->translator->trans($bodyKey, $parameters, 'emails', $locale);
 
         $email = new Email()
             ->from($this->mailerFrom)
-            ->to($user->getEmail())
+            ->to($to)
             ->subject($subject)
             ->text($body);
 

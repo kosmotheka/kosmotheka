@@ -16,3 +16,6 @@ two_factor_enabled:
 two_factor_disabled:
     subject: 'Second factor removed from your Kosmotheka account'
     body: "Your Kosmotheka account's second factor was just removed; signing in now only needs your password again. If it was not you, contact us: it means someone else may have access to your account."
+invitation:
+    subject: 'You have been invited to a library on Kosmotheka'
+    body: "You have been invited to the library «%library%» on Kosmotheka.\n\nOpen this link on the device where you use Kosmotheka, within 24 hours:\n%link%\n\nYou will need to sign in, or create an account, with this same email address. If you were not expecting this, you can ignore this email."

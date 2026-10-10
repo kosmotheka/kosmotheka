@@ -54,4 +54,15 @@ enum AccountErrorCode: string
 
     // Milestone 7.3: live notices.
     case EventsUnavailable = 'events_unavailable';
+
+    // Milestone 7.6.1: invitations to a cloud library (D43, docs/architecture/cloud.md).
+    case InvitationsUnavailable = 'invitations_unavailable';
+    case InvitationForbidden = 'invitation_forbidden';
+    case InvitationLibraryNotReady = 'invitation_library_not_ready';
+    case InvitationPersonUnsuitable = 'invitation_person_unsuitable';
+    case InvitationExpired = 'invitation_expired';
+    case InvitationUsed = 'invitation_used';
+    case InvitationRevoked = 'invitation_revoked';
+    case InvitationNotForThisAccount = 'invitation_not_for_this_account';
+    case InvitationAccountAlreadyInLibrary = 'invitation_account_already_in_library';
 }

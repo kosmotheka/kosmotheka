@@ -25,6 +25,16 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $emailPerAddressLimiter,
         #[Target('two_factor')]
         private RateLimiterFactoryInterface $twoFactorLimiter,
+        #[Target('invitation_create')]
+        private RateLimiterFactoryInterface $invitationCreateLimiter,
+        #[Target('invitation_email')]
+        private RateLimiterFactoryInterface $invitationEmailLimiter,
+        #[Target('invitation_recipient')]
+        private RateLimiterFactoryInterface $invitationRecipientLimiter,
+        #[Target('invitation_lookup')]
+        private RateLimiterFactoryInterface $invitationLookupLimiter,
+        #[Target('invitation_accept')]
+        private RateLimiterFactoryInterface $invitationAcceptLimiter,
     ) {
     }
 
@@ -56,6 +66,35 @@ final readonly class RequestLimiter
     public function consumeTwoFactor(string $userId): void
     {
         $this->consume($this->twoFactorLimiter, $userId);
+    }
+
+    /** Making invitations, per account (D43). @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeInvitationCreate(string $userId): void
+    {
+        $this->consume($this->invitationCreateLimiter, $userId);
+    }
+
+    /**
+     * An invitation sent by email: per account and day, so the server is not a way to mail strangers, and per
+     * recipient and day, so one address cannot be flooded from several accounts. The recipient is a keyed
+     * fingerprint, never the address. @throws AccountException with AccountErrorCode::TooManyRequests.
+     */
+    public function consumeInvitationEmail(string $userId, string $recipientFingerprint): void
+    {
+        $this->consume($this->invitationEmailLimiter, $userId);
+        $this->consume($this->invitationRecipientLimiter, $recipientFingerprint);
+    }
+
+    /** Looking at or accepting an invitation, per address: the token is long, but nobody should be able to try. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeInvitationLookup(string $ip): void
+    {
+        $this->consume($this->invitationLookupLimiter, $ip);
+    }
+
+    /** Accepting, per account, on top of the address. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeInvitationAccept(string $userId): void
+    {
+        $this->consume($this->invitationAcceptLimiter, $userId);
     }
 
     private function consume(RateLimiterFactoryInterface $factory, string $key): void

@@ -47,6 +47,8 @@ security:
         - { path: ^/v1/account/(register|confirm|code)$, roles: PUBLIC_ACCESS }
         - { path: ^/v1/auth/(challenge|login)$, roles: PUBLIC_ACCESS }
         - { path: ^/v1/server$, roles: PUBLIC_ACCESS }
+        # Looking at an invitation by its token needs no session (D43); accepting one does.
+        - { path: '^/v1/cloud/invitations/[^/]+$', methods: [GET], roles: PUBLIC_ACCESS }
         - { path: ^/v1, roles: ROLE_USER }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }

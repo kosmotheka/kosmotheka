@@ -18,6 +18,7 @@ Una migración (`Version20261003165457`). Todo cuelga de `cloud_library`; al bor
 | `membership` (`Membership`) | cuenta, `C`, `member_id` (nulo hasta 7.5), fecha. Hasta 7.5 la única fila es la de la dueña, creada con la biblioteca | `id`; único `(user_id, cloud_library_id)` |
 | `cloud_operation` (`CloudOperation`) | autor (el dispositivo del HLC), `hlc`, versión de esquema, `body` JSONB (la operación tal como llegó, firma incluida), fecha de recepción, `previous`, `status` (7.4.5; `applied`, `request` o nulo si aún no se juzgó) y quién la subió (7.4.6: `pushed_by_user_id`, foránea a la cuenta con `ON DELETE SET NULL`, y `pushed_by_device_id`, el id del dispositivo de esa cuenta, sin foránea). Quién la firmó y quién la subió no son lo mismo: una operación puede haber llegado antes por la red local. Una operación ya guardada no cambia este dato; las guardadas antes de 7.4.6 lo tienen vacío | **`(cloud_library_id, operation_id)`** |
 | `cloud_device_key` (`CloudDeviceKey`) | clave pública de un dispositivo **dentro del registro de esa `C`** | `(cloud_library_id, device_id)` |
+| `invitation` (`Invitation`) | 7.6.1: invitaciones a la biblioteca (ver [Invitaciones](#invitaciones-761-d43)) | `id`; único `token_hash` |
 
 Detalles que conviene saber al revisar:
 
@@ -76,7 +77,7 @@ Las aplica `App\Sync\CloudPush` (el controlador solo mapea). Todo el `push` va e
 | 3 · `C` atada al id local de su enlace | `CloudPush::link()` (la fija una vez, `CloudLibrary::link()`) y `CloudPush::accept()` (la compara) | `testAnOperationOfAnotherLocalLibraryIsRejectedInBothAccounts`, `testWithoutALinkNothingEnters` |
 | Enlace firmado por un dispositivo de la cuenta dueña | `CloudPush::link()` → `DeviceRepository::findOneOfUser()` | `testWithoutALinkNothingEnters` |
 | 4 · Claves de firma dentro de cada `C` | `CloudDeviceKeyRepository::findOneInLibrary()`, `CloudPush::verifyAuthor()` | `testSomebodyElsesKeyForADeviceIdIsRefused` |
-| 5 · Avisos, invitaciones y actividad cuelgan de `C` | aún no existen (7.3, 7.6, 7.7) | — |
+| 5 · Avisos, invitaciones y actividad cuelgan de `C` | avisos (7.3) e invitaciones (7.6.1: `invitation.cloud_library_id`) sí; la actividad aún no existe (7.7) | `CloudEventsControllerTest`, `InvitationControllerTest` |
 | 6 · Un dispositivo es su id junto con su clave | `Device` (restricción única `(device_id, public_key)`), `DeviceTokenAuthenticator`; arreglado en 7.1 | `AccountControllerTest`, y `testARemovedDeviceNoLongerPulls` para las rutas de la nube |
 | 7 · Rechazar solo por lo que dice la operación | `CloudPush::accept()` y `inOrder()`: ninguna comprobación mira lo ya guardado de su autor | `testAnOldOperationArrivingLateIsStoredNotRejected` |
 | 8 · Dos subidas a la vez (`C1` y `C2`) | cliente y 7.5: el servidor ya soporta dos `C` con el mismo id local (costura 1 y 2); la fusión y el borrado de la sobrante no están hechos | — |
@@ -358,6 +359,137 @@ La nube deja de entregar una biblioteca, **al momento**, en dos casos, y los dos
 - **La puerta avisa cuando corta (SEG-038)**, como el `push`: el tema de la biblioteca y el de cada cuenta cortada.
 - **`CloudAuthor` (SEG-028, SEG-039):** con el contador del HLC lleno pasa al milisegundo siguiente; la clave se borra de memoria también si firmar falla; una clave sellada con otro secreto es «sin identidad», no un `500`.
 - **El inicio de sesión exige el id del dispositivo en minúsculas (SEG-029)**, como el HLC de las operaciones.
+
+## Invitaciones (7.6.1, D43)
+
+> El lado del servidor de «invitar con un enlace». Especificación: D43 con su enmienda del 10/10/2026. La app (7.6.2 y 7.6.3) aún no llama a estas rutas. Código en `src/Sync/Invitation/`; tests en `tests/Controller/InvitationControllerTest.php`.
+
+### Qué es una invitación
+
+Una fila de `invitation` que cuelga de la biblioteca de la nube `C` (D84) y nombra a **una persona** (`member`) de esa biblioteca. Dice a quién se invita y por qué vía; **no lleva rol**: quien entra es esa persona, con el rol que ya tiene en el catálogo. El servidor **no crea personas**: la persona nueva la ha creado antes, como lectora, una operación firmada por el dispositivo de quien administra.
+
+| Campo | Qué guarda |
+|---|---|
+| `cloud_library_id` | La biblioteca de la nube. Al borrarla se borran sus invitaciones |
+| `member_id` | La persona (id del cliente, que el servidor solo **compara** con el catálogo de esa biblioteca) |
+| `kind` | `email` o `link` |
+| `token_hash` | SHA-256 del token. El token son 256 bits aleatorios (43 caracteres en base64 seguro para URL) y no se guarda; al ser aleatorio no necesita sal |
+| `email_hash` | Solo en `email`: HMAC-SHA-256 del correo normalizado (minúsculas y sin espacios), con una clave derivada de `APP_SECRET` solo para esto. Un correo se adivina; un hash sin clave se probaría contra correos conocidos. Nunca el correo |
+| `created_by_id` | La cuenta que invita. Si se borra la cuenta, se borran sus invitaciones |
+| `created_at`, `expires_at` | Caduca a las **24 horas** |
+| `accepted_at`, `accepted_by_id` | Cuándo y qué cuenta (`SET NULL` si se borra la cuenta) |
+| `revoked_at` | Si quien administra la anuló |
+
+«Un solo uso» y «24 horas» son reglas del código (`InvitationManager::LIFETIME`, `InvitationAcceptor`), no de la tabla: una invitación de varios usos o sin caducidad, que D43 deja como idea, no pide cambiar el esquema. No se construye.
+
+### Los dos tipos
+
+| | `email` | `link` |
+|---|---|---|
+| Quién la abre | Solo una cuenta cuyo correo (verificado al registrarse, D77) es ese | Quien la abra primero |
+| Para qué persona | Nueva o ya en la biblioteca (editora o lectora): **conserva su rol** | Solo una persona **nueva y lectora** |
+| Cómo llega | El servidor manda el correo con el enlace; la respuesta de crear **no** lo trae | La respuesta de crear lo trae, una vez; el servidor no manda nada |
+
+**Nunca** se invita a una persona que administra (con un correo robado se echaría a los demás, D98), que tiene el acceso retirado, que ya tiene cuenta (`member.account_id` o una fila de `membership` con ella) o que no existe en esa biblioteca.
+
+**«Persona nueva»** (decisión del hito, a confirmar): una lectora sin nada suyo en la biblioteca: **ningún dispositivo** asignado, **ningún ejemplar** suyo y **ninguna marca**. Es lo que D43 pide con «un enlace filtrado no deja a un extraño ocupar el sitio de alguien que ya tiene libros y préstamos». Si se añaden cosas que pertenecen a una persona (préstamos, por ejemplo), hay que añadirlas a `InvitationRules::isNew`.
+
+### Quién invita
+
+Solo quien **administra** la biblioteca, y se lee del servidor, no del cliente (`InvitationRules::administers`): la cuenta tiene una fila de `membership` con persona y sin retirar, y esa persona tiene en el catálogo el rol `admin` y no tiene el acceso retirado. La misma pregunta se hace **otra vez al aceptar**, sobre la cuenta que invitó: si ya no administra, o la echaron, o está bloqueada, la invitación no vale.
+
+Para crear una invitación hace falta además que la biblioteca esté **lista** (`InvitationRules::isReady`): enlazada, **con personas y roles** y con la **nube con poder para vincular dispositivos** (`CloudAuthor::power`: la biblioteca la nombra en `cloud_device_id` y está registrada con la clave de la que sale su id). Se comprueba también al aceptar.
+
+### Rutas
+
+Todas bajo `/v1/cloud`. Los errores son `{"error": "<código>"}` como el resto.
+
+| Ruta | Sesión | Cuerpo | Respuesta |
+|---|---|---|---|
+| `POST /v1/cloud/libraries/{C}/invitations` | sí | `{"memberId": "<uuid>", "kind": "email"\|"link", "email": "…"}` (`email` solo y siempre con `kind: email`; nada más) | `201 {"id", "kind", "memberId", "expiresAt", "link"}`; `link` es `null` en `email` |
+| `GET /v1/cloud/libraries/{C}/invitations` | sí, quien administra | — | `200 {"invitations": [{"id","kind","memberId","state","createdAt","expiresAt","acceptedAt"}]}`. `state`: `pending`, `accepted`, `revoked`, `expired`. Nunca el token ni el correo. Las caducadas se ven una semana (la purga) |
+| `DELETE /v1/cloud/libraries/{C}/invitations/{id}` | sí, quien administra | — | `204`. El id se **compara** con las invitaciones de `C`; una de otra biblioteca da `404 not_found`. Anular una ya anulada o caducada no es un error; una aceptada da `410 invitation_used` |
+| `GET /v1/cloud/invitations/{token}` | **no** | — | `200 {"libraryName", "kind", "expiresAt"}` |
+| `POST /v1/cloud/invitations/{token}/accept` | sí | — | `200 {"id": C}` |
+
+- **Las rutas con `{C}` pasan primero por la puerta de siempre** (`CloudLibraryAccess::require`): quien no tiene fila en esa biblioteca recibe `404 not_found`, exactamente lo mismo que si no existiera. Quien tiene acceso pero no administra recibe `403 invitation_forbidden` (ya sabe que la biblioteca existe).
+- **Mirar una invitación sin sesión** enseña lo justo para «Te invitan a «Casa»» o para decir por qué no vale. **No** enseña personas, roles ni **quién invita**: ni su nombre ni su correo, porque un enlace que acaba en un chat los filtraría. (Decisión del hito, a confirmar.) Un token que no existe o no tiene la forma del nuestro da `404 not_found`, igual en las dos rutas.
+- **El enlace** es `<INVITATION_BASE_URL>/i/<token>` (D79). **El token va en la ruta, no en el fragmento (`#`).** D79 no dice nada del fragmento: un fragmento no llega al servidor web y no queda en sus registros, pero la página de `kosmotheka.app/i/` tendría que leerlo con JavaScript para pasárselo a la app, y los enlaces verificados de Android lo conservan. Si se quiere, es un cambio pequeño de la construcción del enlace (`InvitationSettings::linkFor`) y de la web; queda para decidir.
+- **Si el servidor no tiene dirección para los enlaces** (`INVITATION_BASE_URL` vacía) no hace invitaciones: `409 invitations_unavailable`, y `GET /v1/server` dice `invitations: false`.
+
+### Aceptar
+
+Todo dentro de una transacción, con el **bloqueo de la biblioteca** (el mismo de `push` y `claim`) y después el de la fila de la invitación, que se **vuelve a leer** ya bloqueada: dos cuentas que abren el mismo enlace a la vez hacen cola y la segunda lee «usada». Se comprueba, en este orden:
+
+1. La invitación: no usada (`invitation_used`), no anulada (`invitation_revoked`), no caducada (`invitation_expired`).
+2. Quien invitó **sigue administrando**; la biblioteca **sigue lista**; la persona **sigue pudiendo ser invitada** por ese tipo (existe en esa biblioteca, no administra, sin acceso retirado, sin cuenta, y en un `link`, lectora y nueva). Si algo de esto falla: `invitation_revoked`, la app pide otra.
+3. En `email`: el correo de la cuenta, huella con huella en tiempo constante (`hash_equals`), es el de la invitación (`invitation_not_for_this_account`, `403`).
+4. La cuenta **no es ya otra persona** en esa biblioteca (`invitation_account_already_in_library`, `409`). Una fila de acceso sin persona (la de quien subió la biblioteca, antes de que el servidor se la dé) o ya cortada se enlaza con la persona; una cuenta cortada que acepta una invitación vuelve como esa persona, porque quien administra la invitó.
+
+Después: la fila `membership` queda enlazada con la persona (da acceso), la invitación queda aceptada, y si la nube tiene el poder escribe `member.account_id` con `AccountLinker::noteAccount`, como hace `claim`. **El dispositivo de quien acepta se vincula después por el camino de siempre** (`claim`, `device.link_account`).
+
+**Avisos** (después de confirmar la transacción, nunca dentro): a `libraryChanged` si la nube escribió `account_id`; al tema de la **cuenta de quien invitó**, solo ese, con `{"event":"invitation_accepted","library":"<C>"}` (sin datos de personas; la app pregunta lo demás); y al tema de la **cuenta que entró**, «tu lista de bibliotecas cambió». Es la primera vez que un aviso lleva datos, y la app actual los ignora (`SseEvent`).
+
+### Códigos de error
+
+| Código | HTTP | Cuándo |
+|---|---|---|
+| `invitations_unavailable` | 409 | El servidor no tiene `INVITATION_BASE_URL` |
+| `invitation_forbidden` | 403 | La cuenta está en la biblioteca pero no la administra |
+| `invitation_library_not_ready` | 409 | Sin personas y roles, o la nube sin poder para vincular dispositivos |
+| `invitation_person_unsuitable` | 422 | La persona no existe en esa biblioteca, administra, tiene el acceso retirado, ya tiene cuenta, o (`link`) no es una lectora nueva |
+| `invitation_expired` | 410 | Caducada |
+| `invitation_used` | 410 | Ya aceptada |
+| `invitation_revoked` | 410 | Anulada, o ya no vale (quien invitó dejó de administrar, la persona cambió, la biblioteca perdió los roles o la nube su poder) |
+| `invitation_not_for_this_account` | 403 | Invitación por correo abierta por una cuenta con otro correo |
+| `invitation_account_already_in_library` | 409 | La cuenta ya es otra persona en esa biblioteca |
+| `not_found` | 404 | Sin acceso a la biblioteca, id de invitación de otra biblioteca, o un token que no existe |
+| `too_many_requests` | 429 | Algún límite de abajo |
+
+### Límites de peticiones
+
+Con los limitadores de siempre (`RequestLimiter`, `config/packages/rate_limiter.yaml`):
+
+| Limitador | Límite | Clave |
+|---|---|---|
+| `invitation_create` | 20 por hora | cuenta |
+| `invitation_email` | **10 al día** | cuenta que invita |
+| `invitation_recipient` | **3 al día** | huella del correo de destino, para que no se pueda inundar una dirección desde varias cuentas |
+| `invitation_lookup` | 30 cada 15 min | IP (mirar y aceptar) |
+| `invitation_accept` | 10 cada 15 min | cuenta |
+
+Las cifras son propuesta del hito. Los de correo se consumen después de comprobar que la invitación se puede hacer, para que un error no gaste la cuota.
+
+### El correo
+
+`AccountMailer::sendInvitation`: texto plano, asunto y cuerpo fijos (`translations/emails.{en,es}.yaml`, clave `invitation`) en el idioma de la cuenta que invita (la de quien recibe se desconoce). Lo único que viene de quien invita es el **nombre de la biblioteca**, limpiado (`AccountMailer::libraryNameForMail`): sin caracteres de control ni saltos de línea, sin nada que parezca una dirección (`://`, `www.`) y a 60 caracteres como mucho. Ni su nombre ni su correo van en el asunto ni en el cuerpo. El correo se manda dentro de la transacción: si falla, la invitación no queda.
+
+### Purga
+
+`AccountPurger` (la purga horaria, D49) borra las invitaciones **una semana después de caducar**, aceptadas, anuladas o no. Hasta entonces, la lista de quien administra enseña qué fue de cada una.
+
+### Lo que necesita quien aloja su servidor
+
+- `INVITATION_BASE_URL` en `.env.local` (`.env` la trae vacía): la dirección con la que empiezan los enlaces, sin barra al final, p. ej. `https://kosmotheka.app` en el servidor oficial. **Vacía = sin invitaciones.** Esa dirección tiene que servir `/i/<token>` (D79: la página que abre la app, o deja copiar la invitación) y, para que los enlaces abran la app en Android, estar verificada en ella; en un servidor propio ese enlace no abre la app sola (D79, «Límite»).
+- Correo configurado (`MAILER_DSN`, ver `docs/development/server.md`) si quiere invitar por correo. Sin él, el tipo `link` funciona igual.
+- Ninguna clave nueva: la huella del correo se deriva de `APP_SECRET`. Si se cambia, las invitaciones por correo pendientes dejan de valer (duran 24 horas).
+
+### Qué test cubre cada caso hostil
+
+`tests/Controller/InvitationControllerTest.php` (el reparto y qué se vio fallar, en el informe del hito). Los diez casos de [`docs/plans/fase-7.md`](../plans/fase-7.md), sección 7.6:
+
+| Caso | Tests |
+|---|---|
+| 1 · usado, caducado, anulado; dos a la vez | `testAUsedInvitationGivesNothingToASecondAccount`, `testAnExpiredInvitationGivesNothing`, `testARevokedInvitationGivesNothing`, `testWhoLosesTheRaceForAnInvitationReadsItAgainUnderTheLockAndGetsNothing` |
+| 2 · correo de otra cuenta | `testAnEmailInvitationOpenedByAnAccountWithAnotherEmailGivesNothing`, `testTheServerKeepsAFingerprintOfTheEmailAndOfTheTokenNeverThemselves` |
+| 3 · quien no administra | `testWhoDoesNotAdministerCannotInvite`, `testWhoIsNotInTheLibraryAtAllGetsTheSameNotFoundAsALibraryThatDoesNotExist` |
+| 4 · persona de otra biblioteca | `testAnAdministratorOfAnotherLibraryCannotInviteForAPersonOfThisOne`, `testAnInvitationOfALibraryOnlyGivesAccessToThatLibraryWhateverTheOtherOneHoldsWithTheSameIds`, `testAnInvitationIsRevokedOnlyInTheLibraryItBelongsTo` |
+| 5 · enlace para quien no es nueva o no es lectora, al crear y al aceptar | `testALinkForAPersonWhoIsNotANewReaderIsRefusedWhenMade`, `testALinkIsRefusedWhenAcceptedIfThePersonStoppedBeingANewReaderMeanwhile`, `testALinkIsRefusedWhenAcceptedIfThePersonGotADeviceMeanwhile` |
+| 6 · administra, acceso retirado, ya tiene cuenta | `testAnInvitationForAPersonWhoAdministersHasTheAccessWithdrawnOrAlreadyHasAnAccountIsRefusedWhenMade` y los cuatro `…IsRefusedWhenAcceptedIfThePerson…Meanwhile` |
+| 7 · quien invitó deja de administrar o lo echan | `testAnInvitationDiesWithTheAdministratorWhoMadeItWhenTheyAreDemoted`, `…WhenTheyAreThrownOut`, `testAnInvitationDiesIfTheLibraryLosesItsRolesOrTheCloudLosesThePowerToLinkDevices` |
+| 8 · una cuenta que ya es otra persona | `testAnAccountThatIsAlreadyAnotherPersonInTheLibraryCannotAcceptAnInvitation`, `testTheAdministratorWhoInvitedCannotAcceptHerOwnInvitationAsAnotherPerson` |
+| 9 · adivinar enlaces | `testTokensAreLongRandomAndAnUnknownOneIsAPlainNotFound`, `testGuessingFromOneAddressIsStoppedByTheRateLimit`, `testAcceptingIsLimitedPerAccount` |
+| 10 · mandar correo a ajenos | `testEmailInvitationsAreLimitedPerAccountAndDay`, `testOneAddressCannotBeFloodedEvenFromSeveralAccounts`, `testCreatingInvitationsIsLimitedPerAccount`, `testTheEmailSaysOnlyWhatIsFixedPlusTheCleanedNameOfTheLibrary` |
 
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 

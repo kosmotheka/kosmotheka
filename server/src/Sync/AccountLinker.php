@@ -236,9 +236,11 @@ final readonly class AccountLinker
      * the catalog names, and it is registered with the key its id derives from): without it the operation would
      * only be a request. And not again when a request of the same link is already in the log.
      *
+     * Also used by an accepted invitation (`InvitationAcceptor`), inside the library lock and a transaction.
+     *
      * @return bool whether an operation was written
      */
-    private function noteAccount(CloudLibrary $library, User $user, Uuid $person): bool
+    public function noteAccount(CloudLibrary $library, User $user, Uuid $person): bool
     {
         $cloud = $this->author->power($library);
         if (!$cloud instanceof Uuid) {

@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /** Runs App\Security\AccountPurger by hand; the hourly run is the scheduler (docs/development/server.md). */
-#[AsCommand(name: 'app:accounts:purge', description: 'Deletes unconfirmed accounts older than 24h and expired email codes')]
+#[AsCommand(name: 'app:accounts:purge', description: 'Deletes unconfirmed accounts older than 24h, expired email codes and invitations expired for a week')]
 final class AccountsPurgeCommand extends Command
 {
     public function __construct(
@@ -26,9 +26,10 @@ final class AccountsPurgeCommand extends Command
         $result = $this->purger->purge();
 
         new SymfonyStyle($input, $output)->success(\sprintf(
-            'Deleted %d unconfirmed account(s) and %d expired code(s).',
+            'Deleted %d unconfirmed account(s), %d expired code(s) and %d old invitation(s).',
             $result['unconfirmed_users'],
             $result['expired_codes'],
+            $result['invitations'],
         ));
 
         return Command::SUCCESS;

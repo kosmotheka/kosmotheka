@@ -23,3 +23,26 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '15 minutes'
+        # Invitations (milestone 7.6.1, D43). Making them, per account.
+        invitation_create:
+            policy: sliding_window
+            limit: 20
+            interval: '1 hour'
+        # Invitations by email: per account and day, and per recipient and day (a keyed fingerprint).
+        invitation_email:
+            policy: sliding_window
+            limit: 10
+            interval: '1 day'
+        invitation_recipient:
+            policy: sliding_window
+            limit: 3
+            interval: '1 day'
+        # Looking at or accepting one, per IP; accepting also per account.
+        invitation_lookup:
+            policy: sliding_window
+            limit: 30
+            interval: '15 minutes'
+        invitation_accept:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'

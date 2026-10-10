@@ -37,14 +37,23 @@ final readonly class SyncNotifier
         $this->publish(NoticeTopic::account($user));
     }
 
-    private function publish(string $topic): void
+    /**
+     * Tells the administrator who invited that someone accepted (D43): their account's topic only, so the others do
+     * not hear it. It says that an invitation was accepted in that library and nothing else; the app asks the rest.
+     */
+    public function invitationAccepted(User $inviter, CloudLibrary $library): void
+    {
+        $this->publish(NoticeTopic::account($inviter), json_encode(['event' => 'invitation_accepted', 'library' => $library->getId()->toRfc4122()], \JSON_THROW_ON_ERROR));
+    }
+
+    private function publish(string $topic, string $data = '{}'): void
     {
         if (!$this->settings->isEnabled()) {
             return;
         }
 
         try {
-            $this->hub->publish(new Update($topic, '{}', true));
+            $this->hub->publish(new Update($topic, $data, true));
         } catch (\Throwable $exception) {
             $this->logger->warning('A live notice could not be published.', ['topic' => $topic, 'exception' => $exception]);
         }

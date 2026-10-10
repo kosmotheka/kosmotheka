@@ -6,12 +6,13 @@ namespace App\Security;
 
 use App\Entity\EmailCode;
 use App\Entity\User;
+use App\Repository\InvitationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 
 /**
  * Deletes what D49 says must not linger: accounts never confirmed after 24h,
- * and email codes past their expiry (confirmed accounts can also leave dead
+ * invitations a week after they expire (D43), and email codes past their expiry (confirmed accounts can also leave dead
  * codes behind, e.g. an unused reset_password code). Run hourly by
  * App\Scheduler\PurgeAccountsMessageHandler, and by hand with
  * `app:accounts:purge`.
@@ -26,10 +27,14 @@ final readonly class AccountPurger
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
+        private InvitationRepository $invitations,
     ) {
     }
 
-    /** @return array{unconfirmed_users: int, expired_codes: int} */
+    /** Invitations are kept this long after they expire, so the administrator's list still shows what became of them. */
+    private const int INVITATION_RETENTION_DAYS = 7;
+
+    /** @return array{unconfirmed_users: int, expired_codes: int, invitations: int} */
     public function purge(): array
     {
         $now = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'));
@@ -43,6 +48,8 @@ final readonly class AccountPurger
             \sprintf('DELETE FROM %s c WHERE c.expiresAt < :now', EmailCode::class)
         )->setParameter('now', $now)->execute();
 
-        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes];
+        $deletedInvitations = $this->invitations->deleteExpiredBefore($now->modify(\sprintf('-%d days', self::INVITATION_RETENTION_DAYS)));
+
+        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes, 'invitations' => $deletedInvitations];
     }
 }

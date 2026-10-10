@@ -95,12 +95,27 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 
 *En construcción (hito 7.5.2). Nombre: clave avalada, `vouched_key`.*
 
+### 8. Invitar a alguien de fuera
+
+**Problema:** quieres que una persona entre en tu biblioteca por la nube, sin estar en tu casa. Un enlace viaja por un chat o un correo, y puede acabar en manos que no son las de esa persona.
+
+- **Solo invita quien administra**, y el servidor lo comprueba en sus propias listas, no por lo que diga la app. Si quien invitó deja de administrar, o lo echan, **antes de que se acepte**, la invitación ya no vale.
+- **Una invitación vale una vez y 24 horas**, y quien administra puede anularla antes. El servidor no guarda el enlace, solo una huella suya: ni él mismo podría enseñarlo después. El enlace es un número larguísimo al azar; probarlos a ciegas no lleva a ninguna parte y además el servidor corta a quien lo intenta muchas veces.
+- **Hay dos clases.** *Por correo*: el servidor manda el enlace a esa dirección y solo lo abre una cuenta que se registró con ese mismo correo; sirve también para alguien que ya está en la biblioteca, que **conserva su rol**. *Enlace para copiar*: lo abre quien llegue primero, así que **solo da el rol de lectora y solo a una persona nueva**, sin libros, marcas ni dispositivos suyos en la biblioteca. Así un enlace que se filtra no deja que un desconocido ocupe el sitio de alguien de la familia.
+- **A quien administra no se le invita nunca**, ni a quien tiene el acceso retirado, ni a quien ya tiene cuenta: con un correo robado se podría echar a los demás.
+- **Todo se vuelve a comprobar al aceptar**, no solo al crear: la persona, el rol, quién invitó y si la biblioteca sigue con roles. Y si dos cuentas abren el mismo enlace a la vez, entra una sola.
+- **El servidor no sirve para mandar correo a desconocidos**: pocas invitaciones por correo al día y por cuenta, y muy pocas a una misma dirección aunque vengan de cuentas distintas. El texto del correo es fijo; lo único que escribe quien invita es el nombre de la biblioteca, limpiado, y nada de su nombre ni de su correo sale en él.
+- **Quien mira el enlace sin haber entrado** solo ve el nombre de la biblioteca (y, si no vale, por qué: caducado, usado o anulado). No ve quién más está en ella ni quién invitó.
+
+*Construida en el servidor (hito 7.6.1). La app llega en 7.6.2 y 7.6.3. Nombres: invitación (`invitation`), por correo (`email`), enlace para copiar (`link`).*
+
 ## Lo que no protege
 
 Dicho claro, para que nadie lo dé por supuesto:
 
 - **Quien administra el servidor puede leer las bibliotecas subidas a él.** No hay cifrado de extremo a extremo. Por eso la nube es opcional, se puede instalar un servidor propio, y subir es una decisión de quien administra la biblioteca.
 - **Quien puede leer una biblioteca puede copiarla.** Ningún rol lo impide.
+- **Un enlace para copiar lo usa quien lo abra primero**, sea quien sea. Por eso solo da el rol más bajo, solo a una persona nueva, vale una vez y caduca en un día; si hace falta más seguridad, se invita por correo.
 - **Un dispositivo retirado conserva lo que ya tenía**, aunque la nube ya no le entregue nada más y su app borre la biblioteca al ver la prueba. Una app modificada puede negarse a borrarla.
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.

@@ -178,4 +178,56 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::LinkNotAllowed, 403);
     }
+
+    /** The server has no address for invitation links (`INVITATION_BASE_URL`): it makes none (D18, D79). */
+    public static function invitationsUnavailable(): self
+    {
+        return new self(AccountErrorCode::InvitationsUnavailable, 409);
+    }
+
+    /** The account is in the library but does not administer it: only whoever administers invites (D43). */
+    public static function invitationForbidden(): self
+    {
+        return new self(AccountErrorCode::InvitationForbidden, 403);
+    }
+
+    /** The library has no persons and roles, or the cloud cannot link devices in it: the screen offers to turn them on (D43). */
+    public static function invitationLibraryNotReady(): self
+    {
+        return new self(AccountErrorCode::InvitationLibraryNotReady, 409);
+    }
+
+    /** The person cannot be invited: not in this library, administers, has the access withdrawn, has an account, or (a link) is not a new reader. */
+    public static function invitationPersonUnsuitable(): self
+    {
+        return new self(AccountErrorCode::InvitationPersonUnsuitable, 422);
+    }
+
+    public static function invitationExpired(): self
+    {
+        return new self(AccountErrorCode::InvitationExpired, 410);
+    }
+
+    public static function invitationUsed(): self
+    {
+        return new self(AccountErrorCode::InvitationUsed, 410);
+    }
+
+    /** Revoked by whoever administers, or no longer worth anything (the one who made it stopped administering, the person changed). */
+    public static function invitationRevoked(): self
+    {
+        return new self(AccountErrorCode::InvitationRevoked, 410);
+    }
+
+    /** An invitation tied to an email, opened by an account with another one. */
+    public static function invitationNotForThisAccount(): self
+    {
+        return new self(AccountErrorCode::InvitationNotForThisAccount, 403);
+    }
+
+    /** The account is already another person in that library: an invitation does not move it (D43). */
+    public static function invitationAccountAlreadyInLibrary(): self
+    {
+        return new self(AccountErrorCode::InvitationAccountAlreadyInLibrary, 409);
+    }
 }

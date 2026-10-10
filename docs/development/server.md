@@ -102,6 +102,7 @@ Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La cl
 | Variable | Dónde | Qué es |
 |---|---|---|
 | `CLOUD_KEY_SECRET` | `.env.local` (`.env` la trae vacía; `.env.test` trae un valor de prueba que no sirve fuera de los tests) | 32 bytes aleatorios en base64. **Vacía = sin identidad de nube** (D18): el servidor funciona como antes, las bibliotecas no tienen dispositivo de nube y la API devuelve nulos |
+| `INVITATION_BASE_URL` | `.env.local` (`.env` la trae vacía; `.env.test` trae una de prueba) | Con lo que empiezan los enlaces de invitación, sin barra al final: `<esta>/i/<token>` (D43, D79). En desarrollo, p. ej. `http://localhost:8095`; en el servidor oficial, `https://kosmotheka.app`. **Vacía = sin invitaciones** (D18): `409 invitations_unavailable` y `GET /v1/server` dice `invitations: false`. Ver [cloud.md](../architecture/cloud.md#invitaciones-761-d43) |
 
 - Se genera con `openssl rand -base64 32`. En producción la define el entorno (7.9) y entra en las copias de seguridad **aparte de la base de datos**: una copia de la base sin el secreto no permite firmar.
 - **Perderla deja a la nube sin poder firmar** en las bibliotecas ya creadas (la clave cifrada no se puede abrir; el servidor lo dice con una excepción, no con datos basura). Cambiarla tiene el mismo efecto. Las bibliotecas creadas con el secreto vacío reciben su identidad la primera vez que se listan o se enlazan, si el secreto ya está definido.
