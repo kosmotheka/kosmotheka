@@ -69,6 +69,21 @@ final class PermissionsTest extends TestCase
         self::assertFalse(Permissions::isAllowed($claim, $this->view(Role::Editor)));
     }
 
+    public function testOnlyAnAdministratorVouchesAndNeverTheCloud(): void
+    {
+        $other = '01997c7e-0000-7000-8000-0000000000fc';
+        $vouch = fn (string $device): OperationPayload => $this->op([Ops::update(CatalogEntity::Device, $device, ['vouched_key' => 'iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w'])]);
+
+        self::assertFalse(Permissions::isAllowed($vouch(self::ME), $this->view(Role::Editor)), 'its own');
+        self::assertFalse(Permissions::isAllowed($vouch($other), $this->view(Role::Editor)));
+        self::assertFalse(Permissions::isAllowed($vouch(self::ME), $this->view(null)), 'a device of nobody');
+        self::assertTrue(Permissions::isAllowed($vouch($other), $this->view(Role::Admin)));
+        $cloud = new FakeView(roles: true, cloud: true);
+        $linkAndVouch = $this->op([Ops::update(CatalogEntity::Device, $other, ['member_id' => '01997c7e-0000-7000-8000-000000000013', 'vouched_key' => 'AAAA'])]);
+        self::assertFalse(Permissions::isAllowed($vouch($other), $cloud));
+        self::assertFalse(Permissions::isAllowed($linkAndVouch, $cloud), 'not beside a link');
+    }
+
     public function testAnUnsignedOperationIsNeverAllowed(): void
     {
         $add = $this->op([Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Tehanu'])]);

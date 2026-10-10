@@ -43,7 +43,7 @@ final class Permissions
         return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
     }
 
-    /** Whether the change writes `member.account_id` or `device.member_id`, the fields the cloud device has a say in. */
+    /** Whether the change writes `member.account_id` or `device.member_id`, the fields the cloud device has a say in (never `vouched_key`, D96). */
     private static function touchesCloudField(ChangePayload $change): bool
     {
         return match ($change->entity) {
@@ -67,7 +67,7 @@ final class Permissions
         return match ($change->entity) {
             CatalogEntity::Member => \array_key_exists('account_id', $change->fields) && $view->memberExists($change->id),
             CatalogEntity::Device => 0 !== strcasecmp($change->id, $author)
-                && null === $view->memberOfDevice($change->id)
+                && !$view->deviceHasMemberId($change->id)
                 && \is_string($change->fields['member_id'] ?? null)
                 && $view->memberHasAccount($change->fields['member_id']),
             default => false,
@@ -96,10 +96,10 @@ final class Permissions
         }
         $touches = static fn (string $field): bool => \array_key_exists($field, $change->fields);
 
-        // Every device registers and renames itself; saying whose it is, or
+        // Every device registers and renames itself; saying whose it is (and vouching for its key, D96), or
         // touching another device, or its fence, is for administrators.
         if (CatalogEntity::Device === $change->entity && $change->id === $author) {
-            return ChangeAction::Delete !== $change->action && !$touches('member_id') && !$touches('trusted_through');
+            return ChangeAction::Delete !== $change->action && !$touches('member_id') && !$touches('vouched_key') && !$touches('trusted_through');
         }
 
         switch ($change->entity) {

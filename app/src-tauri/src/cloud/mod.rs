@@ -204,6 +204,7 @@ pub fn status(database: &Database) -> Result<Vec<LibraryCloudStatus>> {
     for library in sync::libraries(&conn)? {
         let link = link_of(&conn, &library)?;
         let may_share = people::may_share(&conn, &library)?;
+        let administers = people::administers(&conn, &library)?;
         let unsigned_history = has_unsigned_history(&conn, &library)?;
         let linked_here = link.as_ref().is_some_and(|link| {
             link.cloud_library
@@ -212,7 +213,7 @@ pub fn status(database: &Database) -> Result<Vec<LibraryCloudStatus>> {
         });
         let is_linked = link.as_ref().is_some_and(|l| l.cloud_library.is_some());
         statuses.push(LibraryCloudStatus {
-            can_upload: signed_in && may_share && !unsigned_history && !is_linked,
+            can_upload: signed_in && administers && !unsigned_history && !is_linked,
             cloud_library: link.as_ref().and_then(|l| l.cloud_library.clone()),
             cloud_server: link.and_then(|l| l.cloud_server),
             linked_here,
@@ -242,7 +243,9 @@ pub async fn upload<A: CloudApi>(
                 id: library.to_owned(),
             });
         }
-        people::ensure_may_share(&conn, &[library.to_owned()])?;
+        if !people::administers(&conn, library)? {
+            return Err(Error::NotAllowed);
+        }
         if has_unsigned_history(&conn, library)? {
             return Err(Error::Cloud("unsigned_history"));
         }
@@ -342,6 +345,7 @@ async fn pull_and_merge<A: CloudApi>(
         let merged = sync::merge(&mut conn, kept)?;
         // With what the cloud had already merged; push_missing then sends the seal (D94).
         crate::permissions::seal_if_missing(&mut conn, &[library.to_owned()])?;
+        crate::permissions::vouch_if_missing(&mut conn, &[library.to_owned()])?;
         merged
     };
     report.received += merged.received;

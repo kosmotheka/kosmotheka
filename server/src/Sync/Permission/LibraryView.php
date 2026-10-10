@@ -27,8 +27,17 @@ interface LibraryView
     /** Whether the operation `$request` was written by a device of the same person as `$device`: who asked may withdraw what they asked for. */
     public function requestedBySamePerson(string $request, string $device): bool;
 
-    /** The person (member id) `$device` belongs to, if any. */
+    /**
+     * The person (member id) `$device` belongs to, if any. A device whose `vouched_key` is set and is not the key
+     * it is registered with belongs to nobody (D96).
+     */
     public function memberOfDevice(string $device): ?string;
+
+    /**
+     * Whether the `member_id` of `$device` is set, whatever its `vouched_key` says. The cloud's rule asks this, not
+     * `memberOfDevice`: it only links devices of nobody (D76).
+     */
+    public function deviceHasMemberId(string $device): bool;
 
     /** Whose the mark `$id` is, if it exists (D68). */
     public function markMember(string $id): ?string;

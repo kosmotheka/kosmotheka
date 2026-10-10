@@ -743,13 +743,63 @@ async fn a_reader_cannot_upload_but_the_administrator_can() {
 
     let error = unwrap_err(upload(&phone, &cloud.api("hugo"), &lib).await);
 
-    assert!(matches!(error, Error::CannotShare), "{error:?}");
+    assert!(matches!(error, Error::NotAllowed), "{error:?}");
     assert_eq!(cloud.created(), 0);
     assert_eq!(log_ids(&phone, &lib), before);
     assert_eq!(link(&phone, &lib), (None, None));
 
     upload(&laptop, &cloud.api("tersoal"), &lib).await.unwrap();
     assert_eq!(cloud.created(), 1);
+}
+
+/// CON-009 (D76): «Can share» is for the home network; going up to the cloud is for whoever administers.
+#[tokio::test]
+async fn an_editor_who_may_share_cannot_upload_and_the_server_receives_nothing() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let hugo: String = laptop
+        .lock()
+        .unwrap()
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&lib, &phone_id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    people::set_role(
+        &mut laptop.lock().unwrap(),
+        &lib,
+        &hugo,
+        Some("editor"),
+        true,
+    )
+    .unwrap();
+    lan_sync(&laptop, &phone, &lib);
+    let before = log_ids(&phone, &lib);
+    // Signed in, so that only the role decides.
+    for device in [&laptop, &phone] {
+        ops::write_state(&device.lock().unwrap(), "account_token", Some("token")).unwrap();
+    }
+    let statuses = status(&phone).unwrap();
+    let mine = statuses.iter().find(|s| s.library == lib).unwrap();
+    assert!(mine.may_share, "he still shares over the home network");
+    assert!(!mine.can_upload);
+
+    let error = unwrap_err(upload(&phone, &cloud.api("hugo"), &lib).await);
+
+    assert!(matches!(error, Error::NotAllowed), "{error:?}");
+    assert_eq!(cloud.created(), 0, "the server never hears of it");
+    assert_eq!(log_ids(&phone, &lib), before);
+    assert_eq!(link(&phone, &lib), (None, None));
+    let statuses = status(&laptop).unwrap();
+    assert!(
+        statuses
+            .iter()
+            .find(|s| s.library == lib)
+            .unwrap()
+            .can_upload
+    );
 }
 
 #[tokio::test]

@@ -214,6 +214,7 @@ async fn push(
         register_in_shared(&mut conn, &client)?;
         // The device that only serves never pulls: this is when it has what the peer had (D94).
         crate::permissions::seal_if_missing(&mut conn, &shared)?;
+        crate::permissions::vouch_if_missing(&mut conn, &shared)?;
         drop(conn);
         if report.received > 0
             && let Some(arrival) = state.arrival.get()

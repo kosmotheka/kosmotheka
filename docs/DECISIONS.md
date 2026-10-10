@@ -101,6 +101,8 @@
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
 | D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
 | D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
+| D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
+| D97 | ¿Roles obligatorios desde que se crea la biblioteca? | abierta |
 
 ---
 
@@ -1139,6 +1141,8 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Consecuencias:** cumple la recuperación con el email de D58. Amplía D57 y D73.
 
+**Enmienda del 10/10/2026 (aceptada): solo sube quien administra.** Donde dice «lo hace quien administra o tiene "Puede compartir"», vale solo «quien administra» (o cualquiera, en una biblioteca sin roles). Subir saca los datos de casa y nombra a la nube como dispositivo con poder: es una decisión de quien administra la biblioteca, no de quien solo está en ella. Ya era lo que hacía el protocolo: enlazar con la nube cambia la fila `library`, que con roles solo cambia un administrador, y desde D93 la nube responde `403` al enlace de cualquier otro. «Puede compartir» sigue valiendo para la red local; si permite invitar a una biblioteca que ya está en la nube se decide en 7.6. Cierra CON-009. El enlace automático se concreta en [D96](#d96--quien-dice-de-quién-es-un-dispositivo-avala-su-clave--aceptada).
+
 ## D77 · Entrar con email o con Google — `aceptada`
 
 **Contexto:** D09 decía usuario y contraseña, y D49 y D50 lo concretaron con códigos por email. El maintainer quiere que entrar sea fácil (01/10/2026): registrarse con un email o con Google. Ninguna red social más por ahora: cada una es otra app que dar de alta y configurar (Meta para Instagram, por ejemplo), y se pueden añadir después.
@@ -1684,3 +1688,49 @@ Aceptada el 10/10/2026, al preparar 7.5. Concreta D76 y cierra el diseño de la 
 **Lo que concede la clave de la nube, dicho claro.** Quien la tenga puede decir que un dispositivo de nadie es de una persona con cuenta, también de una administradora. Es el poder que D76 da a la nube, y por eso es una casilla que se puede quitar: quien no se fíe de su servidor la desmarca y vincula cada dispositivo a mano.
 
 **Consecuencias.** D76 y D84 no cambian. El secreto del servidor entra en la configuración de producción (7.9) y en sus copias. SEG-019 pasa a aceptado con esta decisión, salvo la comparación de id y clave, que se comprueba en 7.5.2.
+
+## D96 · Quien dice de quién es un dispositivo avala su clave — `aceptada`
+
+Aceptada el 10/10/2026, al diseñar 7.5.2b. Concreta el enlace automático de D76 y sustituye la parte de D95 que aceptaba SEG-019.
+
+**Contexto.** El id de un dispositivo no es secreto: lo ven todos los miembros. Lo que lo identifica es su clave, y cada dispositivo, y también la nube, se queda con la primera clave que le llega para un id. «Este dispositivo es de Laura» nombraba solo el id. Un lector con acceso a la biblioteca de la nube y la app modificada podía registrar allí el id de la tablet nueva de una administradora con una clave suya, antes de que llegara el registro de verdad; cuando la administradora la asignaba, en la nube ese id era de Laura y su clave era la del lector. Con el enlace automático, su cuenta quedaba enlazada como Laura: de lector a administrador. No hace falta interceptar nada ni el email de nadie: lo hace alguien de dentro, con su propia cuenta.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Quien asigna un dispositivo nombra su clave | Es lo que hacen Signal, WhatsApp, Matrix o Keybase: un dispositivo de confianza avala al nuevo por su clave. Quien ya estaba en la familia entra con solo registrarse (D76) | Un campo y una regla nuevos en el protocolo; las asignaciones ya hechas hay que avalarlas una vez |
+| Nadie se enlaza solo: un administrador confirma cada cuenta, o todo entra por invitación (7.6) | Más simple | Perjudica a los usuarios legítimos; incumple D76 |
+
+**Decisión.**
+
+- **`device.vouched_key`** («clave avalada»): la operación que dice de quién es un dispositivo lleva también la clave pública que quien la firma tiene registrada para ese dispositivo. La escribe quien puede escribir `member_id` (un administrador, o cualquiera sin roles), en el mismo cambio. Quitar a un dispositivo su persona la vacía.
+- **La nube solo enlaza una cuenta con una persona por una clave avalada:** el dispositivo que inició sesión (id y clave, probados con el reto firmado de 7.1) tiene que ser, en esa biblioteca, de una persona, con `vouched_key` igual a su clave. Un id solo, o una asignación sin clave avalada, no enlaza nada.
+- **La cadena de confianza:** la cuenta que sube garantiza la clave de su dispositivo; ese administrador avala las de los demás.
+- **Las asignaciones anteriores** se avalan una vez, sin preguntar: el dispositivo de un administrador, al terminar una sesión de sincronización (como el sellado de D94), repite con su clave las asignaciones que no la llevan.
+
+**Propuesta, pendiente del visto bueno del maintainer: la regla vale también para el rol.** Al construirlo se vio que el mismo registro falso sirve sin enlace automático, en cuanto varias cuentas tengan acceso a una biblioteca de la nube: quien ocupa el id firma en la nube como ese dispositivo y, si un administrador lo asigna, la nube lo juzga con el rol de esa persona, y un dispositivo nuevo que baje la biblioteca de la nube también. Por eso la regla 2 de `spec/` gana una condición: un dispositivo tiene la persona que dice `member_id` solo si `vouched_key` está vacía (una asignación anterior a esta decisión) o es la clave con la que ese dispositivo está registrado; si no coincide, es de nadie. Con eso, ocupar un id deja de dar nada en ningún sitio: solo estorba al dispositivo de verdad, y se ve.
+
+**Lo que queda.** Si el registro falso llega al propio dispositivo del administrador antes que el de verdad (el dispositivo nuevo se emparejó a través del atacante), el administrador avala la clave falsa. El dispositivo de verdad no funciona con nadie, así que se nota, pero la regla no lo impide. Se retoma con D88 («emparejar una vez»).
+
+**Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 33. SEG-019 se cierra cuando esto esté construido, con la parte que queda apuntada a D88. D95 no cambia en lo demás.
+
+## D97 · ¿Roles obligatorios desde que se crea la biblioteca? — `abierta`
+
+Planteada por el maintainer el 10/10/2026. Se decide en la revisión de seguridad de conjunto de la Fase 7 (tras 7.7), antes de producción (7.9).
+
+**Contexto.** Hoy una biblioteca nace sin roles: todos los dispositivos pueden todo hasta que alguien da el primer rol (D73). Eso son dos modos de funcionar y un paso de uno a otro, y cada regla de permisos lleva su excepción «o cualquiera, si no hay roles». El sello (D94) existe en buena parte por ese paso: lo fechado antes de activar los roles no se puede creer sin más.
+
+**La idea.** Quien crea una biblioteca es su administrador desde el primer cambio. Para dar la biblioteca a otro dispositivo por QR hay que decir de quién es y con qué rol; dar «administrador» es responsabilidad de quien lo da.
+
+**Lo que simplificaría.** Un solo modo; desaparecen la excepción «sin roles» de cada regla, el paso de activar roles y sus casos de prueba; en una biblioteca nueva no hay historia anterior a los roles.
+
+**Lo que no cambia.** Firmas, comprobación de permisos en cada dispositivo, anotar hasta dónde se cree a un dispositivo al quitarle poder, la identidad de la nube y la clave avalada: vienen de que haya roles, no de que sean opcionales.
+
+**Preguntas abiertas.**
+- Las bibliotecas que ya existen sin roles y con varios dispositivos: quién queda de administrador, y cómo sin que dos dispositivos se nombren a la vez.
+- El paso extra al emparejar por primera vez (crear la persona y elegir su rol): cómo se presenta para que no estorbe a una pareja que lo comparte todo.
+- Cuánto código y cuántos casos de `spec/` se quitarían de verdad; medirlo antes de decidir.
+- Momento: antes de publicar no hay bibliotecas de otros que migrar; después, el modo sin roles habría que mantenerlo para siempre.
+
+**Afecta a** D73, D94 y la regla 1 de `spec/`.

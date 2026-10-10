@@ -90,25 +90,19 @@ pub fn dismiss_notices(conn: &Connection, library: &str) -> Result<()> {
 
 fn list(conn: &Connection, library: &str, only: &str) -> Result<Vec<Request>> {
     let me = ops::device_id(conn)?;
-    let my_person: Option<String> = conn
-        .query_row(
-            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-            [library, &me],
-            |row| row.get(0),
-        )
-        .optional()?
-        .flatten();
+    let my_person = crate::permissions::person_of_device(conn, library, &me)?;
     let mut statement = conn.prepare(&format!(
-        "SELECT o.id, o.intent, o.hlc, o.changes, o.device_id, d.name, m.name, d.member_id,
+        "SELECT o.id, o.intent, o.hlc, o.changes, o.device_id, d.name, m.name, {person},
                 r.status, v.hlc
            FROM operations o
            LEFT JOIN devices d ON d.library_id = o.library_id AND d.id = o.device_id
-           LEFT JOIN members m ON m.library_id = o.library_id AND m.id = d.member_id
+           LEFT JOIN members m ON m.library_id = o.library_id AND m.id = {person}
            LEFT JOIN change_requests r ON r.library_id = o.library_id AND r.id = o.id
            LEFT JOIN field_versions v ON v.library_id = o.library_id
                 AND v.entity = 'change_requests' AND v.entity_id = o.id AND v.field = 'status'
           WHERE o.library_id = ?1 AND o.status = 'request' {only}
-          ORDER BY o.hlc DESC"
+          ORDER BY o.hlc DESC",
+        person = crate::permissions::person_of("d")
     ))?;
     let rows = statement.query_map([library], |row| {
         Ok((

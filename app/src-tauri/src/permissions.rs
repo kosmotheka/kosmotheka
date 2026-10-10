@@ -23,18 +23,68 @@ impl<'a> SqlView<'a> {
         Self { conn, library }
     }
 
+    /// The person `device` belongs to (D96): its `member_id`, unless someone vouched for another key.
     fn member_of(&self, device: &str) -> Option<String> {
-        self.conn
-            .query_row(
-                "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-                [self.library, device],
-                |row| row.get::<_, Option<String>>(0),
-            )
-            .optional()
+        person_of_device(self.conn, self.library, device)
             .ok()
             .flatten()
-            .flatten()
     }
+}
+
+/// SQL for the person of the `devices` row aliased `d` (D96): its `member_id`, unless it
+/// carries a `vouched_key` other than the key it is registered with, which makes it
+/// nobody's. Compared byte by byte, like `public_key`.
+pub fn person_of(d: &str) -> String {
+    format!(
+        "CASE WHEN {d}.vouched_key IS NULL OR {d}.vouched_key = '' \
+         OR {d}.vouched_key = {d}.public_key THEN {d}.member_id END"
+    )
+}
+
+/// The fields of a change that says whose `device` is (D96): `member_id` and, in the same
+/// change, the key that whoever writes it has registered for that device. Taking the person
+/// away empties both. Without a key to vouch for, nobody is assigned: this device's own key
+/// is known even before it registers; another device's only through its `device` row.
+pub fn assignment_fields(
+    conn: &Connection,
+    library: &str,
+    device: &str,
+    member: Option<&str>,
+) -> Result<serde_json::Value> {
+    let Some(member) = member else {
+        return Ok(serde_json::json!({ "member_id": null, "vouched_key": null }));
+    };
+    let key = if device == ops::device_id(conn)? {
+        ops::signing_key(conn)?.public_key()
+    } else {
+        conn.query_row(
+            "SELECT public_key FROM devices WHERE library_id = ?1 AND id = ?2",
+            [library, device],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?
+        .ok_or_else(|| crate::error::Error::MissingRow {
+            entity: "device",
+            id: device.to_owned(),
+        })?
+    };
+    Ok(serde_json::json!({ "member_id": member, "vouched_key": key }))
+}
+
+/// The person `device` belongs to in `library`, with the rule of D96. A device that is
+/// not registered, or whose vouched key is not its own, belongs to nobody.
+pub fn person_of_device(conn: &Connection, library: &str, device: &str) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            &format!(
+                "SELECT {} FROM devices d WHERE d.library_id = ?1 AND d.id = ?2",
+                person_of("d")
+            ),
+            [library, device],
+            |row| row.get::<_, Option<String>>(0),
+        )
+        .optional()?
+        .flatten())
 }
 
 // The trait's methods cannot fail, so a database error reads as "no": a device
@@ -90,6 +140,17 @@ impl LibraryView for SqlView<'_> {
 
     fn member_of_device(&self, device: &str) -> Option<String> {
         self.member_of(device)
+    }
+
+    fn device_has_member_id(&self, device: &str) -> bool {
+        self.conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM devices
+                  WHERE library_id = ?1 AND id = ?2 AND member_id IS NOT NULL)",
+                [self.library, device],
+                |row| row.get(0),
+            )
+            .unwrap_or(true)
     }
 
     fn fenced(&self, operation: &Operation) -> bool {
@@ -393,6 +454,46 @@ pub fn seal_if_missing(conn: &mut Connection, libraries: &[String]) -> Result<()
         let mut changes = Vec::new();
         seal_changes(&tx, library, &mut changes)?;
         ops::record(&tx, library, "library.seal", changes)?;
+        tx.commit()?;
+    }
+    Ok(())
+}
+
+/// Vouches, once, for the assignments made before D96: an administrator's device writes, in one
+/// operation, the `vouched_key` of every registered device that belongs to a person and has none,
+/// with the key this device has of it. Nothing is written where there is nothing to vouch for, nor
+/// by a device that is not an administrator's. Called with `seal_if_missing`, after it.
+pub fn vouch_if_missing(conn: &mut Connection, libraries: &[String]) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    for library in libraries {
+        let admin = SqlView::new(conn, library).role_of_device(&me) == Some(Role::Admin);
+        if !admin || !has_roles(conn, library)? {
+            continue;
+        }
+        let changes: Vec<Change> = conn
+            .prepare(
+                "SELECT id, public_key FROM devices
+                  WHERE library_id = ?1 AND member_id IS NOT NULL
+                    AND (vouched_key IS NULL OR vouched_key = '')
+                  ORDER BY id",
+            )?
+            .query_map([library], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?
+            .map(|row| {
+                let (id, key) = row?;
+                Ok(Change::update(
+                    Entity::Device,
+                    id,
+                    serde_json::json!({ "vouched_key": key }),
+                ))
+            })
+            .collect::<Result<_>>()?;
+        if changes.is_empty() {
+            continue;
+        }
+        let tx = conn.transaction()?;
+        ops::record(&tx, library, "library.vouch", changes)?;
         tx.commit()?;
     }
     Ok(())

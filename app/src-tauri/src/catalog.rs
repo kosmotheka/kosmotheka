@@ -1058,14 +1058,7 @@ pub fn list_books(
 ) -> Result<Vec<BookSummary>> {
     // The first argument is this device, whose person's marks come with each work.
     let device = ops::device_id(conn)?;
-    let my_member: Option<String> = conn
-        .query_row(
-            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-            [library, &device],
-            |row| row.get(0),
-        )
-        .optional()?
-        .flatten();
+    let my_member = crate::permissions::person_of_device(conn, library, &device)?;
     let mut conditions: Vec<String> = vec!["e.library_id = ?".to_owned()];
     let mut args: Vec<SqlValue> = vec![
         my_member.clone().map_or(SqlValue::Null, SqlValue::Text),
@@ -1139,13 +1132,13 @@ pub fn list_books(
     }
     if filter.others_wished {
         // `IS NOT` on purpose: a device with no person sees everyone's wishes as "others".
-        conditions.push(
+        conditions.push(format!(
             "EXISTS (SELECT 1 FROM marks o WHERE o.library_id = e.library_id
                        AND o.work_id = e.work_id AND o.wished = 1
-                       AND o.member_id IS NOT (SELECT member_id FROM devices
-                                                 WHERE library_id = e.library_id AND id = ?))"
-                .to_owned(),
-        );
+                       AND o.member_id IS NOT (SELECT {} FROM devices d
+                                                 WHERE d.library_id = e.library_id AND d.id = ?))",
+            crate::permissions::person_of("d")
+        ));
         args.push(SqlValue::Text(device.clone()));
     }
     if !filter.genres.is_empty() {
@@ -1197,12 +1190,13 @@ pub fn list_books(
          FROM editions e
          JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
          LEFT JOIN marks mk ON mk.library_id = e.library_id AND mk.work_id = e.work_id
-              AND mk.member_id = (SELECT member_id FROM devices
-                                   WHERE library_id = e.library_id AND id = ?)
+              AND mk.member_id = (SELECT {person} FROM devices d
+                                   WHERE d.library_id = e.library_id AND d.id = ?)
          LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
          LEFT JOIN publishers pu ON pu.library_id = e.library_id AND pu.id = e.publisher_id
          {where_clause}
-         ORDER BY e.title COLLATE NOCASE, e.id"
+         ORDER BY e.title COLLATE NOCASE, e.id",
+        person = crate::permissions::person_of("d")
     ))?;
     let rows = statement.query_map(params_from_iter(args), |row| {
         Ok(BookSummary {
@@ -1434,14 +1428,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
         .collect::<rusqlite::Result<_>>()?;
 
     let device = ops::device_id(conn)?;
-    let my_member: Option<String> = conn
-        .query_row(
-            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-            [library, &device],
-            |row| row.get(0),
-        )
-        .optional()?
-        .flatten();
+    let my_member = crate::permissions::person_of_device(conn, library, &device)?;
     book.wished_by = split_list(conn.query_row(
         "SELECT group_concat(
                       CASE WHEN m.id = ?1 THEN 'me' ELSE m.name END,

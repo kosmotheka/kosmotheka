@@ -12595,5 +12595,2380 @@
         "01997c7e-0000-7000-8000-000000000007"
       ]
     }
+  },
+  {
+    "name": "an administrator vouches for the real key of a device, and what it does afterwards is applied (D96)",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "deeaf432-b381-5ea1-8d8b-3afc0b63257e",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "finished"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        6,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        6,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        2,
+        3,
+        4,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007"
+      ],
+      "requests": []
+    }
+  },
+  {
+    "name": "a device assigned with another key is nobody's: what it does is a request, and so is its mark (D96)",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "deeaf432-b381-5ea1-8d8b-3afc0b63257e",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "finished"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        6,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        6,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        2,
+        3,
+        4,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007"
+      ]
+    }
+  },
+  {
+    "name": "a device assigned to an administrator with another key cannot change a role (D96, the attack)",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "member.role",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "update",
+            "fields": {
+              "role": "admin"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        6,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        6,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        2,
+        3,
+        4,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007"
+      ]
+    }
+  },
+  {
+    "name": "an assignment without a vouched key, from before D96, still counts",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "mark.set",
+        "changes": [
+          {
+            "entity": "mark",
+            "id": "deeaf432-b381-5ea1-8d8b-3afc0b63257e",
+            "action": "create",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "work_id": "01997c7e-0000-7000-8000-0000000000f1",
+              "status": "finished"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        6,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        6,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        2,
+        3,
+        4,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007"
+      ],
+      "requests": []
+    }
+  },
+  {
+    "name": "only an administrator writes vouched_key: not a reader, not an editor, not on its own device",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.vouch",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000003"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.vouch",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000008",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200032-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.vouch",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000009",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200033-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.rename",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "name": "Laura's phone",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000008"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200034-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.rename",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "name": "Laura's phone"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000009"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        7,
+        8,
+        9,
+        2,
+        5,
+        6
+      ],
+      [
+        2,
+        5,
+        6,
+        1,
+        7,
+        8,
+        9,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        7,
+        2,
+        3,
+        4,
+        8,
+        5,
+        9,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-00000000000a"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007",
+        "01997c7e-0000-7000-8000-000000000008",
+        "01997c7e-0000-7000-8000-000000000009"
+      ]
+    }
+  },
+  {
+    "name": "an administrator corrects the key: what is dated between the two assignments is a request, what comes after is applied",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200022-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200023-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000005"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000008",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200024-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c2",
+            "action": "create",
+            "fields": {
+              "name": "Earthsea"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      [
+        0,
+        3,
+        4,
+        6,
+        1,
+        5,
+        7,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        7,
+        0,
+        3,
+        4,
+        6
+      ],
+      [
+        1,
+        0,
+        5,
+        2,
+        3,
+        4,
+        6,
+        7
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000007",
+        "01997c7e-0000-7000-8000-000000000008"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000006"
+      ]
+    }
+  },
+  {
+    "name": "the assignment of a key arrives before the registration of the device and the verdict is the same (real key)",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        3,
+        4,
+        2
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        2
+      ],
+      [
+        2,
+        0,
+        3,
+        4,
+        1,
+        5
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006"
+      ],
+      "requests": []
+    }
+  },
+  {
+    "name": "the assignment of a key arrives before the registration of the device and the verdict is the same (another key)",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        2
+      ],
+      [
+        2,
+        1,
+        5,
+        0,
+        3,
+        4
+      ],
+      [
+        1,
+        0,
+        5,
+        3,
+        4,
+        2
+      ],
+      [
+        0,
+        3,
+        4,
+        1,
+        5,
+        2
+      ],
+      [
+        2,
+        0,
+        3,
+        4,
+        1,
+        5
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-000000000006"
+      ]
+    }
+  },
+  {
+    "name": "without roles anybody writes vouched_key, and a device whose key does not match still does everything",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.add",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200013-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000003"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200014-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.vouch",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "vouched_key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200015-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000005"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200016-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c2",
+            "action": "create",
+            "fields": {
+              "name": "Earthsea"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000004"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        1,
+        0,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        2,
+        1,
+        3,
+        4,
+        5,
+        6
+      ],
+      [
+        0,
+        1,
+        2,
+        4,
+        3,
+        5,
+        6
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007"
+      ],
+      "requests": []
+    }
+  },
+  {
+    "name": "the cloud cannot write vouched_key, alone or next to a link it could make",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000001",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200010-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000002",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200015-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "library.create",
+        "changes": [
+          {
+            "entity": "library",
+            "id": "01997c7e-0000-7000-8000-00000000aaaa",
+            "action": "create",
+            "fields": {
+              "name": "Home"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000001"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000003",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200011-00000000-01997c7e-0000-7000-8000-0000000000fb",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fb",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "phone"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000004",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200012-00000000-01997c7e-0000-7000-8000-0000000000fc",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "tablet"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000005",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200020-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "member.roles",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000011",
+            "action": "create",
+            "fields": {
+              "name": "Tersoal",
+              "role": "admin",
+              "can_share": true
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "create",
+            "fields": {
+              "name": "Laura",
+              "role": "editor",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000013",
+            "action": "create",
+            "fields": {
+              "name": "Hugo",
+              "role": "reader",
+              "can_share": false
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000011",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          },
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fc",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000013"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000002"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000006",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200013-00000000-01997c7e-0000-7000-8000-0000000000fd",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fd",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "stranger"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000007",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200014-00000000-34750f98-bd59-8cfc-946d-a45aaabe933b",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "34750f98-bd59-8cfc-946d-a45aaabe933b",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "cloud"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000008",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200021-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "library.cloud",
+        "changes": [
+          {
+            "entity": "library",
+            "id": "01997c7e-0000-7000-8000-00000000aaaa",
+            "action": "update",
+            "fields": {
+              "cloud_device_id": "34750f98-bd59-8cfc-946d-a45aaabe933b"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000005"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000009",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200030-00000000-34750f98-bd59-8cfc-946d-a45aaabe933b",
+        "intent": "member.account",
+        "changes": [
+          {
+            "entity": "member",
+            "id": "01997c7e-0000-7000-8000-000000000012",
+            "action": "update",
+            "fields": {
+              "account_id": "01997c7e-0000-7000-8000-0000000000a1"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000007"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000a",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200031-00000000-34750f98-bd59-8cfc-946d-a45aaabe933b",
+        "intent": "device.link",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fd",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012",
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000009"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000b",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200032-00000000-34750f98-bd59-8cfc-946d-a45aaabe933b",
+        "intent": "device.link",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fd",
+            "action": "update",
+            "fields": {
+              "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000000a"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000c",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200033-00000000-01997c7e-0000-7000-8000-0000000000fd",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c1",
+            "action": "create",
+            "fields": {
+              "name": "Tehanu"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-000000000006"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000d",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200034-00000000-34750f98-bd59-8cfc-946d-a45aaabe933b",
+        "intent": "device.link",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fd",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-000000000012"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000000b"
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-00000000000e",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222200035-00000000-01997c7e-0000-7000-8000-0000000000fd",
+        "intent": "tag.add",
+        "changes": [
+          {
+            "entity": "tag",
+            "id": "01997c7e-0000-7000-8000-0000000000c2",
+            "action": "create",
+            "fields": {
+              "name": "Earthsea"
+            }
+          }
+        ],
+        "previous": "01997c7e-0000-7000-8000-00000000000c"
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      [
+        0,
+        1,
+        4,
+        7,
+        2,
+        3,
+        5,
+        11,
+        13,
+        6,
+        8,
+        9,
+        10,
+        12
+      ],
+      [
+        6,
+        8,
+        9,
+        10,
+        12,
+        5,
+        11,
+        13,
+        3,
+        2,
+        0,
+        1,
+        4,
+        7
+      ],
+      [
+        3,
+        2,
+        5,
+        6,
+        0,
+        1,
+        8,
+        4,
+        11,
+        9,
+        7,
+        13,
+        10,
+        12
+      ]
+    ],
+    "expect": {
+      "applied": [
+        "01997c7e-0000-7000-8000-000000000001",
+        "01997c7e-0000-7000-8000-000000000002",
+        "01997c7e-0000-7000-8000-000000000003",
+        "01997c7e-0000-7000-8000-000000000004",
+        "01997c7e-0000-7000-8000-000000000005",
+        "01997c7e-0000-7000-8000-000000000006",
+        "01997c7e-0000-7000-8000-000000000007",
+        "01997c7e-0000-7000-8000-000000000008",
+        "01997c7e-0000-7000-8000-000000000009",
+        "01997c7e-0000-7000-8000-00000000000d",
+        "01997c7e-0000-7000-8000-00000000000e"
+      ],
+      "requests": [
+        "01997c7e-0000-7000-8000-00000000000a",
+        "01997c7e-0000-7000-8000-00000000000b",
+        "01997c7e-0000-7000-8000-00000000000c"
+      ]
+    }
   }
 ]

@@ -219,6 +219,7 @@ const DEVICE_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("member_id", FieldType::Ref(Entity::Member), false),
     field("trusted_through", FieldType::Text, false),
+    field("vouched_key", FieldType::Text, false),
 ];
 /// How a request ended: accepted or rejected by an administrator, or withdrawn by
 /// whoever asked. The row without a status carries the asker's note (D73).

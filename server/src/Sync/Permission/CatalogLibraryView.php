@@ -33,6 +33,12 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class CatalogLibraryView implements LibraryView
 {
+    /**
+     * A device belongs to its person only if it carries no `vouched_key`, or the one it is registered with (D96).
+     * Byte by byte, like `public_key`.
+     */
+    private const string VOUCHED = " AND (d.vouchedKey IS NULL OR d.vouchedKey = '' OR d.vouchedKey = d.publicKey)";
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private CloudLibrary $library,
@@ -58,7 +64,8 @@ final readonly class CatalogLibraryView implements LibraryView
     public function roleOfDevice(string $device): ?Role
     {
         $role = $this->entityManager->createQuery(\sprintf(
-            'SELECT m.role FROM %s d JOIN d.member m WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.id = :device',
+            'SELECT m.role FROM %s d JOIN d.member m WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.id = :device'.
+            self::VOUCHED,
             Device::class,
         ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setMaxResults(1)->getOneOrNullResult();
 
@@ -91,11 +98,18 @@ final readonly class CatalogLibraryView implements LibraryView
     public function memberOfDevice(string $device): ?string
     {
         $member = $this->entityManager->createQuery(\sprintf(
-            'SELECT m.id FROM %s d JOIN d.member m WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.id = :device',
+            'SELECT m.id FROM %s d JOIN d.member m WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.id = :device'.
+            self::VOUCHED,
             Device::class,
         ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setMaxResults(1)->getOneOrNullResult();
 
         return \is_array($member) && \is_string($member['id']) ? $member['id'] : null;
+    }
+
+    public function deviceHasMemberId(string $device): bool
+    {
+        return [] !== $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s d WHERE d.cloudLibrary = :library AND d.id = :device AND d.member IS NOT NULL', Device::class))
+            ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setMaxResults(1)->getResult();
     }
 
     public function markMember(string $id): ?string

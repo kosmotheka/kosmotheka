@@ -51,7 +51,10 @@ pub struct People {
 pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
     let me = ops::device_id(conn)?;
     let devices: Vec<(String, String, Option<String>)> = conn
-        .prepare("SELECT id, name, member_id FROM devices WHERE library_id = ?1 ORDER BY name")?
+        .prepare(&format!(
+            "SELECT id, name, {} FROM devices d WHERE library_id = ?1 ORDER BY name",
+            permissions::person_of("d")
+        ))?
         .query_map([library], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
         .collect::<rusqlite::Result<_>>()?;
     let device = |id: &str, name: &str| PersonDevice {
@@ -247,7 +250,11 @@ pub fn start_roles(
     // second would come from a device that belongs to nobody, a reader's.
     let mut changes = vec![
         first,
-        Change::update(Entity::Device, &me, json!({ "member_id": member })),
+        Change::update(
+            Entity::Device,
+            &me,
+            permissions::assignment_fields(conn, library, &me, Some(&member))?,
+        ),
     ];
     // Everyone already sharing the library says whose device it is, in the same step.
     for owner in owners.iter().filter(|owner| owner.device_id != me) {
@@ -266,7 +273,7 @@ pub fn start_roles(
         changes.push(Change::update(
             Entity::Device,
             &owner.device_id,
-            json!({ "member_id": member }),
+            permissions::assignment_fields(conn, library, &owner.device_id, member.as_deref())?,
         ));
     }
     // The step seals the library (D94): of every device, only what this one had counts.
@@ -396,7 +403,7 @@ pub fn assign_device(
         )
         .optional()?
         .flatten();
-    let mut fields = json!({ "member_id": member });
+    let mut fields = permissions::assignment_fields(&tx, library, device, member)?;
     // A device that stops belonging to its person is fenced (D84).
     if current.as_deref().is_some_and(|c| Some(c) != member) {
         fields["trusted_through"] = json!(crate::permissions::fence_mark(&tx, library, device)?);
@@ -425,6 +432,14 @@ pub fn may_share(conn: &Connection, library: &str) -> Result<bool> {
         .iter()
         .find(|p| p.devices.iter().any(|d| d.this_device))
         .is_some_and(|me| me.role.as_deref() == Some("admin") || me.can_share))
+}
+
+/// Whether this device's person administers `library`, or the library has no roles. Only
+/// they take it to the cloud (D76, CON-009): going up names a device the library trusts
+/// with power, a decision for whoever administers it, not for whoever is merely in it.
+pub fn administers(conn: &Connection, library: &str) -> Result<bool> {
+    let people = list_people(conn, library)?;
+    Ok(!people.has_roles || people.my_role.as_deref() == Some("admin"))
 }
 
 pub fn ensure_may_share(conn: &Connection, libraries: &[String]) -> Result<()> {
@@ -536,7 +551,7 @@ pub fn give_access(
             changes.push(Change::update(
                 Entity::Device,
                 device,
-                json!({ "member_id": member }),
+                permissions::assignment_fields(&tx, library, device, Some(&member))?,
             ));
         } else {
             tx.execute(
@@ -564,7 +579,8 @@ pub fn apply_pending_owners(tx: &rusqlite::Transaction<'_>) -> Result<()> {
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
         .collect::<rusqlite::Result<_>>()?;
     for (library, device, member) in ready {
-        let change = Change::update(Entity::Device, &device, json!({ "member_id": member }));
+        let fields = permissions::assignment_fields(tx, &library, &device, Some(&member))?;
+        let change = Change::update(Entity::Device, &device, fields);
         match ops::record(tx, &library, "device.assign", vec![change]) {
             Ok(_) | Err(Error::NotAllowed) => {}
             Err(error) => return Err(error),
@@ -602,7 +618,7 @@ pub fn remove_device(conn: &mut Connection, device: &str) -> Result<usize> {
         let mut changes = vec![Change::update(
             Entity::Device,
             device,
-            json!({ "member_id": null }),
+            json!({ "member_id": null, "vouched_key": null }),
         )];
         if lan::revocations_of(&tx, library, device)?.is_empty() {
             changes.push(Change::create(

@@ -545,6 +545,36 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame($before['catalog_devices'], $after['catalog_devices']);
     }
 
+    /**
+     * D96, the attack with no automatic link at all: Jhonny, who has access to the family's cloud library, registers
+     * there the id of the administrator's new tablet with a key of his own, before the tablet does. The
+     * administrator then says the id is hers, vouching for the tablet's real key. In the cloud that id is signed by
+     * Jhonny's key, so it is nobody's: what he signs as that device, a change of role, ends as a request.
+     */
+    public function testAnAdministratorVouchingForTheRealKeyOfAnIdJhonnyHadRegisteredLeavesHimNothing(): void
+    {
+        [$cloud, $phone] = $this->familyWithRoles();
+        $this->shareWithJhonny($cloud);
+        $tablet = SigningDevice::generate();
+        $impostor = SigningDevice::generate($tablet->id);
+        $registered = $this->push($this->jhonnySession, $cloud, [$impostor->registration(self::LOCAL, self::T + 10)]);
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $registered['body']);
+        $assigned = $this->push($this->familySession, $cloud, [$phone->sign(self::LOCAL, self::T + 11, 'device.assign', [
+            ['entity' => 'device', 'id' => $tablet->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $tablet->publicKey]],
+        ])]);
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $assigned['body']);
+        self::assertSame(['applied' => 7], $this->statuses());
+        $before = $this->snapshotOf($cloud);
+
+        $takeover = $this->push($this->jhonnySession, $cloud, [$impostor->sign(self::LOCAL, self::T + 12, 'forged.role', [
+            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'update', 'fields' => ['role' => 'admin']],
+        ])]);
+
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $takeover['body']);
+        self::assertSame(['applied' => 7, 'request' => 1], $this->statuses());
+        self::assertSame($before['catalog_members'], $this->snapshotOf($cloud)['catalog_members']);
+    }
+
     /** SEG-014 through the route: the editor's backdated edit lands in the window of the fence of her demotion. */
     public function testADemotedEditorsBackdatedChangeIsARequest(): void
     {

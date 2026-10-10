@@ -28,6 +28,9 @@ final class Device extends CatalogRow
     #[ORM\Column(name: 'trusted_through', type: Types::TEXT, nullable: true)]
     private ?string $trustedThrough = null;
 
+    #[ORM\Column(name: 'vouched_key', type: Types::TEXT, nullable: true)]
+    private ?string $vouchedKey = null;
+
     public function getPublicKey(): string
     {
         return $this->publicKey;
@@ -66,5 +69,15 @@ final class Device extends CatalogRow
     public function setTrustedThrough(?string $trustedThrough): void
     {
         $this->trustedThrough = $trustedThrough;
+    }
+
+    public function getVouchedKey(): ?string
+    {
+        return $this->vouchedKey;
+    }
+
+    public function setVouchedKey(?string $vouchedKey): void
+    {
+        $this->vouchedKey = $vouchedKey;
     }
 }

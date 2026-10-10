@@ -879,6 +879,10 @@
                     "description": "The member this device belongs to (D55). Only administrators set it.",
                     "$ref": "#/$defs/ref"
                   },
+                  "vouched_key": {
+                    "description": "The public key whoever said whose this device is had registered for it (D96), written in the same change as `member_id` by whoever may write that. The device belongs to its person only if this is empty or equal to its registered `public_key`. Null or absent for an assignment from before D96, and when the person is taken away.",
+                    "$ref": "#/$defs/text"
+                  },
                   "trusted_through": {
                     "description": "Fence (D84, D87): the id of the newest operation of this device the administrator had when it lost power, or the empty string if it had none. Set in the same operation that takes the power away. Of this device's operations dated before the one that set it, only the marked operation and its ancestors through `previous` count; any other is a request. Only administrators set it, never the device itself.",
                     "anyOf": [

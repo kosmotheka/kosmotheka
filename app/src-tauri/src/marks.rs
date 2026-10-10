@@ -64,14 +64,7 @@ pub struct WorkMarks {
 /// The person this device belongs to in `library`.
 pub fn my_member(conn: &Connection, library: &str) -> Result<Option<String>> {
     let me = ops::device_id(conn)?;
-    Ok(conn
-        .query_row(
-            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
-            [library, &me],
-            |row| row.get::<_, Option<String>>(0),
-        )
-        .optional()?
-        .flatten())
+    crate::permissions::person_of_device(conn, library, &me)
 }
 
 pub fn work_marks(conn: &Connection, library: &str, work: &str) -> Result<WorkMarks> {
@@ -212,10 +205,11 @@ pub fn claim_person(conn: &mut Connection, library: &str, pick: &PersonPick) -> 
     let tx = conn.transaction()?;
     // The device row has to exist before it can say whose it is.
     ops::ensure_registered(&tx, library)?;
+    let me = ops::device_id(&tx)?;
     changes.push(Change::update(
         Entity::Device,
-        ops::device_id(&tx)?,
-        json!({ "member_id": member }),
+        &me,
+        crate::permissions::assignment_fields(&tx, library, &me, Some(&member))?,
     ));
     ops::record(&tx, library, "person.claim", changes)?;
     tx.commit()?;

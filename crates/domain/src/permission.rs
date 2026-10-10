@@ -35,8 +35,12 @@ pub trait LibraryView {
     /// Whether the operation `request` was written by a device of the same person
     /// as `device`: who asked may withdraw what they asked for.
     fn requested_by_same_person(&self, request: &str, device: &str) -> bool;
-    /// The person (member id) `device` belongs to, if any.
+    /// The person (member id) `device` belongs to, if any. A device whose `vouched_key` is set
+    /// and is not the key it is registered with belongs to nobody (D96).
     fn member_of_device(&self, device: &str) -> Option<String>;
+    /// Whether the `member_id` of `device` is set, whatever its `vouched_key` says. The
+    /// cloud's rule asks this, not `member_of_device`: it only links devices of nobody (D76).
+    fn device_has_member_id(&self, device: &str) -> bool;
     /// Whose the mark `id` is, if it exists (D68).
     fn mark_member(&self, id: &str) -> Option<String>;
     /// Whether `operation` falls under a honoured fence of its author (D84, D87):
@@ -91,6 +95,7 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
 
 /// Whether the change writes something only the cloud device may write, or the one
 /// thing it may do beyond a device of nobody: `member.account_id` or `device.member_id`.
+/// `device.vouched_key` is not among them: the cloud never vouches (D96).
 fn touches_cloud_field(change: &Change) -> bool {
     match change.entity {
         Entity::Member => change.fields.contains_key("account_id"),
@@ -112,7 +117,7 @@ fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool
         }
         Entity::Device => {
             !change.id.eq_ignore_ascii_case(author)
-                && view.member_of_device(&change.id).is_none()
+                && !view.device_has_member_id(&change.id)
                 && change
                     .fields
                     .get("member_id")
@@ -145,10 +150,13 @@ fn change_allowed(
     }
     let touches = |field: &str| change.fields.contains_key(field);
     match change.entity {
-        // Every device registers and renames itself; saying whose it is, or
-        // touching another device, or its fence, is for administrators.
+        // Every device registers and renames itself; saying whose it is (and vouching
+        // for its key, D96), or touching another device, or its fence, is for administrators.
         Entity::Device if change.id == author => {
-            change.action != Action::Delete && !touches("member_id") && !touches("trusted_through")
+            change.action != Action::Delete
+                && !touches("member_id")
+                && !touches("vouched_key")
+                && !touches("trusted_through")
         }
         // Withdrawing is the one resolution that is not an administrator's.
         Entity::ChangeRequest => {
@@ -212,6 +220,9 @@ mod tests {
         }
         fn member_of_device(&self, _: &str) -> Option<String> {
             self.role.map(|_| MY_MEMBER.to_owned())
+        }
+        fn device_has_member_id(&self, _: &str) -> bool {
+            self.role.is_some()
         }
         fn fenced(&self, _: &Operation) -> bool {
             self.fenced
@@ -337,6 +348,36 @@ mod tests {
         )]);
         assert!(is_allowed(&register, &view(None)));
         assert!(!is_allowed(&claim, &view(Some(Role::Editor))));
+    }
+
+    #[test]
+    fn only_an_administrator_vouches_and_never_the_cloud() {
+        const OTHER: &str = "01997c7e-0000-7000-8000-0000000000fc";
+        let vouch = |device: &str| {
+            op(vec![Change::update(
+                Entity::Device,
+                device,
+                json!({ "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w" }),
+            )])
+        };
+        assert!(
+            !is_allowed(&vouch(ME), &view(Some(Role::Editor))),
+            "its own"
+        );
+        assert!(!is_allowed(&vouch(OTHER), &view(Some(Role::Editor))));
+        assert!(!is_allowed(&vouch(ME), &view(None)), "a device of nobody");
+        assert!(is_allowed(&vouch(OTHER), &view(Some(Role::Admin))));
+        let cloud = View {
+            cloud: true,
+            ..view(None)
+        };
+        let link_and_vouch = op(vec![Change::update(
+            Entity::Device,
+            OTHER,
+            json!({ "member_id": MY_MEMBER, "vouched_key": "AAAA" }),
+        )]);
+        assert!(!is_allowed(&vouch(OTHER), &cloud));
+        assert!(!is_allowed(&link_and_vouch, &cloud), "not beside a link");
     }
 
     #[test]

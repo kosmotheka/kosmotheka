@@ -3602,6 +3602,155 @@ mod tests {
         assert_eq!(operations_with_intent(&laptop, "library.seal").len(), 2);
     }
 
+    fn vouched_keys(device: &Device) -> Vec<(String, Option<String>)> {
+        device
+            .0
+            .prepare("SELECT id, vouched_key FROM devices WHERE library_id = ?1 ORDER BY id")
+            .unwrap()
+            .query_map([&device.1], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn an_administrator_vouches_once_for_the_assignments_made_before_d96() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        assert!(vouched_keys(&laptop).iter().all(|(_, key)| key.is_none()));
+
+        permissions::vouch_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        permissions::vouch_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+
+        let vouches = operations_with_intent(&laptop, "library.vouch");
+        assert_eq!(vouches.len(), 1, "the second time there is nothing left");
+        let keys: Vec<(String, Option<String>)> = registered_keys(&laptop)
+            .into_iter()
+            .map(|(id, key)| (id, Some(key)))
+            .collect();
+        assert_eq!(
+            vouched_keys(&laptop),
+            keys,
+            "each with the key it has of it"
+        );
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &vouches[0]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_device_that_is_not_an_administrators_vouches_for_nothing() {
+        let (_laptop, mut phone) = laptop_admin_phone_reader();
+
+        permissions::vouch_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
+
+        assert!(operations_with_intent(&phone, "library.vouch").is_empty());
+    }
+
+    #[test]
+    fn a_library_without_roles_vouches_for_nothing() {
+        let mut device = Device::new();
+        device.add("Dune", None, "Tersoal");
+
+        permissions::vouch_if_missing(&mut device.0, std::slice::from_ref(&device.1)).unwrap();
+
+        assert!(operations_with_intent(&device, "library.vouch").is_empty());
+    }
+
+    #[test]
+    fn two_administrators_who_vouch_at_once_converge() {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+
+        permissions::vouch_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
+        permissions::vouch_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        for device in [&laptop, &phone] {
+            for vouch in operations_with_intent(device, "library.vouch") {
+                assert_eq!(status_of_id(device, &vouch), "applied");
+            }
+            assert!(vouched_keys(device).iter().all(|(_, key)| key.is_some()));
+        }
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    /// D96: a device assigned to a person with a key other than the one it is registered with
+    /// is a device of nobody, in whatever order the assignment and the registration arrive.
+    #[test]
+    fn a_vouched_key_that_is_not_the_registered_one_makes_the_device_nobodys_in_every_order() {
+        for (vouched, expected) in [(None, "applied"), (Some("A".repeat(43)), "request")] {
+            let (mut laptop, _phone) = laptop_admin_phone_reader();
+            let lib = laptop.1.clone();
+            let hugo = ops::new_id();
+            let mut tablet = Device::sharing(&laptop);
+            let tx = tablet.0.transaction().unwrap();
+            ops::ensure_registered(&tx, &lib).unwrap();
+            tx.commit().unwrap();
+            laptop.pull_from(&tablet);
+            let tablet_id = device_id_of(&tablet);
+            let tablet_key = ops::signing_key(&tablet.0).unwrap().public_key();
+            let tx = laptop.0.transaction().unwrap();
+            ops::record(
+                &tx,
+                &lib,
+                "device.assign",
+                vec![
+                    Change::create(
+                        Entity::Member,
+                        &hugo,
+                        json!({ "name": "Hugo's other self", "role": "editor" }),
+                    ),
+                    Change::update(
+                        Entity::Device,
+                        &tablet_id,
+                        json!({
+                            "member_id": hugo,
+                            "vouched_key": vouched.clone().unwrap_or(tablet_key),
+                        }),
+                    ),
+                ],
+            )
+            .unwrap();
+            tx.commit().unwrap();
+            tablet.pull_from(&laptop);
+            let tag = forged_at(
+                &tablet,
+                "tag.add",
+                vec![Change::create(
+                    Entity::Tag,
+                    ops::new_id(),
+                    json!({ "name": "Earthsea" }),
+                )],
+                now_millis() + 1_000,
+                ops::latest_of(&tablet.0, &lib, &tablet_id)
+                    .unwrap()
+                    .as_deref(),
+            );
+            merge(&mut laptop.0, vec![tag.clone()]).unwrap();
+
+            // Two devices that get the same operations in opposite orders: the tablet's
+            // own first, or everyone else's first.
+            let everything: Vec<SyncOperation> = everything_from(&laptop)
+                .into_iter()
+                .filter(|op| op.operation.id != tag.operation.id)
+                .chain([tag.clone()])
+                .collect();
+            let (by_tablet, others): (Vec<_>, Vec<_>) = everything
+                .into_iter()
+                .partition(|op| op.operation.hlc.device == tablet_id);
+            let mut first = Device::empty_for(&laptop);
+            merge(&mut first.0, by_tablet.clone()).unwrap();
+            merge(&mut first.0, others.clone()).unwrap();
+            let mut last = Device::empty_for(&laptop);
+            merge(&mut last.0, others).unwrap();
+            merge(&mut last.0, by_tablet).unwrap();
+
+            for device in [&laptop, &first, &last] {
+                assert_eq!(status_of_id(device, &tag.operation.id), expected);
+            }
+            assert_converged(&[&laptop, &first, &last]);
+        }
+    }
+
     #[test]
     fn the_same_hlc_does_not_overwrite_a_field() {
         let device = Device::new();

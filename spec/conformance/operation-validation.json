@@ -1570,6 +1570,81 @@
     }
   },
   {
+    "name": "device assigned to a member with a vouched key",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001a0",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.assign",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ee",
+          "action": "update",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000012",
+            "vouched_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "device taken from its member empties the vouched key",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001a1",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.assign",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ee",
+          "action": "update",
+          "fields": {
+            "member_id": null,
+            "vouched_key": null
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "vouched key must be text",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001a2",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.assign",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000ee",
+          "action": "update",
+          "fields": {
+            "member_id": "01997c7e-0000-7000-8000-000000000012",
+            "vouched_key": 7
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "vouched_key"
+    }
+  },
+  {
     "name": "request rejected",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000128",
