@@ -28,7 +28,7 @@ El diseño de partida es `docs/design/screens/cloud-account/Invite.dc.html`, y *
 5. **Quita las marcas `@public`** de `api.ts` de lo que ya se use; lo que siga sin uso, dímelo en vez de dejar la marca.
 6. **Mock de desarrollo** al día para poder ver cada estado sin servidor: los seis bloqueos, enlace creado, correo enviado, pendiente, aceptada y cada error al abrir.
 
-## Un cambio pequeño en el servidor (propuesta, la confirma el maintainer al revisar)
+## Un cambio pequeño en el servidor (aceptado por el maintainer el 11/10/2026)
 
 `GET /v1/server` publica además la **base de los enlaces de invitación** (`invitation_base`, o como encaje con lo que hay; `null` si no hay invitaciones), y la app la usa en `token_of_link` en vez de la regla provisional «mismo host o el dominio de encima». **Lo que no cambia:** un enlace nunca decide a qué servidor se llama; la app sigue hablando solo con el servidor de la cuenta (o el de por defecto sin cuenta), y esa base solo dice qué enlaces son *de ese servidor*. Sin el dato (servidor antiguo), vale la regla de hoy. Test hostil antes, visto fallar: un servidor que publica una base ajena no consigue que la app llame a esa dirección; y un enlace con la base de otro servidor se sigue rechazando. Test en PHP de la ruta. Si ves que esto pide más que eso, **para y dímelo**.
 

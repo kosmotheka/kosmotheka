@@ -915,6 +915,11 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **En local**, sin nube, cada dispositivo **conserva la operación de borrado** de una biblioteca (quién, cuándo, qué biblioteca) aunque borre todo su contenido. Sin servidor no hay IP ni hora de confianza: es lo que hay, y basta para uso doméstico.
 - **Se guarda un año** (aceptado el 01/10/2026) y después se borra solo. La IP es un dato personal: se guarda por seguridad, con ese plazo, y la política de privacidad lo dice.
 
+**Enmienda (11/10/2026, aceptada):**
+- **Cuenta borrada:** sus entradas conservan el id de la cuenta y una **huella con clave de su correo**, nunca el correo. Permite contestar «¿fue esta dirección?» sin guardar la dirección.
+- **Se apuntan también** las invitaciones (crear, anular, aceptar; nunca el correo ni el enlace, D43) y lo que hace la nube sola: enlazar una cuenta con una persona y vincular un dispositivo (D76).
+- **Se consulta por consola**, sin ninguna ruta web, hasta que exista el panel (D52).
+
 **Consecuencias:** amplía D52 (su tabla de eventos para los KPI puede ser la misma) y D65. La parte local entra en la Fase 4, con el borrado de bibliotecas; la de la nube, en la Fase 7.
 
 ## D67 · Enlaces para compartir y etiquetas QR: son de la biblioteca — `aceptada`
