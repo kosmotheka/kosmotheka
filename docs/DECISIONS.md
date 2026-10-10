@@ -589,10 +589,10 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - **Quien administra recibe un aviso cuando alguien acepta su invitación**, y le cambia el rol desde Personas cuando quiera, ya viendo quién ha entrado.
 - **Dos tipos de invitación, y el tipo marca el rol** (aceptado el 10/10/2026):
   - **Por correo.** Quien administra escribe el correo de la persona y el servidor le manda el enlace. Solo la acepta una cuenta con ese mismo correo, que las cuentas verifican al registrarse (D77): un enlace reenviado o visto en una captura no sirve a nadie más. Por eso puede dar más que leer: **una persona que ya está en la biblioteca conserva su rol**; una persona nueva entra como lectora. El servidor guarda una huella del correo, no el correo.
-  - **Enlace para copiar** (un chat, WhatsApp). Entra quien lo abre primero, así que **siempre da lector**, también si se crea para una persona que ya tenía otro rol.
+  - **Enlace para copiar** (un chat, WhatsApp). Entra quien lo abre primero, así que **siempre da lector** y **solo se crea para una persona nueva**: a quien ya está en la biblioteca se le invita por correo. Así nadie pierde su rol al crear un enlace, y un enlace filtrado no deja a un extraño ocupar el sitio de alguien que ya tiene libros y préstamos.
   - **Excepción:** a una persona que ya administra no se la invita; entra con un dispositivo emparejado en casa. Un correo robado bastaría para echar a los demás (D98).
 - **Idea para después, sin decidir:** un enlace que no caduca y sirve a muchas personas, como los de los grupos de mensajería, para un club de lectura o una biblioteca pública; siempre lector. Contradice «un solo uso» y pide resolver quién crea la persona de cada uno que entra, porque la nube solo tiene el poder de vincular dispositivos (D76). Las invitaciones de 7.6 se construyen sin cerrarle el paso.
-- Pendiente de decidir: cuándo y quién baja a lector a la persona con otro rol para la que se crea un enlace para copiar, y las bibliotecas sin personas ni roles.
+- Pendiente de decidir: las bibliotecas sin personas ni roles.
 
 ## D44 · El lector escribe solo lo suyo: deseos y lecturas — `reemplazada por D55`
 
