@@ -19,6 +19,7 @@ use kosmotheka_domain::{Change, Entity};
 
 use crate::db::Database;
 use crate::error::{Error, Result};
+use crate::lan;
 use crate::sync::{self, LibraryVectors, MergeReport, SyncOperation, VersionVector};
 use crate::{libraries, ops, people};
 
@@ -30,7 +31,8 @@ pub trait CloudApi {
     fn server(&self) -> &str;
     /// Creates the cloud library; the answer carries its id and, if the server has a secret, the cloud's device (D95).
     async fn create_library(&self) -> Result<CloudLibrary>;
-    async fn list_libraries(&self) -> Result<Vec<CloudLibrary>>;
+    /// What the account reaches from this device, and the ids of the cloud libraries it had and was cut from (D98).
+    async fn list_libraries(&self) -> Result<Listing>;
     /// Asks the server to link this account with its person wherever this device is already that person's
     /// with a vouched key (D76, D96). Sends nothing: the server knows the device from the session.
     async fn claim(&self) -> Result<Claimed>;
@@ -50,6 +52,13 @@ pub trait CloudApi {
         schema_version: i64,
         operations: &[SyncOperation],
     ) -> Result<PushReport>;
+}
+
+/// The answer to «what do I have?»: the libraries, and apart the ids of those the account had and was cut from.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Listing {
+    pub libraries: Vec<CloudLibrary>,
+    pub withdrawn: Vec<String>,
 }
 
 /// What a claim linked: cloud library ids, and those where the account is already another person.
@@ -118,6 +127,12 @@ pub enum Outcome {
     OtherServer,
     /// This device deleted or left it: the cloud does not bring it back by itself.
     DeletedHere,
+    /// The cloud cut this device or its account from the library and proved it with the signed revocation of
+    /// someone who administers it: the library was removed here (D98, D71).
+    Removed,
+    /// The cloud says the access was withdrawn but showed no proof this device accepts: nothing is removed. The
+    /// library stays and is no longer synced with the cloud.
+    AccessWithdrawn,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -330,9 +345,49 @@ pub async fn sync_library<A: CloudApi>(
             .remove(library)
             .unwrap_or_default()
     };
-    let server_vector = pull_and_merge(database, api, library, cloud, &vector, &mut report).await?;
-    push_missing(database, api, library, cloud, server_vector, &mut report).await?;
-    Ok(report)
+    let server_vector =
+        match pull_and_merge(database, api, library, cloud, &vector, &mut report).await {
+            Err(Error::AccessWithdrawn(proofs)) => {
+                return cut_off(database, library, cloud, &proofs);
+            }
+            other => other?,
+        };
+    match push_missing(database, api, library, cloud, server_vector, &mut report).await {
+        Err(Error::AccessWithdrawn(_)) => {
+            // The proofs of a push are the revocations alone; a pull, with this device's vector, also brings the
+            // earlier operations of who signed them, so the revocation chains.
+            let proofs = api_pull_proofs(database, api, library, cloud)
+                .await?
+                .unwrap_or_default();
+            cut_off(database, library, cloud, &proofs)
+        }
+        other => other.map(|()| report),
+    }
+}
+
+/// The cloud says this device, or its account, lost the library (D98, D71). It is believed only through the
+/// signed revocation of a device allowed to make it, checked here exactly as the local network does
+/// (`lan::remove_if_proved`): then the library is removed from this device. Without such a proof nothing is
+/// removed: a server that lies cannot make anyone lose a library.
+fn cut_off(
+    database: &Database,
+    library: &str,
+    cloud: &str,
+    proofs: &[SyncOperation],
+) -> Result<LibraryReport> {
+    let removed = {
+        let mut conn = database.lock()?;
+        lan::remove_if_proved(&mut conn, library, proofs, "the cloud")?
+    };
+    Ok(LibraryReport::new(
+        library,
+        Some(cloud),
+        if removed {
+            Outcome::Removed
+        } else {
+            Outcome::AccessWithdrawn
+        },
+    ))
 }
 
 /// Pulls `cloud` and merges only the operations of `library`: the server's word
@@ -407,7 +462,8 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
     // does not know the route, or a network that fails here, must not stop the session: the list says
     // what there is.
     let _ = api.claim().await;
-    let listed = api.list_libraries().await?;
+    let listing = api.list_libraries().await?;
+    let (listed, withdrawn) = (listing.libraries, listing.withdrawn);
     let server = api.server();
     let linked = linked_libraries(&*database.lock()?)?;
     let mut reports = Vec::new();
@@ -455,6 +511,25 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             download(database, api, &cloud.id, local).await?
         });
     }
+    // Libraries of this device that the cloud says were cut: it asks for the proof, and removes only if it holds.
+    for cloud in &withdrawn {
+        let Some(library) = linked
+            .iter()
+            .find(|(_, link)| link.is(cloud, server))
+            .map(|(library, _)| library)
+        else {
+            continue; // not here: nothing to remove, and nothing to bring down
+        };
+        match api_pull_proofs(database, api, library, cloud).await? {
+            Some(proofs) => reports.push(cut_off(database, library, cloud, &proofs)?),
+            // Whatever else it says is not a proof of anything: the library stays as it is.
+            None => reports.push(LibraryReport::new(
+                library,
+                Some(cloud),
+                Outcome::AccessWithdrawn,
+            )),
+        }
+    }
     // A new phone has just registered itself in a library and sent the registration: the cloud may now say the
     // device is its account's person's. Ask only if something went up, and bring down what the cloud wrote. A
     // failure here costs the session nothing: the next one asks again.
@@ -482,7 +557,10 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
         let Some(cloud) = link.cloud_library.as_deref() else {
             continue;
         };
-        if link.is(cloud, server) && !listed.iter().any(|listed| listed.id == cloud) {
+        if link.is(cloud, server)
+            && !listed.iter().any(|listed| listed.id == cloud)
+            && !withdrawn.iter().any(|id| id == cloud)
+        {
             reports.push(LibraryReport::new(
                 library,
                 Some(cloud),
@@ -632,4 +710,27 @@ fn remove_unlinked(conn: &mut Connection, library: &str) -> Result<()> {
     }
     tx.commit()?;
     Ok(())
+}
+
+/// Asks for the proof the way that carries the chain: a pull with this device's own vector. `Some(proofs)` when
+/// the cloud answers with `access_withdrawn`; `None` for any other answer, which proves nothing.
+async fn api_pull_proofs<A: CloudApi>(
+    database: &Database,
+    api: &A,
+    library: &str,
+    cloud: &str,
+) -> Result<Option<Vec<SyncOperation>>> {
+    let (schema_version, vector) = {
+        let conn = database.lock()?;
+        (
+            ops::schema_version(&conn)?,
+            sync::version_vectors(&conn, &[library.to_owned()])?
+                .remove(library)
+                .unwrap_or_default(),
+        )
+    };
+    match api.pull(cloud, schema_version, &vector).await {
+        Err(Error::AccessWithdrawn(proofs)) => Ok(Some(proofs)),
+        _ => Ok(None),
+    }
 }

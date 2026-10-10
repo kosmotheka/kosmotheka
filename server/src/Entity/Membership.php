@@ -28,6 +28,10 @@ final class Membership
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
+    /** When the server saw the person this account was withdrawn (D98): from then on the row gives no access. */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $withdrawnAt = null;
+
     public function __construct(
         #[ORM\ManyToOne(targetEntity: User::class)]
         #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_membership_user')]
@@ -70,10 +74,29 @@ final class Membership
      */
     public function linkTo(Uuid $memberId): void
     {
-        if ($this->memberId instanceof Uuid && !$this->memberId->equals($memberId)) {
+        if ($this->memberId instanceof Uuid && !$this->memberId->equals($memberId) && !$this->isWithdrawn()) {
             throw new \LogicException('This membership already names another person.');
         }
         $this->memberId = $memberId;
+        // Coming back is linking again, the usual way (D98): the cut is over.
+        $this->withdrawnAt = null;
+    }
+
+    /** The account's person had the access withdrawn: no access from now on, and the row names nobody (D98). */
+    public function withdraw(\DateTimeImmutable $at): void
+    {
+        $this->withdrawnAt ??= $at;
+        $this->memberId = null;
+    }
+
+    public function isWithdrawn(): bool
+    {
+        return $this->withdrawnAt instanceof \DateTimeImmutable;
+    }
+
+    public function getWithdrawnAt(): ?\DateTimeImmutable
+    {
+        return $this->withdrawnAt;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

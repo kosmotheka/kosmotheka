@@ -5,7 +5,7 @@ use reqwest::Method;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::{Claimed, CloudApi, CloudLibrary, Pulled, PushReport};
+use super::{Claimed, CloudApi, CloudLibrary, Listing, Pulled, PushReport};
 use crate::account::{self, client::Auth, client::build_client, client::send_json};
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -100,20 +100,37 @@ impl CloudApi for HttpCloud {
         })
     }
 
-    async fn list_libraries(&self) -> Result<Vec<CloudLibrary>> {
+    async fn list_libraries(&self) -> Result<Listing> {
+        // Older servers answer with the list alone; newer ones with the list and the ids they cut (D98).
+        let answer: Value = send_json(&self.client, Method::GET, &self.url(""), self.auth(), None)
+            .await
+            .map_err(cloud_error)?;
+        let (libraries, withdrawn) = match answer {
+            Value::Array(_) => (answer, Value::Array(Vec::new())),
+            Value::Object(mut object) => (
+                object
+                    .remove("libraries")
+                    .unwrap_or(Value::Array(Vec::new())),
+                object
+                    .remove("withdrawn")
+                    .unwrap_or(Value::Array(Vec::new())),
+            ),
+            _ => return Err(Error::account("server_unavailable")),
+        };
         let listed: Vec<ListedWire> =
-            send_json(&self.client, Method::GET, &self.url(""), self.auth(), None)
-                .await
-                .map_err(cloud_error)?;
-        Ok(listed
-            .into_iter()
-            .map(|wire| CloudLibrary {
-                id: wire.id,
-                local_library_id: wire.local_library_id,
-                cloud_device_id: wire.cloud_device_id,
-                cloud_public_key: wire.cloud_public_key,
-            })
-            .collect())
+            serde_json::from_value(libraries).map_err(|_| Error::account("server_unavailable"))?;
+        Ok(Listing {
+            libraries: listed
+                .into_iter()
+                .map(|wire| CloudLibrary {
+                    id: wire.id,
+                    local_library_id: wire.local_library_id,
+                    cloud_device_id: wire.cloud_device_id,
+                    cloud_public_key: wire.cloud_public_key,
+                })
+                .collect(),
+            withdrawn: serde_json::from_value(withdrawn).unwrap_or_default(),
+        })
     }
 
     async fn claim(&self) -> Result<Claimed> {

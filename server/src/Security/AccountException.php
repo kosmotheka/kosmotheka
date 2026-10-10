@@ -17,6 +17,8 @@ final class AccountException extends \RuntimeException
         public readonly AccountErrorCode $errorCode,
         public readonly int $statusCode,
         public readonly ?int $retryAfterSeconds = null,
+        /** @var array<string, mixed> more keys for the body, next to `error` */
+        public readonly array $extra = [],
     ) {
         parent::__construct($errorCode->value);
     }
@@ -134,6 +136,17 @@ final class AccountException extends \RuntimeException
     public static function twoFactorRequired(): self
     {
         return new self(AccountErrorCode::TwoFactorRequired, 401);
+    }
+
+    /**
+     * The account, or this device, was cut from a library it had (D98, D71). The signed operations that withdrew the
+     * device go with it, so the app checks them itself before it deletes anything.
+     *
+     * @param list<array{schemaVersion: int, operation: \stdClass}> $proofs
+     */
+    public static function accessWithdrawn(array $proofs): self
+    {
+        return new self(AccountErrorCode::AccessWithdrawn, 403, null, ['proofs' => $proofs]);
     }
 
     /** A cloud library the account cannot reach: the same answer as one that does not exist (D84). */

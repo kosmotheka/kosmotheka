@@ -104,7 +104,7 @@ final class ScenarioFixturesTest extends WebTestCase
         // Ana's, Kenji's and Jhonny's two owner rows, and Hugo's, made by the claim (7.5.2b-2).
         self::assertSame(6, $this->rowsIn('membership'));
         self::assertSame(1, $this->rowsIn('membership m JOIN "user" u ON u.id = m.user_id WHERE m.member_id IS NOT NULL AND u.email = '.$this->quote(Cast::HUGO)));
-        $listed = $this->listLibraries(Cast::hugoPhone())['body'];
+        $listed = $this->libraryList($this->listLibraries(Cast::hugoPhone())['body']);
         self::assertCount(1, $listed);
         \assert(\is_array($listed[0]));
         self::assertSame(Cast::GARCIA_LOCAL, $listed[0]['localLibraryId'] ?? null);
@@ -180,8 +180,8 @@ final class ScenarioFixturesTest extends WebTestCase
         $jhonny = Cast::jhonnyPhone();
 
         $own = $this->listLibraries($jhonny);
-        self::assertCount(3, $own['body'], 'The one with the Garcías\' local id, the default-id one and the unlinked one; none of Ana\'s.');
-        self::assertNotContains($ana, array_column($own['body'], 'id'));
+        self::assertCount(3, $this->libraryList($own['body']), 'The one with the Garcías\' local id, the default-id one and the unlinked one; none of Ana\'s.');
+        self::assertNotContains($ana, array_column($this->libraryList($own['body']), 'id'));
 
         foreach (['pull' => ['schemaVersion' => $this->schemaVersion(), 'vector' => new \stdClass()], 'push' => ['operations' => []]] as $route => $body) {
             $response = $this->call('POST', "/v1/cloud/libraries/$ana/$route", $jhonny, $body);
@@ -352,5 +352,20 @@ final class ScenarioFixturesTest extends WebTestCase
         \assert(\is_array($decoded));
 
         return ['status' => $this->client->getResponse()->getStatusCode(), 'body' => $decoded];
+    }
+
+    /**
+     * The `libraries` of a listing answer.
+     *
+     * @param array<mixed> $body
+     *
+     * @return array<mixed>
+     */
+    private function libraryList(array $body): array
+    {
+        $libraries = $body['libraries'] ?? null;
+        \assert(\is_array($libraries));
+
+        return $libraries;
     }
 }

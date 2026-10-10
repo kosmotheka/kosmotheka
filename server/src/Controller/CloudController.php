@@ -9,7 +9,6 @@ use App\Dto\PushedOperation;
 use App\Dto\PushRequest;
 use App\Entity\CloudLibrary;
 use App\Entity\User;
-use App\Repository\CloudLibraryRepository;
 use App\Security\CurrentDevice;
 use App\Sync\AccountLinker;
 use App\Sync\CloudIdentityIssuer;
@@ -38,7 +37,6 @@ final class CloudController extends AbstractController
     public function __construct(
         private readonly CloudLibraryAccess $access,
         private readonly CloudLibraryCreator $creator,
-        private readonly CloudLibraryRepository $libraries,
         private readonly CloudIdentityIssuer $identity,
         private readonly CloudPull $cloudPull,
         private readonly CloudLink $cloudLink,
@@ -56,21 +54,30 @@ final class CloudController extends AbstractController
         return new JsonResponse(['id' => $library->getId()->toRfc4122()] + $this->identityOf($library), Response::HTTP_CREATED);
     }
 
+    /**
+     * The libraries this device reaches, and, apart, the ids of those the account had and was cut from (D98): only
+     * ids of libraries it had, so nothing is revealed that it did not know.
+     */
     #[Route('', methods: ['GET'])]
     public function list(): JsonResponse
     {
-        return new JsonResponse(array_map(
-            function (CloudLibrary $library): array {
-                // A library from before the server had a secret gets its cloud device the first time it is listed.
-                $this->identity->ensure($library);
+        $reachable = $this->access->reachable($this->currentUser(), $this->currentDevice->get());
 
-                return [
-                    'id' => $library->getId()->toRfc4122(),
-                    'localLibraryId' => $library->getLocalLibraryId(),
-                ] + $this->identityOf($library);
-            },
-            $this->libraries->findAllAccessibleBy($this->currentUser()),
-        ));
+        return new JsonResponse([
+            'libraries' => array_map(
+                function (CloudLibrary $library): array {
+                    // A library from before the server had a secret gets its cloud device the first time it is listed.
+                    $this->identity->ensure($library);
+
+                    return [
+                        'id' => $library->getId()->toRfc4122(),
+                        'localLibraryId' => $library->getLocalLibraryId(),
+                    ] + $this->identityOf($library);
+                },
+                $reachable['libraries'],
+            ),
+            'withdrawn' => $reachable['withdrawn'],
+        ]);
     }
 
     /**
@@ -86,7 +93,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/pull', methods: ['POST'])]
     public function pull(string $id, #[MapRequestPayload] PullRequest $payload): JsonResponse
     {
-        $library = $this->access->require($id, $this->currentUser());
+        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), $payload->vector);
 
         return new JsonResponse($this->cloudPull->pull($library, $payload));
     }
@@ -95,7 +102,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/link', methods: ['POST'])]
     public function link(string $id, Request $request): JsonResponse
     {
-        $library = $this->access->require($id, $this->currentUser());
+        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get());
         $this->cloudLink->linkFrom($library, PushedOperation::fromJson($request->getContent()));
 
         return new JsonResponse(['localLibraryId' => $library->getLocalLibraryId()]);
@@ -104,7 +111,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/push', methods: ['POST'])]
     public function push(string $id, Request $request): JsonResponse
     {
-        $library = $this->access->require($id, $this->currentUser());
+        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get());
 
         return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());
     }

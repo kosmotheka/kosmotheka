@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Sync;
 
+use App\Entity\Device;
 use App\Entity\User;
-use App\Repository\CloudLibraryRepository;
 use App\Security\AccountException;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Mercure\Jwt\Grant;
@@ -23,7 +23,7 @@ final readonly class EventsToken
 
     public function __construct(
         private HubSettings $settings,
-        private CloudLibraryRepository $libraries,
+        private CloudLibraryAccess $access,
         private ClockInterface $clock,
     ) {
     }
@@ -33,7 +33,7 @@ final readonly class EventsToken
      *
      * @throws AccountException when this server has no hub
      */
-    public function issue(User $user): array
+    public function issue(User $user, ?Device $device = null): array
     {
         if (!$this->settings->isEnabled()) {
             throw AccountException::eventsUnavailable();
@@ -41,7 +41,7 @@ final readonly class EventsToken
 
         $topics = [
             NoticeTopic::account($user),
-            ...array_map(NoticeTopic::library(...), $this->libraries->findAllAccessibleBy($user)),
+            ...array_map(NoticeTopic::library(...), $this->access->reachable($user, $device)['libraries']),
         ];
         $expires = new \DateTimeImmutable('@'.($this->clock->now()->getTimestamp() + self::LIFETIME_SECONDS));
 

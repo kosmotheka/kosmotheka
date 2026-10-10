@@ -37,6 +37,10 @@ struct FakeLibrary {
     /// Accounts the claim gave access to, and the person each one is.
     members: Vec<String>,
     persons: BTreeMap<String, String>,
+    /// A server that lies, or has cut an account: what it answers `access_withdrawn` with, per account.
+    forced_cut: BTreeMap<String, Vec<SyncOperation>>,
+    /// A server whose proofs carry only the revocations, not the earlier operations of whoever signed them.
+    no_chain: bool,
     local: Option<String>,
     operations: BTreeMap<String, SyncOperation>,
     identity: Option<FakeIdentity>,
@@ -107,6 +111,29 @@ impl FakeCloud {
     fn lying(self) -> Self {
         self.0.lock().unwrap().lying = true;
         self
+    }
+
+    /// The server answers `access_withdrawn` to this account about this library with these proofs, true or not.
+    fn cut(&self, cloud: &str, account: &str, proofs: Vec<SyncOperation>) {
+        self.0
+            .lock()
+            .unwrap()
+            .libraries
+            .get_mut(cloud)
+            .unwrap()
+            .forced_cut
+            .insert(account.to_owned(), proofs);
+    }
+
+    /// The server's proofs carry only the revocations (what the first version of the cut sent).
+    fn without_chain(&self, cloud: &str) {
+        self.0
+            .lock()
+            .unwrap()
+            .libraries
+            .get_mut(cloud)
+            .unwrap()
+            .no_chain = true;
     }
 
     fn identity_of(&self, cloud: &str) -> Option<(String, String)> {
@@ -190,6 +217,73 @@ impl FakeApi {
 impl FakeLibrary {
     fn has_access(&self, account: &str) -> bool {
         self.owner == account || self.members.iter().any(|member| member == account)
+    }
+
+    /// The small version of the server's two cuts (D98, D71): a revocation in the log names the device, or the
+    /// account's person has the access withdrawn. The proofs are the revocations that name the device.
+    fn cut_for(
+        &self,
+        account: &str,
+        device: Option<&str>,
+        vector: Option<&VersionVector>,
+    ) -> Option<Vec<SyncOperation>> {
+        if let Some(forced) = self.forced_cut.get(account) {
+            return Some(forced.clone());
+        }
+        let revoking = |id: &str| -> Vec<SyncOperation> {
+            self.operations
+                .values()
+                .filter(|synced| {
+                    synced.operation.changes.iter().any(|change| {
+                        change.entity == Entity::Revocation
+                            && change.action == kosmotheka_domain::Action::Create
+                            && change.fields.get("device_id").and_then(Value::as_str) == Some(id)
+                    })
+                })
+                .cloned()
+                .collect()
+        };
+        let mut proofs = device.map(revoking).unwrap_or_default();
+        if let Some(vector) = vector.filter(|_| !self.no_chain) {
+            // With a vector (a pull): what the author of each revocation did before it and the client lacks.
+            let mut chain: Vec<SyncOperation> = Vec::new();
+            for proof in &proofs {
+                let author = &proof.operation.hlc.device;
+                chain.extend(
+                    self.operations
+                        .values()
+                        .filter(|synced| {
+                            let hlc = synced.operation.hlc.to_string();
+                            &synced.operation.hlc.device == author
+                                && synced.operation.hlc < proof.operation.hlc
+                                && vector.get(author).is_none_or(|seen| hlc > *seen)
+                        })
+                        .cloned(),
+                );
+            }
+            chain.extend(proofs);
+            chain.sort_by(|a, b| a.operation.hlc.cmp(&b.operation.hlc));
+            chain.dedup_by(|a, b| a.operation.id == b.operation.id);
+            proofs = chain;
+        }
+        let person_cut = self.persons.get(account).is_some_and(|person| {
+            self.operations
+                .values()
+                .flat_map(|synced| {
+                    synced
+                        .operation
+                        .changes
+                        .iter()
+                        .map(|c| (&synced.operation.hlc, c))
+                })
+                .filter(|(_, change)| change.entity == Entity::Member && &change.id == person)
+                .filter_map(|(hlc, change)| {
+                    Some((hlc, change.fields.get("access_withdrawn")?.as_bool()?))
+                })
+                .max_by(|a, b| a.0.cmp(b.0))
+                .is_some_and(|(_, withdrawn)| withdrawn)
+        });
+        (person_cut || !proofs.is_empty()).then_some(proofs)
     }
 
     /// The small version of the server's rule (D96): the person of the device in the log, if it is registered
@@ -374,6 +468,8 @@ impl CloudApi for FakeApi {
                 owner: self.account.clone(),
                 members: Vec::new(),
                 persons: BTreeMap::new(),
+                forced_cut: BTreeMap::new(),
+                no_chain: false,
                 local: None,
                 operations: BTreeMap::new(),
                 identity,
@@ -427,13 +523,20 @@ impl CloudApi for FakeApi {
         Ok(claimed)
     }
 
-    async fn list_libraries(&self) -> Result<Vec<CloudLibrary>> {
+    async fn list_libraries(&self) -> Result<Listing> {
         let state = self.cloud.0.lock().unwrap();
-        Ok(state
+        let device = self.device.as_ref().map(|(id, _)| id.as_str());
+        let mut listing = Listing::default();
+        for (id, library) in state
             .libraries
             .iter()
-            .filter(|(_, library)| library.has_access(&self.account))
-            .map(|(id, library)| CloudLibrary {
+            .filter(|(_, l)| l.has_access(&self.account))
+        {
+            if library.cut_for(&self.account, device, None).is_some() {
+                listing.withdrawn.push(id.clone());
+                continue;
+            }
+            listing.libraries.push(CloudLibrary {
                 id: id.clone(),
                 local_library_id: library.local.clone(),
                 cloud_device_id: library
@@ -444,8 +547,9 @@ impl CloudApi for FakeApi {
                     .identity
                     .as_ref()
                     .map(|identity| identity.public_key.clone()),
-            })
-            .collect())
+            });
+        }
+        Ok(listing)
     }
 
     async fn pull(
@@ -461,6 +565,13 @@ impl CloudApi for FakeApi {
             .get(cloud)
             .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
+        if let Some(proofs) = library.cut_for(
+            &self.account,
+            self.device.as_ref().map(|(id, _)| id.as_str()),
+            Some(vector),
+        ) {
+            return Err(Error::AccessWithdrawn(proofs));
+        }
         let mut operations: Vec<SyncOperation> = library
             .operations
             .values()
@@ -518,6 +629,13 @@ impl CloudApi for FakeApi {
             .get_mut(cloud)
             .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
+        if let Some(proofs) = library.cut_for(
+            &self.account,
+            self.device.as_ref().map(|(id, _)| id.as_str()),
+            None,
+        ) {
+            return Err(Error::AccessWithdrawn(proofs));
+        }
         let mut report = PushReport::default();
         let size = if batch == 0 { usize::MAX } else { batch };
         for request in operations.chunks(size) {
@@ -992,7 +1110,7 @@ async fn a_second_account_whose_device_is_assigned_and_vouched_syncs_the_library
     );
     let hugo = cloud.api("hugo").on(&phone);
     assert!(
-        hugo.list_libraries().await.unwrap().is_empty(),
+        hugo.list_libraries().await.unwrap().libraries.is_empty(),
         "no access before the claim"
     );
 
@@ -1164,6 +1282,297 @@ async fn a_new_phone_of_an_account_that_is_not_linked_gets_nothing() {
 
 fn library_exists_here(device: &Database, library: &str) -> bool {
     libraries::library_exists(&device.lock().unwrap(), library).unwrap()
+}
+
+// --- The cloud cuts the access (D98, D71) -----------------------------------------------------------
+
+/// The laptop (an administrator) uploaded; Hugo's phone has the library, is let in by its account, and the two
+/// have everything the other has. Returns the cloud library id and Hugo's member id.
+async fn laptop_and_hugos_phone_in_sync(
+    cloud: &FakeCloud,
+) -> (Database, Database, String, String, String) {
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let hugo: String = laptop
+        .lock()
+        .unwrap()
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&lib, &phone_id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+    sync_library(&laptop, &tersoal, &lib).await.unwrap();
+    sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+    (laptop, phone, lib, hugo, cloud.only_library())
+}
+
+fn titles(device: &Database, library: &str) -> Vec<String> {
+    let mut titles: Vec<String> = catalog::list_books(
+        &device.lock().unwrap(),
+        library,
+        &catalog::BookFilter::default(),
+    )
+    .unwrap()
+    .into_iter()
+    .map(|book| book.title)
+    .collect();
+    titles.sort();
+    titles
+}
+
+/// An operation signed by `device` itself, as a modified app would make it.
+fn signed_by(
+    device: &Database,
+    library: &str,
+    intent: &str,
+    changes: Vec<Change>,
+) -> SyncOperation {
+    let conn = device.lock().unwrap();
+    let id = ops::device_id(&conn).unwrap();
+    let mut operation = Operation {
+        id: ops::new_id(),
+        library: library.to_owned(),
+        hlc: Hlc {
+            millis: 9_000_000_000_000,
+            counter: 0,
+            device: id.clone(),
+        },
+        intent: intent.into(),
+        changes,
+        previous: ops::latest_of(&conn, library, &id).unwrap(),
+        signature: None,
+    };
+    operation.signature = Some(ops::signing_key(&conn).unwrap().sign(&operation));
+    SyncOperation {
+        schema_version: ops::schema_version(&conn).unwrap(),
+        operation,
+    }
+}
+
+/// D98: echar a una persona is proved to her phone by the signed operation, and the phone removes the library.
+#[tokio::test]
+async fn a_phone_of_a_person_who_was_withdrawn_removes_the_library_with_the_proof_and_it_does_not_come_back()
+ {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, hugo, c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let api = cloud.api("hugo").on(&phone);
+    people::withdraw_person(&mut laptop.lock().unwrap(), &lib, &hugo).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+
+    let reports = sync_all(&phone, &api).await.unwrap();
+
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.library == lib && r.outcome == Outcome::Removed),
+        "{reports:?}"
+    );
+    assert!(!library_exists_here(&phone, &lib));
+    // The next session does not bring it down again, and the laptop keeps it.
+    let again = sync_all(&phone, &api).await.unwrap();
+    assert!(again.iter().all(|r| r.outcome != Outcome::Downloaded));
+    assert!(!library_exists_here(&phone, &lib));
+    assert!(library_exists_here(&laptop, &lib));
+    let _ = c;
+}
+
+/// A device withdrawn alone (D71) gets the same answer from the cloud and removes the library the same way.
+#[tokio::test]
+async fn a_device_whose_access_was_withdrawn_removes_the_library_with_the_proof() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    libraries::revoke_access(&mut laptop.lock().unwrap(), &lib, &phone_id).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+
+    let reports = sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+
+    assert!(reports.iter().any(|r| r.outcome == Outcome::Removed));
+    assert!(!library_exists_here(&phone, &lib));
+}
+
+/// A server that lies cannot make anybody lose a library: four ways to say «access withdrawn» without a proof
+/// this device accepts, and the library stays whole.
+#[tokio::test]
+async fn a_server_that_lies_about_the_access_removes_nothing() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, _hugo, c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let before_titles = titles(&phone, &lib);
+    let before_log = log_ids(&phone, &lib);
+
+    // A revocation of this phone signed by an administrator, in another library.
+    let (stranger, other) = device_with_family();
+    libraries::revoke_access(&mut stranger.lock().unwrap(), &other, &phone_id).unwrap();
+    let elsewhere: Vec<SyncOperation> = sync::operations_since(
+        &stranger.lock().unwrap(),
+        &LibraryVectors::from([(other.clone(), VersionVector::new())]),
+    )
+    .unwrap()
+    .into_iter()
+    .filter(|synced| synced.operation.intent == "library.revoke")
+    .collect();
+    assert_eq!(elsewhere.len(), 1);
+    // A revocation of this phone signed by a reader (itself): not allowed, so it is only a request.
+    let by_a_reader = signed_by(
+        &phone,
+        &lib,
+        "library.revoke",
+        vec![Change::create(
+            Entity::Revocation,
+            ops::new_id(),
+            json!({ "device_id": phone_id, "device_name": "me" }),
+        )],
+    );
+    // A genuine revocation signed by the administrator, but of another device.
+    libraries::revoke_access(&mut laptop.lock().unwrap(), &lib, "some-other-device").unwrap();
+    let schema_version = ops::schema_version(&laptop.lock().unwrap()).unwrap();
+    let log = sync::library_log(&laptop.lock().unwrap(), &lib).unwrap();
+    let of_another: Vec<SyncOperation> = log
+        .into_iter()
+        .filter(|op| op.intent == "library.revoke")
+        .map(|operation| SyncOperation {
+            schema_version,
+            operation,
+        })
+        .collect();
+    assert_eq!(of_another.len(), 1);
+
+    for (name, proofs) in [
+        ("no proofs", Vec::new()),
+        ("proofs of another library", elsewhere),
+        ("a revocation signed by a reader", vec![by_a_reader]),
+        ("a revocation of another device", of_another),
+    ] {
+        cloud.cut(&c, "hugo", proofs);
+
+        let reports = sync_all(&phone, &cloud.api("hugo").on(&phone))
+            .await
+            .unwrap();
+
+        assert!(
+            reports
+                .iter()
+                .any(|r| r.library == lib && r.outcome == Outcome::AccessWithdrawn),
+            "{name}: {reports:?}"
+        );
+        assert!(
+            library_exists_here(&phone, &lib),
+            "{name}: the library stays"
+        );
+        assert_eq!(titles(&phone, &lib), before_titles, "{name}");
+        assert_eq!(log_ids(&phone, &lib), before_log, "{name}");
+    }
+}
+
+/// The administrator did things the phone never received, and the cut stops it from receiving them: the cloud
+/// sends, with the revocation, the earlier operations of whoever signed it that the phone lacks (D87), so the
+/// withdrawal chains and the library is removed.
+#[tokio::test]
+async fn a_proof_that_comes_with_the_earlier_operations_of_the_administrator_removes_the_library() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    add(&laptop, &lib, "Something the phone never received");
+    people::withdraw_person(&mut laptop.lock().unwrap(), &lib, &hugo).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+
+    let reports = sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+
+    assert!(
+        reports.iter().any(|r| r.outcome == Outcome::Removed),
+        "{reports:?}"
+    );
+    assert!(!library_exists_here(&phone, &lib));
+}
+
+/// The fail-safe: the server does not send the earlier operations, the revocation cannot chain, and nothing is
+/// removed. The library stays, reported as withdrawn.
+#[tokio::test]
+async fn a_proof_without_the_earlier_operations_it_depends_on_removes_nothing() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, hugo, c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    add(&laptop, &lib, "Something the phone never received");
+    people::withdraw_person(&mut laptop.lock().unwrap(), &lib, &hugo).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+    cloud.without_chain(&c);
+
+    let reports = sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.outcome == Outcome::AccessWithdrawn),
+        "{reports:?}"
+    );
+    assert!(library_exists_here(&phone, &lib));
+}
+
+/// A fifth way to lie: earlier operations that claim to be the administrator's but are signed by somebody else,
+/// next to the real revocation. They are refused, the revocation finds its `previous` missing, and nothing goes.
+#[tokio::test]
+async fn forged_earlier_operations_do_not_make_the_device_remove_anything() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, hugo, c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    add(&laptop, &lib, "Something the phone never received");
+    people::withdraw_person(&mut laptop.lock().unwrap(), &lib, &hugo).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+    let laptop_id = ops::device_id(&laptop.lock().unwrap()).unwrap();
+    let schema_version = ops::schema_version(&laptop.lock().unwrap()).unwrap();
+    let log = sync::library_log(&laptop.lock().unwrap(), &lib).unwrap();
+    // The real revocation, and, in place of the laptop's real earlier operation, a copy re-signed by the phone.
+    let key = ops::signing_key(&phone.lock().unwrap()).unwrap();
+    let mut proofs = Vec::new();
+    for mut operation in log.into_iter().filter(|op| op.hlc.device == laptop_id) {
+        if operation.intent == "book.add" {
+            operation.signature = Some(key.sign(&operation));
+        }
+        if operation.intent == "member.withdraw" || operation.intent == "book.add" {
+            proofs.push(SyncOperation {
+                schema_version,
+                operation,
+            });
+        }
+    }
+    assert!(proofs.len() >= 2, "{}", proofs.len());
+    let before_titles = titles(&phone, &lib);
+    cloud.cut(&c, "hugo", proofs);
+
+    let reports = sync_all(&phone, &cloud.api("hugo").on(&phone))
+        .await
+        .unwrap();
+
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.outcome == Outcome::AccessWithdrawn),
+        "{reports:?}"
+    );
+    assert!(library_exists_here(&phone, &lib));
+    assert_eq!(titles(&phone, &lib), before_titles);
 }
 
 /// A device that has the library over the LAN but belongs to nobody gets nothing from the cloud.

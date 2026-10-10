@@ -49,6 +49,9 @@ enum AccountErrorCode: string
     case LinkRejected = 'link_rejected';
     case LinkNotAllowed = 'link_not_allowed';
 
+    // Milestone 7.5.4b: the cloud cuts the access (D98, D71).
+    case AccessWithdrawn = 'access_withdrawn';
+
     // Milestone 7.3: live notices.
     case EventsUnavailable = 'events_unavailable';
 }

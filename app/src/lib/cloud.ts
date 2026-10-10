@@ -192,6 +192,8 @@ export function cloudNotices(
         library_conflict: () => t("cloud.notice.libraryConflict", { name }),
         missing_in_cloud: () => t("cloud.notice.missingInCloud", { name }),
         deleted_here: () => t("cloud.notice.deletedHere"),
+        removed: () => t("cloud.notice.removed"),
+        access_withdrawn: () => t("cloud.notice.accessWithdrawn", { name }),
         not_linked: () => t("cloud.notice.notLinked"),
       } as Partial<Record<CloudOutcome, () => string>>
     )[report.outcome];

@@ -434,6 +434,42 @@ pub fn notices_for(conn: &Connection, peer: &str) -> Result<SharingNotices> {
     })
 }
 
+/// Removes `library` from this device **only if** the proofs, merged and judged like any other operation,
+/// leave a revocation of this device applied in it (SEG-011, D71). Shared by the local network and the cloud
+/// (D98): a peer or a server that says so without a signed revocation of someone allowed to make it removes
+/// nothing. Only what concerns this library and this device is merged. `by` is told nothing more later.
+pub fn remove_if_proved(
+    conn: &mut Connection,
+    library: &str,
+    proofs: &[SyncOperation],
+    by: &str,
+) -> Result<bool> {
+    let me = ops::device_id(conn)?;
+    // The revocations of this device in this library, and the earlier operations of whoever signed them that
+    // the cloud sends with them so the revocation chains with what this device has (D87). Nothing of another
+    // library, and nothing of another author: those are judged like anything else, but never taken as proof.
+    let revokers: Vec<&str> = proofs
+        .iter()
+        .filter(|p| p.operation.library == library && revokes(&p.operation.changes, &me))
+        .map(|p| p.operation.hlc.device.as_str())
+        .collect();
+    let proofs: Vec<SyncOperation> = proofs
+        .iter()
+        .filter(|p| {
+            p.operation.library == library
+                && (revokes(&p.operation.changes, &me)
+                    || revokers.contains(&p.operation.hlc.device.as_str()))
+        })
+        .cloned()
+        .collect();
+    crate::sync::merge(conn, proofs)?;
+    if revocations_of(conn, library, &me)?.is_empty() {
+        return Ok(false);
+    }
+    libraries::remove_revoked(conn, library, by)?;
+    Ok(true)
+}
+
 /// Whether the changes create a revocation for `device`.
 fn revokes(changes: &[Change], device: &str) -> bool {
     changes.iter().any(|change| {
@@ -456,7 +492,6 @@ pub fn reconcile(
     notices: &SharingNotices,
 ) -> Result<Vec<String>> {
     let shared = shared_libraries(conn, peer)?;
-    let me = ops::device_id(conn)?;
     for library in &notices.revoked {
         // Only the peers it was shared with can take a library away, and only with
         // a revocation this device accepts once merged: signed by someone allowed
@@ -464,16 +499,7 @@ pub fn reconcile(
         if !shared.contains(library) {
             continue;
         }
-        let proofs: Vec<SyncOperation> = notices
-            .proofs
-            .iter()
-            .filter(|p| &p.operation.library == library && revokes(&p.operation.changes, &me))
-            .cloned()
-            .collect();
-        crate::sync::merge(conn, proofs)?;
-        if !revocations_of(conn, library, &me)?.is_empty() {
-            libraries::remove_revoked(conn, library, peer)?;
-        }
+        remove_if_proved(conn, library, &notices.proofs, peer)?;
     }
     for library in &notices.left {
         conn.execute(

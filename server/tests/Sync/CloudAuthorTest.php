@@ -288,7 +288,7 @@ final class CloudAuthorTest extends WebTestCase
     /** @return array{id: string, key: string} */
     private function identityOf(string $cloud): array
     {
-        foreach ($this->call('GET', '/v1/cloud/libraries') as $library) {
+        foreach ($this->libraryList($this->call('GET', '/v1/cloud/libraries')) as $library) {
             if (\is_array($library) && ($library['id'] ?? null) === $cloud) {
                 self::assertIsString($library['cloudDeviceId'] ?? null);
                 self::assertIsString($library['cloudPublicKey'] ?? null);
@@ -332,5 +332,20 @@ final class CloudAuthorTest extends WebTestCase
         \assert(\is_array($decoded));
 
         return $decoded;
+    }
+
+    /**
+     * The `libraries` of a listing answer.
+     *
+     * @param array<mixed> $body
+     *
+     * @return array<mixed>
+     */
+    private function libraryList(array $body): array
+    {
+        $libraries = $body['libraries'] ?? null;
+        \assert(\is_array($libraries));
+
+        return $libraries;
     }
 }

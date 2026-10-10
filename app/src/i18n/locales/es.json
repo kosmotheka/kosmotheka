@@ -1665,6 +1665,8 @@
       "libraryConflict": "«{{name}}» no se ha bajado de la nube: este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se ha mezclado nada.",
       "missingInCloud": "{{name}} ya no está en tu cuenta de la nube. Sigue en este dispositivo.",
       "deletedHere": "Borraste en este dispositivo una biblioteca que sigue en tu nube. No se descargó otra vez.",
+      "removed": "Te retiraron el acceso a una biblioteca y se ha quitado de este dispositivo.",
+      "accessWithdrawn": "La nube dice que te retiraron el acceso a «{{name}}», pero no ha mostrado una prueba que este dispositivo acepte. No se ha quitado nada, y ya no se sincroniza con la nube.",
       "notLinked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró."
     },
     "pick": {

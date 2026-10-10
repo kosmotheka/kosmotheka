@@ -49,6 +49,8 @@ final readonly class CloudPush
         private CatalogJudge $judge,
         #[Autowire(lazy: true)]
         private CloudAuthor $author,
+        #[Autowire(lazy: true)]
+        private AccessCutter $cutter,
     ) {
     }
 
@@ -63,11 +65,16 @@ final readonly class CloudPush
         // one by one in apply(): history from before an update is still good.
         $this->schemaVersion->require($request->schemaVersion);
 
-        $result = $this->entityManager->wrapInTransaction(function () use ($library, $request, $pushedBy): PushResult {
+        $cut = [];
+        $result = $this->entityManager->wrapInTransaction(function () use ($library, $request, $pushedBy, &$cut): PushResult {
             $result = $this->applyLocked($library, $request->operations, $pushedBy);
             // The library has just been linked and names its cloud device: the device registers itself, last (D95).
             // Not counted in the answer: the counts are the client's operations.
             $this->author->registerIfNamed($library);
+            // A withdrawal that has just been judged cuts the account of that person, now (D98), after `settle`.
+            if ($result->received > 0) {
+                $cut = $this->cutter->cut($library);
+            }
 
             return $result;
         });
@@ -75,6 +82,10 @@ final readonly class CloudPush
         // After the commit, and only when something new was stored (D75).
         if ($result->received > 0) {
             $this->notifier->libraryChanged($library);
+        }
+        // The accounts that have just lost the library hear it on their own topic, to sync and be told.
+        foreach ($cut as $user) {
+            $this->notifier->librariesOfAccountChanged($user);
         }
 
         return $result;

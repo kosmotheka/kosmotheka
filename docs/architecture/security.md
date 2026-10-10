@@ -62,7 +62,7 @@ Lo mismo se hace una vez para todos al activar los roles en una biblioteca: desd
 - **Retirar el acceso:** quien administra puede decir que un dispositivo ya no recibe una biblioteca; los demás dejan de entregársela. Lo que ese dispositivo ya tenía copiado no se le puede quitar.
 - **Echar a una persona:** quien administra puede decir que una persona ya no entra en la biblioteca. Sus dispositivos dejan de contar como suyos y se les retira el acceso, de modo que borran la biblioteca al conectar; su nombre y lo suyo (sus libros, sus préstamos) se quedan. Si vuelve, quien administra le devuelve el acceso y le vuelve a vincular un dispositivo. No se puede echar al último administrador.
 
-*Construida. Nombres: emparejamiento, `can_share`, retirada (`revocation`).*
+*Construida. Nombres: emparejamiento, `can_share`, retirada (`revocation`), acceso retirado (`access_withdrawn`).*
 
 ### 5. La nube: la cuenta y la lista de acceso
 
@@ -72,6 +72,7 @@ Lo mismo se hace una vez para todos al activar los roles en una biblioteca: desd
 - El servidor guarda una lista: qué cuentas pueden entrar en qué biblioteca. Es lo único que decide el acceso. El servidor nunca se fía de un identificador que le mande la app: lo compara con lo que él tiene, no lo usa para buscar.
 - A una biblioteca ajena, o que no existe, el servidor responde lo mismo, para que nadie averigüe cuáles existen.
 - El servidor aplica las mismas reglas de roles que los dispositivos (pieza 2) a todo lo que guarda.
+- **Si echan a una persona o retiran un dispositivo, la nube deja de entregarles la biblioteca al momento**, aunque entren desde un móvil nuevo; a la cuenta echada se le olvida también el vínculo con su persona. Al dispositivo cortado le enseña la prueba firmada de quien administra, y el dispositivo solo borra la biblioteca si esa prueba es buena: un servidor que mintiera no podría hacer perder una biblioteca. Quien nunca tuvo la biblioteca sigue recibiendo «no existe», no «te la quitaron».
 
 *Construida para una cuenta por biblioteca. Varias cuentas en la misma biblioteca: en construcción (hito 7.5).*
 
@@ -99,7 +100,7 @@ Dicho claro, para que nadie lo dé por supuesto:
 
 - **Quien administra el servidor puede leer las bibliotecas subidas a él.** No hay cifrado de extremo a extremo. Por eso la nube es opcional, se puede instalar un servidor propio, y subir es una decisión de quien administra la biblioteca.
 - **Quien puede leer una biblioteca puede copiarla.** Ningún rol lo impide.
-- **Un dispositivo retirado conserva lo que ya tenía.**
+- **Un dispositivo retirado conserva lo que ya tenía**, aunque la nube ya no le entregue nada más y su app borre la biblioteca al ver la prueba. Una app modificada puede negarse a borrarla.
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.
 - **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. Pendiente de mejorar.

@@ -62,6 +62,10 @@ pub enum Error {
     /// not_signed_in, unsigned_history, already_linked.
     #[error("cloud sync failed: {0}")]
     Cloud(&'static str),
+    /// The cloud cut this device or its account from a library (D98, D71), and sent the signed operations that
+    /// withdrew the device. It proves nothing by itself: the device checks the proofs before it removes anything.
+    #[error("the cloud withdrew the access to this library")]
+    AccessWithdrawn(Vec<crate::sync::SyncOperation>),
     /// The sync server rejected an account call: the code is whatever it sent (an
     /// unknown service, so it stays a string), `retry_after` only set for 429s.
     #[error("account error: {code}")]
@@ -130,6 +134,9 @@ impl Serialize for Error {
                 reason: "cannot_share",
             },
             Error::Cloud(reason) => ErrorPayload::Cloud { reason },
+            Error::AccessWithdrawn(_) => ErrorPayload::Cloud {
+                reason: "access_withdrawn",
+            },
             Error::Account { code, retry_after } => ErrorPayload::Account {
                 reason: code,
                 retry_after: *retry_after,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Security\CurrentDevice;
 use App\Sync\EventsToken;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,7 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class CloudEventsController extends AbstractController
 {
-    public function __construct(private readonly EventsToken $eventsToken)
+    public function __construct(private readonly EventsToken $eventsToken, private readonly CurrentDevice $currentDevice)
     {
     }
 
@@ -28,6 +29,6 @@ final class CloudEventsController extends AbstractController
         $user = $this->getUser();
         \assert($user instanceof User);
 
-        return new JsonResponse($this->eventsToken->issue($user));
+        return new JsonResponse($this->eventsToken->issue($user, $this->currentDevice->get()));
     }
 }

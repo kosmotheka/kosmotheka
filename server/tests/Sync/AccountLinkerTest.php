@@ -86,7 +86,7 @@ final class AccountLinkerTest extends WebTestCase
 
         self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $answer);
         self::assertSame(404, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $mine, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
-        self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $mine)['body']);
+        self::assertSame([], $this->libraryList($this->call('GET', '/v1/cloud/libraries', $mine)['body']));
     }
 
     public function testAnAssignmentWithoutAVouchedKeyLinksNobody(): void
@@ -147,7 +147,7 @@ final class AccountLinkerTest extends WebTestCase
         self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->jhonny));
         self::assertNull($this->memberOf($cloud, 'jhonny@example.com'));
         self::assertSame(self::HUGO, $this->memberOf($cloud, 'hugo@example.com'));
-        self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $this->jhonny)['body']);
+        self::assertSame([], $this->libraryList($this->call('GET', '/v1/cloud/libraries', $this->jhonny)['body']));
     }
 
     public function testABodyWithIdsIsIgnored(): void
@@ -206,7 +206,7 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->world();
         [$hugo, $session] = $this->hugo($cloud);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO, $hugo->publicKey)]);
-        self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $session)['body'], 'nothing before the claim');
+        self::assertSame([], $this->libraryList($this->call('GET', '/v1/cloud/libraries', $session)['body']), 'nothing before the claim');
 
         $answer = $this->claim($session);
 
@@ -512,6 +512,310 @@ final class AccountLinkerTest extends WebTestCase
         return $this->scalar('SELECT COUNT(*) FROM catalog_publishers WHERE cloud_library_id = ?', [$cloud]);
     }
 
+    // ------------------------------------------------------ the cloud cuts the access (7.5.4b) ---
+
+    /** A withdrawn device: the cloud stops giving it the library, with the proofs, and the account keeps its other devices. */
+    public function testAWithdrawnDeviceGetsA403WithTheProofAndNothingElseWhileTheOtherDeviceOfTheAccountKeepsGoingIn(): void
+    {
+        [$cloud, $one, $oneSession, $two, $twoSession] = $this->jhonnyWithTwoDevices();
+        $revocation = Uuid::v7()->toRfc4122();
+        $this->laptopSigns($cloud, 'library.revoke', [['entity' => 'revocation', 'id' => $revocation, 'action' => 'create', 'fields' => ['device_id' => $one->id, 'device_name' => 'Jhonny']]]);
+
+        $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+        $push = $this->push($oneSession, $cloud, [$one->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000)]);
+
+        self::assertSame(403, $pull['status']);
+        self::assertSame(['error', 'proofs'], array_keys($pull['body']), 'no operation of the library goes with it');
+        $proofs = $pull['body']['proofs'] ?? null;
+        \assert(\is_array($proofs) && \is_array($proofs[0] ?? null) && \is_array($proofs[0]['operation'] ?? null));
+        // On a pull, with the vector of a device that has nothing: her earlier operations, up to the revocation (last).
+        self::assertGreaterThan(1, \count($proofs));
+        \assert(\is_array($proofs[\count($proofs) - 1]) && \is_array($proofs[\count($proofs) - 1]['operation'] ?? null));
+        self::assertSame('library.revoke', $proofs[\count($proofs) - 1]['operation']['intent']);
+        self::assertSame('access_withdrawn', $push['error'], 'the same for a push');
+        self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $twoSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status'], 'the other device of the account');
+        self::assertSame(0, $this->publishers($cloud), 'nothing the withdrawn device sent was stored');
+    }
+
+    /** The person is withdrawn: every device of the account, and a new one, is cut. */
+    public function testAWithdrawnPersonLosesEveryDeviceOfTheAccountAndANewOneAndIsNotListedNorLinkedNorSubscribed(): void
+    {
+        [$cloud, $one, $oneSession, $two, $twoSession] = $this->jhonnyWithTwoDevices();
+        $this->withdrawJhonny($cloud, $one, $two);
+        $three = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, Uuid::v4()->toRfc4122(), 'Third');
+
+        foreach ([$oneSession, $twoSession, $three] as $session) {
+            $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $session, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+            self::assertSame(403, $pull['status']);
+            self::assertSame('access_withdrawn', $pull['body']['error']);
+        }
+        $list = $this->call('GET', '/v1/cloud/libraries', $three)['body'];
+        self::assertSame(['libraries' => [], 'withdrawn' => [$cloud]], $list);
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($three));
+        self::assertNull($this->memberOf($cloud, 'jhonny@example.com'), 'the row names nobody');
+        $topics = $this->call('GET', '/v1/cloud/events', $three)['body']['topics'] ?? [];
+        \assert(\is_array($topics));
+        self::assertNotContains('urn:kosmotheka:cloud-library:'.$cloud, $topics);
+        self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND withdrawn_at IS NOT NULL', [$cloud]));
+    }
+
+    public function testTheCloudEmptiesTheAccountOfAWithdrawnPersonSignedAndAppliedAndOnlyOnce(): void
+    {
+        [$cloud, $one, , $two] = $this->jhonnyWithTwoDevices();
+        self::assertNotNull($this->accountIdOf(self::READER), 'it was noted when he was linked');
+
+        $this->withdrawJhonny($cloud, $one, $two);
+
+        self::assertNull($this->accountIdOf(self::READER));
+        $rows = $this->cloudOperations($cloud, 'member.unlink_account');
+        self::assertCount(1, $rows);
+        self::assertSame('applied', $rows[0]['status']);
+        $body = json_decode($rows[0]['body'], false, flags: \JSON_THROW_ON_ERROR);
+        \assert($body instanceof \stdClass);
+        new OperationSignature()->verify($body, $this->cloudKey($cloud));
+        $this->call('GET', '/v1/cloud/libraries', $this->jhonny);
+        $this->call('GET', '/v1/cloud/libraries', $this->jhonny);
+        self::assertCount(1, $this->cloudOperations($cloud, 'member.unlink_account'), 'the later requests write nothing');
+    }
+
+    /**
+     * A cut device whose vector is behind: it gets the withdrawing author's earlier operations, up to the withdrawal,
+     * so it can chain it; never what is dated after, never another author's. The vector decides how many, not what.
+     */
+    public function testACutDeviceBehindTheAdministratorGetsHerEarlierOperationsUpToTheWithdrawalAndNothingElse(): void
+    {
+        [$cloud, $one, $oneSession, $two] = $this->jhonnyWithTwoDevices();
+        $earlier = $this->laptop->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 10_000, 'Before');
+        $this->push($this->family, $cloud, [$earlier]);
+        $this->withdrawJhonny($cloud, $one, $two);
+        $this->push($this->family, $cloud, [$this->laptop->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 90_000, 'After')]);
+        $connection = self::getContainer()->get(Connection::class);
+        $withdrawal = $connection->fetchAssociative("SELECT operation_id, hlc FROM cloud_operation WHERE cloud_library_id = ? AND body::text LIKE '%member.withdraw%'", [$cloud]);
+        \assert(\is_array($withdrawal) && \is_string($withdrawal['operation_id']) && \is_string($withdrawal['hlc']));
+        $withdrawalId = $withdrawal['operation_id'];
+        $withdrawalHlc = $withdrawal['hlc'];
+        /** @var array<string, string> $authored */
+        $authored = [];
+        foreach ($connection->fetchAllAssociative('SELECT operation_id, hlc FROM cloud_operation WHERE cloud_library_id = ? AND author_device_id = ?', [$cloud, $this->laptop->id]) as $row) {
+            \assert(\is_string($row['operation_id']) && \is_string($row['hlc']));
+            $authored[$row['operation_id']] = $row['hlc'];
+        }
+        $earlierHlc = $earlier['hlc'];
+        \assert(\is_string($earlierHlc));
+
+        $vectors = [
+            'empty' => [],
+            'up to the earlier one' => [$this->laptop->id => $earlierHlc],
+            'made up, of another author' => [$one->id => '0001727222222222-00000000-'.$one->id],
+        ];
+        foreach ($vectors as $name => $vector) {
+            $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => $vector ?: new \stdClass()]);
+            self::assertSame(403, $pull['status'], $name);
+            $proofs = $pull['body']['proofs'] ?? null;
+            \assert(\is_array($proofs));
+            $ids = array_map(static fn (mixed $proof): string => \is_array($proof) && \is_array($proof['operation'] ?? null) && \is_string($proof['operation']['id'] ?? null) ? $proof['operation']['id'] : '', $proofs);
+            $since = $vector[$this->laptop->id] ?? '';
+            $expected = array_keys(array_filter($authored, static fn (string $hlc): bool => $hlc > $since && $hlc <= $withdrawalHlc));
+            sort($expected);
+            $got = $ids;
+            sort($got);
+            self::assertSame($expected, $got, "$name: her operations after the vector and up to the withdrawal, nothing else");
+            self::assertContains($withdrawalId, $ids, $name);
+            $hlcs = array_map(static fn (string $id): string => $authored[$id] ?? '', $ids);
+            $sorted = $hlcs;
+            sort($sorted);
+            self::assertSame($sorted, $hlcs, "$name: in HLC order");
+        }
+    }
+
+    public function testWithoutThePowerTheCloudWritesNothingAndTheCutHoldsAll(): void
+    {
+        $cloud = $this->world(namesTheCloud: false);
+        [$one, $oneSession] = $this->jhonnyDevice($cloud, $this->jhonny);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($one->id, self::READER, $one->publicKey)]);
+        self::assertSame([$cloud], $this->claim($oneSession)['linked']);
+
+        $this->withdrawJhonny($cloud, $one);
+
+        self::assertSame(403, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+        self::assertSame([], $this->cloudOperations($cloud, null));
+    }
+
+    /** Taking the mark off is not coming back: the account is linked again the usual way, or not at all. */
+    public function testTakingTheMarkOffGivesNothingBackAndLinkingAgainDoes(): void
+    {
+        [$cloud, $one, $oneSession, $two, $twoSession] = $this->jhonnyWithTwoDevices();
+        $this->withdrawJhonny($cloud, $one, $two);
+        $back = (int) (microtime(true) * 1000) + 200_000;
+        $this->laptopSigns($cloud, 'member.restore', [['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => false]]], $back);
+
+        self::assertSame(403, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status'], 'the mark alone');
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($oneSession));
+
+        // The administrator links a device again, vouching for its key; the account is linked the usual way.
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($two->id, self::READER, $two->publicKey)], $back + 1);
+        $this->laptopSigns($cloud, 'library.grant', [['entity' => 'revocation', 'id' => $this->revocationOf($two->id), 'action' => 'delete', 'fields' => new \stdClass()]], $back + 2);
+        $answer = $this->claim($twoSession);
+
+        self::assertSame([$cloud], $answer['linked']);
+        self::assertSame(self::READER, $this->memberOf($cloud, 'jhonny@example.com'));
+        self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $twoSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+    }
+
+    public function testAWithdrawnPersonWhoTriesToTakeTheMarkOffOrDeleteHisRevocationIsTurnedDownAtTheDoorAndNothingChanges(): void
+    {
+        [$cloud, $one, $oneSession, $two] = $this->jhonnyWithTwoDevices();
+        $this->withdrawJhonny($cloud, $one, $two);
+        $before = [$this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), $this->accessWithdrawnOf(self::READER), $this->scalar('SELECT COUNT(*) FROM catalog_revocations WHERE cloud_library_id = ?', [$cloud])];
+        $at = (int) (microtime(true) * 1000) + 120_000;
+
+        $mark = $this->push($oneSession, $cloud, [$one->sign(self::LOCAL, $at, 'member.restore', [['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => false]]])]);
+        $revocation = $this->push($oneSession, $cloud, [$one->sign(self::LOCAL, $at + 1, 'library.grant', [['entity' => 'revocation', 'id' => $this->revocationOf($one->id), 'action' => 'delete', 'fields' => new \stdClass()]])]);
+
+        self::assertSame('access_withdrawn', $mark['error']);
+        self::assertSame('access_withdrawn', $revocation['error']);
+        self::assertSame($before, [$this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), $this->accessWithdrawnOf(self::READER), $this->scalar('SELECT COUNT(*) FROM catalog_revocations WHERE cloud_library_id = ?', [$cloud])]);
+    }
+
+    /** The id of a withdrawn device with another key is another device (of another account, with access): it is not cut for that. */
+    public function testADeviceWithTheIdOfAWithdrawnDeviceAndAnotherKeyIsNotCut(): void
+    {
+        [$cloud, $one, $oneSession] = $this->jhonnyWithTwoDevices();
+        [, , $hugoSession] = [null, null, $this->hugoJoins($cloud)];
+        $this->laptopSigns($cloud, 'library.revoke', [['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $one->id, 'device_name' => 'Jhonny']]]);
+        $sameId = $this->loginDevice($this->client, 'hugo@example.com', self::PASSWORD, $one->id, 'Same id, another key');
+
+        self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $sameId, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+        self::assertSame(403, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+        self::assertNotSame($hugoSession['token'], $sameId['token']);
+    }
+
+    /**
+     * Hugo, an editor with his account linked, in a library that already has Jhonny.
+     *
+     * @return array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string}
+     */
+    private function hugoJoins(string $cloud): array
+    {
+        [$hugo, $session] = $this->hugo($cloud);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO, $hugo->publicKey)]);
+        self::assertSame([$cloud], $this->claim($session)['linked']);
+
+        return $session;
+    }
+
+    public function testAnAccountThatNeverHadTheLibraryGetsA404NotA403(): void
+    {
+        [$cloud, $one, , $two] = $this->jhonnyWithTwoDevices();
+        $this->withdrawJhonny($cloud, $one, $two);
+        $stranger = $this->signInNewDevice($this->client, 'mallory@example.com');
+
+        $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $stranger, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+
+        self::assertSame(404, $pull['status']);
+        self::assertSame(['error' => 'not_found'], $pull['body']);
+        self::assertSame(['libraries' => [], 'withdrawn' => []], $this->call('GET', '/v1/cloud/libraries', $stranger)['body']);
+    }
+
+    public function testWhatTheClientSendsDoesNotChangeTheCut(): void
+    {
+        [$cloud, $one, $oneSession, $two] = $this->jhonnyWithTwoDevices();
+        $this->withdrawJhonny($cloud, $one, $two);
+
+        $plain = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+        $other = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => [$one->id => '0001727222222222-00000000-'.$one->id]]);
+        $link = $this->call('POST', "/v1/cloud/libraries/$cloud/link", $oneSession, ['proofs' => [], 'library' => Uuid::v4()->toRfc4122(), 'member' => self::LAURA]);
+
+        self::assertSame([403, 403, 403], [$plain['status'], $other['status'], $link['status']]);
+        self::assertSame($plain['body']['error'], $other['body']['error']);
+        self::assertSame($plain['body']['error'], $link['body']['error']);
+        // Without a vector (the link route) only the revocation goes; the vector decides how many earlier ones go with it, no more.
+        self::assertIsArray($link['body']['proofs']);
+        self::assertCount(1, $link['body']['proofs']);
+        self::assertSame($plain['body']['proofs'], $other['body']['proofs'], 'a vector of another author changes nothing for hers');
+    }
+
+    /** The withdrawal reaches the cloud late, dated before something else already stored: the cut holds all the same. */
+    public function testAWithdrawalThatArrivesLateStillCutsTheAccount(): void
+    {
+        [$cloud, $one, $oneSession, $two] = $this->jhonnyWithTwoDevices();
+        [$hugo] = $this->hugo($cloud);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO, $hugo->publicKey)], (int) (microtime(true) * 1000) + 10_000);
+        // Another author's later operation is stored first; the withdrawal, dated before it, arrives after.
+        $late = (int) (microtime(true) * 1000) + 90_000;
+        $withdrawal = $this->laptop->sign(self::LOCAL, $late - 10_000, 'member.withdraw', [
+            ['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => true]],
+            ['entity' => 'device', 'id' => $one->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']],
+            ['entity' => 'device', 'id' => $two->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']],
+        ]);
+        self::assertSame(1, $this->push($this->family, $cloud, [$hugo->publisher(self::LOCAL, $late, 'Stored first')])['received']);
+        self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+
+        self::assertSame(1, $this->push($this->family, $cloud, [$withdrawal])['received']);
+
+        self::assertSame(403, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+        self::assertNull($this->accountIdOf(self::READER));
+    }
+
+    /**
+     * Jhonny, a reader, with two devices of one account, both assigned and vouched, and the account linked.
+     *
+     * @return array{string, SigningDevice, array{headers: array<string, string>}, SigningDevice, array{headers: array<string, string>}}
+     */
+    private function jhonnyWithTwoDevices(): array
+    {
+        $cloud = $this->world();
+        [$one, $oneSession] = $this->jhonnyDevice($cloud, $this->jhonny);
+        $twoSession = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, Uuid::v4()->toRfc4122(), 'Second');
+        [$two] = $this->jhonnyDevice($cloud, $twoSession);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($one->id, self::READER, $one->publicKey), $this->assign($two->id, self::READER, $two->publicKey)]);
+        self::assertSame([$cloud], $this->claim($oneSession)['linked']);
+
+        return [$cloud, $one, $oneSession, $two, $twoSession];
+    }
+
+    /**
+     * A device of Jhonny's account, registered in the library (pushed by the family: whoever pushes, the signature is its own).
+     *
+     * @param array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string} $session
+     *
+     * @return array{SigningDevice, array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string}}
+     */
+    private function jhonnyDevice(string $cloud, array $session): array
+    {
+        $device = SigningDevice::fromSession($session);
+        $this->push($this->family, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())]);
+
+        return [$device, $session];
+    }
+
+    /** What the app writes in one operation (D98): the mark, and for each device no person, a fence and a revocation. */
+    private function withdrawJhonny(string $cloud, SigningDevice ...$devices): void
+    {
+        $changes = [['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => true]]];
+        foreach ($devices as $device) {
+            $changes[] = ['entity' => 'device', 'id' => $device->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']];
+            $changes[] = ['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $device->id, 'device_name' => 'Jhonny']];
+        }
+        // Dated after what the cloud wrote when it linked him (the server writes with its own clock).
+        $this->laptopSigns($cloud, 'member.withdraw', $changes, (int) (microtime(true) * 1000) + 30_000);
+    }
+
+    private function revocationOf(string $device): string
+    {
+        $id = self::getContainer()->get(Connection::class)->fetchOne('SELECT id FROM catalog_revocations WHERE device_id = ?', [$device]);
+        \assert(\is_string($id));
+
+        return $id;
+    }
+
+    private function accessWithdrawnOf(string $member): ?bool
+    {
+        $value = self::getContainer()->get(Connection::class)->fetchOne('SELECT access_withdrawn FROM catalog_members WHERE id = ?', [$member]);
+
+        return \is_bool($value) ? $value : null;
+    }
+
     // ------------------------------------------------------ the world ---
 
     /**
@@ -689,7 +993,7 @@ final class AccountLinkerTest extends WebTestCase
     /** The cloud device's id in the library, from its owner's listing. */
     private function identityOf(string $cloud): string
     {
-        foreach ($this->call('GET', '/v1/cloud/libraries', $this->family)['body'] as $library) {
+        foreach ($this->libraryList($this->call('GET', '/v1/cloud/libraries', $this->family)['body']) as $library) {
             if (\is_array($library) && ($library['id'] ?? null) === $cloud && \is_string($library['cloudDeviceId'] ?? null)) {
                 return $library['cloudDeviceId'];
             }
@@ -700,7 +1004,7 @@ final class AccountLinkerTest extends WebTestCase
 
     private function cloudKey(string $cloud): string
     {
-        foreach ($this->call('GET', '/v1/cloud/libraries', $this->family)['body'] as $library) {
+        foreach ($this->libraryList($this->call('GET', '/v1/cloud/libraries', $this->family)['body']) as $library) {
             if (\is_array($library) && ($library['id'] ?? null) === $cloud && \is_string($library['cloudPublicKey'] ?? null)) {
                 return $library['cloudPublicKey'];
             }
@@ -758,5 +1062,20 @@ final class AccountLinkerTest extends WebTestCase
             "UPDATE cloud_operation SET status = 'request' WHERE cloud_library_id = ? AND body::text LIKE '%member.link_account%'",
             [$cloud],
         );
+    }
+
+    /**
+     * The `libraries` of a listing answer.
+     *
+     * @param array<mixed> $body
+     *
+     * @return array<mixed>
+     */
+    private function libraryList(array $body): array
+    {
+        $libraries = $body['libraries'] ?? null;
+        \assert(\is_array($libraries));
+
+        return $libraries;
     }
 }

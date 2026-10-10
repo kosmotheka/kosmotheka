@@ -1356,7 +1356,7 @@ final class CloudSyncControllerTest extends WebTestCase
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $byRoute);
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $byPush['body']);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => null, 'cloudDeviceId' => $identity['id'], 'cloudPublicKey' => $identity['key']]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => null, 'cloudDeviceId' => $identity['id'], 'cloudPublicKey' => $identity['key']]], $this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']['libraries']);
         self::assertSame(0, $this->rows('cloud_operation'));
         self::assertSame([$identity['key']], $this->storedKeys($identity['id']));
     }
@@ -1367,7 +1367,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $listed = $this->call('GET', '/v1/cloud/libraries', $this->familySession);
 
         self::assertSame(['id', 'cloudDeviceId', 'cloudPublicKey'], array_keys($created['body']));
-        $first = $listed['body'][0] ?? null;
+        $first = $this->libraryList($listed['body'])[0] ?? null;
         self::assertIsArray($first);
         self::assertSame(['id', 'localLibraryId', 'cloudDeviceId', 'cloudPublicKey'], array_keys($first));
         $row = self::getContainer()->get(Connection::class)->fetchAssociative('SELECT cloud_public_key, cloud_secret_key FROM cloud_library');
@@ -1395,7 +1395,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $listed = $this->call('GET', '/v1/cloud/libraries', $this->jhonnySession);
         $pull = $this->pull($this->jhonnySession, $cloud, []);
 
-        self::assertSame([], $listed['body']);
+        self::assertSame(['libraries' => [], 'withdrawn' => []], $listed['body']);
         self::assertSame(['status' => Response::HTTP_NOT_FOUND, 'body' => ['error' => 'not_found']], $pull);
         self::assertStringNotContainsString($identity['id'], json_encode([$listed, $pull], \JSON_THROW_ON_ERROR));
     }
@@ -1552,7 +1552,7 @@ final class CloudSyncControllerTest extends WebTestCase
     private function listing(array $session): array
     {
         $listed = [];
-        foreach ($this->call('GET', '/v1/cloud/libraries', $session)['body'] as $library) {
+        foreach ($this->libraryList($this->call('GET', '/v1/cloud/libraries', $session)['body']) as $library) {
             \assert(\is_array($library));
             $listed[] = ['id' => $library['id'] ?? null, 'localLibraryId' => $library['localLibraryId'] ?? null];
         }
@@ -1567,7 +1567,7 @@ final class CloudSyncControllerTest extends WebTestCase
      */
     private function identityOf(string $cloud): array
     {
-        foreach ($this->call('GET', '/v1/cloud/libraries', $this->familySession)['body'] as $library) {
+        foreach ($this->libraryList($this->call('GET', '/v1/cloud/libraries', $this->familySession)['body']) as $library) {
             if (\is_array($library) && ($library['id'] ?? null) === $cloud) {
                 $id = $library['cloudDeviceId'] ?? null;
                 $key = $library['cloudPublicKey'] ?? null;
@@ -1710,5 +1710,20 @@ final class CloudSyncControllerTest extends WebTestCase
         \assert(\is_int($count));
 
         return $count;
+    }
+
+    /**
+     * The `libraries` of a listing answer.
+     *
+     * @param array<mixed> $body
+     *
+     * @return array<mixed>
+     */
+    private function libraryList(array $body): array
+    {
+        $libraries = $body['libraries'] ?? null;
+        \assert(\is_array($libraries));
+
+        return $libraries;
     }
 }

@@ -21,7 +21,7 @@ final class AccountExceptionListener
             return;
         }
 
-        $response = new JsonResponse(['error' => $exception->errorCode->value], $exception->statusCode);
+        $response = new JsonResponse(['error' => $exception->errorCode->value] + $exception->extra, $exception->statusCode);
         if (null !== $exception->retryAfterSeconds) {
             $response->headers->set('Retry-After', (string) $exception->retryAfterSeconds);
         }

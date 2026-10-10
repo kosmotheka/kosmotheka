@@ -74,7 +74,7 @@ final class CloudWithoutSecretTest extends WebTestCase
 
         self::assertSame(['localLibraryId' => self::LOCAL], $linked);
         self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $pushed);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL, 'cloudDeviceId' => null, 'cloudPublicKey' => null]], $listed);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL, 'cloudDeviceId' => null, 'cloudPublicKey' => null]], $listed['libraries']);
         $connection = self::getContainer()->get(Connection::class);
         self::assertSame(1, $connection->fetchOne('SELECT COUNT(*) FROM cloud_device_key'), 'only the laptop');
         self::assertSame(3, $connection->fetchOne('SELECT COUNT(*) FROM cloud_operation'), 'the cloud wrote nothing');

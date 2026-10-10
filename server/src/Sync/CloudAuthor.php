@@ -92,6 +92,18 @@ final readonly class CloudAuthor
     }
 
     /**
+     * The cloud's device id if it has the power in this library now (D76, D95): the device the catalog names, registered
+     * with the key its id derives from. Without it what the cloud signs would only be a request.
+     */
+    public function power(CloudLibrary $library): ?Uuid
+    {
+        $cloud = $library->getCloudDeviceId();
+        $named = new CatalogLibraryView($this->entityManager, $library)->cloudDevice();
+
+        return $cloud instanceof Uuid && null !== $named && strtolower($named) === $cloud->toRfc4122() ? $cloud : null;
+    }
+
+    /**
      * Registers the cloud device in the library's log (D95): a `device.register` signed with its own key, with its
      * own id in the HLC, as any device registers (spec/README.md allows no other way to create a `device` row). It
      * is written once, when the library's catalog names this device in `cloud_device_id` and the device has no

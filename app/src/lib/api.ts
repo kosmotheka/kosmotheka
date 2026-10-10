@@ -1240,7 +1240,9 @@ export type CloudOutcome =
   | "not_linked"
   | "missing_in_cloud"
   | "other_server"
-  | "deleted_here";
+  | "deleted_here"
+  | "removed"
+  | "access_withdrawn";
 
 /** What a cloud sync did to one library. */
 export interface CloudLibraryReport {

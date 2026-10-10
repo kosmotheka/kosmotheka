@@ -48,6 +48,9 @@ pub fn build_streaming_client() -> Result<reqwest::Client> {
 #[derive(Deserialize)]
 struct ErrorBody {
     error: String,
+    /// Only `access_withdrawn` carries them: the signed operations that withdrew this device (D98).
+    #[serde(default)]
+    proofs: Vec<Value>,
 }
 
 /// Maps a failed response to the error the UI sees. Pure and unit-tested without
@@ -56,6 +59,15 @@ struct ErrorBody {
 pub fn map_response_error(status: StatusCode, retry_after: Option<&str>, body: &str) -> Error {
     let retry_after = || retry_after.and_then(|value| value.trim().parse::<u64>().ok());
     if let Ok(parsed) = serde_json::from_str::<ErrorBody>(body) {
+        if status == StatusCode::FORBIDDEN && parsed.error == "access_withdrawn" {
+            // What does not parse as an operation is dropped: it could prove nothing anyway.
+            let proofs = parsed
+                .proofs
+                .into_iter()
+                .filter_map(|proof| serde_json::from_value(proof).ok())
+                .collect();
+            return Error::AccessWithdrawn(proofs);
+        }
         return if status == StatusCode::TOO_MANY_REQUESTS {
             Error::Account {
                 code: parsed.error,

@@ -198,6 +198,94 @@ final class CloudOperationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Whether the library's log already holds a request of the cloud that tried to empty the `account_id` of
+     * `$memberId` (`member.unlink_account`): not written again, or every request to the library would add one.
+     */
+    public function hasRefusedAccountUnlink(CloudLibrary $library, string $cloudDeviceId, string $memberId): bool
+    {
+        $probe = json_encode([
+            'intent' => 'member.unlink_account',
+            'changes' => [['entity' => 'member', 'id' => $memberId, 'fields' => ['account_id' => null]]],
+        ], \JSON_THROW_ON_ERROR);
+
+        return false !== $this->getEntityManager()->getConnection()->fetchOne(
+            "SELECT 1 FROM cloud_operation WHERE cloud_library_id = :library AND author_device_id = :author
+                AND status = 'request' AND body @> CAST(:probe AS jsonb) LIMIT 1",
+            ['library' => $library->getId()->toRfc4122(), 'author' => $cloudDeviceId, 'probe' => $probe],
+        );
+    }
+
+    /**
+     * The signed operations, as they were stored, that created the revocations of `$deviceId` which were applied
+     * (D71): what the device checks itself before it deletes a library. Nothing else of the log goes with them.
+     *
+     * @return list<array{schemaVersion: int, operation: \stdClass}>
+     */
+    public function revocationProofs(CloudLibrary $library, string $deviceId): array
+    {
+        $probe = static fn (string $id): string => json_encode(['changes' => [['entity' => 'revocation', 'action' => 'create', 'fields' => ['device_id' => $id]]]], \JSON_THROW_ON_ERROR);
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            "SELECT schema_version, CAST(body AS TEXT) AS body FROM cloud_operation
+              WHERE cloud_library_id = :library AND status = 'applied'
+                AND (body @> CAST(:exact AS jsonb) OR body @> CAST(:lower AS jsonb))
+              ORDER BY hlc, operation_id",
+            ['library' => $library->getId()->toRfc4122(), 'exact' => $probe($deviceId), 'lower' => $probe(strtolower($deviceId))],
+        );
+        $proofs = [];
+        foreach ($rows as $row) {
+            \assert(\is_string($row['body']) && is_numeric($row['schema_version']));
+            $operation = json_decode($row['body'], false, flags: \JSON_THROW_ON_ERROR);
+            \assert($operation instanceof \stdClass);
+            $proofs[] = ['schemaVersion' => (int) $row['schema_version'], 'operation' => $operation];
+        }
+
+        return $proofs;
+    }
+
+    /**
+     * What a cut device needs to check the withdrawal itself (D71, D87): the revocations that name it, and, from the
+     * author of each, the operations **before** it that the client lacks according to its vector (after what the
+     * vector says it has for that author, up to the revocation), in HLC order. Only that author's and only up to the
+     * revocation: nothing dated after the withdrawal, nothing from anybody else. The vector is the client's, so it
+     * only decides how many are sent, never the access nor which library: a false one gets, at most, the author's
+     * whole chain up to a withdrawal that was made before the cut.
+     *
+     * @param array<string, string> $vector the last HLC the client has per author
+     *
+     * @return list<array{schemaVersion: int, operation: \stdClass}>
+     */
+    public function revocationProofsWithChain(CloudLibrary $library, string $deviceId, array $vector): array
+    {
+        $proofs = $this->revocationProofs($library, $deviceId);
+        $connection = $this->getEntityManager()->getConnection();
+        $byId = [];
+        foreach ($proofs as $proof) {
+            $hlc = $proof['operation']->hlc ?? null;
+            $id = $proof['operation']->id ?? null;
+            if (!\is_string($hlc) || !\is_string($id)) {
+                continue;
+            }
+            $byId[$id] = [$hlc, $proof];
+            $author = explode('-', $hlc, 3)[2] ?? '';
+            $rows = $connection->fetchAllAssociative(
+                'SELECT operation_id, hlc, schema_version, CAST(body AS TEXT) AS body FROM cloud_operation
+                  WHERE cloud_library_id = :library AND author_device_id = :author AND hlc > :since AND hlc < :until
+                  ORDER BY hlc, operation_id',
+                ['library' => $library->getId()->toRfc4122(), 'author' => $author, 'since' => $vector[$author] ?? '', 'until' => $hlc],
+            );
+            foreach ($rows as $row) {
+                \assert(\is_string($row['body']) && \is_string($row['hlc']) && is_numeric($row['schema_version']));
+                $operation = json_decode($row['body'], false, flags: \JSON_THROW_ON_ERROR);
+                \assert($operation instanceof \stdClass && \is_string($operation->id ?? null));
+                $byId[$operation->id] ??= [$row['hlc'], ['schemaVersion' => (int) $row['schema_version'], 'operation' => $operation]];
+            }
+        }
+        uasort($byId, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+
+        return array_values(array_map(static fn (array $pair): array => $pair[1], $byId));
+    }
+
+    /**
      * The newest operation (by HLC) a device signed in the library: what its next one chains to.
      *
      * @return ?array{id: string, hlc: string}

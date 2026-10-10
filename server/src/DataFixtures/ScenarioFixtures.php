@@ -285,7 +285,7 @@ final class ScenarioFixtures extends Fixture
     {
         $before = $this->stored();
         try {
-            $this->access->require($garcia->getId()->toRfc4122(), $jhonny);
+            $this->access->require($garcia->getId()->toRfc4122(), $jhonny, null);
         } catch (AccountException $exception) {
             if (404 === $exception->statusCode && $before === $this->stored()) {
                 $this->report->add('Refused: Jhonny asks for the Garcías\' library', '404 not_found, the same answer as for an id that does not exist; nothing stored');

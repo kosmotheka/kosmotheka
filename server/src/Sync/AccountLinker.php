@@ -12,7 +12,6 @@ use App\Entity\Device;
 use App\Entity\Membership;
 use App\Entity\User;
 use App\Repository\CloudOperationRepository;
-use App\Sync\Permission\CatalogLibraryView;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -34,6 +33,7 @@ final readonly class AccountLinker
         private CloudOperationRepository $operations,
         private CloudAuthor $author,
         private SyncNotifier $notifier,
+        private AccessCutter $cutter,
     ) {
     }
 
@@ -85,7 +85,7 @@ final readonly class AccountLinker
         /** @var list<CloudLibrary> $libraries */
         $libraries = $this->entityManager->createQuery(\sprintf(
             'SELECT l FROM %s l JOIN %s m WITH m.cloudLibrary = l
-              WHERE m.user = :user AND m.memberId IS NOT NULL AND l.localLibraryId IS NOT NULL ORDER BY l.createdAt',
+              WHERE m.user = :user AND m.memberId IS NOT NULL AND m.withdrawnAt IS NULL AND l.localLibraryId IS NOT NULL ORDER BY l.createdAt',
             CloudLibrary::class,
             Membership::class,
         ))->setParameter('user', $device->getUser())->getResult();
@@ -121,8 +121,8 @@ final readonly class AccountLinker
         }
         $this->entityManager->refresh($membership);
         $person = $membership->getMemberId();
-        $cloud = $this->cloudWithPower($library);
-        if (!$person instanceof Uuid || !$cloud instanceof Uuid) {
+        $cloud = $this->author->power($library);
+        if (!$person instanceof Uuid || !$cloud instanceof Uuid || $this->cutter->personCut($library, $person)) {
             return false;
         }
         // The regla 12 asks that the person already has this account: write it first, in this same call.
@@ -170,8 +170,8 @@ final readonly class AccountLinker
         /** @var list<CloudLibrary> $libraries */
         $libraries = $this->entityManager->createQuery(\sprintf(
             'SELECT l FROM %s l WHERE l.localLibraryId IS NOT NULL AND EXISTS (
-                SELECT 1 FROM %s d WHERE d.cloudLibrary = l AND d.vouchedKey = :key AND d.publicKey = :key
-                    AND LOWER(d.id) = :device AND d.member IS NOT NULL)
+                SELECT 1 FROM %s d JOIN d.member pm WHERE d.cloudLibrary = l AND d.vouchedKey = :key AND d.publicKey = :key
+                    AND LOWER(d.id) = :device AND (pm.accessWithdrawn IS NULL OR pm.accessWithdrawn = false))
              ORDER BY l.createdAt',
             CloudLibrary::class,
             CatalogDevice::class,
@@ -185,7 +185,8 @@ final readonly class AccountLinker
     {
         $row = $this->entityManager->createQuery(\sprintf(
             'SELECT m.id AS id FROM %s d JOIN d.member m
-              WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.vouchedKey = :key AND d.publicKey = :key AND LOWER(d.id) = :device',
+              WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.vouchedKey = :key AND d.publicKey = :key AND LOWER(d.id) = :device
+                AND (m.accessWithdrawn IS NULL OR m.accessWithdrawn = false)',
             CatalogDevice::class,
         ))->setParameter('library', $library->getId(), 'uuid')->setParameter('key', $device->getPublicKey())->setParameter('device', strtolower($device->getDeviceId()))->setMaxResults(1)->getOneOrNullResult();
         $id = \is_array($row) ? $row['id'] : null;
@@ -205,7 +206,7 @@ final readonly class AccountLinker
     private function link(CloudLibrary $library, User $user, Uuid $person): ?string
     {
         // One person, one account.
-        $taken = $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.memberId = :member AND m.user <> :user', Membership::class))
+        $taken = $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.memberId = :member AND m.user <> :user AND m.withdrawnAt IS NULL', Membership::class))
             ->setParameter('library', $library->getId(), 'uuid')->setParameter('member', $person, 'uuid')->setParameter('user', $user)->setMaxResults(1)->getResult();
         if ([] !== $taken) {
             return null;
@@ -219,7 +220,8 @@ final readonly class AccountLinker
         }
         $this->entityManager->refresh($membership);
         $current = $membership->getMemberId();
-        if (!$current instanceof Uuid) {
+        // Coming back after a cut is linking again, the usual way (D98).
+        if (!$current instanceof Uuid || $membership->isWithdrawn()) {
             $membership->linkTo($person);
             $this->entityManager->flush();
 
@@ -238,7 +240,7 @@ final readonly class AccountLinker
      */
     private function noteAccount(CloudLibrary $library, User $user, Uuid $person): bool
     {
-        $cloud = $this->cloudWithPower($library);
+        $cloud = $this->author->power($library);
         if (!$cloud instanceof Uuid) {
             return false;
         }
@@ -262,15 +264,6 @@ final readonly class AccountLinker
         }
 
         return true;
-    }
-
-    /** The cloud's device id if it has the power in this library now (it is the device the catalog names, registered with the key its id derives from), else null. */
-    private function cloudWithPower(CloudLibrary $library): ?Uuid
-    {
-        $cloud = $library->getCloudDeviceId();
-        $named = new CatalogLibraryView($this->entityManager, $library)->cloudDevice();
-
-        return $cloud instanceof Uuid && null !== $named && strtolower($named) === $cloud->toRfc4122() ? $cloud : null;
     }
 
     /**
