@@ -161,6 +161,15 @@ Propuestas para construirlo:
 9. Adivinar enlaces: el token es largo y aleatorio, solo se guarda su huella, y la ruta tiene límite de peticiones.
 10. Usar el servidor para mandar correo a direcciones ajenas: límite de invitaciones por correo por cuenta y día, y un texto que no lleva nada escrito por quien invita salvo el nombre de la biblioteca.
 
+**Que el enlace abra la app sola: aplazado a antes de publicar** (decidido por el maintainer el 11/10/2026). 7.6 se cierra con «pega aquí tu enlace»: quien recibe una invitación copia el enlace y lo pega en la app. Sirve para probar todo lo demás; no sirve a un usuario normal, así que **es condición para publicar la nube** (va en 7.9). Lo que falta, ya estudiado (detalle en [cloud.md](../architecture/cloud.md#invitaciones-en-la-app-762-d43), «Enlaces profundos»):
+
+1. **En la app:** el plugin `tauri-plugin-deep-link` (una dependencia más) y, en escritorio, `single-instance`, para que el enlace llegue a la ventana ya abierta. Lo que recibe se pasa tal cual a `open_invitation(link)`, que ya valida el enlace y ya rechaza los de otro servidor: no hay regla nueva.
+2. **En Android:** un `intent-filter` con `android:autoVerify="true"` para `https://kosmotheka.app/i/` en `gen/android/…/AndroidManifest.xml`.
+3. **En la web `kosmotheka.app`:** el fichero `/.well-known/assetlinks.json` con el nombre del paquete y la huella SHA-256 de la firma de la app (la de Google Play, no la de depuración). **Lo sube el maintainer**; sin él Android no verifica el dominio y abre el navegador.
+4. **Una página en `kosmotheka.app/i/…`** para quien no tiene la app instalada o abre el enlace en un ordenador: qué es, dónde se instala y el enlace para copiar. Hoy esa dirección no sirve nada.
+5. **Servidores propios:** los enlaces verificados solo valen para el dominio oficial (D79); para los demás, el esquema `kosmotheka://i/<token>`, que hoy `token_of_link` rechaza a propósito. Decidir entonces si se admite.
+6. **A comprobar al montarlo:** que la verificación del dominio pasa en un móvil real (`adb shell pm get-app-links`), qué ocurre con la app cerrada, abierta y sin sesión, y que volver de Google (D77) usa el mismo mecanismo.
+
 ### 7.7 Registro de actividad
 
 - Tabla de solo añadir, sin claves foráneas hacia lo que registra, para que sobreviva a lo borrado (D66). Se llena con lo que hace la cuenta (inicio de sesión, cambio de contraseña, borrar la cuenta) y con las operaciones que llegan con ciertos cambios (crear o borrar una biblioteca, roles, «Puede compartir», de quién es un dispositivo, retiradas), con la hora y la IP de cuando llegaron.
@@ -187,6 +196,8 @@ Apuntado para esa revisión:
 - Las condiciones de cada proveedor (uso no comercial, atribución) se revisan en [research/proveedores.md](../research/proveedores.md) antes de integrarlo; uno a uno.
 
 ### 7.9 Producción
+
+**Antes de publicar la nube:** que un enlace de invitación abra la app sola (aplazado desde 7.6; la lista está en «7.6 Invitar con un enlace»).
 
 **El VPS** (datos del maintainer, 01/10/2026; se revisan al llegar):
 - Pequeño: poca CPU y poca memoria, un Ubuntu reciente (por mirar), disco suficiente para empezar (por mirar cuánto). Si la app pide más, se verá entonces.
