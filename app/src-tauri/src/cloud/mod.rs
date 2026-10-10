@@ -133,6 +133,9 @@ pub enum Outcome {
     /// The cloud says the access was withdrawn but showed no proof this device accepts: nothing is removed. The
     /// library stays and is no longer synced with the cloud.
     AccessWithdrawn,
+    /// This library's step failed (`LibraryReport::error` says why, if it has a code) and the session went on
+    /// with the others (DAT-009).
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -146,9 +149,23 @@ pub struct LibraryReport {
     /// Operations dropped: from another library, malformed or unsigned, or refused
     /// by the cloud.
     pub rejected: usize,
+    /// With `Outcome::Failed`: the code of the error, when it has one the UI can translate.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 impl LibraryReport {
+    /// A library whose step failed with `error` (DAT-009).
+    fn failed(library: &str, cloud: &str, error: &Error) -> Self {
+        let mut report = Self::new(library, Some(cloud), Outcome::Failed);
+        report.error = match error {
+            Error::Cloud(code) => Some((*code).to_owned()),
+            Error::Account { code, .. } => Some(code.clone()),
+            _ => None,
+        };
+        report
+    }
+
     fn new(library: &str, cloud: Option<&str>, outcome: Outcome) -> Self {
         Self {
             library: library.to_owned(),
@@ -157,6 +174,7 @@ impl LibraryReport {
             received: 0,
             sent: 0,
             rejected: 0,
+            error: None,
         }
     }
 }
@@ -414,6 +432,7 @@ async fn pull_and_merge<A: CloudApi>(
         // With what the cloud had already merged; push_missing then sends the seal (D94).
         crate::permissions::seal_if_missing(&mut conn, &[library.to_owned()])?;
         crate::permissions::vouch_if_missing(&mut conn, &[library.to_owned()])?;
+        crate::permissions::complete_withdrawals(&mut conn, &[library.to_owned()])?;
         merged
     };
     report.received += merged.received;
@@ -455,8 +474,35 @@ async fn push_missing<A: CloudApi>(
     Ok(())
 }
 
+/// Whether `error` belongs to the whole session and not to one library: no session, a schema version the
+/// server does not take, the server unreachable or refusing the account (rate limit, device removed), or
+/// this device's own database or HTTP stack failing. Anything else is about the library being synced.
+fn stops_the_session(error: &Error) -> bool {
+    matches!(
+        error,
+        Error::Cloud("not_signed_in" | "schema_version")
+            | Error::Account { .. }
+            | Error::Http(_)
+            | Error::Io(_)
+            | Error::Sqlite(_)
+            | Error::LockPoisoned
+    )
+}
+
+/// The report of one library's step, or, if the step failed for a reason of that library alone, a report
+/// saying so: the session goes on with the others (DAT-009).
+fn or_failed(result: Result<LibraryReport>, library: &str, cloud: &str) -> Result<LibraryReport> {
+    match result {
+        Err(error) if !stops_the_session(&error) => {
+            Ok(LibraryReport::failed(library, cloud, &error))
+        }
+        other => other,
+    }
+}
+
 /// Syncs every library of the account: the ones linked here, and the ones this
-/// device does not have yet, which come down.
+/// device does not have yet, which come down. A library that fails for its own reasons is reported as
+/// failed and the rest go on; the session stops only for what concerns all of them (`stops_the_session`).
 pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<LibraryReport>> {
     // Before listing, so a library this account was just given access to is in the list. A server that
     // does not know the route, or a network that fails here, must not stop the session: the list says
@@ -483,7 +529,11 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             .find(|(_, link)| link.is(&cloud.id, server))
             .map(|(library, _)| library);
         if let Some(library) = here {
-            reports.push(sync_library(database, api, library).await?);
+            reports.push(or_failed(
+                sync_library(database, api, library).await,
+                library,
+                &cloud.id,
+            )?);
             continue;
         }
         let Some(local) = cloud.local_library_id.as_deref() else {
@@ -497,19 +547,28 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
                     || libraries::library_forgotten(&conn, local)?,
             )
         };
-        reports.push(if exists {
-            if adopt_link(database, api, &cloud.id, local).await? {
-                sync_library(database, api, local).await?
-            } else {
+        let step = if exists {
+            match adopt_link(database, api, &cloud.id, local).await {
+                Ok(true) => sync_library(database, api, local).await,
                 // Same id, but nothing this device's own log trusts links it to this
                 // cloud library: a stranger's library that happens to share the id.
-                LibraryReport::new(local, Some(&cloud.id), Outcome::LibraryConflict)
+                Ok(false) => Ok(LibraryReport::new(
+                    local,
+                    Some(&cloud.id),
+                    Outcome::LibraryConflict,
+                )),
+                Err(error) => Err(error),
             }
         } else if known {
-            LibraryReport::new(local, Some(&cloud.id), Outcome::DeletedHere)
+            Ok(LibraryReport::new(
+                local,
+                Some(&cloud.id),
+                Outcome::DeletedHere,
+            ))
         } else {
-            download(database, api, &cloud.id, local).await?
-        });
+            download(database, api, &cloud.id, local).await
+        };
+        reports.push(or_failed(step, local, &cloud.id)?);
     }
     // Libraries of this device that the cloud says were cut: it asks for the proof, and removes only if it holds.
     for cloud in &withdrawn {
@@ -661,7 +720,7 @@ async fn download<A: CloudApi>(
     local: &str,
 ) -> Result<LibraryReport> {
     let mut report = LibraryReport::new(local, Some(cloud), Outcome::Downloaded);
-    let server_vector = pull_and_merge(
+    let server_vector = match pull_and_merge(
         database,
         api,
         local,
@@ -669,7 +728,18 @@ async fn download<A: CloudApi>(
         &VersionVector::new(),
         &mut report,
     )
-    .await?;
+    .await
+    {
+        // This device never had the library: there is nothing to remove, and nothing to bring down.
+        Err(Error::AccessWithdrawn(_)) => {
+            return Ok(LibraryReport::new(
+                local,
+                Some(cloud),
+                Outcome::AccessWithdrawn,
+            ));
+        }
+        other => other?,
+    };
     let linked = {
         let conn = database.lock()?;
         link_of(&conn, local)?.is_some_and(|link| link.is(cloud, api.server()))
@@ -689,8 +759,16 @@ async fn download<A: CloudApi>(
         ops::ensure_registered(&tx, local)?;
         tx.commit()?;
     }
-    push_missing(database, api, local, cloud, server_vector, &mut report).await?;
-    Ok(report)
+    match push_missing(database, api, local, cloud, server_vector, &mut report).await {
+        // Cut while it came down: the same proof as for a library already here.
+        Err(Error::AccessWithdrawn(_)) => {
+            let proofs = api_pull_proofs(database, api, local, cloud)
+                .await?
+                .unwrap_or_default();
+            cut_off(database, local, cloud, &proofs)
+        }
+        other => other.map(|()| report),
+    }
 }
 
 /// Forgets everything merged for a library that was never here before.

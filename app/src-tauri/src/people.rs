@@ -597,7 +597,7 @@ pub fn apply_pending_owners(tx: &rusqlite::Transaction<'_>) -> Result<()> {
     Ok(())
 }
 
-fn is_registered(conn: &Connection, library: &str, device: &str) -> Result<bool> {
+pub(crate) fn is_registered(conn: &Connection, library: &str, device: &str) -> Result<bool> {
     Ok(conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM devices WHERE library_id = ?1 AND id = ?2)",
         [library, device],
@@ -617,6 +617,23 @@ pub fn remove_device(conn: &mut Connection, device: &str) -> Result<usize> {
         .prepare("SELECT library_id, name FROM devices WHERE id = ?1")?
         .query_map([device], |row| Ok((row.get(0)?, row.get(1)?)))?
         .collect::<rusqlite::Result<_>>()?;
+    // Not the last device of the last administrator who can act (SEG-036), in any library.
+    for (library, _) in &libraries {
+        let Some(person) = permissions::person_of_device(conn, library, device)? else {
+            continue;
+        };
+        let their_devices: i64 = conn.query_row(
+            &format!(
+                "SELECT count(*) FROM devices d WHERE d.library_id = ?1 AND {} = ?2",
+                permissions::person_of("d")
+            ),
+            [library, &person],
+            |row| row.get(0),
+        )?;
+        if their_devices == 1 && is_last_admin(conn, library, &person)? {
+            return Err(Error::LastAdmin);
+        }
+    }
     let tx = conn.transaction()?;
     for (library, registered_name) in &libraries {
         let mut changes = vec![Change::update(
@@ -670,17 +687,29 @@ pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Re
         member,
         json!({ "access_withdrawn": true }),
     )];
-    for (device, name) in &devices {
-        // One change per device row: no person, no vouched key, and the fence.
-        let mut fields = permissions::assignment_fields(&tx, library, device, None)?;
-        fields["trusted_through"] = json!(permissions::fence_mark(&tx, library, device)?);
-        changes.push(Change::update(Entity::Device, device, fields));
-        changes.extend(libraries::revocation_change(&tx, library, device, name)?);
+    changes.extend(permissions::cut_off_changes(&tx, library, &devices)?);
+    // A device paired and given to this person that has not registered yet has no row in
+    // `devices`, only a waiting assignment (SEG-035): it is cut off the same way, with nothing
+    // to fence since it has written nothing.
+    let waiting: Vec<String> = tx
+        .prepare(
+            "SELECT device_id FROM pending_owners WHERE library_id = ?1 AND member_id = ?2
+              ORDER BY device_id",
+        )?
+        .query_map([library, member], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    for device in &waiting {
+        let name = lan::known_device_name(&tx, device)?.unwrap_or_default();
+        changes.extend(libraries::revocation_change(&tx, library, device, &name)?);
     }
     ops::record(&tx, library, "member.withdraw", changes)?;
-    for (device, _) in &devices {
+    for device in devices.iter().map(|(id, _)| id).chain(&waiting) {
         libraries::forget_peer(&tx, library, device)?;
     }
+    tx.execute(
+        "DELETE FROM pending_owners WHERE library_id = ?1 AND member_id = ?2",
+        [library, member],
+    )?;
     tx.commit()?;
     Ok(())
 }
@@ -690,28 +719,38 @@ pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Re
 #[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
 pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
     let tx = conn.transaction()?;
-    ops::record(
-        &tx,
-        library,
-        "member.restore",
-        vec![Change::update(
-            Entity::Member,
-            member,
-            json!({ "access_withdrawn": false }),
-        )],
-    )?;
+    // Devices the withdrawal did not name still point at the person; cut them off first, in the
+    // same operation, or removing the mark would give them their access back (SEG-033).
+    let strays = permissions::devices_of_withdrawn(&tx, library, Some(member))?;
+    let mut changes = permissions::cut_off_changes(&tx, library, &strays)?;
+    changes.push(Change::update(
+        Entity::Member,
+        member,
+        json!({ "access_withdrawn": false }),
+    ));
+    ops::record(&tx, library, "member.restore", changes)?;
+    for (device, _) in &strays {
+        libraries::forget_peer(&tx, library, device)?;
+    }
     tx.commit()?;
     Ok(())
 }
 
+/// Whether `member` is the last administrator **who can act** (D58, SEG-036): with access, and
+/// with at least one device that is theirs. One with no device cannot sign anything, so if the
+/// others were taken away nobody could change permissions again.
 fn is_last_admin(conn: &Connection, library: &str, member: &str) -> Result<bool> {
-    let (admins, this_one): (i64, bool) = conn.query_row(
-        "SELECT count(*), coalesce(max(id = ?2), 0) FROM members
-          WHERE library_id = ?1 AND role = 'admin' AND coalesce(access_withdrawn, 0) = 0",
-        [library, member],
-        |row| Ok((row.get(0)?, row.get(1)?)),
-    )?;
-    Ok(admins == 1 && this_one)
+    let acting: Vec<String> = conn
+        .prepare(&format!(
+            "SELECT m.id FROM members m
+              WHERE m.library_id = ?1 AND m.role = 'admin' AND coalesce(m.access_withdrawn, 0) = 0
+                AND EXISTS (SELECT 1 FROM devices d WHERE d.library_id = m.library_id
+                               AND {} = m.id)",
+            permissions::person_of("d")
+        ))?
+        .query_map([library], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(acting.len() == 1 && acting[0] == member)
 }
 
 #[cfg(test)]

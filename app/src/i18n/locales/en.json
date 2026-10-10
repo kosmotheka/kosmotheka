@@ -1653,7 +1653,8 @@
       "deletedHere": "You deleted a library on this device that is still in your cloud. It was not downloaded again.",
       "removed": "Your access to a library was withdrawn, so it was removed from this device.",
       "accessWithdrawn": "The cloud says your access to “{{name}}” was withdrawn, but showed no proof this device accepts. Nothing was removed, and it is no longer synced with the cloud.",
-      "notLinked": "The cloud offered a library that was not properly linked. It was ignored."
+      "notLinked": "The cloud offered a library that was not properly linked. It was ignored.",
+      "failed": "“{{name}}” could not be synced with the cloud this time. The other libraries were. It will be tried again."
     },
     "pick": {
       "title": "Which libraries do you want in the cloud?",

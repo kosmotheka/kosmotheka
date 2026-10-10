@@ -263,6 +263,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
         // With what the peer had already merged, and before working out what to send it (D94).
         crate::permissions::seal_if_missing(&mut conn, &shared)?;
         crate::permissions::vouch_if_missing(&mut conn, &shared)?;
+        crate::permissions::complete_withdrawals(&mut conn, &shared)?;
         let theirs = only_shared(pulled.vectors, &shared);
         (
             received,
@@ -725,6 +726,58 @@ mod tests {
             has_library(&desk.database, &club),
             "the desk keeps it, and Hugo stays in it"
         );
+    }
+
+    /// SEG-035: a phone paired and given to a person but not registered yet has no `devices` row,
+    /// only `pending_owners` and `library_peers`; withdrawing that person has to reach it too.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn withdrawing_a_person_reaches_a_phone_that_has_not_registered_yet() {
+        let (desk, club) = desk_with_club().await;
+        let phone = Database::in_memory();
+        let code = open_pairing_for(&desk, vec![club.clone()]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        let phone_id = id_of(&phone);
+        let hugo = ops::new_id();
+        {
+            let mut conn = desk.database.lock().unwrap();
+            crate::people::start_roles(&mut conn, &club, "Ana", &[]).unwrap();
+            // Paired but never synced: the desk has no row for the phone.
+            crate::people::give_access(
+                &mut conn,
+                &phone_id,
+                &crate::people::PersonPick {
+                    id: Some(hugo.clone()),
+                    name: "Hugo".into(),
+                },
+                &std::collections::BTreeMap::from([(club.clone(), "editor".to_owned())]),
+                false,
+            )
+            .unwrap();
+            assert!(!crate::people::is_registered(&conn, &club, &phone_id).unwrap());
+            crate::people::withdraw_person(&mut conn, &club, &hugo).unwrap();
+        }
+
+        sync(&phone, &server.device_id).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        assert!(
+            !has_library(&phone, &club),
+            "the phone must not get the club"
+        );
+        let conn = desk.database.lock().unwrap();
+        let pending: i64 = conn
+            .query_row("SELECT count(*) FROM pending_owners", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(pending, 0, "nothing waits to assign the phone to Hugo");
+        let owner: Option<String> = conn
+            .query_row(
+                "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+                [&club, &phone_id],
+                |r| r.get(0),
+            )
+            .ok()
+            .flatten();
+        assert_eq!(owner, None, "the phone is nobody's when it registers");
     }
 
     #[tokio::test(flavor = "multi_thread")]

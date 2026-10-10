@@ -195,6 +195,7 @@ export function cloudNotices(
         removed: () => t("cloud.notice.removed"),
         access_withdrawn: () => t("cloud.notice.accessWithdrawn", { name }),
         not_linked: () => t("cloud.notice.notLinked"),
+        failed: () => t("cloud.notice.failed", { name }),
       } as Partial<Record<CloudOutcome, () => string>>
     )[report.outcome];
     if (!message) continue;

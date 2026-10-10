@@ -1667,7 +1667,8 @@
       "deletedHere": "Borraste en este dispositivo una biblioteca que sigue en tu nube. No se descargó otra vez.",
       "removed": "Te retiraron el acceso a una biblioteca y se ha quitado de este dispositivo.",
       "accessWithdrawn": "La nube dice que te retiraron el acceso a «{{name}}», pero no ha mostrado una prueba que este dispositivo acepte. No se ha quitado nada, y ya no se sincroniza con la nube.",
-      "notLinked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró."
+      "notLinked": "La nube ofreció una biblioteca que no estaba bien enlazada. Se ignoró.",
+      "failed": "«{{name}}» no se ha podido sincronizar con la nube esta vez. Las demás sí. Se volverá a intentar."
     },
     "pick": {
       "title": "¿Qué bibliotecas subes a la nube?",

@@ -3874,6 +3874,176 @@ mod tests {
         );
     }
 
+    /// Two administrators; the second assigns a new tablet to Laura while the first, who has not
+    /// heard of it, echa a Laura. Once they sync the tablet still points at her (SEG-033).
+    /// Returns (laptop, phone, tablet, laura).
+    fn tablet_assigned_to_a_person_withdrawn_meanwhile() -> (Device, Device, Device, String) {
+        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let lib = laptop.1.clone();
+        let laura = ops::new_id();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &laura,
+                json!({ "name": "Laura", "role": "editor" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        laptop.sync_with(&mut phone);
+        let mut tablet = Device::sharing(&laptop);
+        let tx = tablet.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        phone.pull_from(&tablet);
+
+        crate::people::withdraw_person(&mut laptop.0, &lib, &laura).unwrap();
+        crate::people::assign_device(&mut phone.0, &lib, &device_id_of(&tablet), Some(&laura))
+            .unwrap();
+        laptop.sync_with(&mut phone);
+        tablet.pull_from(&laptop);
+        (laptop, phone, tablet, laura)
+    }
+
+    /// SEG-033: the withdrawal only names the devices its signer knew; one that arrived later keeps
+    /// pointing at the person, and an administrator's session completes the withdrawal.
+    #[test]
+    fn an_administrator_completes_a_withdrawal_for_a_device_that_arrived_late() {
+        let (mut laptop, mut phone, mut tablet, laura) =
+            tablet_assigned_to_a_person_withdrawn_meanwhile();
+        let lib = laptop.1.clone();
+        let tablet_id = device_id_of(&tablet);
+        assert_eq!(device_row(&laptop, &tablet_id).0.as_deref(), Some(&*laura));
+        let first = operations_with_intent(&laptop, "member.withdraw").len();
+
+        permissions::complete_withdrawals(&mut laptop.0, std::slice::from_ref(&lib)).unwrap();
+
+        let (person, key, fence) = device_row(&laptop, &tablet_id);
+        assert_eq!(
+            (person, key),
+            (None, None),
+            "without person nor vouched key"
+        );
+        assert!(fence.is_some(), "fenced");
+        assert!(
+            !crate::lan::revocations_of(&laptop.0, &lib, &tablet_id)
+                .unwrap()
+                .is_empty(),
+            "and withdrawn"
+        );
+        let steps = operations_with_intent(&laptop, "member.withdraw");
+        assert_eq!(steps.len(), first + 1, "one operation");
+
+        // Idempotent; and a device that is not an administrator's writes nothing.
+        permissions::complete_withdrawals(&mut laptop.0, std::slice::from_ref(&lib)).unwrap();
+        assert_eq!(
+            operations_with_intent(&laptop, "member.withdraw").len(),
+            first + 1
+        );
+        let tablet_before = operations_with_intent(&tablet, "member.withdraw").len();
+        permissions::complete_withdrawals(&mut tablet.0, std::slice::from_ref(&lib)).unwrap();
+        assert_eq!(
+            operations_with_intent(&tablet, "member.withdraw").len(),
+            tablet_before
+        );
+
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &steps[first]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn two_administrators_completing_a_withdrawal_at_once_converge() {
+        let (mut laptop, mut phone, _tablet, _laura) =
+            tablet_assigned_to_a_person_withdrawn_meanwhile();
+        let lib = laptop.1.clone();
+
+        permissions::complete_withdrawals(&mut laptop.0, std::slice::from_ref(&lib)).unwrap();
+        permissions::complete_withdrawals(&mut phone.0, std::slice::from_ref(&lib)).unwrap();
+        laptop.sync_with(&mut phone);
+
+        for device in [&laptop, &phone] {
+            for step in operations_with_intent(device, "member.withdraw") {
+                assert_eq!(status_of_id(device, &step), "applied");
+            }
+        }
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    /// SEG-033: giving the access back cleans the devices the withdrawal missed first, in the same
+    /// operation, so removing the mark returns nothing by a stray device.
+    #[test]
+    fn giving_the_access_back_leaves_no_device_pointing_at_the_person() {
+        let (mut laptop, mut phone, _tablet, laura) =
+            tablet_assigned_to_a_person_withdrawn_meanwhile();
+        let lib = laptop.1.clone();
+
+        crate::people::restore_person(&mut laptop.0, &lib, &laura).unwrap();
+
+        let pointing: i64 = laptop
+            .0
+            .query_row(
+                "SELECT count(*) FROM devices WHERE library_id = ?1 AND member_id = ?2",
+                [&lib, &laura],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(pointing, 0);
+        assert_eq!(member_row(&laptop, &laura).0, Some(0));
+        let steps = operations_with_intent(&laptop, "member.restore");
+        assert_eq!(steps.len(), 1, "in the same operation");
+        phone.pull_from(&laptop);
+        assert_eq!(status_of_id(&phone, &steps[0]), "applied");
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    /// SEG-036: an administrator with no device cannot sign, so does not count as one who could take
+    /// over. Tersoal (laptop) and a second administrator nobody has a device of: Tersoal is the last
+    /// one that can act, and neither her demotion, her withdrawal nor taking away her last device
+    /// is allowed. The phone (a reader) tries them: before, each went through to become a request.
+    #[test]
+    fn the_last_administrator_who_can_act_is_not_demoted_withdrawn_or_left_without_a_device() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let tersoal = crate::marks::my_member(&laptop.0, &lib).unwrap().unwrap();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                ops::new_id(),
+                json!({ "name": "Ghost", "role": "admin" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        phone.pull_from(&laptop);
+        let laptop_id = device_id_of(&laptop);
+
+        assert!(matches!(
+            crate::people::set_role(&mut phone.0, &lib, &tersoal, Some("editor"), false),
+            Err(crate::error::Error::LastAdmin)
+        ));
+        assert!(matches!(
+            crate::people::withdraw_person(&mut phone.0, &lib, &tersoal),
+            Err(crate::error::Error::LastAdmin)
+        ));
+        assert!(matches!(
+            crate::people::remove_device(&mut phone.0, &laptop_id),
+            Err(crate::error::Error::LastAdmin)
+        ));
+        // Nothing was written on the way.
+        assert!(operations_with_intent(&phone, "device.remove").is_empty());
+        assert!(operations_with_intent(&phone, "member.role").is_empty());
+        assert!(operations_with_intent(&phone, "member.withdraw").is_empty());
+    }
+
     /// D98: what the expelled signs after the withdrawal is a request, in whatever order it arrives.
     #[test]
     fn what_the_expelled_signs_after_the_withdrawal_is_a_request_in_every_order() {

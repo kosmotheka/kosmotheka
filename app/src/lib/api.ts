@@ -1253,6 +1253,8 @@ export interface CloudLibraryReport {
   sent: number;
   /** Operations dropped: from another library, invalid, or refused by the cloud. */
   rejected: number;
+  /** With outcome "failed": the code of the error, when it has one. */
+  error?: string;
 }
 
 export interface LibraryCloudStatus {

@@ -513,6 +513,74 @@ pub fn vouch_if_missing(conn: &mut Connection, libraries: &[String]) -> Result<(
     Ok(())
 }
 
+/// The devices of `library` whose raw `member_id` points at a person with `access_withdrawn`
+/// (and, if given, only at `member`): id and name. The withdrawal that wrote the mark only named
+/// the devices its signer knew (SEG-033).
+pub fn devices_of_withdrawn(
+    conn: &Connection,
+    library: &str,
+    member: Option<&str>,
+) -> Result<Vec<(String, String)>> {
+    Ok(conn
+        .prepare(
+            "SELECT d.id, d.name FROM devices d
+               JOIN members m ON m.library_id = d.library_id AND m.id = d.member_id
+              WHERE d.library_id = ?1 AND m.access_withdrawn = 1
+                AND (?2 IS NULL OR m.id = ?2)
+              ORDER BY d.id",
+        )?
+        .query_map(params![library, member], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+/// The changes that cut `devices` off from a withdrawn person (D98): no person nor vouched key,
+/// the fence (D84, D87) and the withdrawal of their access (D71). Then each is forgotten as a
+/// peer, once the operation is recorded (`libraries::forget_peer`).
+pub fn cut_off_changes(
+    conn: &Connection,
+    library: &str,
+    devices: &[(String, String)],
+) -> Result<Vec<Change>> {
+    let mut changes = Vec::new();
+    for (device, name) in devices {
+        let mut fields = assignment_fields(conn, library, device, None)?;
+        fields["trusted_through"] = serde_json::json!(fence_mark(conn, library, device)?);
+        changes.push(Change::update(Entity::Device, device, fields));
+        changes.extend(crate::libraries::revocation_change(
+            conn, library, device, name,
+        )?);
+    }
+    Ok(changes)
+}
+
+/// Completes the withdrawals of people (D98) for the devices that arrived after them: in each
+/// library with roles where this device is an administrator's, **one** operation cuts off every
+/// device still pointing at a person with their access withdrawn. Nothing is written where there
+/// is nothing to do, nor by a device that is not an administrator's. Called with `vouch_if_missing`.
+pub fn complete_withdrawals(conn: &mut Connection, libraries: &[String]) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    for library in libraries {
+        let admin = SqlView::new(conn, library).role_of_device(&me) == Some(Role::Admin);
+        if !admin || !has_roles(conn, library)? {
+            continue;
+        }
+        let devices = devices_of_withdrawn(conn, library, None)?;
+        if devices.is_empty() {
+            continue;
+        }
+        let tx = conn.transaction()?;
+        let changes = cut_off_changes(&tx, library, &devices)?;
+        ops::record(&tx, library, "member.withdraw", changes)?;
+        for (device, _) in &devices {
+            crate::libraries::forget_peer(&tx, library, device)?;
+        }
+        tx.commit()?;
+    }
+    Ok(())
+}
+
 /// A fence an operation of the log sets (D84, D87), not yet known to be honoured.
 struct Fence {
     author: String,

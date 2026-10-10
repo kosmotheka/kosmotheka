@@ -62,6 +62,8 @@ struct CloudState {
     without_identity: bool,
     /// A server that names a cloud device whose id is not the one its key gives.
     lying: bool,
+    /// Cloud libraries whose pull fails with this code.
+    failing_pulls: BTreeMap<String, &'static str>,
 }
 
 /// Enforces only what the client is tested against: membership by account,
@@ -105,6 +107,15 @@ impl FakeCloud {
     fn without_identity(self) -> Self {
         self.0.lock().unwrap().without_identity = true;
         self
+    }
+
+    /// Pulling this cloud library fails with `Error::Cloud(code)`.
+    fn fail_pulls_of(&self, cloud: &str, code: &'static str) {
+        self.0
+            .lock()
+            .unwrap()
+            .failing_pulls
+            .insert(cloud.to_owned(), code);
     }
 
     /// A server that lies: the id it gives its cloud device does not derive from the key it gives.
@@ -560,11 +571,17 @@ impl CloudApi for FakeApi {
     ) -> Result<Pulled> {
         let mut state = self.cloud.0.lock().unwrap();
         state.pulls += 1;
-        let library = state
+        state
             .libraries
             .get(cloud)
             .filter(|library| library.has_access(&self.account))
             .ok_or(Error::Cloud("not_found"))?;
+        match state.failing_pulls.get(cloud) {
+            Some(&"access_withdrawn") => return Err(Error::AccessWithdrawn(Vec::new())),
+            Some(code) => return Err(Error::Cloud(code)),
+            None => {}
+        }
+        let library = &state.libraries[cloud];
         if let Some(proofs) = library.cut_for(
             &self.account,
             self.device.as_ref().map(|(id, _)| id.as_str()),
@@ -2143,4 +2160,95 @@ async fn taking_the_cloud_away_after_uploading_fences_its_registration() {
         )
         .unwrap();
     assert_eq!(named, None);
+}
+
+/// Three libraries of one account, uploaded from a laptop: their local ids, in order, and the laptop.
+async fn three_uploaded_libraries(cloud: &FakeCloud) -> (Database, Vec<String>) {
+    let laptop = Database::in_memory();
+    let api = cloud.api("ana").on(&laptop);
+    let mut libs = Vec::new();
+    for name in ["One", "Two", "Three"] {
+        let lib = libraries::create_library(&mut laptop.lock().unwrap(), name).unwrap();
+        add(&laptop, &lib, &format!("Book of {name}"));
+        upload_settled(&laptop, &api, &lib).await;
+        libs.push(lib);
+    }
+    (laptop, libs)
+}
+
+/// DAT-009: one library that cannot be brought down does not stop the others from coming down.
+#[tokio::test]
+async fn a_library_that_fails_to_download_does_not_stop_the_others() {
+    let cloud = FakeCloud::default();
+    let (laptop, libs) = three_uploaded_libraries(&cloud).await;
+    cloud.fail_pulls_of(&link(&laptop, &libs[1]).0.unwrap(), "invalid_request");
+    let phone = Database::in_memory();
+
+    let reports = sync_all(&phone, &cloud.api("ana").on(&phone))
+        .await
+        .unwrap();
+
+    let outcome = |lib: &String| reports.iter().find(|r| &r.library == lib).unwrap();
+    assert_eq!(outcome(&libs[0]).outcome, Outcome::Downloaded);
+    assert_eq!(outcome(&libs[2]).outcome, Outcome::Downloaded);
+    assert_eq!(outcome(&libs[1]).outcome, Outcome::Failed);
+    assert_eq!(outcome(&libs[1]).error.as_deref(), Some("invalid_request"));
+    let conn = phone.lock().unwrap();
+    assert!(libraries::library_exists(&conn, &libs[0]).unwrap());
+    assert!(!libraries::library_exists(&conn, &libs[1]).unwrap());
+    assert!(libraries::library_exists(&conn, &libs[2]).unwrap());
+}
+
+/// DAT-009: the same for libraries this device already syncs.
+#[tokio::test]
+async fn a_linked_library_that_fails_to_sync_does_not_stop_the_others() {
+    let cloud = FakeCloud::default();
+    let (laptop, libs) = three_uploaded_libraries(&cloud).await;
+    let api = cloud.api("ana").on(&laptop);
+    cloud.fail_pulls_of(&link(&laptop, &libs[0]).0.unwrap(), "unsigned_history");
+    add(&laptop, &libs[2], "Added after");
+
+    let reports = sync_all(&laptop, &api).await.unwrap();
+
+    let failed: Vec<_> = reports
+        .iter()
+        .filter(|r| r.outcome == Outcome::Failed)
+        .collect();
+    assert_eq!(failed.len(), 1);
+    assert_eq!(failed[0].library, libs[0]);
+    assert_eq!(failed[0].error.as_deref(), Some("unsigned_history"));
+    let third = reports.iter().find(|r| r.library == libs[2]).unwrap();
+    assert_eq!((third.outcome, third.sent > 0), (Outcome::Synced, true));
+}
+
+/// What belongs to the whole session still stops it: a version of the schema the server does not take.
+#[tokio::test]
+async fn an_error_of_the_session_still_stops_it() {
+    let cloud = FakeCloud::default();
+    let (laptop, libs) = three_uploaded_libraries(&cloud).await;
+    cloud.fail_pulls_of(&link(&laptop, &libs[1]).0.unwrap(), "schema_version");
+
+    let result = sync_all(&laptop, &cloud.api("ana").on(&laptop)).await;
+
+    assert!(matches!(result, Err(Error::Cloud("schema_version"))));
+}
+
+/// DAT-009: a cut that arrives while a library comes down is a result, like for a library already here.
+#[tokio::test]
+async fn a_library_cut_while_it_comes_down_is_a_result_and_the_others_still_come_down() {
+    let cloud = FakeCloud::default();
+    let (laptop, libs) = three_uploaded_libraries(&cloud).await;
+    cloud.fail_pulls_of(&link(&laptop, &libs[0]).0.unwrap(), "access_withdrawn");
+    let phone = Database::in_memory();
+
+    let reports = sync_all(&phone, &cloud.api("ana").on(&phone))
+        .await
+        .unwrap();
+
+    let first = reports.iter().find(|r| r.library == libs[0]).unwrap();
+    assert_eq!(first.outcome, Outcome::AccessWithdrawn);
+    let conn = phone.lock().unwrap();
+    assert!(!libraries::library_exists(&conn, &libs[0]).unwrap());
+    assert!(libraries::library_exists(&conn, &libs[1]).unwrap());
+    assert!(libraries::library_exists(&conn, &libs[2]).unwrap());
 }

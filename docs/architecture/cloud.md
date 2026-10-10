@@ -444,6 +444,9 @@ Lista las `C` de la cuenta y, para cada una:
 | `C` aún no tiene enlace en el servidor (creada y sin subir) | Nada | (sin informe) |
 | Biblioteca local enlazada a una `C` que la cuenta ya no lista | Nada | `missing_in_cloud` |
 | Biblioteca local enlazada a una nube de otro servidor | Nada, ni una llamada | `other_server` |
+| El paso de **una** biblioteca falla por algo de esa biblioteca (`sync_library`, `adopt_link` o `download`) | Las demás siguen. El informe lleva `error` con el código si lo hay (DAT-009) | `failed` |
+
+**Qué corta la sesión entera y qué no (DAT-009, `cloud::stops_the_session`).** Cortan la sesión: no haber iniciado sesión (`not_signed_in`), una versión del esquema que el servidor no admite (`schema_version`), cualquier error de la cuenta (`Error::Account`: servidor no disponible, límite de peticiones, dispositivo quitado), y los fallos de este dispositivo (`Http`, `Io`, `Sqlite`, base de datos bloqueada). Es de una biblioteca todo lo demás (`not_found`, `unsigned_history`, `invalid_request`, un registro que no se puede fusionar…). `download` trata un `access_withdrawn` como `sync_library`: si el corte llega al bajar, y la biblioteca nunca estuvo aquí, no hay nada que borrar (`access_withdrawn`); si llega al subir lo que se acaba de bajar, se pide la prueba y se comprueba como siempre.
 
 ### Qué test cubre cada regla (`cloud/tests.rs`)
 
