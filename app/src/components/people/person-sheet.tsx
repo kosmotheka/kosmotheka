@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EllipsisVertical, Info, Trash2, UserRoundCheck, UserRoundMinus } from "lucide-react";
 
-import { Avatar, Switch } from "@/components/people/role-parts";
+import { Avatar, Switch, linkNote } from "@/components/people/role-parts";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -152,6 +152,11 @@ export function PersonSheet({
                     <span className="font-normal text-muted-foreground">
                       {" "}
                       · {t("people.thisDevice")}
+                    </span>
+                  )}
+                  {linkNote(device, t) && (
+                    <span className="block text-[13px] font-normal text-muted-foreground">
+                      {linkNote(device, t)}
                     </span>
                   )}
                 </span>

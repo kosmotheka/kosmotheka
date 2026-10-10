@@ -137,7 +137,12 @@ Propuestos por Design el 10/10/2026 ([original](screens/cloud-family/errors-fase
 | — | `access_withdrawn` (error, `403` con pruebas) | aviso | `accountErrors.accessWithdrawn`, `cloud.errors.access_withdrawn` |
 | — | `no_cloud_device` (solo de la app) | error | `cloud.errors.no_cloud_device`: el servidor no da identidad a la nube y no se puede dar ese poder |
 
-Sin código real todavía (no se inventan; son del hito 7.5.5c): `device_duplicate`, `person_account_taken` y `cloud_link_disabled`. Los textos nuevos que no son errores (`cloud_pick.*`, `joined.*`, `autolink.*`, `device.no_person`) están en las claves `cloud.pick.*`, `cloud.notice.joined*`, `cloud.autolink.*` y `people.noPerson*` de los ficheros de idioma.
+Sin código real (no se inventan; comprobado en 7.5.5c, 10/10/2026): el servidor no da ningún código en estos tres casos, así que no llegan a la app.
+- `device_duplicate`: un dispositivo registrado con otra clave simplemente no se vincula (`AccountLinker::linkDeviceIn` devuelve falso, sin código).
+- `person_account_taken`: `AccountLinker::link` devuelve `null` en silencio cuando otra cuenta ya es esa persona; `claim` no lo cuenta.
+- `cloud_link_disabled`: no hay error; el interruptor solo vacía `cloud_device_id` en la biblioteca, y la nube sin poder no escribe nada. Sería un texto inferido, no un error del servidor.
+
+Lo que sí llega es `claim.conflicts` («este dispositivo es de otra persona»): diálogo `cloud.otherOwner.*`. Los textos nuevos que no son errores (`cloud_pick.*`, `joined.*`, `autolink.*`, `device.no_person`) están en las claves `cloud.pick.*`, `cloud.notice.joined*`, `cloud.autolink.*` y `people.noPerson*` de los ficheros de idioma.
 
 ## Errores internos
 

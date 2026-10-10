@@ -1286,6 +1286,20 @@ pub async fn set_cloud_power(
     result
 }
 
+/// Libraries where this device is another person's than the signed-in account, not answered yet (D76).
+#[tauri::command]
+pub fn cloud_other_owners(
+    database: State<'_, Database>,
+) -> Result<Vec<cloud::other_owner::OtherOwner>> {
+    cloud::other_owner::pending(&*database.lock()?)
+}
+
+/// «Leave it as it is»: the question about `library_id` is not asked again.
+#[tauri::command]
+pub fn answer_other_owner(database: State<'_, Database>, library_id: String) -> Result<()> {
+    cloud::other_owner::answer(&*database.lock()?, &library_id)
+}
+
 /// Syncs every library of the account with the cloud, one report per library.
 #[tauri::command]
 pub async fn sync_cloud(

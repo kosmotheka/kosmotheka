@@ -215,6 +215,8 @@ pub fn run() {
             commands::upload_to_cloud,
             commands::set_cloud_power,
             commands::sync_cloud,
+            commands::cloud_other_owners,
+            commands::answer_other_owner,
             commands::cloud_events_wake,
             commands::cloud_connection
         ])

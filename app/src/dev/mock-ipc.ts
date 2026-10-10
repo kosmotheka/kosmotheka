@@ -575,6 +575,8 @@ const dev = (id: string, name: string, thisDevice = false) => ({
   name,
   thisDevice,
   lastDeviceOfLastAdmin: false,
+  linkedByCloud: id === "pixel",
+  linkedBy: null,
 });
 const people: People = {
   hasRoles: !params.has("noroles"),
@@ -588,6 +590,7 @@ const people: People = {
       canShare: true,
       accessWithdrawn: false,
       lastAdmin: true,
+      hasAccount: true,
       devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
       elsewhere: ["Club de rol"],
     },
@@ -598,6 +601,7 @@ const people: People = {
       canShare: true,
       accessWithdrawn: false,
       lastAdmin: false,
+      hasAccount: false,
       devices: [dev("phone", "Móvil de Laura")],
       elsewhere: [],
     },
@@ -608,6 +612,7 @@ const people: People = {
       canShare: false,
       accessWithdrawn: params.has("withdrawn"),
       lastAdmin: false,
+      hasAccount: false,
       devices: [
         dev("hugo-phone", "Móvil de Hugo", params.has("reader")),
         dev("tablet", "Tablet Lenovo"),

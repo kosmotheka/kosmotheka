@@ -39,9 +39,9 @@ En las carpetas de bibliotecas, en `cloud-account/` y en `cloud-family/`, `ds-ba
 
 **Diferencias de `cloud-family/` con lo construido**, a resolver en el hito 7.5.5:
 - `cloud-family/` no tiene captura `-overview.png`, y no se ha comprobado contra el proyecto de Design si falta alguna pieza (se descargó a mano).
-- `download.background` («Si sales de la app, seguirá bajando») promete algo que la app no hace: la sincronización con la nube solo corre con la app abierta. No se muestra.
-- «Pedir a quien administra que lo cambie» supone una petición normal en Peticiones. Hay que comprobar que la asignación de un dispositivo firmada por quien no administra llega como petición y se puede aceptar desde ahí.
-- La biblioteca «en modo de solo mirar» mientras el móvil nuevo aún no tiene su rol (`lib.finishing`) no existe: hoy el dispositivo sin persona ya no puede editar con roles, pero la pantalla no lo dice así.
-- La etiqueta «por la nube» de un dispositivo necesita saber quién firmó su vinculación; Rust no lo expone todavía.
+- `download.background` («Si sales de la app, seguirá bajando») promete algo que la app no hace: la sincronización con la nube solo corre con la app abierta. No se muestra. La pantalla de bajada es un aviso sin porcentaje (`DownloadWait`) y el resumen final es un aviso de texto, no una pantalla (7.5.5c).
+- «Pedir a quien administra que lo cambie» y «Hacerla mía» no están (7.5.5c): lo primero necesita saber qué persona es la cuenta y la app no lo sabe; lo segundo es de quien administra (regla 3). El diálogo explica y deja «Dejarlo como está».
+- `lib.finishing` y `download.finishing` no se construyen: la biblioteca nunca se ve sin que la sesión haya intentado ya vincular el dispositivo; si sigue sin persona, es `people.noPerson*`.
+- «Por la nube» y «vinculado por Ana» salen de `PersonDevice.linkedByCloud` y `linkedBy` (7.5.5c). Si se quita el poder a la nube, la etiqueta se pierde.
 - Los códigos de error de `errors-fase-7b.md` son nombres de Design; los del servidor son otros (`access_withdrawn`, `link_not_allowed`…). Manda el servidor.
 - «No se puede echar al último administrador» ya es, desde SEG-036, «al último que tiene algún dispositivo», y vale también para quitarle su único dispositivo: el diálogo que lo explica debe cubrir los dos casos.

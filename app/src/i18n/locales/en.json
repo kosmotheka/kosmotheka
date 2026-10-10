@@ -824,6 +824,10 @@
     "no": "No",
     "you": "you",
     "thisDevice": "this device",
+    "hasAccount": "Has a cloud account",
+    "accountNote": "This person has an account, so their new devices can get in through the cloud.",
+    "viaCloud": "by the cloud",
+    "linkedBy": "linked by {{person}}",
     "noRole": "No role",
     "name": "Name",
     "and": " and ",
@@ -1705,11 +1709,26 @@
       "pickLabel": "The cloud can give access to my new devices",
       "pickHint": "A new phone belonging to someone at home with an account gets in on its own, with that person’s role. You can change this in each library’s settings."
     },
+    "otherOwner": {
+      "title": "In “{{library}}”, this device belongs to {{person}}",
+      "body": "You signed in with your account, but whoever administers the library said this device belongs to someone else.",
+      "keep": "It stays as it is: in “{{library}}” you see the library as {{as}}.",
+      "change": "To change whose it is, whoever administers the library has to do it from their own device, in People.",
+      "action": "Leave it as it is",
+      "foot": "We will not ask again on this device, unless another account signs in or the device changes hands."
+    },
+    "download": {
+      "title": "Downloading your libraries from the cloud",
+      "lead": "Large libraries can take a while. Nobody at home needs to do anything."
+    },
     "notice": {
       "joinedOne": "You are now in “{{name}}” in the cloud. As {{as}}.",
       "joinedMany_one": "You are now in {{count}} library in the cloud · {{list}}",
       "joinedMany_other": "You are now in {{count}} libraries in the cloud · {{list}}",
-      "downloaded": "{{name}} came down from your cloud.",
+      "downloadedCount_one": "{{count}} library came down from your cloud.",
+      "downloadedCount_other": "{{count}} libraries came down from your cloud.",
+      "downloadedAs": "In “{{name}}” you are {{as}}.",
+      "downloadedNotUploaded": "Libraries you did not upload are still on your other devices.",
       "libraryConflict": "«{{name}}» was not brought down from the cloud: this device already has a different library that the app identifies the same way. Nothing was mixed.",
       "missingInCloud": "{{name}} is no longer in your cloud account. It stays on this device.",
       "deletedHere": "You deleted a library on this device that is still in your cloud. It was not downloaded again.",

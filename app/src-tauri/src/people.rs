@@ -2,7 +2,7 @@
 //! what the screens list and what an administrator changes. The permission rules
 //! decide whether each change is allowed, as for any other operation.
 
-use kosmotheka_domain::{Change, Entity};
+use kosmotheka_domain::{Change, Entity, LibraryView};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -22,6 +22,10 @@ pub struct PersonDevice {
     pub this_device: bool,
     /// Removing it would leave the library without an administrator who can act (SEG-036): refused.
     pub last_device_of_last_admin: bool,
+    /// The operation that said whose it is was signed by the cloud's device (D76, D96).
+    pub linked_by_cloud: bool,
+    /// The person whose device signed that operation, when it was not the cloud, nor the device itself.
+    pub linked_by: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -35,6 +39,8 @@ pub struct Person {
     pub access_withdrawn: bool,
     /// The last administrator who can act: they cannot be demoted nor withdrawn (D58, SEG-036).
     pub last_admin: bool,
+    /// An account is linked to this person (D76). Never says which one.
+    pub has_account: bool,
     pub devices: Vec<PersonDevice>,
     /// Other libraries on this device where the same person is (same member id).
     pub elsewhere: Vec<String>,
@@ -57,22 +63,51 @@ pub struct People {
 
 pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
     let me = ops::device_id(conn)?;
-    let devices: Vec<(String, String, Option<String>)> = conn
+    let devices: Vec<(String, String, Option<String>, Option<String>)> = conn
         .prepare(&format!(
-            "SELECT id, name, {} FROM devices d WHERE library_id = ?1 ORDER BY name",
-            permissions::person_of("d")
+            "SELECT id, name, {person},
+                    (SELECT v.hlc FROM field_versions v
+                      WHERE v.library_id = d.library_id AND v.entity = 'devices'
+                        AND v.entity_id = d.id AND v.field = 'member_id')
+               FROM devices d WHERE library_id = ?1 ORDER BY name",
+            person = permissions::person_of("d")
         ))?
-        .query_map([library], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .query_map([library], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })?
         .collect::<rusqlite::Result<_>>()?;
-    let device = |id: &str, name: &str| PersonDevice {
-        id: id.to_owned(),
-        name: name.to_owned(),
-        this_device: id == me,
-        last_device_of_last_admin: false,
+    let cloud = permissions::SqlView::new(conn, library).cloud_device();
+    let device = |id: &str, name: &str, assigned_at: Option<&str>| {
+        // Who signed the operation that said whose it is: read from the field's version, no extra record.
+        let author = assigned_at
+            .and_then(|hlc| hlc.parse::<kosmotheka_domain::Hlc>().ok())
+            .map(|hlc| hlc.device);
+        let linked_by_cloud = author.is_some() && author == cloud;
+        let linked_by = author
+            .filter(|author| !linked_by_cloud && author != id)
+            .and_then(|author| {
+                let person = permissions::person_of_device(conn, library, &author).ok()??;
+                conn.query_row(
+                    "SELECT name FROM members WHERE library_id = ?1 AND id = ?2",
+                    [library, &person],
+                    |row| row.get(0),
+                )
+                .optional()
+                .ok()?
+            });
+        PersonDevice {
+            id: id.to_owned(),
+            name: name.to_owned(),
+            this_device: id == me,
+            last_device_of_last_admin: false,
+            linked_by_cloud,
+            linked_by,
+        }
     };
     let mut people: Vec<Person> = conn
         .prepare(
-            "SELECT id, name, role, can_share, coalesce(access_withdrawn, 0) FROM members
+            "SELECT id, name, role, can_share, coalesce(access_withdrawn, 0),
+                    coalesce(account_id, '') <> '' FROM members
               WHERE library_id = ?1 ORDER BY name COLLATE NOCASE, id",
         )?
         .query_map([library], |row| {
@@ -83,16 +118,19 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
                 can_share: row.get::<_, Option<i64>>(3)?.unwrap_or(0) != 0,
                 access_withdrawn: row.get::<_, i64>(4)? != 0,
                 last_admin: false,
+                has_account: row.get(5)?,
                 devices: Vec::new(),
                 elsewhere: Vec::new(),
             })
         })?
         .collect::<rusqlite::Result<_>>()?;
     let mut unassigned = Vec::new();
-    for (id, name, member) in &devices {
+    for (id, name, member, assigned_at) in &devices {
         match people.iter_mut().find(|p| Some(&p.id) == member.as_ref()) {
-            Some(person) => person.devices.push(device(id, name)),
-            None => unassigned.push(device(id, name)),
+            Some(person) => person
+                .devices
+                .push(device(id, name, assigned_at.as_deref())),
+            None => unassigned.push(device(id, name, None)),
         }
     }
     // A withdrawn administrator no longer administers (D98).

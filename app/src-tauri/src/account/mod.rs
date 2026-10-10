@@ -204,6 +204,11 @@ fn cached_user(conn: &Connection) -> Result<Option<AccountUser>> {
     Ok(read_state(conn, ACCOUNT_USER)?.and_then(|raw| serde_json::from_str(&raw).ok()))
 }
 
+/// The id of the account signed in on this device, from the cached user.
+pub(crate) fn signed_in_user_id(conn: &Connection) -> Result<Option<String>> {
+    Ok(cached_user(conn)?.map(|user| user.id))
+}
+
 pub(crate) fn is_signed_in(conn: &Connection) -> Result<bool> {
     Ok(read_state(conn, ACCOUNT_TOKEN)?.is_some())
 }

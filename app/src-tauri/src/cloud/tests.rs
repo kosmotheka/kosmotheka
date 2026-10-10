@@ -11,6 +11,7 @@ use serde_json::{Map, Value, json};
 
 use super::*;
 use crate::catalog;
+use crate::permissions;
 
 // --- The fake cloud --------------------------------------------------------
 
@@ -517,6 +518,12 @@ impl CloudApi for FakeApi {
                 continue;
             };
             let (registered, _, owner) = library.device_fields(id);
+            // The account is a person here and this device, registered with this key, is someone else's.
+            if registered.as_deref() == Some(key.as_str())
+                && owner.as_ref().is_some_and(|owner| *owner != person)
+            {
+                claimed.conflicts.push(cloud.clone());
+            }
             if registered.as_deref() == Some(key.as_str())
                 && owner.is_none()
                 && library.cloud_writes(
@@ -1182,6 +1189,17 @@ async fn a_new_phone_of_a_linked_account_gets_the_library_its_person_and_its_rol
             .iter()
             .any(|r| r.library == lib && r.outcome == Outcome::Downloaded)
     );
+    // The report says who the phone is by the end of the session, for the summary of the download.
+    assert_eq!(
+        reports
+            .iter()
+            .find(|r| r.library == lib)
+            .and_then(|r| r.me.clone()),
+        Some(Joined {
+            person: "Hugo".into(),
+            role: Some("editor".into())
+        })
+    );
     let new_id = ops::device_id(&new.lock().unwrap()).unwrap();
     let person: Option<String> = new
         .lock()
@@ -1223,6 +1241,47 @@ async fn a_new_phone_of_a_linked_account_gets_the_library_its_person_and_its_rol
         );
     }
     assert_converged(&[&laptop, &phone, &new], &lib);
+
+    // Who linked each device (D76, D96): the cloud only for the new phone; by hand, the administrator.
+    let new_id = ops::device_id(&new.lock().unwrap()).unwrap();
+    let linked = |device: &Database| -> Vec<(String, bool, Option<String>)> {
+        let mut found: Vec<_> = people::list_people(&device.lock().unwrap(), &lib)
+            .unwrap()
+            .people
+            .into_iter()
+            .flat_map(|p| p.devices)
+            .map(|d| (d.id, d.linked_by_cloud, d.linked_by))
+            .collect();
+        found.sort();
+        found
+    };
+    for device in [&laptop, &new] {
+        let found = linked(device);
+        let of = |id: &str| found.iter().find(|d| d.0 == id).cloned().unwrap();
+        assert!(of(&new_id).1, "the new phone was linked by the cloud");
+        assert_eq!(of(&new_id).2, None);
+        assert!(!of(&phone_id).1, "the first phone was linked by hand");
+        assert_eq!(of(&phone_id).2.as_deref(), Some("Tersoal"));
+    }
+    let hugo_has_account = people::list_people(&laptop.lock().unwrap(), &lib)
+        .unwrap()
+        .people
+        .iter()
+        .map(|p| (p.name.clone(), p.has_account))
+        .collect::<Vec<_>>();
+    assert!(hugo_has_account.contains(&("Hugo".into(), true)));
+
+    // Hostile: a library that names as its cloud a device whose key does not derive its id has no cloud
+    // device, so nothing is «by the cloud» whoever signed (rule 12).
+    laptop
+        .lock()
+        .unwrap()
+        .execute(
+            "UPDATE libraries SET cloud_device_id = ?2 WHERE id = ?1",
+            [&lib, &new_id],
+        )
+        .unwrap();
+    assert!(linked(&laptop).iter().all(|d| !d.1));
 }
 
 /// D58: the only administrator loses her only phone. A new one and her account are enough.
@@ -2382,4 +2441,100 @@ async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
         (true, false, false),
         "no people, no roles"
     );
+}
+
+fn sign_in_as(device: &Database, user: &str) {
+    crate::account::store_session(
+        &device.lock().unwrap(),
+        "token",
+        &crate::account::AccountUser {
+            id: user.into(),
+            email: format!("{user}@example.com"),
+            name: user.into(),
+            locale: "en".into(),
+        },
+        &format!("{user}@example.com"),
+    )
+    .unwrap();
+}
+
+/// D76: the account is Tersoal but this phone is Hugo's. The app learns it from the claim, tells it once, and
+/// asks again only if another account signs in or the phone changes hands; it never changes whose it is.
+#[tokio::test]
+async fn a_device_of_another_person_is_asked_about_once_per_account_and_person() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    sync_all(&laptop, &tersoal).await.unwrap();
+    sign_in_as(&phone, "u1");
+    let hers = cloud.api("tersoal").on(&phone);
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let owner_before = person_of(&phone, &lib, &phone_id);
+    let open = |device: &Database| other_owner::pending(&device.lock().unwrap()).unwrap();
+
+    sync_all(&phone, &hers).await.unwrap();
+    let first = open(&phone);
+    assert_eq!(first.len(), 1, "{first:?}");
+    assert_eq!(
+        (first[0].person.as_str(), first[0].role.as_deref()),
+        ("Hugo", Some("reader"))
+    );
+    assert_eq!(
+        person_of(&phone, &lib, &phone_id),
+        owner_before,
+        "nothing changes"
+    );
+
+    other_owner::answer(&phone.lock().unwrap(), &lib).unwrap();
+    assert!(open(&phone).is_empty());
+    sync_all(&phone, &hers).await.unwrap();
+    assert!(open(&phone).is_empty(), "not asked again");
+
+    sign_in_as(&phone, "u2");
+    assert!(
+        open(&phone).is_empty(),
+        "the answer was for u1: nothing is open until a claim says it"
+    );
+    sync_all(&phone, &hers).await.unwrap();
+    assert_eq!(open(&phone).len(), 1, "another account is asked again");
+
+    // The phone changes hands: Laura's now. The old question is no longer the question.
+    let laura = ops::new_id();
+    {
+        let mut conn = laptop.lock().unwrap();
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &laura,
+                json!({ "name": "Laura", "role": "editor" }),
+            )],
+        )
+        .unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "device.assign",
+            vec![Change::update(
+                Entity::Device,
+                &phone_id,
+                permissions::assignment_fields(&tx, &lib, &phone_id, Some(&laura)).unwrap(),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+    }
+    sync_all(&laptop, &tersoal).await.unwrap();
+    sync_all(&phone, &hers).await.unwrap();
+    let again = open(&phone);
+    assert_eq!(again.len(), 1);
+    assert_eq!(again[0].person, "Laura");
+}
+
+fn person_of(device: &Database, library: &str, id: &str) -> Option<String> {
+    permissions::person_of_device(&device.lock().unwrap(), library, id).unwrap()
 }

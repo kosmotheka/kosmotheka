@@ -131,9 +131,11 @@ export function RevokeDialog({
           {others[0] &&
             ` ${t("people.revoke.stays", { person: person.name, device: others[0].name })}`}
         </p>
-        <p className="text-[13px] text-muted-foreground">
-          {t("people.revoke.tip", { person: person.name })}
-        </p>
+        {person.hasAccount && (
+          <p className="text-[13px] text-muted-foreground">
+            {t("people.revoke.tip", { person: person.name })}
+          </p>
+        )}
       </div>
       <div className={cn("flex gap-2", desktop ? "justify-end" : "flex-col-reverse")}>
         <Button variant="outline" className={cn(!desktop && "h-12")} onClick={onClose}>

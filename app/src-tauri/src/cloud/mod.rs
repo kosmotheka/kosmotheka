@@ -8,6 +8,7 @@
 
 pub mod client;
 pub mod events;
+pub mod other_owner;
 #[cfg(test)]
 mod tests;
 
@@ -159,6 +160,10 @@ pub struct LibraryReport {
     /// device hears of it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub joined: Option<Joined>,
+    /// With `Outcome::Downloaded`: who this device is in the library when the session ends, if it already
+    /// is someone (the cloud links a new device in the same session, D76).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub me: Option<Joined>,
 }
 
 /// Who this device's account became in a library the cloud let it into without an invitation.
@@ -191,6 +196,7 @@ impl LibraryReport {
             error: None,
             library_name: None,
             joined: None,
+            me: None,
         }
     }
 }
@@ -609,7 +615,15 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
     // Before listing, so a library this account was just given access to is in the list. A server that
     // does not know the route, or a network that fails here, must not stop the session: the list says
     // what there is.
-    let mut joined_in: Vec<String> = api.claim().await.map(|c| c.linked).unwrap_or_default();
+    let first_claim = api.claim().await.ok();
+    let mut joined_in: Vec<String> = first_claim
+        .as_ref()
+        .map(|claimed| claimed.linked.clone())
+        .unwrap_or_default();
+    let mut conflicts: Vec<String> = first_claim
+        .as_ref()
+        .map(|claimed| claimed.conflicts.clone())
+        .unwrap_or_default();
     let listing = api.list_libraries().await?;
     let (listed, withdrawn) = (listing.libraries, listing.withdrawn);
     let server = api.server();
@@ -698,6 +712,7 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
         && let Ok(claimed) = api.claim().await
     {
         joined_in.extend(claimed.linked);
+        conflicts.extend(claimed.conflicts);
         for cloud in claimed.devices {
             let Some(local) = reports
                 .iter()
@@ -743,6 +758,27 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             report.joined = joined.filter(|_| report.outcome == Outcome::Synced);
         }
     }
+    for report in reports
+        .iter_mut()
+        .filter(|report| report.outcome == Outcome::Downloaded)
+    {
+        report.me = this_device_as(&*database.lock()?, &report.library)?;
+    }
+    // Where the account is one person and this device is another's: remembered here, asked once (D76).
+    // Only a first claim that worked says which conflicts are over.
+    {
+        let conn = database.lock()?;
+        for report in &reports {
+            let Some(cloud) = report.cloud_library.as_deref() else {
+                continue;
+            };
+            if conflicts.iter().any(|id| id == cloud) {
+                other_owner::note(&conn, &report.library)?;
+            } else if first_claim.is_some() {
+                other_owner::clear(&conn, &report.library)?;
+            }
+        }
+    }
     Ok(reports)
 }
 
@@ -765,6 +801,11 @@ fn note_joined(conn: &Connection, library: &str) -> Result<Option<Joined>> {
     if uploaded_here {
         return Ok(None);
     }
+    this_device_as(conn, library)
+}
+
+/// The person this device belongs to in `library`, with their role, if any.
+fn this_device_as(conn: &Connection, library: &str) -> Result<Option<Joined>> {
     Ok(people::list_people(conn, library)?
         .people
         .into_iter()

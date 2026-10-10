@@ -4,6 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import { CircleCheck } from "lucide-react";
 
 import { AccountDialog } from "@/components/account/account-dialog";
+import { OtherOwnerDialog } from "@/components/cloud/other-owner-dialog";
+import { DownloadWait } from "@/components/cloud/download-wait";
 import { AccountNotice } from "@/components/account/account-notice";
 import { AuthDialog } from "@/components/account/auth-dialog";
 import { DevicesDialog as AccountDevicesDialog } from "@/components/account/devices-dialog";
@@ -407,6 +409,7 @@ export default function App() {
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
       )}
+      <DownloadWait />
       {page}
     </>
   );
@@ -605,6 +608,7 @@ export default function App() {
             codes={overlay?.name === "twoFactor" ? overlay.codes : undefined}
           />
           <AccountNotice libraries={allLibraries} />
+          <OtherOwnerDialog desktop={desktop} />
           {!desktop && (
             <BookDetailView
               editionId={bookId}

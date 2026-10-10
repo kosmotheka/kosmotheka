@@ -838,6 +838,10 @@
     "no": "No",
     "you": "tú",
     "thisDevice": "este dispositivo",
+    "hasAccount": "Tiene cuenta en la nube",
+    "accountNote": "Esta persona tiene una cuenta, así que sus dispositivos nuevos pueden entrar por la nube.",
+    "viaCloud": "por la nube",
+    "linkedBy": "vinculado por {{person}}",
     "noRole": "Sin rol",
     "name": "Nombre",
     "and": " y ",
@@ -1719,11 +1723,26 @@
       "pickLabel": "La nube puede dar acceso a mis dispositivos nuevos",
       "pickHint": "Un móvil nuevo de alguien de casa con cuenta entra solo, con el rol de esa persona. Puedes cambiarlo en los ajustes de cada biblioteca."
     },
+    "otherOwner": {
+      "title": "En «{{library}}», este dispositivo es de {{person}}",
+      "body": "Has entrado con tu cuenta, pero quien administra la biblioteca dijo que este dispositivo es de otra persona.",
+      "keep": "Se queda como está: en «{{library}}» ves la biblioteca como {{as}}.",
+      "change": "Para cambiar de quién es, quien administra la biblioteca tiene que hacerlo desde su propio dispositivo, en Personas.",
+      "action": "Dejarlo como está",
+      "foot": "No volveremos a preguntarlo en este dispositivo, salvo que entre otra cuenta o el dispositivo cambie de manos."
+    },
+    "download": {
+      "title": "Bajando tus bibliotecas de la nube",
+      "lead": "Con bibliotecas grandes puede tardar un rato. No hace falta que nadie en casa haga nada."
+    },
     "notice": {
       "joinedOne": "Ya estás en «{{name}}» en la nube. Como {{as}}.",
       "joinedMany_one": "Ya estás en {{count}} biblioteca en la nube · {{list}}",
       "joinedMany_other": "Ya estás en {{count}} bibliotecas en la nube · {{list}}",
-      "downloaded": "{{name}} ha bajado de tu nube.",
+      "downloadedCount_one": "Ha bajado {{count}} biblioteca de tu nube.",
+      "downloadedCount_other": "Han bajado {{count}} bibliotecas de tu nube.",
+      "downloadedAs": "En «{{name}}» eres {{as}}.",
+      "downloadedNotUploaded": "Las bibliotecas que no subiste siguen en tus otros dispositivos.",
       "libraryConflict": "«{{name}}» no se ha bajado de la nube: este dispositivo ya tiene otra biblioteca distinta que la app identifica igual. No se ha mezclado nada.",
       "missingInCloud": "{{name}} ya no está en tu cuenta de la nube. Sigue en este dispositivo.",
       "deletedHere": "Borraste en este dispositivo una biblioteca que sigue en tu nube. No se descargó otra vez.",

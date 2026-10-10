@@ -237,7 +237,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
           </section>
         )}
 
-        {cloudRow?.status.linkedHere && (
+        {cloudRow?.status.linkedHere && cloudRow.status.hasRoles && (
           <AutolinkSwitch status={cloudRow.status} library={nameOf(library)} desktop={desktop} />
         )}
 

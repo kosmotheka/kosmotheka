@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, Info, Laptop, Smartphone } from "lucide-react";
 
@@ -26,6 +27,12 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
 }
 
 /** A device's name with an icon: a laptop for desktops, a phone otherwise. */
+/** «By the cloud» or «Linked by Ana»: who said whose the device is, when Rust knows. */
+export function linkNote(device: PersonDevice, t: TFunction): string | null {
+  if (device.linkedByCloud) return t("people.viaCloud");
+  return device.linkedBy ? t("people.linkedBy", { person: device.linkedBy }) : null;
+}
+
 export function DeviceChip({ device }: { device: PersonDevice }) {
   const { t } = useTranslation();
   const Icon = /port|lap|desk|pc|mac/i.test(device.name) ? Laptop : Smartphone;
@@ -35,6 +42,9 @@ export function DeviceChip({ device }: { device: PersonDevice }) {
       {device.name}
       {device.thisDevice && (
         <span className="text-muted-foreground">· {t("people.thisDevice")}</span>
+      )}
+      {linkNote(device, t) && (
+        <span className="text-muted-foreground">· {linkNote(device, t)}</span>
       )}
     </span>
   );

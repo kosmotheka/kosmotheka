@@ -750,6 +750,10 @@ export interface PersonDevice {
   thisDevice: boolean;
   /** Removing it would leave nobody who administers and can act: Rust refuses (SEG-036). */
   lastDeviceOfLastAdmin: boolean;
+  /** The operation that said whose it is was signed by the cloud (D76, D96). */
+  linkedByCloud: boolean;
+  /** The person whose device linked it, when it was neither the cloud nor the device itself. */
+  linkedBy: string | null;
 }
 
 export interface Person {
@@ -761,6 +765,8 @@ export interface Person {
   accessWithdrawn: boolean;
   /** The last administrator who can act: not demoted nor sent away (D58, SEG-036). */
   lastAdmin: boolean;
+  /** An account is linked to this person (D76); which one is never shown. */
+  hasAccount: boolean;
   devices: PersonDevice[];
   /** Other libraries on this device where the same person is. */
   elsewhere: string[];
@@ -1284,6 +1290,8 @@ export interface CloudLibraryReport {
   libraryName?: string;
   /** The account was let into this library as this person, the first time this device heard of it (D76). */
   joined?: { person: string; role: Role | null };
+  /** With outcome "downloaded": who this device is in the library by the end of the session, if anyone. */
+  me?: { person: string; role: Role | null };
 }
 
 export interface LibraryCloudStatus {
@@ -1318,6 +1326,25 @@ export function uploadToCloud(libraryId: string, autolink: boolean): Promise<Clo
 /** Lets the cloud link new devices of this library (D76), or stops it. Only who administers it. */
 export function setCloudPower(libraryId: string, on: boolean): Promise<void> {
   return invoke("set_cloud_power", { libraryId, on });
+}
+
+/** A library where the account is one person and this device belongs to another (D76). */
+export interface OtherOwner {
+  library: string;
+  libraryName: string;
+  /** The person this device belongs to there. */
+  person: string;
+  role: Role | null;
+}
+
+/** Questions about «this device is somebody else's» still open for the account signed in. Local only. */
+export function cloudOtherOwners(): Promise<OtherOwner[]> {
+  return invoke<OtherOwner[]>("cloud_other_owners");
+}
+
+/** «Leave it as it is»: not asked again for this account and this person. */
+export function answerOtherOwner(libraryId: string): Promise<void> {
+  return invoke("answer_other_owner", { libraryId });
 }
 
 /** One report per library of the account. */

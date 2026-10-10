@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ChevronRight,
+  Cloud,
   Ellipsis,
   Inbox,
   Lock,
@@ -19,7 +20,14 @@ import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { AccessDialog } from "@/components/people/access-dialog";
 import { ActivateDialog } from "@/components/people/activate-dialog";
 import { PersonSheet } from "@/components/people/person-sheet";
-import { Avatar, DeviceChip, RoleLegend, RoleMenu, Switch } from "@/components/people/role-parts";
+import {
+  Avatar,
+  DeviceChip,
+  RoleLegend,
+  RoleMenu,
+  Switch,
+  linkNote,
+} from "@/components/people/role-parts";
 import { RevokeDialog } from "@/components/people/revoke-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -254,6 +262,12 @@ export function PeoplePage({
       {person.devices.some((d) => d.thisDevice) && (
         <span className="font-normal text-muted-foreground"> · {t("people.you")}</span>
       )}
+      {person.hasAccount && (
+        <Cloud
+          className="ml-1.5 inline size-3.5 align-[-2px] text-muted-foreground"
+          aria-label={t("people.hasAccount")}
+        />
+      )}
     </span>
   );
 
@@ -340,6 +354,7 @@ export function PeoplePage({
                 <span key={device.id} className="flex items-center gap-1">
                   <Smartphone className="size-3.5" />
                   {device.name}
+                  {linkNote(device, t) && ` · ${linkNote(device, t)}`}
                 </span>
               ))}
             </span>
@@ -402,6 +417,12 @@ export function PeoplePage({
         )}
         {warning}
         {readOnlyNote}
+        {people.people.some((p) => p.hasAccount) && (
+          <p className="flex items-start gap-2.5 px-0.5 text-[13px] text-pretty text-muted-foreground">
+            <Cloud className="mt-0.5 size-3.5 shrink-0" />
+            <span>{t("people.accountNote")}</span>
+          </p>
+        )}
         {desktop ? table : list}
         {unassigned}
         <RoleLegend compact={!desktop} />

@@ -8,6 +8,7 @@ import {
   type CloudOutcome,
   type LibraryCloudStatus,
   type LibrarySummary,
+  type Role,
   accountStatus,
   cloudConnection,
   cloudErrorKey,
@@ -207,13 +208,35 @@ export function cloudNotices(
       }),
     );
   }
+  const downloaded = reports.filter((report) => report.outcome === "downloaded");
+  if (downloaded.length > 0) {
+    // One summary for the whole session: how many came down and who this device is in each.
+    const roleOf = (role: Role | null) => role && t(`people.roles.${role}`).toLocaleLowerCase();
+    const lines = downloaded.flatMap(({ library, me }) =>
+      me
+        ? [
+            t("cloud.notice.downloadedAs", {
+              name: nameOf(library),
+              as: [me.person, roleOf(me.role)].filter(Boolean).join(" · "),
+            }),
+          ]
+        : [],
+    );
+    messages.push(
+      [
+        t("cloud.notice.downloadedCount", { count: downloaded.length }),
+        ...lines,
+        t("cloud.notice.downloadedNotUploaded"),
+      ].join(" "),
+    );
+  }
   for (const report of reports) {
+    if (report.outcome === "downloaded") continue;
     const key = `${report.outcome}:${report.library}`;
-    if (once && report.outcome !== "downloaded" && told.has(key)) continue;
+    if (once && told.has(key)) continue;
     const name = nameOf(report.library, report.libraryName);
     const message = (
       {
-        downloaded: () => t("cloud.notice.downloaded", { name }),
         library_conflict: () => t("cloud.notice.libraryConflict", { name }),
         missing_in_cloud: () => t("cloud.notice.missingInCloud", { name }),
         deleted_here: () => t("cloud.notice.deletedHere"),
