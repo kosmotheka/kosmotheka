@@ -338,6 +338,22 @@ final class AuthControllerTest extends WebTestCase
         self::assertSame('{"error":"device_key_mismatch"}', $client->getResponse()->getContent());
     }
 
+    /** SEG-029: one spelling per device, the one operations carry. */
+    public function testADeviceIdInCapitalsCannotSignIn(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'capitals@example.com';
+        $this->registerAndConfirmForLogin($client, $email, 'correct horse battery');
+        $deviceId = strtoupper(Uuid::v4()->toRfc4122());
+        $keyPair = sodium_crypto_sign_keypair();
+        $challenge = $this->requestChallenge($client)['challenge'];
+
+        $this->requestLogin($client, $email, 'correct horse battery', $deviceId, 'Phone', $this->encode(sodium_crypto_sign_publickey($keyPair)), $challenge, $this->sign($challenge, $deviceId, sodium_crypto_sign_secretkey($keyPair)));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
+        self::assertNull($this->deviceRepository()->findOneBy(['deviceId' => $deviceId]));
+    }
+
     public function testLogoutInvalidatesTheToken(): void
     {
         $client = $this->createTestClient();

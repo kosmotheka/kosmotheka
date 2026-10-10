@@ -25,23 +25,26 @@ final readonly class CloudLibraryAccess
         private CloudLibraryRepository $libraries,
         private MembershipRepository $memberships,
         private AccessCutter $cutter,
+        private SyncNotifier $notifier,
     ) {
     }
 
     /**
-     * @param ?array<string, string> $vector the client's version vector, only on a pull: it decides how many earlier
-     *                                       operations of the withdrawing author go with the proofs (never the access)
+     * @param ?array<string, string> $vector  the client's version vector, only on a pull: it decides how many earlier
+     *                                        operations of the withdrawing author go with the proofs (never the access)
+     * @param bool                   $toWrite a link or a push: an account that is nobody in a library with roles may
+     *                                        still send, and gets nothing to read
      *
      * @throws AccountException not found, for any of the three first reasons above; `access_withdrawn` for a cut
      */
-    public function require(string $id, User $user, ?Device $device, ?array $vector = null): CloudLibrary
+    public function require(string $id, User $user, ?Device $device, ?array $vector = null, bool $toWrite = false): CloudLibrary
     {
         if (!Uuid::isValid($id)) {
             throw AccountException::notFound();
         }
         $library = $this->libraries->find(Uuid::fromString($id)) ?? throw AccountException::notFound();
         $membership = $this->memberships->findOf($library, $user) ?? throw AccountException::notFound();
-        if ($this->isCut($membership, $device)) {
+        if ($this->isCut($membership, $device, $toWrite)) {
             throw AccountException::accessWithdrawn($this->cutter->proofs($library, $device, $vector));
         }
 
@@ -67,20 +70,44 @@ final readonly class CloudLibraryAccess
         return ['libraries' => $libraries, 'withdrawn' => $withdrawn];
     }
 
-    private function isCut(Membership $membership, ?Device $device): bool
+    private function isCut(Membership $membership, ?Device $device, bool $toWrite = false): bool
     {
         if ($membership->isWithdrawn()) {
             return true;
         }
         $library = $membership->getCloudLibrary();
         $person = $membership->getMemberId();
+        // A row without a person, in a library with roles (SEG-030): the server gives it its person now if the
+        // account's devices have one; if they do not, the account is nobody there and the cloud gives it nothing.
+        if (!$person instanceof Uuid && $this->cutter->needsAPerson($library)) {
+            $this->cut($library);
+            $person = $membership->getMemberId();
+            // It may still send (`$toWrite`): what it sends is judged as nobody's, and an upload in several batches
+            // has roles in the catalog before the batch that says whose the uploading device is.
+            if (!$person instanceof Uuid) {
+                return !$toWrite;
+            }
+        }
         // The catalog is read now, not a notice that could have been lost: the first request after the withdrawal marks the row.
         if ($person instanceof Uuid && $this->cutter->personCut($library, $person)) {
-            $this->cutter->cut($library);
+            $this->cut($library);
 
             return true;
         }
 
         return $device instanceof Device && $this->cutter->deviceCut($library, $device);
+    }
+
+    /** The cut, and the notices a push gives after one (D75): the cloud may have signed, and the accounts cut should hear. */
+    private function cut(CloudLibrary $library): void
+    {
+        $cut = $this->cutter->cut($library);
+        if ([] === $cut) {
+            return;
+        }
+        $this->notifier->libraryChanged($library);
+        foreach ($cut as $user) {
+            $this->notifier->librariesOfAccountChanged($user);
+        }
     }
 }

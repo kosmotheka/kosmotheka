@@ -143,6 +143,10 @@ impl Change {
         if Uuid::parse_str(&self.id).is_err() {
             return Err(fail(InvalidId, None));
         }
+        // A device is a UUID in lowercase and nothing else, so one id cannot be written two ways (SEG-029).
+        if self.entity == Entity::Device && !crate::hlc::is_device_id(&self.id) {
+            return Err(fail(InvalidId, None));
+        }
         if self.entity == Entity::Library && self.id != library {
             return Err(fail(OtherLibrary, None));
         }
@@ -217,6 +221,10 @@ fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
             .as_str()
             .is_some_and(|s| s.len() == 13 && s.bytes().all(|b| b.is_ascii_digit())),
         FieldType::Ref(_) => value.as_str().is_some_and(|s| Uuid::parse_str(s).is_ok()),
+        FieldType::DeviceId => value.as_str().is_some_and(crate::hlc::is_device_id),
+        FieldType::DeviceIdOrEmpty => value
+            .as_str()
+            .is_some_and(|s| s.is_empty() || crate::hlc::is_device_id(s)),
     }
 }
 
@@ -338,7 +346,7 @@ mod tests {
             let mut op = json!({
                 "id": "01997c7e-0000-7000-8000-000000000001",
                 "library": "01997c7e-0000-7000-8000-00000000aaaa",
-                "hlc": "0001727222222222-00000000-dev",
+                "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
                 "intent": "member.add",
                 "changes": [{
                     "entity": "member",
@@ -362,7 +370,9 @@ mod tests {
         let op = Operation {
             id: "01997c7e-0000-7000-8000-000000000001".into(),
             library: "01997c7e-0000-7000-8000-00000000aaaa".into(),
-            hlc: "0001727222222222-00000000-dev".parse().unwrap(),
+            hlc: "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff"
+                .parse()
+                .unwrap(),
             intent: "member.add".into(),
             changes: vec![Change::create(
                 Entity::Member,
@@ -378,7 +388,7 @@ mod tests {
             json!({
                 "id": "01997c7e-0000-7000-8000-000000000001",
                 "library": "01997c7e-0000-7000-8000-00000000aaaa",
-                "hlc": "0001727222222222-00000000-dev",
+                "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
                 "intent": "member.add",
                 "previous": null,
                 "changes": [{

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Sync;
 
 use App\DataFixtures\SigningDevice;
+use App\Dto\OperationPayload;
 use App\Entity\CloudLibrary;
 use App\Repository\CloudOperationRepository;
 use App\Security\CloudKeyVault;
@@ -151,6 +152,8 @@ final class CloudAuthorTest extends WebTestCase
     {
         [$cloud] = $this->uploadedFamily(namesTheCloud: true);
         $container = self::getContainer();
+        $ahead = new \DateTimeImmutable('+30 minutes');
+        $millis = \sprintf('%016d', (int) $ahead->format('Uv'));
         $stopped = new CloudAuthor(
             $container->get(EntityManagerInterface::class),
             $container->get(CloudKeyVault::class),
@@ -158,7 +161,7 @@ final class CloudAuthorTest extends WebTestCase
             $container->get(CloudOperationRepository::class),
             $container->get(OperationSigner::class),
             $container->get(SchemaVersion::class),
-            new MockClock(new \DateTimeImmutable('@4102444800')), // 2100: ahead of any test time, and it does not move
+            new MockClock($ahead), // ahead of everything in the log, within what a push admits (SEG-028), and it does not move
             'http://kosmotheka.test',
         );
 
@@ -168,8 +171,44 @@ final class CloudAuthorTest extends WebTestCase
         $hlcs = $this->hlcsOf([$one, $two]);
         self::assertLessThan($hlcs[1], $hlcs[0]);
         self::assertNotSame($hlcs[0], $hlcs[1]);
-        self::assertStringStartsWith('0004102444800000-00000000-', $hlcs[0]);
-        self::assertStringStartsWith('0004102444800000-00000001-', $hlcs[1]);
+        self::assertStringStartsWith($millis.'-00000000-', $hlcs[0]);
+        self::assertStringStartsWith($millis.'-00000001-', $hlcs[1]);
+    }
+
+    /** SEG-028: a full counter in the newest operation of the log does not leave the cloud unable to sign. */
+    public function testAFullCounterMovesOnToTheNextMillisecondAndTheEndOfTimeIsRefused(): void
+    {
+        $author = self::getContainer()->get(CloudAuthor::class);
+        $hlc = new \ReflectionMethod(CloudAuthor::class, 'hlc');
+        $device = '01997c7e-0000-7000-8000-0000000000aa';
+
+        // Far ahead of the server's clock, with every digit of the counter used.
+        $next = $hlc->invoke($author, $device, '0009000000000000-ffffffff-'.$device);
+        self::assertSame('0009000000000001-00000000-'.$device, $next);
+        self::assertMatchesRegularExpression(OperationPayload::HLC_PATTERN, $next);
+
+        $this->expectException(CloudAuthorException::class);
+        $hlc->invoke($author, $device, '9999999999999999-ffffffff-'.$device);
+    }
+
+    /** SEG-039: a key sealed with another secret is «the cloud cannot sign here», not an error of the server. */
+    public function testAKeySealedWithAnotherSecretIsNoIdentityNotACrash(): void
+    {
+        [$cloud] = $this->uploadedFamily(namesTheCloud: true);
+        $container = self::getContainer();
+        $otherSecret = new CloudAuthor(
+            $container->get(EntityManagerInterface::class),
+            new CloudKeyVault(base64_encode(random_bytes(\SODIUM_CRYPTO_SECRETBOX_KEYBYTES))),
+            $container->get(CloudPush::class),
+            $container->get(CloudOperationRepository::class),
+            $container->get(OperationSigner::class),
+            $container->get(SchemaVersion::class),
+            new MockClock(),
+            'http://kosmotheka.test',
+        );
+
+        $this->expectException(CloudAuthorException::class);
+        $this->authorWith($otherSecret, $cloud, self::ACCOUNT);
     }
 
     public function testItNeedsATransactionAndALinkedLibrary(): void

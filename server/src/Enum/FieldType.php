@@ -22,4 +22,8 @@ enum FieldType
     case Count;
     /** Thirteen ASCII digits, without hyphens. */
     case Isbn13;
+    /** The id of a device: a UUID in lowercase (SEG-029). */
+    case DeviceId;
+    /** The id of a device, or the empty text that takes it away. */
+    case DeviceIdOrEmpty;
 }

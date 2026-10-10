@@ -25,8 +25,11 @@ final readonly class OperationPayload
      */
     public const array SERIALIZATION_CONTEXT = [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false];
 
-    /** Time, counter and device: `0001727222222222-00000003-<device id>`. */
-    public const string HLC_PATTERN = '/^[0-9]{16}-[0-9a-f]{8}-.+$/D';
+    /** Time, counter and device: `0001727222222222-00000003-<device id>`, the device being a UUID in lowercase (SEG-029). */
+    public const string HLC_PATTERN = '/^[0-9]{16}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/D';
+
+    /** The id of a device: a UUID written 8-4-4-4-12 in lowercase hexadecimal. Compared exactly, so one device has one writing (SEG-029). */
+    public const string DEVICE_ID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/D';
 
     /**
      * @param list<ChangePayload> $changes

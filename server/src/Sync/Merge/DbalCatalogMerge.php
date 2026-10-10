@@ -388,7 +388,7 @@ final class DbalCatalogMerge implements CatalogMerge
     {
         return match ($type) {
             // PostgreSQL text cannot hold U+0000 or invalid UTF-8.
-            FieldType::Text, FieldType::Date, FieldType::OneOf, FieldType::Isbn13 => \is_string($value) && !str_contains($value, "\0") && mb_check_encoding($value, 'UTF-8'),
+            FieldType::Text, FieldType::Date, FieldType::OneOf, FieldType::Isbn13, FieldType::DeviceId, FieldType::DeviceIdOrEmpty => \is_string($value) && !str_contains($value, "\0") && mb_check_encoding($value, 'UTF-8'),
             FieldType::Integer, FieldType::Count => \is_int($value),
             // The column is an INTEGER and the spec says 1 to 5.
             FieldType::Rating => \is_int($value) && $value >= 1 && $value <= 5,

@@ -2586,8 +2586,21 @@ mod tests {
                 for &index in order {
                     let mut fields = case.operations[index].clone();
                     let unsigned = fields.remove("unsigned").is_some();
+                    let id = fields["id"].as_str().unwrap().to_owned();
                     let mut operation: Operation =
-                        serde_json::from_value(Value::Object(fields)).unwrap();
+                        match serde_json::from_value(Value::Object(fields)) {
+                            Ok(operation) => operation,
+                            // An operation that is not even read (an author in capitals, SEG-029) is a
+                            // refused one: the case must say so.
+                            Err(_) => {
+                                assert!(
+                                    case.expect.rejected.contains(&id),
+                                    "case '{}': op {index} is unreadable but not expected rejected",
+                                    case.name
+                                );
+                                continue;
+                            }
+                        };
                     if !unsigned {
                         operation.signature = Some(key.sign(&operation));
                     }
@@ -3904,13 +3917,163 @@ mod tests {
         assert_converged(&[&laptop, &first, &last]);
     }
 
+    /// SEG-029: a reader writes the cloud's id in capitals as the author of what he signs. On the wire such an
+    /// id is not even read; and if a struct with it got to the judge, the comparison is exact, so it has no power.
+    #[test]
+    fn an_author_written_in_capitals_is_not_the_cloud_and_is_not_even_read() {
+        let (mut laptop, hugo_phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let mut cloud = Device::sharing(&laptop);
+        permissions::become_a_cloud_device(&cloud.0, 7);
+        let tx = cloud.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        laptop.pull_from(&cloud);
+        let cloud_id = device_id_of(&cloud);
+        let mut tablet = Device::sharing(&laptop);
+        let tx = tablet.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        laptop.pull_from(&tablet);
+        let tablet_id = device_id_of(&tablet);
+        let tablet_key = ops::signing_key(&tablet.0).unwrap().public_key();
+        let laura = ops::new_id();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &laura,
+                json!({ "name": "Laura", "role": "admin", "can_share": true }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        crate::people::name_cloud_device(&mut laptop.0, &lib, &cloud_id).unwrap();
+        let shout = cloud_id.to_uppercase();
+        let attacker_key = ops::signing_key(&hugo_phone.0).unwrap();
+
+        // The attacker's three operations, as structs (the wire would not even carry them).
+        let signed = |millis: u64, intent: &str, changes: Vec<Change>, previous: Option<String>| {
+            let mut operation = Operation {
+                id: ops::new_id(),
+                library: lib.clone(),
+                hlc: Hlc {
+                    millis,
+                    counter: 0,
+                    device: shout.clone(),
+                },
+                intent: intent.into(),
+                changes,
+                previous,
+                signature: None,
+            };
+            operation.signature = Some(attacker_key.sign(&operation));
+            SyncOperation {
+                schema_version: ops::schema_version(&laptop.0).unwrap(),
+                operation,
+            }
+        };
+        let base = now_millis() + 1_000;
+        let register = signed(
+            base,
+            "device.register",
+            vec![Change::create(
+                Entity::Device,
+                &shout,
+                json!({ "public_key": attacker_key.public_key(), "name": "not the cloud" }),
+            )],
+            None,
+        );
+        let account = signed(
+            base + 1,
+            "forged.account",
+            vec![Change::update(
+                Entity::Member,
+                &laura,
+                json!({ "account_id": ops::new_id() }),
+            )],
+            Some(register.operation.id.clone()),
+        );
+        let link = signed(
+            base + 2,
+            "forged.link",
+            vec![Change::update(
+                Entity::Device,
+                &tablet_id,
+                json!({ "member_id": laura, "vouched_key": tablet_key }),
+            )],
+            Some(account.operation.id.clone()),
+        );
+        // On the wire: not an operation at all.
+        for forged in [&register, &account, &link] {
+            let text = serde_json::to_value(forged).unwrap();
+            assert!(
+                serde_json::from_value::<SyncOperation>(text).is_err(),
+                "an author in capitals is not read"
+            );
+        }
+
+        let report = merge(
+            &mut laptop.0,
+            vec![register.clone(), account.clone(), link.clone()],
+        )
+        .unwrap();
+        let status = |id: &str| -> Option<String> {
+            laptop
+                .0
+                .query_row("SELECT status FROM operations WHERE id = ?1", [id], |row| {
+                    row.get(0)
+                })
+                .optional()
+                .unwrap()
+        };
+        let seen = format!(
+            "received {} rejected {}; register {:?}, account {:?}, link {:?}",
+            report.received,
+            report.rejected,
+            status(&register.operation.id),
+            status(&account.operation.id),
+            status(&link.operation.id)
+        );
+
+        // If it got to the judge anyway, it has no power: the cloud is still the one named, in lowercase.
+        assert_eq!(
+            permissions::SqlView::new(&laptop.0, &lib).cloud_device_for_tests(),
+            Some(cloud_id.clone()),
+            "the cloud keeps its power, and it is the one in lowercase"
+        );
+        for forged in [&account, &link] {
+            assert_ne!(
+                status(&forged.operation.id).as_deref(),
+                Some("applied"),
+                "{} ({seen})",
+                forged.operation.intent
+            );
+        }
+        let laura_account: Option<String> = laptop
+            .0
+            .query_row(
+                "SELECT account_id FROM members WHERE library_id = ?1 AND id = ?2",
+                [&lib, &laura],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(laura_account, None, "{seen}");
+        assert_eq!(device_row(&laptop, &tablet_id).0, None, "{seen}");
+        // What happened, for the record of the audit.
+        assert!(!seen.is_empty());
+    }
+
     #[test]
     fn the_same_hlc_does_not_overwrite_a_field() {
         let device = Device::new();
         let mut conn = device.0;
         let lib = device.1;
         let work = "01997c7e-0000-7000-8000-0000000000b1";
-        let at = "0001727222222222-00000001-dev";
+        let at = "0001727222222222-00000001-01997c7e-0000-7000-8000-0000000000ff";
         let tx = conn.transaction().unwrap();
 
         let create = Change::create(
@@ -3940,9 +4103,9 @@ mod tests {
         let lib = device.1;
         let work = "01997c7e-0000-7000-8000-0000000000b2";
         let (h1, h2, h3) = (
-            "0001727222222222-00000001-dev",
-            "0001727222222222-00000002-dev",
-            "0001727222222222-00000003-dev",
+            "0001727222222222-00000001-01997c7e-0000-7000-8000-0000000000ff",
+            "0001727222222222-00000002-01997c7e-0000-7000-8000-0000000000ff",
+            "0001727222222222-00000003-01997c7e-0000-7000-8000-0000000000ff",
         );
         let tx = conn.transaction().unwrap();
         let change = |action_create: bool, fields: Value| {

@@ -422,7 +422,9 @@ mod tests {
         let op = Operation {
             id: "01997c7e-0000-7000-8000-000000000001".into(),
             library: "01997c7e-0000-7000-8000-00000000aaaa".into(),
-            hlc: "0000000000000001-00000000-dev".parse().unwrap(),
+            hlc: "0000000000000001-00000000-01997c7e-0000-7000-8000-0000000000ff"
+                .parse()
+                .unwrap(),
             intent: "tag.add".into(),
             changes: vec![
                 Change::delete(Entity::Tag, "t1"),
@@ -434,7 +436,7 @@ mod tests {
         };
         let change = |id| format!(r#"{{"action":"delete","entity":"tag","id":"{id}"}}"#);
         let expected = format!(
-            r#"{{"changes":[{},{},{}],"hlc":"0000000000000001-00000000-dev","id":"01997c7e-0000-7000-8000-000000000001","intent":"tag.add","library":"01997c7e-0000-7000-8000-00000000aaaa","previous":null}}"#,
+            r#"{{"changes":[{},{},{}],"hlc":"0000000000000001-00000000-01997c7e-0000-7000-8000-0000000000ff","id":"01997c7e-0000-7000-8000-000000000001","intent":"tag.add","library":"01997c7e-0000-7000-8000-00000000aaaa","previous":null}}"#,
             change("t1"),
             change("t2"),
             change("t3")

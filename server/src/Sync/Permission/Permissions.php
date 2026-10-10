@@ -38,7 +38,7 @@ final class Permissions
         $cloud = !$fenced
             && array_any($operation->changes, self::touchesCloudField(...))
             && null !== ($named = $view->cloudDevice())
-            && 0 === strcasecmp($named, $author);
+            && $named === $author;
 
         return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
     }
@@ -69,7 +69,7 @@ final class Permissions
             CatalogEntity::Member => 1 === \count($change->fields) && \array_key_exists('account_id', $change->fields) && $view->memberExists($change->id),
             CatalogEntity::Device => 2 === \count($change->fields)
                 && \is_string($change->fields['vouched_key'] ?? null) && '' !== $change->fields['vouched_key']
-                && 0 !== strcasecmp($change->id, $author)
+                && $change->id !== $author
                 && !$view->deviceHasMemberId($change->id)
                 && \is_string($change->fields['member_id'] ?? null) && '' !== $change->fields['member_id']
                 && $view->memberHasAccount($change->fields['member_id'])
@@ -119,6 +119,10 @@ final class Permissions
                 return false;
                 // Nobody gives more than they have.
             case CatalogEntity::Member:
+                // Deleting a person is for administrators, even one the editor created herself (SEG-034).
+                if (ChangeAction::Delete === $change->action) {
+                    return false;
+                }
                 if ($touches('role') || $touches('can_share') || $touches('access_withdrawn')) {
                     return false;
                 }

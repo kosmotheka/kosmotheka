@@ -87,9 +87,7 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     // makes it nobody's. Asked only when a change could use it.
     let cloud = !fenced
         && operation.changes.iter().any(touches_cloud_field)
-        && view
-            .cloud_device()
-            .is_some_and(|cloud| cloud.eq_ignore_ascii_case(author));
+        && view.cloud_device().is_some_and(|cloud| cloud == author);
     operation
         .changes
         .iter()
@@ -134,7 +132,7 @@ fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool
         Entity::Device => {
             change.fields.len() == 2
                 && text("vouched_key").is_some()
-                && !change.id.eq_ignore_ascii_case(author)
+                && change.id != author
                 && !view.device_has_member_id(&change.id)
                 && text("member_id").is_some_and(|member| {
                     view.member_has_account(member) && !view.member_access_withdrawn(member)
@@ -183,6 +181,9 @@ fn change_allowed(
         }
         Entity::Device | Entity::Library | Entity::Revocation => false,
         // Nobody gives more than they have.
+        // Deleting a person is for administrators, even one the editor created herself (SEG-034): a deleted
+        // person leaves her devices without a person and her account without a library.
+        Entity::Member if change.action == Action::Delete => false,
         // `access_withdrawn` goes with `role` (D98): whoever may not give a role may not echar a person
         // or give the access back, the person themself included.
         Entity::Member

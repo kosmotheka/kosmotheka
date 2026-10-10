@@ -23,4 +23,6 @@ enum OperationRejection: string
     case BrokenChain = 'broken_chain';
     /** Another operation of this library already holds its HLC: only a modified app signs two with one time. */
     case HlcTaken = 'hlc_taken';
+    /** Dated more than the allowed clock drift ahead of the server's clock (SEG-028): an honest device never signs it. */
+    case TooFarAhead = 'too_far_ahead';
 }

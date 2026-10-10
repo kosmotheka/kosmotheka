@@ -196,12 +196,12 @@ final readonly class CatalogLibraryView implements LibraryView
 
         // Only if the key registered for that device in the library is the one its id derives from (D95).
         $key = $this->entityManager->createQuery(\sprintf(
-            'SELECT d.publicKey FROM %s d WHERE d.cloudLibrary = :library AND LOWER(d.id) = :device',
+            'SELECT d.publicKey FROM %s d WHERE d.cloudLibrary = :library AND d.id = :device',
             Device::class,
-        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', strtolower($named))->setMaxResults(1)->getOneOrNullResult();
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $named)->setMaxResults(1)->getOneOrNullResult();
         $derived = \is_array($key) && \is_string($key['publicKey']) ? CloudDeviceId::fromPublicKey($key['publicKey']) : null;
 
-        return null !== $derived && $derived === strtolower($named) ? $named : null;
+        return null !== $derived && $derived === $named ? $named : null;
     }
 
     public function memberExists(string $member): bool

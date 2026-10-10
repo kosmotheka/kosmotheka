@@ -21,6 +21,7 @@ use App\Security\AccountException;
 use App\Sync\Permission\CatalogJudge;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -37,6 +38,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 final readonly class CloudPush
 {
+    /** How far ahead of the server's clock an operation may be dated: the app's `MAX_CLOCK_DRIFT_MILLIS` (crates/domain/src/hlc.rs). */
+    public const int MAX_CLOCK_DRIFT_MILLIS = 3_600_000;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private SchemaVersion $schemaVersion,
@@ -51,6 +55,7 @@ final readonly class CloudPush
         private CloudAuthor $author,
         #[Autowire(lazy: true)]
         private AccessCutter $cutter,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -239,6 +244,11 @@ final readonly class CloudPush
             return false;
         }
 
+        // Nothing dated further ahead than a device's clock may drift (`MAX_CLOCK_DRIFT_MILLIS` in the app, one hour):
+        // such an operation lifts the floor of every HLC the library writes afterwards, the cloud's own included (SEG-028).
+        if ((int) substr($payload->hlc, 0, 16) > (int) $this->clock->now()->format('Uv') + self::MAX_CLOCK_DRIFT_MILLIS) {
+            throw new OperationRejectedException(OperationRejection::TooFarAhead);
+        }
         if (!$library->isLinked()) {
             // Nothing enters before the link.
             throw new OperationRejectedException(OperationRejection::NotLinked);

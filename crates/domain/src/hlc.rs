@@ -107,6 +107,16 @@ impl fmt::Display for Hlc {
     }
 }
 
+/// Whether `text` is the id of a device: a UUID written `8-4-4-4-12` in **lowercase** hexadecimal. It is what a
+/// device is in every operation, so two writings of one id can never be two devices (SEG-029).
+pub fn is_device_id(text: &str) -> bool {
+    text.len() == 36
+        && text.bytes().enumerate().all(|(index, byte)| match index {
+            8 | 13 | 18 | 23 => byte == b'-',
+            _ => byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte),
+        })
+}
+
 impl FromStr for Hlc {
     type Err = HlcParseError;
 
@@ -115,7 +125,7 @@ impl FromStr for Hlc {
         let millis = parts.next().ok_or(HlcParseError)?;
         let counter = parts.next().ok_or(HlcParseError)?;
         let device = parts.next().ok_or(HlcParseError)?;
-        if millis.len() != 16 || counter.len() != 8 || device.is_empty() {
+        if millis.len() != 16 || counter.len() != 8 || !is_device_id(device) {
             return Err(HlcParseError);
         }
         Ok(Hlc {
@@ -242,23 +252,28 @@ mod tests {
         let earlier = Hlc {
             millis: 99,
             counter: 15,
-            device: "dev".into(),
+            device: "01997c7e-0000-7000-8000-0000000000ff".into(),
         };
         let later = Hlc {
             millis: 100,
             counter: 0,
-            device: "dev".into(),
+            device: "01997c7e-0000-7000-8000-0000000000ff".into(),
         };
 
-        assert_eq!(earlier.to_string(), "0000000000000099-0000000f-dev");
+        assert_eq!(
+            earlier.to_string(),
+            "0000000000000099-0000000f-01997c7e-0000-7000-8000-0000000000ff"
+        );
         assert_eq!(earlier.to_string().parse(), Ok(earlier.clone()));
         assert!(earlier.to_string() < later.to_string());
     }
 
     #[test]
     fn device_ids_with_hyphens_survive_parsing() {
-        let hlc: Hlc = "0000000000000001-00000000-0199-abcd".parse().unwrap();
-        assert_eq!(hlc.device, "0199-abcd");
+        let hlc: Hlc = "0000000000000001-00000000-01997c7e-0000-7000-8000-0000000000ff"
+            .parse()
+            .unwrap();
+        assert_eq!(hlc.device, "01997c7e-0000-7000-8000-0000000000ff");
     }
 
     #[test]
@@ -308,14 +323,18 @@ mod tests {
 
     #[test]
     fn a_malformed_text_form_is_rejected_whichever_part_is_wrong() {
-        let valid = "0000000000000001-00000000-dev";
+        let valid = "0000000000000001-00000000-01997c7e-0000-7000-8000-0000000000ff";
         assert!(valid.parse::<Hlc>().is_ok());
         for bad in [
-            "000000000000001-00000000-dev",   // 15 digits of time
-            "00000000000000001-00000000-dev", // 17 digits of time
-            "0000000000000001-0000000-dev",   // 7 digits of counter
-            "0000000000000001-000000000-dev", // 9 digits of counter
-            "0000000000000001-00000000-",     // no device
+            "000000000000001-00000000-dev", // 15 digits of time
+            "00000000000000001-00000000-01997c7e-0000-7000-8000-0000000000ff", // 17 digits of time
+            "0000000000000001-0000000-01997c7e-0000-7000-8000-0000000000ff", // 7 digits of counter
+            "0000000000000001-000000000-01997c7e-0000-7000-8000-0000000000ff", // 9 digits of counter
+            "0000000000000001-00000000-",                                      // no device
+            "0000000000000001-00000000-dev",                                   // not a UUID
+            "0000000000000001-00000000-01997C7E-0000-7000-8000-0000000000FF",  // capitals (SEG-029)
+            "0000000000000001-00000000-01997c7e00007000800000000000ff",        // no hyphens
+            "0000000000000001-00000000-01997c7e-0000-7000-8000-0000000000fg",  // not hexadecimal
         ] {
             assert_eq!(bad.parse::<Hlc>(), Err(HlcParseError), "{bad}");
         }

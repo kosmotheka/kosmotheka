@@ -31,10 +31,16 @@ for (const file of ["library-merge", "merge", "permissions"]) {
   const mergeCases = JSON.parse(
     readFileSync(`${spec}conformance/${file}.json`, "utf8"),
   );
-  for (const { name, operations } of mergeCases) {
+  for (const { name, operations, expect } of mergeCases) {
     for (const { unsigned, ...operation } of operations) {
       checked++;
       if (!validate(operation)) {
+        // An operation a case expects rejected may be one that is not even read: its `hlc` does not match
+        // (a device in capitals, SEG-029). Only that, and only if the case says it is refused.
+        const unreadable =
+          (expect?.rejected ?? []).includes(operation.id) &&
+          validate.errors.some((error) => error.instancePath === "/hlc");
+        if (unreadable) continue;
         mismatches++;
         console.error(`MISMATCH: ${file}: ${name}`, validate.errors?.[0] ?? "");
       }

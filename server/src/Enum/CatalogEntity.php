@@ -196,7 +196,7 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
-            self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text(), 'cloud_device_id' => $text()],
+            self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text(), 'cloud_device_id' => new FieldSpec(FieldType::DeviceIdOrEmpty, false)],
             self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
             self::Member => [
                 'name' => $text(true),
@@ -270,7 +270,7 @@ enum CatalogEntity: string
                 'related_work_id' => $ref(self::Work, true),
                 'relation' => $oneOf(...self::WORK_RELATIONS),
             ],
-            self::Revocation => ['device_id' => $text(true), 'device_name' => $text(true)],
+            self::Revocation => ['device_id' => new FieldSpec(FieldType::DeviceId, true), 'device_name' => $text(true)],
             self::Device => ['public_key' => $text(true), 'name' => $text(true), 'member_id' => $ref(self::Member), 'trusted_through' => $text(), 'vouched_key' => $text()],
             self::ChangeRequest => [
                 'status' => new FieldSpec(FieldType::OneOf, false, ['accepted', 'rejected', 'withdrawn']),

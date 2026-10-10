@@ -8,6 +8,7 @@ use App\DataFixtures\SigningDevice;
 use App\Entity\CloudLibrary;
 use App\Entity\Membership;
 use App\Entity\User;
+use App\Sync\CloudAuthor;
 use App\Sync\OperationSignature;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\Spec;
@@ -573,6 +574,114 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $takeover['body']);
         self::assertSame(['applied' => 7, 'request' => 1], $this->statuses());
         self::assertSame($before['catalog_members'], $this->snapshotOf($cloud)['catalog_members']);
+    }
+
+    /**
+     * SEG-029: a reader registers the cloud's id in capitals with a key of his own, and signs as that author an
+     * account note on an administrator's person and the link of a device of his own to her. Nothing of it may enter,
+     * and the cloud keeps its power.
+     */
+    public function testAReaderWhoSignsWithTheCloudsIdInCapitalsGetsNothingOfItsPower(): void
+    {
+        [$cloud, $identity] = $this->libraryNamingTheCloud();
+        $this->shareWithJhonny($cloud);
+        $shout = SigningDevice::generate(strtoupper($identity['id']));
+        // Jhonny is a reader: his phone is assigned to the reader, vouched. His other device is nobody's, and is the
+        // one he will try to link to the administrator.
+        $phone = SigningDevice::fromSession($this->jhonnySession);
+        $secondSession = $this->loginDevice($this->client, 'jhonny@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Second');
+        $mine = SigningDevice::fromSession($secondSession);
+        $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 10), $mine->registration(self::LOCAL, self::T + 11)]);
+        $this->push($this->familySession, $cloud, [$this->laptop->sign(self::LOCAL, self::T + 12, 'device.assign', [
+            ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'vouched_key' => $phone->publicKey]],
+        ])]);
+        $before = $this->snapshotOf($cloud);
+        $steps = [];
+
+        $steps['registers the id in capitals and his own device'] = $this->push($this->jhonnySession, $cloud, [$shout->registration(self::LOCAL, self::T + 100)])['body'];
+        $steps['signs an account note as the cloud'] = $this->push($this->jhonnySession, $cloud, [$shout->sign(self::LOCAL, self::T + 102, 'forged.account', [
+            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'update', 'fields' => ['account_id' => Uuid::v4()->toRfc4122()]],
+        ])])['body'];
+        $steps['signs the link of his device to her'] = $this->push($this->jhonnySession, $cloud, [$shout->sign(self::LOCAL, self::T + 103, 'forged.link', [
+            ['entity' => 'device', 'id' => $mine->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $mine->publicKey]],
+        ])])['body'];
+
+        $connection = self::getContainer()->get(Connection::class);
+        $account = $connection->fetchOne('SELECT account_id FROM catalog_members WHERE id = ? AND cloud_library_id = ?', [self::ADMIN_MEMBER, $cloud]);
+        $linked = $connection->fetchOne('SELECT member_key FROM catalog_devices WHERE id = ? AND cloud_library_id = ?', [$mine->id, $cloud]);
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $library = $em->find(CloudLibrary::class, Uuid::fromString($cloud)) ?? self::fail('No library.');
+        $power = self::getContainer()->get(CloudAuthor::class)->power($library);
+        $report = json_encode([
+            'steps' => $steps,
+            'statuses' => $this->statuses(),
+            'accountOfHerPerson' => $account,
+            'hisDeviceLinkedTo' => $linked,
+            'cloudPower' => $power?->toRfc4122(),
+            'rowsOfTheCloudsId' => $connection->fetchFirstColumn('SELECT id FROM catalog_devices WHERE LOWER(id) = ? AND cloud_library_id = ?', [strtolower($identity['id']), $cloud]),
+        ], \JSON_THROW_ON_ERROR);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $steps['registers the id in capitals and his own device'], $report);
+        self::assertNull($account, $report);
+        self::assertNull($linked, $report);
+        self::assertSame($identity['id'], $power?->toRfc4122(), $report);
+        self::assertSame($before['catalog_devices'], $this->snapshotOf($cloud)['catalog_devices'], $report);
+    }
+
+    /**
+     * SEG-028: a reader uploads an operation dated at the end of time. It used to be stored (as a request) and every
+     * HLC the cloud wrote afterwards had to follow it, which no HLC can. Now it is refused, and so are the author's next ones.
+     */
+    public function testAnOperationDatedFarAheadOfTheServersClockIsRefusedAndHoldsBackTheNextOnesOfItsAuthor(): void
+    {
+        [$cloud] = $this->libraryNamingTheCloud();
+        $this->shareWithJhonny($cloud);
+        $phone = SigningDevice::fromSession($this->jhonnySession);
+        $registration = $phone->registration(self::LOCAL, self::T + 10);
+        $this->push($this->familySession, $cloud, [$registration]);
+        $this->push($this->familySession, $cloud, [$this->laptop->sign(self::LOCAL, self::T + 11, 'device.assign', [
+            ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'vouched_key' => $phone->publicKey]],
+        ])]);
+        $stored = $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
+        $far = $phone->publisher(self::LOCAL, self::T + 20, 'At the end of time');
+        $far['hlc'] = '9999999999999999-ffffffff-'.$phone->id;
+        $far = $phone->resign($far);
+        $next = $phone->publisher(self::LOCAL, self::T + 21, 'Right after');
+
+        $answer = $this->push($this->jhonnySession, $cloud, [$far]);
+        $following = $this->push($this->jhonnySession, $cloud, [$next]);
+
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $answer['body'], 'the far one is refused');
+        self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $following['body'], 'and the next one of its author waits for it');
+        self::assertSame($stored, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), 'nothing was stored');
+        // Just inside the drift is fine.
+        \assert(\is_string($registration['id']));
+        $near = $phone->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 1_800_000, 'Half an hour ahead', $registration['id']);
+        self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->jhonnySession, $cloud, [$near])['body']);
+    }
+
+    /**
+     * The family uploads a library with roles that names the cloud, and the cloud registers itself.
+     *
+     * @return array{string, array{id: string, key: string}}
+     */
+    private function libraryNamingTheCloud(): array
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $identity = $this->identityOf($cloud);
+        $response = $this->push($this->familySession, $cloud, [
+            $this->laptop->registration(self::LOCAL, self::T),
+            $this->laptop->sign(self::LOCAL, self::T + 1, 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
+            $this->laptop->sign(self::LOCAL, self::T + 2, 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]]]),
+            $this->laptop->sign(self::LOCAL, self::T + 3, 'family.roles', [
+                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+                ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
+                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $this->laptop->publicKey]],
+            ]),
+        ]);
+        self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
+
+        return [$cloud, $identity];
     }
 
     /** SEG-014 through the route: the editor's backdated edit lands in the window of the fence of her demotion. */

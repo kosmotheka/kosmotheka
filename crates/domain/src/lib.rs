@@ -20,7 +20,7 @@ pub use book::{
 };
 pub use cloud::cloud_device_id;
 pub use genre::{GENRES, genres_of};
-pub use hlc::{Hlc, HlcClock};
+pub use hlc::{Hlc, HlcClock, is_device_id};
 pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;
 pub use mark::mark_id;

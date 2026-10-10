@@ -180,7 +180,12 @@ final class ScenarioFixturesTest extends WebTestCase
         $jhonny = Cast::jhonnyPhone();
 
         $own = $this->listLibraries($jhonny);
-        self::assertCount(3, $this->libraryList($own['body']), 'The one with the Garcías\' local id, the default-id one and the unlinked one; none of Ana\'s.');
+        // His copy of the Garcías' operations has their roles and he is nobody in it, so the cloud gives him nothing
+        // of it either (SEG-030): it is listed as withdrawn. The default-id one and the unlinked one stay; none of Ana's.
+        self::assertCount(2, $this->libraryList($own['body']));
+        $withdrawn = $own['body']['withdrawn'] ?? [];
+        \assert(\is_array($withdrawn));
+        self::assertCount(1, $withdrawn);
         self::assertNotContains($ana, array_column($this->libraryList($own['body']), 'id'));
 
         foreach (['pull' => ['schemaVersion' => $this->schemaVersion(), 'vector' => new \stdClass()], 'push' => ['operations' => []]] as $route => $body) {

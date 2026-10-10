@@ -81,6 +81,10 @@ final class ValidOperationValidator extends ConstraintValidator
         if (!$this->isUuid($change->id)) {
             return $this->report(OperationErrorCode::InvalidId, "$path.id");
         }
+        // A device is a UUID in lowercase and nothing else, so one id cannot be written two ways (SEG-029).
+        if (CatalogEntity::Device === $change->entity && !$this->isDeviceId($change->id)) {
+            return $this->report(OperationErrorCode::InvalidId, "$path.id");
+        }
         if (CatalogEntity::Library === $change->entity && $change->id !== $library) {
             return $this->report(OperationErrorCode::OtherLibrary, "$path.id");
         }
@@ -158,6 +162,8 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::Rating => \is_int($value) && $value >= 1 && $value <= 5,
             FieldType::Count => \is_int($value) && $value >= 1,
             FieldType::Isbn13 => \is_string($value) && 1 === preg_match('/^[0-9]{13}$/D', $value),
+            FieldType::DeviceId => \is_string($value) && $this->isDeviceId($value),
+            FieldType::DeviceIdOrEmpty => \is_string($value) && ('' === $value || $this->isDeviceId($value)),
         };
     }
 
@@ -167,6 +173,11 @@ final class ValidOperationValidator extends ConstraintValidator
     private function author(string $hlc): string
     {
         return explode('-', $hlc, 3)[2] ?? '';
+    }
+
+    private function isDeviceId(string $value): bool
+    {
+        return 1 === preg_match(OperationPayload::DEVICE_ID_PATTERN, $value);
     }
 
     private function isUuid(string $value): bool

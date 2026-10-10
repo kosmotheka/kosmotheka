@@ -22,9 +22,9 @@
       "$ref": "#/$defs/uuid"
     },
     "hlc": {
-      "description": "Hybrid logical clock timestamp: 16-digit milliseconds, 8-hex-digit counter, device id.",
+      "description": "Hybrid logical clock timestamp: 16-digit milliseconds, 8-hex-digit counter, device id (a UUID in lowercase, SEG-029).",
       "type": "string",
-      "pattern": "^[0-9]{16}-[0-9a-f]{8}-.+$"
+      "pattern": "^[0-9]{16}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "intent": {
       "description": "What the user meant, e.g. book.add. Informative only: permissions and merging look at the changes.",
@@ -56,6 +56,11 @@
     }
   },
   "$defs": {
+    "deviceId": {
+      "description": "The id of a device: a UUID written 8-4-4-4-12 in lowercase hexadecimal (SEG-029). Compared exactly, so one device has one writing.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
     "uuid": {
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -306,7 +311,10 @@
                     "description": "The device that is the cloud in this library (D76, D95), the only one with the cloud's power. Written by whoever may change the library row. Null or absent: no cloud device. Not a reference: the device may register after the field names it.",
                     "anyOf": [
                       {
-                        "$ref": "#/$defs/uuid"
+                        "$ref": "#/$defs/deviceId"
+                      },
+                      {
+                        "const": ""
                       },
                       {
                         "type": "null"
@@ -850,7 +858,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "device_id": {
-                    "$ref": "#/$defs/requiredText"
+                    "$ref": "#/$defs/deviceId"
                   },
                   "device_name": {
                     "$ref": "#/$defs/requiredText"
@@ -870,6 +878,9 @@
           },
           "then": {
             "properties": {
+              "id": {
+                "$ref": "#/$defs/deviceId"
+              },
               "fields": {
                 "additionalProperties": false,
                 "properties": {

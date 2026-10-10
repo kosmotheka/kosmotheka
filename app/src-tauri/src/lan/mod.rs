@@ -627,7 +627,9 @@ mod tests {
             operation: Operation {
                 id: "01997c7e-0000-7000-8000-000000000001".into(),
                 library: library.into(),
-                hlc: "0001727222222222-00000000-dev".parse().unwrap(),
+                hlc: "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff"
+                    .parse()
+                    .unwrap(),
                 intent: "member.add".into(),
                 changes: Vec::new(),
                 previous: None,

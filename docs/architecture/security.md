@@ -72,6 +72,7 @@ Lo mismo se hace una vez para todos al activar los roles en una biblioteca: desd
 - El servidor guarda una lista: qué cuentas pueden entrar en qué biblioteca. Es lo único que decide el acceso. El servidor nunca se fía de un identificador que le mande la app: lo compara con lo que él tiene, no lo usa para buscar.
 - A una biblioteca ajena, o que no existe, el servidor responde lo mismo, para que nadie averigüe cuáles existen.
 - El servidor aplica las mismas reglas de roles que los dispositivos (pieza 2) a todo lo que guarda.
+- **En una biblioteca con roles, por la nube solo lee quien es alguien en ella.** Una cuenta que no corresponde a ninguna persona de la biblioteca no recibe nada, aunque fuera quien la subió. Así nadie queda fuera del alcance de «echar a una persona».
 - **Si echan a una persona o retiran un dispositivo, la nube deja de entregarles la biblioteca al momento**, aunque entren desde un móvil nuevo; a la cuenta echada se le olvida también el vínculo con su persona. Al dispositivo cortado le enseña la prueba firmada de quien administra, y el dispositivo solo borra la biblioteca si esa prueba es buena: un servidor que mintiera no podría hacer perder una biblioteca. Quien nunca tuvo la biblioteca sigue recibiendo «no existe», no «te la quitaron».
 
 *Construida para una cuenta por biblioteca. Varias cuentas en la misma biblioteca: en construcción (hito 7.5).*

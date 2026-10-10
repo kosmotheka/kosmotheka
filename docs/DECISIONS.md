@@ -1761,6 +1761,8 @@ Aceptada el 10/10/2026, al preparar 7.5.4. Concreta D71 con cuentas y sustituye 
 - **No se puede retirar el acceso al último administrador.**
 - **Quitar un dispositivo** (un móvil perdido) sigue siendo lo de D71 y no afecta a la cuenta: el móvil nuevo de esa persona entra solo (D76).
 
+**Echar es definitivo para quien es echado (precisado por el maintainer el 10/10/2026, tras la auditoría, SEG-032).** Una cuenta cortada no puede subir nada a la nube, tampoco un cambio que deshaga su expulsión: solo otro administrador puede devolverle el acceso. Entre dos administradores, quien echa primero en la nube gana, también si el otro acababa de quitarle el rol por la red local y aún no lo había subido. Es a propósito: pensando en unos amigos que se enfadan o un matrimonio que se separa, si el echado pudiera deshacerlo estarían echándose y recuperándose sin fin. Lo que queda dicho: si los dos únicos administradores se enfrentan, la nube se queda con quien llegó antes; la copia de cada uno en sus dispositivos no se toca.
+
 **Lo que no se construye:** borrar del todo a una persona del catálogo. Si un día hace falta, es otra acción.
 
 **Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 34. Regla nueva en `spec/` con sus casos. Glosario: `access_withdrawn`.

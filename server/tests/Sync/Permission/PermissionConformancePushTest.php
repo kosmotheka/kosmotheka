@@ -141,6 +141,7 @@ final class PermissionConformancePushTest extends KernelTestCase
 
         self::assertSame([
             'An unsigned operation is refused, with or without roles',
+            'an author written in capitals is not read, so the cloud\'s id in capitals gets none of its power (SEG-029)',
             'the key of a device counts only through its own create, and a registered one never changes',
         ], $listing);
     }

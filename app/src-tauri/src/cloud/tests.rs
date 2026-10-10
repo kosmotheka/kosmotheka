@@ -1439,7 +1439,12 @@ async fn a_server_that_lies_about_the_access_removes_nothing() {
         )],
     );
     // A genuine revocation signed by the administrator, but of another device.
-    libraries::revoke_access(&mut laptop.lock().unwrap(), &lib, "some-other-device").unwrap();
+    libraries::revoke_access(
+        &mut laptop.lock().unwrap(),
+        &lib,
+        "01997c7e-0000-7000-8000-0000000000ee",
+    )
+    .unwrap();
     let schema_version = ops::schema_version(&laptop.lock().unwrap()).unwrap();
     let log = sync::library_log(&laptop.lock().unwrap(), &lib).unwrap();
     let of_another: Vec<SyncOperation> = log

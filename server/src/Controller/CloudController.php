@@ -102,7 +102,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/link', methods: ['POST'])]
     public function link(string $id, Request $request): JsonResponse
     {
-        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get());
+        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
         $this->cloudLink->linkFrom($library, PushedOperation::fromJson($request->getContent()));
 
         return new JsonResponse(['localLibraryId' => $library->getLocalLibraryId()]);
@@ -111,7 +111,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/push', methods: ['POST'])]
     public function push(string $id, Request $request): JsonResponse
     {
-        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get());
+        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
 
         return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());
     }

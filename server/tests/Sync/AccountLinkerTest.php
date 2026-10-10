@@ -72,7 +72,7 @@ final class AccountLinkerTest extends WebTestCase
         $answer = $this->claim($jhonnysTablet);
 
         self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $answer);
-        self::assertNull($this->memberOf($cloud, 'jhonny@example.com'), 'his row does not change');
+        self::assertSame(self::READER, $this->memberOf($cloud, 'jhonny@example.com'), 'his row does not change');
         self::assertNull($this->accountIdOf(self::LAURA), 'nobody is Laura');
     }
 
@@ -117,9 +117,12 @@ final class AccountLinkerTest extends WebTestCase
             $mine->sign(self::LOCAL, self::T + $this->tick(), 'device.claim', [$this->assign($mine->id, self::LAURA, $mine->publicKey)]),
         ]);
 
-        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->jhonny));
+        // His account is the reader's, so the cloud says his device is the reader's: never Laura's, whatever he signed.
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => [$cloud]], $this->claim($this->jhonny));
+        self::assertSame(self::READER, $this->personOfDevice($mine->id));
+        self::assertNull($this->accountIdOf(self::LAURA));
         self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]));
-        self::assertNull($this->memberOf($cloud, 'jhonny@example.com'));
+        self::assertSame(self::READER, $this->memberOf($cloud, 'jhonny@example.com'));
     }
 
     public function testADeviceWithARevocationLinksNobody(): void
@@ -236,9 +239,10 @@ final class AccountLinkerTest extends WebTestCase
     public function testTheOwnerWhoUploadedHasHerRowFilledWithHerPerson(): void
     {
         $cloud = $this->world();
-        self::assertNull($this->memberOf($cloud, 'family@example.com'), 'the owner starts with no person');
+        // The server gives the row its person at the end of the push that brings her device's (SEG-030); the claim finds it done.
+        self::assertSame(self::LAURA, $this->memberOf($cloud, 'family@example.com'));
 
-        self::assertSame(['linked' => [$cloud], 'conflicts' => [], 'devices' => []], $this->claim($this->family));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->family));
 
         self::assertSame(self::LAURA, $this->memberOf($cloud, 'family@example.com'));
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND member_id IS NOT NULL', [$cloud]));
@@ -369,9 +373,10 @@ final class AccountLinkerTest extends WebTestCase
     public function testAnAccountWithARowButNoPersonLinksNoDevice(): void
     {
         $cloud = $this->world();
-        $this->shareWithJhonny($cloud);
+        $this->shareWithJhonny($cloud, asTheReader: false);
         $mine = SigningDevice::fromSession($this->jhonny);
-        $this->push($this->jhonny, $cloud, [$mine->registration(self::LOCAL, self::T + $this->tick())]);
+        // The family sends his registration: a row without a person gets nothing through the door (SEG-030).
+        $this->push($this->family, $cloud, [$mine->registration(self::LOCAL, self::T + $this->tick())]);
 
         self::assertSame([], $this->claim($this->jhonny)['devices']);
         self::assertNull($this->personOfDevice($mine->id));
@@ -690,6 +695,73 @@ final class AccountLinkerTest extends WebTestCase
         self::assertNotSame($hugoSession['token'], $sameId['token']);
     }
 
+    /** SEG-031: the proofs are for the very device a revocation names (id and key), never for whoever signs in with its id. */
+    public function testAnAccountThatWasCutGetsNoProofsOfAnotherDevicesLaterRevocationByUsingItsId(): void
+    {
+        [$cloud, $one, , $two] = $this->jhonnyWithTwoDevices();
+        [$hugo] = $this->hugo($cloud);
+        $this->withdrawJhonny($cloud, $one, $two);
+        $later = (int) (microtime(true) * 1000) + 60_000;
+        $this->laptopSigns($cloud, 'publisher.create', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'After Jhonny left']]], $later);
+        $this->laptopSigns($cloud, 'library.revoke', [['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $hugo->id, 'device_name' => 'Hugo']]], $later + 1_000);
+        $hugosId = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, $hugo->id, 'The id of Hugo, a key of his own');
+
+        $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $hugosId, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+
+        self::assertSame(403, $pull['status']);
+        self::assertSame([], $pull['body']['proofs'] ?? null, 'nothing written after he was cut reaches him');
+    }
+
+    /** SEG-030: whoever uploaded is reached by a withdrawal too, without her app ever claiming her person. */
+    public function testTheOwnerWhoNeverClaimedIsCutWhenHerPersonIsWithdrawnAlsoFromANewDevice(): void
+    {
+        $cloud = $this->world();
+        self::assertSame(self::LAURA, $this->memberOf($cloud, 'family@example.com'), 'the server gave the row its person, unasked');
+        $this->laptopSigns($cloud, 'member.withdraw', [
+            ['entity' => 'member', 'id' => self::LAURA, 'action' => 'update', 'fields' => ['access_withdrawn' => true]],
+            // No fence here: an empty mark would turn the laptop's link into a request, and the push would be undone (D93).
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null]],
+            ['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $this->laptop->id, 'device_name' => 'Laptop']],
+        ]);
+        $new = $this->loginDevice($this->client, 'family@example.com', self::PASSWORD, Uuid::v4()->toRfc4122(), 'A new device');
+
+        $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $new, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+
+        self::assertSame(403, $pull['status']);
+        self::assertSame(['libraries' => [], 'withdrawn' => [$cloud]], $this->call('GET', '/v1/cloud/libraries', $new)['body']);
+    }
+
+    /** SEG-030: in a library with roles an account that is nobody there gets nothing from the cloud, and gets it back with a person. */
+    public function testAnOwnerWhoIsNobodyInALibraryWithRolesGetsNothingUntilSheHasAPerson(): void
+    {
+        $cloud = $this->call('POST', '/v1/cloud/libraries', $this->family)['body']['id'] ?? null;
+        \assert(\is_string($cloud));
+        $other = SigningDevice::fromSession($this->signInNewDevice($this->client, 'other@example.com'));
+        self::assertSame(5, $this->push($this->family, $cloud, [
+            $this->laptop->registration(self::LOCAL, self::T + $this->tick()),
+            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
+            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER]]]),
+            $other->registration(self::LOCAL, self::T + $this->tick()),
+            // Somebody else turns the roles on and is the only person: the uploader's laptop is nobody's.
+            $other->sign(self::LOCAL, self::T + $this->tick(), 'family.roles', [
+                ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'admin']],
+                $this->assign($other->id, self::LAURA, $other->publicKey),
+            ]),
+        ])['received']);
+
+        $nobody = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $this->family, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
+        self::assertSame(403, $nobody['status']);
+        self::assertSame([], $nobody['body']['proofs'] ?? null);
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND withdrawn_at IS NOT NULL', [$cloud]), 'not a cut: she was never somebody');
+
+        // She may still send, as a device of nobody; and once an administrator says whose her laptop is, she is in.
+        self::assertSame(1, $this->push($this->family, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + $this->tick())])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign(self::LOCAL, self::T + $this->tick(), 'member.add', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor']]])])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign(self::LOCAL, self::T + $this->tick(), 'device.assign', [$this->assign($this->laptop->id, self::HUGO, $this->laptop->publicKey)])])['received']);
+        self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $this->family, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
+        self::assertSame(self::HUGO, $this->memberOf($cloud, 'family@example.com'));
+    }
+
     /**
      * Hugo, an editor with his account linked, in a library that already has Jhonny.
      *
@@ -935,12 +1007,16 @@ final class AccountLinkerTest extends WebTestCase
         return self::getContainer()->get(SchemaVersion::class)->current();
     }
 
-    private function shareWithJhonny(string $cloud): void
+    /**
+     * Jhonny's account gets a row in the library, as the reader of `world()`: in a library with roles an account
+     * reaches the cloud as somebody (SEG-030). Without a person the row gives him nothing.
+     */
+    private function shareWithJhonny(string $cloud, bool $asTheReader = true): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);
         $user = $em->getRepository(User::class)->findOneBy(['email' => 'jhonny@example.com']) ?? self::fail('No Jhonny.');
         $library = $em->find(CloudLibrary::class, Uuid::fromString($cloud)) ?? self::fail('No library.');
-        $em->persist(new Membership($user, $library));
+        $em->persist(new Membership($user, $library, $asTheReader ? Uuid::fromString(self::READER) : null));
         $em->flush();
     }
 

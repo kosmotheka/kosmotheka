@@ -90,7 +90,7 @@ impl CloudLibrary {
             .as_deref()
             .zip(self.cloud_public_key.as_deref())?;
         kosmotheka_domain::cloud_device_id(key)
-            .is_some_and(|derived| derived.eq_ignore_ascii_case(id))
+            .is_some_and(|derived| derived == id)
             .then_some(id)
     }
 }

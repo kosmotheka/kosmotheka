@@ -66,6 +66,10 @@ pub enum FieldType {
     Isbn13,
     /// Id of another entity; the database enforces that it exists.
     Ref(Entity),
+    /// The id of a device: a UUID in lowercase (SEG-029).
+    DeviceId,
+    /// The id of a device, or the empty text that takes it away.
+    DeviceIdOrEmpty,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,7 +138,7 @@ const LIBRARY_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("cloud_library_id", FieldType::Text, false),
     field("cloud_server", FieldType::Text, false),
-    field("cloud_device_id", FieldType::Text, false),
+    field("cloud_device_id", FieldType::DeviceIdOrEmpty, false),
 ];
 const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[
@@ -212,7 +216,7 @@ const WORK_RELATION_FIELDS: &[FieldSpec] = &[
     field("relation", FieldType::OneOf(WORK_RELATIONS), true),
 ];
 const REVOCATION_FIELDS: &[FieldSpec] = &[
-    field("device_id", FieldType::Text, true),
+    field("device_id", FieldType::DeviceId, true),
     field("device_name", FieldType::Text, true),
 ];
 const DEVICE_FIELDS: &[FieldSpec] = &[

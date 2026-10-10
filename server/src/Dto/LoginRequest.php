@@ -19,6 +19,8 @@ final readonly class LoginRequest
         public string $password,
         #[Assert\NotBlank]
         #[Assert\Uuid]
+        // In lowercase, as the device of an operation's HLC (SEG-029): one spelling per device, compared exactly.
+        #[Assert\Regex(OperationPayload::DEVICE_ID_PATTERN, message: 'The device id must be a UUID in lowercase.')]
         #[SerializedName('device_id')]
         public string $deviceId,
         #[Assert\NotBlank(normalizer: 'trim')]

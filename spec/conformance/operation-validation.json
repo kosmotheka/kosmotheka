@@ -1619,6 +1619,157 @@
     }
   },
   {
+    "name": "device row whose id is written in capitals",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c0",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "device.assign",
+      "changes": [
+        {
+          "entity": "device",
+          "id": "01997C7E-0000-7000-8000-0000000000EE",
+          "action": "update",
+          "fields": {
+            "name": "Phone"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "invalid_id",
+      "change": 0
+    }
+  },
+  {
+    "name": "revocation of a device written in capitals",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c1",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.revoke",
+      "changes": [
+        {
+          "entity": "revocation",
+          "id": "01997c7e-0000-7000-8000-0000000000e0",
+          "action": "create",
+          "fields": {
+            "device_id": "01997C7E-0000-7000-8000-0000000000EE",
+            "device_name": "Phone"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "device_id"
+    }
+  },
+  {
+    "name": "revocation of a device that is not a UUID",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c2",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.revoke",
+      "changes": [
+        {
+          "entity": "revocation",
+          "id": "01997c7e-0000-7000-8000-0000000000e0",
+          "action": "create",
+          "fields": {
+            "device_id": "some-other-device",
+            "device_name": "Phone"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "device_id"
+    }
+  },
+  {
+    "name": "cloud device named in capitals",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c3",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": "34750F98-BD59-8CFC-946D-A45AAABE933B"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "cloud_device_id"
+    }
+  },
+  {
+    "name": "cloud device named in lowercase",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c4",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": "34750f98-bd59-8cfc-946d-a45aaabe933b"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "cloud device taken away with the empty text",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-0000000001c5",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": ""
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
     "name": "device assigned to a member",
     "operation": {
       "id": "01997c7e-0000-7000-8000-000000000127",

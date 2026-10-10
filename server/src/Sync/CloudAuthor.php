@@ -8,6 +8,7 @@ use App\Dto\PushedOperation;
 use App\Entity\CloudLibrary;
 use App\Repository\CloudOperationRepository;
 use App\Security\CloudKeyVault;
+use App\Security\CloudKeyVaultException;
 use App\Sync\Permission\CatalogLibraryView;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -78,9 +79,17 @@ final readonly class CloudAuthor
             'changes' => $changes,
             'previous' => $previous['id'] ?? null,
         ];
-        $secretKey = $this->vault->open($sealed);
-        $operation['signature'] = $this->signer->sign($operation, $secretKey);
-        sodium_memzero($secretKey);
+        try {
+            $secretKey = $this->vault->open($sealed);
+        } catch (CloudKeyVaultException) {
+            // Another secret than the one the key was sealed with: the cloud cannot sign here, and says so as such.
+            throw CloudAuthorException::noIdentity();
+        }
+        try {
+            $operation['signature'] = $this->signer->sign($operation, $secretKey);
+        } finally {
+            sodium_memzero($secretKey);
+        }
 
         $body = json_decode(json_encode($operation, \JSON_THROW_ON_ERROR), false, flags: \JSON_THROW_ON_ERROR);
         \assert($body instanceof \stdClass);
@@ -149,6 +158,14 @@ final readonly class CloudAuthor
                 $millis = (int) $time;
                 $counter = (int) hexdec($count) + 1;
             }
+        }
+        // A full counter moves on to the next millisecond (SEG-028): eight hexadecimal digits is all the format has.
+        if ($counter > 0xFFFFFFFF) {
+            ++$millis;
+            $counter = 0;
+        }
+        if ($millis > 9_999_999_999_999_999) {
+            throw CloudAuthorException::refused();
         }
 
         return \sprintf('%016d-%08x-%s', $millis, $counter, $device);

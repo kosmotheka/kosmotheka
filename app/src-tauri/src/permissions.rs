@@ -204,7 +204,7 @@ impl LibraryView for SqlView<'_> {
         let key: String = self
             .conn
             .query_row(
-                "SELECT public_key FROM devices WHERE library_id = ?1 AND lower(id) = lower(?2)",
+                "SELECT public_key FROM devices WHERE library_id = ?1 AND id = ?2",
                 [self.library, &named],
                 |row| row.get(0),
             )
@@ -212,7 +212,7 @@ impl LibraryView for SqlView<'_> {
             .ok()
             .flatten()?;
         kosmotheka_domain::cloud_device_id(&key)
-            .filter(|derived| derived.eq_ignore_ascii_case(&named))
+            .filter(|derived| *derived == named)
             .map(|_| named)
     }
 

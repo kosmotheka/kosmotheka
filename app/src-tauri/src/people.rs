@@ -353,7 +353,7 @@ pub fn name_cloud_device(conn: &mut Connection, library: &str, device: &str) -> 
         library,
         json!({ "cloud_device_id": device }),
     )];
-    if let Some(old) = old.filter(|old| !old.eq_ignore_ascii_case(device)) {
+    if let Some(old) = old.filter(|old| old != device) {
         changes.push(permissions::fence_cloud_change(&tx, library, &old)?);
     }
     ops::record(&tx, library, "library.cloud", changes)?;
