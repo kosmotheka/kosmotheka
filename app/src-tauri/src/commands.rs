@@ -14,6 +14,9 @@ use crate::catalog::{
     IsbnCheck, TagSummary,
 };
 use crate::cloud::events::{Connection, EventsService};
+use crate::cloud::invitations::{
+    self, Accepted, InvitationItem, InviteRequest, InviteResult, InviteStatus, OpenedInvitation,
+};
 use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
@@ -1327,4 +1330,111 @@ pub fn cloud_events_wake(events: State<'_, EventsService>) {
 #[tauri::command]
 pub fn cloud_connection(events: State<'_, EventsService>) -> Connection {
     events.connection()
+}
+
+// --- Invitations (D43, milestone 7.6.2) --------------------------------------
+
+/// Can this library invite now, and if not, why. Local, plus asking the server whether it makes invitations; no
+/// session needed, so a signed-out device gets its reason without a request.
+#[tauri::command]
+pub async fn invite_status(
+    database: State<'_, Database>,
+    library_id: String,
+) -> Result<InviteStatus> {
+    let api = HttpCloud::anonymous(&database)?;
+    invitations::invite_status(&database, &api, &library_id).await
+}
+
+/// Invites somebody to a library. For a new person the person is created first, always as a reader.
+#[tauri::command]
+pub async fn invite_to_library(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    library_id: String,
+    request: InviteRequest,
+) -> Result<InviteResult> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => invitations::invite(&database, &api, &library_id, request).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+/// The invitations of a library, for whoever administers it.
+#[tauri::command]
+pub async fn list_invitations(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    library_id: String,
+) -> Result<Vec<InvitationItem>> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => invitations::list_invitations(&database, &api, &library_id).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+#[tauri::command]
+pub async fn revoke_invitation(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    library_id: String,
+    invitation_id: String,
+) -> Result<()> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => {
+            invitations::revoke_invitation(&database, &api, &library_id, &invitation_id).await
+        }
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
+/// Opens an invitation link (pasted, or handed over by the system when it arrives that way), with no session:
+/// says what it is for and keeps its token until the account that accepts it is signed in. A link of another
+/// server than this device's is refused without asking anything.
+#[tauri::command]
+pub async fn open_invitation(
+    database: State<'_, Database>,
+    link: String,
+) -> Result<OpenedInvitation> {
+    let api = HttpCloud::anonymous(&database)?;
+    invitations::open(&database, &api, &link).await
+}
+
+/// The link that is waiting for a session, if one is and has not expired.
+#[tauri::command]
+pub fn pending_invitation(database: State<'_, Database>) -> Result<Option<OpenedInvitation>> {
+    invitations::pending_invitation(&database)
+}
+
+/// «Not this one»: forgets the link that was waiting.
+#[tauri::command]
+pub fn discard_pending_invitation(database: State<'_, Database>) -> Result<()> {
+    invitations::discard_pending_invitation(&database)
+}
+
+/// Accepts the link that is waiting, with the signed-in account, and syncs so the library comes down.
+#[tauri::command]
+pub async fn accept_invitation(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<Accepted> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => invitations::accept_pending(&database, &api).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
 }

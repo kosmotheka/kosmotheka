@@ -620,3 +620,60 @@ async fn the_database_stays_free_while_connected_and_while_waiting() {
         settle(50).await;
     }
 }
+
+const ACCEPTED: &[u8] =
+    b"id: urn:uuid:2\ndata: {\"event\":\"invitation_accepted\",\"library\":\"C1\"}\n\n";
+
+/// D43: the live notice of an accepted invitation gives its own signal, and the ordinary «something changed» too:
+/// the app syncs and tells.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_accepted_invitation_is_told_once_and_still_gives_a_cloud_changed() {
+    let running = launch(
+        Config::with_hub(vec![vec![
+            Step::Wait(150),
+            Step::Send(ACCEPTED),
+            Step::Hold,
+        ]]),
+        patient(),
+    )
+    .await;
+
+    eventually("the event's emit", || running.changed() == 2).await;
+    settle(200).await;
+
+    let told: Vec<Signal> = running
+        .signals()
+        .into_iter()
+        .filter(|signal| matches!(signal, Signal::InvitationAccepted(_)))
+        .collect();
+    assert_eq!(told, vec![Signal::InvitationAccepted("C1".to_owned())]);
+}
+
+/// Any other event, or data that is not that notice, is a change and nothing more.
+#[tokio::test(flavor = "multi_thread")]
+async fn other_events_do_not_tell_of_an_invitation() {
+    let other: &[u8] =
+        b"id: urn:uuid:3\ndata: {\"event\":\"something_else\",\"library\":\"C1\"}\n\n";
+    let garbage: &[u8] = b"id: urn:uuid:4\ndata: not json\n\n";
+    let running = launch(
+        Config::with_hub(vec![vec![
+            Step::Wait(150),
+            Step::Send(EVENT),
+            Step::Send(other),
+            Step::Send(garbage),
+            Step::Hold,
+        ]]),
+        patient(),
+    )
+    .await;
+
+    eventually("a change", || running.changed() >= 2).await;
+    settle(300).await;
+
+    assert!(
+        !running
+            .signals()
+            .iter()
+            .any(|signal| matches!(signal, Signal::InvitationAccepted(_)))
+    );
+}

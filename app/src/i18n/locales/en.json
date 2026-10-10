@@ -1683,6 +1683,38 @@
       "help": "Talk to whoever administers it."
     }
   },
+  "invitations": {
+    "notice": {
+      "accepted": "Someone accepted your invitation to “{{library}}”."
+    },
+    "errors": {
+      "unknown": "The invitation could not be completed. Try again.",
+      "invitations_unavailable": "This server does not make invitations.",
+      "invitation_forbidden": "Only whoever administers the library can invite.",
+      "invitation_library_not_ready": "This library cannot invite yet: it needs people with roles and the cloud allowed to link devices.",
+      "invitation_person_unsuitable": "That person cannot be invited now.",
+      "invitation_expired": "It has expired: ask whoever administers for a new one.",
+      "invitation_used": "This link was already used.",
+      "invitation_revoked": "This invitation was cancelled.",
+      "invitation_not_for_this_account": "This invitation is for another account.",
+      "invitation_account_already_in_library": "Your account is already another person in this library.",
+      "too_many_requests": "Too many attempts. Wait a little and try again.",
+      "not_signed_in": "Sign in to your account first.",
+      "not_in_cloud": "This library is not in your cloud account.",
+      "no_roles": "This library has no people with roles yet, so there is nobody to link an account to.",
+      "no_cloud_power": "The cloud is not allowed to link new devices in this library. Turn it on in the library’s settings.",
+      "server_without_invitations": "This server does not make invitations.",
+      "invalid_email": "That email address does not look right.",
+      "invalid_name": "Write the person’s name.",
+      "link_needs_new_person": "A link is only for somebody new. For someone already in the library, use their email.",
+      "person_not_invitable": "That person cannot be invited: they administer the library, have no access, or already have an account.",
+      "invitation_bad_link": "That is not an invitation link.",
+      "invitation_other_server": "This link belongs to another server than your account’s. It was not opened.",
+      "invitation_not_found": "This link is not valid.",
+      "invitation_no_pending": "There is no invitation waiting.",
+      "invitation_other_account": "This invitation was opened with another account. Open the link again."
+    }
+  },
   "cloud": {
     "errors": {
       "unknown": "Something went wrong with the cloud. Try again.",

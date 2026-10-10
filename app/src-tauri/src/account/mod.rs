@@ -233,7 +233,9 @@ fn store_user(conn: &Connection, user: &AccountUser) -> Result<()> {
 
 /// Sign-out never changes the identity (D81): the device id, the signing key and
 /// the email hint all survive.
-fn clear_session(conn: &Connection) -> Result<()> {
+pub(crate) fn clear_session(conn: &Connection) -> Result<()> {
+    // An invitation waiting for a session was meant for whoever was here: not for the next one.
+    crate::cloud::invitations::forget_pending(conn)?;
     write_state(conn, ACCOUNT_TOKEN, None)?;
     write_state(conn, ACCOUNT_USER, None)
 }

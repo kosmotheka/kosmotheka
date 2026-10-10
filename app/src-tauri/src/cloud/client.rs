@@ -5,8 +5,12 @@ use reqwest::Method;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::invitations::{CreatedInvitation, InvitationItem, InvitationKind, InvitationPreview};
 use super::{Claimed, CloudApi, CloudLibrary, Listing, Pulled, PushReport};
-use crate::account::{self, client::Auth, client::build_client, client::send_json};
+use crate::account::{
+    self,
+    client::{Auth, build_client, send_empty, send_json},
+};
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::sync::{SyncOperation, VersionVector};
@@ -17,8 +21,8 @@ const PUSH_BATCH: usize = 1000;
 pub struct HttpCloud {
     client: reqwest::Client,
     base: String,
-    device_id: String,
-    token: String,
+    /// This device's id and token; none for the calls that need no session.
+    session: Option<(String, String)>,
 }
 
 impl HttpCloud {
@@ -34,16 +38,28 @@ impl HttpCloud {
         Ok(Self {
             client: build_client()?,
             base,
-            device_id,
-            token,
+            session: Some((device_id, token)),
+        })
+    }
+
+    /// The server this device talks to, with no session: it can only ask what needs none (an invitation's
+    /// preview, what the server offers). Never sends the token, even if there is one.
+    pub fn anonymous(database: &Database) -> Result<Self> {
+        Ok(Self {
+            client: build_client()?,
+            base: account::server(&*database.lock()?)?,
+            session: None,
         })
     }
 
     fn auth(&self) -> Option<Auth<'_>> {
-        Some(Auth {
-            device_id: &self.device_id,
-            token: &self.token,
-        })
+        self.session
+            .as_ref()
+            .map(|(device_id, token)| Auth { device_id, token })
+    }
+
+    fn invitations_url(&self, path: &str) -> String {
+        format!("{}/v1/cloud/invitations{path}", self.base)
     }
 
     fn url(&self, path: &str) -> String {
@@ -59,6 +75,26 @@ fn cloud_error(error: Error) -> Error {
         Error::Account { code, .. } if code == "schema_version" => Error::Cloud("schema_version"),
         other => other,
     }
+}
+
+/// What the app says of an invitation token the server does not know: the same words for a wrong one and for one
+/// it forgot, so the code tells nothing more than the answer did.
+fn invitation_error(error: Error) -> Error {
+    match error {
+        Error::Account { code, .. } if code == "not_found" => Error::Cloud("invitation_not_found"),
+        other => other,
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InvitationListWire {
+    invitations: Vec<InvitationItem>,
+}
+
+#[derive(Deserialize)]
+struct AcceptedWire {
+    id: String,
 }
 
 #[derive(Deserialize)]
@@ -200,6 +236,85 @@ impl CloudApi for HttpCloud {
             total.rejected += report.rejected;
         }
         Ok(total)
+    }
+
+    async fn offers_invitations(&self) -> Result<bool> {
+        Ok(account::client::server_info(&self.client, &self.base)
+            .await?
+            .invitations)
+    }
+
+    async fn create_invitation(
+        &self,
+        cloud: &str,
+        member: &str,
+        kind: InvitationKind,
+        email: Option<&str>,
+    ) -> Result<CreatedInvitation> {
+        let mut body = json!({ "memberId": member, "kind": kind });
+        if let Some(email) = email {
+            body["email"] = json!(email);
+        }
+        send_json(
+            &self.client,
+            Method::POST,
+            &self.url(&format!("/{cloud}/invitations")),
+            self.auth(),
+            Some(&body),
+        )
+        .await
+        .map_err(cloud_error)
+    }
+
+    async fn list_invitations(&self, cloud: &str) -> Result<Vec<InvitationItem>> {
+        let answer: InvitationListWire = send_json(
+            &self.client,
+            Method::GET,
+            &self.url(&format!("/{cloud}/invitations")),
+            self.auth(),
+            None,
+        )
+        .await
+        .map_err(cloud_error)?;
+        Ok(answer.invitations)
+    }
+
+    async fn revoke_invitation(&self, cloud: &str, invitation: &str) -> Result<()> {
+        send_empty(
+            &self.client,
+            Method::DELETE,
+            &self.url(&format!("/{cloud}/invitations/{invitation}")),
+            self.auth(),
+            None,
+        )
+        .await
+        .map_err(cloud_error)
+    }
+
+    async fn peek_invitation(&self, token: &str) -> Result<InvitationPreview> {
+        // No session on purpose: whoever opens a link has not necessarily got an account yet.
+        send_json(
+            &self.client,
+            Method::GET,
+            &self.invitations_url(&format!("/{token}")),
+            None,
+            None,
+        )
+        .await
+        .map_err(invitation_error)
+    }
+
+    async fn accept_invitation(&self, token: &str) -> Result<String> {
+        let accepted: AcceptedWire = send_json(
+            &self.client,
+            Method::POST,
+            &self.invitations_url(&format!("/{token}/accept")),
+            self.auth(),
+            None,
+        )
+        .await
+        .map_err(invitation_error)?;
+        Ok(accepted.id)
     }
 }
 

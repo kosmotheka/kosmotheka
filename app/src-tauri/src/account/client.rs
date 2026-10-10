@@ -134,7 +134,7 @@ pub(crate) async fn send_json<T: for<'de> Deserialize<'de>>(
         .map_err(|_| Error::account("server_unavailable"))
 }
 
-async fn send_empty(
+pub(crate) async fn send_empty(
     client: &reqwest::Client,
     method: Method,
     url: &str,
@@ -155,6 +155,9 @@ pub struct ServerInfoWire {
     /// Whether the server has the live-notices hub (D75). Older servers omit it.
     #[serde(default)]
     pub events: bool,
+    /// Whether the server makes invitations (D43): it needs a base address for their links. Older servers omit it.
+    #[serde(default)]
+    pub invitations: bool,
 }
 
 pub async fn server_info(client: &reqwest::Client, base: &str) -> Result<ServerInfoWire> {

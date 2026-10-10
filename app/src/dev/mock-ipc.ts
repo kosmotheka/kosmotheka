@@ -90,6 +90,25 @@ if (cloudMode !== null) {
 }
 const cloudLinked = new Set<string>(cloudMode !== null ? [HOME] : []);
 
+// Invitations (D43, 7.6.2): the shape of the answers, with no server behind. The token is not a real one.
+const MOCK_TOKEN = "A".repeat(43);
+interface MockInvitation {
+  id: string;
+  kind: string;
+  memberId: string;
+  state: string;
+  createdAt: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+}
+const mockInvitations: MockInvitation[] = [];
+let mockPendingInvitation: {
+  libraryName: string;
+  kind: string;
+  expiresAt: string;
+  signedIn: boolean;
+} | null = null;
+
 const work = (
   n: number,
   kind: Kind,
@@ -591,6 +610,7 @@ const people: People = {
       accessWithdrawn: false,
       lastAdmin: true,
       hasAccount: true,
+      invitable: "none",
       devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
       elsewhere: ["Club de rol"],
     },
@@ -602,6 +622,7 @@ const people: People = {
       accessWithdrawn: false,
       lastAdmin: false,
       hasAccount: false,
+      invitable: "email",
       devices: [dev("phone", "Móvil de Laura")],
       elsewhere: [],
     },
@@ -613,6 +634,7 @@ const people: People = {
       accessWithdrawn: params.has("withdrawn"),
       lastAdmin: false,
       hasAccount: false,
+      invitable: params.has("withdrawn") ? "none" : "email",
       devices: [
         dev("hugo-phone", "Móvil de Hugo", params.has("reader")),
         dev("tablet", "Tablet Lenovo"),
@@ -1530,6 +1552,79 @@ mockIPC((cmd, args) => {
       if (cloudMode === "conflict") reports.push(report(CLUB, "library_conflict"));
       if (cloudMode === "deleted") reports.push(report("deleted-library", "deleted_here"));
       return reports;
+    }
+    case "invite_status":
+      return {
+        canInvite: mockAccount.signedIn && !params.has("reader"),
+        blocker: !mockAccount.signedIn
+          ? "not_signed_in"
+          : params.has("reader")
+            ? "not_admin"
+            : null,
+      };
+    case "invite_to_library": {
+      const { request } = args as {
+        request: { person: { type: string; member?: string }; kind: string };
+      };
+      const isNew = request.person.type === "new";
+      const member = isNew ? `new-${mockInvitations.length + 1}` : (request.person.member ?? "");
+      const id = `invitation-${mockInvitations.length + 1}`;
+      mockInvitations.push({
+        id,
+        kind: request.kind,
+        memberId: member,
+        state: "pending",
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        acceptedAt: null,
+      });
+      return {
+        member,
+        personCreated: isNew,
+        failed: null,
+        invitation: {
+          id,
+          kind: request.kind,
+          memberId: member,
+          expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+          link: request.kind === "link" ? `https://kosmotheka.app/i/${MOCK_TOKEN}` : null,
+        },
+      };
+    }
+    case "list_invitations":
+      return mockInvitations;
+    case "revoke_invitation": {
+      const { invitationId } = args as { invitationId: string };
+      for (const item of mockInvitations) if (item.id === invitationId) item.state = "revoked";
+      return null;
+    }
+    case "open_invitation": {
+      const { link } = args as { link: string };
+      if (!link.includes("/i/")) throw { kind: "cloud", reason: "invitation_bad_link" };
+      mockPendingInvitation = {
+        libraryName: "Casa",
+        kind: "link",
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        signedIn: mockAccount.signedIn,
+      };
+      return mockPendingInvitation;
+    }
+    case "pending_invitation":
+      return mockPendingInvitation;
+    case "discard_pending_invitation":
+      mockPendingInvitation = null;
+      return null;
+    case "accept_invitation": {
+      if (!mockPendingInvitation) throw { kind: "cloud", reason: "invitation_no_pending" };
+      if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
+      mockPendingInvitation = null;
+      return {
+        cloudLibrary: "cloud-casa",
+        library: HOME,
+        libraryName: "Casa",
+        reports: [],
+        syncError: null,
+      };
     }
     case "give_device_away":
       // The real app reloads from the `device-reset` event Rust emits; the mock

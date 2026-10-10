@@ -539,7 +539,7 @@ El cliente de la nube está en `app/src-tauri/src/cloud/`. Habla con las rutas d
 - `cloud/client.rs`: `HttpCloud`, sobre el cliente de cuentas (`account::client`: mismo `reqwest`, mismas cabeceras del dispositivo). Crea `C`, lista las de la cuenta, `pull` y `push` (lotes de 1000). Un `404 not_found` y un `409 schema_version` pasan a errores de tipo `cloud`; el resto (sesión cerrada, dispositivo quitado, sin conexión) conserva la traducción de la cuenta.
 - `cloud/mod.rs`: el trait `CloudApi` (crear, listar, enlazar, `pull`, `push`) y la lógica: `upload`, `sync_library`, `sync_all` y `status`. Los tests la ejecutan contra una nube en memoria (`cloud/tests.rs`), sin red.
 - Comandos de Tauri: `upload_to_cloud(library_id)`, `sync_cloud()` (un informe por biblioteca) y `cloud_status()` (solo local: por biblioteca, si está enlazada, a qué `C`, y si podría subir). Los envoltorios están en `app/src/lib/api.ts`.
-- Los errores propios son de tipo `cloud`: `not_found`, `schema_version`, `not_signed_in`, `unsigned_history`, `already_linked`. Textos en `cloud.errors.*` (`en` y `es`).
+- Los errores propios son de tipo `cloud`: `not_found`, `schema_version`, `not_signed_in`, `unsigned_history`, `already_linked`. Textos en `cloud.errors.*` (`en` y `es`). Las invitaciones (`cloud/invitations.rs`, 7.6.2) se cuentan más abajo.
 - El bloqueo de la base de datos nunca se mantiene a través de una llamada de red: se lee lo necesario, se suelta, se espera y se vuelve a bloquear para fusionar.
 
 ### Dónde vive el enlace
@@ -597,6 +597,44 @@ Lista las `C` de la cuenta y, para cada una:
 
 **Qué corta la sesión entera y qué no (DAT-009, `cloud::stops_the_session`).** Cortan la sesión: no haber iniciado sesión (`not_signed_in`), una versión del esquema que el servidor no admite (`schema_version`), cualquier error de la cuenta (`Error::Account`: servidor no disponible, límite de peticiones, dispositivo quitado), y los fallos de este dispositivo (`Http`, `Io`, `Sqlite`, base de datos bloqueada). Es de una biblioteca todo lo demás (`not_found`, `unsigned_history`, `invalid_request`, un registro que no se puede fusionar…). `download` trata un `access_withdrawn` como `sync_library`: si el corte llega al bajar, y la biblioteca nunca estuvo aquí, no hay nada que borrar (`access_withdrawn`); si llega al subir lo que se acaba de bajar, se pide la prueba y se comprueba como siempre.
 
+### Invitaciones en la app (7.6.2, D43)
+
+El servidor decide (sección «Invitaciones (7.6.1, D43)» de arriba). La app, en `app/src-tauri/src/cloud/invitations.rs`, solo evita ofrecer lo que el servidor va a rechazar, crea a la persona nueva, y lleva un enlace desde donde se abrió hasta la cuenta que lo acepta. Las pantallas son de 7.6.3; aquí están los comandos, los tipos de `api.ts` y el mock.
+
+**Cliente.** El trait `CloudApi` gana seis métodos: `offers_invitations` (`GET /v1/server`, campo `invitations`), `create_invitation`, `list_invitations`, `revoke_invitation`, `peek_invitation` y `accept_invitation`; los implementan `HttpCloud` y `FakeCloud`. `HttpCloud::anonymous` es el cliente sin sesión (nunca envía el token, aunque lo haya) y lo usan las dos llamadas que no la necesitan: mirar un enlace y preguntar qué ofrece el servidor. Un `404` de un token pasa a `invitation_not_found`; los códigos del servidor (`invitation_expired`, `invitation_used`…) llegan tal cual como errores de cuenta.
+
+**Comandos** (todos reciben `library_id`, como `upload_to_cloud`; la pantalla pasa la biblioteca activa):
+
+| Comando | Qué hace |
+|---|---|
+| `invite_status(library_id)` | `{canInvite, blocker}`: sin sesión, no está en la nube de este servidor, sin roles, este dispositivo no administra, la nube sin poder de vincular, o el servidor no hace invitaciones. Local salvo preguntar al servidor qué ofrece; no necesita sesión |
+| `invite_to_library(library_id, request)` | `request = {person: {type: "new", name} \| {type: "existing", member}, kind: "email" \| "link", email?}`. Devuelve `{member, personCreated, invitation, failed}` |
+| `list_invitations(library_id)` · `revoke_invitation(library_id, invitation_id)` | Las del servidor (pendientes, aceptadas, anuladas y caducadas; el `memberId` permite cruzarlas con Personas). Solo quien administra |
+| `open_invitation(link)` | Sin sesión. Saca el token del enlace, pregunta al servidor qué es y lo deja esperando. Devuelve `{libraryName, kind, expiresAt, signedIn}` |
+| `pending_invitation()` · `discard_pending_invitation()` | Lo que espera, si sigue vigente; y «no era esta» |
+| `accept_invitation()` | Con sesión: acepta lo que espera, hace `sync_all` y dice en qué biblioteca se ha entrado (`library`, `libraryName`, los informes y `syncError` si la sincronización falló: la invitación ya está usada y la siguiente sincronización normal trae la biblioteca) |
+
+**Invitar.** Antes de escribir nada ni llamar al servidor, la app comprueba en Rust lo que el servidor comprueba (`readiness`): sesión, biblioteca enlazada a la nube **de este servidor**, roles, que la persona de este dispositivo administre, y que la biblioteca nombre a la nube como dispositivo que vincula (D76). Un dispositivo que no administra recibe `not_allowed` sin escribir a la persona y sin llamar. El servidor tiene la última palabra: la app no decide el permiso.
+- **Persona nueva:** una operación firmada (`member.invite`) crea la fila `member` con `role: reader` y `can_share: false` (lo único que existe: la petición no tiene campo de rol y `deny_unknown_fields` rechaza entera la que lo traiga), se sube con `sync_library` y solo entonces se pide la invitación con su id. Se admiten `email` y `link`.
+- **Persona que ya está:** solo `email`, y no se toca su fila. `Person.invitable` (`"email"` o `"none"`) lo calcula Rust para Personas: solo lectores y editores, sin el acceso retirado y sin cuenta.
+- **Si algo falla después de crear a la persona**, nada se deshace: el resultado trae `failed` con el código y `personCreated: true`, y la pantalla lo cuenta. La persona está en la biblioteca y se puede volver a pedir la invitación por correo.
+- El correo se valida solo en su forma (algo, `@`, un dominio con punto, sin espacios) y viaja tal cual; no se guarda en ninguna parte.
+- **El enlace completo** de una invitación `link` solo existe en la respuesta de crearla. No se escribe en la base de datos ni en el registro, ni en mensajes de error: el tipo `Secret` lo oculta de `Debug`, y un test busca el token en todas las columnas de todas las tablas.
+
+**Abrir un enlace, y a qué servidor se habla.** Hoy la app, sin sesión, habla con el servidor guardado en `local_state` (`account_server`, el de «Otro servidor», D77) o con el oficial `https://api.kosmotheka.app`; solo se cambia con la sesión cerrada. **Un enlace nunca elige a qué servidor se llama**: solo se lee, y el servidor al que se pregunta es siempre el de la cuenta. Pero tiene que ser **de ese servidor**: si no, el token de uno se le entregaría a otro, que podría usarlo allí. La regla (`token_of_link`):
+- servidor oficial: solo enlaces de `kosmotheka.app` (D79), por `https` y con el puerto por defecto;
+- servidor propio: enlaces de su mismo host o del dominio inmediatamente por encima (`api.ejemplo.org` y `ejemplo.org`); **nunca** un enlace de `kosmotheka.app`. Es una regla provisional: el servidor no dice dónde viven sus enlaces, y `INVITATION_BASE_URL` puede ser cualquier dominio. Quien use `invitaciones.ejemplo.org` con `api.ejemplo.org` verá rechazados sus enlaces hasta que `GET /v1/server` publique la base de las invitaciones (cambio pequeño en el servidor, **pendiente de decidir**);
+- la forma: `https` (o `http` solo si el propio servidor es `http`, p. ej. local), sin usuario, contraseña, parámetros ni fragmento, ruta exactamente `/i/<token>` y token de 43 caracteres `A-Za-z0-9_-`.
+Cualquier otra cosa da `invitation_bad_link` o `invitation_other_server` **sin preguntar nada**.
+
+**El token que espera.** Si no hay sesión, el token queda en `local_state` (`pending_invitation`: token, servidor, nombre de la biblioteca, tipo, caducidad y la cuenta que tenía abierta la sesión al abrirlo, si había una). Nunca en una operación, ni en las copias de seguridad. Caduca con la invitación, se borra al cerrar la sesión (`clear_session`) y con «Dejar el dispositivo a otra persona» (que borra toda la base). Al aceptar se rechaza (y se olvida) si el servidor ya no es el mismo o si lo abrió una cuenta y ahora hay otra. Tras un fallo del servidor solo queda esperando lo que un reintento puede arreglar (sin conexión, límite de peticiones, sin sesión); cualquier respuesta del servidor lo borra.
+
+**Enlaces profundos: qué hay hoy.** Nada. No hay plugin `deep-link` ni `single-instance` en `Cargo.toml`, ni `intent-filter` de enlaces en `AndroidManifest.xml` (solo el del lanzador), ni esquema registrado en `tauri.conf.json`. Por eso `open_invitation(link)` acepta el enlace **pegado a mano**. Para que un enlace abra la app hace falta, aparte y por decidir: el plugin `tauri-plugin-deep-link` (con `single-instance` en escritorio para que el enlace llegue a la ventana abierta); en Android un `intent-filter` con `android:autoVerify` para `https://kosmotheka.app/i/` y el `assetlinks.json` servido en `kosmotheka.app/.well-known/` con la huella de firma de la app (D79: los enlaces verificados solo valen para el dominio oficial); y, para servidores propios, el esquema `kosmotheka://i/<token>` (D79), que hoy `token_of_link` rechaza a propósito. Volver de Google en D77 necesitará el mismo mecanismo.
+
+**El aviso a quien invitó.** `invitation_accepted` llega por el canal de avisos (`{"event":"invitation_accepted","library":"<C>"}`, sin datos personales). `events::run` lo lee y emite `Signal::InvitationAccepted(C)` además del `Changed` de siempre; el servicio de avisos lo convierte en el evento `invitation-accepted` de Tauri con `{library, libraryName}`, **solo si** esta instalación tiene esa `C` en el servidor de la cuenta (`invitations::accepted_notice`, que no toca la ventana: una notificación con la app cerrada puede usarla tal cual). La app pone «Alguien ha aceptado tu invitación a «Casa»» y sincroniza por el `cloud-changed` que viene a la vez. No dice quién: el evento no lo trae, y la lista de invitaciones (`state: accepted` + `memberId`) deja a Personas decirlo en 7.6.3.
+
+**Errores.** Los de invitación tienen texto propio en `invitations.errors.*` (`en` y `es`) y en [design/errors.md](../design/errors.md). Códigos del servidor: los nueve de «Invitaciones (7.6.1)». Códigos de la app (tipo `cloud`): `not_in_cloud`, `no_roles`, `no_cloud_power`, `server_without_invitations`, `invalid_email`, `invalid_name`, `link_needs_new_person`, `person_not_invitable`, `invitation_bad_link`, `invitation_other_server`, `invitation_not_found`, `invitation_no_pending`, `invitation_other_account`. Quien no administra recibe `not_allowed` (tipo `permission`).
+
 ### Qué test cubre cada regla (`cloud/tests.rs`)
 
 | Regla | Test |
@@ -618,3 +656,23 @@ Lista las `C` de la cuenta y, para cada una:
 | Códigos de error del servidor | `cloud/client.rs`: `the_servers_own_codes_become_cloud_errors`, `other_errors_keep_the_account_mapping` |
 
 La nube de los tests (`FakeCloud`) solo hace cumplir lo que el cliente necesita probar: acceso por cuenta, operaciones únicas por `C` y una `C` que solo admite el id local de su enlace. No comprueba firmas: de eso se encarga el `merge` del cliente.
+
+### Qué test cubre cada caso hostil de las invitaciones en la app (7.6.2)
+
+Todos en `cloud/tests/invitations_tests.rs` (contra `FakeCloud`) salvo el del aviso, en `cloud/events/tests.rs`. «Visto fallar»: se quitó cada defensa por separado y el test se puso rojo (barrido de mutaciones de 39 cambios; el único que sobrevivió, quitar la comprobación expresa de que un servidor propio no recibe enlaces de `kosmotheka.app`, obligó a añadir el caso del servidor propio alojado en `kosmotheka.app`).
+
+| Caso | Test |
+|---|---|
+| Un enlace de otro servidor no se sigue, ni se lee, ni pregunta nada | `a_link_of_another_server_is_refused_before_anything_is_asked` |
+| Un token mal formado, un esquema o ruta raros, usuario o fragmento: nada se pregunta ni se guarda | `a_malformed_token_is_refused_before_anything_is_asked` |
+| El servidor al que se pregunta es el de la cuenta, no el del enlace | `on_the_official_server_a_link_of_kosmotheka_app_is_followed` |
+| La persona nueva nunca es otra cosa que lectora, aunque el comando lo pida | `a_new_person_is_never_anything_but_a_reader_even_if_the_command_asks`, `a_new_person_is_created_as_a_reader_uploaded_and_only_then_invited` |
+| Un dispositivo que no administra no crea a la persona ni llama al servidor | `a_device_that_does_not_administer_writes_no_person_and_asks_the_server_nothing` |
+| Un enlace solo para una persona nueva | `a_link_for_a_person_who_is_already_in_the_library_is_refused_before_asking` |
+| Nadie que administre, tenga el acceso retirado o tenga cuenta | `nobody_is_invited_who_administers_has_the_access_withdrawn_or_has_an_account` |
+| El token que espera no sobrevive a otra cuenta, a cerrar la sesión, a «dejar el dispositivo», a otro servidor ni a caducar | `the_pending_token_does_not_survive_another_account_signing_in`, `signing_out_forgets_the_pending_token`, `leaving_the_device_to_another_person_takes_the_pending_token_with_it`, `a_pending_token_is_not_taken_to_another_server`, `a_pending_token_expires_with_its_invitation` |
+| El enlace y el token no se escriben en ninguna tabla ni se imprimen | `the_link_of_an_invitation_is_not_written_anywhere_on_the_device`, `a_link_and_a_token_do_not_print` |
+| Si algo falla tras crear a la persona, no se deshace y se dice | `if_the_server_refuses_the_invitation_the_new_person_stays_and_the_result_says_so`, `if_the_upload_of_the_new_person_fails_the_server_is_not_asked_for_an_invitation` |
+| El aviso `invitation_accepted`: solo ese evento, y solo con una biblioteca de esta instalación | `an_accepted_invitation_is_told_once_and_still_gives_a_cloud_changed`, `other_events_do_not_tell_of_an_invitation`, `the_notice_names_the_library_only_if_this_device_has_it_in_that_cloud` |
+
+No se ha podido probar con un servidor real (ni con el de `server/`): la nube de los tests es una versión pequeña de sus reglas.

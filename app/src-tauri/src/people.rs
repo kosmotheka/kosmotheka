@@ -41,9 +41,28 @@ pub struct Person {
     pub last_admin: bool,
     /// An account is linked to this person (D76). Never says which one.
     pub has_account: bool,
+    /// Whether this person can be invited, from what this device knows: only a reader or an editor who is not
+    /// withdrawn and has no account (D43). Who may invite, and whether the server does, is another matter.
+    pub invitable: Invitable,
     pub devices: Vec<PersonDevice>,
     /// Other libraries on this device where the same person is (same member id).
     pub elsewhere: Vec<String>,
+}
+
+/// How a person can be invited: by email, or not at all. A link is for somebody new, and a person who is
+/// already in the library is not new.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Invitable {
+    Email,
+    None,
+}
+
+impl Invitable {
+    fn of(role: Option<&str>, access_withdrawn: bool, has_account: bool) -> Self {
+        let may = matches!(role, Some("reader" | "editor")) && !access_withdrawn && !has_account;
+        if may { Self::Email } else { Self::None }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -111,14 +130,18 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
               WHERE library_id = ?1 ORDER BY name COLLATE NOCASE, id",
         )?
         .query_map([library], |row| {
+            let role: Option<String> = row.get(2)?;
+            let access_withdrawn = row.get::<_, i64>(4)? != 0;
+            let has_account: bool = row.get(5)?;
             Ok(Person {
                 id: row.get(0)?,
                 name: row.get(1)?,
-                role: row.get(2)?,
+                invitable: Invitable::of(role.as_deref(), access_withdrawn, has_account),
+                role,
                 can_share: row.get::<_, Option<i64>>(3)?.unwrap_or(0) != 0,
-                access_withdrawn: row.get::<_, i64>(4)? != 0,
+                access_withdrawn,
                 last_admin: false,
-                has_account: row.get(5)?,
+                has_account,
                 devices: Vec::new(),
                 elsewhere: Vec::new(),
             })

@@ -1697,6 +1697,38 @@
       "help": "Quítalo de tu cuenta desde otro dispositivo, en Cuenta › Mis dispositivos, y vuelve a entrar aquí."
     }
   },
+  "invitations": {
+    "notice": {
+      "accepted": "Alguien ha aceptado tu invitación a «{{library}}»."
+    },
+    "errors": {
+      "unknown": "No se pudo completar la invitación. Inténtalo de nuevo.",
+      "invitations_unavailable": "Este servidor no hace invitaciones.",
+      "invitation_forbidden": "Solo quien administra la biblioteca puede invitar.",
+      "invitation_library_not_ready": "Esta biblioteca aún no puede invitar: necesita personas con roles y que la nube pueda vincular dispositivos.",
+      "invitation_person_unsuitable": "A esa persona no se la puede invitar ahora.",
+      "invitation_expired": "Ha caducado: pide otro a quien administra.",
+      "invitation_used": "Este enlace ya se usó.",
+      "invitation_revoked": "Esta invitación se anuló.",
+      "invitation_not_for_this_account": "Esta invitación es para otra cuenta.",
+      "invitation_account_already_in_library": "Tu cuenta ya es otra persona en esta biblioteca.",
+      "too_many_requests": "Demasiados intentos. Espera un poco y prueba otra vez.",
+      "not_signed_in": "Inicia sesión en tu cuenta primero.",
+      "not_in_cloud": "Esta biblioteca no está en tu cuenta de la nube.",
+      "no_roles": "Esta biblioteca aún no tiene personas con roles, así que no hay a quién vincular una cuenta.",
+      "no_cloud_power": "La nube no puede vincular dispositivos nuevos en esta biblioteca. Actívalo en los ajustes de la biblioteca.",
+      "server_without_invitations": "Este servidor no hace invitaciones.",
+      "invalid_email": "Esa dirección de correo no parece correcta.",
+      "invalid_name": "Escribe el nombre de la persona.",
+      "link_needs_new_person": "Un enlace es solo para alguien nuevo. Para quien ya está en la biblioteca, usa su correo.",
+      "person_not_invitable": "No se puede invitar a esa persona: administra la biblioteca, no tiene acceso o ya tiene una cuenta.",
+      "invitation_bad_link": "Eso no es un enlace de invitación.",
+      "invitation_other_server": "Este enlace es de otro servidor distinto al de tu cuenta. No se ha abierto.",
+      "invitation_not_found": "Este enlace no vale.",
+      "invitation_no_pending": "No hay ninguna invitación esperando.",
+      "invitation_other_account": "Esta invitación se abrió con otra cuenta. Abre el enlace otra vez."
+    }
+  },
   "cloud": {
     "errors": {
       "unknown": "Algo ha fallado con la nube. Prueba otra vez.",

@@ -218,7 +218,15 @@ pub fn run() {
             commands::cloud_other_owners,
             commands::answer_other_owner,
             commands::cloud_events_wake,
-            commands::cloud_connection
+            commands::cloud_connection,
+            commands::invite_status,
+            commands::invite_to_library,
+            commands::list_invitations,
+            commands::revoke_invitation,
+            commands::open_invitation,
+            commands::pending_invitation,
+            commands::discard_pending_invitation,
+            commands::accept_invitation
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

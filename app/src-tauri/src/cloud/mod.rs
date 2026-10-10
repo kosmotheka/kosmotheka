@@ -8,6 +8,7 @@
 
 pub mod client;
 pub mod events;
+pub mod invitations;
 pub mod other_owner;
 #[cfg(test)]
 mod tests;
@@ -24,7 +25,7 @@ use crate::lan;
 use crate::sync::{self, LibraryVectors, MergeReport, SyncOperation, VersionVector};
 use crate::{libraries, ops, people};
 
-/// The five calls the client needs, behind a trait so tests run against an in-memory
+/// The calls the client needs, behind a trait so tests run against an in-memory
 /// cloud instead of the network.
 #[allow(async_fn_in_trait)]
 pub trait CloudApi {
@@ -53,6 +54,23 @@ pub trait CloudApi {
         schema_version: i64,
         operations: &[SyncOperation],
     ) -> Result<PushReport>;
+    /// Whether this server makes invitations (`GET /v1/server`, no session needed).
+    async fn offers_invitations(&self) -> Result<bool>;
+    /// Asks for an invitation to `cloud` for the person `member`, which the server compares with its own
+    /// catalog (D84). The link of a `link` invitation is in this answer and nowhere else.
+    async fn create_invitation(
+        &self,
+        cloud: &str,
+        member: &str,
+        kind: invitations::InvitationKind,
+        email: Option<&str>,
+    ) -> Result<invitations::CreatedInvitation>;
+    async fn list_invitations(&self, cloud: &str) -> Result<Vec<invitations::InvitationItem>>;
+    async fn revoke_invitation(&self, cloud: &str, invitation: &str) -> Result<()>;
+    /// Without a session: what whoever holds the link may know. Always asked of `server()`.
+    async fn peek_invitation(&self, token: &str) -> Result<invitations::InvitationPreview>;
+    /// With a session: the cloud library the account was let into.
+    async fn accept_invitation(&self, token: &str) -> Result<String>;
 }
 
 /// The answer to «what do I have?»: the libraries, and apart the ids of those the account had and was cut from.

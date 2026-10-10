@@ -767,6 +767,8 @@ export interface Person {
   lastAdmin: boolean;
   /** An account is linked to this person (D76); which one is never shown. */
   hasAccount: boolean;
+  /** Whether they can be invited, from what this device knows: only a reader or editor with no account who still has access (D43). */
+  invitable: "email" | "none";
   devices: PersonDevice[];
   /** Other libraries on this device where the same person is. */
   elsewhere: string[];
@@ -1259,7 +1261,8 @@ type CloudErrorReason =
   | "unsigned_history"
   | "already_linked"
   | "no_cloud_device"
-  | "access_withdrawn";
+  | "access_withdrawn"
+  | InvitationAppReason;
 
 /** Account errors that come with a cloud call and have their own text under `cloud.errors`. */
 const CLOUD_ACCOUNT_REASONS = ["link_rejected", "link_not_allowed", "events_unavailable"];
@@ -1386,4 +1389,224 @@ export function cloudErrorKey(error: unknown): string {
     return `cloud.errors.${error.reason}`;
   if (isCloudOffline(error)) return "cloud.errors.offline";
   return "cloud.errors.unknown";
+}
+
+// --- Invitations (D43, milestone 7.6.2) ---
+
+/** The app's own reasons for the invitation commands, before or instead of asking the server. */
+type InvitationAppReason =
+  | "not_in_cloud"
+  | "no_roles"
+  | "no_cloud_power"
+  | "server_without_invitations"
+  | "invalid_email"
+  | "invalid_name"
+  | "link_needs_new_person"
+  | "person_not_invitable"
+  | "invitation_bad_link"
+  | "invitation_other_server"
+  | "invitation_not_found"
+  | "invitation_no_pending"
+  | "invitation_other_account";
+
+/** @public 7.6.3 builds the screens that use it. */
+export type InvitationKind = "email" | "link";
+
+/** @public 7.6.3 builds the screens that use it. */
+export type InvitationState = "pending" | "accepted" | "revoked" | "expired" | "unknown";
+
+/**
+ * Why a library cannot invite now.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export type InviteBlocker =
+  | "not_signed_in"
+  | "not_in_cloud"
+  | "no_roles"
+  | "not_admin"
+  | "no_cloud_power"
+  | "server_without_invitations";
+
+/** @public 7.6.3 builds the screens that use it. */
+export interface InviteStatus {
+  canInvite: boolean;
+  blocker: InviteBlocker | null;
+}
+
+/**
+ * Who an invitation is for. A new person is always created as a reader: there is no role to give, and Rust
+ * refuses a request that names one.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export type InvitePerson = { type: "new"; name: string } | { type: "existing"; member: string };
+
+/** @public 7.6.3 builds the screens that use it. */
+export interface InviteRequest {
+  person: InvitePerson;
+  kind: InvitationKind;
+  /** Only for `email`: sent as typed, never kept. */
+  email?: string | null;
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export interface CreatedInvitation {
+  id: string;
+  kind: InvitationKind;
+  memberId: string;
+  expiresAt: string;
+  /** Only for `link`, and only here: show it once, do not keep it. */
+  link: string | null;
+}
+
+/**
+ * What inviting did. If `failed` is set after `personCreated`, the person is in the library anyway and the
+ * invitation can be asked again for them (by email).
+ * @public 7.6.3 builds the screens that use it.
+ */
+export interface InviteResult {
+  member: string;
+  personCreated: boolean;
+  invitation: CreatedInvitation | null;
+  failed: string | null;
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export interface InvitationItem {
+  id: string;
+  kind: InvitationKind;
+  /** The person it is for: cross it with the list of people. */
+  memberId: string;
+  state: InvitationState;
+  createdAt: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+}
+
+/**
+ * A link that was opened: what it says, and whether the account that accepts it is already signed in.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export interface OpenedInvitation {
+  libraryName: string;
+  kind: InvitationKind;
+  expiresAt: string;
+  signedIn: boolean;
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export interface AcceptedInvitation {
+  cloudLibrary: string;
+  /** The library on this device, if the session after accepting brought it down. */
+  library: string | null;
+  libraryName: string | null;
+  reports: CloudLibraryReport[];
+  /** Why the session after accepting failed. The invitation is used anyway; the next sync brings the library. */
+  syncError: string | null;
+}
+
+/** The `invitation-accepted` event: somebody accepted an invitation to a library of this device. No personal data. */
+export interface InvitationAcceptedNotice {
+  library: string;
+  libraryName: string;
+}
+
+/**
+ * Can this library invite now, and if not, why. Needs no session.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export function inviteStatus(libraryId: string): Promise<InviteStatus> {
+  return invoke<InviteStatus>("invite_status", { libraryId });
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export function inviteToLibrary(libraryId: string, request: InviteRequest): Promise<InviteResult> {
+  return invoke<InviteResult>("invite_to_library", { libraryId, request });
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export function listInvitations(libraryId: string): Promise<InvitationItem[]> {
+  return invoke<InvitationItem[]>("list_invitations", { libraryId });
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export function revokeInvitation(libraryId: string, invitationId: string): Promise<void> {
+  return invoke("revoke_invitation", { libraryId, invitationId });
+}
+
+/**
+ * Opens a pasted (or handed-over) invitation link, with no session; it waits for the account that accepts.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export function openInvitation(link: string): Promise<OpenedInvitation> {
+  return invoke<OpenedInvitation>("open_invitation", { link });
+}
+
+/**
+ * The link waiting for a session, if there is one and it has not expired.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export function pendingInvitation(): Promise<OpenedInvitation | null> {
+  return invoke<OpenedInvitation | null>("pending_invitation");
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export function discardPendingInvitation(): Promise<void> {
+  return invoke("discard_pending_invitation");
+}
+
+/**
+ * Accepts the waiting link with the signed-in account and syncs, so the library comes down.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export function acceptInvitation(): Promise<AcceptedInvitation> {
+  return invoke<AcceptedInvitation>("accept_invitation");
+}
+
+/** The server's own codes for invitations, which have their own text under `invitations.errors`. */
+const INVITATION_REASONS = [
+  "invitations_unavailable",
+  "invitation_forbidden",
+  "invitation_library_not_ready",
+  "invitation_person_unsuitable",
+  "invitation_expired",
+  "invitation_used",
+  "invitation_revoked",
+  "invitation_not_for_this_account",
+  "invitation_account_already_in_library",
+  "too_many_requests",
+  "not_signed_in",
+  "not_in_cloud",
+  "no_roles",
+  "no_cloud_power",
+  "server_without_invitations",
+  "invalid_email",
+  "invalid_name",
+  "link_needs_new_person",
+  "person_not_invitable",
+  "invitation_bad_link",
+  "invitation_other_server",
+  "invitation_not_found",
+  "invitation_no_pending",
+  "invitation_other_account",
+];
+
+/**
+ * Translation key for the code of a failed invitation command, or of `InviteResult.failed`.
+ * @public 7.6.3 builds the screens that use it.
+ */
+export function invitationReasonKey(reason: string): string {
+  return INVITATION_REASONS.includes(reason)
+    ? `invitations.errors.${reason}`
+    : "invitations.errors.unknown";
+}
+
+/** @public 7.6.3 builds the screens that use it. */
+export function invitationErrorKey(error: unknown): string {
+  if (isCommandError(error)) {
+    if (error.kind === "permission" && error.reason === "not_allowed")
+      return "invitations.errors.invitation_forbidden";
+    if (error.kind === "account" || error.kind === "cloud")
+      return invitationReasonKey(error.reason);
+  }
+  return "invitations.errors.unknown";
 }

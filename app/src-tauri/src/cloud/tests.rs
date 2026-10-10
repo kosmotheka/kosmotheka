@@ -65,6 +65,29 @@ struct CloudState {
     lying: bool,
     /// Cloud libraries whose pull fails with this code.
     failing_pulls: BTreeMap<String, &'static str>,
+    /// A server that makes no invitations (it has no address for their links).
+    without_invitations: bool,
+    /// Where the links of this server live.
+    link_base: String,
+    invitations: Vec<FakeInvitation>,
+    /// Creating an invitation fails with this code of the server.
+    refuse_invitations: Option<&'static str>,
+    /// Every call to an invitation route, whichever it is: what a device that must not ask never adds to.
+    invitation_calls: usize,
+    /// The server and the token of every peek, to see where a link was taken.
+    peeks: Vec<(String, String)>,
+}
+
+/// The small version of what the server keeps: no hash, the token is here, and the rules are only the ones
+/// the client is tested against (the server's own are in its tests, 7.6.1).
+struct FakeInvitation {
+    id: String,
+    cloud: String,
+    member: String,
+    kind: invitations::InvitationKind,
+    email: Option<String>,
+    token: String,
+    state: invitations::InvitationState,
 }
 
 /// Enforces only what the client is tested against: membership by account,
@@ -94,6 +117,30 @@ impl FakeCloud {
             server: server.to_owned(),
             device: None,
         }
+    }
+
+    /// A server that makes no invitations.
+    fn without_invitations(self) -> Self {
+        self.0.lock().unwrap().without_invitations = true;
+        self
+    }
+
+    /// Creating an invitation fails with this code, after the person is in the catalog.
+    fn refuse_invitations(&self, code: &'static str) {
+        self.0.lock().unwrap().refuse_invitations = Some(code);
+    }
+
+    fn invitation_calls(&self) -> usize {
+        self.0.lock().unwrap().invitation_calls
+    }
+
+    fn peeks(&self) -> Vec<(String, String)> {
+        self.0.lock().unwrap().peeks.clone()
+    }
+
+    fn with_link_base(self, base: &str) -> Self {
+        self.0.lock().unwrap().link_base = base.to_owned();
+        self
     }
 
     fn created(&self) -> usize {
@@ -377,6 +424,17 @@ impl FakeLibrary {
             },
         );
         true
+    }
+
+    /// Whether this person is in the catalog the log builds: a member row was created with this id.
+    fn knows_member(&self, member: &str) -> bool {
+        self.operations.values().any(|synced| {
+            synced.operation.changes.iter().any(|change| {
+                change.entity == Entity::Member
+                    && change.action == kosmotheka_domain::Action::Create
+                    && change.id == member
+            })
+        })
     }
 
     /// The account note the cloud writes when it links an account with its person (D76).
@@ -689,6 +747,145 @@ impl CloudApi for FakeApi {
         library.register_the_cloud(&self.server);
         Ok(report)
     }
+
+    async fn offers_invitations(&self) -> Result<bool> {
+        Ok(!self.cloud.0.lock().unwrap().without_invitations)
+    }
+
+    async fn create_invitation(
+        &self,
+        cloud: &str,
+        member: &str,
+        kind: invitations::InvitationKind,
+        email: Option<&str>,
+    ) -> Result<invitations::CreatedInvitation> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.invitation_calls += 1;
+        if let Some(code) = state.refuse_invitations {
+            return Err(Error::account(code));
+        }
+        let library = state
+            .libraries
+            .get(cloud)
+            .filter(|library| library.has_access(&self.account))
+            .ok_or(Error::Cloud("not_found"))?;
+        // The id is compared with the catalog of this library, as the real server does (D84).
+        if !library.knows_member(member) {
+            return Err(Error::account("invitation_person_unsuitable"));
+        }
+        let token = format!("{:A>43}", state.invitations.len() + 1);
+        let base = if state.link_base.is_empty() {
+            "https://cloud.example"
+        } else {
+            &state.link_base
+        };
+        let link = (kind == invitations::InvitationKind::Link)
+            .then(|| invitations::Secret::new(format!("{base}/i/{token}")));
+        let id = ops::new_id();
+        state.invitations.push(FakeInvitation {
+            id: id.clone(),
+            cloud: cloud.to_owned(),
+            member: member.to_owned(),
+            kind,
+            email: email.map(str::to_owned),
+            token,
+            state: invitations::InvitationState::Pending,
+        });
+        Ok(invitations::CreatedInvitation {
+            id,
+            kind,
+            member_id: member.to_owned(),
+            expires_at: "2099-01-01T00:00:00+00:00".to_owned(),
+            link,
+        })
+    }
+
+    async fn list_invitations(&self, cloud: &str) -> Result<Vec<invitations::InvitationItem>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.invitation_calls += 1;
+        Ok(state
+            .invitations
+            .iter()
+            .filter(|invitation| invitation.cloud == cloud)
+            .map(|invitation| invitations::InvitationItem {
+                id: invitation.id.clone(),
+                kind: invitation.kind,
+                member_id: invitation.member.clone(),
+                state: invitation.state,
+                created_at: "2098-12-31T00:00:00+00:00".to_owned(),
+                expires_at: "2099-01-01T00:00:00+00:00".to_owned(),
+                accepted_at: None,
+            })
+            .collect())
+    }
+
+    async fn revoke_invitation(&self, cloud: &str, invitation: &str) -> Result<()> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.invitation_calls += 1;
+        let found = state
+            .invitations
+            .iter_mut()
+            .find(|found| found.cloud == cloud && found.id == invitation)
+            .ok_or(Error::Cloud("not_found"))?;
+        found.state = invitations::InvitationState::Revoked;
+        Ok(())
+    }
+
+    async fn peek_invitation(&self, token: &str) -> Result<invitations::InvitationPreview> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.invitation_calls += 1;
+        state.peeks.push((self.server.clone(), token.to_owned()));
+        let found = state
+            .invitations
+            .iter()
+            .find(|found| found.token == token)
+            .ok_or(Error::Cloud("invitation_not_found"))?;
+        match found.state {
+            invitations::InvitationState::Pending => Ok(invitations::InvitationPreview {
+                library_name: "Family".to_owned(),
+                kind: found.kind,
+                expires_at: "2099-01-01T00:00:00+00:00".to_owned(),
+            }),
+            invitations::InvitationState::Accepted => Err(Error::account("invitation_used")),
+            _ => Err(Error::account("invitation_revoked")),
+        }
+    }
+
+    async fn accept_invitation(&self, token: &str) -> Result<String> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.invitation_calls += 1;
+        let index = state
+            .invitations
+            .iter()
+            .position(|found| found.token == token)
+            .ok_or(Error::Cloud("invitation_not_found"))?;
+        let (cloud, member, email) = {
+            let found = &state.invitations[index];
+            match found.state {
+                invitations::InvitationState::Pending => {}
+                invitations::InvitationState::Accepted => {
+                    return Err(Error::account("invitation_used"));
+                }
+                _ => return Err(Error::account("invitation_revoked")),
+            }
+            (
+                found.cloud.clone(),
+                found.member.clone(),
+                found.email.clone(),
+            )
+        };
+        if email.is_some_and(|email| email != format!("{}@example.com", self.account)) {
+            return Err(Error::account("invitation_not_for_this_account"));
+        }
+        state.invitations[index].state = invitations::InvitationState::Accepted;
+        let library = state.libraries.get_mut(&cloud).unwrap();
+        if !library.has_access(&self.account) {
+            library.members.push(self.account.clone());
+        }
+        library.persons.insert(self.account.clone(), member.clone());
+        library.note_account(&self.account, &member);
+        Ok(cloud)
+    }
 }
 
 // --- Devices and helpers ---------------------------------------------------
@@ -823,6 +1020,8 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 }
 
 // --- Tests -----------------------------------------------------------------
+
+mod invitations_tests;
 
 #[tokio::test]
 async fn uploading_links_the_library_and_sends_its_whole_log() {

@@ -51,6 +51,7 @@ import {
   type CatalogOptions,
   type CreatedBook,
   type Holding,
+  type InvitationAcceptedNotice,
   type LibrarySummary,
   addToSeries,
   catalogOptions,
@@ -283,6 +284,11 @@ export default function App() {
     document.addEventListener("visibilitychange", onVisible);
     const unlisten = [
       listen("cloud-changed", () => void onCloudChanged()),
+      // Somebody accepted an invitation of this account (D43). The event carries no personal data: the app
+      // syncs (the `cloud-changed` that comes with it) and the screen of People says who.
+      listen<InvitationAcceptedNotice>("invitation-accepted", (event) =>
+        setNotice(t("invitations.notice.accepted", { library: event.payload.libraryName })),
+      ),
       listen("local-changed", () => void syncAll(true)),
       listen("library-changed", () => {
         reload();

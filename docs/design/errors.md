@@ -153,3 +153,30 @@ Lo que sí llega es `claim.conflicts` («este dispositivo es de otra persona»):
 ## Pendiente de implementar
 
 Hoy la app muestra estos mensajes de forma más escueta: la mayoría sin el «qué hacer», sin botones de acción y sin la guía de emparejamiento. También faltan situaciones que aún no detecta: el código de barras que no es de un libro, «hace mucho que no se sincroniza» y el aviso de sin conexión. Esta tabla es la referencia para implementarlos cuando llegue el nuevo diseño.
+
+## Invitaciones (7.6.2, D43)
+
+Códigos **reales**, del servidor (7.6.1) y de la app (`cloud/invitations.rs`); los textos están en `invitations.errors.*` de los ficheros de idioma y los pintan las pantallas de 7.6.3. La app no muestra el token ni el enlace en ningún error.
+
+| Código | De dónde | Texto (es) |
+|---|---|---|
+| `invitation_used` | servidor, `410` | Este enlace ya se usó. |
+| `invitation_expired` | servidor, `410` | Ha caducado: pide otro a quien administra. |
+| `invitation_revoked` | servidor, `410` (también cuando quien invitó ya no administra, la biblioteca perdió roles o poder, o la persona dejó de poder ser invitada) | Esta invitación se anuló. |
+| `invitation_not_for_this_account` | servidor, `403` (por correo ajeno; también la cuenta que fue echada y quiere entrar con un enlace) | Esta invitación es para otra cuenta. |
+| `invitation_account_already_in_library` | servidor, `409` | Tu cuenta ya es otra persona en esta biblioteca. |
+| `invitation_forbidden` | servidor, `403` | Solo quien administra la biblioteca puede invitar. (La app, antes de llamar: `not_allowed`, del tipo `permission`) |
+| `invitation_library_not_ready` | servidor, `409` | Esta biblioteca aún no puede invitar: necesita personas con roles y que la nube pueda vincular dispositivos. |
+| `invitation_person_unsuitable` | servidor, `422` | A esa persona no se la puede invitar ahora. |
+| `invitations_unavailable` | servidor, `409` | Este servidor no hace invitaciones. |
+| `too_many_requests` | servidor, `429` | Demasiados intentos. Espera un poco y prueba otra vez. |
+| `invitation_not_found` | app (un `404` de un token) | Este enlace no vale. Es el mismo texto para un token equivocado y para uno que el servidor olvidó. |
+| `invitation_bad_link` | app, sin preguntar | Eso no es un enlace de invitación. |
+| `invitation_other_server` | app, sin preguntar | Este enlace es de otro servidor distinto al de tu cuenta. No se ha abierto. |
+| `invitation_no_pending` | app | No hay ninguna invitación esperando. |
+| `invitation_other_account` | app | Esta invitación se abrió con otra cuenta. Abre el enlace otra vez. |
+| `not_in_cloud` · `no_roles` · `no_cloud_power` · `server_without_invitations` | app (`invite_status` y `invite_to_library`) | Por qué la biblioteca no puede invitar: no está en la nube de esta cuenta; no tiene personas con roles; la nube no puede vincular dispositivos nuevos (se activa en los ajustes de la biblioteca); el servidor no hace invitaciones. |
+| `invalid_email` · `invalid_name` | app | La dirección no parece correcta; falta el nombre de la persona. |
+| `link_needs_new_person` · `person_not_invitable` | app | Un enlace es solo para alguien nuevo; esa persona administra, no tiene acceso o ya tiene una cuenta. |
+
+Lo que no es un error: el aviso «Alguien ha aceptado tu invitación a «Casa»» (`invitations.notice.accepted`), que sale con la app abierta cuando llega `invitation_accepted` por el canal de avisos.

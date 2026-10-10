@@ -20,6 +20,7 @@ use tokio::time::{Instant, sleep, sleep_until, timeout};
 
 use crate::account::client::{self, Auth, send_json};
 use crate::account::{self, ResetDeps};
+use crate::cloud::invitations;
 use crate::commands;
 use crate::db::Database;
 use crate::error::{Error, Result};
@@ -110,7 +111,7 @@ fn parse_utc(text: &str) -> Option<u64> {
 }
 
 /// How long until `expires_at`, or `None` when it is not a date or already past.
-fn time_left(expires_at: &str, now: SystemTime) -> Option<Duration> {
+pub(super) fn time_left(expires_at: &str, now: SystemTime) -> Option<Duration> {
     let expires = parse_utc(expires_at)?;
     let now = now.duration_since(UNIX_EPOCH).ok()?.as_secs();
     expires.checked_sub(now).map(Duration::from_secs)
@@ -237,10 +238,13 @@ impl EventsApi for HttpEvents {
 // --- The loop ----------------------------------------------------------------
 
 /// What the loop tells the outside.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Signal {
     /// Something may have changed in the cloud: sync.
     Changed,
+    /// Somebody accepted an invitation to this cloud library (the id is the cloud's). It comes along with a
+    /// `Changed`; it only says what happened, so the app can tell whoever invited (D43).
+    InvitationAccepted(String),
     /// The connection came up or went down (it will retry).
     Live(bool),
     /// The loop ended for good (no hub, signed out): nothing more will come.
@@ -425,7 +429,13 @@ async fn connect_once<A: EventsApi>(
             chunk = stream.next_chunk() => match chunk {
                 Ok(Some(bytes)) => {
                     idle_at = Instant::now() + timing.idle;
-                    if !parser.feed(&bytes).is_empty() {
+                    let events = parser.feed(&bytes);
+                    for event in &events {
+                        if let Some(cloud) = invitations::accepted_cloud_library(&event.data) {
+                            emit(Signal::InvitationAccepted(cloud));
+                        }
+                    }
+                    if !events.is_empty() {
                         coalescer.mark(emit);
                     }
                 }
@@ -560,10 +570,10 @@ impl EventsService {
         }
     }
 
-    /// Turns the loop's signals into what the UI hears: `cloud-changed` and
-    /// `cloud-connection`.
+    /// Turns the loop's signals into what the UI hears: `cloud-changed`, `cloud-connection` and
+    /// `invitation-accepted`.
     fn emitter(&self) -> impl Fn(Signal) + Send + 'static {
-        let (inner, app) = (self.inner.clone(), self.app.clone());
+        let (inner, app, database) = (self.inner.clone(), self.app.clone(), self.database.clone());
         move |signal| {
             let snapshot = |change: &dyn Fn(&mut Connection)| {
                 inner.status.lock().ok().map(|mut status| {
@@ -574,6 +584,19 @@ impl EventsService {
             match signal {
                 Signal::Changed => {
                     let _ = app.emit("cloud-changed", ());
+                }
+                Signal::InvitationAccepted(cloud) => {
+                    // Only a library this device has in this server's cloud is named; the server's word alone
+                    // changes nothing here.
+                    let notice = database.lock().ok().and_then(|conn| {
+                        let server = account::server(&conn).ok()?;
+                        invitations::accepted_notice(&conn, &server, &cloud)
+                            .ok()
+                            .flatten()
+                    });
+                    if let Some(notice) = notice {
+                        let _ = app.emit("invitation-accepted", notice);
+                    }
                 }
                 Signal::Live(live) => {
                     if let Some(status) = snapshot(&|status| status.live = live) {
