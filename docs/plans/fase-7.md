@@ -144,9 +144,22 @@ Propuestas para construirlo:
 
 ### 7.6 Invitar con un enlace
 
-- **Quien administra** crea la invitación (D43, enmienda del 10/10/2026): una operación firmada crea la fila `member` de la persona nueva **como lector**, siempre; la invitación no lleva rol. El servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad. Quien administra recibe un aviso cuando se acepta y cambia el rol desde Personas. Dos tipos (D43): **por correo**, atada a ese correo, con la que quien ya está en la biblioteca conserva su rol; y **enlace para copiar**, solo para personas nuevas, que siempre da lector. A quien ya administra no se le invita. Límite de correos de invitación por cuenta y día, para que el servidor no sirva para mandar correo no deseado. Pendiente de decidir: las bibliotecas sin roles.
+- **Quien administra** crea la invitación (D43, enmienda del 10/10/2026): una operación firmada crea la fila `member` de la persona nueva **como lector**, siempre; la invitación no lleva rol. El servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad. Quien administra recibe un aviso cuando se acepta y cambia el rol desde Personas. Dos tipos (D43): **por correo**, atada a ese correo, con la que quien ya está en la biblioteca conserva su rol; y **enlace para copiar**, solo para personas nuevas, que siempre da lector. A quien ya administra no se le invita. Límite de correos de invitación por cuenta y día, para que el servidor no sirva para mandar correo no deseado. Solo se invita a una biblioteca con personas y roles; sin ellos, la pantalla lleva a activarlos.
 - Al abrirla, la app pide crear la cuenta o iniciar sesión; el servidor enlaza la cuenta con esa persona (7.5) y la biblioteca llega entera.
 - El enlace da exactamente eso: entrar una vez, como esa persona, con ese rol. Un enlace usado o caducado no da nada y la app lo explica (D43).
+
+**Casos hostiles de las invitaciones** (cada uno con su test antes de la defensa, visto fallar; se suman a la «Batería de acceso»):
+
+1. Un enlace usado, caducado o anulado no da nada, y dos cuentas que lo aceptan a la vez: entra una.
+2. Una invitación por correo aceptada por una cuenta con otro correo.
+3. Quien no administra crea una invitación con una app modificada (lector, editor, «Puede compartir»).
+4. Quien administra la biblioteca A crea una invitación con el id de una persona de la biblioteca B: el servidor compara, no busca por el id que le mandan (D84).
+5. Un enlace para copiar creado para una persona que no es nueva o no es lectora (una app modificada): se comprueba al crear **y al aceptar**.
+6. Una invitación para una persona que ya administra, que tiene el acceso retirado (D98) o que ya tiene una cuenta enlazada.
+7. Quien invitó deja de administrar, o es echado, antes de que se acepte: la invitación ya no vale.
+8. Una cuenta que ya es otra persona en esa biblioteca acepta una invitación.
+9. Adivinar enlaces: el token es largo y aleatorio, solo se guarda su huella, y la ruta tiene límite de peticiones.
+10. Usar el servidor para mandar correo a direcciones ajenas: límite de invitaciones por correo por cuenta y día, y un texto que no lleva nada escrito por quien invita salvo el nombre de la biblioteca.
 
 ### 7.7 Registro de actividad
 
