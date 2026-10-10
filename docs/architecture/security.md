@@ -82,7 +82,7 @@ Al subir una biblioteca, la nube entra en ella como un dispositivo más, con su 
 
 Cada biblioteca de la nube tiene su propia clave, guardada cifrada. El identificador de «la nube» en una biblioteca sale de su clave, de modo que nadie puede presentarse con ese identificador y otra clave.
 
-*Construido: el poder y la identidad de la nube. En construcción: que la nube lo use (hitos 7.5.2 y 7.5.3). Nombres: `cloud_device_id`, `account_id`.*
+*Construido: el poder y la identidad de la nube, y su uso. Cuando Laura entra con su cuenta en un móvil nuevo, el móvil baja la biblioteca, se da de alta en ella, y la nube dice que ese móvil es de Laura **apuntando la clave con la que ha entrado**. Todo en una sesión: al terminar, el móvil tiene su persona y su rol en todos los dispositivos de la familia. Vale igual para la administradora única que perdió su único móvil. La nube no vuelve a vincular un móvil al que un administrador quitó su persona o retiró el acceso, ni toca uno que ya es de otra persona, ni el que alguien ocupó con una clave que no es la suya. Si la nube no tiene el poder en esa biblioteca (no está nombrada, o se le quitó), no escribe nada. Nombres: `cloud_device_id`, `account_id`, `claim` (`device.link_account`).*
 
 ### 7. Decir de quién es un dispositivo incluye su clave
 

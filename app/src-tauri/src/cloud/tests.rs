@@ -34,8 +34,9 @@ impl FakeIdentity {
 
 struct FakeLibrary {
     owner: String,
-    /// Accounts the claim gave access to.
+    /// Accounts the claim gave access to, and the person each one is.
     members: Vec<String>,
+    persons: BTreeMap<String, String>,
     local: Option<String>,
     operations: BTreeMap<String, SyncOperation>,
     identity: Option<FakeIdentity>,
@@ -191,9 +192,17 @@ impl FakeLibrary {
         self.owner == account || self.members.iter().any(|member| member == account)
     }
 
-    /// The small version of the server's rule (D96): the device is a person's in the log, with its own key
-    /// registered and vouched. The last writer of each field wins, as in the catalog.
-    fn vouches_for(&self, id: &str, key: &str) -> bool {
+    /// The small version of the server's rule (D96): the person of the device in the log, if it is registered
+    /// with this key and that key was vouched. The last writer of each field wins, as in the catalog.
+    fn vouches_for(&self, id: &str, key: &str) -> Option<String> {
+        let (registered, vouched, person) = self.device_fields(id);
+        (registered.as_deref() == Some(key) && vouched.as_deref() == Some(key))
+            .then_some(person)
+            .flatten()
+    }
+
+    /// `public_key`, `vouched_key` and `member_id` of a device as the log leaves them.
+    fn device_fields(&self, id: &str) -> (Option<String>, Option<String>, Option<String>) {
         let mut changes: Vec<(&Hlc, &Change)> = self
             .operations
             .values()
@@ -215,9 +224,63 @@ impl FakeLibrary {
                 .and_then(Value::as_str)
                 .map(str::to_owned)
         };
-        last("public_key").as_deref() == Some(key)
-            && last("vouched_key").as_deref() == Some(key)
-            && last("member_id").is_some()
+        (last("public_key"), last("vouched_key"), last("member_id"))
+    }
+
+    /// What the real cloud signs for itself, once it has registered and the library names it: an operation
+    /// with its own key, chained to its previous one, dated after everything in the log.
+    fn cloud_writes(&mut self, intent: &str, changes: Vec<Change>) -> bool {
+        let (Some(identity), true) = (self.identity.as_ref(), self.registered) else {
+            return false;
+        };
+        let Some(local) = self.local.clone() else {
+            return false;
+        };
+        let newest = self
+            .operations
+            .values()
+            .map(|synced| synced.operation.hlc.millis)
+            .max()
+            .unwrap_or_default();
+        let previous = self
+            .operations
+            .values()
+            .filter(|synced| synced.operation.hlc.device == identity.id)
+            .max_by(|a, b| a.operation.hlc.cmp(&b.operation.hlc))
+            .map(|synced| synced.operation.id.clone());
+        let schema_version = self.operations.values().next().unwrap().schema_version;
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: local,
+            hlc: Hlc {
+                millis: newest + 1,
+                counter: 0,
+                device: identity.id.clone(),
+            },
+            intent: intent.into(),
+            changes,
+            previous,
+            signature: None,
+        };
+        operation.signature = Some(DeviceKey::from_seed([identity.seed; 32]).sign(&operation));
+        self.operations.insert(
+            operation.id.clone(),
+            SyncOperation {
+                schema_version,
+                operation,
+            },
+        );
+        true
+    }
+
+    /// The account note the cloud writes when it links an account with its person (D76).
+    fn note_account(&mut self, account: &str, member: &str) {
+        let change = Change::update(
+            Entity::Member,
+            member,
+            json!({ "account_id": format!("account-{account}") }),
+        );
+        self.cloud_writes("member.link_account", vec![change]);
     }
 
     /// What the real server does at the end of the push that names its cloud device (D95): the device
@@ -310,6 +373,7 @@ impl CloudApi for FakeApi {
             FakeLibrary {
                 owner: self.account.clone(),
                 members: Vec::new(),
+                persons: BTreeMap::new(),
                 local: None,
                 operations: BTreeMap::new(),
                 identity,
@@ -326,12 +390,38 @@ impl CloudApi for FakeApi {
         };
         let mut claimed = Claimed::default();
         for (cloud, library) in state.libraries.iter_mut() {
-            if library.local.is_some()
-                && !library.has_access(&self.account)
-                && library.vouches_for(id, key)
+            if library.local.is_none() {
+                continue;
+            }
+            if !library.persons.contains_key(&self.account)
+                && let Some(person) = library.vouches_for(id, key)
             {
-                library.members.push(self.account.clone());
+                // The owner's row only gets its person; anyone else's row is made.
+                if !library.has_access(&self.account) {
+                    library.members.push(self.account.clone());
+                }
+                library.persons.insert(self.account.clone(), person.clone());
+                library.note_account(&self.account, &person);
                 claimed.linked.push(cloud.clone());
+            }
+            // The second step: this account is a person here, and the device registered itself with this
+            // key and belongs to nobody yet.
+            let Some(person) = library.persons.get(&self.account).cloned() else {
+                continue;
+            };
+            let (registered, _, owner) = library.device_fields(id);
+            if registered.as_deref() == Some(key.as_str())
+                && owner.is_none()
+                && library.cloud_writes(
+                    "device.link_account",
+                    vec![Change::update(
+                        Entity::Device,
+                        id,
+                        json!({ "member_id": person, "vouched_key": key }),
+                    )],
+                )
+            {
+                claimed.devices.push(cloud.clone());
             }
         }
         Ok(claimed)
@@ -915,6 +1005,167 @@ async fn a_second_account_whose_device_is_assigned_and_vouched_syncs_the_library
     assert_converged(&[&laptop, &phone], &lib);
 }
 
+/// A new phone of an account that is already Hugo, an editor: one session and it has the library, its person
+/// and its role (D76, D96); what it adds is applied and reaches everybody.
+#[tokio::test]
+async fn a_new_phone_of_a_linked_account_gets_the_library_its_person_and_its_role_in_one_session() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let hugo_member: String = laptop
+        .lock()
+        .unwrap()
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&lib, &phone_id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    people::set_role(
+        &mut laptop.lock().unwrap(),
+        &lib,
+        &hugo_member,
+        Some("editor"),
+        false,
+    )
+    .unwrap();
+    lan_sync(&laptop, &phone, &lib);
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    // Hugo's first phone claims its person and syncs.
+    let hugo = cloud.api("hugo").on(&phone);
+    sync_all(&phone, &hugo).await.unwrap();
+    sync_library(&laptop, &tersoal, &lib).await.unwrap();
+
+    // The new phone: nothing of the library, a fresh device of the same account.
+    let new = Database::in_memory();
+    let hugos_new = cloud.api("hugo").on(&new);
+    let reports = sync_all(&new, &hugos_new).await.unwrap();
+
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.library == lib && r.outcome == Outcome::Downloaded)
+    );
+    let new_id = ops::device_id(&new.lock().unwrap()).unwrap();
+    let person: Option<String> = new
+        .lock()
+        .unwrap()
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&lib, &new_id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        person.as_deref(),
+        Some(hugo_member.as_str()),
+        "the cloud said it is Hugo's"
+    );
+    assert_eq!(
+        people::list_people(&new.lock().unwrap(), &lib)
+            .unwrap()
+            .my_role
+            .as_deref(),
+        Some("editor")
+    );
+    // A change of the new phone is applied everywhere.
+    add(&new, &lib, "The Farthest Shore");
+    sync_library(&new, &hugos_new, &lib).await.unwrap();
+    sync_library(&laptop, &tersoal, &lib).await.unwrap();
+    sync_library(&phone, &hugo, &lib).await.unwrap();
+    sync_library(&new, &hugos_new, &lib).await.unwrap();
+    for device in [&laptop, &phone, &new] {
+        assert!(
+            catalog::list_books(
+                &device.lock().unwrap(),
+                &lib,
+                &catalog::BookFilter::default()
+            )
+            .unwrap()
+            .iter()
+            .any(|b| b.title == "The Farthest Shore")
+        );
+    }
+    assert_converged(&[&laptop, &phone, &new], &lib);
+}
+
+/// D58: the only administrator loses her only phone. A new one and her account are enough.
+#[tokio::test]
+async fn the_only_administrator_with_a_new_phone_and_her_account_is_an_administrator_again() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib) = laptop_admin_phone_reader();
+    let tersoal = cloud.api("tersoal").on(&laptop);
+    upload_settled(&laptop, &tersoal, &lib).await;
+    // Her session with the cloud: she is let in as her person.
+    sync_all(&laptop, &tersoal).await.unwrap();
+    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
+    let hugo: String = laptop
+        .lock()
+        .unwrap()
+        .query_row(
+            "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+            [&lib, &phone_id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    // The laptop is gone: only the cloud and a new device remain.
+    let new = Database::in_memory();
+    let api = cloud.api("tersoal").on(&new);
+
+    sync_all(&new, &api).await.unwrap();
+
+    assert_eq!(
+        people::list_people(&new.lock().unwrap(), &lib)
+            .unwrap()
+            .my_role
+            .as_deref(),
+        Some("admin")
+    );
+    people::set_role(&mut new.lock().unwrap(), &lib, &hugo, Some("editor"), false).unwrap();
+}
+
+/// A library that was never uploaded: nothing happens in the cloud, and nothing changes here.
+#[tokio::test]
+async fn a_library_that_was_never_uploaded_stays_as_it_is_in_a_session() {
+    let cloud = FakeCloud::default();
+    let (device, library) = device_with_family();
+    let before = log_ids(&device, &library);
+
+    let reports = sync_all(&device, &cloud.api("ana").on(&device))
+        .await
+        .unwrap();
+
+    assert!(reports.is_empty());
+    assert_eq!(cloud.calls(), (0, 0));
+    assert_eq!(log_ids(&device, &library), before);
+}
+
+/// A new phone of an account that is not linked with any person gets nothing.
+#[tokio::test]
+async fn a_new_phone_of_an_account_that_is_not_linked_gets_nothing() {
+    let cloud = FakeCloud::default();
+    let (laptop, _phone, lib) = laptop_admin_phone_reader();
+    upload_settled(&laptop, &cloud.api("tersoal").on(&laptop), &lib).await;
+    let new = Database::in_memory();
+    let own = ops::active_library(&new.lock().unwrap()).unwrap();
+    let before = log_ids(&new, &own);
+    let (pulls, pushes) = cloud.calls();
+
+    let reports = sync_all(&new, &cloud.api("mallory").on(&new))
+        .await
+        .unwrap();
+
+    assert!(reports.is_empty());
+    assert_eq!(cloud.calls(), (pulls, pushes));
+    assert!(!library_exists_here(&new, &lib));
+    assert_eq!(log_ids(&new, &own), before);
+}
+
+fn library_exists_here(device: &Database, library: &str) -> bool {
+    libraries::library_exists(&device.lock().unwrap(), library).unwrap()
+}
+
 /// A device that has the library over the LAN but belongs to nobody gets nothing from the cloud.
 #[tokio::test]
 async fn a_device_of_nobody_that_has_the_library_over_the_lan_gets_nothing_from_the_cloud() {
@@ -967,7 +1218,11 @@ async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
 
     assert_eq!(reports.len(), 1);
     assert_eq!(reports[0].outcome, Outcome::Downloaded);
-    assert_eq!(reports[0].sent, 0);
+    // The phone registered itself in the library (D56) and sent only that.
+    assert_eq!(reports[0].sent, 1);
+    sync_library(&ana, &cloud.api("ana"), &library)
+        .await
+        .unwrap();
     assert_converged(&[&ana, &phone], &library);
     assert_eq!(link(&phone, &library), link(&ana, &library));
 
@@ -978,7 +1233,7 @@ async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
         .unwrap();
     let reports = sync_all(&ana, &cloud.api("ana")).await.unwrap();
     assert_eq!(reports[0].outcome, Outcome::Synced);
-    assert_eq!(reports[0].received, 2); // the book and the phone's key
+    assert_eq!(reports[0].received, 1); // the book: the phone's key came with its first session
     assert_converged(&[&ana, &phone], &library);
 }
 
@@ -1033,6 +1288,10 @@ async fn a_new_device_of_the_account_downloads_its_first_library() {
             .iter()
             .all(|report| report.outcome != Outcome::LibraryConflict)
     );
+    // The phone registered itself in the library; the laptop hears of it in its next session.
+    sync_library(&laptop, &cloud.api("kenji"), &library)
+        .await
+        .unwrap();
     assert_converged(&[&laptop, &phone], &library);
     assert_eq!(link(&phone, &library), link(&laptop, &library));
 }
@@ -1205,6 +1464,9 @@ async fn operations_of_another_library_from_the_cloud_are_dropped() {
     assert_eq!(reports[0].outcome, Outcome::Downloaded);
     assert_eq!(reports[0].rejected, planted.len());
     assert!(!libraries::library_known(&phone.lock().unwrap(), &other).unwrap());
+    sync_library(&ana, &cloud.api("ana"), &library)
+        .await
+        .unwrap();
     assert_converged(&[&ana, &phone], &library);
 }
 
@@ -1244,6 +1506,11 @@ async fn a_week_offline_then_both_paths(cloud_first: bool) {
     lan_sync(&laptop, &phone, &library);
     let tablet = Database::in_memory();
     sync_all(&tablet, &cloud.api("ana")).await.unwrap();
+    // The tablet registered itself in the library; the others hear of it.
+    sync_library(&laptop, &cloud.api("ana"), &library)
+        .await
+        .unwrap();
+    lan_sync(&laptop, &phone, &library);
     assert_converged(&[&laptop, &phone, &tablet], &library);
 
     for title in ["Dune", "Tehanu", "The Dispossessed", "Lavinia"] {

@@ -3254,6 +3254,7 @@ mod tests {
         tx.commit().unwrap();
         laptop.pull_from(&tablet);
         let tablet_id = device_id_of(&tablet);
+        let tablet_key = ops::signing_key(&tablet.0).unwrap().public_key();
         let laura = ops::new_id();
         let tx = laptop.0.transaction().unwrap();
         ops::record(
@@ -3291,7 +3292,8 @@ mod tests {
             vec![Change::update(
                 Entity::Device,
                 &tablet_id,
-                json!({ "member_id": laura }),
+                // The cloud vouches for what it links (D96): the key the tablet registered.
+                json!({ "member_id": laura, "vouched_key": tablet_key }),
             )],
         )
         .unwrap();

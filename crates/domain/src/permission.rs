@@ -94,35 +94,46 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
 }
 
 /// Whether the change writes something only the cloud device may write, or the one
-/// thing it may do beyond a device of nobody: `member.account_id` or `device.member_id`.
-/// `device.vouched_key` is not among them: the cloud never vouches (D96).
+/// thing it may do beyond a device of nobody: `member.account_id`, or `device.member_id`
+/// with the `vouched_key` that goes with it (D96).
 fn touches_cloud_field(change: &Change) -> bool {
     match change.entity {
         Entity::Member => change.fields.contains_key("account_id"),
-        Entity::Device => change.fields.contains_key("member_id"),
+        Entity::Device => {
+            change.fields.contains_key("member_id") || change.fields.contains_key("vouched_key")
+        }
         _ => false,
     }
 }
 
 /// The two changes the cloud device may make besides what a device of nobody may do
-/// (D76): `account_id` of a person who exists, and the person of another device that
-/// belongs to nobody, pointing at a person with an account. Each touches that field only.
+/// (D76, D96): `account_id` of a person who exists, which is all the change touches; and
+/// the link of another device that belongs to nobody to a person with an account, which
+/// touches exactly `member_id` and `vouched_key`, both set. The cloud vouches for what it
+/// links; whether that key is the one the device is registered with is rule 13's business.
 fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool {
-    if change.action != Action::Update || change.fields.len() != 1 {
+    if change.action != Action::Update {
         return false;
     }
+    let text = |field: &str| {
+        change
+            .fields
+            .get(field)
+            .and_then(|v| v.as_str())
+            .filter(|v| !v.is_empty())
+    };
     match change.entity {
         Entity::Member => {
-            change.fields.contains_key("account_id") && view.member_exists(&change.id)
+            change.fields.len() == 1
+                && change.fields.contains_key("account_id")
+                && view.member_exists(&change.id)
         }
         Entity::Device => {
-            !change.id.eq_ignore_ascii_case(author)
+            change.fields.len() == 2
+                && text("vouched_key").is_some()
+                && !change.id.eq_ignore_ascii_case(author)
                 && !view.device_has_member_id(&change.id)
-                && change
-                    .fields
-                    .get("member_id")
-                    .and_then(|v| v.as_str())
-                    .is_some_and(|member| view.member_has_account(member))
+                && text("member_id").is_some_and(|member| view.member_has_account(member))
         }
         _ => false,
     }
@@ -376,8 +387,11 @@ mod tests {
             OTHER,
             json!({ "member_id": MY_MEMBER, "vouched_key": "AAAA" }),
         )]);
-        assert!(!is_allowed(&vouch(OTHER), &cloud));
-        assert!(!is_allowed(&link_and_vouch, &cloud), "not beside a link");
+        assert!(!is_allowed(&vouch(OTHER), &cloud), "alone");
+        assert!(
+            is_allowed(&link_and_vouch, &cloud),
+            "with the link it makes"
+        );
     }
 
     #[test]
@@ -466,7 +480,8 @@ mod tests {
             op(vec![Change::update(Entity::Member, OTHER_MEMBER, fields)])
         };
         let link = |device: &str, member: Option<&str>, more: serde_json::Value| {
-            let mut fields = json!({ "member_id": member });
+            // The cloud vouches for what it links (D96): `member_id` goes with `vouched_key`.
+            let mut fields = json!({ "member_id": member, "vouched_key": member.map(|_| "k") });
             fields
                 .as_object_mut()
                 .unwrap()
@@ -488,6 +503,23 @@ mod tests {
         assert!(
             !is_allowed(&link(other, None, nothing.clone()), &cloud()),
             "taking the person away"
+        );
+        let alone =
+            |fields: serde_json::Value| op(vec![Change::update(Entity::Device, other, fields)]);
+        assert!(
+            !is_allowed(&alone(json!({ "member_id": MY_MEMBER })), &cloud()),
+            "member_id alone"
+        );
+        assert!(
+            !is_allowed(&alone(json!({ "vouched_key": "k" })), &cloud()),
+            "vouched_key alone"
+        );
+        assert!(
+            !is_allowed(
+                &alone(json!({ "member_id": MY_MEMBER, "vouched_key": "" })),
+                &cloud()
+            ),
+            "an empty key vouches for nothing"
         );
         assert!(
             !is_allowed(

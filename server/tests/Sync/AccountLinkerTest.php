@@ -71,7 +71,7 @@ final class AccountLinkerTest extends WebTestCase
 
         $answer = $this->claim($jhonnysTablet);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $answer);
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $answer);
         self::assertNull($this->memberOf($cloud, 'jhonny@example.com'), 'his row does not change');
         self::assertNull($this->accountIdOf(self::LAURA), 'nobody is Laura');
     }
@@ -84,7 +84,7 @@ final class AccountLinkerTest extends WebTestCase
 
         $answer = $this->claim($mine);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $answer);
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $answer);
         self::assertSame(404, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $mine, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
         self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $mine)['body']);
     }
@@ -95,7 +95,7 @@ final class AccountLinkerTest extends WebTestCase
         [$hugo, $session] = $this->hugo($cloud);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO)]);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($session));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($session));
         self::assertNull($this->memberOf($cloud, 'hugo@example.com'));
     }
 
@@ -104,7 +104,7 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->world();
         [, $session] = $this->hugo($cloud);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($session));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($session));
     }
 
     public function testAReaderWhoAssignsItselfToTheAdministratorVouchingForItsOwnKeyMakesARequestAndLinksNobody(): void
@@ -117,7 +117,7 @@ final class AccountLinkerTest extends WebTestCase
             $mine->sign(self::LOCAL, self::T + $this->tick(), 'device.claim', [$this->assign($mine->id, self::LAURA, $mine->publicKey)]),
         ]);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($this->jhonny));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->jhonny));
         self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]));
         self::assertNull($this->memberOf($cloud, 'jhonny@example.com'));
     }
@@ -129,7 +129,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO, $hugo->publicKey)]);
         $this->laptopSigns($cloud, 'device.remove', [['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $hugo->id, 'device_name' => 'Hugo']]]);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($session));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($session));
         self::assertNull($this->memberOf($cloud, 'hugo@example.com'));
     }
 
@@ -144,7 +144,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->push($this->family, $cloud, [$other->registration(self::LOCAL, self::T + $this->tick())]);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($other->id, self::HUGO, $other->publicKey)]);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($this->jhonny));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->jhonny));
         self::assertNull($this->memberOf($cloud, 'jhonny@example.com'));
         self::assertSame(self::HUGO, $this->memberOf($cloud, 'hugo@example.com'));
         self::assertSame([], $this->call('GET', '/v1/cloud/libraries', $this->jhonny)['body']);
@@ -160,7 +160,7 @@ final class AccountLinkerTest extends WebTestCase
         $answer = $this->call('POST', '/v1/cloud/libraries/claim', $session, ['library' => $other, 'member' => self::LAURA, 'device' => $this->laptop->id, 'libraries' => [$other]]);
 
         self::assertSame(200, $answer['status']);
-        self::assertSame(['linked' => [$cloud], 'conflicts' => []], $answer['body']);
+        self::assertSame(['linked' => [$cloud], 'conflicts' => [], 'devices' => []], $answer['body']);
         self::assertSame(self::HUGO, $this->memberOf($cloud, 'hugo@example.com'));
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM membership m JOIN "user" u ON u.id = m.user_id WHERE u.email = ?', ['hugo@example.com']));
     }
@@ -179,7 +179,7 @@ final class AccountLinkerTest extends WebTestCase
         ]);
         self::assertSame(0, $response['received']);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($this->family));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->family));
     }
 
     public function testAnAccountLinkedAsAReaderReadsAndWhatItUploadsIsARequest(): void
@@ -210,7 +210,7 @@ final class AccountLinkerTest extends WebTestCase
 
         $answer = $this->claim($session);
 
-        self::assertSame(['linked' => [$cloud], 'conflicts' => []], $answer);
+        self::assertSame(['linked' => [$cloud], 'conflicts' => [], 'devices' => []], $answer);
         self::assertSame(self::HUGO, $this->memberOf($cloud, 'hugo@example.com'));
         $pulled = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $session, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
         self::assertSame(200, $pulled['status']);
@@ -238,7 +238,7 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->world();
         self::assertNull($this->memberOf($cloud, 'family@example.com'), 'the owner starts with no person');
 
-        self::assertSame(['linked' => [$cloud], 'conflicts' => []], $this->claim($this->family));
+        self::assertSame(['linked' => [$cloud], 'conflicts' => [], 'devices' => []], $this->claim($this->family));
 
         self::assertSame(self::LAURA, $this->memberOf($cloud, 'family@example.com'));
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND member_id IS NOT NULL', [$cloud]));
@@ -270,7 +270,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($second->id, self::HUGO, $second->publicKey)]);
         $operations = $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
 
-        self::assertSame(['linked' => [], 'conflicts' => [$cloud]], $this->claim($secondSession));
+        self::assertSame(['linked' => [], 'conflicts' => [$cloud], 'devices' => []], $this->claim($secondSession));
 
         self::assertSame(self::READER, $this->memberOf($cloud, 'hugo@example.com'));
         self::assertSame($operations, $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]));
@@ -284,7 +284,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->claim($session);
         $operations = $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
 
-        self::assertSame(['linked' => [], 'conflicts' => []], $this->claim($session));
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($session));
 
         self::assertSame($operations, $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]));
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND member_id = ?', [$cloud, self::HUGO]));
@@ -322,6 +322,194 @@ final class AccountLinkerTest extends WebTestCase
             $ids[] = $account;
         }
         self::assertCount(2, array_unique($ids));
+    }
+
+    // ------------------------------------------------------ the new phone (7.5.3) ---
+
+    /** A lost phone: an administrator took its person away, with a fence. The cloud does not give it back. */
+    public function testAPhoneWhosePersonAnAdministratorTookAwayIsNotLinkedAgainByTheCloud(): void
+    {
+        [$cloud, $old, $oldSession] = $this->hugoWithAnAccount();
+        $this->laptopSigns($cloud, 'device.assign', [['entity' => 'device', 'id' => $old->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']]]);
+        self::assertNull($this->personOfDevice($old->id));
+
+        $answer = $this->claim($oldSession);
+
+        self::assertSame([], $answer['devices']);
+        self::assertNull($this->personOfDevice($old->id), 'only an administrator gives it back');
+    }
+
+    public function testAPhoneWithARevocationIsNotLinkedAgainByTheCloud(): void
+    {
+        [$cloud, $old, $oldSession] = $this->hugoWithAnAccount();
+        $this->laptopSigns($cloud, 'device.assign', [['entity' => 'device', 'id' => $old->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null]]]);
+        $this->laptopSigns($cloud, 'device.remove', [['entity' => 'revocation', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['device_id' => $old->id, 'device_name' => 'Hugo']]]);
+
+        self::assertSame([], $this->claim($oldSession)['devices']);
+        self::assertNull($this->personOfDevice($old->id));
+    }
+
+    /** Jhonny, a reader with access, registered the id of Hugo's new phone with a key of his own before the phone did. */
+    public function testAnIdJhonnyRegisteredFirstWithAKeyOfHisOwnIsNotLinkedToHugoWhenHugosPhoneClaims(): void
+    {
+        [$cloud] = $this->hugoWithAnAccount();
+        $this->shareWithJhonny($cloud);
+        $newId = Uuid::v4()->toRfc4122();
+        $jhonnysCopy = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, $newId, 'Phone');
+        self::assertSame(1, $this->push($this->jhonny, $cloud, [SigningDevice::fromSession($jhonnysCopy)->registration(self::LOCAL, self::T + $this->tick())])['received']);
+        $hugosNew = $this->loginDevice($this->client, 'hugo@example.com', self::PASSWORD, $newId, 'New phone');
+
+        $answer = $this->claim($hugosNew);
+
+        self::assertSame([], $answer['devices']);
+        self::assertNull($this->personOfDevice($newId), 'the id stays nobody\'s');
+        self::assertSame([], $this->cloudOperations($cloud, 'device.link_account'));
+    }
+
+    public function testAnAccountWithARowButNoPersonLinksNoDevice(): void
+    {
+        $cloud = $this->world();
+        $this->shareWithJhonny($cloud);
+        $mine = SigningDevice::fromSession($this->jhonny);
+        $this->push($this->jhonny, $cloud, [$mine->registration(self::LOCAL, self::T + $this->tick())]);
+
+        self::assertSame([], $this->claim($this->jhonny)['devices']);
+        self::assertNull($this->personOfDevice($mine->id));
+    }
+
+    public function testTheNewPhoneOfAReaderIsLinkedAsAReaderAndWhatItUploadsIsARequest(): void
+    {
+        $cloud = $this->world();
+        $oldSession = $this->signInNewDevice($this->client, 'reader2@example.com', self::PASSWORD, 'Reader');
+        $old = SigningDevice::fromSession($oldSession);
+        $this->push($this->family, $cloud, [$old->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($old->id, self::READER, $old->publicKey)]);
+        self::assertSame([$cloud], $this->claim($oldSession)['linked']);
+        [$new, $newSession] = $this->newPhone($cloud, 'reader2@example.com', $oldSession);
+
+        $answer = $this->claim($newSession);
+
+        self::assertSame([$cloud], $answer['devices']);
+        self::assertSame(self::READER, $this->personOfDevice($new->id));
+        $before = $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]);
+        $this->push($newSession, $cloud, [$new->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000)]);
+        self::assertSame($before + 1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]), 'never more role than the person has');
+    }
+
+    public function testTheCloudWithoutThePowerLinksNoDeviceAndWritesNothing(): void
+    {
+        $cloud = $this->world(namesTheCloud: false);
+        [$old, $oldSession] = $this->hugo($cloud);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($old->id, self::HUGO, $old->publicKey)]);
+        $this->claim($oldSession);
+        [$new, $newSession] = $this->newPhone($cloud, 'hugo@example.com', $oldSession);
+
+        self::assertSame([], $this->claim($newSession)['devices']);
+
+        self::assertNull($this->personOfDevice($new->id));
+        self::assertSame([], $this->cloudOperations($cloud, null));
+    }
+
+    /** The account is already noted, then the administrator stops naming the cloud: it has no power there now. */
+    public function testTheCloudWhosePowerWasTakenAwayLinksNoDevice(): void
+    {
+        [$cloud, , $oldSession] = $this->hugoWithAnAccount();
+        // Dated after what the cloud has written (it uses the server's clock), as an administrator's phone would be.
+        $this->laptopSigns($cloud, 'library.cloud', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_device_id' => '']]], (int) (microtime(true) * 1000) + 60_000);
+        [$new, $newSession] = $this->newPhone($cloud, 'hugo@example.com', $oldSession);
+        $operations = $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
+
+        self::assertSame([], $this->claim($newSession)['devices']);
+
+        self::assertNull($this->personOfDevice($new->id));
+        self::assertSame($operations, $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), 'nothing is written');
+    }
+
+    public function testADeviceThatAlreadyBelongsToAnotherPersonIsNotTouched(): void
+    {
+        [$cloud, , $oldSession] = $this->hugoWithAnAccount();
+        [$new, $newSession] = $this->newPhone($cloud, 'hugo@example.com', $oldSession);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($new->id, self::READER, $new->publicKey)]);
+
+        self::assertSame([], $this->claim($newSession)['devices']);
+
+        self::assertSame(self::READER, $this->personOfDevice($new->id));
+    }
+
+    public function testTheNewPhoneOfAnEditorIsLinkedOnceAndHasItsRoleEverywhere(): void
+    {
+        [$cloud, , $oldSession] = $this->hugoWithAnAccount();
+        [$new, $newSession] = $this->newPhone($cloud, 'hugo@example.com', $oldSession);
+        self::assertNull($this->personOfDevice($new->id), 'registered, nobody\'s');
+
+        // A body with ids is ignored: the same answer as without one.
+        $answer = $this->call('POST', '/v1/cloud/libraries/claim', $newSession, ['library' => Uuid::v4()->toRfc4122(), 'member' => self::LAURA, 'device' => $this->laptop->id, 'devices' => [$this->laptop->id]]);
+        self::assertSame(200, $answer['status']);
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => [$cloud]], $answer['body']);
+
+        self::assertSame(self::HUGO, $this->personOfDevice($new->id));
+        self::assertSame($new->publicKey, $this->vouchedKeyOfDevice($new->id));
+        $rows = $this->cloudOperations($cloud, 'device.link_account');
+        self::assertCount(1, $rows);
+        self::assertSame('applied', $rows[0]['status']);
+        // It is an editor's device now: what it adds is applied.
+        $before = $this->publishers($cloud);
+        // Dated after the cloud's link, as the clock of a phone that has pulled it would be (the server writes with its own clock).
+        $this->push($newSession, $cloud, [$new->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000, 'By the new phone')]);
+        self::assertSame($before + 1, $this->publishers($cloud));
+        // Twice: nothing more.
+        self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($newSession));
+        self::assertCount(1, $this->cloudOperations($cloud, 'device.link_account'));
+    }
+
+    /**
+     * Hugo's first phone, assigned and vouched, and his account claimed: linked, with the note of his account.
+     *
+     * @return array{string, SigningDevice, array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string}}
+     */
+    private function hugoWithAnAccount(): array
+    {
+        $cloud = $this->world();
+        [$old, $session] = $this->hugo($cloud);
+        $this->laptopSigns($cloud, 'device.assign', [$this->assign($old->id, self::HUGO, $old->publicKey)]);
+        self::assertSame([$cloud], $this->claim($session)['linked']);
+
+        return [$cloud, $old, $session];
+    }
+
+    /**
+     * A new phone of the account: it signs in and registers itself in the library, through the access it has.
+     *
+     * @param array{headers: array<string, string>} $withAccess
+     *
+     * @return array{SigningDevice, array{headers: array<string, string>, device_id: string, token: string, public_key: string, secret_key: string, email: string}}
+     */
+    private function newPhone(string $cloud, string $email, array $withAccess): array
+    {
+        $session = $this->loginDevice($this->client, $email, self::PASSWORD, Uuid::v4()->toRfc4122(), 'New phone');
+        $device = SigningDevice::fromSession($session);
+        self::assertSame(1, $this->push($withAccess, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())])['received']);
+
+        return [$device, $session];
+    }
+
+    private function personOfDevice(string $device): ?string
+    {
+        $member = self::getContainer()->get(Connection::class)->fetchOne('SELECT m.id FROM catalog_devices d JOIN catalog_members m ON m.key = d.member_key WHERE d.id = ?', [$device]);
+
+        return \is_string($member) ? $member : null;
+    }
+
+    private function vouchedKeyOfDevice(string $device): ?string
+    {
+        $key = self::getContainer()->get(Connection::class)->fetchOne('SELECT vouched_key FROM catalog_devices WHERE id = ?', [$device]);
+
+        return \is_string($key) ? $key : null;
+    }
+
+    private function publishers(string $cloud): int
+    {
+        return $this->scalar('SELECT COUNT(*) FROM catalog_publishers WHERE cloud_library_id = ?', [$cloud]);
     }
 
     // ------------------------------------------------------ the world ---
@@ -372,9 +560,9 @@ final class AccountLinkerTest extends WebTestCase
     /**
      * @param list<array<string, mixed>> $changes
      */
-    private function laptopSigns(string $cloud, string $intent, array $changes): void
+    private function laptopSigns(string $cloud, string $intent, array $changes, ?int $at = null): void
     {
-        $response = $this->push($this->family, $cloud, [$this->laptop->sign(self::LOCAL, self::T + $this->tick(), $intent, $changes)]);
+        $response = $this->push($this->family, $cloud, [$this->laptop->sign(self::LOCAL, $at ?? self::T + $this->tick(), $intent, $changes)]);
         self::assertSame(1, $response['received']);
     }
 
@@ -393,14 +581,14 @@ final class AccountLinkerTest extends WebTestCase
     /**
      * @param array{headers: array<string, string>} $session
      *
-     * @return array{linked: list<string>, conflicts: list<string>}
+     * @return array{linked: list<string>, conflicts: list<string>, devices: list<string>}
      */
     private function claim(array $session): array
     {
         $answer = $this->call('POST', '/v1/cloud/libraries/claim', $session);
         self::assertSame(200, $answer['status']);
 
-        /** @var array{linked: list<string>, conflicts: list<string>} $body */
+        /** @var array{linked: list<string>, conflicts: list<string>, devices: list<string>} $body */
         $body = $answer['body'];
 
         return $body;

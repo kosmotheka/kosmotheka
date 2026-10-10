@@ -302,6 +302,26 @@ Respuesta `200 {"linked": [...], "conflicts": [...]}`: solo ids de bibliotecas a
 
 **Anotar la cuenta en la biblioteca.** Con la fila enlazada con `M` y `member.account_id` de `M` distinto del `account_id` de la cuenta, la nube escribe `member.link_account` (un `update` de `member` con solo `account_id`) con `CloudAuthor::author`, y avisa a los demás dispositivos como un `push`. **Solo si tiene el poder** en esa biblioteca en ese momento (la biblioteca la nombra en `cloud_device_id` y está registrada con la clave de la que sale su id: `CatalogLibraryView::cloudDevice()`); si no, el acceso se da y no se escribe nada. Para no llenar el registro de peticiones, si el registro ya tiene una petición de la nube con ese mismo `member.link_account` (misma persona, misma cuenta: `CloudOperationRepository::hasRefusedAccountLink`, contención `@>` sobre el `body` jsonb) no se vuelve a escribir.
 
+## El móvil nuevo: el segundo paso de `claim` (7.5.3, D76, D96)
+
+`claim` hace ahora dos cosas, una detrás de otra, y sigue sin recibir ningún id (D84): el dispositivo es el autenticado (id `D`, clave `K`, cuenta `U`).
+
+1. **Enlazar la cuenta con su persona** (7.5.2b-2, arriba).
+2. **Vincular el dispositivo.** En cada biblioteca donde `U` tiene `membership` **con persona** `M` (una consulta, no una por biblioteca del servidor), con el bloqueo de la biblioteca y releyendo dentro, la nube escribe con `CloudAuthor` un `update` de la fila `device` de `D` con `member_id` = `M` y `vouched_key` = `K` (intención `device.link_account`) **solo si**:
+
+| Condición | Por qué |
+|---|---|
+| La nube tiene el poder ahí ahora (`cloudWithPower`: nombrada y registrada con la clave de la que sale su id) | Sin poder sería una petición |
+| `M` existe y su `account_id` es el `accountId` de `U` | Lo pide la regla 12; si aún no lo es, se anota y se vincula en la misma llamada |
+| El catálogo tiene la fila `device` de `D` con `public_key` = `K` | El móvil se ha registrado él mismo; con otra clave, alguien ocupó su id: nada |
+| Su `member_id` está vacío | La nube no reasigna |
+| Su `trusted_through` es **nulo** y no hay retirada para `D` | A un dispositivo al que se le quitó su persona o el acceso solo lo devuelve un administrador. Se pide nulo y no «vacío»: un `trusted_through` de texto vacío es una valla con marca vacía, no ausencia de valla |
+| No hay ya una petición de la nube con ese mismo cambio (`hasRefusedDeviceLink`) | Sin bucles |
+
+La respuesta gana `devices`: ids de las bibliotecas de la nube donde el dispositivo acaba de quedar vinculado. Idempotente.
+
+**El orden de una sesión en un móvil nuevo** (`cloud::sync_all`): `claim`; listar; bajar la biblioteca que no tiene (`download`), que ahora **registra al dispositivo** en ella (una operación suya que solo crea su fila `device`, `ops::ensure_registered`) y la sube con el resto; `claim` otra vez, solo si en la sesión se subió algo; si devuelve `devices`, se vuelve a sincronizar esa biblioteca para traer lo que la nube acaba de escribir. Un fallo de cualquiera de los dos `claim` no rompe la sesión. Al terminar **una** sesión el móvil tiene su persona y su rol.
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.

@@ -57,6 +57,9 @@ pub trait CloudApi {
 pub struct Claimed {
     pub linked: Vec<String>,
     pub conflicts: Vec<String>,
+    /// Libraries where the cloud has just said this device is its person's (D76, D96).
+    #[serde(default)]
+    pub devices: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -452,6 +455,29 @@ pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<L
             download(database, api, &cloud.id, local).await?
         });
     }
+    // A new phone has just registered itself in a library and sent the registration: the cloud may now say the
+    // device is its account's person's. Ask only if something went up, and bring down what the cloud wrote. A
+    // failure here costs the session nothing: the next one asks again.
+    if reports.iter().any(|report| report.sent > 0)
+        && let Ok(claimed) = api.claim().await
+    {
+        for cloud in claimed.devices {
+            let Some(local) = reports
+                .iter()
+                .find(|report| report.cloud_library.as_deref() == Some(cloud.as_str()))
+                .map(|report| report.library.clone())
+            else {
+                continue;
+            };
+            if let Ok(again) = sync_library(database, api, &local).await
+                && let Some(report) = reports.iter_mut().find(|report| report.library == local)
+            {
+                report.received += again.received;
+                report.sent += again.sent;
+                report.rejected += again.rejected;
+            }
+        }
+    }
     for (library, link) in &linked {
         let Some(cloud) = link.cloud_library.as_deref() else {
             continue;
@@ -575,6 +601,15 @@ async fn download<A: CloudApi>(
         report.outcome = Outcome::NotLinked;
         report.received = 0;
         return Ok(report);
+    }
+    // A device registers itself the first time it writes in a library (D56); a new phone writes nothing here
+    // yet, so it does it now, and the registration goes up with the rest: the cloud can then say whose it is
+    // (D76, D96). Always allowed, whatever the role.
+    {
+        let mut conn = database.lock()?;
+        let tx = conn.transaction()?;
+        ops::ensure_registered(&tx, local)?;
+        tx.commit()?;
     }
     push_missing(database, api, local, cloud, server_vector, &mut report).await?;
     Ok(report)

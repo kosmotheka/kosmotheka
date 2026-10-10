@@ -43,32 +43,35 @@ final class Permissions
         return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
     }
 
-    /** Whether the change writes `member.account_id` or `device.member_id`, the fields the cloud device has a say in (never `vouched_key`, D96). */
+    /** Whether the change writes `member.account_id` or `device.member_id` / `device.vouched_key`, the fields the cloud device has a say in (D76, D96). */
     private static function touchesCloudField(ChangePayload $change): bool
     {
         return match ($change->entity) {
             CatalogEntity::Member => \array_key_exists('account_id', $change->fields),
-            CatalogEntity::Device => \array_key_exists('member_id', $change->fields),
+            CatalogEntity::Device => \array_key_exists('member_id', $change->fields) || \array_key_exists('vouched_key', $change->fields),
             default => false,
         };
     }
 
     /**
-     * The two changes the cloud device may make besides what a device of nobody may do (D76): the `account_id`
-     * of a person who exists, and the person of another device that belongs to nobody, pointing at a person
-     * with an account. Each touches that field only.
+     * The two changes the cloud device may make besides what a device of nobody may do (D76, D96): the `account_id` of
+     * a person who exists, which is all the change touches; and the link of another device that belongs to nobody to a
+     * person with an account, which touches exactly `member_id` and `vouched_key`, both set. The cloud vouches for what
+     * it links; whether that key is the registered one is rule 13's business.
      */
     private static function cloudAllowed(ChangePayload $change, string $author, LibraryView $view): bool
     {
-        if (ChangeAction::Update !== $change->action || 1 !== \count($change->fields)) {
+        if (ChangeAction::Update !== $change->action) {
             return false;
         }
 
         return match ($change->entity) {
-            CatalogEntity::Member => \array_key_exists('account_id', $change->fields) && $view->memberExists($change->id),
-            CatalogEntity::Device => 0 !== strcasecmp($change->id, $author)
+            CatalogEntity::Member => 1 === \count($change->fields) && \array_key_exists('account_id', $change->fields) && $view->memberExists($change->id),
+            CatalogEntity::Device => 2 === \count($change->fields)
+                && \is_string($change->fields['vouched_key'] ?? null) && '' !== $change->fields['vouched_key']
+                && 0 !== strcasecmp($change->id, $author)
                 && !$view->deviceHasMemberId($change->id)
-                && \is_string($change->fields['member_id'] ?? null)
+                && \is_string($change->fields['member_id'] ?? null) && '' !== $change->fields['member_id']
                 && $view->memberHasAccount($change->fields['member_id']),
             default => false,
         };

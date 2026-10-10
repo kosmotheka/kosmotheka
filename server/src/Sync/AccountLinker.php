@@ -38,7 +38,7 @@ final readonly class AccountLinker
     }
 
     /**
-     * @return array{linked: list<string>, conflicts: list<string>} cloud library ids; both lists only name libraries the account can reach at the end
+     * @return array{linked: list<string>, conflicts: list<string>, devices: list<string>} cloud library ids; the lists only name libraries the account can reach at the end
      */
     public function claim(Device $device): array
     {
@@ -70,7 +70,93 @@ final readonly class AccountLinker
             }
         }
 
-        return ['linked' => $linked, 'conflicts' => $conflicts];
+        return ['linked' => $linked, 'conflicts' => $conflicts, 'devices' => $this->linkDevice($device)];
+    }
+
+    /**
+     * The second step: where the account is already a person, the cloud says this device is that person's, vouching
+     * for the key it signed in with (D76, D96). One query finds the libraries to look at: those where the account has
+     * a membership with a person. Each is judged again inside the library lock.
+     *
+     * @return list<string> cloud library ids where the device has just been linked
+     */
+    private function linkDevice(Device $device): array
+    {
+        /** @var list<CloudLibrary> $libraries */
+        $libraries = $this->entityManager->createQuery(\sprintf(
+            'SELECT l FROM %s l JOIN %s m WITH m.cloudLibrary = l
+              WHERE m.user = :user AND m.memberId IS NOT NULL AND l.localLibraryId IS NOT NULL ORDER BY l.createdAt',
+            CloudLibrary::class,
+            Membership::class,
+        ))->setParameter('user', $device->getUser())->getResult();
+        $linked = [];
+        foreach ($libraries as $library) {
+            $wrote = $done = false;
+            $this->entityManager->wrapInTransaction(function () use ($library, $device, &$wrote, &$done): void {
+                $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
+                $done = $this->linkDeviceIn($library, $device, $wrote);
+            });
+            if ($wrote || $done) {
+                $this->notifier->libraryChanged($library);
+            }
+            if ($done) {
+                $linked[] = $library->getId()->toRfc4122();
+            }
+        }
+
+        return $linked;
+    }
+
+    /**
+     * @param bool $wrote set when the cloud wrote anything here, the account note included, so the clients are told
+     *
+     * @return bool whether the device was linked
+     */
+    private function linkDeviceIn(CloudLibrary $library, Device $device, bool &$wrote): bool
+    {
+        $user = $device->getUser();
+        $membership = $this->entityManager->getRepository(Membership::class)->findOneBy(['cloudLibrary' => $library, 'user' => $user]);
+        if (!$membership instanceof Membership) {
+            return false;
+        }
+        $this->entityManager->refresh($membership);
+        $person = $membership->getMemberId();
+        $cloud = $this->cloudWithPower($library);
+        if (!$person instanceof Uuid || !$cloud instanceof Uuid) {
+            return false;
+        }
+        // The regla 12 asks that the person already has this account: write it first, in this same call.
+        $account = $user->getAccountId()->toRfc4122();
+        if ($this->accountOf($library, $person) !== $account) {
+            $wrote = $this->noteAccount($library, $user, $person);
+            if ($this->accountOf($library, $person) !== $account) {
+                return false;
+            }
+        }
+        // The device's own row, registered by the device itself with this very key, and still nobody's.
+        $row = $this->entityManager->createQuery(\sprintf(
+            'SELECT d.id AS id FROM %s d WHERE d.cloudLibrary = :library AND LOWER(d.id) = :device AND d.publicKey = :key
+                AND d.member IS NULL AND d.trustedThrough IS NULL',
+            CatalogDevice::class,
+        ))->setParameter('library', $library->getId(), 'uuid')->setParameter('device', strtolower($device->getDeviceId()))->setParameter('key', $device->getPublicKey())->setMaxResults(1)->getOneOrNullResult();
+        $id = \is_array($row) ? $row['id'] : null;
+        if (!\is_string($id) || $this->revoked($library, $device)
+            || $this->operations->hasRefusedDeviceLink($library, $cloud->toRfc4122(), $id, $person->toRfc4122(), $device->getPublicKey())) {
+            return false;
+        }
+        try {
+            $this->author->author($library, 'device.link_account', [[
+                'entity' => 'device',
+                'id' => $id,
+                'action' => 'update',
+                'fields' => ['member_id' => $person->toRfc4122(), 'vouched_key' => $device->getPublicKey()],
+            ]]);
+        } catch (CloudAuthorException) {
+            return false;
+        }
+        $wrote = true;
+
+        return true;
     }
 
     /**
@@ -152,16 +238,14 @@ final readonly class AccountLinker
      */
     private function noteAccount(CloudLibrary $library, User $user, Uuid $person): bool
     {
-        $cloud = $library->getCloudDeviceId();
-        $named = new CatalogLibraryView($this->entityManager, $library)->cloudDevice();
-        if (!$cloud instanceof Uuid || null === $named || strtolower($named) !== $cloud->toRfc4122()) {
+        $cloud = $this->cloudWithPower($library);
+        if (!$cloud instanceof Uuid) {
             return false;
         }
         $account = $user->getAccountId()->toRfc4122();
-        $row = $this->entityManager->createQuery(\sprintf('SELECT m.accountId AS account FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member', Member::class))
-            ->setParameter('library', $library->getId(), 'uuid')->setParameter('member', $person->toRfc4122())->setMaxResults(1)->getOneOrNullResult();
+        $current = $this->accountOf($library, $person);
         // The person's row may not be in the catalog (deleted since): nothing to write on.
-        if (!\is_array($row) || (\is_string($row['account']) && strtolower($row['account']) === $account)
+        if (false === $current || $current === $account
             || $this->operations->hasRefusedAccountLink($library, $cloud->toRfc4122(), $person->toRfc4122(), $account)) {
             return false;
         }
@@ -178,5 +262,28 @@ final readonly class AccountLinker
         }
 
         return true;
+    }
+
+    /** The cloud's device id if it has the power in this library now (it is the device the catalog names, registered with the key its id derives from), else null. */
+    private function cloudWithPower(CloudLibrary $library): ?Uuid
+    {
+        $cloud = $library->getCloudDeviceId();
+        $named = new CatalogLibraryView($this->entityManager, $library)->cloudDevice();
+
+        return $cloud instanceof Uuid && null !== $named && strtolower($named) === $cloud->toRfc4122() ? $cloud : null;
+    }
+
+    /**
+     * The `account_id` of a person in the catalog, lower-cased; null if the person has none; false if there is no such person.
+     */
+    private function accountOf(CloudLibrary $library, Uuid $person): string|false|null
+    {
+        $row = $this->entityManager->createQuery(\sprintf('SELECT m.accountId AS account FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member', Member::class))
+            ->setParameter('library', $library->getId(), 'uuid')->setParameter('member', $person->toRfc4122())->setMaxResults(1)->getOneOrNullResult();
+        if (!\is_array($row)) {
+            return false;
+        }
+
+        return \is_string($row['account']) && '' !== $row['account'] ? strtolower($row['account']) : null;
     }
 }

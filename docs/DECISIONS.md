@@ -103,6 +103,7 @@
 | D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
 | D97 | ¿Roles obligatorios desde que se crea la biblioteca? | abierta |
+| D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
 
 ---
 
@@ -1711,6 +1712,8 @@ Aceptada el 10/10/2026, al diseñar 7.5.2b. Concreta el enlace automático de D7
 
 **La regla vale también para el rol (aceptado por el maintainer el 10/10/2026, con el test del ataque delante).** Al construirlo se vio que el mismo registro falso sirve sin enlace automático, en cuanto varias cuentas tengan acceso a una biblioteca de la nube: quien ocupa el id firma en la nube como ese dispositivo y, si un administrador lo asigna, la nube lo juzga con el rol de esa persona, y un dispositivo nuevo que baje la biblioteca de la nube también. Por eso la regla 2 de `spec/` gana una condición: un dispositivo tiene la persona que dice `member_id` solo si `vouched_key` está vacía (una asignación anterior a esta decisión) o es la clave con la que ese dispositivo está registrado; si no coincide, es de nadie. Con eso, ocupar un id deja de dar nada en ningún sitio: solo estorba al dispositivo de verdad, y se ve.
 
+**La nube también avala (aceptado el 10/10/2026, para 7.5.3).** Cuando la nube dice que el dispositivo nuevo de una cuenta enlazada es de su persona, escribe en el mismo cambio la clave con la que ese dispositivo inició sesión. La regla 12 de `spec/` pasa a pedir las dos cosas juntas (`member_id` y `vouched_key`), así ningún dispositivo vinculado por la nube queda sin clave avalada. La nube no vuelve a vincular un dispositivo al que alguien quitó su persona o retiró el acceso: eso lo deshace solo un administrador.
+
 **Lo que queda.** Si el registro falso llega al propio dispositivo del administrador antes que el de verdad (el dispositivo nuevo se emparejó a través del atacante), el administrador avala la clave falsa. El dispositivo de verdad no funciona con nadie, así que se nota, pero la regla no lo impide. Se retoma con D88 («emparejar una vez»).
 
 **Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 33. SEG-019 se cierra cuando esto esté construido, con la parte que queda apuntada a D88. D95 no cambia en lo demás.
@@ -1734,3 +1737,30 @@ Planteada por el maintainer el 10/10/2026. Se decide en la revisión de segurida
 - Momento: antes de publicar no hay bibliotecas de otros que migrar; después, el modo sin roles habría que mantenerlo para siempre.
 
 **Afecta a** D73, D94 y la regla 1 de `spec/`.
+
+## D98 · Echar a una persona le retira el acceso; la persona sigue en el catálogo — `aceptada`
+
+Aceptada el 10/10/2026, al preparar 7.5.4. Concreta D71 con cuentas y sustituye la condición de D89 para «quitar miembro» que había en el plan de la Fase 7.
+
+**Contexto.** Se puede retirar el acceso a un dispositivo (D71), pero no a una persona: alguien que se va de la familia seguiría entrando con su cuenta desde un dispositivo nuevo. Hay que decidir qué pasa con esa persona dentro del catálogo.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. La persona sigue, sin acceso | Sus libros siguen siendo suyos y sus préstamos y marcas se conservan; si vuelve, lo encuentra todo | Un dato nuevo en el protocolo |
+| B. La persona se borra del catálogo | Nada nuevo: es lo que hace hoy borrar un `member` (D89) | Sus ejemplares se quedan sin dueño y sus marcas se borran, sin vuelta atrás |
+
+**Decisión (A).** El maintainer: «lo que debe perderse es la vinculación de esa persona con su usuario de la nube y sus dispositivos, pero debe seguir el nombre de la persona».
+
+- **Una persona del catálogo no es alguien con acceso** (D46): también hay personas sin dispositivo. Retirar el acceso no toca los datos.
+- **`member.access_withdrawn`** («acceso retirado de una persona»): lo escribe quien administra. La misma operación deja sin persona a cada dispositivo suyo, con su valla (D84, D87), y crea su retirada (D71), de modo que esos dispositivos borran la biblioteca al conectar, por la red local o por la nube.
+- **Un dispositivo de una persona con el acceso retirado es de nadie**, y la nube no puede vincularle dispositivos nuevos: ningún camino le devuelve el rol.
+- **La nube corta a la cuenta al momento:** deja de entregarle la biblioteca, olvida el enlace entre esa cuenta y la persona y, si tiene el poder, borra `account_id`. A los dispositivos afectados les responde con las retiradas firmadas, para que comprueben por sí mismos antes de borrar nada: un servidor no puede hacer que alguien pierda una biblioteca sin la firma de quien administra (como SEG-011 en la red local).
+- **Volver:** quien administra quita la marca y vincula de nuevo un dispositivo de esa persona; su cuenta se enlaza otra vez por el camino de siempre (D96). Quitar la marca sola no devuelve nada.
+- **No se puede retirar el acceso al último administrador.**
+- **Quitar un dispositivo** (un móvil perdido) sigue siendo lo de D71 y no afecta a la cuenta: el móvil nuevo de esa persona entra solo (D76).
+
+**Lo que no se construye:** borrar del todo a una persona del catálogo. Si un día hace falta, es otra acción.
+
+**Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 34. Regla nueva en `spec/` con sus casos. Glosario: `access_withdrawn`.

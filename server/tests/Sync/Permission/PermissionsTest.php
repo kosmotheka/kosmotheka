@@ -80,8 +80,10 @@ final class PermissionsTest extends TestCase
         self::assertTrue(Permissions::isAllowed($vouch($other), $this->view(Role::Admin)));
         $cloud = new FakeView(roles: true, cloud: true);
         $linkAndVouch = $this->op([Ops::update(CatalogEntity::Device, $other, ['member_id' => '01997c7e-0000-7000-8000-000000000013', 'vouched_key' => 'AAAA'])]);
-        self::assertFalse(Permissions::isAllowed($vouch($other), $cloud));
-        self::assertFalse(Permissions::isAllowed($linkAndVouch, $cloud), 'not beside a link');
+        self::assertFalse(Permissions::isAllowed($vouch($other), $cloud), 'alone');
+        self::assertTrue(Permissions::isAllowed($linkAndVouch, $cloud), 'with the link it makes');
+        $linkAlone = $this->op([Ops::update(CatalogEntity::Device, $other, ['member_id' => '01997c7e-0000-7000-8000-000000000013'])]);
+        self::assertFalse(Permissions::isAllowed($linkAlone, $cloud), 'member_id alone');
     }
 
     public function testAnUnsignedOperationIsNeverAllowed(): void
@@ -191,7 +193,7 @@ final class PermissionsTest extends TestCase
      */
     private function link(string $device, ?string $member, array $more = []): OperationPayload
     {
-        return $this->op([Ops::update(CatalogEntity::Device, $device, ['member_id' => $member] + $more)]);
+        return $this->op([Ops::update(CatalogEntity::Device, $device, ['member_id' => $member, 'vouched_key' => null === $member ? null : 'k'] + $more)]);
     }
 
     /** The cloud device is a device of nobody, or of the person given. */
