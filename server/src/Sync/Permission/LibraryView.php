@@ -41,4 +41,13 @@ interface LibraryView
      * nothing, even through a device that has not heard of it yet.
      */
     public function fenced(OperationPayload $operation): bool;
+
+    /** The device `library.cloud_device_id` names now (D76, D95), if any. */
+    public function cloudDevice(): ?string;
+
+    /** Whether the person `$member` exists. */
+    public function memberExists(string $member): bool;
+
+    /** Whether the person `$member` has an `account_id`. */
+    public function memberHasAccount(string $member): bool;
 }

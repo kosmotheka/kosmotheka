@@ -20,6 +20,7 @@ final readonly class FakeView implements LibraryView
         private ?Role $role = null,
         private bool $samePerson = false,
         private bool $fenced = false,
+        private bool $cloud = false,
     ) {
     }
 
@@ -56,5 +57,21 @@ final readonly class FakeView implements LibraryView
     public function fenced(OperationPayload $operation): bool
     {
         return $this->fenced;
+    }
+
+    /** The cloud device, when there is one, is the device that makes the operation (`PermissionsTest::ME`). */
+    public function cloudDevice(): ?string
+    {
+        return $this->cloud ? '01997c7e-0000-7000-8000-0000000000fb' : null;
+    }
+
+    public function memberExists(string $member): bool
+    {
+        return true;
+    }
+
+    public function memberHasAccount(string $member): bool
+    {
+        return self::MY_MEMBER === $member;
     }
 }

@@ -301,6 +301,17 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "cloud_device_id": {
+                    "description": "The device that is the cloud in this library (D76, D95), the only one with the cloud's power. Written by whoever may change the library row. Null or absent: no cloud device. Not a reference: the device may register after the field names it.",
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -335,6 +346,17 @@
                   "can_share": {
                     "description": "Whether the member may share the library with other devices or people (D55).",
                     "$ref": "#/$defs/boolean"
+                  },
+                  "account_id": {
+                    "description": "A random id of the account linked to this person (D76); the email never travels. Only the cloud device writes it, and never when the member is created.",
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }

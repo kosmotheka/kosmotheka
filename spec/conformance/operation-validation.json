@@ -2746,5 +2746,149 @@
       "result": "invalid",
       "code": "invalid_previous"
     }
+  },
+  {
+    "name": "member with an account",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000159",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.account",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "account_id": "01997c7e-0000-7000-8000-0000000000a1"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "member whose account is emptied",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000015a",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.account",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "account_id": null
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "account_id that is not text",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000015b",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "member.account",
+      "changes": [
+        {
+          "entity": "member",
+          "id": "01997c7e-0000-7000-8000-000000000012",
+          "action": "update",
+          "fields": {
+            "account_id": 7
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "account_id"
+    }
+  },
+  {
+    "name": "library that names its cloud device",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000015c",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": "01997c7e-0000-7000-8000-0000000000a1"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "library whose cloud device is emptied",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000015d",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": null
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "cloud_device_id that is not text",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000015e",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "library.cloud",
+      "changes": [
+        {
+          "entity": "library",
+          "id": "01997c7e-0000-7000-8000-00000000aaaa",
+          "action": "update",
+          "fields": {
+            "cloud_device_id": true
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "cloud_device_id"
+    }
   }
 ]

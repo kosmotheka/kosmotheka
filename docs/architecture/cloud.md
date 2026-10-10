@@ -281,6 +281,7 @@ Las pasadas iguales siguen saliendo en dos tandas, como en las medidas anteriore
 | Referencias | `work_id` (id de la app) | `work_key` (clave del servidor) | El motor traduce el id de la app a la fila, siempre dentro de la biblioteca |
 | Una fila apunta a otra biblioteca | imposible | los disparadores `catalog_same_library` lo rechazan | Las claves foráneas ya no llevan `cloud_library_id` |
 | Campos `cloud_library_id` y `cloud_server` de `library` | columnas de `libraries` | sin columna | El vínculo es el `cloud_library.id` del propio servidor; su versión sí consta en `versions` de la fila |
+| Campo `cloud_device_id` de `library` y `account_id` de `member` (7.5.1, D76, D95) | columnas de `libraries` y `members` | columnas de `catalog_libraries` y `catalog_members`, **sí guardadas** | A diferencia de `cloud_library_id` y `cloud_server`, el juez del servidor las necesita: quién es la nube de la biblioteca y qué personas tienen cuenta (migración `Version20261009224124`) |
 | `created_at` | columna con valor por defecto | no existe | Es de la app; la nube tiene `received_at` en `cloud_operation` |
 | Detalles por tipo (`book_details`…) | clave `edition_id` | `id` (el de su edición) y `edition_key` | En `schema.rs` el id ya es el de la edición |
 | Booleanos y enteros | `INTEGER` | `BOOLEAN` y `BIGINT` | La operación lleva `true`/`false` y enteros de 64 bits |

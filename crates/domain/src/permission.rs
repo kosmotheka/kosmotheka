@@ -49,6 +49,12 @@ pub trait LibraryView {
     /// Also after a revocation of the author still in force at its HLC (D71): a
     /// revoked device writes nothing, even through a device that has not heard of it yet.
     fn fenced(&self, operation: &Operation) -> bool;
+    /// The device `library.cloud_device_id` names now (D76, D95), if any.
+    fn cloud_device(&self) -> Option<String>;
+    /// Whether the person `member` exists.
+    fn member_exists(&self, member: &str) -> bool;
+    /// Whether the person `member` has an `account_id`.
+    fn member_has_account(&self, member: &str) -> bool;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -70,18 +76,68 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     } else {
         view.role_of_device(author)
     };
+    // The cloud's power (D76, D95) is the named device's, unless a fence or a seal
+    // makes it nobody's. Asked only when a change could use it.
+    let cloud = !fenced
+        && operation.changes.iter().any(touches_cloud_field)
+        && view
+            .cloud_device()
+            .is_some_and(|cloud| cloud.eq_ignore_ascii_case(author));
     operation
         .changes
         .iter()
-        .all(|change| change_allowed(change, author, role, view))
+        .all(|change| change_allowed(change, author, role, cloud, view))
+}
+
+/// Whether the change writes something only the cloud device may write, or the one
+/// thing it may do beyond a device of nobody: `member.account_id` or `device.member_id`.
+fn touches_cloud_field(change: &Change) -> bool {
+    match change.entity {
+        Entity::Member => change.fields.contains_key("account_id"),
+        Entity::Device => change.fields.contains_key("member_id"),
+        _ => false,
+    }
+}
+
+/// The two changes the cloud device may make besides what a device of nobody may do
+/// (D76): `account_id` of a person who exists, and the person of another device that
+/// belongs to nobody, pointing at a person with an account. Each touches that field only.
+fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool {
+    if change.action != Action::Update || change.fields.len() != 1 {
+        return false;
+    }
+    match change.entity {
+        Entity::Member => {
+            change.fields.contains_key("account_id") && view.member_exists(&change.id)
+        }
+        Entity::Device => {
+            !change.id.eq_ignore_ascii_case(author)
+                && view.member_of_device(&change.id).is_none()
+                && change
+                    .fields
+                    .get("member_id")
+                    .and_then(|v| v.as_str())
+                    .is_some_and(|member| view.member_has_account(member))
+        }
+        _ => false,
+    }
 }
 
 fn change_allowed(
     change: &Change,
     author: &str,
     role: Option<Role>,
+    cloud: bool,
     view: &impl LibraryView,
 ) -> bool {
+    // `account_id` is written by the cloud device alone: not by an administrator, not
+    // when the member is created.
+    if change.entity == Entity::Member && change.fields.contains_key("account_id") {
+        return cloud && cloud_allowed(change, author, view);
+    }
+    if cloud && cloud_allowed(change, author, view) {
+        return true;
+    }
     let someone = role.is_some();
     let role = role.unwrap_or(Role::Reader);
     if role == Role::Admin {
@@ -138,6 +194,7 @@ mod tests {
         role: Option<Role>,
         same_person: bool,
         fenced: bool,
+        cloud: bool,
     }
 
     impl LibraryView for View {
@@ -158,6 +215,15 @@ mod tests {
         }
         fn fenced(&self, _: &Operation) -> bool {
             self.fenced
+        }
+        fn cloud_device(&self) -> Option<String> {
+            self.cloud.then(|| ME.to_owned())
+        }
+        fn member_exists(&self, _: &str) -> bool {
+            true
+        }
+        fn member_has_account(&self, member: &str) -> bool {
+            member == MY_MEMBER
         }
         fn mark_member(&self, _: &str) -> Option<String> {
             Some(
@@ -225,6 +291,7 @@ mod tests {
             role,
             same_person: false,
             fenced: false,
+            cloud: false,
         }
     }
 
@@ -238,6 +305,7 @@ mod tests {
             role: None,
             same_person: false,
             fenced: false,
+            cloud: false,
         };
         assert!(is_allowed(&delete, &none));
         assert!(!is_allowed(&delete, &view(Some(Role::Reader))));
@@ -339,6 +407,107 @@ mod tests {
         assert!(!is_allowed(&other, &view(Some(Role::Editor))));
         assert!(is_allowed(&other, &view(Some(Role::Admin))));
         assert!(!is_allowed(&own, &view(None)));
+    }
+
+    const ACCOUNT: &str = "01997c7e-0000-7000-8000-0000000000a1";
+
+    fn cloud() -> View {
+        View {
+            cloud: true,
+            ..view(None)
+        }
+    }
+
+    #[test]
+    fn the_cloud_device_writes_accounts_and_links_devices_of_nobody_and_nothing_else() {
+        let other = "01997c7e-0000-7000-8000-0000000000fc";
+        let account = |fields: serde_json::Value| {
+            op(vec![Change::update(Entity::Member, OTHER_MEMBER, fields)])
+        };
+        let link = |device: &str, member: Option<&str>, more: serde_json::Value| {
+            let mut fields = json!({ "member_id": member });
+            fields
+                .as_object_mut()
+                .unwrap()
+                .extend(more.as_object().unwrap().clone());
+            op(vec![Change::update(Entity::Device, device, fields)])
+        };
+        let set = account(json!({ "account_id": ACCOUNT }));
+        let nothing = json!({});
+
+        assert!(is_allowed(&set, &cloud()));
+        assert!(is_allowed(
+            &link(other, Some(MY_MEMBER), nothing.clone()),
+            &cloud()
+        ));
+        assert!(
+            !is_allowed(&link(other, Some(OTHER_MEMBER), nothing.clone()), &cloud()),
+            "a person without an account"
+        );
+        assert!(
+            !is_allowed(&link(other, None, nothing.clone()), &cloud()),
+            "taking the person away"
+        );
+        assert!(
+            !is_allowed(
+                &link(other, Some(MY_MEMBER), json!({ "trusted_through": "" })),
+                &cloud()
+            ),
+            "beside a fence"
+        );
+        assert!(
+            !is_allowed(&link(ME, Some(MY_MEMBER), nothing), &cloud()),
+            "its own device"
+        );
+        assert!(!is_allowed(&account(json!({ "role": "admin" })), &cloud()));
+        assert!(
+            !is_allowed(
+                &account(json!({ "account_id": ACCOUNT, "name": "Laura" })),
+                &cloud()
+            ),
+            "account_id and nothing else"
+        );
+        assert!(!is_allowed(
+            &op(vec![Change::create(
+                Entity::Tag,
+                TAG,
+                json!({ "name": "Tehanu" })
+            )]),
+            &cloud()
+        ));
+        // Not the cloud device: a reader, and not even an administrator.
+        assert!(!is_allowed(&set, &view(Some(Role::Reader))));
+        assert!(!is_allowed(&set, &view(Some(Role::Admin))));
+        let born = op(vec![Change::create(
+            Entity::Member,
+            OTHER_MEMBER,
+            json!({ "name": "Laura", "account_id": ACCOUNT }),
+        )]);
+        assert!(
+            !is_allowed(&born, &view(Some(Role::Admin))),
+            "nor at creation"
+        );
+        // Without roles everyone may.
+        let none = View {
+            roles: false,
+            ..view(None)
+        };
+        assert!(is_allowed(&set, &none));
+    }
+
+    #[test]
+    fn a_fenced_cloud_device_has_no_power() {
+        let set = op(vec![Change::update(
+            Entity::Member,
+            OTHER_MEMBER,
+            json!({ "account_id": ACCOUNT }),
+        )]);
+        assert!(is_allowed(&set, &cloud()));
+        let fenced = View {
+            fenced: true,
+            ..cloud()
+        };
+        assert!(!is_allowed(&set, &fenced));
     }
 
     #[test]

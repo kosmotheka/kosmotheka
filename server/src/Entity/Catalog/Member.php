@@ -23,6 +23,10 @@ final class Member extends CatalogRow
     #[ORM\Column(name: 'can_share', type: Types::BOOLEAN, nullable: true)]
     private ?bool $canShare = null;
 
+    /** The account linked to this person (D76); only the cloud device writes it. */
+    #[ORM\Column(name: 'account_id', type: Types::TEXT, nullable: true)]
+    private ?string $accountId = null;
+
     public function getName(): string
     {
         return $this->name;
@@ -51,5 +55,15 @@ final class Member extends CatalogRow
     public function setCanShare(?bool $canShare): void
     {
         $this->canShare = $canShare;
+    }
+
+    public function getAccountId(): ?string
+    {
+        return $this->accountId;
+    }
+
+    public function setAccountId(?string $accountId): void
+    {
+        $this->accountId = $accountId;
     }
 }

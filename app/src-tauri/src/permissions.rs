@@ -123,6 +123,41 @@ impl LibraryView for SqlView<'_> {
             .unwrap_or(true)
     }
 
+    fn cloud_device(&self) -> Option<String> {
+        self.conn
+            .query_row(
+                "SELECT cloud_device_id FROM libraries WHERE id = ?1",
+                [self.library],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .optional()
+            .ok()
+            .flatten()
+            .flatten()
+            .filter(|device| !device.is_empty())
+    }
+
+    fn member_exists(&self, member: &str) -> bool {
+        self.conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM members WHERE library_id = ?1 AND id = ?2)",
+                [self.library, member],
+                |row| row.get(0),
+            )
+            .unwrap_or(false)
+    }
+
+    fn member_has_account(&self, member: &str) -> bool {
+        self.conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM members
+                  WHERE library_id = ?1 AND id = ?2 AND account_id IS NOT NULL AND account_id <> '')",
+                [self.library, member],
+                |row| row.get(0),
+            )
+            .unwrap_or(false)
+    }
+
     fn mark_member(&self, id: &str) -> Option<String> {
         self.conn
             .query_row(

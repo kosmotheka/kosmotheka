@@ -100,6 +100,7 @@
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
 | D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
+| D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
 
 ---
 
@@ -1658,3 +1659,26 @@ Las reglas son las mismas en la app, así que ocurre igual por la red local. Las
 **Lo que se acepta.** Lo que un dispositivo honrado hizo sin conexión antes del sello, y el administrador que sella no había recibido, queda en petición: no se pierde y un administrador lo acepta. Es el mismo coste que D84 ya acepta al degradar. Una biblioteca que nunca activa roles no tiene sello y sigue como hasta ahora.
 
 **Consecuencias.** Cambian `spec/README.md` («Roles and permissions»), `permissions.json` (casos hostiles nuevos), el juez de Rust y el de PHP, y `spec/sync.json` sube de versión: una app sin actualizar juzgaría distinto y no debe sincronizar. D73, D84 y D87 no cambian; esto añade una regla sobre ellas. Con el sello, la regla de D93 vuelve a valer contra quien antedata su enlace, y SEG-013 y SEG-025 se cierran cuando 7.4.7 tenga los casos hostiles en verde.
+
+## D95 · La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave — `aceptada`
+
+Aceptada el 10/10/2026, al preparar 7.5. Concreta D76 y cierra el diseño de la segunda parte de SEG-019.
+
+**Contexto.** Con D76 la nube pasa a ser un dispositivo de cada biblioteca que sube, con una clave propia, y firma operaciones por primera vez: decir de quién es un dispositivo de una cuenta enlazada, y anotar qué personas tienen cuenta. Hay que decidir dónde vive esa clave. Y con varias cuentas subiendo a la misma biblioteca de la nube vuelve SEG-019: la primera clave que llega para un id de dispositivo es la que vale.
+
+**Opciones para la clave.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Una por servidor | Un solo secreto que guardar y copiar | Si se filtra, afecta a todas las bibliotecas a la vez; quien se lleva su biblioteca a otro servidor arrastra un dispositivo que no puede volver a firmar |
+| Una por biblioteca de la nube | Se cambia la de una biblioteca sin tocar las demás; cada biblioteca tiene su propio dispositivo «nube» | Más filas que proteger en la base de datos |
+
+**Decisión.**
+
+- **Una clave por biblioteca de la nube**, generada por el servidor al enlazarla, guardada en la base de datos **cifrada con un secreto del servidor** que no está en la base. Una copia de la base sin ese secreto no permite firmar.
+- **Identidad en la nube: id y clave.** Cuando la nube enlaza una cuenta con una persona porque un dispositivo suyo «ya es de esa persona» (D76), compara el id del dispositivo **y** su clave con los que esa biblioteca tiene registrados. Un id solo no da nada. Va en 7.5.2, con su test hostil antes que el código.
+- **Se acepta por ahora que un miembro estorbe a otro** (SEG-019, segunda parte): quien ya tiene acceso a una biblioteca de la nube puede, con la app modificada, registrar antes que nadie el id de un dispositivo ajeno con una clave suya, u ocupar el id de una operación aún no subida. No gana acceso ni datos: deja fuera de la nube al dispositivo de verdad. Lo hace alguien de dentro, un administrador puede echarlo, y la red local sigue funcionando. No tiene arreglo solo en el servidor (quien sube el registro de un dispositivo sin cuenta es indistinguible de quien lo falsifica) y existe igual en la red local. **Se retoma con D88** («emparejar una vez»), que también toca cómo se reconocen los dispositivos.
+
+**Lo que concede la clave de la nube, dicho claro.** Quien la tenga puede decir que un dispositivo de nadie es de una persona con cuenta, también de una administradora. Es el poder que D76 da a la nube, y por eso es una casilla que se puede quitar: quien no se fíe de su servidor la desmarca y vincula cada dispositivo a mano.
+
+**Consecuencias.** D76 y D84 no cambian. El secreto del servidor entra en la configuración de producción (7.9) y en sus copias. SEG-019 pasa a aceptado con esta decisión, salvo la comparación de id y clave, que se comprueba en 7.5.2.

@@ -91,6 +91,8 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | valla (sobre un dispositivo) | `fence` | Set by the operation that takes power away from a device: what the device dated before it, beyond the operation named in `trusted_through`, is not believed (D84, D87) |
 | estado de una operación: aplicada · petición | `applied` · `request` | A `request` is an operation its author was not allowed to make (D73). Not a `change_request`, which is the row that resolves it |
 | sello | `seal` | An applied operation that fences its own author's device; it fences every device, named or not (D94) |
+| dispositivo de la nube | `cloud_device_id` | Field of the `library` row: the device that is the cloud in this library, and the only one with the cloud's power (D76, D95) |
+| cuenta de una persona | `account_id` | Field of a `member`: a random id of the account linked to that person; only the cloud writes it (D76) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |

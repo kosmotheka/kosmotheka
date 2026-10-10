@@ -7,7 +7,10 @@ namespace App\Entity\Catalog;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-/** The library's own row (D84): its name. `cloud_library_id` and `cloud_server` have no column, the link is the cloud library itself. */
+/**
+ * The library's own row (D84): its name and the device that is the cloud in it (D76, D95). `cloud_library_id` and
+ * `cloud_server` have no column, the link is the cloud library itself; `cloud_device_id` does, because the judge needs it.
+ */
 #[ORM\Entity]
 #[ORM\Table(name: 'catalog_libraries')]
 #[ORM\UniqueConstraint(name: 'uniq_catalog_libraries_library_id', columns: ['cloud_library_id', 'id'])]
@@ -18,6 +21,9 @@ final class Library extends CatalogRow
     #[ORM\Column(name: 'name', type: Types::TEXT)]
     private string $name;
 
+    #[ORM\Column(name: 'cloud_device_id', type: Types::TEXT, nullable: true)]
+    private ?string $cloudDeviceId = null;
+
     public function getName(): string
     {
         return $this->name;
@@ -26,5 +32,15 @@ final class Library extends CatalogRow
     public function setName(string $name): void
     {
         $this->name = $name;
+    }
+
+    public function getCloudDeviceId(): ?string
+    {
+        return $this->cloudDeviceId;
+    }
+
+    public function setCloudDeviceId(?string $cloudDeviceId): void
+    {
+        $this->cloudDeviceId = $cloudDeviceId;
     }
 }

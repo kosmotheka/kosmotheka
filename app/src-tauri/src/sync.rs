@@ -3237,6 +3237,91 @@ mod tests {
     }
 
     #[test]
+    fn the_cloud_s_power_reaching_a_device_after_what_it_did_changes_nothing_in_the_end() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let phone_id = device_id_of(&phone);
+        let mut tablet = Device::sharing(&laptop);
+        let tx = tablet.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        laptop.pull_from(&tablet);
+        let tablet_id = device_id_of(&tablet);
+        let laura = ops::new_id();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "member.add",
+            vec![Change::create(
+                Entity::Member,
+                &laura,
+                json!({ "name": "Laura", "role": "editor", "can_share": false }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        crate::people::name_cloud_device(&mut laptop.0, &lib, &phone_id).unwrap();
+        phone.pull_from(&laptop);
+
+        // The phone is the cloud: it writes Laura's account and links the tablet to her.
+        let tx = phone.0.transaction().unwrap();
+        let account = ops::record(
+            &tx,
+            &lib,
+            "member.account",
+            vec![Change::update(
+                Entity::Member,
+                &laura,
+                json!({ "account_id": ops::new_id() }),
+            )],
+        )
+        .unwrap();
+        let link = ops::record(
+            &tx,
+            &lib,
+            "device.link",
+            vec![Change::update(
+                Entity::Device,
+                &tablet_id,
+                json!({ "member_id": laura }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        // A third device hears of all of it before it hears that the phone is the cloud.
+        let naming = operations_with_intent(&laptop, "library.cloud");
+        let (late, early): (Vec<_>, Vec<_>) = everything_from(&phone)
+            .into_iter()
+            .partition(|op| naming.contains(&op.operation.id));
+        let mut observer = Device::empty_for(&laptop);
+        merge(&mut observer.0, early).unwrap();
+        for id in [&account.id, &link.id] {
+            assert_eq!(
+                ops::status_of(&observer.0, id).unwrap(),
+                ops::Status::Request,
+                "until the phone is known to be the cloud"
+            );
+        }
+        merge(&mut observer.0, late).unwrap();
+
+        for id in [&account.id, &link.id] {
+            assert_eq!(
+                ops::status_of(&observer.0, id).unwrap(),
+                ops::Status::Applied
+            );
+        }
+        laptop.pull_from(&phone);
+        tablet.pull_from(&laptop);
+        assert_converged(&[&laptop, &phone, &tablet, &observer]);
+        assert_eq!(
+            ops::status_of(&laptop.0, &link.id).unwrap(),
+            ops::Status::Applied
+        );
+    }
+
+    #[test]
     fn turning_roles_on_seals_the_library_naming_every_device_it_knows() {
         let mut laptop = Device::new();
         let lib = laptop.1.clone();

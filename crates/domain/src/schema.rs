@@ -134,6 +134,7 @@ const LIBRARY_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("cloud_library_id", FieldType::Text, false),
     field("cloud_server", FieldType::Text, false),
+    field("cloud_device_id", FieldType::Text, false),
 ];
 const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[
@@ -181,6 +182,7 @@ const MEMBER_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("role", FieldType::OneOf(ROLES), false),
     field("can_share", FieldType::Boolean, false),
+    field("account_id", FieldType::Text, false),
 ];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const TAG_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];

@@ -317,6 +317,60 @@ pub fn set_role(
     Ok(())
 }
 
+/// The device `library.cloud_device_id` names now, if any (D76, D95).
+#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
+fn cloud_device_of(conn: &Connection, library: &str) -> Result<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT cloud_device_id FROM libraries WHERE id = ?1",
+            [library],
+            |row| row.get::<_, Option<String>>(0),
+        )
+        .optional()?
+        .flatten()
+        .filter(|device| !device.is_empty()))
+}
+
+/// Names `device` as the cloud of `library` (D76, D95). Naming another one takes the
+/// power from the old one, so the same operation fences it (D84).
+#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
+pub fn name_cloud_device(conn: &mut Connection, library: &str, device: &str) -> Result<()> {
+    let tx = conn.transaction()?;
+    let old = cloud_device_of(&tx, library)?;
+    let mut changes = vec![Change::update(
+        Entity::Library,
+        library,
+        json!({ "cloud_device_id": device }),
+    )];
+    if let Some(old) = old.filter(|old| !old.eq_ignore_ascii_case(device)) {
+        changes.extend(permissions::fence_changes(&tx, library, &[old])?);
+    }
+    ops::record(&tx, library, "library.cloud", changes)?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Takes the cloud's power away: `cloud_device_id` is emptied and, in the same
+/// operation, the cloud device is fenced with the newest operation of it this device
+/// holds, so nothing it dated before and this device never saw is believed (D84, D87).
+/// Does nothing if the library names no cloud.
+#[cfg_attr(not(test), allow(dead_code))] // no command yet: the screen comes with 7.5.5
+pub fn remove_cloud_device(conn: &mut Connection, library: &str) -> Result<()> {
+    let tx = conn.transaction()?;
+    let Some(old) = cloud_device_of(&tx, library)? else {
+        return Ok(());
+    };
+    let mut changes = vec![Change::update(
+        Entity::Library,
+        library,
+        json!({ "cloud_device_id": null }),
+    )];
+    changes.extend(permissions::fence_changes(&tx, library, &[old])?);
+    ops::record(&tx, library, "library.cloud", changes)?;
+    tx.commit()?;
+    Ok(())
+}
+
 fn power_rank(role: Option<&str>) -> u8 {
     match role {
         Some("admin") => 3,
@@ -692,6 +746,128 @@ mod tests {
         let people = list_people(&laptop, &lib).unwrap();
         assert_eq!(people.unassigned.len(), 1);
         assert!(lan::revocations_of(&laptop, &lib, &phone_id).unwrap().len() == 1);
+    }
+
+    /// Laptop (administrator), a phone that is the cloud, and Laura, a person to link an account to.
+    fn laptop_with_a_cloud_phone() -> (Connection, Connection, String, String) {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut phone = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&laptop).unwrap();
+        pull(&mut phone, &laptop, &lib);
+        // The cloud registers itself as a device of the library. Synced before the roles
+        // are turned on, so the seal believes that registration.
+        let tx = phone.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        pull(&mut laptop, &phone, &lib);
+        let admin = start_roles(&mut laptop, &lib, "Tersoal", &[]).unwrap();
+        let phone_id = ops::device_id(&phone).unwrap();
+        let mut changes = Vec::new();
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let laura =
+            member_changes(&laptop, &lib, &laura, Some("editor"), None, &mut changes).unwrap();
+        let tx = laptop.transaction().unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+        assert_ne!(admin, laura);
+        name_cloud_device(&mut laptop, &lib, &phone_id).unwrap();
+        pull(&mut phone, &laptop, &lib);
+        (laptop, phone, lib, laura)
+    }
+
+    fn write_account(conn: &mut Connection, lib: &str, member: &str) -> String {
+        let tx = conn.transaction().unwrap();
+        let operation = ops::record(
+            &tx,
+            lib,
+            "member.account",
+            vec![Change::update(
+                Entity::Member,
+                member,
+                json!({ "account_id": "01997c7e-0000-7000-8000-0000000000a1" }),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        operation.id
+    }
+
+    #[test]
+    fn the_cloud_device_writes_an_account_and_no_one_else_does() {
+        let (mut laptop, mut phone, lib, laura) = laptop_with_a_cloud_phone();
+
+        let by_the_cloud = write_account(&mut phone, &lib, &laura);
+        pull(&mut laptop, &phone, &lib);
+        assert_eq!(
+            ops::status_of(&laptop, &by_the_cloud).unwrap(),
+            ops::Status::Applied
+        );
+
+        // An administrator may change the library row, but not this field of a person.
+        let tx = laptop.transaction().unwrap();
+        let refused = ops::record(
+            &tx,
+            &lib,
+            "member.account",
+            vec![Change::update(
+                Entity::Member,
+                &laura,
+                json!({ "account_id": "01997c7e-0000-7000-8000-0000000000a2" }),
+            )],
+        );
+        assert!(matches!(refused, Err(Error::NotAllowed)));
+    }
+
+    #[test]
+    fn taking_the_cloud_away_fences_it_and_what_it_dated_before_is_not_believed() {
+        let (mut laptop, mut phone, lib, laura) = laptop_with_a_cloud_phone();
+        let known = write_account(&mut phone, &lib, &laura);
+        pull(&mut laptop, &phone, &lib);
+
+        // The cloud writes once more; the laptop never hears of it before removing the power.
+        let unseen = write_account(&mut phone, &lib, &laura);
+        remove_cloud_device(&mut laptop, &lib).unwrap();
+        pull(&mut laptop, &phone, &lib);
+
+        assert_eq!(
+            ops::status_of(&laptop, &known).unwrap(),
+            ops::Status::Applied
+        );
+        assert_eq!(
+            ops::status_of(&laptop, &unseen).unwrap(),
+            ops::Status::Request
+        );
+        assert_eq!(cloud_device_of(&laptop, &lib).unwrap(), None);
+        // Emptying it twice writes nothing the second time.
+        let before = ops::latest_of(&laptop, &lib, &ops::device_id(&laptop).unwrap()).unwrap();
+        remove_cloud_device(&mut laptop, &lib).unwrap();
+        assert_eq!(
+            ops::latest_of(&laptop, &lib, &ops::device_id(&laptop).unwrap()).unwrap(),
+            before
+        );
+    }
+
+    #[test]
+    fn naming_another_cloud_fences_the_old_one() {
+        let (mut laptop, mut phone, lib, laura) = laptop_with_a_cloud_phone();
+        let mut tablet = db::open_in_memory().unwrap();
+        pull(&mut tablet, &laptop, &lib);
+        let tx = tablet.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        pull(&mut laptop, &tablet, &lib);
+        let unseen = write_account(&mut phone, &lib, &laura);
+
+        name_cloud_device(&mut laptop, &lib, &ops::device_id(&tablet).unwrap()).unwrap();
+        pull(&mut laptop, &phone, &lib);
+
+        assert_eq!(
+            ops::status_of(&laptop, &unseen).unwrap(),
+            ops::Status::Request
+        );
     }
 
     #[test]

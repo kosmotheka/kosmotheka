@@ -413,6 +413,8 @@ fn record_rows_as(tx: &Transaction<'_>, library: &str, rows: &Rows, intent: &str
             if entity == Entity::Member {
                 fields.remove("role");
                 fields.remove("can_share");
+                // The account belongs to the library it was linked in (D76).
+                fields.remove("account_id");
             }
             changes.push(Change::create(entity, id, Value::Object(fields)));
         }

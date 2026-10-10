@@ -33,8 +33,45 @@ final class Permissions
             return true;
         }
         $role = $fenced ? null : $view->roleOfDevice($author);
+        // The cloud's power (D76, D95) is the named device's, unless a fence or a seal makes it nobody's.
+        // Asked only when a change could use it.
+        $cloud = !$fenced
+            && array_any($operation->changes, self::touchesCloudField(...))
+            && null !== ($named = $view->cloudDevice())
+            && 0 === strcasecmp($named, $author);
 
-        return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $view));
+        return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
+    }
+
+    /** Whether the change writes `member.account_id` or `device.member_id`, the fields the cloud device has a say in. */
+    private static function touchesCloudField(ChangePayload $change): bool
+    {
+        return match ($change->entity) {
+            CatalogEntity::Member => \array_key_exists('account_id', $change->fields),
+            CatalogEntity::Device => \array_key_exists('member_id', $change->fields),
+            default => false,
+        };
+    }
+
+    /**
+     * The two changes the cloud device may make besides what a device of nobody may do (D76): the `account_id`
+     * of a person who exists, and the person of another device that belongs to nobody, pointing at a person
+     * with an account. Each touches that field only.
+     */
+    private static function cloudAllowed(ChangePayload $change, string $author, LibraryView $view): bool
+    {
+        if (ChangeAction::Update !== $change->action || 1 !== \count($change->fields)) {
+            return false;
+        }
+
+        return match ($change->entity) {
+            CatalogEntity::Member => \array_key_exists('account_id', $change->fields) && $view->memberExists($change->id),
+            CatalogEntity::Device => 0 !== strcasecmp($change->id, $author)
+                && null === $view->memberOfDevice($change->id)
+                && \is_string($change->fields['member_id'] ?? null)
+                && $view->memberHasAccount($change->fields['member_id']),
+            default => false,
+        };
     }
 
     /** The device in the HLC: `<time>-<counter>-<device>`. */
@@ -43,8 +80,15 @@ final class Permissions
         return explode('-', $operation->hlc, 3)[2] ?? '';
     }
 
-    private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, LibraryView $view): bool
+    private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, bool $cloud, LibraryView $view): bool
     {
+        // `account_id` is written by the cloud device alone: not by an administrator, not when the member is created.
+        if (CatalogEntity::Member === $change->entity && \array_key_exists('account_id', $change->fields)) {
+            return $cloud && self::cloudAllowed($change, $author, $view);
+        }
+        if ($cloud && self::cloudAllowed($change, $author, $view)) {
+            return true;
+        }
         $someone = $role instanceof Role;
         $role ??= Role::Reader;
         if (Role::Admin === $role) {

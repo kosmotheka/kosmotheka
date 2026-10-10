@@ -124,6 +124,38 @@ final class PermissionsTest extends TestCase
         self::assertTrue(Permissions::isAllowed($rename($other), $this->view(Role::Admin)));
     }
 
+    public function testTheCloudDeviceWritesAccountsAndLinksDevicesOfNobodyAndNothingElse(): void
+    {
+        $other = '01997c7e-0000-7000-8000-0000000000fc';
+        $account = $this->op([Ops::update(CatalogEntity::Member, self::OTHER_MEMBER, ['account_id' => '01997c7e-0000-7000-8000-0000000000a1'])]);
+        $cloud = $this->cloud(null);
+        $reader = $this->view(Role::Reader);
+
+        self::assertTrue(Permissions::isAllowed($account, $cloud));
+        self::assertTrue(Permissions::isAllowed($this->link($other, self::MY_MEMBER), $cloud), 'a person with an account');
+        self::assertFalse(Permissions::isAllowed($this->link($other, self::OTHER_MEMBER), $cloud), 'a person without one');
+        self::assertFalse(Permissions::isAllowed($this->link($other, null), $cloud), 'taking the person away');
+        self::assertFalse(Permissions::isAllowed($this->link($other, self::MY_MEMBER, ['trusted_through' => '']), $cloud), 'beside a fence');
+        self::assertFalse(Permissions::isAllowed($this->link(self::ME, self::MY_MEMBER), $cloud), 'its own device');
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::update(CatalogEntity::Member, self::OTHER_MEMBER, ['role' => 'admin'])]), $cloud));
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Tehanu'])]), $cloud));
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::update(CatalogEntity::Member, self::OTHER_MEMBER, ['account_id' => '01997c7e-0000-7000-8000-0000000000a1', 'name' => 'Laura'])]), $cloud), 'account_id and nothing else');
+        // Not the cloud device: a reader, and an administrator.
+        self::assertFalse(Permissions::isAllowed($account, $reader));
+        self::assertFalse(Permissions::isAllowed($account, $this->view(Role::Admin)), 'not even an administrator');
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Member, self::OTHER_MEMBER, ['name' => 'Laura', 'account_id' => '01997c7e-0000-7000-8000-0000000000a1'])]), $this->view(Role::Admin)), 'nor at creation');
+        // Without roles everyone may.
+        self::assertTrue(Permissions::isAllowed($account, new FakeView(roles: false)));
+    }
+
+    public function testAFencedCloudDeviceHasNoPower(): void
+    {
+        $account = $this->op([Ops::update(CatalogEntity::Member, self::OTHER_MEMBER, ['account_id' => '01997c7e-0000-7000-8000-0000000000a1'])]);
+
+        self::assertTrue(Permissions::isAllowed($account, $this->cloud(null)));
+        self::assertFalse(Permissions::isAllowed($account, new FakeView(roles: true, fenced: true, cloud: true)));
+    }
+
     /**
      * @param list<ChangePayload> $changes
      */
@@ -137,5 +169,19 @@ final class PermissionsTest extends TestCase
     private function view(?Role $role, bool $samePerson = false, bool $fenced = false): FakeView
     {
         return new FakeView(roles: true, role: $role, samePerson: $samePerson, fenced: $fenced);
+    }
+
+    /**
+     * @param array<string, mixed> $more
+     */
+    private function link(string $device, ?string $member, array $more = []): OperationPayload
+    {
+        return $this->op([Ops::update(CatalogEntity::Device, $device, ['member_id' => $member] + $more)]);
+    }
+
+    /** The cloud device is a device of nobody, or of the person given. */
+    private function cloud(?Role $role): FakeView
+    {
+        return new FakeView(roles: true, role: $role, cloud: true);
     }
 }

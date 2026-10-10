@@ -8,6 +8,7 @@ use App\Dto\OperationPayload;
 use App\Entity\Catalog\Device;
 use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
+use App\Entity\Catalog\Library;
 use App\Entity\Catalog\Mark;
 use App\Entity\Catalog\Member;
 use App\Entity\Catalog\Revocation;
@@ -152,6 +153,28 @@ final readonly class CatalogLibraryView implements LibraryView
         }
 
         return false;
+    }
+
+    public function cloudDevice(): ?string
+    {
+        $row = $this->entityManager->createQuery(\sprintf(
+            'SELECT l.cloudDeviceId FROM %s l WHERE l.cloudLibrary = :library',
+            Library::class,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setMaxResults(1)->getOneOrNullResult();
+
+        return \is_array($row) && \is_string($row['cloudDeviceId']) && '' !== $row['cloudDeviceId'] ? $row['cloudDeviceId'] : null;
+    }
+
+    public function memberExists(string $member): bool
+    {
+        return [] !== $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member', Member::class))
+            ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('member', $member)->setMaxResults(1)->getResult();
+    }
+
+    public function memberHasAccount(string $member): bool
+    {
+        return [] !== $this->entityManager->createQuery(\sprintf("SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member AND m.accountId IS NOT NULL AND m.accountId <> ''", Member::class))
+            ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('member', $member)->setMaxResults(1)->getResult();
     }
 
     /** The same device, or two devices of the same person. */
