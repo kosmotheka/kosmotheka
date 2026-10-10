@@ -587,7 +587,12 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - **Invita quien administra la biblioteca.** Antes se decía «quien puede compartir»; desde la enmienda de D76 solo sube una biblioteca a la nube quien la administra, y dar un rol es suyo (D73). «Puede compartir» se queda para la red local.
 - **Quien entra por invitación entra como lector.** La invitación no lleva rol. Un enlace viaja por un chat o un correo y entra quien lo abre primero: si diera más, un enlace filtrado dejaría editar, y uno de administrador dejaría echar a quien invitó, que es definitivo (D98). Además, sin elegir rol la invitación es más simple de crear y de construir.
 - **Quien administra recibe un aviso cuando alguien acepta su invitación**, y le cambia el rol desde Personas cuando quiera, ya viendo quién ha entrado.
-- Pendiente de decidir: invitar a una persona que ya está en la biblioteca, y las bibliotecas sin personas ni roles.
+- **Dos tipos de invitación, y el tipo marca el rol** (aceptado el 10/10/2026):
+  - **Por correo.** Quien administra escribe el correo de la persona y el servidor le manda el enlace. Solo la acepta una cuenta con ese mismo correo, que las cuentas verifican al registrarse (D77): un enlace reenviado o visto en una captura no sirve a nadie más. Por eso puede dar más que leer: **una persona que ya está en la biblioteca conserva su rol**; una persona nueva entra como lectora. El servidor guarda una huella del correo, no el correo.
+  - **Enlace para copiar** (un chat, WhatsApp). Entra quien lo abre primero, así que **siempre da lector**, también si se crea para una persona que ya tenía otro rol.
+  - **Excepción:** a una persona que ya administra no se la invita; entra con un dispositivo emparejado en casa. Un correo robado bastaría para echar a los demás (D98).
+- **Idea para después, sin decidir:** un enlace que no caduca y sirve a muchas personas, como los de los grupos de mensajería, para un club de lectura o una biblioteca pública; siempre lector. Contradice «un solo uso» y pide resolver quién crea la persona de cada uno que entra, porque la nube solo tiene el poder de vincular dispositivos (D76). Las invitaciones de 7.6 se construyen sin cerrarle el paso.
+- Pendiente de decidir: cuándo y quién baja a lector a la persona con otro rol para la que se crea un enlace para copiar, y las bibliotecas sin personas ni roles.
 
 ## D44 · El lector escribe solo lo suyo: deseos y lecturas — `reemplazada por D55`
 

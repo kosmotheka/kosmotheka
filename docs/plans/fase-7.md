@@ -144,7 +144,7 @@ Propuestas para construirlo:
 
 ### 7.6 Invitar con un enlace
 
-- **Quien administra** crea la invitación (D43, enmienda del 10/10/2026): una operación firmada crea la fila `member` de la persona nueva **como lector**, siempre; la invitación no lleva rol. El servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad. Quien administra recibe un aviso cuando se acepta y cambia el rol desde Personas. Pendiente de decidir: invitar a quien ya está en la biblioteca, y las bibliotecas sin roles.
+- **Quien administra** crea la invitación (D43, enmienda del 10/10/2026): una operación firmada crea la fila `member` de la persona nueva **como lector**, siempre; la invitación no lleva rol. El servidor guarda la invitación con el id de esa persona, el hash del token y la caducidad. Quien administra recibe un aviso cuando se acepta y cambia el rol desde Personas. Dos tipos (D43): **por correo**, atada a ese correo, con la que quien ya está en la biblioteca conserva su rol; y **enlace para copiar**, que siempre da lector. A quien ya administra no se le invita. Límite de correos de invitación por cuenta y día, para que el servidor no sirva para mandar correo no deseado. Pendiente de decidir: quién baja a lector a la persona con otro rol en un enlace para copiar, y las bibliotecas sin roles.
 - Al abrirla, la app pide crear la cuenta o iniciar sesión; el servidor enlaza la cuenta con esa persona (7.5) y la biblioteca llega entera.
 - El enlace da exactamente eso: entrar una vez, como esa persona, con ese rol. Un enlace usado o caducado no da nada y la app lo explica (D43).
 
