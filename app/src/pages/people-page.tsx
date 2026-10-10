@@ -7,6 +7,7 @@ import {
   Ellipsis,
   Inbox,
   Lock,
+  MailPlus,
   QrCode,
   ShieldCheck,
   Smartphone,
@@ -19,6 +20,8 @@ import {
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { AccessDialog } from "@/components/people/access-dialog";
 import { ActivateDialog } from "@/components/people/activate-dialog";
+import { InvitationNote } from "@/components/people/invitation-note";
+import { InviteDialog } from "@/components/people/invite-dialog";
 import { PersonSheet } from "@/components/people/person-sheet";
 import {
   Avatar,
@@ -36,17 +39,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { listen } from "@tauri-apps/api/event";
+
 import {
+  type InvitationItem,
   type People,
   type Person,
   type PersonDevice,
   type Role,
   assignDevice,
+  invitationErrorKey,
+  listInvitations,
   listPeople,
   permissionErrorKey,
+  revokeInvitation,
   setRole,
 } from "@/lib/api";
 import { useCloud } from "@/lib/cloud";
+import { invitationOf } from "@/lib/invitations";
 import { leaveSection, openOverlay } from "@/lib/navigation";
 
 /**
@@ -73,6 +83,10 @@ export function PeoplePage({
     null,
   );
   const [revoking, setRevoking] = useState<{ person: Person; device?: PersonDevice } | null>(null);
+  // `null` person: a new one. Someone invited by email who is already here carries their row.
+  const [inviting, setInviting] = useState<{ person: Person | null } | null>(null);
+  const [invitations, setInvitations] = useState<InvitationItem[]>([]);
+  const [invitationReloads, setInvitationReloads] = useState(0);
   const cloudStatus = useCloud().status.find((s) => s.library === libraries.active?.id);
   // Signed in and the library is in the cloud: being someone here also opens it through the cloud.
   const inCloud = cloudStatus?.signedIn === true && cloudStatus.linkedHere;
@@ -103,6 +117,40 @@ export function PeoplePage({
     act(() => setRole(person.id, role, canShare));
 
   const isAdmin = people?.myRole === "admin";
+  const activeId = libraries.active?.id;
+  const listsInvitations = isAdmin && people.hasRoles && inCloud;
+
+  // Somebody accepting changes the list; so does the cloud telling us something changed (it reloads `version`).
+  useEffect(() => {
+    const unlisten = listen("invitation-accepted", () => setInvitationReloads((n) => n + 1));
+    return () => void unlisten.then((stop) => stop());
+  }, []);
+
+  // The list asks the server: with no network, People works the same and says nothing about invitations.
+  useEffect(() => {
+    if (!activeId || !listsInvitations) return;
+    let cancelled = false;
+    listInvitations(activeId)
+      .then((loaded) => !cancelled && setInvitations(loaded))
+      .catch(() => !cancelled && setInvitations([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId, listsInvitations, version, reloads, invitationReloads]);
+
+  const invitationFor = (person: Person) =>
+    listsInvitations ? invitationOf(invitations, person.id) : null;
+  const revokeFor = (person: Person, item: InvitationItem) => async () => {
+    if (!activeId) return;
+    try {
+      await revokeInvitation(activeId, item.id);
+      onNotice(t("invitations.people.revoked", { person: person.name }));
+    } catch (e) {
+      onNotice(t(invitationErrorKey(e)));
+    } finally {
+      setInvitationReloads((n) => n + 1);
+    }
+  };
   // Somebody sent away has no access (D98): they are neither shown as administering nor offered devices.
   const withAccess = people?.people.filter((p) => !p.accessWithdrawn) ?? [];
   const admins = withAccess.filter((p) => p.role === "admin");
@@ -116,9 +164,14 @@ export function PeoplePage({
         </p>
       </div>
       {isAdmin && people.hasRoles && (
-        <Button onClick={() => openOverlay({ name: "pair" })}>
-          <QrCode /> {t("people.giveAccess")}
-        </Button>
+        <>
+          <Button variant="outline" onClick={() => setInviting({ person: null })}>
+            <MailPlus /> {t("invitations.invite.button")}
+          </Button>
+          <Button onClick={() => openOverlay({ name: "pair" })}>
+            <QrCode /> {t("people.giveAccess")}
+          </Button>
+        </>
       )}
     </div>
   ) : (
@@ -217,7 +270,8 @@ export function PeoplePage({
     if (!isAdmin) return null;
     const isMe = person.devices.some((d) => d.thisDevice);
     const removable = person.devices.some((d) => !d.thisDevice);
-    if (!person.accessWithdrawn && !removable && isMe) return null;
+    const canInvite = person.invitable === "email" && invitationFor(person)?.state !== "pending";
+    if (!person.accessWithdrawn && !removable && isMe && !canInvite) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -236,6 +290,11 @@ export function PeoplePage({
             </DropdownMenuItem>
           ) : (
             <>
+              {canInvite && (
+                <DropdownMenuItem onSelect={() => setInviting({ person })}>
+                  <MailPlus /> {t("invitations.invite.byEmail")}
+                </DropdownMenuItem>
+              )}
               {removable && (
                 <DropdownMenuItem onSelect={() => setRevoking({ person })}>
                   {t("people.revoke.menu")}
@@ -287,7 +346,21 @@ export function PeoplePage({
         >
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={person.name} />
-            {name(person)}
+            <span className="flex min-w-0 flex-col gap-0.5">
+              {name(person)}
+              {(() => {
+                const item = invitationFor(person);
+                return (
+                  item && (
+                    <InvitationNote
+                      item={item}
+                      person={person.name}
+                      onRevoke={isAdmin ? () => void revokeFor(person, item)() : undefined}
+                    />
+                  )
+                );
+              })()}
+            </span>
           </div>
           {person.accessWithdrawn ? (
             <span className="col-span-3 text-sm text-muted-foreground">{t("people.noAccess")}</span>
@@ -339,6 +412,10 @@ export function PeoplePage({
           <Avatar name={person.name} size={40} />
           <span className="flex min-w-0 flex-1 flex-col gap-1">
             {name(person)}
+            {(() => {
+              const item = invitationFor(person);
+              return item && <InvitationNote item={item} person={person.name} />;
+            })()}
             {person.accessWithdrawn ? (
               <span className="text-[13px] text-muted-foreground">{t("people.noAccess")}</span>
             ) : (
@@ -427,9 +504,18 @@ export function PeoplePage({
         {unassigned}
         <RoleLegend compact={!desktop} />
         {!desktop && isAdmin && (
-          <Button className="h-[52px]" onClick={() => openOverlay({ name: "pair" })}>
-            <QrCode /> {t("people.giveAccessAnother")}
-          </Button>
+          <>
+            <Button className="h-[52px]" onClick={() => setInviting({ person: null })}>
+              <MailPlus /> {t("invitations.invite.button")}
+            </Button>
+            <Button
+              variant="outline"
+              className="h-[52px]"
+              onClick={() => openOverlay({ name: "pair" })}
+            >
+              <QrCode /> {t("people.giveAccessAnother")}
+            </Button>
+          </>
         )}
       </div>
 
@@ -437,6 +523,18 @@ export function PeoplePage({
         <PersonSheet
           person={sheet}
           library={library}
+          invitation={invitationFor(sheet)}
+          onInvite={() => {
+            const person = sheet;
+            setSheet(null);
+            setInviting({ person });
+          }}
+          onRevokeInvitation={() => {
+            const person = sheet;
+            const item = invitationFor(person);
+            setSheet(null);
+            if (item) void revokeFor(person, item)();
+          }}
           onClose={() => setSheet(null)}
           onSave={(role, canShare) => {
             const person = sheet;
@@ -469,6 +567,33 @@ export function PeoplePage({
           onClose={() => setAccess(null)}
           onDone={(message) => {
             setAccess(null);
+            onNotice(message);
+            reload();
+          }}
+        />
+      )}
+      {inviting && activeId && (
+        <InviteDialog
+          libraryId={activeId}
+          library={library}
+          person={inviting.person}
+          desktop={desktop}
+          onClose={() => setInviting(null)}
+          onInvited={() => {
+            setInvitationReloads((n) => n + 1);
+            reload();
+          }}
+          onActivate={() => setActivating(true)}
+        />
+      )}
+      {activating && (
+        <ActivateDialog
+          open
+          people={people}
+          library={library}
+          onClose={() => setActivating(false)}
+          onDone={(message) => {
+            setActivating(false);
             onNotice(message);
             reload();
           }}

@@ -1699,7 +1699,110 @@
   },
   "invitations": {
     "notice": {
-      "accepted": "Alguien ha aceptado tu invitación a «{{library}}»."
+      "see": "Ver en Personas"
+    },
+    "expiry": {
+      "today": "hoy a las {{time}}",
+      "tomorrow": "mañana a las {{time}}",
+      "on": "el {{date}} a las {{time}}"
+    },
+    "people": {
+      "accepted": "Aceptó la invitación",
+      "unused": "Tiene una invitación sin usar · caduca {{when}}",
+      "revoke": "Anular",
+      "revokeTitle": "¿Anular la invitación de {{person}}?",
+      "revokeBody": "El enlace o el correo dejan de valer. {{person}} sigue en la biblioteca y puedes volver a invitarla.",
+      "revokeConfirm": "Anular invitación",
+      "revoked": "Se anuló la invitación de {{person}}."
+    },
+    "invite": {
+      "button": "Invitar",
+      "byEmail": "Invitar por correo",
+      "title": "Invitar a «{{library}}»",
+      "titleExisting": "Invitar a {{person}} por correo",
+      "description": "Invita a alguien a «{{library}}», por correo o con un enlace para copiar.",
+      "checking": "Comprobando…",
+      "modes": {
+        "email": {
+          "label": "Por correo",
+          "hint": "Le llegará un enlace por correo. Solo podrá usarlo con ese correo."
+        },
+        "link": {
+          "label": "Copiar enlace",
+          "hint": "Quien lo abra primero entra. Pásaselo solo a esa persona."
+        }
+      },
+      "name": "Nombre",
+      "nameHint": "Así aparecerá en Personas hasta que entre.",
+      "emailField": "Su correo",
+      "emailHint": "Solo sirve para enviar la invitación. No se guarda.",
+      "existingBody": "{{person}} ya está en la biblioteca. Le llegará un enlace por correo para entrar con su propia cuenta.",
+      "keepsRole": "{{person}} conserva su rol. El enlace solo conecta su cuenta.",
+      "readerNote": "Entra como lector; después puedes cambiar su rol aquí.",
+      "sendEmail": "Enviar invitación",
+      "makeLink": "Crear enlace",
+      "useQr": "Está aquí: usar el QR",
+      "copyFailed": "No se pudo copiar el enlace. Selecciónalo y cópialo a mano."
+    },
+    "blocked": {
+      "not_signed_in": {
+        "body": "Para invitar tienes que haber iniciado sesión con tu cuenta.",
+        "action": "Iniciar sesión"
+      },
+      "not_in_cloud": {
+        "body": "«{{library}}» aún no está en la nube. Súbela primero y entonces podrás invitar.",
+        "action": "Subir la biblioteca"
+      },
+      "no_roles": {
+        "body": "«{{library}}» aún no tiene personas con roles. Actívalos primero, para que cada invitación tenga a quién ir dirigida.",
+        "action": "Activar personas y roles"
+      },
+      "not_admin": {
+        "body": "Solo quien administra «{{library}}» puede invitar."
+      },
+      "no_cloud_power": {
+        "body": "La nube no tiene permiso para dar acceso a dispositivos nuevos en «{{library}}». Actívalo en los ajustes de la biblioteca.",
+        "action": "Abrir los ajustes de la biblioteca"
+      },
+      "server_without_invitations": {
+        "body": "Este servidor no hace invitaciones. Aún puedes dar acceso con el QR."
+      }
+    },
+    "result": {
+      "createdButFailed": "Hemos añadido a {{person}} a la biblioteca, pero no se pudo crear la invitación.",
+      "failed": "No se pudo crear la invitación.",
+      "retryByEmail": "Puedes volver a intentarlo por correo desde la ficha de {{person}}.",
+      "sentTo": "Enviado a {{email}}.",
+      "once": "Vale una vez, hasta {{when}}.",
+      "done": "Listo",
+      "linkFor": "Enlace para {{person}}",
+      "linkLabel": "Enlace de invitación",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "share": "Compartir…",
+      "readerOnly": "{{person}} entra como lector. Puedes cambiarlo en Personas.",
+      "closeWarning": "Si cierras esto, no podrás volver a ver el enlace. Si no lo has copiado, anula la invitación en Personas y crea otra.",
+      "back": "Volver",
+      "closeAnyway": "Cerrar de todos modos"
+    },
+    "open": {
+      "entry": "Tengo una invitación",
+      "entryHint": "Pega un enlace que te hayan enviado",
+      "title": "Tengo una invitación",
+      "description": "Pega el enlace de una invitación para entrar en una biblioteca.",
+      "field": "Enlace de la invitación",
+      "hint": "Pega el enlace que te enviaron. No pasa nada hasta que tú lo digas.",
+      "look": "Ver",
+      "invited": "Te han invitado a «{{library}}»",
+      "validUntil": "Vale hasta {{when}}.",
+      "signedInBody": "Entrarás en «{{library}}» con la cuenta {{account}}.",
+      "signInFirst": "Inicia sesión o crea una cuenta para entrar.",
+      "decline": "No, gracias",
+      "enter": "Entrar en «{{library}}»",
+      "signUp": "Crear cuenta",
+      "signIn": "Iniciar sesión",
+      "joined": "Ya estás en «{{library}}».",
+      "joinedLater": "Ya estás dentro. La biblioteca llegará en un momento, en la próxima sincronización."
     },
     "errors": {
       "unknown": "No se pudo completar la invitación. Inténtalo de nuevo.",

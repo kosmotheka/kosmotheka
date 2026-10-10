@@ -52,3 +52,12 @@ En las carpetas de bibliotecas, en `cloud-account/` y en `cloud-family/`, `ds-ba
 - Antes de invitar, la pantalla comprueba que la biblioteca está en la nube, tiene personas y roles, y que «La nube puede dar acceso a dispositivos nuevos» está encendido; si falta algo, lo dice y lleva a arreglarlo.
 - Se mantienen: «Vale una vez, hasta mañana a las 18:20», «Compartir…», «Está aquí: usar el QR», anular desde Personas y «ya tiene un enlace sin usar».
 - Al abrir un enlace, la app no sabe quién invita: enseña la biblioteca, y nada de las personas que hay en ella.
+
+**Lo que se construyó distinto de `cloud-account/Invite`** (7.6.3, 11/10/2026; ninguna pantalla se ha visto aún en una ventana real):
+- El selector de rol («Rol · Lector · Cambiar») no está. En su lugar, dos tarjetas «Por correo» / «Copiar enlace» con su texto llano, y una línea fija: «Entra como lector; después puedes cambiar su rol aquí».
+- «Para» (elegir a quien se invita entre la lista) no está: quien ya está se invita desde su fila (menú en escritorio, ficha en móvil), y una persona nueva se crea en el propio diálogo con su nombre.
+- El diálogo es `SheetOrDialog` (hoja en móvil, ventana en escritorio), como los demás de Personas.
+- El enlace se enseña entero en un campo de solo lectura (seleccionable) con «Copiar» y, si el sistema tiene «compartir» (`navigator.share`), «Compartir…». Al cerrar se avisa de que no se podrá volver a ver. El diseño enseña un enlace corto de ejemplo (`7QK2-MF9X`); el real lleva un token de 43 caracteres.
+- «Ya tiene un enlace sin usar» sale en la fila de Personas, con «Anular», no en el selector. En el móvil la fila es un botón y «Anular» está en la ficha.
+- Los bloqueos (sin sesión, no está en la nube, sin roles, sin poder de la nube, sin invitaciones en el servidor, no administra) no están en el diseño: se enseñan en el diálogo con un botón que lleva a arreglarlos.
+- «Tengo una invitación» (pegar el enlace) tampoco está: es un diálogo nuevo, con entradas en la cuenta, en los ajustes sin sesión y en la bienvenida.

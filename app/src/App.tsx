@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { CircleCheck } from "lucide-react";
 
 import { AccountDialog } from "@/components/account/account-dialog";
+import { InvitationDialog } from "@/components/cloud/invitation-dialog";
 import { OtherOwnerDialog } from "@/components/cloud/other-owner-dialog";
 import { DownloadWait } from "@/components/cloud/download-wait";
 import { AccountNotice } from "@/components/account/account-notice";
@@ -46,6 +47,7 @@ import { useSyncStatus } from "@/components/shell/sync-status";
 import { TopBar } from "@/components/shell/top-bar";
 import { useDesktop } from "@/components/shell/use-desktop";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   type BookFilter,
   type CatalogOptions,
@@ -62,6 +64,7 @@ import {
   lanStatus,
   listBooks,
   listLibraries,
+  pendingInvitation,
   setActiveLibrary,
 } from "@/lib/api";
 import { refreshAccount, useAccount } from "@/lib/account";
@@ -100,6 +103,8 @@ export default function App() {
   const [options, setOptions] = useState<CatalogOptions>(emptyOptions);
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
+  // What pressing a notice does, tied to its text: any other notice replaces it and the action goes with it.
+  const [noticeAction, setNoticeAction] = useState<{ text: string; run: () => void } | null>(null);
   const [welcome, setWelcome] = useState(false);
   useEffect(() => {
     void welcomeSeen().then((seen) => setWelcome(seen < WELCOME_VERSION));
@@ -157,6 +162,20 @@ export default function App() {
   useEffect(() => {
     void refreshAccount();
   }, []);
+
+  // A link opened before signing in waits in Rust: once the account is in and nothing else is open, the
+  // person comes back to it, once per sign-in.
+  const resumeInvitation = useRef(false);
+  const wasSignedIn = useRef(false);
+  useEffect(() => {
+    if (account.signedIn && !wasSignedIn.current) resumeInvitation.current = true;
+    wasSignedIn.current = account.signedIn;
+    if (!account.signedIn || !resumeInvitation.current || overlay !== null) return;
+    resumeInvitation.current = false;
+    void pendingInvitation()
+      .then((waiting) => waiting && openOverlay({ name: "invitation" }))
+      .catch(() => {});
+  }, [account.signedIn, overlay]);
 
   // The device was reset (D81): its identity is new, so the welcome flag from
   // before no longer applies and a stale `?mock`-style view would be wrong.
@@ -286,9 +305,21 @@ export default function App() {
       listen("cloud-changed", () => void onCloudChanged()),
       // Somebody accepted an invitation of this account (D43). The event carries no personal data: the app
       // syncs (the `cloud-changed` that comes with it) and the screen of People says who.
-      listen<InvitationAcceptedNotice>("invitation-accepted", (event) =>
-        setNotice(t("invitations.notice.accepted", { library: event.payload.libraryName })),
-      ),
+      listen<InvitationAcceptedNotice>("invitation-accepted", (event) => {
+        const text = t("invitations.notice.accepted", { library: event.payload.libraryName });
+        setNotice(text);
+        setNoticeAction({
+          text,
+          run: () => {
+            void setActiveLibrary(event.payload.library)
+              .then(() => {
+                reload();
+                navigate("people");
+              })
+              .catch(() => {});
+          },
+        });
+      }),
       listen("local-changed", () => void syncAll(true)),
       listen("library-changed", () => {
         reload();
@@ -412,7 +443,14 @@ export default function App() {
       {notice && (
         <Alert className="mb-4">
           <CircleCheck />
-          <AlertDescription>{notice}</AlertDescription>
+          <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {notice}
+            {noticeAction?.text === notice && (
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={noticeAction.run}>
+                {t("invitations.notice.see")}
+              </Button>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       <DownloadWait />
@@ -607,6 +645,11 @@ export default function App() {
           <CloudPickDialog
             open={overlay?.name === "cloudPick"}
             onDone={(count) => setNotice(t("cloud.pick.done", { count }))}
+          />
+          <InvitationDialog
+            open={overlay?.name === "invitation"}
+            desktop={desktop}
+            onDone={setNotice}
           />
           <TwoFactorDialog
             open={overlay?.name === "twoFactor"}

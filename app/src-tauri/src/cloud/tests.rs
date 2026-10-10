@@ -69,6 +69,8 @@ struct CloudState {
     without_invitations: bool,
     /// Where the links of this server live.
     link_base: String,
+    /// What `GET /v1/server` says the links start with, if the server says (an older one does not).
+    published_base: Option<String>,
     invitations: Vec<FakeInvitation>,
     /// Creating an invitation fails with this code of the server.
     refuse_invitations: Option<&'static str>,
@@ -136,6 +138,12 @@ impl FakeCloud {
 
     fn peeks(&self) -> Vec<(String, String)> {
         self.0.lock().unwrap().peeks.clone()
+    }
+
+    /// A server that publishes where its links start.
+    fn publishing_base(self, base: &str) -> Self {
+        self.0.lock().unwrap().published_base = Some(base.to_owned());
+        self
     }
 
     fn with_link_base(self, base: &str) -> Self {
@@ -750,6 +758,10 @@ impl CloudApi for FakeApi {
 
     async fn offers_invitations(&self) -> Result<bool> {
         Ok(!self.cloud.0.lock().unwrap().without_invitations)
+    }
+
+    async fn invitation_base(&self) -> Result<Option<String>> {
+        Ok(self.cloud.0.lock().unwrap().published_base.clone())
     }
 
     async fn create_invitation(

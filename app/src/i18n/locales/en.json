@@ -1685,7 +1685,110 @@
   },
   "invitations": {
     "notice": {
-      "accepted": "Someone accepted your invitation to “{{library}}”."
+      "see": "See in People"
+    },
+    "expiry": {
+      "today": "today at {{time}}",
+      "tomorrow": "tomorrow at {{time}}",
+      "on": "{{date}} at {{time}}"
+    },
+    "people": {
+      "accepted": "Accepted the invitation",
+      "unused": "Has an unused invitation · expires {{when}}",
+      "revoke": "Cancel",
+      "revokeTitle": "Cancel {{person}}’s invitation?",
+      "revokeBody": "The link or email stops working. {{person}} stays in the library and you can invite them again.",
+      "revokeConfirm": "Cancel invitation",
+      "revoked": "The invitation for {{person}} was cancelled."
+    },
+    "invite": {
+      "button": "Invite",
+      "byEmail": "Invite by email",
+      "title": "Invite to “{{library}}”",
+      "titleExisting": "Invite {{person}} by email",
+      "description": "Invite someone to “{{library}}”, by email or with a link to copy.",
+      "checking": "Checking…",
+      "modes": {
+        "email": {
+          "label": "By email",
+          "hint": "They get a link by email. Only that email address can use it."
+        },
+        "link": {
+          "label": "Copy link",
+          "hint": "Whoever opens it first gets in. Give it only to that person."
+        }
+      },
+      "name": "Name",
+      "nameHint": "This is how they will appear in People until they get in.",
+      "emailField": "Their email",
+      "emailHint": "Only used to send the invitation. It is not kept.",
+      "existingBody": "{{person}} is already in the library. They will get a link by email to sign in and use their own account.",
+      "keepsRole": "{{person}} keeps their role. The link only connects their account.",
+      "readerNote": "They get in as a reader; you can change their role here afterwards.",
+      "sendEmail": "Send invitation",
+      "makeLink": "Create link",
+      "useQr": "They are here: use the QR instead",
+      "copyFailed": "The link could not be copied. Select it and copy it by hand."
+    },
+    "blocked": {
+      "not_signed_in": {
+        "body": "To invite you need to be signed in to your account.",
+        "action": "Sign in"
+      },
+      "not_in_cloud": {
+        "body": "“{{library}}” is not in the cloud yet. Upload it first and then you can invite.",
+        "action": "Upload the library"
+      },
+      "no_roles": {
+        "body": "“{{library}}” has no people with roles yet. Turn them on first, so each invitation has someone to be for.",
+        "action": "Turn on people and roles"
+      },
+      "not_admin": {
+        "body": "Only whoever administers “{{library}}” can invite."
+      },
+      "no_cloud_power": {
+        "body": "The cloud is not allowed to give access to new devices in “{{library}}”. Turn that on in the library’s settings.",
+        "action": "Open library settings"
+      },
+      "server_without_invitations": {
+        "body": "This server does not make invitations. You can still give access with the QR."
+      }
+    },
+    "result": {
+      "createdButFailed": "We added {{person}} to the library, but the invitation could not be created.",
+      "failed": "The invitation could not be created.",
+      "retryByEmail": "You can try again by email from {{person}}’s page.",
+      "sentTo": "Sent to {{email}}.",
+      "once": "Works once, until {{when}}.",
+      "done": "Done",
+      "linkFor": "Link for {{person}}",
+      "linkLabel": "Invitation link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "share": "Share…",
+      "readerOnly": "{{person}} gets in as a reader. You can change that in People.",
+      "closeWarning": "If you close this you will not be able to see the link again. If you did not copy it, cancel the invitation in People and make another.",
+      "back": "Back",
+      "closeAnyway": "Close anyway"
+    },
+    "open": {
+      "entry": "I have an invitation",
+      "entryHint": "Paste a link someone sent you",
+      "title": "I have an invitation",
+      "description": "Paste an invitation link to join a library.",
+      "field": "Invitation link",
+      "hint": "Paste the link you were sent. Nothing happens until you say so.",
+      "look": "Look",
+      "invited": "You are invited to “{{library}}”",
+      "validUntil": "Valid until {{when}}.",
+      "signedInBody": "You will join “{{library}}” with the account {{account}}.",
+      "signInFirst": "Sign in or create an account to get in.",
+      "decline": "No, thanks",
+      "enter": "Join “{{library}}”",
+      "signUp": "Create account",
+      "signIn": "Sign in",
+      "joined": "You are in “{{library}}”.",
+      "joinedLater": "You are in. The library will arrive in a moment, the next time the app syncs."
     },
     "errors": {
       "unknown": "The invitation could not be completed. Try again.",

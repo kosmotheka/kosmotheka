@@ -622,24 +622,32 @@ fn official_link(token: &str) -> String {
 
 #[test]
 fn the_token_of_a_link_is_read_when_the_link_is_the_servers() {
-    let token = token_of_link(&official_link(TOKEN), OFFICIAL_SERVER).unwrap();
+    let token = token_of_link(&official_link(TOKEN), OFFICIAL_SERVER, None).unwrap();
     assert_eq!(token.expose(), TOKEN);
     // A little slack for what a chat adds around a pasted link.
-    assert!(token_of_link(&format!("  {}\n", official_link(TOKEN)), OFFICIAL_SERVER).is_ok());
+    assert!(
+        token_of_link(
+            &format!("  {}\n", official_link(TOKEN)),
+            OFFICIAL_SERVER,
+            None
+        )
+        .is_ok()
+    );
     // A server of one's own: its own host, or the domain above it.
     for link in [
         format!("https://api.example.org/i/{TOKEN}"),
         format!("https://example.org/i/{TOKEN}"),
     ] {
         assert!(
-            token_of_link(&link, "https://api.example.org").is_ok(),
+            token_of_link(&link, "https://api.example.org", None).is_ok(),
             "{link}"
         );
     }
     assert!(
         token_of_link(
             &format!("http://localhost:8000/i/{TOKEN}"),
-            "http://localhost:8000"
+            "http://localhost:8000",
+            None
         )
         .is_ok()
     );
@@ -683,6 +691,139 @@ async fn a_link_of_another_server_is_refused_before_anything_is_asked() {
         cloud.peeks()
     );
     assert_eq!(pending_invitation(&nora).unwrap(), None);
+}
+
+/// A server that says where its links start (`invitation_base`) decides which links are its own, and only that:
+/// the link is compared, never called.
+#[tokio::test]
+async fn a_server_that_says_where_its_links_start_has_exactly_those_links() {
+    let server = "https://api.example.org";
+    let base = Some("https://invitaciones.example.org");
+    assert!(
+        token_of_link(
+            &format!("https://invitaciones.example.org/i/{TOKEN}"),
+            server,
+            base
+        )
+        .is_ok()
+    );
+    // With a base, the old guess (same host, domain above) no longer lets anything in.
+    for link in [
+        format!("https://api.example.org/i/{TOKEN}"),
+        format!("https://example.org/i/{TOKEN}"),
+        format!("https://invitaciones.example.org:8443/i/{TOKEN}"),
+        format!("https://invitaciones.example.org/x/i/{TOKEN}"),
+    ] {
+        let refused = token_of_link(&link, server, base).expect_err(&link);
+        assert_eq!(code(&refused), "invitation_other_server", "{link}");
+    }
+    let plain = token_of_link(
+        &format!("http://invitaciones.example.org/i/{TOKEN}"),
+        server,
+        base,
+    );
+    assert_eq!(code(&plain.unwrap_err()), "invitation_bad_link");
+    // The scheme is part of where the links start: a local server's `http` base is not the same as `https`.
+    let local = "http://localhost:8000";
+    assert!(token_of_link(&format!("{local}/i/{TOKEN}"), local, Some(local)).is_ok());
+    let secure = token_of_link(
+        &format!("https://localhost:8000/i/{TOKEN}"),
+        local,
+        Some(local),
+    );
+    assert_eq!(code(&secure.unwrap_err()), "invitation_other_server");
+    // A base with a path.
+    let under_path = Some("https://example.org/invitaciones/");
+    assert!(
+        token_of_link(
+            &format!("https://example.org/invitaciones/i/{TOKEN}"),
+            server,
+            under_path
+        )
+        .is_ok()
+    );
+    assert!(
+        token_of_link(
+            &format!("https://example.org/i/{TOKEN}"),
+            server,
+            under_path
+        )
+        .is_err()
+    );
+}
+
+/// Hostile: a link made for another server is still refused when this one publishes its base, and a server that
+/// publishes someone else's address does not get the app to call it, nor the tokens of the official server.
+#[tokio::test]
+async fn a_published_base_never_makes_the_app_call_it_nor_hand_over_an_official_link() {
+    let own = "https://api.example.org";
+    // The link of another server.
+    let refused = token_of_link(
+        &format!("https://other.example/i/{TOKEN}"),
+        own,
+        Some("https://invitaciones.example.org"),
+    );
+    assert_eq!(code(&refused.unwrap_err()), "invitation_other_server");
+
+    // A server that names a foreign address as its own base: the link is "its", but the call goes to the account's server.
+    let cloud = FakeCloud::default().publishing_base("https://evil.test");
+    let nora = Database::in_memory();
+    let api = cloud.api_on("nora", own).on(&nora);
+    // The fake knows no such invitation, so the peek fails; what matters is where it was asked.
+    let _ = open(&nora, &api, &format!("https://evil.test/i/{TOKEN}")).await;
+    assert_eq!(cloud.peeks(), vec![(own.to_owned(), TOKEN.to_owned())]);
+
+    // A server that names the official address as its base does not get the official tokens.
+    for base in ["https://kosmotheka.app", "https://kosmotheka.app/"] {
+        let refused = token_of_link(&official_link(TOKEN), own, Some(base));
+        assert_eq!(
+            code(&refused.unwrap_err()),
+            "invitation_other_server",
+            "{base}"
+        );
+    }
+    // The official server does not let a base move its links.
+    let refused = token_of_link(
+        &format!("https://evil.test/i/{TOKEN}"),
+        OFFICIAL_SERVER,
+        Some("https://evil.test"),
+    );
+    assert_eq!(code(&refused.unwrap_err()), "invitation_other_server");
+    assert!(
+        token_of_link(
+            &official_link(TOKEN),
+            OFFICIAL_SERVER,
+            Some("https://evil.test")
+        )
+        .is_ok()
+    );
+
+    // A base that is not a plain address is not believed: the guess of before applies instead.
+    for base in [
+        "https://user@evil.test",
+        "https://:secret@evil.test",
+        "https://evil.test/#frag",
+        "https://evil.test/?x=1",
+        "http://evil.test",
+        "ftp://evil.test",
+        "not a url",
+        "",
+    ] {
+        let refused = token_of_link(&format!("https://evil.test/i/{TOKEN}"), own, Some(base));
+        assert_eq!(
+            code(&refused.unwrap_err()),
+            "invitation_other_server",
+            "{base}"
+        );
+    }
+    assert!(
+        token_of_link(
+            &format!("https://api.example.org/i/{TOKEN}"),
+            own,
+            Some("not a url")
+        )
+        .is_ok()
+    );
 }
 
 /// Hostile: a token with the wrong form is refused without asking, and without being written.

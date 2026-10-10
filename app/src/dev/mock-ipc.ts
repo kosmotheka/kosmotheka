@@ -101,7 +101,29 @@ interface MockInvitation {
   expiresAt: string;
   acceptedAt: string | null;
 }
-const mockInvitations: MockInvitation[] = [];
+// `?invited` seeds People with an unused invitation (Laura) and an accepted one (Hugo).
+const mockInvitations: MockInvitation[] = new URLSearchParams(window.location.search).has("invited")
+  ? [
+      {
+        id: "invitation-laura",
+        kind: "email",
+        memberId: "laura",
+        state: "pending",
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 20 * 3600 * 1000).toISOString(),
+        acceptedAt: null,
+      },
+      {
+        id: "invitation-hugo",
+        kind: "link",
+        memberId: "hugo",
+        state: "accepted",
+        createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 23 * 3600 * 1000).toISOString(),
+        acceptedAt: new Date().toISOString(),
+      },
+    ]
+  : [];
 let mockPendingInvitation: {
   libraryName: string;
   kind: string;
@@ -1553,20 +1575,23 @@ mockIPC((cmd, args) => {
       if (cloudMode === "deleted") reports.push(report("deleted-library", "deleted_here"));
       return reports;
     }
-    case "invite_status":
-      return {
-        canInvite: mockAccount.signedIn && !params.has("reader"),
-        blocker: !mockAccount.signedIn
-          ? "not_signed_in"
-          : params.has("reader")
-            ? "not_admin"
-            : null,
-      };
+    case "invite_status": {
+      // `?blocker=not_in_cloud` (or no_roles, no_cloud_power, server_without_invitations, not_admin,
+      // not_signed_in) shows each reason a library cannot invite.
+      const asked = params.get("blocker");
+      const blocker =
+        asked ??
+        (!mockAccount.signedIn ? "not_signed_in" : params.has("reader") ? "not_admin" : null);
+      return { canInvite: blocker === null, blocker };
+    }
     case "invite_to_library": {
       const { request } = args as {
         request: { person: { type: string; member?: string }; kind: string };
       };
       const isNew = request.person.type === "new";
+      const email = (request as { email?: string | null }).email;
+      if (request.kind === "email" && !email?.includes("@"))
+        throw { kind: "account", reason: "invalid_email" };
       const member = isNew ? `new-${mockInvitations.length + 1}` : (request.person.member ?? "");
       const id = `invitation-${mockInvitations.length + 1}`;
       mockInvitations.push({
@@ -1578,6 +1603,11 @@ mockIPC((cmd, args) => {
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
         acceptedAt: null,
       });
+      // `?invitefails`: the person is added but the invitation is not made (the server refused).
+      if (params.has("invitefails")) {
+        mockInvitations.pop();
+        return { member, personCreated: isNew, failed: "too_many_requests", invitation: null };
+      }
       return {
         member,
         personCreated: isNew,
@@ -1600,7 +1630,22 @@ mockIPC((cmd, args) => {
     }
     case "open_invitation": {
       const { link } = args as { link: string };
+      // The text of the link picks the answer, to see every error: «used», «expired», «revoked»,
+      // «otheraccount», «otherserver», «notfound»; anything without `/i/` is not a link.
       if (!link.includes("/i/")) throw { kind: "cloud", reason: "invitation_bad_link" };
+      const failures: Record<string, string> = {
+        used: "invitation_used",
+        expired: "invitation_expired",
+        revoked: "invitation_revoked",
+        otheraccount: "invitation_not_for_this_account",
+        otherserver: "invitation_other_server",
+        notfound: "invitation_not_found",
+      };
+      const failure = Object.keys(failures).find((word) => link.includes(word));
+      if (failure) {
+        const reason = failures[failure];
+        throw { kind: reason === "invitation_other_server" ? "cloud" : "account", reason };
+      }
       mockPendingInvitation = {
         libraryName: "Casa",
         kind: "link",
@@ -1618,12 +1663,14 @@ mockIPC((cmd, args) => {
       if (!mockPendingInvitation) throw { kind: "cloud", reason: "invitation_no_pending" };
       if (!mockAccount.signedIn) throw { kind: "cloud", reason: "not_signed_in" };
       mockPendingInvitation = null;
+      // `?joinlater`: used, but the library has not come down yet.
+      const later = params.has("joinlater");
       return {
         cloudLibrary: "cloud-casa",
-        library: HOME,
+        library: later ? null : HOME,
         libraryName: "Casa",
         reports: [],
-        syncError: null,
+        syncError: later ? "server_unavailable" : null,
       };
     }
     case "give_device_away":

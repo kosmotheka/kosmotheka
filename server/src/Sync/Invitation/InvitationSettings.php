@@ -26,6 +26,12 @@ final readonly class InvitationSettings
         return '' !== $this->baseUrl;
     }
 
+    /** What the links start with, so the app can tell which links are this server's; null when there are none. */
+    public function baseUrl(): ?string
+    {
+        return $this->isEnabled() ? $this->baseUrl : null;
+    }
+
     public function linkFor(string $token): string
     {
         return $this->baseUrl.'/i/'.$token;

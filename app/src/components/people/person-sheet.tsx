@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EllipsisVertical, Info, Trash2, UserRoundCheck, UserRoundMinus } from "lucide-react";
+import {
+  EllipsisVertical,
+  Info,
+  MailPlus,
+  Trash2,
+  UserRoundCheck,
+  UserRoundMinus,
+} from "lucide-react";
 
+import { InvitationNote } from "@/components/people/invitation-note";
 import { Avatar, Switch, linkNote } from "@/components/people/role-parts";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
@@ -11,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type Person, type PersonDevice, type Role, roles } from "@/lib/api";
+import { type InvitationItem, type Person, type PersonDevice, type Role, roles } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,6 +29,9 @@ import { cn } from "@/lib/utils";
 export function PersonSheet({
   person,
   library,
+  invitation,
+  onInvite,
+  onRevokeInvitation,
   onClose,
   onSave,
   onRemoveDevice,
@@ -29,6 +40,10 @@ export function PersonSheet({
 }: {
   person: Person;
   library: string;
+  /** What the server says of their invitation, if it listed one. */
+  invitation: InvitationItem | null;
+  onInvite: () => void;
+  onRevokeInvitation: () => void;
   onClose: () => void;
   onSave: (role: Role, canShare: boolean) => void;
   onRemoveDevice: (device: PersonDevice) => void;
@@ -185,6 +200,16 @@ export function PersonSheet({
             ))}
           </div>
         </>
+      )}
+      {invitation && (
+        <div className="flex flex-col gap-1">
+          <InvitationNote item={invitation} person={person.name} onRevoke={onRevokeInvitation} />
+        </div>
+      )}
+      {person.invitable === "email" && invitation?.state !== "pending" && (
+        <Button variant="outline" className="h-12" onClick={onInvite}>
+          <MailPlus /> {t("invitations.invite.byEmail")}
+        </Button>
       )}
       {!isMe && (
         <Button

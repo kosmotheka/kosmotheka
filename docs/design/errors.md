@@ -179,4 +179,6 @@ Códigos **reales**, del servidor (7.6.1) y de la app (`cloud/invitations.rs`); 
 | `invalid_email` · `invalid_name` | app | La dirección no parece correcta; falta el nombre de la persona. |
 | `link_needs_new_person` · `person_not_invitable` | app | Un enlace es solo para alguien nuevo; esa persona administra, no tiene acceso o ya tiene una cuenta. |
 
+Lo que no es un código de ninguna parte, sino un texto de la pantalla: «No se pudo copiar el enlace. Selecciónalo y cópialo a mano» (`invitations.invite.copyFailed`), cuando el portapapeles no responde; el enlace queda seleccionable en su campo.
+
 Lo que no es un error: el aviso «Alguien ha aceptado tu invitación a «Casa»» (`invitations.notice.accepted`), que sale con la app abierta cuando llega `invitation_accepted` por el canal de avisos.

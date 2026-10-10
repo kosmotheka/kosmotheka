@@ -219,11 +219,13 @@ pub struct AcceptedNotice {
 /// the account's own server (or the default one, with no account) is asked. What the link names has to match it,
 /// so a token made for another server is not handed to this one, which could use it there.
 ///
-/// - the official server (D79): links of `kosmotheka.app`, and no other;
-/// - a server of one's own: links of its own host or of the domain above it (`api.example.org` and
-///   `example.org`), because the server does not say where its links live. Anything else is refused: a link of
-///   `kosmotheka.app` never reaches a server of one's own.
-pub fn token_of_link(link: &str, server: &str) -> Result<Secret> {
+/// - the official server (D79): links of `kosmotheka.app`, and no other, whatever it publishes;
+/// - a server of one's own that publishes where its links start (`base`, from `GET /v1/server`): the links that
+///   start there, and no other. A base that is not a plain address, or that is the official one, is not believed;
+/// - a server of one's own that says nothing (an older one): links of its own host or of the domain above it
+///   (`api.example.org` and `example.org`). Anything else is refused: a link of `kosmotheka.app` never reaches a
+///   server of one's own.
+pub fn token_of_link(link: &str, server: &str, base: Option<&str>) -> Result<Secret> {
     let bad = || Error::Cloud("invitation_bad_link");
     let url = Url::parse(link.trim()).map_err(|_| bad())?;
     let server_url = Url::parse(server).map_err(|_| Error::Cloud("invitation_other_server"))?;
@@ -241,16 +243,56 @@ pub fn token_of_link(link: &str, server: &str) -> Result<Secret> {
         _ => return Err(bad()),
     }
     let segments: Vec<&str> = url.path_segments().ok_or_else(bad)?.collect();
-    let [prefix, token] = segments.as_slice() else {
+    let Some((&token, front)) = segments.split_last() else {
         return Err(bad());
     };
-    if *prefix != "i" || !is_token_shaped(token) {
+    let Some((&"i", front)) = front.split_last() else {
+        return Err(bad());
+    };
+    if !is_token_shaped(token) {
         return Err(bad());
     }
-    if !belongs_to(&url, &server_url, server == OFFICIAL_SERVER) {
+    let official = server == OFFICIAL_SERVER;
+    let published = if official {
+        None
+    } else {
+        base.and_then(plain_base)
+    };
+    let ours = match &published {
+        Some(base) => starts_at(&url, front, base),
+        None if !front.is_empty() => return Err(bad()),
+        None => belongs_to(&url, &server_url, official),
+    };
+    if !ours {
         return Err(Error::Cloud("invitation_other_server"));
     }
-    Ok(Secret::new(*token))
+    Ok(Secret::new(token))
+}
+
+/// The base a server published, if it is a plain address that is not the official one: no credentials, query or
+/// fragment, and a host. Its scheme is not judged here: a link has to start with it, and a link is only `https`
+/// (or `http` where the server is).
+fn plain_base(base: &str) -> Option<Url> {
+    let url = Url::parse(base.trim()).ok()?;
+    let plain = url.username().is_empty()
+        && url.password().is_none()
+        && url.query().is_none()
+        && url.fragment().is_none();
+    let official = url.host_str() == Some(OFFICIAL_INVITATIONS_HOST);
+    (plain && !official && url.host().is_some()).then_some(url)
+}
+
+/// Whether the link starts where the base does: same scheme, host and port, and the path of the base before
+/// `/i/<token>`.
+fn starts_at(link: &Url, front: &[&str], base: &Url) -> bool {
+    let wanted: Vec<&str> = base
+        .path_segments()
+        .map(|segments| segments.filter(|segment| !segment.is_empty()).collect())
+        .unwrap_or_default();
+    link.scheme() == base.scheme()
+        && link.host() == base.host()
+        && link.port_or_known_default() == base.port_or_known_default()
+        && front == wanted.as_slice()
 }
 
 fn is_token_shaped(token: &str) -> bool {
@@ -566,7 +608,8 @@ pub async fn open<A: CloudApi>(
     api: &A,
     link: &str,
 ) -> Result<OpenedInvitation> {
-    let token = token_of_link(link, api.server())?;
+    let base = api.invitation_base().await?;
+    let token = token_of_link(link, api.server(), base.as_deref())?;
     let preview = api.peek_invitation(token.expose()).await?;
     let conn = database.lock()?;
     let account = account::signed_in_user_id(&conn)?;

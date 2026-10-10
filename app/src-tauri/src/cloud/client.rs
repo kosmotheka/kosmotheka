@@ -244,6 +244,12 @@ impl CloudApi for HttpCloud {
             .invitations)
     }
 
+    async fn invitation_base(&self) -> Result<Option<String>> {
+        Ok(account::client::server_info(&self.client, &self.base)
+            .await?
+            .invitation_base)
+    }
+
     async fn create_invitation(
         &self,
         cloud: &str,

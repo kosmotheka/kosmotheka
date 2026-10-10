@@ -56,6 +56,9 @@ pub trait CloudApi {
     ) -> Result<PushReport>;
     /// Whether this server makes invitations (`GET /v1/server`, no session needed).
     async fn offers_invitations(&self) -> Result<bool>;
+    /// What the links of this server's invitations start with, if it says (`GET /v1/server`). It is only ever
+    /// compared with a link; the app never calls it.
+    async fn invitation_base(&self) -> Result<Option<String>>;
     /// Asks for an invitation to `cloud` for the person `member`, which the server compares with its own
     /// catalog (D84). The link of a `link` invitation is in this answer and nowhere else.
     async fn create_invitation(

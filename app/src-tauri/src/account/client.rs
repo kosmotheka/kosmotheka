@@ -158,6 +158,9 @@ pub struct ServerInfoWire {
     /// Whether the server makes invitations (D43): it needs a base address for their links. Older servers omit it.
     #[serde(default)]
     pub invitations: bool,
+    /// What the links of this server's invitations start with (D79), if it says. Older servers omit it.
+    #[serde(default)]
+    pub invitation_base: Option<String>,
 }
 
 pub async fn server_info(client: &reqwest::Client, base: &str) -> Result<ServerInfoWire> {

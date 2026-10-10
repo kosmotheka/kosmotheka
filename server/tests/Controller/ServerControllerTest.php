@@ -25,6 +25,7 @@ final class ServerControllerTest extends WebTestCase
             'two_factor' => true,
             'events' => true,
             'invitations' => true,
+            'invitation_base' => 'https://invitations.test',
         ], json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR));
     }
 }

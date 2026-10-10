@@ -166,6 +166,16 @@ export function AccountNotice({ libraries }: { libraries: LibrarySummary[] }) {
           >
             {t("account.notice.welcome.signIn")}
           </button>
+          <button
+            type="button"
+            className="h-10 rounded-xl text-[14px] font-medium text-primary"
+            onClick={() => {
+              finishWelcome();
+              openOverlay({ name: "invitation" });
+            }}
+          >
+            {t("invitations.open.entry")}
+          </button>
           {/* order matches Notice.dc.html: filled primary action first, outline second */}
           <p className="text-[13px] text-pretty text-muted-foreground">
             {t("account.notice.welcome.note")}

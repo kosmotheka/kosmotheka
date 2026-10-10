@@ -1409,17 +1409,14 @@ type InvitationAppReason =
   | "invitation_no_pending"
   | "invitation_other_account";
 
-/** @public 7.6.3 builds the screens that use it. */
 export type InvitationKind = "email" | "link";
 
-/** @public 7.6.3 builds the screens that use it. */
-export type InvitationState = "pending" | "accepted" | "revoked" | "expired" | "unknown";
+type InvitationState = "pending" | "accepted" | "revoked" | "expired" | "unknown";
 
 /**
  * Why a library cannot invite now.
- * @public 7.6.3 builds the screens that use it.
  */
-export type InviteBlocker =
+type InviteBlocker =
   | "not_signed_in"
   | "not_in_cloud"
   | "no_roles"
@@ -1427,7 +1424,6 @@ export type InviteBlocker =
   | "no_cloud_power"
   | "server_without_invitations";
 
-/** @public 7.6.3 builds the screens that use it. */
 export interface InviteStatus {
   canInvite: boolean;
   blocker: InviteBlocker | null;
@@ -1436,11 +1432,9 @@ export interface InviteStatus {
 /**
  * Who an invitation is for. A new person is always created as a reader: there is no role to give, and Rust
  * refuses a request that names one.
- * @public 7.6.3 builds the screens that use it.
  */
-export type InvitePerson = { type: "new"; name: string } | { type: "existing"; member: string };
+type InvitePerson = { type: "new"; name: string } | { type: "existing"; member: string };
 
-/** @public 7.6.3 builds the screens that use it. */
 export interface InviteRequest {
   person: InvitePerson;
   kind: InvitationKind;
@@ -1448,8 +1442,7 @@ export interface InviteRequest {
   email?: string | null;
 }
 
-/** @public 7.6.3 builds the screens that use it. */
-export interface CreatedInvitation {
+interface CreatedInvitation {
   id: string;
   kind: InvitationKind;
   memberId: string;
@@ -1461,7 +1454,6 @@ export interface CreatedInvitation {
 /**
  * What inviting did. If `failed` is set after `personCreated`, the person is in the library anyway and the
  * invitation can be asked again for them (by email).
- * @public 7.6.3 builds the screens that use it.
  */
 export interface InviteResult {
   member: string;
@@ -1470,7 +1462,6 @@ export interface InviteResult {
   failed: string | null;
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export interface InvitationItem {
   id: string;
   kind: InvitationKind;
@@ -1484,7 +1475,6 @@ export interface InvitationItem {
 
 /**
  * A link that was opened: what it says, and whether the account that accepts it is already signed in.
- * @public 7.6.3 builds the screens that use it.
  */
 export interface OpenedInvitation {
   libraryName: string;
@@ -1493,7 +1483,6 @@ export interface OpenedInvitation {
   signedIn: boolean;
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export interface AcceptedInvitation {
   cloudLibrary: string;
   /** The library on this device, if the session after accepting brought it down. */
@@ -1512,30 +1501,25 @@ export interface InvitationAcceptedNotice {
 
 /**
  * Can this library invite now, and if not, why. Needs no session.
- * @public 7.6.3 builds the screens that use it.
  */
 export function inviteStatus(libraryId: string): Promise<InviteStatus> {
   return invoke<InviteStatus>("invite_status", { libraryId });
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export function inviteToLibrary(libraryId: string, request: InviteRequest): Promise<InviteResult> {
   return invoke<InviteResult>("invite_to_library", { libraryId, request });
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export function listInvitations(libraryId: string): Promise<InvitationItem[]> {
   return invoke<InvitationItem[]>("list_invitations", { libraryId });
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export function revokeInvitation(libraryId: string, invitationId: string): Promise<void> {
   return invoke("revoke_invitation", { libraryId, invitationId });
 }
 
 /**
  * Opens a pasted (or handed-over) invitation link, with no session; it waits for the account that accepts.
- * @public 7.6.3 builds the screens that use it.
  */
 export function openInvitation(link: string): Promise<OpenedInvitation> {
   return invoke<OpenedInvitation>("open_invitation", { link });
@@ -1543,20 +1527,17 @@ export function openInvitation(link: string): Promise<OpenedInvitation> {
 
 /**
  * The link waiting for a session, if there is one and it has not expired.
- * @public 7.6.3 builds the screens that use it.
  */
 export function pendingInvitation(): Promise<OpenedInvitation | null> {
   return invoke<OpenedInvitation | null>("pending_invitation");
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export function discardPendingInvitation(): Promise<void> {
   return invoke("discard_pending_invitation");
 }
 
 /**
  * Accepts the waiting link with the signed-in account and syncs, so the library comes down.
- * @public 7.6.3 builds the screens that use it.
  */
 export function acceptInvitation(): Promise<AcceptedInvitation> {
   return invoke<AcceptedInvitation>("accept_invitation");
@@ -1592,7 +1573,6 @@ const INVITATION_REASONS = [
 
 /**
  * Translation key for the code of a failed invitation command, or of `InviteResult.failed`.
- * @public 7.6.3 builds the screens that use it.
  */
 export function invitationReasonKey(reason: string): string {
   return INVITATION_REASONS.includes(reason)
@@ -1600,7 +1580,6 @@ export function invitationReasonKey(reason: string): string {
     : "invitations.errors.unknown";
 }
 
-/** @public 7.6.3 builds the screens that use it. */
 export function invitationErrorKey(error: unknown): string {
   if (isCommandError(error)) {
     if (error.kind === "permission" && error.reason === "not_allowed")

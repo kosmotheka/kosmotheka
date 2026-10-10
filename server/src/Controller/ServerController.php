@@ -17,7 +17,8 @@ use Symfony\Component\Routing\Attribute\Route;
  * `signInWithGoogle` is the one obvious place to flip once that milestone
  * lands; `two_factor` reads TWO_FACTOR_ENABLED (D78) and `events` is
  * whether a Mercure hub is configured (D75) and `invitations`
- * whether the server has an address for invitation links (D43, D79).
+ * whether the server has an address for invitation links, which `invitation_base`
+ * gives (D43, D79).
  */
 #[Route('/v1/server')]
 final class ServerController extends AbstractController
@@ -44,6 +45,7 @@ final class ServerController extends AbstractController
             'two_factor' => $this->twoFactorEnabled,
             'events' => $this->hub->isEnabled(),
             'invitations' => $this->invitations->isEnabled(),
+            'invitation_base' => $this->invitations->baseUrl(),
         ]);
     }
 }

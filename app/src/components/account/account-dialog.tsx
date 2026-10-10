@@ -6,6 +6,7 @@ import {
   Cloud,
   KeyRound,
   LogOut,
+  MailOpen,
   MonitorSmartphone,
   ShieldCheck,
 } from "lucide-react";
@@ -284,6 +285,21 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
                   })}
                 </span>
               )}
+            </span>
+            <ChevronRight className="size-[18px] shrink-0 text-muted-foreground" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openOverlay({ name: "invitation" })}
+            className="flex min-h-14 items-center gap-3 rounded-2xl border px-4 text-left hover:bg-accent/50"
+          >
+            <MailOpen className="size-[18px] shrink-0" />
+            <span className="flex flex-1 flex-col gap-0.5">
+              <span className="text-[15px]">{t("invitations.open.entry")}</span>
+              <span className="text-[13px] text-muted-foreground">
+                {t("invitations.open.entryHint")}
+              </span>
             </span>
             <ChevronRight className="size-[18px] shrink-0 text-muted-foreground" />
           </button>

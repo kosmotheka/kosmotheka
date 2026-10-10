@@ -6,6 +6,7 @@ import {
   HandHelping,
   HardDrive,
   LogIn,
+  MailOpen,
   MonitorSmartphone,
 } from "lucide-react";
 
@@ -140,6 +141,14 @@ export function SettingsDialog({
                 </div>
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              onClick={() => openOverlay({ name: "invitation" })}
+            >
+              <MailOpen /> {t("invitations.open.entry")}
+            </Button>
           </div>
           <div className="space-y-2">
             <p className="text-sm font-medium">{t("nav.languages")}</p>
