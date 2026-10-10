@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Kosmotheka · la cuenta dentro de la biblioteca (Fase 7, 2.ª tanda)" description="Móvil (390 × 844) y escritorio (1280 × 800), claro y oscuro: CloudPick solo para quien administra, entrar en la nube sin invitación, el móvil nuevo que baja solo, el interruptor de la nube en los ajustes, dispositivo de otra persona, quién tiene cuenta, quitar dispositivos y personas, errores y textos ES/EN." -->
+<helmet><script src="./ds-base.js"></script></helmet><div style="min-height:100vh;background:oklch(0.93 0 0);padding:40px;display:flex;flex-direction:column;gap:56px;font-family:var(--font-sans)"><header style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font:600 28px var(--font-sans);letter-spacing:-0.02em;color:oklch(0.2 0 0)">Kosmotheka · Fase 7 · la cuenta dentro de la biblioteca</h1><p style="margin:0;font-size:14px;line-height:1.5;color:oklch(0.4 0 0);text-wrap:pretty">La cuenta no añade pasos: si quien administra ya dijo de quién es un móvil, entrar con la cuenta basta. Los avisos cuentan lo que ha pasado sin pedir nada; solo se pregunta cuando hay dos respuestas razonables (la tablet de otra persona) y solo una vez. Lo que se puede romper (quitar, apagar) pide confirmar y dice qué se conserva.</p></header><sc-for list="{{ blocks }}" as="b" hint-placeholder-count="1"><section style="display:flex;flex-direction:column;gap:32px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">{{ b.name }}</h2><sc-for list="{{ b.groups }}" as="g" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:14px"><h3 style="margin:0;font:600 15px var(--font-sans);color:oklch(0.3 0 0)">{{ g.title }}</h3><div style="display:flex;flex-wrap:wrap;gap:40px 28px"><sc-for list="{{ g.frames }}" as="f" hint-placeholder-count="3"><sc-if value="{{ b.mobile }}" hint-placeholder-val="{{ true }}"><div data-screen-label="{{ f.n }}" style="width:390px;display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);min-height:36px;text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ b.cls }}" style="width:390px;height:844px;border-radius:28px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.pick }}" hint-placeholder-val="{{ false }}"><dc-import name="CloudPick" shell="m" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.download }}" hint-placeholder-val="{{ false }}"><dc-import name="Download" shell="m" kind="{{ f.dk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.notice }}" hint-placeholder-val="{{ false }}"><dc-import name="Notice" shell="m" kind="{{ f.nk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pLib }}" hint-placeholder-val="{{ false }}"><dc-import name="Lib" shell="m" kind="{{ f.lk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pSet }}" hint-placeholder-val="{{ false }}"><dc-import name="LibSettings" shell="m" view="{{ f.view }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.pPeo }}" hint-placeholder-val="{{ false }}"><dc-import name="People" shell="m" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.over }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:var(--scrim);display:flex;flex-direction:column;justify-content:flex-end"><div style="background:var(--popover);border-radius:28px 28px 0 0;padding:10px 24px 28px;display:flex;flex-direction:column;gap:14px"><div style="width:32px;height:4px;border-radius:2px;background:var(--muted-foreground);opacity:.4;margin:0 auto"></div><sc-if value="{{ f.person }}" hint-placeholder-val="{{ false }}"><dc-import name="Person" who="{{ f.who }}" hint-size="100%,420px"></dc-import></sc-if><sc-if value="{{ f.dialog }}" hint-placeholder-val="{{ false }}"><dc-import name="Dialog" kind="{{ f.dlk }}" hint-size="100%,320px"></dc-import></sc-if></div></div></sc-if></div></div></sc-if><sc-if value="{{ b.desktop }}" hint-placeholder-val="{{ false }}"><div data-screen-label="{{ f.n }}" style="display:flex;flex-direction:column;gap:10px"><span style="font:500 13px var(--font-sans);color:oklch(0.4 0 0);text-wrap:pretty"><span style="font-family:var(--font-mono);margin-right:8px">{{ f.n }}</span>{{ f.label }}</span><div class="{{ b.cls }}" style="width:1280px;height:800px;border-radius:12px;overflow:hidden;position:relative;flex-shrink:0;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px oklch(0 0 0 / 10%),0 24px 48px -24px oklch(0 0 0 / 30%)"><sc-if value="{{ f.full }}" hint-placeholder-val="{{ false }}"><div style="height:100%;background:var(--muted);display:flex;align-items:center;justify-content:center"><div style="width:520px;height:640px;border-radius:20px;overflow:hidden;background:var(--background);box-shadow:0 0 0 1px var(--border),0 24px 48px -24px oklch(0 0 0 / 25%)"><sc-if value="{{ f.download }}" hint-placeholder-val="{{ false }}"><dc-import name="Download" shell="d" kind="{{ f.dk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.notice }}" hint-placeholder-val="{{ false }}"><dc-import name="Notice" shell="d" kind="{{ f.nk }}" hint-size="100%,100%"></dc-import></sc-if></div></div></sc-if><sc-if value="{{ f.app }}" hint-placeholder-val="{{ true }}"><div style="height:100%;display:flex"><dc-import name="Sidebar" active="{{ f.side }}" account="on" who="{{ f.who2 }}" library="Casa" role="{{ f.role }}" hint-size="256px,100%"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column"><dc-import name="TopBar" cloud="on" library="Casa" role="{{ f.role }}" hint-size="100%,56px"></dc-import><main style="flex:1;min-height:0;padding:0 16px;overflow:hidden;position:relative"><sc-if value="{{ f.dLib }}" hint-placeholder-val="{{ false }}"><dc-import name="Lib" shell="d" kind="{{ f.lk }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.dSet }}" hint-placeholder-val="{{ false }}"><dc-import name="LibSettings" shell="d" view="{{ f.view }}" hint-size="100%,100%"></dc-import></sc-if><sc-if value="{{ f.dPeo }}" hint-placeholder-val="{{ false }}"><dc-import name="People" shell="d" hint-size="100%,100%"></dc-import></sc-if></main></div></div></sc-if><sc-if value="{{ f.dlg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center"><div style="width:460px;max-height:760px;overflow:hidden;border-radius:16px;background:var(--popover);box-shadow:0 24px 64px -16px oklch(0 0 0 / 40%)"><sc-if value="{{ f.pick }}" hint-placeholder-val="{{ false }}"><dc-import name="CloudPick" shell="d" hint-size="100%,640px"></dc-import></sc-if><sc-if value="{{ f.person }}" hint-placeholder-val="{{ false }}"><div style="padding:24px"><dc-import name="Person" who="{{ f.who }}" hint-size="100%,420px"></dc-import></div></sc-if><sc-if value="{{ f.dialog }}" hint-placeholder-val="{{ false }}"><div style="padding:24px"><dc-import name="Dialog" kind="{{ f.dlk }}" hint-size="100%,320px"></dc-import></div></sc-if></div></div></sc-if></div></div></sc-if></sc-for></div></div></sc-for></section></sc-for><section style="display:flex;flex-direction:column;gap:14px"><h2 style="margin:0;font:600 22px var(--font-sans);color:oklch(0.25 0 0)">Textos ES / EN y lo que hemos supuesto</h2><div class="light" style="width:1280px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px oklch(0 0 0 / 10%)"><dc-import name="Copy" hint-size="1280px,2400px"></dc-import></div></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;móvil&quot;,&quot;escritorio&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;móvil&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;claro&quot;,&quot;oscuro&quot;,&quot;ambos&quot;],&quot;default&quot;:&quot;claro&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.theme ?? 'claro', dv = this.props.device ?? 'móvil';
+    const groups = () => {
+      let n = 0;
+      const F = (kind, label, p = {}) => {
+        const o = { page: 'lib', lk: '', view: 'admin', who: 'laura', dk: '', nk: '', dlk: '', who2: 'Ana Ruiz', role: 'admin', ...p };
+        const full = kind === 'download' || kind === 'notice';
+        const over = kind === 'person' || kind === 'dialog';
+        const page = kind === 'pick' ? 'lib' : (['lib', 'settings', 'people'].includes(kind) ? kind : o.page);
+        const showPage = !full && kind !== 'pick';
+        return { ...o, n: String(++n).padStart(2, '0'), label,
+          pick: kind === 'pick', download: kind === 'download', notice: kind === 'notice', person: kind === 'person', dialog: kind === 'dialog',
+          over, full, app: !full, dlg: kind === 'pick' || over,
+          pLib: showPage && page === 'lib', pSet: showPage && page === 'settings', pPeo: showPage && page === 'people',
+          dLib: !full && page === 'lib', dSet: !full && page === 'settings', dPeo: !full && page === 'people',
+          side: { lib: 'catalog', settings: 'settings', people: 'people' }[page] };
+      };
+      const J = { who2: 'Jhonny', role: 'lector' }, L = { who2: 'Laura Gómez' };
+      return [
+        { title: '0 · Lo que cambia: CloudPick', frames: [
+          F('pick', 'Solo sube quien administra: las demás, sin casilla y con «La sube quien la administra»; una biblioteca sin personas ni roles se puede subir')
+        ] },
+        { title: '1 · Entrar en una biblioteca de la nube sin que nadie te invite', frames: [
+          F('lib', 'Jhonny inicia sesión: un aviso que se cierra solo, sin pedir nada', { lk: 'joined', ...J }),
+          F('lib', 'Varias bibliotecas: un solo aviso que las lista', { lk: 'joinedMany', ...J }),
+          F('lib', 'Su móvil aún no es de nadie: el texto de siempre, con «…y entrarás también por la nube»', { lk: 'noPerson', ...J })
+        ] },
+        { title: '2 · El móvil nuevo', frames: [
+          F('download', 'Mientras baja: cuánto falta de cada biblioteca', { dk: 'downloading' }),
+          F('download', 'Ya están, falta el rol: una línea, sin botón para abrir todavía', { dk: 'finishing' }),
+          F('lib', 'Si se abre antes de tener el rol: solo mirar, sin «Añadir»', { lk: 'finishing', ...L, role: 'pending' }),
+          F('download', 'Al terminar: cuántas, y como quién en cada una; lo que no se subió sigue en los otros dispositivos', { dk: 'done' })
+        ] },
+        { title: '3 · «La nube puede dar acceso a mis dispositivos nuevos»', frames: [
+          F('settings', 'Ajustes de la biblioteca, quien administra: el interruptor y qué hace encendido y apagado', { view: 'admin' }),
+          F('dialog', 'Apagarlo pide confirmar: los vinculados siguen igual; los nuevos, a mano', { page: 'settings', dlk: 'cloudOff' }),
+          F('settings', 'Apagado', { view: 'adminOff' }),
+          F('settings', 'Quien no administra: ve el estado, no lo puede cambiar', { view: 'reader', ...J })
+        ] },
+        { title: '4 · Este dispositivo es de otra persona', frames: [
+          F('dialog', 'Laura entra en la tablet de Hugo: pregunta una sola vez', { dlk: 'otherOwner', ...L, role: 'lector' }),
+          F('dialog', 'Si Laura administra, puede hacerla suya ahí mismo', { dlk: 'otherOwnerAdmin', ...L })
+        ] },
+        { title: '5 · Quién tiene cuenta', frames: [
+          F('people', 'La marca discreta en quien tiene cuenta, sin email; Carmen, sin acceso, con «Devolver el acceso»'),
+          F('person', 'Ficha: «por la nube» en los dispositivos que entraron solos', { page: 'people', who: 'laura' })
+        ] },
+        { title: '6 · Quitar un dispositivo o a una persona', frames: [
+          F('dialog', 'Quitar un móvil perdido: la nube no se lo devuelve; recomienda quitarlo de su cuenta o cambiar la contraseña', { page: 'people', dlk: 'removeDevice' }),
+          F('notice', 'Lo que ve ese dispositivo', { nk: 'removedByAdmin' }),
+          F('dialog', 'Quitar a una persona: deja de entrar al momento; qué se conserva y qué no se puede quitar', { page: 'people', dlk: 'kick' }),
+          F('person', 'Persona sin acceso: «Devolver el acceso» y vincular de nuevo', { page: 'people', who: 'carmen' }),
+          F('dialog', 'No se puede quitar al último administrador', { page: 'people', dlk: 'kickLast' }),
+          F('dialog', 'Salir yo: solo de este dispositivo, con una copia antes', { page: 'settings', dlk: 'leave', view: 'reader', ...J })
+        ] },
+        { title: '7 · Errores y estados', frames: [
+          F('notice', 'Te han retirado el acceso y se ha borrado (comprobado)', { nk: 'revokedDeleted' }),
+          F('lib', 'La nube dice que no tienes acceso, sin poder comprobarlo', { lk: 'revokedUnverified', ...J }),
+          F('lib', 'Solo puede subirla quien la administra', { lk: 'uploadAdminOnly', ...J }),
+          F('lib', 'Otro dispositivo registrado igual que este (muy raro)', { lk: 'dupDevice', ...J }),
+          F('lib', 'Otra cuenta ya está enlazada con esta persona', { lk: 'accountTaken', ...J }),
+          F('lib', 'La nube no puede vincular dispositivos nuevos aquí', { lk: 'cloudNoLink', ...J })
+        ] }
+      ];
+    };
+    const themes = [], devs = [], blocks = [];
+    if (t !== 'oscuro') themes.push(['light', 'Claro']);
+    if (t !== 'claro') themes.push(['dark', 'Oscuro']);
+    if (dv !== 'escritorio') devs.push([true, 'Móvil']);
+    if (dv !== 'móvil') devs.push([false, 'Escritorio']);
+    for (const [mobile, dn] of devs) for (const [cls, tn] of themes) blocks.push({ name: dn + ' · ' + tn, cls, mobile, desktop: !mobile, groups: groups() });
+    return { blocks };
+  }
+}
+</script>
+</body>
+</html>

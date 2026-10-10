@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet><div style="background:var(--background);color:var(--foreground);font-family:var(--font-sans);padding:32px;display:flex;flex-direction:column;gap:32px"><sc-for list="{{ groups }}" as="g" hint-placeholder-count="3"><section style="display:flex;flex-direction:column;gap:10px"><h3 style="margin:0;font-size:16px;font-weight:600">{{ g.t }}</h3><div style="display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:13.5px;line-height:1.5"><span style="padding:8px 12px;background:var(--muted);font-weight:600">Dónde</span><span style="padding:8px 12px;background:var(--muted);font-weight:600">Español</span><span style="padding:8px 12px;background:var(--muted);font-weight:600">English</span><sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3"><span style="padding:10px 12px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">{{ r.k }}</span><span style="padding:10px 12px;border-top:1px solid var(--border);text-wrap:pretty">{{ r.es }}</span><span style="padding:10px 12px;border-top:1px solid var(--border);text-wrap:pretty">{{ r.en }}</span></sc-for></div></section></sc-for><section style="display:flex;flex-direction:column;gap:10px;max-width:900px"><h3 style="margin:0;font-size:16px;font-weight:600">Lo que hemos supuesto</h3><ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5"><sc-for list="{{ assumptions }}" as="a" hint-placeholder-count="6"><li style="text-wrap:pretty">{{ a }}</li></sc-for></ol></section></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:1800}}">
+class Component extends DCLogic {
+  renderVals() {
+    const R = (k, es, en) => ({ k, es, en });
+    const groups = [
+      { t: 'Subir a la nube (CloudPick)', rows: [
+        R('cloud_pick.lead', 'Las que no subas siguen como hasta ahora, por la red de casa.', 'The ones you don’t upload keep working as before, over your home network.'),
+        R('cloud_pick.not_admin', 'La sube quien la administra', 'Uploaded by whoever manages it'),
+        R('cloud_pick.no_roles', 'Sin personas ni roles', 'No people or roles'),
+        R('cloud_pick.autolink', 'La nube puede dar acceso a mis dispositivos nuevos · Un móvil nuevo de alguien de casa con cuenta entra solo, con el rol de esa persona. Puedes cambiarlo en los ajustes de cada biblioteca.', 'The cloud can give access to my new devices · A new phone belonging to someone at home with an account gets in on its own, with that person’s role. You can change this in each library’s settings.')
+      ] },
+      { t: 'Entrar sin invitación y el móvil nuevo', rows: [
+        R('joined.one', 'Ya estás en «Casa» en la nube · Como Jhonny · lector.', 'You’re now in “Casa” in the cloud · As Jhonny · reader.'),
+        R('joined.many', 'Ya estás en 2 bibliotecas en la nube · «Casa», como Jhonny · lector', 'You’re now in 2 libraries in the cloud · “Casa”, as Jhonny · reader'),
+        R('device.no_person', 'Pide a quien administra que diga de quién es este dispositivo, y entrarás también por la nube.', 'Ask whoever manages it to say whose device this is, and you’ll also get in through the cloud.'),
+        R('download.title', 'Bajando tus bibliotecas de la nube', 'Downloading your libraries from the cloud'),
+        R('download.lead', 'Con bibliotecas grandes puede tardar un rato. No hace falta que nadie en casa haga nada.', 'Large libraries can take a while. Nobody at home needs to do anything.'),
+        R('download.background', 'Si sales de la app, seguirá bajando.', 'If you leave the app, it keeps downloading.'),
+        R('download.finishing', 'Terminando de preparar este móvil…', 'Finishing setting up this phone…'),
+        R('lib.finishing', 'Ya puedes mirar «Casa». En un momento podrás añadir y cambiar cosas.', 'You can already browse “Casa”. In a moment you’ll be able to add and change things.'),
+        R('download.done', 'Han bajado 2 bibliotecas. En «Casa» eres Laura · administradora', '2 libraries downloaded. In “Casa” you’re Laura · admin'),
+        R('download.not_uploaded', 'Las bibliotecas que no subiste siguen en tus otros dispositivos.', 'Libraries you didn’t upload are still on your other devices.')
+      ] },
+      { t: 'Ajustes de la biblioteca', rows: [
+        R('autolink.label', 'La nube puede dar acceso a dispositivos nuevos', 'The cloud can give access to new devices'),
+        R('autolink.on', 'Encendido: el móvil nuevo de alguien de casa con cuenta entra solo, con el rol de esa persona.', 'On: a new phone belonging to someone at home with an account gets in on its own, with that person’s role.'),
+        R('autolink.off', 'Apagado: cada dispositivo nuevo lo vincula a mano quien administra, como sin nube.', 'Off: whoever manages the library links each new device by hand, as without the cloud.'),
+        R('autolink.readonly', 'Lo cambia quien administra Casa', 'Changed by whoever manages Casa'),
+        R('autolink.off_confirm', '¿Apagar el acceso por la nube en Casa? · Los dispositivos que ya están en Casa siguen igual. Los nuevos tendrás que vincularlos tú a mano, aunque su persona tenga cuenta. · Apagar', 'Turn off cloud access for Casa? · Devices already in Casa stay as they are. You’ll have to link new ones by hand, even if their person has an account. · Turn off'),
+        R('leave', '¿Salir de Casa en este móvil? · Casa se va solo de este móvil. Tus otros dispositivos la conservan, y la nube no volverá a bajarla aquí. · Guardar una copia y salir · Salir sin copia', 'Leave Casa on this phone? · Casa goes away from this phone only. Your other devices keep it, and the cloud won’t download it here again. · Save a copy and leave · Leave without a copy')
+      ] },
+      { t: 'Este dispositivo es de otra persona', rows: [
+        R('other_owner.title', 'En Casa, esta tablet es de Hugo', 'In Casa, this tablet belongs to Hugo'),
+        R('other_owner.body', 'Has entrado con tu cuenta, pero quien administra dijo que esta tablet es de Hugo.', 'You signed in with your account, but whoever manages Casa said this tablet belongs to Hugo.'),
+        R('other_owner.keep', 'Dejarlo como está · Sigue siendo de Hugo. Aquí ves Casa como Hugo · lector.', 'Leave it as is · It stays Hugo’s. Here you see Casa as Hugo · reader.'),
+        R('other_owner.ask', 'Pedir a quien administra que lo cambie · Mientras tanto, se queda como está.', 'Ask whoever manages it to change it · Until then, it stays as is.'),
+        R('other_owner.mine', 'Hacerla mía · Pasa a ser de Laura · administradora. Hugo conserva su móvil.', 'Make it mine · It becomes Laura’s · admin. Hugo keeps his phone.'),
+        R('other_owner.foot', 'No volveremos a preguntarlo en esta tablet.', 'We won’t ask again on this tablet.')
+      ] },
+      { t: 'Personas, dispositivos y quitar', rows: [
+        R('people.has_account', 'tiene cuenta: no hace falta invitarla', 'has an account: no need to invite them'),
+        R('device.via_cloud', 'por la nube', 'via the cloud'),
+        R('device.linked_by', 'Lo vinculó Ana', 'Linked by Ana'),
+        R('remove_device', '¿Quitar el Móvil de Laura? · Dejará de tener el rol de Laura en Casa. La nube no se lo devolverá sola, aunque siga con la sesión abierta.', 'Remove Laura’s phone? · It will no longer have Laura’s role in Casa. The cloud won’t give it back on its own, even if it’s still signed in.'),
+        R('remove_device.tip', 'Si lo ha perdido, conviene además que Laura lo quite de «Mis dispositivos» en su cuenta, o que cambie la contraseña.', 'If it’s lost, Laura should also remove it from “My devices” in her account, or change her password.'),
+        R('device.removed_by_admin', 'Quien administra «Casa» ha quitado este dispositivo. Para volver, pídele que lo vincule otra vez.', 'Whoever manages “Casa” removed this device. To come back, ask them to link it again.'),
+        R('kick', '¿Quitar a Laura de Casa? · Dejará de poder entrar al momento, ni con sus dispositivos ni con su cuenta.', 'Remove Laura from Casa? · She’ll lose access right away, from her devices and her account.'),
+        R('kick.keeps', 'Su nombre sigue en Casa: sus libros siguen siendo suyos y se conservan sus préstamos y lo que marcó. Lo que ya haya copiado fuera de la app no se le puede quitar.', 'Her name stays in Casa: her books are still hers, and her loans and marks are kept. Anything she already copied outside the app can’t be taken back.'),
+        R('kick.last_admin', 'Laura es la única que administra Casa · Si se va, nadie podrá cambiar los permisos ni dar acceso a dispositivos nuevos. Primero nombra a otra persona administradora.', 'Laura is the only one managing Casa · If she leaves, nobody can change permissions or give access to new devices. First make someone else an admin.'),
+        R('people.no_access', 'Sin acceso desde el 3 oct · sus libros siguen siendo suyos', 'No access since Oct 3 · their books are still theirs'),
+        R('people.restore', 'Devolver el acceso · Después, vincula de nuevo un dispositivo suyo.', 'Give access back · Then link one of their devices again.')
+      ] },
+      { t: 'Errores y estados (ver errors-fase-7b.md)', rows: [
+        R('access_revoked_wiped', 'Ya no estás en «Casa». Quien la administra te ha retirado el acceso, y la biblioteca se ha borrado de este dispositivo.', 'You’re no longer in “Casa”. Whoever manages it removed your access, and the library has been deleted from this device.'),
+        R('access_revoked_unverified', '«Casa» ha dejado de sincronizarse con la nube. La nube dice que ya no tienes acceso, pero no hemos podido comprobarlo. La biblioteca sigue en este dispositivo, y por la red de casa. Habla con quien la administra.', '“Casa” has stopped syncing with the cloud. The cloud says you no longer have access, but we couldn’t confirm it. The library is still on this device and on your home network. Talk to whoever manages it.'),
+        R('upload_admin_only', 'Esta biblioteca solo puede subirla quien la administra. Pídeselo a Ana Ruiz.', 'Only whoever manages this library can upload it. Ask Ana Ruiz.'),
+        R('device_duplicate', 'Este móvil no puede sincronizar «Casa» con la nube. Hay otro dispositivo registrado igual que este. Es muy raro y no se pierde nada. Lo arregla quien administra: quitando ese otro dispositivo y vinculando este de nuevo.', 'This phone can’t sync “Casa” with the cloud. Another device is registered exactly like this one. It’s very rare and nothing is lost. Whoever manages it can fix it by removing that other device and linking this one again.'),
+        R('person_account_taken', 'Otra cuenta ya está enlazada con Jhonny en «Casa». Cada persona se enlaza con una sola cuenta.', 'Another account is already linked to Jhonny in “Casa”. Each person links to one account only.'),
+        R('cloud_link_disabled', 'La nube no puede dar acceso a este móvil en «Casa». Quien administra prefiere vincular cada dispositivo a mano. Pídele que vincule este.', 'The cloud can’t give this phone access to “Casa”. Whoever manages it prefers to link each device by hand. Ask them to link this one.')
+      ] }
+    ];
+    const assumptions = [
+      'Bibliotecas sin personas ni roles: en CloudPick salen con casilla y la línea «Sin personas ni roles»; cualquiera de los que la comparten puede subirla.',
+      'Las bibliotecas que no administras no llevan candado ni casilla gris: solo un hueco y la línea «La sube quien la administra», para que no parezcan bloqueadas por error.',
+      'El aviso de «Ya estás en la nube» es una barra que se cierra sola (o con la X) la primera vez que se abre la app tras iniciar sesión; no se repite.',
+      'Al texto del dispositivo sin persona le añadimos «…y entrarás también por la nube» solo si hay sesión iniciada y la biblioteca está en la nube; si no, se queda como estaba.',
+      'Mientras baja, el móvil nuevo muestra una pantalla propia. Si se abre la biblioteca antes de tener el rol, se ve en modo de solo mirar: sin «Añadir» ni edición, con la línea «Terminando de preparar este móvil…». Nada se ofrece para luego rechazarlo.',
+      'El rol concuerda con la persona cuando lo dice el mensaje («Laura · administradora»); en listas y ajustes seguimos con el nombre genérico del rol (Administrador, Editor, Lector), como hasta ahora.',
+      'El interruptor de la nube está encendido por defecto al subir (como en CloudPick). Apagarlo pide confirmar; encenderlo no.',
+      'Tablet de otra persona: la respuesta se guarda en ese dispositivo para esa cuenta. Solo vuelve a preguntar si cambia la persona del dispositivo o entra otra cuenta.',
+      '«Pedir a quien administra que lo cambie» crea una petición normal en Peticiones, con el mismo aspecto que las demás.',
+      'La marca de cuenta es el mismo icono que en Compartir (insignia con tic), sin email; su significado se explica una vez, encima de la lista.',
+      'Una persona sin acceso pierde sus dispositivos vinculados; al devolverle el acceso vuelve con su rol anterior, y quien administra tiene que vincular a mano un dispositivo suyo: la nube no la vuelve a meter sola aunque el interruptor esté encendido.',
+      'El caso del último administrador se resuelve antes de confirmar: el diálogo de quitar no llega a aparecer, sale el que explica por qué no se puede.',
+      'En escritorio, «este móvil» pasa a «este ordenador»; en tablet, «esta tablet». En inglés: phone / computer / tablet.',
+      'Usamos «Casa» como nombre de la biblioteca de ejemplo, como en el encargo.'
+    ];
+    return { groups, assumptions };
+  }
+}
+</script>
+</body>
+</html>
