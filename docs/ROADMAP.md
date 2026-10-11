@@ -218,6 +218,7 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 
 No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §3](research/referentes.md)).
 
+- **Añadir varios resultados de una búsqueda a la vez** (pedido por el maintainer el 11/10/2026, probando TMDB): buscar «matrix» y dar de alta toda la saga de una vez, en lugar de una a una. En el móvil, manteniendo pulsado para seleccionar; en escritorio, quizá con casillas. Por pensar: qué datos de ejemplar (formato, ubicación, dueño) se aplican a todos, como hace ya Alta rápida.
 - **La dimensión social:** comentarios, préstamo entre desconocidos, compartir en redes (§3.3).
 - **Bibliotecas públicas** que se descubren buscando y se navegan sin invitación.
 - **Reservar un ejemplar prestado.**
