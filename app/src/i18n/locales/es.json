@@ -1256,14 +1256,28 @@
       }
     },
     "toggleAria": "Usar {{name}}",
-    "needsAccountBadge": "Pide una cuenta",
-    "tmdbWithAccount": "Llega con una cuenta en un servidor que lo ofrezca. Sin ella se usa Wikidata.",
+    "tmdbWithAccount": "Pide tu propia clave, o una cuenta en un servidor que lo ofrezca. Sin ninguna de las dos se usa Wikidata.",
     "tmdbSends": "Envía lo que escribes, el tipo y el idioma de la app al servidor de tu cuenta, que pregunta a TMDB. Nada más.",
-    "dataSources": "Fuentes de datos",
     "tmdbNotice": "Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo.",
-    "rawgWithAccount": "Llega con una cuenta en un servidor que lo ofrezca. Sin ella se usa Wikidata.",
+    "rawgWithAccount": "Pide tu propia clave, o una cuenta en un servidor que lo ofrezca. Sin ninguna de las dos se usa Wikidata.",
     "rawgSends": "Envía lo que escribes al servidor de tu cuenta, que pregunta a RAWG. Nada más.",
-    "rawgNotice": "Datos de videojuegos de <link>RAWG</link>."
+    "rawgNotice": "Datos de videojuegos de <link>RAWG</link>.",
+    "credits": "Créditos",
+    "all": "Todas",
+    "needsKeyOrAccountBadge": "Pide clave o cuenta",
+    "ownKeyUsed": "Usa tu propia clave: nada pasa por el servidor.",
+    "keyPlaceholderTmdb": "Pega tu «API Read Access Token» (no la clave corta de la API)",
+    "sourceDescriptions": {
+      "bne": "Libros publicados en España, con autores y editorial",
+      "open_library": "Libros de todo el mundo: título, autores e ISBN",
+      "inventaire": "Ediciones y portadas",
+      "wikidata": "Obras y autoría, para todos los tipos",
+      "google_books": "La fuente más completa para buscar por ISBN",
+      "game_upc": "Juegos de mesa por el código de barras de la caja",
+      "music_brainz": "Discos por título o código de barras",
+      "tmdb": "Título, director o creadores, duración y cartel",
+      "rawg": "Título, estudio, editor, plataformas y carátula"
+    }
   },
   "series": {
     "new": "Nueva serie",

@@ -7,13 +7,27 @@ use kosmotheka_domain::ContributorRole;
 use serde_json::{Value, json};
 
 use super::*;
-use crate::metadata::via_server::{parse_tmdb_answer, search_tmdb};
+use crate::metadata::via_server::{SearchAccess, parse_tmdb_answer, search_tmdb as search_with};
 use crate::metadata::{Candidate, ProviderError, Source};
 
 fn film(title: &str) -> Candidate {
     let mut candidate = Candidate::new(Kind::Film, Source::Tmdb, title);
     candidate.external_id = Some("603".to_owned());
     candidate
+}
+
+/// The server of the account, or nobody; the own key has its own tests (`own_key_tests`). It must never be used here.
+async fn search_tmdb<C: CloudApi>(
+    cloud: Option<&C>,
+    kind: Kind,
+    query: &str,
+    language: &str,
+) -> std::result::Result<Vec<Candidate>, ProviderError> {
+    let access = cloud.map_or(SearchAccess::Nothing, SearchAccess::Server);
+    search_with(access, kind, query, language, |_key| async {
+        panic!("the own key is not in play")
+    })
+    .await
 }
 
 // --- Who is asked, and with what ------------------------------------------------------------------------------------

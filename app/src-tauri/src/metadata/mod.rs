@@ -8,6 +8,8 @@ pub mod google;
 pub mod inventaire;
 pub mod musicbrainz;
 pub mod openlibrary;
+pub mod rawg;
+pub mod tmdb;
 pub mod via_server;
 pub mod wikidata;
 
@@ -18,8 +20,10 @@ use std::time::Duration;
 use kosmotheka_domain::{Isbn, Kind};
 
 use crate::cloud::CloudApi;
+use reqwest::StatusCode;
 use serde::Serialize;
-use via_server::{GoogleAccess, lookup_google, search_rawg, search_tmdb};
+use serde_json::Value;
+use via_server::{GoogleAccess, choose_search_access, lookup_google, search_rawg, search_tmdb};
 
 pub use candidate::{Candidate, CandidateContributor};
 
@@ -196,6 +200,44 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
     candidate
 }
 
+/// The most a provider's answer to a search may be, read: what is far more is not what was asked.
+const MAX_ANSWER: usize = 512 * 1024;
+
+/// One call to a provider that needs a key, read as JSON: the key may be in the address (RAWG takes it nowhere else),
+/// so an error never carries the address (`without_url`) or anything the provider said, only what kind of failure it
+/// was. 401 and 403 are a key the provider rejects, 429 its quota.
+pub(crate) async fn get_json(request: reqwest::RequestBuilder) -> Result<Value, ProviderError> {
+    let mut response = request
+        .send()
+        .await
+        .map_err(|error| ProviderError::Network(error.without_url()))?;
+    match response.status() {
+        StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => return Err(ProviderError::BadKey),
+        StatusCode::TOO_MANY_REQUESTS => return Err(ProviderError::Quota),
+        status if !status.is_success() => {
+            return Err(ProviderError::Unexpected(format!("HTTP {status}")));
+        }
+        _ => {}
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| ProviderError::Network(error.without_url()))?
+    {
+        if body.len() + chunk.len() > MAX_ANSWER {
+            return Err(ProviderError::Unexpected("answer too big".to_owned()));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    serde_json::from_slice(&body).map_err(|_| ProviderError::Unexpected("not json".to_owned()))
+}
+
+/// The language of the app as TMDB writes it.
+fn tmdb_tag(language: &str) -> &'static str {
+    if language == "es" { "es-ES" } else { "en-US" }
+}
+
 type ProviderResult = Result<Option<Metadata>, ProviderError>;
 
 /// Shared HTTP client, kept in Tauri state so connections are reused.
@@ -247,6 +289,7 @@ impl Lookup {
         kind: Kind,
         query: &str,
         disabled: &BTreeSet<String>,
+        own_key: Option<&str>,
         cloud: Option<&C>,
         language: &str,
     ) -> SearchResult {
@@ -296,7 +339,23 @@ impl Lookup {
                 let (tmdb_result, wikidata) = tokio::join!(
                     maybe_vec(
                         disabled.contains(Source::Tmdb.id()),
-                        search_tmdb(cloud, kind, query, language),
+                        search_tmdb(
+                            choose_search_access(own_key, cloud),
+                            kind,
+                            query,
+                            language,
+                            |key| async move {
+                                tmdb::search(
+                                    &self.client,
+                                    tmdb::API,
+                                    &key,
+                                    kind,
+                                    query,
+                                    tmdb_tag(language),
+                                )
+                                .await
+                            },
+                        ),
                     ),
                     maybe_vec(
                         disabled.contains(Source::Wikidata.id()),
@@ -313,7 +372,13 @@ impl Lookup {
                 let (rawg, wikidata) = tokio::join!(
                     maybe_vec(
                         disabled.contains(Source::Rawg.id()),
-                        search_rawg(cloud, query),
+                        search_rawg(
+                            choose_search_access(own_key, cloud),
+                            query,
+                            |key| async move {
+                                rawg::search(&self.client, rawg::API, &key, query).await
+                            }
+                        ),
                     ),
                     maybe_vec(
                         disabled.contains(Source::Wikidata.id()),

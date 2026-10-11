@@ -1,0 +1,32 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/fNG7i7RqMErkcqhohV2a6cV1Ehy.jpg",
+      "genre_ids": [28, 878],
+      "id": 603,
+      "original_language": "en",
+      "original_title": "The Matrix",
+      "overview": "Set in the 22nd century, The Matrix tells the story of a computer hacker...",
+      "popularity": 85.4,
+      "poster_path": "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+      "release_date": "1999-03-30",
+      "title": "Matrix",
+      "video": false,
+      "vote_average": 8.2,
+      "vote_count": 24000
+    },
+    {
+      "adult": false,
+      "id": 604,
+      "original_language": "en",
+      "original_title": "The Matrix Reloaded",
+      "poster_path": "/9TGHDvWrqKBzwDxDodHYXEmOE6J.jpg",
+      "release_date": "2003-05-15",
+      "title": "Matrix Reloaded"
+    }
+  ],
+  "total_pages": 1,
+  "total_results": 2
+}

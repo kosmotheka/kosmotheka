@@ -7,13 +7,25 @@ use kosmotheka_domain::ContributorRole;
 use serde_json::{Value, json};
 
 use super::*;
-use crate::metadata::via_server::{parse_rawg_answer, search_rawg};
+use crate::metadata::via_server::{SearchAccess, parse_rawg_answer, search_rawg as search_with};
 use crate::metadata::{Candidate, ProviderError, Source};
 
 fn game(title: &str) -> Candidate {
     let mut candidate = Candidate::new(Kind::Videogame, Source::Rawg, title);
     candidate.external_id = Some("3498".to_owned());
     candidate
+}
+
+/// The server of the account, or nobody; the own key has its own tests (`own_key_tests`). It must never be used here.
+async fn search_rawg<C: CloudApi>(
+    cloud: Option<&C>,
+    query: &str,
+) -> std::result::Result<Vec<Candidate>, ProviderError> {
+    let access = cloud.map_or(SearchAccess::Nothing, SearchAccess::Server);
+    search_with(access, query, |_key| async {
+        panic!("the own key is not in play")
+    })
+    .await
 }
 
 // --- Who is asked, and with what ------------------------------------------------------------------------------------

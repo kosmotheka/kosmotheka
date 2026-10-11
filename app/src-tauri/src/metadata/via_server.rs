@@ -195,17 +195,51 @@ const MAX_PEOPLE: usize = 5;
 const TMDB_COVER_HOST: &str = "image.tmdb.org";
 const TMDB_COVER_DIR: &str = "/t/p/w500/";
 
+/// Who asks TMDB or RAWG for a search (7.8, D62): the person's own key, the server of the account, or nobody.
+pub enum SearchAccess<'a, C> {
+    /// The person's own key: straight to the provider, and the server is never told.
+    Key(&'a str),
+    /// The server of the account, if it offers the search.
+    Server(&'a C),
+    /// No key and no session: nothing is asked.
+    Nothing,
+}
+
+/// Their own key first (as for Google Books, D83), else the server of the session, else nobody. A key that is only
+/// blanks is no key, and one with blanks around it is used without them.
+pub fn choose_search_access<'a, C>(
+    key: Option<&'a str>,
+    cloud: Option<&'a C>,
+) -> SearchAccess<'a, C> {
+    match (key.map(str::trim).filter(|key| !key.is_empty()), cloud) {
+        (Some(key), _) => SearchAccess::Key(key),
+        (None, Some(cloud)) => SearchAccess::Server(cloud),
+        (None, None) => SearchAccess::Nothing,
+    }
+}
+
 /// Searches films or series by title in TMDB through the server of the account. Without a session (`cloud` is
 /// `None`), for a kind TMDB does not cover, or on a server that does not say it offers the search, nothing is sent at
 /// all and there is nothing to add. A server that fails or is slow is a warning, as for any other provider.
-pub async fn search_tmdb<C: CloudApi>(
-    cloud: Option<&C>,
+pub async fn search_tmdb<C, D, Fut>(
+    access: SearchAccess<'_, C>,
     kind: Kind,
     query: &str,
     language: &str,
-) -> Result<Vec<Candidate>, ProviderError> {
-    let Some(cloud) = cloud.filter(|_| matches!(kind, Kind::Film | Kind::TvSeries)) else {
+    direct: D,
+) -> Result<Vec<Candidate>, ProviderError>
+where
+    C: CloudApi,
+    D: Fn(String) -> Fut,
+    Fut: Future<Output = Result<Vec<Candidate>, ProviderError>>,
+{
+    if !matches!(kind, Kind::Film | Kind::TvSeries) {
         return Ok(Vec::new());
+    }
+    let cloud = match access {
+        SearchAccess::Key(key) => return direct(key.to_owned()).await,
+        SearchAccess::Server(cloud) => cloud,
+        SearchAccess::Nothing => return Ok(Vec::new()),
     };
 
     let asked = tokio::time::timeout(TMDB_PATIENCE, async {
@@ -335,12 +369,20 @@ const RAWG_COVER_HOST: &str = "media.rawg.io";
 
 /// Searches video games by title in RAWG through the server of the account, with the same care as TMDB's search:
 /// without a session, or on a server that does not say it offers it, nothing is sent at all.
-pub async fn search_rawg<C: CloudApi>(
-    cloud: Option<&C>,
+pub async fn search_rawg<C, D, Fut>(
+    access: SearchAccess<'_, C>,
     query: &str,
-) -> Result<Vec<Candidate>, ProviderError> {
-    let Some(cloud) = cloud else {
-        return Ok(Vec::new());
+    direct: D,
+) -> Result<Vec<Candidate>, ProviderError>
+where
+    C: CloudApi,
+    D: Fn(String) -> Fut,
+    Fut: Future<Output = Result<Vec<Candidate>, ProviderError>>,
+{
+    let cloud = match access {
+        SearchAccess::Key(key) => return direct(key.to_owned()).await,
+        SearchAccess::Server(cloud) => cloud,
+        SearchAccess::Nothing => return Ok(Vec::new()),
     };
 
     let asked = tokio::time::timeout(TMDB_PATIENCE, async {

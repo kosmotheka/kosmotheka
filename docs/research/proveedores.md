@@ -45,6 +45,8 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 **Hecho en 7.8 (tercera parte, 11/10/2026): RAWG (videojuegos) por título a través del servidor.** Con cuenta, un servidor con `RAWG_API_KEY` busca por título (hasta 8 candidatos; el detalle —desarrolladores y editores— de los tres primeros). Condiciones releídas el 11/10/2026 (términos del 01/03/2021): gratis hasta 20.000 peticiones al mes (el servidor se pone 600 al día); atribución con enlace activo a RAWG en cada página donde se usen sus datos, que la app cumple en «Fuentes de datos» y en la pantalla de resultados. RAWG solo admite la clave en la dirección de la llamada, lo que obliga a un cuidado especial con excepciones y log. Diseño en [architecture/cloud.md](../architecture/cloud.md#buscar-videojuegos-por-título-en-rawg-78-tercera-parte-d62). Pendiente: clave propia en Ajustes, y BoardGameGeek, IGDB y Comic Vine.
 
+**Hecho en 7.8 (cuarta parte, 11/10/2026): clave propia para TMDB y RAWG** (D62: todo proveedor con clave la admite en Ajustes). Con ella la app llama directamente al proveedor, con preferencia sobre el servidor de la cuenta, y con las mismas comprobaciones que si la respuesta viniera de un servidor. Ver [architecture/cloud.md](../architecture/cloud.md#clave-propia-para-tmdb-y-rawg-78-cuarta-parte-d62).
+
 ## Lo que esto implica para la arquitectura
 
 - **Claves en una app de código abierto.** Una clave no puede ir dentro de la app: el código es público y cualquiera la extraería (D03, D21). Tres salidas:

@@ -278,19 +278,24 @@ pub async fn search_works(
     query: String,
     language: Option<String>,
 ) -> Result<SearchResult> {
-    let disabled_sources = {
+    let settings = {
         let conn = database.lock()?;
-        settings::load(&conn)?.disabled_sources
+        settings::load(&conn)?
     };
-    // The account's server only for what TMDB (films, series) or RAWG (video games) cover, only with a session and
-    // only if that source is not switched off.
+    let disabled_sources = settings.disabled_sources.clone();
+    // TMDB (films, series) and RAWG (video games) with the person's own key, or through the account's server; for
+    // the other kinds, neither. The server is only looked for when there is no key of their own.
     let source = match kind {
         Kind::Film | Kind::TvSeries => Some(Source::Tmdb),
         Kind::Videogame => Some(Source::Rawg),
         _ => None,
     };
+    let own_key = source
+        .and_then(|source| settings.api_keys.get(source.id()))
+        .cloned();
     let cloud = source
-        .filter(|source| !disabled_sources.contains(source.id()))
+        .filter(|source| !settings.disabled_sources.contains(source.id()))
+        .filter(|_| own_key.as_deref().is_none_or(|key| key.trim().is_empty()))
         .and_then(|_| HttpCloud::connect(&database).ok());
     let language = if language.as_deref() == Some("es") {
         "es"
@@ -298,7 +303,14 @@ pub async fn search_works(
         "en"
     };
     let mut result = lookup
-        .search(kind, &query, &disabled_sources, cloud.as_ref(), language)
+        .search(
+            kind,
+            &query,
+            &disabled_sources,
+            own_key.as_deref(),
+            cloud.as_ref(),
+            language,
+        )
         .await;
     // The block ends before this function returns and there is no further await,
     // so the lock is never held across one.

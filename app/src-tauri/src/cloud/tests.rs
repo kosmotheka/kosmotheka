@@ -1147,6 +1147,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 mod invitations_tests;
 mod links_tests;
 mod metadata_tests;
+mod own_key_tests;
 mod rawg_tests;
 mod tmdb_tests;
 

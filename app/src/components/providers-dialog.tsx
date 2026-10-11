@@ -17,6 +17,7 @@ import {
   lookupCode,
   lookupIsbn,
   saveSettings,
+  searchWorks,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ExternalLink, RAWG_URL } from "@/components/external-link";
@@ -33,14 +34,26 @@ const SOURCES_BY_KIND: Record<Kind, Source[]> = {
   other: [],
 };
 
-const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc"]);
+/** Every source once, in the order the types list them, and the types each one covers. */
+const ALL_SOURCES: Source[] = [...new Set(kinds.flatMap((kind) => SOURCES_BY_KIND[kind]))];
 
-/** Sources that only arrive with an account: the server of the account asks them (D62). */
+function kindsOf(source: Source): Kind[] {
+  return kinds.filter((kind) => SOURCES_BY_KIND[kind].includes(source));
+}
+
+/** What is selected on the left: every source at once, one type, or (on a phone) nothing yet. */
+type Selection = Kind | "all" | null;
+
+const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc", "tmdb", "rawg"]);
+
+/** Sources the account's server can also ask when there is no key of their own (D62, D83). */
 const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
   game_upc: "https://gameupc.com",
+  tmdb: "https://www.themoviedb.org/settings/api",
+  rawg: "https://rawg.io/apidocs",
 };
 
 /** Known codes that resolve to a real result on that provider, used only to
@@ -50,7 +63,11 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
     const result =
       source === "google_books"
         ? await lookupIsbn("9780140328721")
-        : await lookupCode("019962194719");
+        : source === "tmdb"
+          ? await searchWorks("film", "matrix", "en")
+          : source === "rawg"
+            ? await searchWorks("videogame", "zelda", "en")
+            : await lookupCode("019962194719");
     return result.warnings.some((w) => w.source === source && w.kind === "bad_key")
       ? "bad_key"
       : "ok";
@@ -68,20 +85,26 @@ interface Offers {
 
 const NO_OFFERS: Offers = { googleBooks: false, tmdb: false, rawg: false };
 
-function usableCount(kind: Kind, settings: Settings, offers: Offers): number {
-  return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings, offers)).length;
+function usableCount(sources: Source[], settings: Settings, offers: Offers): number {
+  return sources.filter((source) => isUsable(source, settings, offers)).length;
 }
 
-/** Google Books works without a key of their own when the account's server looks it up (7.8). */
-function needsOwnKey(source: Source, settings: Settings, offers: Offers): boolean {
-  if (!KEYED_SOURCES.has(source)) return false;
-  return !(source === "google_books" && offers.googleBooks && settings.googleBooksViaServer);
+/** Whether the account's server asks this source instead of a key of their own (7.8). */
+function viaAccount(source: Source, settings: Settings, offers: Offers): boolean {
+  if (source === "google_books") return offers.googleBooks && settings.googleBooksViaServer;
+  if (source === "tmdb") return offers.tmdb;
+  if (source === "rawg") return offers.rawg;
+  return false;
+}
+
+/** A keyed source works with a key of their own or, where the account's server asks it, without one. */
+function isAvailable(source: Source, settings: Settings, offers: Offers): boolean {
+  if (!KEYED_SOURCES.has(source)) return true;
+  return Boolean(settings.apiKeys[source]?.trim()) || viaAccount(source, settings, offers);
 }
 
 function isUsable(source: Source, settings: Settings, offers: Offers): boolean {
-  if (settings.disabledSources.includes(source)) return false;
-  if (ACCOUNT_SOURCES.has(source)) return offers[source as "tmdb" | "rawg"];
-  return !needsOwnKey(source, settings, offers) || Boolean(settings.apiKeys[source]?.trim());
+  return !settings.disabledSources.includes(source) && isAvailable(source, settings, offers);
 }
 
 export function ProvidersDialog({
@@ -94,7 +117,7 @@ export function ProvidersDialog({
   const { t } = useTranslation();
   const desktop = useDesktop();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [selectedKind, setSelectedKind] = useState<Kind | null>(null);
+  const [selectedKind, setSelectedKind] = useState<Selection>(null);
   const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
   const [testStatus, setTestStatus] = useState<
     Partial<Record<Source, "testing" | "ok" | "bad_key" | "failed">>
@@ -106,7 +129,7 @@ export function ProvidersDialog({
   // Fresh settings each time the page opens, as Design asks (same pattern as PairDialog).
   if (open && !seeded) {
     setSeeded(true);
-    setSelectedKind(desktop ? "book" : null);
+    setSelectedKind(desktop ? "all" : null);
     void getSettings().then((loaded) => {
       setSettings(loaded);
       setKeyDrafts(loaded.apiKeys);
@@ -159,24 +182,26 @@ export function ProvidersDialog({
   };
 
   const kindLabel = (kind: Kind) => t(`typesPlural.${kind}`);
+  const selectionLabel = (selection: Kind | "all") =>
+    selection === "all" ? t("providers.all") : kindLabel(selection);
 
   const kindsList = (
     <nav aria-label={t("providers.title")} className="flex flex-col gap-0.5">
-      {kinds.map((kind) => {
-        const sources = SOURCES_BY_KIND[kind];
-        const n = settings ? usableCount(kind, settings, offers) : 0;
-        const weak = sources.length > 0 && n < 2;
+      {(["all", ...kinds] as const).map((entry) => {
+        const sources = entry === "all" ? ALL_SOURCES : SOURCES_BY_KIND[entry];
+        const n = settings ? usableCount(sources, settings, offers) : 0;
+        const weak = entry !== "all" && sources.length > 0 && n < 2;
         return (
           <button
-            key={kind}
+            key={entry}
             type="button"
-            onClick={() => setSelectedKind(kind)}
+            onClick={() => setSelectedKind(entry)}
             className={cn(
               "flex h-11 items-center gap-2.5 rounded-lg px-3 text-left text-sm",
-              desktop && selectedKind === kind ? "bg-secondary font-semibold" : "font-medium",
+              desktop && selectedKind === entry ? "bg-secondary font-semibold" : "font-medium",
             )}
           >
-            <span className="flex-1">{kindLabel(kind)}</span>
+            <span className="flex-1">{selectionLabel(entry)}</span>
             {sources.length > 0 ? (
               <span
                 className={cn(
@@ -198,8 +223,8 @@ export function ProvidersDialog({
     </nav>
   );
 
-  const sourceCards = (kind: Kind) => {
-    const sources = SOURCES_BY_KIND[kind];
+  const sourceCards = (selection: Kind | "all") => {
+    const sources = selection === "all" ? ALL_SOURCES : SOURCES_BY_KIND[selection];
     if (sources.length === 0) {
       return <p className="text-sm text-muted-foreground">{t("providers.other")}</p>;
     }
@@ -208,11 +233,9 @@ export function ProvidersDialog({
         {sources.map((source) => {
           const keyed = KEYED_SOURCES.has(source);
           const hasKey = Boolean(settings?.apiKeys[source]?.trim());
-          const accountOnly = ACCOUNT_SOURCES.has(source);
+          const accountToo = ACCOUNT_SOURCES.has(source);
           const on = settings ? isUsable(source, settings, offers) : false;
-          const canToggle = accountOnly
-            ? offers[source as "tmdb" | "rawg"]
-            : !settings || !needsOwnKey(source, settings, offers) || hasKey;
+          const canToggle = !settings || isAvailable(source, settings, offers);
           const cloudSwitch = source === "google_books" && offers.googleBooks && settings !== null;
           const status = testStatus[source];
           return (
@@ -223,8 +246,8 @@ export function ProvidersDialog({
                     {t(`lookup.sources.${source}`)}
                     <span className="rounded-full border px-2 py-px text-xs font-medium text-muted-foreground">
                       {t(
-                        accountOnly
-                          ? "providers.needsAccountBadge"
+                        accountToo
+                          ? "providers.needsKeyOrAccountBadge"
                           : keyed
                             ? "providers.needsKeyBadge"
                             : "providers.noKeyBadge",
@@ -232,8 +255,15 @@ export function ProvidersDialog({
                     </span>
                   </span>
                   <span className="text-[13px] text-muted-foreground">
-                    {t(`providers.descriptions.${kind}.${source}`)}
+                    {selection === "all"
+                      ? t(`providers.sourceDescriptions.${source}`)
+                      : t(`providers.descriptions.${selection}.${source}`)}
                   </span>
+                  {selection === "all" && (
+                    <span className="text-xs text-muted-foreground">
+                      {kindsOf(source).map(kindLabel).join(" · ")}
+                    </span>
+                  )}
                 </div>
                 <Switch
                   checked={on}
@@ -242,12 +272,14 @@ export function ProvidersDialog({
                   onChange={() => toggleSource(source)}
                 />
               </div>
-              {accountOnly && (
+              {accountToo && settings && (
                 <p className="text-[13px] text-muted-foreground">
                   {t(
-                    offers[source as "tmdb" | "rawg"]
-                      ? `providers.${source}Sends`
-                      : `providers.${source}WithAccount`,
+                    hasKey
+                      ? "providers.ownKeyUsed"
+                      : viaAccount(source, settings, offers)
+                        ? `providers.${source}Sends`
+                        : `providers.${source}WithAccount`,
                   )}
                 </p>
               )}
@@ -272,7 +304,11 @@ export function ProvidersDialog({
                     type="password"
                     autoComplete="off"
                     className="max-w-64"
-                    placeholder={t("providers.keyPlaceholder")}
+                    placeholder={t(
+                      source === "tmdb"
+                        ? "providers.keyPlaceholderTmdb"
+                        : "providers.keyPlaceholder",
+                    )}
                     value={keyDrafts[source] ?? ""}
                     onChange={(e) => setKeyDrafts((d) => ({ ...d, [source]: e.target.value }))}
                   />
@@ -325,7 +361,9 @@ export function ProvidersDialog({
     <div className="flex gap-6">
       <div className="w-56 shrink-0">{kindsList}</div>
       <div className="min-w-0 flex-1 space-y-3">
-        <h2 className="text-base font-semibold">{selectedKind ? kindLabel(selectedKind) : ""}</h2>
+        <h2 className="text-base font-semibold">
+          {selectedKind ? selectionLabel(selectedKind) : ""}
+        </h2>
         {selectedKind && sourceCards(selectedKind)}
       </div>
     </div>
@@ -345,14 +383,15 @@ export function ProvidersDialog({
     kindsList
   );
 
-  const attribution = (
-    <section className="flex flex-col gap-2 border-t pt-3.5">
-      <h3 className="text-sm font-semibold">{t("providers.dataSources")}</h3>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <img src={tmdbLogo} alt="TMDB" className="h-3.5 w-auto" />
-        <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("providers.tmdbNotice")}</p>
+  // What each provider asks us to show: a footer, small and quiet, whatever is selected above.
+  const credits = (
+    <section className="flex flex-col gap-1.5 border-t pt-3 text-xs text-muted-foreground">
+      <h3 className="font-medium">{t("providers.credits")}</h3>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <img src={tmdbLogo} alt="TMDB" className="h-3 w-auto" />
+        <p className="min-w-0 flex-1">{t("providers.tmdbNotice")}</p>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p>
         <Trans
           i18nKey="providers.rawgNotice"
           components={{ link: <ExternalLink url={RAWG_URL} /> }}
@@ -365,7 +404,7 @@ export function ProvidersDialog({
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={!desktop && selectedKind ? kindLabel(selectedKind) : t("providers.title")}
+      title={!desktop && selectedKind ? selectionLabel(selectedKind) : t("providers.title")}
       description={t("providers.description")}
       className="sm:max-w-3xl"
     >
@@ -381,7 +420,7 @@ export function ProvidersDialog({
           </span>
         </div>
         {body}
-        {attribution}
+        {credits}
       </div>
     </ResponsiveDialog>
   );

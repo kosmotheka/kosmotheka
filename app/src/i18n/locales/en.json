@@ -1242,14 +1242,28 @@
       }
     },
     "toggleAria": "Use {{name}}",
-    "needsAccountBadge": "Needs an account",
-    "tmdbWithAccount": "Arrives with an account on a server that offers it. Without one, Wikidata is used.",
+    "tmdbWithAccount": "Needs your own key, or an account on a server that offers it. Without either, Wikidata is used.",
     "tmdbSends": "Sends what you type, the kind and the app's language to your account's server, which asks TMDB. Nothing else.",
-    "dataSources": "Data sources",
     "tmdbNotice": "This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
-    "rawgWithAccount": "Arrives with an account on a server that offers it. Without one, Wikidata is used.",
+    "rawgWithAccount": "Needs your own key, or an account on a server that offers it. Without either, Wikidata is used.",
     "rawgSends": "Sends what you type to your account's server, which asks RAWG. Nothing else.",
-    "rawgNotice": "Video game data from <link>RAWG</link>."
+    "rawgNotice": "Video game data from <link>RAWG</link>.",
+    "credits": "Credits",
+    "all": "All",
+    "needsKeyOrAccountBadge": "Needs a key or an account",
+    "ownKeyUsed": "Uses your own key: nothing goes through the server.",
+    "keyPlaceholderTmdb": "Paste your API Read Access Token (not the short API key)",
+    "sourceDescriptions": {
+      "bne": "Books published in Spain, with authors and publisher",
+      "open_library": "Books from around the world: title, authors and ISBN",
+      "inventaire": "Editions and covers",
+      "wikidata": "Works and authorship, for every type",
+      "google_books": "The most complete source for ISBN lookups",
+      "game_upc": "Board games by the box's barcode",
+      "music_brainz": "Albums by title or barcode",
+      "tmdb": "Title, director or creators, length and poster",
+      "rawg": "Title, studio, publisher, platforms and cover"
+    }
   },
   "series": {
     "new": "New series",
