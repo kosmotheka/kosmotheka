@@ -137,3 +137,7 @@ Una fila por candidato: categoría, fichero, función que lo contiene y código 
 | rust.sql-format | `app/src-tauri/src/lan/mod.rs` | `list_devices` | `SELECT device_id, name, paired_at, last_sync_at FROM {table} ORDER BY name COLLATE NOCASE` | `table` solo recibe los literales `known_servers` y `known_clients` | `55ee005` |
 | rust.sql-format | `app/src-tauri/src/requests.rs` | `list` | `SELECT o.id, o.intent, o.hlc, o.changes, o.device_id, d.name, m.name, {person}, r.status, v.hlc FROM operations o LEFT JOIN devices d ON d.library_id…` | `person` es el fragmento fijo de `person_of` y `only` un literal | `55ee005` |
 | rust.sql-format | `app/src-tauri/src/requests.rs` | `stored_text` | `SELECT {field} FROM {} WHERE {} = ?1 AND {} = ?2` | `field` es siempre un nombre de columna literal en los llamadores | `55ee005` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("cloud-changed", () => void onCloudChanged()),` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen<InvitationAcceptedNotice>("invitation-accepted", (event) => {` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("local-changed", () => void syncAll(true)),` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("library-changed", () => {` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
