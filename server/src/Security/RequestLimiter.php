@@ -19,6 +19,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $registrationLimiter,
         #[Target('login')]
         private RateLimiterFactoryInterface $loginLimiter,
+        #[Target('login_failed_account')]
+        private RateLimiterFactoryInterface $loginFailedAccountLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -48,6 +50,25 @@ final readonly class RequestLimiter
     public function consumeLogin(string $ip): void
     {
         $this->consume($this->loginLimiter, $ip);
+    }
+
+    /**
+     * Whether the account typed at a login has already failed too many times, without spending anything: a sign-in with
+     * the right password is refused too, until the window passes (SEG-051). The key is the fingerprint of the address,
+     * so an address with no account answers the same. @throws AccountException with AccountErrorCode::TooManyRequests.
+     */
+    public function requireLoginOpen(string $addressFingerprint): void
+    {
+        $limit = $this->loginFailedAccountLimiter->create($addressFingerprint)->consume(0);
+        if ($limit->getRemainingTokens() < 1) {
+            throw AccountException::tooManyRequests($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /** A failed sign-in (a wrong password or second-factor code) spends one try of that account; it never throws. */
+    public function noteLoginFailure(string $addressFingerprint): void
+    {
+        $this->loginFailedAccountLimiter->create($addressFingerprint)->consume();
     }
 
     /** @throws AccountException with AccountErrorCode::TooManyRequests */

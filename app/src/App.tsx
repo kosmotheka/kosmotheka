@@ -173,7 +173,7 @@ export default function App() {
     if (!account.signedIn || !resumeInvitation.current || overlay !== null) return;
     resumeInvitation.current = false;
     void pendingInvitation()
-      .then((waiting) => waiting && openOverlay({ name: "invitation" }))
+      .then((waiting) => waiting.state !== "nothing" && openOverlay({ name: "invitation" }))
       .catch(() => {});
   }, [account.signedIn, overlay]);
 

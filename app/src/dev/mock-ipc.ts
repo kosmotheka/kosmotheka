@@ -1655,7 +1655,9 @@ mockIPC((cmd, args) => {
       return mockPendingInvitation;
     }
     case "pending_invitation":
-      return mockPendingInvitation;
+      return mockPendingInvitation
+        ? { state: "waiting", ...mockPendingInvitation }
+        : { state: "nothing" };
     case "discard_pending_invitation":
       mockPendingInvitation = null;
       return null;

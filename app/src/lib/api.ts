@@ -1526,10 +1526,16 @@ export function openInvitation(link: string): Promise<OpenedInvitation> {
 }
 
 /**
- * The link waiting for a session, if there is one and it has not expired.
+ * What waits for a session after a link was opened: nothing, the link, or a link that expired while the person
+ * signed in. The note of an expired one stays until `discardPendingInvitation`.
  */
-export function pendingInvitation(): Promise<OpenedInvitation | null> {
-  return invoke<OpenedInvitation | null>("pending_invitation");
+export type PendingInvitation =
+  | { state: "nothing" }
+  | ({ state: "waiting" } & OpenedInvitation)
+  | { state: "expired"; libraryName: string };
+
+export function pendingInvitation(): Promise<PendingInvitation> {
+  return invoke<PendingInvitation>("pending_invitation");
 }
 
 export function discardPendingInvitation(): Promise<void> {
@@ -1569,6 +1575,7 @@ const INVITATION_REASONS = [
   "invitation_not_found",
   "invitation_no_pending",
   "invitation_other_account",
+  "server_unavailable",
 ];
 
 /**

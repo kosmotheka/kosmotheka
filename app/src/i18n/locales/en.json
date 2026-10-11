@@ -1685,6 +1685,7 @@
   },
   "invitations": {
     "notice": {
+      "accepted": "Someone accepted your invitation to “{{library}}”.",
       "see": "See in People"
     },
     "expiry": {
@@ -1707,6 +1708,7 @@
       "title": "Invite to “{{library}}”",
       "titleExisting": "Invite {{person}} by email",
       "description": "Invite someone to “{{library}}”, by email or with a link to copy.",
+      "retry": "Try again",
       "checking": "Checking…",
       "modes": {
         "email": {
@@ -1776,6 +1778,8 @@
       "entryHint": "Paste a link someone sent you",
       "title": "I have an invitation",
       "description": "Paste an invitation link to join a library.",
+      "expired": "The invitation to “{{library}}” expired while you were signing in. Ask for a new one and paste it here.",
+      "placeholder": "Paste the link you were sent here",
       "field": "Invitation link",
       "hint": "Paste the link you were sent. Nothing happens until you say so.",
       "look": "Look",
@@ -1815,6 +1819,7 @@
       "invitation_other_server": "This link belongs to another server than your account’s. It was not opened.",
       "invitation_not_found": "This link is not valid.",
       "invitation_no_pending": "There is no invitation waiting.",
+      "server_unavailable": "The server cannot be reached. Check your connection and try again.",
       "invitation_other_account": "This invitation was opened with another account. Open the link again."
     }
   },

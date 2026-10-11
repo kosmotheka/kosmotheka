@@ -7,10 +7,10 @@ use serde_json::json;
 use super::*;
 use crate::account::OFFICIAL_SERVER;
 use crate::cloud::invitations::{
-    Blocker, InvitationKind, InvitationState, InvitePerson, InviteRequest, accept_pending,
-    accepted_cloud_library, accepted_notice, discard_pending_invitation, email_shape_is_valid,
-    invite, invite_status, keeps_pending, list_invitations, open, pending_invitation,
-    revoke_invitation, token_of_link,
+    Blocker, InvitationKind, InvitationState, InvitePerson, InviteRequest, PendingInvitation,
+    accept_pending, accepted_cloud_library, accepted_notice, discard_pending_invitation,
+    email_shape_is_valid, invite, invite_status, keeps_pending, list_invitations, open,
+    pending_invitation, revoke_invitation, token_of_link,
 };
 use crate::people::{self, Invitable};
 
@@ -132,6 +132,13 @@ async fn nora_joins(cloud: &FakeCloud, laptop: &Database, lib: &str) -> (Databas
     sign_in_as(&nora, "nora");
     accept_pending(&nora, &api).await.unwrap();
     (nora, made.member)
+}
+
+fn waiting(device: &Database) -> bool {
+    matches!(
+        pending_invitation(device).unwrap(),
+        PendingInvitation::Waiting(_)
+    )
 }
 
 fn code(error: &Error) -> String {
@@ -633,10 +640,11 @@ fn the_token_of_a_link_is_read_when_the_link_is_the_servers() {
         )
         .is_ok()
     );
-    // A server of one's own: its own host, or the domain above it.
+    // A server of one's own that publishes nothing: its own host, written however a person writes it.
     for link in [
         format!("https://api.example.org/i/{TOKEN}"),
-        format!("https://example.org/i/{TOKEN}"),
+        format!("https://API.Example.org/i/{TOKEN}"),
+        format!("https://api.example.org./i/{TOKEN}"),
     ] {
         assert!(
             token_of_link(&link, "https://api.example.org", None).is_ok(),
@@ -645,12 +653,156 @@ fn the_token_of_a_link_is_read_when_the_link_is_the_servers() {
     }
     assert!(
         token_of_link(
+            &format!("https://api.example.org/i/{TOKEN}"),
+            "https://api.example.org.",
+            None
+        )
+        .is_ok()
+    );
+    assert!(
+        token_of_link(
             &format!("http://localhost:8000/i/{TOKEN}"),
             "http://localhost:8000",
             None
         )
         .is_ok()
     );
+}
+
+/// SEG-048, hostile: the hosts are compared as hosts (no final dot, no capitals), the official one is never a server
+/// of one's own, nor anything under it, and the fallback for an old server is its own host and nothing above it.
+#[test]
+fn hosts_are_compared_as_hosts_and_a_server_of_ones_own_never_has_the_official_domain_nor_the_one_above_it()
+ {
+    // The official host written with a final dot or in capitals is still the official one.
+    for link in [
+        "https://kosmotheka.app./i/",
+        "https://KOSMOTHEKA.app/i/",
+        "https://Kosmotheka.App./i/",
+    ] {
+        assert!(
+            token_of_link(&format!("{link}{TOKEN}"), OFFICIAL_SERVER, None).is_ok(),
+            "{link}"
+        );
+    }
+    // A server of one's own, with or without a published base, does not take the official domain or a subdomain.
+    for server in [
+        "https://api.example.org",
+        "https://eu.kosmotheka.app",
+        "https://kosmotheka.app.",
+    ] {
+        for link in [
+            "https://kosmotheka.app./i/",
+            "https://KOSMOTHEKA.APP/i/",
+            "https://www.kosmotheka.app/i/",
+            "https://www.kosmotheka.app./i/",
+        ] {
+            for base in [
+                None,
+                Some("https://kosmotheka.app."),
+                Some("https://www.kosmotheka.app"),
+            ] {
+                let refused = token_of_link(&format!("{link}{TOKEN}"), server, base)
+                    .expect_err(&format!("{server} {link} {base:?}"));
+                assert_eq!(code(&refused), "invitation_other_server");
+            }
+        }
+    }
+    // A base that is the official host in disguise is not believed: the old rule still applies, same host only.
+    assert!(
+        token_of_link(
+            &format!("https://api.example.org/i/{TOKEN}"),
+            "https://api.example.org",
+            Some("https://kosmotheka.app.")
+        )
+        .is_ok()
+    );
+    // The fallback is the same host: not the domain above, and not a public suffix such as github.io.
+    for (server, link) in [
+        ("https://api.example.org", "https://example.org/i/"),
+        ("https://alice.github.io", "https://github.io/i/"),
+        ("https://alice.github.io", "https://bob.github.io/i/"),
+        ("https://alice.github.io", "https://io/i/"),
+    ] {
+        let refused = token_of_link(&format!("{link}{TOKEN}"), server, None)
+            .expect_err(&format!("{server} {link}"));
+        assert_eq!(code(&refused), "invitation_other_server");
+    }
+    // The hosts of a published base are compared the same way.
+    assert!(
+        token_of_link(
+            &format!("https://Invitaciones.example.org./i/{TOKEN}"),
+            "https://api.example.org",
+            Some("https://invitaciones.example.org")
+        )
+        .is_ok()
+    );
+}
+
+/// SEG-049: what goes into the path of a route is the shape of an id, nothing else, and a refusal asks nothing.
+#[tokio::test]
+async fn only_an_id_shaped_like_one_is_put_in_the_path_of_revoking() {
+    let (cloud, laptop, _phone, lib) = family().await;
+    let api = cloud.api("tersoal").on(&laptop);
+
+    for bad in [
+        "",
+        "../../v1/account",
+        "a/b",
+        "01234567-89ab-cdef-0123-456789abcdeg",
+        "01234567-89AB-CDEF-0123-456789ABCDEF/../x",
+        "01234567-89ab-cdef-0123-456789abcdef?x=1",
+        "%2e%2e",
+    ] {
+        let refused = revoke_invitation(&laptop, &api, &lib, bad)
+            .await
+            .expect_err(bad);
+        assert_eq!(code(&refused), "invitation_not_found", "{bad:?}");
+    }
+    assert_eq!(cloud.invitation_calls(), 0, "the server was not asked");
+    // An id that is one goes through (the server then says whether it knows it).
+    let made = invite(&laptop, &api, &lib, link_for("Nora")).await.unwrap();
+    let listed = list_invitations(&laptop, &api, &lib).await.unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(made.member, listed[0].member_id);
+    revoke_invitation(&laptop, &api, &lib, &listed[0].id)
+        .await
+        .unwrap();
+}
+
+/// COS-002: asking again for a person who is already in the library syncs first, like a new one, so a person
+/// whose upload failed is on the server by the time they are invited; if it cannot, the reason is the sync's.
+#[tokio::test]
+async fn asking_again_for_a_person_whose_upload_failed_syncs_first() {
+    let (cloud, laptop, _phone, lib) = family().await;
+    let api = cloud.api("tersoal").on(&laptop);
+    cloud.fail_pulls_of(&cloud.only_library(), "server_unavailable");
+    let first = invite(&laptop, &api, &lib, link_for("Nora")).await.unwrap();
+    assert_eq!(first.failed.as_deref(), Some("server_unavailable"));
+    let again = |request_member: String| InviteRequest {
+        person: InvitePerson::Existing {
+            member: request_member,
+        },
+        kind: InvitationKind::Email,
+        email: Some("nora@example.com".into()),
+    };
+
+    // Still no connection: the answer is that, and the server is not asked for an invitation it would refuse.
+    let calls = cloud.invitation_calls();
+    let offline = invite(&laptop, &api, &lib, again(first.member.clone()))
+        .await
+        .unwrap();
+    assert_eq!(offline.failed.as_deref(), Some("server_unavailable"));
+    assert!(offline.invitation.is_none() && !offline.person_created);
+    assert_eq!(cloud.invitation_calls(), calls);
+
+    // Connection back: the person goes up and the invitation is made.
+    cloud.0.lock().unwrap().failing_pulls.clear();
+    let online = invite(&laptop, &api, &lib, again(first.member))
+        .await
+        .unwrap();
+    assert_eq!(online.failed, None);
+    assert!(online.invitation.is_some());
 }
 
 /// Hostile: a link that names another server is not followed, and not even read for its token: the token of
@@ -690,7 +842,10 @@ async fn a_link_of_another_server_is_refused_before_anything_is_asked() {
         "no server was asked: {:?}",
         cloud.peeks()
     );
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
 }
 
 /// A server that says where its links start (`invitation_base`) decides which links are its own, and only that:
@@ -861,7 +1016,10 @@ async fn a_malformed_token_is_refused_before_anything_is_asked() {
         assert_eq!(code(&refused), "invitation_bad_link", "{link}");
     }
     assert!(cloud.peeks().is_empty());
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
     assert!(!database_contains(&nora, TOKEN));
 }
 
@@ -886,14 +1044,18 @@ async fn a_link_opened_before_signing_in_waits_and_is_accepted_after_it() {
         (opened.library_name.as_str(), opened.kind, opened.signed_in),
         ("Family", InvitationKind::Link, false)
     );
-    assert!(pending_invitation(&nora).unwrap().is_some());
+    assert!(waiting(&nora));
     sign_in_as(&nora, "nora");
     let accepted = accept_pending(&nora, &api).await.unwrap();
 
     assert_eq!(accepted.library.as_deref(), Some(lib.as_str()));
     assert_eq!(accepted.sync_error, None);
     assert_eq!(accepted.cloud_library, cloud.only_library());
-    assert_eq!(pending_invitation(&nora).unwrap(), None, "used: not kept");
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing,
+        "used: not kept"
+    );
     let me = this_device_as(&nora.lock().unwrap(), &lib)
         .unwrap()
         .unwrap();
@@ -946,10 +1108,7 @@ async fn accepting_with_no_session_waits_and_with_nothing_pending_says_so() {
     open(&nora, &api, &seed_link(&cloud).await).await.unwrap();
     let signed_out = accept_pending(&nora, &api).await.unwrap_err();
     assert_eq!(code(&signed_out), "not_signed_in");
-    assert!(
-        pending_invitation(&nora).unwrap().is_some(),
-        "still waiting for the session"
-    );
+    assert!(waiting(&nora), "still waiting for the session");
 }
 
 /// The link of an invitation for the tests that only need one: Tersoal's, for a new person. A second call in the
@@ -1000,7 +1159,10 @@ async fn the_pending_token_does_not_survive_another_account_signing_in() {
 
     assert_eq!(code(&refused), "invitation_other_account");
     assert_eq!(cloud.invitation_calls(), asked, "the server was not asked");
-    assert_eq!(pending_invitation(&phone).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&phone).unwrap(),
+        PendingInvitation::Nothing
+    );
     assert!(!database_contains(&phone, &token_in(&link)));
 }
 
@@ -1011,7 +1173,7 @@ async fn signing_out_forgets_the_pending_token() {
     sign_in_as(&nora, "nora");
     let api = cloud.api("nora").on(&nora);
     open(&nora, &api, &seed_link(&cloud).await).await.unwrap();
-    assert!(pending_invitation(&nora).unwrap().is_some());
+    assert!(waiting(&nora));
     assert!(
         database_contains(&nora, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1"),
         "waiting, here and nowhere else"
@@ -1019,7 +1181,10 @@ async fn signing_out_forgets_the_pending_token() {
 
     crate::account::clear_session(&nora.lock().unwrap()).unwrap();
 
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
     assert!(!database_contains(
         &nora,
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1"
@@ -1033,11 +1198,14 @@ async fn leaving_the_device_to_another_person_takes_the_pending_token_with_it() 
     let nora = Database::in_memory();
     let api = cloud.api("nora").on(&nora);
     open(&nora, &api, &seed_link(&cloud).await).await.unwrap();
-    assert!(pending_invitation(&nora).unwrap().is_some());
+    assert!(waiting(&nora));
 
     nora.reset().unwrap();
 
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
     assert!(!database_contains(
         &nora,
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1"
@@ -1062,11 +1230,57 @@ async fn a_pending_token_expires_with_its_invitation() {
     )
     .unwrap();
 
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Expired {
+            library_name: "Family".into()
+        },
+        "it is told that it expired, not that there was nothing"
+    );
     assert!(
         !database_contains(&nora, TOKEN),
         "an expired token is removed, not just ignored"
     );
+    // The note stays (the screen that comes after is another call) until it is dismissed.
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Expired {
+            library_name: "Family".into()
+        }
+    );
+    discard_pending_invitation(&nora).unwrap();
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
+}
+
+/// COS-003: accepting after the invitation expired while the person signed in says so, instead of «nothing pending».
+#[tokio::test]
+async fn accepting_an_invitation_that_expired_while_waiting_says_it_expired() {
+    let cloud = FakeCloud::default();
+    let nora = Database::in_memory();
+    sign_in_as(&nora, "nora");
+    let stale = json!({
+        "token": TOKEN,
+        "server": "https://cloud.example",
+        "library_name": "Family",
+        "kind": "link",
+        "expires_at": "2020-01-01T00:00:00+00:00",
+        "account": null
+    });
+    ops::write_state(
+        &nora.lock().unwrap(),
+        "pending_invitation",
+        Some(&stale.to_string()),
+    )
+    .unwrap();
+    let api = cloud.api("nora").on(&nora);
+
+    let refused = accept_pending(&nora, &api).await.unwrap_err();
+
+    assert_eq!(code(&refused), "invitation_expired");
+    assert_eq!(cloud.invitation_calls(), 0);
 }
 
 #[tokio::test]
@@ -1083,7 +1297,10 @@ async fn a_pending_token_is_not_taken_to_another_server() {
 
     assert_eq!(code(&refused), "invitation_other_server");
     assert_eq!(cloud.invitation_calls(), asked);
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
 }
 
 #[tokio::test]
@@ -1095,7 +1312,10 @@ async fn discarding_forgets_what_was_waiting() {
 
     discard_pending_invitation(&nora).unwrap();
 
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
 }
 
 #[tokio::test]
@@ -1121,7 +1341,10 @@ async fn an_invitation_that_is_not_valid_says_why_and_is_not_kept() {
     let refused = open(&nora, &api, link.expose()).await.unwrap_err();
 
     assert_eq!(code(&refused), "invitation_revoked");
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
     let nowhere = open(&nora, &api, &format!("https://cloud.example/i/{TOKEN}"))
         .await
         .unwrap_err();
@@ -1150,7 +1373,10 @@ async fn an_invitation_used_twice_gives_the_second_account_nothing_and_is_forgot
     let refused = accept_pending(&late, &second).await.unwrap_err();
 
     assert_eq!(code(&refused), "invitation_used");
-    assert_eq!(pending_invitation(&late).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&late).unwrap(),
+        PendingInvitation::Nothing
+    );
     assert!(!library_exists_here(&late, &lib));
 }
 
@@ -1188,7 +1414,10 @@ async fn an_email_invitation_opened_by_the_wrong_account_gets_nothing() {
 
     assert_eq!(code(&refused), "invitation_not_for_this_account");
     assert!(!library_exists_here(&stranger, &lib));
-    assert_eq!(pending_invitation(&stranger).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&stranger).unwrap(),
+        PendingInvitation::Nothing
+    );
 }
 
 #[tokio::test]
@@ -1213,7 +1442,10 @@ async fn if_the_session_after_accepting_fails_the_invitation_is_already_used_and
 
     assert_eq!(accepted.sync_error.as_deref(), Some("schema_version"));
     assert_eq!(accepted.library, None);
-    assert_eq!(pending_invitation(&nora).unwrap(), None);
+    assert_eq!(
+        pending_invitation(&nora).unwrap(),
+        PendingInvitation::Nothing
+    );
 }
 
 #[test]

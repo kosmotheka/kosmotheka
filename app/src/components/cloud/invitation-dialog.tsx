@@ -8,10 +8,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  type AcceptedInvitation,
   type OpenedInvitation,
   acceptInvitation,
   discardPendingInvitation,
   invitationErrorKey,
+  invitationReasonKey,
   openInvitation,
   pendingInvitation,
 } from "@/lib/api";
@@ -40,11 +42,15 @@ export function InvitationDialog({
   const account = useAccount();
   const libraries = useLibraries();
   const [opened, setOpened] = useState<OpenedInvitation | null>(null);
+  // The library of a link that expired while the person signed in: said here, once.
+  const [expiredFor, setExpiredFor] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"open" | "accept" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [joinedLater, setJoinedLater] = useState(false);
+  // Why the library did not come down with the invitation, if the session after accepting failed.
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Each time it opens, start clean.
   const [seeded, setSeeded] = useState(false);
@@ -53,6 +59,8 @@ export function InvitationDialog({
     setLink("");
     setError(null);
     setJoinedLater(false);
+    setSyncError(null);
+    setExpiredFor(null);
     setBusy(null);
     setLoading(true);
   } else if (!open && seeded) {
@@ -64,7 +72,15 @@ export function InvitationDialog({
     if (!open) return;
     let cancelled = false;
     pendingInvitation()
-      .then((waiting) => !cancelled && setOpened(waiting))
+      .then((waiting) => {
+        if (cancelled) return;
+        setOpened(waiting.state === "waiting" ? waiting : null);
+        if (waiting.state === "expired") {
+          setExpiredFor(waiting.libraryName);
+          // It is told now; it is not told again the next time this opens.
+          void discardPendingInvitation().catch(() => {});
+        }
+      })
       .catch(() => !cancelled && setOpened(null))
       .finally(() => !cancelled && setLoading(false));
     return () => {
@@ -77,6 +93,7 @@ export function InvitationDialog({
     setError(null);
     try {
       setOpened(await openInvitation(link));
+      setExpiredFor(null);
       setLink("");
     } catch (e) {
       setError(t(invitationErrorKey(e)));
@@ -94,33 +111,41 @@ export function InvitationDialog({
   const enter = async () => {
     setBusy("accept");
     setError(null);
+    let joined: AcceptedInvitation;
     try {
-      const joined = await acceptInvitation();
-      await refreshCloudStatus();
-      libraries.reload();
-      const notices = cloudNotices(joined.reports, libraries.all, t, false);
-      const message =
-        notices.length > 0
-          ? notices.join(" ")
-          : t("invitations.open.joined", { library: joined.libraryName ?? opened?.libraryName });
-      if (joined.library) {
-        await libraries.switchTo(joined.library);
-        closeOverlay();
-        onDone(message);
-      } else {
-        // Used, but the library has not come down yet: the next sync brings it.
-        setOpened(null);
-        setJoinedLater(true);
-      }
+      joined = await acceptInvitation();
     } catch (e) {
       setError(t(invitationErrorKey(e)));
       // Whatever the server said about it, the invitation is gone unless a retry can fix it.
       await pendingInvitation()
-        .then((waiting) => setOpened(waiting))
+        .then((waiting) => setOpened(waiting.state === "waiting" ? waiting : null))
         .catch(() => setOpened(null));
+      setBusy(null);
+      return;
+    }
+    // From here the invitation is used: what fails is the screen's refresh, not the invitation.
+    try {
+      await refreshCloudStatus();
+      libraries.reload();
+      if (joined.library) {
+        const notices = cloudNotices(joined.reports, libraries.all, t, false);
+        const message =
+          notices.length > 0
+            ? notices.join(" ")
+            : t("invitations.open.joined", { library: joined.libraryName ?? opened?.libraryName });
+        await libraries.switchTo(joined.library);
+        closeOverlay();
+        onDone(message);
+        return;
+      }
+    } catch {
+      // Falls through to «you are in; it will arrive with the next sync».
     } finally {
       setBusy(null);
     }
+    setOpened(null);
+    setSyncError(joined.syncError);
+    setJoinedLater(true);
   };
 
   const buttons = cn("flex gap-2", desktop ? "justify-end" : "flex-col-reverse");
@@ -139,6 +164,11 @@ export function InvitationDialog({
       return (
         <>
           <p className="text-sm leading-relaxed text-pretty">{t("invitations.open.joinedLater")}</p>
+          {syncError && (
+            <Alert variant="destructive">
+              <AlertDescription>{t(invitationReasonKey(syncError))}</AlertDescription>
+            </Alert>
+          )}
           <div className={buttons}>
             <Button className={size} onClick={closeOverlay}>
               {t("common.close")}
@@ -222,7 +252,7 @@ export function InvitationDialog({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             disabled={busy !== null}
-            placeholder="https://kosmotheka.app/i/…"
+            placeholder={t("invitations.open.placeholder")}
             inputMode="url"
             autoFocus
             autoComplete="off"
@@ -231,6 +261,13 @@ export function InvitationDialog({
           />
           <span className="text-[13px] text-muted-foreground">{t("invitations.open.hint")}</span>
         </label>
+        {expiredFor !== null && (
+          <Alert>
+            <AlertDescription>
+              {t("invitations.open.expired", { library: expiredFor })}
+            </AlertDescription>
+          </Alert>
+        )}
         {errorBlock}
         <div className={buttons}>
           <Button type="button" variant="outline" className={size} onClick={closeOverlay}>

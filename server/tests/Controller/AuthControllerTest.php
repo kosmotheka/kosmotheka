@@ -442,6 +442,29 @@ final class AuthControllerTest extends WebTestCase
         self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
     }
 
+    public function testWrongSecondFactorCodesCountAsFailuresOfTheAccount(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'totp-count@example.com');
+        $secret = $this->enableTwoFactor($client, $session['headers']);
+
+        // Three wrong codes (the second factor's own limit is five) and two wrong passwords: five failures of the account.
+        for ($i = 0; $i < 3; ++$i) {
+            $this->loginAgainWithTotp($client, $session, '000000');
+            self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        }
+        for ($i = 0; $i < 2; ++$i) {
+            $challenge = $this->requestChallenge($client)['challenge'];
+            $this->requestLogin($client, $session['email'], 'not the password', $session['device_id'], 'Test device', $session['public_key'], $challenge, $this->sign($challenge, $session['device_id'], $this->decode($session['secret_key'])));
+            self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        }
+
+        self::mockTime(self::LOGIN_AT);
+        $this->loginAgainWithTotp($client, $session, self::totpAt($secret, self::LOGIN_AT));
+        self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);
+    }
+
     public function testLoginWithTheRightTotpCodeSucceeds(): void
     {
         self::mockTime(self::AT);

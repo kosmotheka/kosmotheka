@@ -6,9 +6,16 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+        # Per address; a family behind one router shares it (SEG-051), so it is wide. The challenge and the login spend it.
         login:
             policy: sliding_window
-            limit: 10
+            limit: 30
+            interval: '15 minutes'
+        # Per account, and only for failures: whoever guesses a password gets five tries, from any number of addresses.
+        # The key is a fingerprint of the address typed, so an address with no account is counted the same way.
+        login_failed_account:
+            policy: sliding_window
+            limit: 5
             interval: '15 minutes'
         email_code:
             policy: sliding_window

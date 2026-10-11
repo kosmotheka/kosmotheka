@@ -17,6 +17,7 @@ use App\Security\AccountMailer;
 use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\RequestLimiter;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
@@ -60,7 +61,8 @@ final readonly class InvitationManager
         $this->rules->requireReady($library);
         $member = Uuid::fromString($request->memberId);
         $this->rules->requireInviteable($library, $member, $request->kind);
-        $email = InvitationKind::Email === $request->kind ? $request->email : null;
+        // An address with a link is a mistake of the app, not something to ignore: it would think the link was tied to it.
+        $email = $request->email;
         if ((InvitationKind::Email === $request->kind) !== (null !== $email)) {
             throw AccountException::invalidRequest();
         }
@@ -128,15 +130,21 @@ final readonly class InvitationManager
         if (!$invitation instanceof Invitation) {
             throw AccountException::notFound();
         }
-        if ($invitation->isAccepted()) {
-            throw AccountException::invitationUsed();
-        }
-        $wasRevoked = $invitation->isRevoked();
-        $invitation->revoke($this->now());
-        if (!$wasRevoked) {
-            $this->activity->record(ActivityKind::InvitationRevoked, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
-        }
-        $this->entityManager->flush();
+        // The locks of accepting, in its order (the library, then the row), and what decides is read after them: whoever
+        // accepts at the same moment either comes first and this says «used», or comes after and reads «revoked» (SEG-043).
+        $this->entityManager->wrapInTransaction(function () use ($library, $by, $invitation): void {
+            $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
+            $this->entityManager->refresh($invitation, LockMode::PESSIMISTIC_WRITE);
+            if ($invitation->isAccepted()) {
+                throw AccountException::invitationUsed();
+            }
+            $wasRevoked = $invitation->isRevoked();
+            $invitation->revoke($this->now());
+            if (!$wasRevoked) {
+                $this->activity->record(ActivityKind::InvitationRevoked, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
+            }
+            $this->entityManager->flush();
+        });
     }
 
     public function libraryName(CloudLibrary $library): string

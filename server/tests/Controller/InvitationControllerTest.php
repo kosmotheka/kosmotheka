@@ -12,6 +12,7 @@ use App\Entity\User;
 use App\Security\AccountException;
 use App\Security\AccountPurger;
 use App\Sync\Invitation\InvitationAcceptor;
+use App\Sync\Invitation\InvitationManager;
 use App\Sync\Invitation\InvitationToken;
 use App\Sync\SchemaVersion;
 use App\Tests\Support\DeviceAuthTestTrait;
@@ -137,6 +138,42 @@ final class InvitationControllerTest extends WebTestCase
         self::assertSame(204, $this->call('DELETE', "/v1/cloud/libraries/$cloud/invitations/$id", $this->family)['status']);
 
         self::assertSame(['error' => 'invitation_revoked'], $this->accept($nora, $this->tokenOf($created))['body']);
+    }
+
+    /** SEG-043: someone accepts between the moment revoking reads the row and the moment it writes; the acceptance must win. */
+    public function testRevokingReadsTheRowAgainUnderTheLockAndNeverTurnsAnAcceptedInvitationIntoARevokedOne(): void
+    {
+        $cloud = $this->world();
+        $this->account('nora@example.com');
+        $created = $this->invite($this->family, $cloud, self::NORA, 'link');
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $invitation = $em->getRepository(Invitation::class)->findOneBy([]) ?? self::fail('No invitation.');
+        $admin = $em->getRepository(User::class)->findOneBy(['email' => 'family@example.com']) ?? self::fail('No administrator.');
+        $library = $invitation->getCloudLibrary();
+        // The other process accepted and committed after this one had read the row (stale in the identity map).
+        self::getContainer()->get(Connection::class)->executeStatement('UPDATE invitation SET accepted_at = now() WHERE id = ?', [$invitation->getId()->toRfc4122()]);
+        self::assertFalse($invitation->isAccepted(), 'the entity in memory is stale');
+        self::assertSame(201, $created['status']);
+
+        try {
+            self::getContainer()->get(InvitationManager::class)->revoke($library, $admin, $invitation->getId()->toRfc4122());
+            self::fail('Revoking an accepted invitation must fail.');
+        } catch (AccountException $exception) {
+            self::assertSame('invitation_used', $exception->errorCode->value);
+        }
+        self::assertSame('accepted', $this->stateOfOnlyInvitation());
+        self::assertSame(0, $this->scalar("SELECT COUNT(*) FROM activity_log WHERE kind = 'invitation_revoked'"));
+    }
+
+    /** SEG-047: a link is for whoever opens it; an app that sends an address with it made a mistake, and must hear it. */
+    public function testALinkWithAnEmailInTheBodyIsRefusedInsteadOfIgnoringTheAddress(): void
+    {
+        $cloud = $this->world();
+
+        $answer = $this->invite($this->family, $cloud, self::NORA, 'link', 'someone@example.com');
+
+        self::assertSame(['error' => 'invalid_request'], $answer['body']);
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM invitation'));
     }
 
     public function testThePeekShowsTheLibraryNameAndNothingOfThePeopleInIt(): void

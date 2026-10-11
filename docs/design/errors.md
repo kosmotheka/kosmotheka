@@ -174,6 +174,8 @@ Códigos **reales**, del servidor (7.6.1) y de la app (`cloud/invitations.rs`); 
 | `invitation_bad_link` | app, sin preguntar | Eso no es un enlace de invitación. |
 | `invitation_other_server` | app, sin preguntar | Este enlace es de otro servidor distinto al de tu cuenta. No se ha abierto. |
 | `invitation_no_pending` | app | No hay ninguna invitación esperando. |
+| `invitation_expired` (desde la app) | app, al volver de iniciar sesión | La invitación a «{biblioteca}» caducó mientras iniciabas sesión. Pide otra y pégala aquí. (Aviso en el campo de pegar, una vez) |
+| `server_unavailable` | app, sin conexión | No se puede llegar al servidor. Comprueba la conexión y vuelve a intentarlo. (En «Invitar», con **Cerrar** y **Reintentar**) |
 | `invitation_other_account` | app | Esta invitación se abrió con otra cuenta. Abre el enlace otra vez. |
 | `not_in_cloud` · `no_roles` · `no_cloud_power` · `server_without_invitations` | app (`invite_status` y `invite_to_library`) | Por qué la biblioteca no puede invitar: no está en la nube de esta cuenta; no tiene personas con roles; la nube no puede vincular dispositivos nuevos (se activa en los ajustes de la biblioteca); el servidor no hace invitaciones. |
 | `invalid_email` · `invalid_name` | app | La dirección no parece correcta; falta el nombre de la persona. |

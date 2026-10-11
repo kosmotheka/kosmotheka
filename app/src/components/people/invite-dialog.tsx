@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Loader2, Mail, Link2, QrCode, Share2, UserRoundPlus } from "lucide-react";
 
@@ -49,7 +49,10 @@ export function InviteDialog({
   onActivate: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const [status, setStatus] = useState<InviteStatus | "failed" | null>(null);
+  const [status, setStatus] = useState<InviteStatus | { failed: string } | null>(null);
+  // Bumped by «Try again»: the status is asked once more.
+  const [attempt, setAttempt] = useState(0);
+  const modeButtons = useRef<Record<string, HTMLButtonElement | null>>({});
   const [kind, setKind] = useState<InvitationKind>("email");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,11 +68,11 @@ export function InviteDialog({
     let cancelled = false;
     inviteStatus(libraryId)
       .then((loaded) => !cancelled && setStatus(loaded))
-      .catch(() => !cancelled && setStatus("failed"));
+      .catch((e: unknown) => !cancelled && setStatus({ failed: invitationErrorKey(e) }));
     return () => {
       cancelled = true;
     };
-  }, [libraryId]);
+  }, [libraryId, attempt]);
 
   /** A link that was not copied is lost on closing: ask once. */
   const requestClose = () => {
@@ -124,7 +127,7 @@ export function InviteDialog({
     : t("invitations.invite.title", { library });
   const canShare = typeof navigator.share === "function";
 
-  const blocked = status && status !== "failed" && status.blocker;
+  const blocked = status && !("failed" in status) && status.blocker;
   const body = () => {
     if (status === null) {
       return (
@@ -133,8 +136,28 @@ export function InviteDialog({
         </p>
       );
     }
-    if (status === "failed") {
-      return <p className="text-sm text-pretty">{t("invitations.errors.unknown")}</p>;
+    if ("failed" in status) {
+      return (
+        <>
+          <Alert variant="destructive">
+            <AlertDescription>{t(status.failed)}</AlertDescription>
+          </Alert>
+          <div className={buttons}>
+            <Button variant="outline" className={size} onClick={onClose}>
+              {t("common.close")}
+            </Button>
+            <Button
+              className={size}
+              onClick={() => {
+                setStatus(null);
+                setAttempt((n) => n + 1);
+              }}
+            >
+              {t("invitations.invite.retry")}
+            </Button>
+          </div>
+        </>
+      );
     }
     if (blocked) {
       const action: Record<string, (() => void) | undefined> = {
@@ -297,9 +320,24 @@ export function InviteDialog({
                 type="button"
                 role="radio"
                 aria-checked={kind === key}
+                ref={(node) => {
+                  modeButtons.current[key] = node;
+                }}
+                // One stop in the group, and the arrows move inside it, as in any group of options.
+                tabIndex={kind === key ? 0 : -1}
                 onClick={() => {
                   setKind(key);
                   setError(null);
+                }}
+                onKeyDown={(e) => {
+                  const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+                  if (step === undefined) return;
+                  e.preventDefault();
+                  const at = modes.findIndex((mode) => mode.key === key) + step;
+                  const next = modes[(at + modes.length) % modes.length]?.key ?? key;
+                  setKind(next);
+                  setError(null);
+                  modeButtons.current[next]?.focus();
                 }}
                 className={cn(
                   "flex flex-1 flex-col gap-1 rounded-2xl border p-3.5 text-left",

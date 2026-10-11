@@ -222,9 +222,11 @@ pub struct AcceptedNotice {
 /// - the official server (D79): links of `kosmotheka.app`, and no other, whatever it publishes;
 /// - a server of one's own that publishes where its links start (`base`, from `GET /v1/server`): the links that
 ///   start there, and no other. A base that is not a plain address, or that is the official one, is not believed;
-/// - a server of one's own that says nothing (an older one): links of its own host or of the domain above it
-///   (`api.example.org` and `example.org`). Anything else is refused: a link of `kosmotheka.app` never reaches a
-///   server of one's own.
+/// - a server of one's own that says nothing (an older one): links of its own host, and no other: not the domain
+///   above it, which may belong to anyone (`github.io`). A link of `kosmotheka.app`, or of anything under it,
+///   never reaches a server of one's own.
+///
+/// Hosts are compared as hosts: without a final dot and without telling capitals apart.
 pub fn token_of_link(link: &str, server: &str, base: Option<&str>) -> Result<Secret> {
     let bad = || Error::Cloud("invitation_bad_link");
     let url = Url::parse(link.trim()).map_err(|_| bad())?;
@@ -278,8 +280,8 @@ fn plain_base(base: &str) -> Option<Url> {
         && url.password().is_none()
         && url.query().is_none()
         && url.fragment().is_none();
-    let official = url.host_str() == Some(OFFICIAL_INVITATIONS_HOST);
-    (plain && !official && url.host().is_some()).then_some(url)
+    let official = host_of(&url).is_none_or(|host| is_official_or_under(&host));
+    (plain && !official).then_some(url)
 }
 
 /// Whether the link starts where the base does: same scheme, host and port, and the path of the base before
@@ -290,7 +292,7 @@ fn starts_at(link: &Url, front: &[&str], base: &Url) -> bool {
         .map(|segments| segments.filter(|segment| !segment.is_empty()).collect())
         .unwrap_or_default();
     link.scheme() == base.scheme()
-        && link.host() == base.host()
+        && host_of(link) == host_of(base)
         && link.port_or_known_default() == base.port_or_known_default()
         && front == wanted.as_slice()
 }
@@ -302,25 +304,37 @@ fn is_token_shaped(token: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
+/// Where a server with no published base has its links: its own host and no other (an old server). Not the domain
+/// above it, which may belong to anyone (`github.io`).
 fn belongs_to(link: &Url, server: &Url, official: bool) -> bool {
+    let Some(link_host) = host_of(link) else {
+        return false;
+    };
     if link.port_or_known_default() != server.port_or_known_default() {
         return false;
     }
-    fn above(host: &str) -> Option<&str> {
-        host.split_once('.')
-            .map(|(_, rest)| rest)
-            .filter(|rest| rest.contains('.'))
+    if official {
+        return link_host == OFFICIAL_INVITATIONS_HOST;
     }
-    match (link.host(), server.host()) {
-        _ if official => link.host_str() == Some(OFFICIAL_INVITATIONS_HOST),
-        (Some(url::Host::Domain(link_host)), Some(url::Host::Domain(server_host))) => {
-            link_host != OFFICIAL_INVITATIONS_HOST
-                && (link_host == server_host || above(server_host) == Some(link_host))
-        }
-        // An address (a local server): only the very same one.
-        (Some(link_host), Some(server_host)) => link_host == server_host,
-        _ => false,
-    }
+    !is_official_or_under(&link_host)
+        && host_of(server).is_some_and(|server_host| server_host == link_host)
+}
+
+/// A host as it is compared: the parser already lowers the capitals; a final dot (`example.org.`) is the same
+/// host, so it is taken off.
+fn host_of(url: &Url) -> Option<String> {
+    url.host().map(|host| match host {
+        url::Host::Domain(domain) => domain.trim_end_matches('.').to_owned(),
+        other => other.to_string(),
+    })
+}
+
+/// The official host or anything under it: never the host of a server of one's own.
+fn is_official_or_under(host: &str) -> bool {
+    host == OFFICIAL_INVITATIONS_HOST
+        || host
+            .strip_suffix(OFFICIAL_INVITATIONS_HOST)
+            .is_some_and(|front| front.ends_with('.'))
 }
 
 // --- What this device may offer ----------------------------------------------
@@ -488,18 +502,17 @@ pub async fn invite<A: CloudApi>(
         invitation: None,
         failed: None,
     };
-    if created {
-        // The server compares the id with its own catalog, so the person has to be there first.
-        match sync_library(database, api, library).await {
-            Ok(report) if report.outcome == Outcome::Synced => {}
-            Ok(report) => {
-                result.failed = Some(report.error.unwrap_or_else(|| "not_uploaded".to_owned()));
-                return Ok(result);
-            }
-            Err(error) => {
-                result.failed = Some(code_of(&error));
-                return Ok(result);
-            }
+    // The server compares the id with its own catalog, so the person has to be there first: a new one, and also one
+    // whose earlier upload failed and who is asked for again. If this cannot be done, the reason is the sync's.
+    match sync_library(database, api, library).await {
+        Ok(report) if report.outcome == Outcome::Synced => {}
+        Ok(report) => {
+            result.failed = Some(report.error.unwrap_or_else(|| "not_uploaded".to_owned()));
+            return Ok(result);
+        }
+        Err(error) => {
+            result.failed = Some(code_of(&error));
+            return Ok(result);
         }
     }
     match api
@@ -547,7 +560,20 @@ pub async fn revoke_invitation<A: CloudApi>(
     invitation: &str,
 ) -> Result<()> {
     let cloud = ready(database, library, api.server(), false)?;
+    // The id goes into the path of the route: only the shape of one gets there, whatever a modified screen sends.
+    if !is_uuid_shaped(invitation) {
+        return Err(Error::Cloud("invitation_not_found"));
+    }
     api.revoke_invitation(&cloud, invitation).await
+}
+
+/// `8-4-4-4-12` lowercase hexadecimal, as the server writes the ids of its invitations.
+fn is_uuid_shaped(id: &str) -> bool {
+    id.len() == 36
+        && id.bytes().enumerate().all(|(at, byte)| match at {
+            8 | 13 | 18 | 23 => byte == b'-',
+            _ => byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte),
+        })
 }
 
 // --- Opening a link ----------------------------------------------------------
@@ -569,30 +595,73 @@ pub fn forget_pending(conn: &Connection) -> Result<()> {
     write_state(conn, PENDING, None)
 }
 
-/// The invitation waiting for a session, unless it has expired: that one is forgotten.
-fn pending(conn: &Connection) -> Result<Option<Pending>> {
+/// What waits for a session: nothing, an invitation, or one that expired while it waited. The token of an expired
+/// one is gone at once; a note of which library it was stays until the screen has told it (`discard`) or another
+/// link is opened.
+enum Stored {
+    Nothing,
+    Waiting(Pending),
+    Expired { library_name: String },
+}
+
+/// What replaces the token of an invitation that expired while it waited.
+#[derive(Serialize, Deserialize)]
+struct Expired {
+    expired_library: String,
+}
+
+fn stored(conn: &Connection) -> Result<Stored> {
     let Some(raw) = read_state(conn, PENDING)? else {
-        return Ok(None);
+        return Ok(Stored::Nothing);
     };
-    let kept = serde_json::from_str::<Pending>(&raw)
-        .ok()
-        .filter(|pending| events::time_left(&pending.expires_at, SystemTime::now()).is_some());
-    if kept.is_none() {
-        forget_pending(conn)?;
+    if let Ok(pending) = serde_json::from_str::<Pending>(&raw) {
+        if events::time_left(&pending.expires_at, SystemTime::now()).is_some() {
+            return Ok(Stored::Waiting(pending));
+        }
+        let note = Expired {
+            expired_library: pending.library_name.clone(),
+        };
+        write_state(conn, PENDING, Some(&serde_json::to_string(&note)?))?;
+        return Ok(Stored::Expired {
+            library_name: pending.library_name,
+        });
     }
-    Ok(kept)
+    if let Ok(note) = serde_json::from_str::<Expired>(&raw) {
+        return Ok(Stored::Expired {
+            library_name: note.expired_library,
+        });
+    }
+    forget_pending(conn)?;
+    Ok(Stored::Nothing)
+}
+
+/// What the screen after a sign-in is told about the link that was waiting.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(
+    tag = "state",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
+pub enum PendingInvitation {
+    Nothing,
+    Waiting(OpenedInvitation),
+    Expired { library_name: String },
 }
 
 /// For the screen that follows a sign-in: what is waiting, if anything still is.
-pub fn pending_invitation(database: &Database) -> Result<Option<OpenedInvitation>> {
+pub fn pending_invitation(database: &Database) -> Result<PendingInvitation> {
     let conn = database.lock()?;
     let signed_in = account::is_signed_in(&conn)?;
-    Ok(pending(&conn)?.map(|pending| OpenedInvitation {
-        library_name: pending.library_name,
-        kind: pending.kind,
-        expires_at: pending.expires_at,
-        signed_in,
-    }))
+    Ok(match stored(&conn)? {
+        Stored::Nothing => PendingInvitation::Nothing,
+        Stored::Expired { library_name } => PendingInvitation::Expired { library_name },
+        Stored::Waiting(pending) => PendingInvitation::Waiting(OpenedInvitation {
+            library_name: pending.library_name,
+            kind: pending.kind,
+            expires_at: pending.expires_at,
+            signed_in,
+        }),
+    })
 }
 
 /// «Not this one»: forgets the invitation that was waiting.
@@ -649,8 +718,10 @@ pub(super) fn keeps_pending(error: &Error) -> bool {
 pub async fn accept_pending<A: CloudApi>(database: &Database, api: &A) -> Result<Accepted> {
     let token = {
         let conn = database.lock()?;
-        let Some(pending) = pending(&conn)? else {
-            return Err(Error::Cloud("invitation_no_pending"));
+        let pending = match stored(&conn)? {
+            Stored::Waiting(pending) => pending,
+            Stored::Expired { .. } => return Err(Error::Cloud("invitation_expired")),
+            Stored::Nothing => return Err(Error::Cloud("invitation_no_pending")),
         };
         if !account::is_signed_in(&conn)? {
             return Err(Error::Cloud("not_signed_in"));

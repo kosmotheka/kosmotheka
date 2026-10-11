@@ -16,6 +16,7 @@ use crate::catalog::{
 use crate::cloud::events::{Connection, EventsService};
 use crate::cloud::invitations::{
     self, Accepted, InvitationItem, InviteRequest, InviteResult, InviteStatus, OpenedInvitation,
+    PendingInvitation,
 };
 use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
@@ -1413,7 +1414,7 @@ pub async fn open_invitation(
 
 /// The link that is waiting for a session, if one is and has not expired.
 #[tauri::command]
-pub fn pending_invitation(database: State<'_, Database>) -> Result<Option<OpenedInvitation>> {
+pub fn pending_invitation(database: State<'_, Database>) -> Result<PendingInvitation> {
     invitations::pending_invitation(&database)
 }
 

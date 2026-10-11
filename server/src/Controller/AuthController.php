@@ -19,6 +19,7 @@ use App\Security\LoginChallengeIssuer;
 use App\Security\RequestLimiter;
 use App\Security\TwoFactor;
 use App\Security\UserChecker;
+use App\Sync\Invitation\EmailFingerprint;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -50,6 +51,7 @@ final class AuthController extends AbstractController
         private readonly CurrentDevice $currentDevice,
         private readonly TwoFactor $twoFactor,
         private readonly ActivityLog $activityLog,
+        private readonly EmailFingerprint $fingerprints,
     ) {
     }
 
@@ -76,8 +78,12 @@ final class AuthController extends AbstractController
         $this->challengeIssuer->consume($payload->challenge);
         $this->deviceProof->verify($payload->challenge, $payload->deviceId, $payload->publicKey, $payload->signature);
 
-        $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
-        $this->checkCredentials($user, $payload->password);
+        // Before the password is looked at: a cut account answers the same with the right one, and the same for an address
+        // with no account (SEG-051).
+        $email = $this->normaliseEmail($payload->email);
+        $this->requestLimiter->requireLoginOpen($this->fingerprints->of($email));
+        $user = $this->userRepository->findOneByEmail($email);
+        $this->checkCredentials($user, $email, $payload->password);
         \assert($user instanceof User);
 
         $this->userChecker->checkPreAuth($user);
@@ -106,10 +112,11 @@ final class AuthController extends AbstractController
     }
 
     /** @throws AccountException with invalid_credentials, never revealing which check failed */
-    private function checkCredentials(?User $user, string $password): void
+    private function checkCredentials(?User $user, string $email, string $password): void
     {
         if (!$user instanceof User || null === $user->getPassword()) {
             $this->hashDummyPassword($password);
+            $this->requestLimiter->noteLoginFailure($this->fingerprints->of($email));
             // Written too, so that failing against an account that exists costs the same as against one that does not.
             $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
 
@@ -117,6 +124,7 @@ final class AuthController extends AbstractController
         }
 
         if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+            $this->requestLimiter->noteLoginFailure($this->fingerprints->of($email));
             // An account that exists, and somebody who does not know its password. The device is not named: it was only
             // proved to hold its own key, and nothing says it is the account's (D84).
             $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
@@ -160,6 +168,7 @@ final class AuthController extends AbstractController
         } catch (AccountException $exception) {
             // A wrong code, not a limit being hit: that one says nothing about who is trying.
             if (AccountErrorCode::InvalidTwoFactorCode === $exception->errorCode) {
+                $this->requestLimiter->noteLoginFailure($this->fingerprints->of($user->getEmail()));
                 $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
             }
 

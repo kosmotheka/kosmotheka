@@ -1699,6 +1699,7 @@
   },
   "invitations": {
     "notice": {
+      "accepted": "Alguien ha aceptado tu invitación a «{{library}}».",
       "see": "Ver en Personas"
     },
     "expiry": {
@@ -1721,6 +1722,7 @@
       "title": "Invitar a «{{library}}»",
       "titleExisting": "Invitar a {{person}} por correo",
       "description": "Invita a alguien a «{{library}}», por correo o con un enlace para copiar.",
+      "retry": "Reintentar",
       "checking": "Comprobando…",
       "modes": {
         "email": {
@@ -1790,6 +1792,8 @@
       "entryHint": "Pega un enlace que te hayan enviado",
       "title": "Tengo una invitación",
       "description": "Pega el enlace de una invitación para entrar en una biblioteca.",
+      "expired": "La invitación a «{{library}}» caducó mientras iniciabas sesión. Pide otra y pégala aquí.",
+      "placeholder": "Pega aquí el enlace que te mandaron",
       "field": "Enlace de la invitación",
       "hint": "Pega el enlace que te enviaron. No pasa nada hasta que tú lo digas.",
       "look": "Ver",
@@ -1829,6 +1833,7 @@
       "invitation_other_server": "Este enlace es de otro servidor distinto al de tu cuenta. No se ha abierto.",
       "invitation_not_found": "Este enlace no vale.",
       "invitation_no_pending": "No hay ninguna invitación esperando.",
+      "server_unavailable": "No se puede llegar al servidor. Comprueba la conexión y vuelve a intentarlo.",
       "invitation_other_account": "Esta invitación se abrió con otra cuenta. Abre el enlace otra vez."
     }
   },
