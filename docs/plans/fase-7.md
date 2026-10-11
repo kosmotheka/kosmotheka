@@ -189,7 +189,8 @@ Apuntado para esa revisión:
 - La prueba de una retirada lleva las operaciones anteriores de quien la firmó que al dispositivo le faltan, sin tope de tamaño: un dispositivo cortado puede pedirla con un vector vacío una y otra vez. Va con el límite de peticiones de las rutas de la nube.
 - Si el rol de quien retira depende de una operación de otro autor que al dispositivo cortado le falta, la prueba no se aplica y ese dispositivo conserva su copia (deja de recibir, pero no borra).
 - Registro de actividad (7.7), visto al revisarlo:
-  - un inicio de sesión fallido escribe una fila **solo si la cuenta existe**: esa escritura de más tarda algo, y el código ya se cuidaba de tardar lo mismo exista o no la cuenta (contraseña de relleno). Midiendo muchas veces se podría distinguir. Lo acota el límite de inicios por IP. Arreglo posible: apuntar también el intento contra una cuenta que no existe, sin cuenta;
+  - (arreglado el 11/10/2026) un inicio de sesión fallido escribía una fila solo si la cuenta existía, y esa escritura de más podía delatar qué direcciones tienen cuenta; ahora se apunta en los dos casos;
+  - **el límite de inicios de sesión es por IP** (10 peticiones cada 15 minutos, y cada inicio gasta dos: el reto y el inicio): una familia en la misma wifi lo comparte. Revisarlo antes de producción;
   - la huella del correo sale de `APP_SECRET`: si se cambia, las huellas viejas dejan de casar con ninguna dirección;
   - la primera subida de una biblioteca deja filas por los cambios de rol y de dispositivo de toda su historia, con la hora de llegada;
   - no se apuntan: crear una persona, quitar un dispositivo de la cuenta (D81) y nombrar superadministrador por consola (D52 pide sus accesos);

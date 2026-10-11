@@ -504,7 +504,7 @@ Una tabla de solo añadir, `activity_log`, para poder decir **quién hizo qué, 
 | Tipo | Dónde se escribe |
 |---|---|
 | `account_registered` | `POST /v1/account/confirm`: el registro **confirmado** |
-| `login_succeeded` · `login_failed` | `POST /v1/auth/login`. El fallo, solo contra una cuenta que existe (contraseña o código de segundo factor equivocados), sin dispositivo: la prueba del reto solo demuestra que quien llama tiene su clave, no que el dispositivo sea de la cuenta |
+| `login_succeeded` · `login_failed` | `POST /v1/auth/login`. El fallo, exista o no la cuenta (contraseña o código de segundo factor equivocados; contra una dirección sin cuenta la fila va sin cuenta ni huella, para que fallar cueste lo mismo en los dos casos y no delate qué direcciones tienen cuenta), sin dispositivo: la prueba del reto solo demuestra que quien llama tiene su clave, no que el dispositivo sea de la cuenta |
 | `device_signed_out` | `POST /v1/auth/logout` |
 | `password_changed` · `password_reset` | `POST /v1/account/password` · `/password/reset` |
 | `two_factor_enabled` · `two_factor_disabled` | `TwoFactorController`, y la orden `app:user:two-factor-disable` |

@@ -110,6 +110,8 @@ final class AuthController extends AbstractController
     {
         if (!$user instanceof User || null === $user->getPassword()) {
             $this->hashDummyPassword($password);
+            // Written too, so that failing against an account that exists costs the same as against one that does not.
+            $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
 
             throw AccountException::invalidCredentials();
         }

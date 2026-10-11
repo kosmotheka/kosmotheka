@@ -216,6 +216,21 @@ final class ActivityLogTest extends WebTestCase
         self::assertNull($this->lineOf(ActivityKind::LoginFailed)->getDeviceId(), 'the device was only proved to hold its key, not to be the account\'s');
     }
 
+    /**
+     * The same write whether the account exists or not: a line only for accounts that exist would make a failed login
+     * against one of them take longer, and tell which addresses have an account.
+     */
+    public function testAFailedLoginIsWrittenTheSameWhetherTheAccountExistsOrNot(): void
+    {
+        $this->client->setServerParameter('REMOTE_ADDR', '203.0.113.50');
+        $this->login('nobody@example.com', 'not the password');
+
+        $line = $this->lineOf(ActivityKind::LoginFailed);
+        self::assertNull($line->getAccountId());
+        self::assertNull($line->getAccountEmailFingerprint(), 'nothing of an address that is not an account\'s is kept');
+        self::assertSame('203.0.113.50', $line->getIp());
+    }
+
     public function testPasswordResetDeleteAndSecondFactorAreWritten(): void
     {
         $session = $this->signInNewDevice($this->client, 'ada@example.com', self::PASSWORD);
