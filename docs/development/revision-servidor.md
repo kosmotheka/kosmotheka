@@ -73,7 +73,7 @@ Una línea por cosa, sin arreglar nada mientras lees:
 fichero:línea · qué he visto · por qué me chirría · ¿duda o fallo?
 ```
 
-Tres tipos de nota valen igual: «esto está mal», «esto no lo entiendo» (si tú no lo entiendes con veinte años de Symfony, está mal explicado) y «esto es más complicado de lo que debería». La tercera es la que menos encuentran las auditorías automáticas y la que más aporta tu lectura.
+Tres tipos de nota valen igual: «esto está mal», «esto no lo entiendo» (si tú no lo entiendes con tu experiencia en Symfony, está mal explicado) y «esto es más complicado de lo que debería». La tercera es la que menos encuentran las auditorías automáticas y la que más aporta tu lectura.
 
 ## Lo que ya se sabe, para no apuntarlo dos veces
 
