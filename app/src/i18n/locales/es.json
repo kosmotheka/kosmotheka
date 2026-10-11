@@ -1578,6 +1578,10 @@
       "title": "Demasiadas peticiones.",
       "help": "Espera {{minutes}} minutos e inténtalo de nuevo."
     },
+    "registrationClosed": {
+      "title": "Este servidor no admite cuentas nuevas por ahora.",
+      "help": "Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor."
+    },
     "invalidCredentials": {
       "title": "El email o la contraseña no son correctos.",
       "help": "Revisa cómo está escrito el email. Si no recuerdas la contraseña, pon una nueva.",

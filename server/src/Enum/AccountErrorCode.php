@@ -15,6 +15,7 @@ enum AccountErrorCode: string
     case CodeExpired = 'code_expired';
     case TooManyAttempts = 'too_many_attempts';
     case TooManyRequests = 'too_many_requests';
+    case RegistrationClosed = 'registration_closed';
 
     // Milestone 7.1, part 2: device sign-in and the authenticated API.
     case InvalidChallenge = 'invalid_challenge';

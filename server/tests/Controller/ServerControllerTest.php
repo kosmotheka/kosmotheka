@@ -21,6 +21,7 @@ final class ServerControllerTest extends WebTestCase
             'name' => 'Kosmotheka',
             'api_version' => 1,
             'registration' => true,
+            'registration_restricted' => false,
             'sign_in_with_google' => false,
             'two_factor' => true,
             'events' => true,

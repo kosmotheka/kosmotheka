@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Security\RegistrationGate;
 use App\Sync\HubSettings;
 use App\Sync\Invitation\InvitationSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +32,7 @@ final class ServerController extends AbstractController
         private readonly bool $twoFactorEnabled,
         private readonly HubSettings $hub,
         private readonly InvitationSettings $invitations,
+        private readonly RegistrationGate $registrationGate,
     ) {
     }
 
@@ -41,6 +43,8 @@ final class ServerController extends AbstractController
             'name' => 'Kosmotheka',
             'api_version' => 1,
             'registration' => self::REGISTRATION,
+            // Only some addresses may make an account; which ones is never said.
+            'registration_restricted' => $this->registrationGate->isRestricted(),
             'sign_in_with_google' => self::SIGN_IN_WITH_GOOGLE,
             'two_factor' => $this->twoFactorEnabled,
             'events' => $this->hub->isEnabled(),

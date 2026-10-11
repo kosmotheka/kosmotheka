@@ -1564,6 +1564,10 @@
       "title": "Too many requests.",
       "help": "Wait {{minutes}} minutes and try again."
     },
+    "registrationClosed": {
+      "title": "This server is not taking new accounts for now.",
+      "help": "If you already have an account, sign in. If you expected to be able to create one, talk to whoever runs the server."
+    },
     "invalidCredentials": {
       "title": "The email or password is incorrect.",
       "help": "Check how the email is spelled. If you don't remember your password, set a new one.",

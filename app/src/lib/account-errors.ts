@@ -66,6 +66,12 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         titleKey: "accountErrors.tooManyRequests.title",
         helpKey: "accountErrors.tooManyRequests.help",
       };
+    case "registration_closed":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.registrationClosed.title",
+        helpKey: "accountErrors.registrationClosed.help",
+      };
     case "invalid_credentials":
       return {
         level: "error",

@@ -211,6 +211,8 @@ Apuntado para esa revisión:
 
 **Antes de publicar la nube:** que un enlace de invitación abra la app sola (aplazado desde 7.6; la lista está en «7.6 Invitar con un enlace»).
 
+**Registro cerrado** (11/10/2026): `REGISTRATION_ALLOWED_EMAILS` deja crear cuenta solo a los correos de la lista ([accounts.md](../architecture/accounts.md#post-v1accountregister)); es como se despliega la prueba cerrada antes de la revisión de seguridad de conjunto. Hecho por la sesión coordinadora, con sus tests vistos fallar; la pasada completa de `make check` se repite al cerrar la segunda tanda de arreglos, porque se hizo mientras la otra sesión trabajaba.
+
 **El VPS** (datos del maintainer, 01/10/2026; se revisan al llegar):
 - Pequeño: poca CPU y poca memoria, un Ubuntu reciente (por mirar), disco suficiente para empezar (por mirar cuánto). Si la app pide más, se verá entonces.
 - Es un servidor **compartido** con otro proyecto del maintainer.

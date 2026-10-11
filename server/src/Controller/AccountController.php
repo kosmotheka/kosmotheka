@@ -25,6 +25,7 @@ use App\Security\AccountMailer;
 use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
+use App\Security\RegistrationGate;
 use App\Security\RequestLimiter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -54,6 +55,7 @@ final class AccountController extends AbstractController
         private readonly DeviceRepository $deviceRepository,
         private readonly BackupCodeRepository $backupCodeRepository,
         private readonly ActivityLog $activityLog,
+        private readonly RegistrationGate $registrationGate,
     ) {
     }
 
@@ -63,6 +65,10 @@ final class AccountController extends AbstractController
         $this->requestLimiter->consumeRegistration((string) $request->getClientIp());
 
         $email = $this->normaliseEmail($payload->email);
+        // Before anything is created or sent: a server that only lets some addresses in leaves nothing behind for the rest.
+        if (!$this->registrationGate->allows($email)) {
+            throw AccountException::registrationClosed();
+        }
         $user = $this->userRepository->findOneByEmail($email);
 
         if (!$user instanceof User) {

@@ -102,6 +102,7 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 | `code_expired` | `code_expired` | error | Este código ha caducado. | Los códigos valen 15 minutos. Pide otro y úsalo en cuanto llegue. **«Enviar otro código»** |
 | `code_attempts` | `too_many_attempts` | error | Demasiados intentos con este código. | Ya no sirve. Pide otro: llega en un momento. **«Pedir otro código»** |
 | `rate_limited` | `too_many_requests` (con `Retry-After`) | aviso | Demasiadas peticiones. | Espera {n} minutos e inténtalo de nuevo. |
+| `registration_closed` | `registration_closed` (`403`) | aviso | Este servidor no admite cuentas nuevas por ahora. | Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor. |
 | `bad_credentials` | `invalid_credentials` | error | El email o la contraseña no son correctos. | Revisa cómo está escrito el email. Si no recuerdas la contraseña, pon una nueva. **«Recuperar la contraseña»** |
 | `email_unconfirmed` | `account_not_confirmed` | aviso | Falta confirmar tu email. | Al crear la cuenta te enviamos un código. Si no lo encuentras, pide otro. **«Enviar otro código»** |
 | `account_locked` | `account_blocked` | error | Esta cuenta está bloqueada. | Si crees que es un error, escribe a quien gestiona el servidor. |
