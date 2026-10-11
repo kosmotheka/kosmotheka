@@ -25,8 +25,9 @@ class MetadataCacheEntry
     /** A title search is kept as long as its provider says, found or not: the provider of those rows is one of these. */
     public const string TMDB_SEARCH = 'tmdb_search';
     public const string RAWG_SEARCH = 'rawg_search';
+    public const string COMIC_VINE_SEARCH = 'comic_vine_search';
     /** @var array<string, string> how long each kind of search is kept */
-    public const array SEARCH_TTLS = [self::TMDB_SEARCH => '1 day', self::RAWG_SEARCH => '7 days'];
+    public const array SEARCH_TTLS = [self::TMDB_SEARCH => '1 day', self::RAWG_SEARCH => '7 days', self::COMIC_VINE_SEARCH => '7 days'];
 
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\ComicVineSearchRequest;
 use App\Dto\RawgSearchRequest;
 use App\Dto\TmdbSearchRequest;
 use App\Entity\User;
 use App\Metadata\BookLookup;
 use App\Metadata\BookMetadata;
 use App\Metadata\BookProvider;
+use App\Metadata\ComicVineSearch;
+use App\Metadata\ComicVineSource;
 use App\Metadata\Isbn;
 use App\Metadata\RawgSearch;
 use App\Metadata\RawgSource;
@@ -38,6 +41,8 @@ final class MetadataController extends AbstractController
         private readonly TmdbSearch $tmdbSearch,
         private readonly RawgSource $rawgSource,
         private readonly RawgSearch $rawgSearch,
+        private readonly ComicVineSource $comicVineSource,
+        private readonly ComicVineSearch $comicVineSearch,
         private readonly RequestLimiter $limiter,
     ) {
     }
@@ -102,6 +107,24 @@ final class MetadataController extends AbstractController
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $this->rawgSearch->search($payload->query)]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /** A POST on purpose, as the others': the title a person looks for is never in an address. */
+    #[Route('/comic-vine/search', methods: ['POST'])]
+    public function comicVineSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] ComicVineSearchRequest $payload): JsonResponse
+    {
+        if (!$this->comicVineSource->isConfigured()) {
+            throw AccountException::metadataUnavailable();
+        }
+
+        $user = $this->getUser();
+        \assert($user instanceof User);
+        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
+
+        $response = new JsonResponse(['candidates' => $this->comicVineSearch->search($payload->query)]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

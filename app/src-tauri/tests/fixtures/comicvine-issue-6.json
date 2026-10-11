@@ -1,0 +1,10 @@
+{
+  "error": "OK",
+  "status_code": 1,
+  "results": {
+    "person_credits": [
+      { "id": 1, "name": "Bill Finger", "role": "writer" },
+      { "id": 2, "name": "Bob Kane", "role": "cover, penciler" }
+    ]
+  }
+}

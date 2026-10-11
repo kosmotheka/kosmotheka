@@ -41,7 +41,7 @@ final readonly class RawgSearch
     /** Trimmed, with every run of blanks (non-breaking ones too) as one space, and lower case. */
     public static function normalise(string $query): string
     {
-        return mb_strtolower(trim((string) preg_replace('/[\s\x{a0}]+/u', ' ', $query)));
+        return TextCleaner::normaliseQuery($query);
     }
 
     /**

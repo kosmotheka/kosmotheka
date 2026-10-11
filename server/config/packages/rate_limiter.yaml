@@ -43,6 +43,20 @@ framework:
             policy: sliding_window
             limit: 600
             interval: '1 day'
+        # Comic Vine (7.8, D62): it supports 200 requests an hour per resource, so the server keeps to 150 of each of the
+        # three it calls (the search, the detail of a series, the detail of an issue). The key is the same for all.
+        comic_vine_search:
+            policy: sliding_window
+            limit: 150
+            interval: '1 hour'
+        comic_vine_volume:
+            policy: sliding_window
+            limit: 150
+            interval: '1 hour'
+        comic_vine_issue:
+            policy: sliding_window
+            limit: 150
+            interval: '1 hour'
         email_code:
             policy: sliding_window
             limit: 10

@@ -11,7 +11,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 /**
  * The RAWG API with the server's key (D62). **RAWG only takes the key as the `key` parameter of the address** (it has
  * no header for it), so here the key is in every outgoing address, and everything is arranged so that it goes nowhere
- * else: the client has no logger ({@see RawgClientFactory}), every failure is thrown as fixed text without `previous`
+ * else: the client has no logger ({@see UnloggedClientFactory}), every failure is thrown as fixed text without `previous`
  * (what the http client throws carries the address), and nothing of RAWG's own answer is passed on. The text a person
  * searches for travels as one encoded parameter; the detail is asked by a number RAWG itself returned. Whatever RAWG
  * sends is read with a size cap and cut and type-checked field by field.

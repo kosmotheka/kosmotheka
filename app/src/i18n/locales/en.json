@@ -315,10 +315,12 @@
       "music_brainz": "MusicBrainz",
       "game_upc": "GameUPC",
       "tmdb": "TMDB",
-      "rawg": "RAWG"
+      "rawg": "RAWG",
+      "comic_vine": "Comic Vine"
     },
     "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers.",
-    "rawgData": "Data from <link>RAWG</link>"
+    "rawgData": "Data from <link>RAWG</link>",
+    "comicVineData": "Data from <link>Comic Vine</link>"
   },
   "settings": {
     "title": "Settings",
@@ -1219,6 +1221,7 @@
         "google_books": "The most complete source for ISBN lookups"
       },
       "comic": {
+        "comic_vine": "Series and issues, with publisher, writers, artists and cover",
         "wikidata": "Series and authorship"
       },
       "boardgame": {
@@ -1262,8 +1265,12 @@
       "game_upc": "Board games by the box's barcode",
       "music_brainz": "Albums by title or barcode",
       "tmdb": "Title, director or creators, length and poster",
-      "rawg": "Title, studio, publisher, platforms and cover"
-    }
+      "rawg": "Title, studio, publisher, platforms and cover",
+      "comic_vine": "Comic series and issues: title, publisher, writers, artists and cover"
+    },
+    "comic_vineWithAccount": "Needs your own key, or an account on a server that offers it. Without either, Wikidata is used.",
+    "comic_vineSends": "Sends what you type to your account's server, which asks Comic Vine. Nothing else.",
+    "comicVineNotice": "Comic data from <link>Comic Vine</link>."
   },
   "series": {
     "new": "New series",

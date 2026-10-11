@@ -396,7 +396,8 @@ export type Source =
   | "wikidata"
   | "game_upc"
   | "tmdb"
-  | "rawg";
+  | "rawg"
+  | "comic_vine";
 
 export interface LookupResult {
   isbn13: string;

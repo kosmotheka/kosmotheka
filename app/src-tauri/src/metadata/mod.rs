@@ -3,6 +3,7 @@
 
 pub mod bne;
 pub mod candidate;
+pub mod comic_vine;
 pub mod gameupc;
 pub mod google;
 pub mod inventaire;
@@ -23,7 +24,9 @@ use crate::cloud::CloudApi;
 use reqwest::StatusCode;
 use serde::Serialize;
 use serde_json::Value;
-use via_server::{GoogleAccess, choose_search_access, lookup_google, search_rawg, search_tmdb};
+use via_server::{
+    GoogleAccess, choose_search_access, lookup_google, search_comic_vine, search_rawg, search_tmdb,
+};
 
 pub use candidate::{Candidate, CandidateContributor};
 
@@ -53,6 +56,7 @@ pub enum Source {
     GameUpc,
     Tmdb,
     Rawg,
+    ComicVine,
 }
 
 impl Source {
@@ -69,6 +73,7 @@ impl Source {
             Source::GameUpc => "game_upc",
             Source::Tmdb => "tmdb",
             Source::Rawg => "rawg",
+            Source::ComicVine => "comic_vine",
         }
     }
 }
@@ -195,7 +200,8 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
         | Source::Wikidata
         | Source::GameUpc
         | Source::Tmdb
-        | Source::Rawg => None,
+        | Source::Rawg
+        | Source::ComicVine => None,
     };
     candidate
 }
@@ -213,7 +219,9 @@ pub(crate) async fn get_json(request: reqwest::RequestBuilder) -> Result<Value, 
         .map_err(|error| ProviderError::Network(error.without_url()))?;
     match response.status() {
         StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => return Err(ProviderError::BadKey),
+        // 420 is how Comic Vine says it too.
         StatusCode::TOO_MANY_REQUESTS => return Err(ProviderError::Quota),
+        status if status.as_u16() == 420 => return Err(ProviderError::Quota),
         status if !status.is_success() => {
             return Err(ProviderError::Unexpected(format!("HTTP {status}")));
         }
@@ -387,7 +395,31 @@ impl Lookup {
                 );
                 collect_candidates(vec![(Source::Rawg, rawg), (Source::Wikidata, wikidata)])
             }
-            Kind::Comic | Kind::Boardgame => {
+            Kind::Comic => {
+                // Comic Vine first, as the others: with their own key, or through the account's server, and at the
+                // same time as Wikidata.
+                let (comic_vine, wikidata) = tokio::join!(
+                    maybe_vec(
+                        disabled.contains(Source::ComicVine.id()),
+                        search_comic_vine(
+                            choose_search_access(own_key, cloud),
+                            query,
+                            |key| async move {
+                                comic_vine::search(&self.client, comic_vine::API, &key, query).await
+                            }
+                        ),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Wikidata.id()),
+                        wikidata::search(&self.client, kind, query),
+                    ),
+                );
+                collect_candidates(vec![
+                    (Source::ComicVine, comic_vine),
+                    (Source::Wikidata, wikidata),
+                ])
+            }
+            Kind::Boardgame => {
                 if disabled.contains(Source::Wikidata.id()) {
                     return SearchResult::default();
                 }

@@ -1,0 +1,11 @@
+{
+  "error": "OK",
+  "status_code": 1,
+  "results": {
+    "person_credits": [
+      { "api_detail_url": "https://comicvine.gamespot.com/api/person/4040-1/", "id": 1, "name": "Bill Finger", "role": "writer" },
+      { "api_detail_url": "https://comicvine.gamespot.com/api/person/4040-2/", "id": 2, "name": "Bob Kane", "role": "penciler, inker" },
+      { "api_detail_url": "https://comicvine.gamespot.com/api/person/4040-3/", "id": 3, "name": "Jerry Robinson", "role": "colorist" }
+    ]
+  }
+}

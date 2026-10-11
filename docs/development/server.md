@@ -128,6 +128,10 @@ Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador 
 
 `RAWG_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de la API de RAWG (rawg.io/apidocs, hay que aceptar sus condiciones y la atribución). Con ella, las cuentas pueden buscar videojuegos por título y `GET /v1/server` lista `rawg` en `metadata`; vacía, la ruta responde `404 metadata_unavailable`. **RAWG solo la admite en la dirección de la llamada saliente**, no en una cabecera: por eso esa llamada se hace con un cliente HTTP sin registrador y todas sus excepciones se relanzan sin la dirección (ver [cloud.md](../architecture/cloud.md#buscar-videojuegos-por-título-en-rawg-78-tercera-parte-d62)). Si se añade un proxy o un registro de llamadas salientes, no debe guardar las direcciones de `api.rawg.io`.
 
+### Comic Vine: cómics por el servidor (7.8, D62)
+
+`COMIC_VINE_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de la API de Comic Vine (`comicvine.gamespot.com/api/`, hace falta una cuenta de Comic Vine; uso estrictamente no comercial). Con ella, las cuentas pueden buscar cómics por título y `GET /v1/server` lista `comic_vine` en `metadata`; vacía, la ruta responde `404 metadata_unavailable`. **Solo la admite en la dirección de la llamada saliente**, como RAWG: se pregunta con un cliente HTTP sin registrador y con las excepciones sin la dirección. Comic Vine cuenta 200 peticiones por recurso y hora; el servidor se limita a 150 por recurso (`comic_vine_search`, `comic_vine_volume`, `comic_vine_issue`). Ver [cloud.md](../architecture/cloud.md#buscar-cómics-por-título-en-comic-vine-78-quinta-parte-d62).
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

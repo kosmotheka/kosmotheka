@@ -32,6 +32,10 @@ final class MetadataCachePurgeTest extends KernelTestCase
         // A video game search is kept a week.
         $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::RAWG_SEARCH, str_repeat('c', 64), true, [], new \DateTimeImmutable('2026-06-22 11:00:00')));
         $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::RAWG_SEARCH, str_repeat('d', 64), true, [], new \DateTimeImmutable('2026-06-24 13:00:00')));
+        // A comic search is kept a week too, and its details thirty days.
+        $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::COMIC_VINE_SEARCH, str_repeat('e', 64), true, [], new \DateTimeImmutable('2026-06-22 11:00:00')));
+        $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::COMIC_VINE_SEARCH, str_repeat('f', 64), true, [], new \DateTimeImmutable('2026-06-24 13:00:00')));
+        $entityManager->persist(new MetadataCacheEntry('comic_vine_volume', '796', true, [], new \DateTimeImmutable('2026-05-30 11:00:00')));
         $entityManager->persist(new MetadataCacheEntry('rawg_game', '3498', true, [], new \DateTimeImmutable('2026-06-01 12:00:00')));
         $entityManager->persist(new MetadataCacheEntry('tmdb_movie_en', '603', true, [], new \DateTimeImmutable('2026-06-01 12:00:00')));
         $entityManager->persist(new MetadataCacheEntry('tmdb_movie_en', '604', true, [], new \DateTimeImmutable('2026-05-30 11:00:00')));
@@ -43,12 +47,12 @@ final class MetadataCachePurgeTest extends KernelTestCase
 
         $result = self::getContainer()->get(AccountPurger::class)->purge();
 
-        self::assertSame(5, $result['metadata_cache']);
+        self::assertSame(7, $result['metadata_cache']);
         $entityManager->clear();
         $left = array_map(
             static fn (MetadataCacheEntry $entry): string => $entry->getCode(),
             $entityManager->getRepository(MetadataCacheEntry::class)->findBy([], ['code' => 'ASC']),
         );
-        self::assertSame(['3498', '603', '9780000000001', '9780000000003', str_repeat('b', 64), str_repeat('d', 64)], $left);
+        self::assertSame(['3498', '603', '9780000000001', '9780000000003', str_repeat('b', 64), str_repeat('d', 64), str_repeat('f', 64)], $left);
     }
 }

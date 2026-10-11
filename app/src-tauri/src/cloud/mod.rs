@@ -88,6 +88,9 @@ pub trait CloudApi {
     /// A video game searched by title in RAWG through the server (7.8, D62). The text goes in the body of a `POST`,
     /// never in an address. The answer is already cut to the fixed shape and to at most eight candidates.
     async fn rawg_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>>;
+    /// A comic searched by title in Comic Vine through the server (7.8, D62): series and issues, the series first.
+    /// The text goes in the body of a `POST`, never in an address; the answer is already cut to the fixed shape.
+    async fn comic_vine_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>>;
     /// One ISBN in Google Books through the server (7.8, D83): `Ok(None)` is the server saying it is not found.
     /// Only the ISBN leaves the app.
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>>;

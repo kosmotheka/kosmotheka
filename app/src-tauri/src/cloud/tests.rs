@@ -91,6 +91,11 @@ struct CloudState {
         std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
     >,
     rawg_asks: Vec<String>,
+    /// The same for the comic search.
+    comic_vine_answers: std::collections::VecDeque<
+        std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
+    >,
+    comic_vine_asks: Vec<String>,
     /// The ISBNs the book route was asked, and how many times `GET /v1/server` was read for the catalogues.
     book_asks: Vec<String>,
     offer_checks: usize,
@@ -166,6 +171,20 @@ impl FakeCloud {
         let mut state = self.0.lock().unwrap();
         state.metadata.push("rawg".to_owned());
         state.rawg_answers = answers.into();
+    }
+
+    /// A server that searches comics in Comic Vine, answering these in order.
+    fn with_comic_vine(
+        &self,
+        answers: Vec<std::result::Result<Vec<crate::metadata::Candidate>, &'static str>>,
+    ) {
+        let mut state = self.0.lock().unwrap();
+        state.metadata.push("comic_vine".to_owned());
+        state.comic_vine_answers = answers.into();
+    }
+
+    fn comic_vine_asks(&self) -> Vec<String> {
+        self.0.lock().unwrap().comic_vine_asks.clone()
     }
 
     fn rawg_asks(&self) -> Vec<String> {
@@ -832,6 +851,16 @@ impl CloudApi for FakeApi {
         Ok(state.metadata.iter().any(|offered| offered == provider))
     }
 
+    async fn comic_vine_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.comic_vine_asks.push(query.to_owned());
+        match state.comic_vine_answers.pop_front() {
+            Some(Ok(candidates)) => Ok(candidates),
+            Some(Err(code)) => Err(Error::account(code)),
+            None => Err(Error::account("server_unavailable")),
+        }
+    }
+
     async fn rawg_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>> {
         let mut state = self.cloud.0.lock().unwrap();
         state.rawg_asks.push(query.to_owned());
@@ -1144,6 +1173,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 
 // --- Tests -----------------------------------------------------------------
 
+mod comic_vine_tests;
 mod invitations_tests;
 mod links_tests;
 mod metadata_tests;

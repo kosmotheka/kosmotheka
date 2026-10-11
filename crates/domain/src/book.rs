@@ -469,6 +469,8 @@ pub const COVER_HOSTS: &[&str] = &[
     "image.tmdb.org",
     // RAWG's images, whose address the server validates and the app checks again (see metadata::via_server).
     "media.rawg.io",
+    // Comic Vine's images, whose address the server validates and the app checks again (see metadata::via_server).
+    "comicvine.gamespot.com",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {

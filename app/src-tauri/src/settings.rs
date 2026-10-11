@@ -17,7 +17,7 @@ const GOOGLE_BOOKS_VIA_SERVER_KEY: &str = "google_books_via_server";
 
 /// Provider ids that need a key (see `metadata::Source` for every source,
 /// keyless ones included).
-pub const KEYED_PROVIDERS: &[&str] = &["google_books", "gameupc", "tmdb", "rawg"];
+pub const KEYED_PROVIDERS: &[&str] = &["google_books", "gameupc", "tmdb", "rawg", "comic_vine"];
 
 fn api_key_state_key(provider: &str) -> String {
     format!("api_key.{provider}")

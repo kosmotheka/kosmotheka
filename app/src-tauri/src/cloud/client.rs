@@ -15,7 +15,9 @@ use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::metadata::Candidate;
 use crate::metadata::Metadata;
-use crate::metadata::via_server::{parse_answer, parse_rawg_answer, parse_tmdb_answer};
+use crate::metadata::via_server::{
+    parse_answer, parse_comic_vine_answer, parse_rawg_answer, parse_tmdb_answer,
+};
 use crate::sync::{SyncOperation, VersionVector};
 use kosmotheka_domain::Isbn;
 use kosmotheka_domain::Kind;
@@ -300,6 +302,19 @@ impl CloudApi for HttpCloud {
             .metadata
             .iter()
             .any(|offered| offered == provider))
+    }
+
+    async fn comic_vine_search(&self, query: &str) -> Result<Vec<Candidate>> {
+        let body = json!({ "query": query });
+        let answer: Value = send_json(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/comic-vine/search", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await?;
+        parse_comic_vine_answer(&answer).map_err(|()| Error::account("server_unavailable"))
     }
 
     async fn rawg_search(&self, query: &str) -> Result<Vec<Candidate>> {

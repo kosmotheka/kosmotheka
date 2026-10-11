@@ -1,0 +1,37 @@
+{
+  "error": "OK",
+  "limit": 8,
+  "offset": 0,
+  "number_of_page_results": 4,
+  "number_of_total_results": 4,
+  "status_code": 1,
+  "results": [
+    {
+      "id": 6,
+      "name": "The Joker",
+      "resource_type": "issue",
+      "issue_number": "1",
+      "cover_date": "1940-04-01",
+      "store_date": "1940-03-15",
+      "volume": { "api_detail_url": "https://comicvine.gamespot.com/api/volume/4050-796/", "id": 796, "name": "Batman" },
+      "image": {
+        "small_url": "https://comicvine.gamespot.com/a/uploads/scale_small/6/66037/1334617-batman_1_cover.jpg",
+        "medium_url": "https://comicvine.gamespot.com/a/uploads/scale_medium/6/66037/1334617-batman_1_cover.jpg",
+        "original_url": "https://comicvine.gamespot.com/a/uploads/original/6/66037/1334617-batman_1_cover.jpg"
+      }
+    },
+    {
+      "id": 796,
+      "name": "Batman",
+      "resource_type": "volume",
+      "start_year": "1940",
+      "publisher": { "api_detail_url": "https://comicvine.gamespot.com/api/publisher/4010-10/", "id": 10, "name": "DC Comics" },
+      "image": {
+        "small_url": "https://comicvine.gamespot.com/a/uploads/scale_small/6/66037/1334617-batman_1_cover.jpg",
+        "medium_url": "https://comicvine.gamespot.com/a/uploads/scale_medium/6/66037/1334617-batman_1_cover.jpg"
+      }
+    },
+    { "id": 1699, "name": "Batman", "resource_type": "character" },
+    { "id": 10, "name": "DC Comics", "resource_type": "publisher" }
+  ]
+}

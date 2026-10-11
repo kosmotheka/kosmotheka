@@ -20,12 +20,13 @@ import {
   searchWorks,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { ExternalLink, RAWG_URL } from "@/components/external-link";
+import { ExternalLink } from "@/components/external-link";
+import { SOURCES_WITH_A_LINK } from "@/components/source-credits";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
   book: ["bne", "open_library", "inventaire", "wikidata", "google_books"],
-  comic: ["wikidata"],
+  comic: ["comic_vine", "wikidata"],
   boardgame: ["wikidata", "game_upc"],
   film: ["tmdb", "wikidata"],
   tv_series: ["tmdb", "wikidata"],
@@ -44,16 +45,17 @@ function kindsOf(source: Source): Kind[] {
 /** What is selected on the left: every source at once, one type, or (on a phone) nothing yet. */
 type Selection = Kind | "all" | null;
 
-const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc", "tmdb", "rawg"]);
+const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc", "tmdb", "rawg", "comic_vine"]);
 
 /** Sources the account's server can also ask when there is no key of their own (D62, D83). */
-const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg"]);
+const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg", "comic_vine"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
   game_upc: "https://gameupc.com",
   tmdb: "https://www.themoviedb.org/settings/api",
   rawg: "https://rawg.io/apidocs",
+  comic_vine: "https://comicvine.gamespot.com/api/",
 };
 
 /** Known codes that resolve to a real result on that provider, used only to
@@ -67,7 +69,9 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
           ? await searchWorks("film", "matrix", "en")
           : source === "rawg"
             ? await searchWorks("videogame", "zelda", "en")
-            : await lookupCode("019962194719");
+            : source === "comic_vine"
+              ? await searchWorks("comic", "batman", "en")
+              : await lookupCode("019962194719");
     return result.warnings.some((w) => w.source === source && w.kind === "bad_key")
       ? "bad_key"
       : "ok";
@@ -81,9 +85,10 @@ interface Offers {
   googleBooks: boolean;
   tmdb: boolean;
   rawg: boolean;
+  comicVine: boolean;
 }
 
-const NO_OFFERS: Offers = { googleBooks: false, tmdb: false, rawg: false };
+const NO_OFFERS: Offers = { googleBooks: false, tmdb: false, rawg: false, comicVine: false };
 
 function usableCount(sources: Source[], settings: Settings, offers: Offers): number {
   return sources.filter((source) => isUsable(source, settings, offers)).length;
@@ -94,6 +99,7 @@ function viaAccount(source: Source, settings: Settings, offers: Offers): boolean
   if (source === "google_books") return offers.googleBooks && settings.googleBooksViaServer;
   if (source === "tmdb") return offers.tmdb;
   if (source === "rawg") return offers.rawg;
+  if (source === "comic_vine") return offers.comicVine;
   return false;
 }
 
@@ -140,6 +146,7 @@ export function ProvidersDialog({
           googleBooks: offered.includes("google_books"),
           tmdb: offered.includes("tmdb"),
           rawg: offered.includes("rawg"),
+          comicVine: offered.includes("comic_vine"),
         }),
       )
       .catch(() => setOffers(NO_OFFERS));
@@ -391,12 +398,11 @@ export function ProvidersDialog({
         <img src={tmdbLogo} alt="TMDB" className="h-3 w-auto" />
         <p className="min-w-0 flex-1">{t("providers.tmdbNotice")}</p>
       </div>
-      <p>
-        <Trans
-          i18nKey="providers.rawgNotice"
-          components={{ link: <ExternalLink url={RAWG_URL} /> }}
-        />
-      </p>
+      {Object.values(SOURCES_WITH_A_LINK).map((credit) => (
+        <p key={credit.url}>
+          <Trans i18nKey={credit.notice} components={{ link: <ExternalLink url={credit.url} /> }} />
+        </p>
+      ))}
     </section>
   );
 
@@ -413,7 +419,7 @@ export function ProvidersDialog({
         <div className="flex items-center gap-2.5 rounded-lg border p-3 text-sm">
           <span className="flex-1">
             {t(
-              offers.googleBooks || offers.tmdb || offers.rawg
+              offers.googleBooks || offers.tmdb || offers.rawg || offers.comicVine
                 ? "providers.withCloud"
                 : "providers.noCloud",
             )}

@@ -47,6 +47,8 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 **Hecho en 7.8 (cuarta parte, 11/10/2026): clave propia para TMDB y RAWG** (D62: todo proveedor con clave la admite en Ajustes). Con ella la app llama directamente al proveedor, con preferencia sobre el servidor de la cuenta, y con las mismas comprobaciones que si la respuesta viniera de un servidor. Ver [architecture/cloud.md](../architecture/cloud.md#clave-propia-para-tmdb-y-rawg-78-cuarta-parte-d62).
 
+**Hecho en 7.8 (quinta parte, 12/10/2026): Comic Vine (cómics) por título, por el servidor y con clave propia.** Series y números, con editorial, guion y dibujo (de los tres primeros). Condiciones releídas el 12/10/2026: estrictamente no comercial; 200 peticiones por recurso y hora (el servidor se queda en 150 por recurso); enlace de vuelta en cada página donde se usen sus datos (en «Créditos» y en los resultados); no un producto que compita con ellos, ni redistribuir sus datos alterados. Comic Vine solo admite la clave en la dirección. Diseño y qué se leyó y qué se supuso de su documentación en [architecture/cloud.md](../architecture/cloud.md#buscar-cómics-por-título-en-comic-vine-78-quinta-parte-d62). Pendiente: BoardGameGeek, que de momento no contesta.
+
 ## Lo que esto implica para la arquitectura
 
 - **Claves en una app de código abierto.** Una clave no puede ir dentro de la app: el código es público y cualquiera la extraería (D03, D21). Tres salidas:

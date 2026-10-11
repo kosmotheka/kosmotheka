@@ -27,14 +27,20 @@ services:
         # Fixtures extend a dev-only bundle: they exist only in dev and test (below).
         exclude: '../src/DataFixtures/'
 
-    # RAWG only takes its key in the address of the call, so it is asked with a client of its own (7.8): see
-    # App\Metadata\RawgClientFactory. The tests replace this one with RAWG in memory.
+    # RAWG and Comic Vine only take their key in the address of the call, so they are asked with a client of their
+    # own (7.8): see App\Metadata\UnloggedClientFactory. The tests replace these with the providers in memory.
     app.http_client.rawg:
         class: Symfony\Contracts\HttpClient\HttpClientInterface
-        factory: ['App\Metadata\RawgClientFactory', 'create']
+        factory: ['App\Metadata\UnloggedClientFactory', 'create']
     App\Metadata\RawgHttpSource:
         arguments:
             $httpClient: '@app.http_client.rawg'
+    app.http_client.comic_vine:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['App\Metadata\UnloggedClientFactory', 'create']
+    App\Metadata\ComicVineHttpSource:
+        arguments:
+            $httpClient: '@app.http_client.comic_vine'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
@@ -97,6 +103,10 @@ when@test:
         app.http_client.rawg:
             class: Symfony\Component\HttpClient\MockHttpClient
             factory: ['App\Tests\Support\FakeRawgApi', 'client']
+        # Comic Vine, in memory: the same.
+        app.http_client.comic_vine:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeComicVineApi', 'client']
         # The log, in memory: a test can say that something never reached it.
         logger:
             class: App\Tests\Support\RecordingLogger

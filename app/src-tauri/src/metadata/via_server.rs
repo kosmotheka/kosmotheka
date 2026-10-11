@@ -5,7 +5,7 @@
 use std::future::Future;
 use std::time::Duration;
 
-use kosmotheka_domain::{ContributorRole, Isbn, Kind};
+use kosmotheka_domain::{ContributorRole, Format, Isbn, Kind};
 use serde_json::Value;
 use url::Url;
 
@@ -269,7 +269,10 @@ pub fn parse_tmdb_answer(body: &Value, kind: Kind) -> Result<Vec<Candidate>, ()>
 }
 
 fn tmdb_candidate(item: &Value, kind: Kind) -> Option<Candidate> {
-    let id = item.get("external_id")?.as_u64().filter(|id| *id > 0)?;
+    let id = item
+        .get("external_id")?
+        .as_u64()
+        .filter(|id| (1..=MAX_ID).contains(id))?;
     let original = text(item.get("original_title"), MAX_TEXT);
     let title = text(item.get("title"), MAX_TEXT).or_else(|| original.clone())?;
 
@@ -424,7 +427,10 @@ pub fn parse_rawg_answer(body: &Value) -> Result<Vec<Candidate>, ()> {
 }
 
 fn rawg_candidate(item: &Value) -> Option<Candidate> {
-    let id = item.get("external_id")?.as_u64().filter(|id| *id > 0)?;
+    let id = item
+        .get("external_id")?
+        .as_u64()
+        .filter(|id| (1..=MAX_ID).contains(id))?;
     let title = text(item.get("title"), MAX_TEXT)?;
 
     let mut candidate = Candidate::new(Kind::Videogame, Source::Rawg, title);
@@ -488,8 +494,155 @@ fn is_rawg_cover(raw: &str) -> bool {
     })
 }
 
-/// `games/456/abc.jpg`: plain names between slashes, the last with an image extension.
+/// `games/456/abc.jpg`, as RAWG names its images.
 fn is_rawg_image_path(path: &str) -> bool {
+    is_plain_image_path(path, &["jpg", "jpeg", "png", "webp"], 0)
+}
+
+/// The provider's id for Comic Vine in `GET /v1/server`'s `metadata` list.
+pub const COMIC_VINE: &str = "comic_vine";
+
+const MAX_NUMBER: usize = 20;
+/// The biggest number a provider or a server may give for a thing, as the server itself allows it.
+const MAX_ID: u64 = 1_000_000_000;
+/// Where Comic Vine keeps its images: the server validates the address, the app checks it again, and only this is
+/// downloaded for a candidate.
+const COMIC_VINE_COVER_HOST: &str = "comicvine.gamespot.com";
+
+/// Searches comics by title in Comic Vine: with the person's own key straight to it, else through the server of the
+/// account if it offers it, else nothing is asked. As for RAWG, a server that fails or is slow is a warning.
+pub async fn search_comic_vine<C, D, Fut>(
+    access: SearchAccess<'_, C>,
+    query: &str,
+    direct: D,
+) -> Result<Vec<Candidate>, ProviderError>
+where
+    C: CloudApi,
+    D: Fn(String) -> Fut,
+    Fut: Future<Output = Result<Vec<Candidate>, ProviderError>>,
+{
+    let cloud = match access {
+        SearchAccess::Key(key) => return direct(key.to_owned()).await,
+        SearchAccess::Server(cloud) => cloud,
+        SearchAccess::Nothing => return Ok(Vec::new()),
+    };
+
+    let asked = tokio::time::timeout(TMDB_PATIENCE, async {
+        if !cloud.offers_metadata(COMIC_VINE).await.unwrap_or(false) {
+            return Ok(Vec::new());
+        }
+        cloud.comic_vine_search(query.trim()).await
+    })
+    .await;
+    match asked {
+        Ok(Ok(candidates)) => Ok(candidates),
+        Ok(Err(error)) => Err(server_error(&error)),
+        Err(_) => Err(ProviderError::Unexpected("server too slow".to_owned())),
+    }
+}
+
+/// Reads the answer to a comic search, from the server or made from a provider's own: at most eight candidates, series
+/// and issues, each field checked and cut, what does not fit dropped. `Err` when it is not the shape at all.
+pub fn parse_comic_vine_answer(body: &Value) -> Result<Vec<Candidate>, ()> {
+    let list = body.get("candidates").and_then(Value::as_array).ok_or(())?;
+    Ok(list
+        .iter()
+        .take(10 * MAX_CANDIDATES)
+        .filter_map(comic_vine_candidate)
+        .take(MAX_CANDIDATES)
+        .collect())
+}
+
+fn comic_vine_candidate(item: &Value) -> Option<Candidate> {
+    let resource = item.get("resource")?.as_str()?;
+    if !matches!(resource, "volume" | "issue") {
+        return None;
+    }
+    let id = item
+        .get("external_id")?
+        .as_u64()
+        .filter(|id| (1..=MAX_ID).contains(id))?;
+    let title = text(item.get("title"), MAX_TEXT);
+
+    let mut candidate = if resource == "volume" {
+        let mut candidate = Candidate::new(Kind::Comic, Source::ComicVine, title?);
+        candidate.publisher = text(item.get("publisher"), MAX_NAME);
+        candidate
+    } else {
+        let series = text(item.get("series"), MAX_TEXT);
+        let number = text(item.get("number"), MAX_NUMBER);
+        let name = issue_title(series.as_deref(), number.as_deref(), title.as_deref())?;
+        let mut candidate = Candidate::new(Kind::Comic, Source::ComicVine, name);
+        candidate.number = number;
+        // A single issue, as a person holds it.
+        candidate.format = Some(Format::SingleIssue);
+        candidate
+    };
+    candidate.external_id = Some(format!("{resource}-{id}"));
+    candidate.published_year = item
+        .get("year")
+        .and_then(Value::as_i64)
+        .filter(|year| (1800..=2200).contains(year))
+        .and_then(|year| i32::try_from(year).ok());
+    candidate.cover_url = item
+        .get("cover_url")
+        .and_then(Value::as_str)
+        .filter(|url| is_comic_vine_cover(url))
+        .map(str::to_owned);
+    candidate.contributors = names(item.get("writers"))
+        .into_iter()
+        .map(|name| CandidateContributor {
+            name,
+            role: ContributorRole::Writer,
+        })
+        .chain(
+            names(item.get("artists"))
+                .into_iter()
+                .map(|name| CandidateContributor {
+                    name,
+                    role: ContributorRole::Illustrator,
+                }),
+        )
+        .collect();
+    Some(candidate)
+}
+
+/// `Batman #1: The Joker`, or as much of it as there is; nothing when there is nothing to call it.
+fn issue_title(series: Option<&str>, number: Option<&str>, title: Option<&str>) -> Option<String> {
+    let numbered = |name: &str| match number {
+        Some(number) => format!("{name} #{number}"),
+        None => name.to_owned(),
+    };
+    let composed = match (series, title) {
+        (Some(series), Some(title)) if title != series => format!("{}: {title}", numbered(series)),
+        (Some(series), _) => numbered(series),
+        (None, Some(title)) => numbered(title),
+        (None, None) => format!("#{}", number?),
+    };
+    Some(composed.chars().take(MAX_TEXT).collect())
+}
+
+/// `https://comicvine.gamespot.com/a/uploads/<names>/<file>` ending in an image extension the app can store.
+fn is_comic_vine_cover(raw: &str) -> bool {
+    if raw.len() > MAX_URL || raw.chars().any(|c| c.is_control() || c.is_whitespace()) {
+        return false;
+    }
+    Url::parse(raw).is_ok_and(|url| {
+        url.scheme() == "https"
+            && url.host_str() == Some(COMIC_VINE_COVER_HOST)
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && url.query().is_none()
+            && url.fragment().is_none()
+            && url.path().strip_prefix("/a/uploads/").is_some_and(|path| {
+                is_plain_image_path(path, &["jpg", "jpeg", "png", "gif", "webp"], 1)
+            })
+    })
+}
+
+/// `games/456/abc.jpg`: plain names between slashes (at least `min_dirs` of them), the last with an image extension.
+fn is_plain_image_path(path: &str, extensions: &[&str], min_dirs: usize) -> bool {
     let plain = |name: &str| {
         !name.is_empty()
             && name
@@ -500,7 +653,9 @@ fn is_rawg_image_path(path: &str) -> bool {
     let Some(file) = parts.pop() else {
         return false;
     };
-    file.rsplit_once('.').is_some_and(|(name, extension)| {
-        plain(name) && matches!(extension, "jpg" | "jpeg" | "png" | "webp")
-    }) && parts.iter().all(|part| plain(part))
+    parts.len() >= min_dirs
+        && file
+            .rsplit_once('.')
+            .is_some_and(|(name, extension)| plain(name) && extensions.contains(&extension))
+        && parts.iter().all(|part| plain(part))
 }

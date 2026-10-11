@@ -8,11 +8,11 @@ use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * The http client RAWG is asked with. RAWG only takes its key as a parameter of the address, so this client is made
+ * The http client of a provider that only takes its key as a parameter of the address (RAWG, Comic Vine). It is made
  * apart and never given a logger: the framework's own client logs every request with its address (at the `info`
  * level, which a server turned up to debug would write), and here that address holds the key.
  */
-final class RawgClientFactory
+final class UnloggedClientFactory
 {
     public static function create(): HttpClientInterface
     {

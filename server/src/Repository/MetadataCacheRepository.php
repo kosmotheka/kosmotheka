@@ -26,20 +26,29 @@ final class MetadataCacheRepository extends ServiceEntityRepository
     /** Deletes what is past its age: each kind of search after its own period, found books and missing ones after theirs. */
     public function deleteStaleBefore(\DateTimeImmutable $now): int
     {
-        $searches = array_keys(MetadataCacheEntry::SEARCH_TTLS);
+        // One condition per kind of search, built from the one table of periods.
+        $searchConditions = [];
+        $parameters = [];
+        foreach (MetadataCacheEntry::SEARCH_TTLS as $provider => $period) {
+            $n = \count($parameters) / 2;
+            $searchConditions[] = \sprintf('(e.provider = :provider%1$d AND e.fetchedAt <= :age%1$d)', $n);
+            $parameters['provider'.$n] = $provider;
+            $parameters['age'.$n] = $now->modify('-'.$period);
+        }
+
         $query = $this->getEntityManager()->createQuery(
             \sprintf(
-                'DELETE FROM %1$s e WHERE (e.provider = :tmdb AND e.fetchedAt <= :tmdbAge) OR (e.provider = :rawg AND e.fetchedAt <= :rawgAge) OR (e.provider NOT IN (:searches) AND ((e.found = true AND e.fetchedAt <= :found) OR (e.found = false AND e.fetchedAt <= :missing)))',
+                'DELETE FROM %s e WHERE %s OR (e.provider NOT IN (:searches) AND ((e.found = true AND e.fetchedAt <= :found) OR (e.found = false AND e.fetchedAt <= :missing)))',
                 MetadataCacheEntry::class,
+                implode(' OR ', $searchConditions),
             )
         );
+        foreach ($parameters as $name => $value) {
+            $query->setParameter($name, $value);
+        }
 
         return (int) $query
-            ->setParameter('tmdb', MetadataCacheEntry::TMDB_SEARCH)
-            ->setParameter('tmdbAge', $now->modify('-'.MetadataCacheEntry::SEARCH_TTLS[MetadataCacheEntry::TMDB_SEARCH]))
-            ->setParameter('rawg', MetadataCacheEntry::RAWG_SEARCH)
-            ->setParameter('rawgAge', $now->modify('-'.MetadataCacheEntry::SEARCH_TTLS[MetadataCacheEntry::RAWG_SEARCH]))
-            ->setParameter('searches', $searches)
+            ->setParameter('searches', array_keys(MetadataCacheEntry::SEARCH_TTLS))
             ->setParameter('found', $now->modify('-'.MetadataCacheEntry::FOUND_TTL))
             ->setParameter('missing', $now->modify('-'.MetadataCacheEntry::MISSING_TTL))
             ->execute();

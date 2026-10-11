@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Enum\ComicVineResource;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
@@ -31,6 +32,12 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $tmdbCallsLimiter,
         #[Target('rawg_calls')]
         private RateLimiterFactoryInterface $rawgCallsLimiter,
+        #[Target('comic_vine_search')]
+        private RateLimiterFactoryInterface $comicVineSearchLimiter,
+        #[Target('comic_vine_volume')]
+        private RateLimiterFactoryInterface $comicVineVolumeLimiter,
+        #[Target('comic_vine_issue')]
+        private RateLimiterFactoryInterface $comicVineIssueLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -107,6 +114,25 @@ final readonly class RequestLimiter
     public function consumeRawgCall(): void
     {
         $limit = $this->rawgCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /**
+     * One real call to Comic Vine, from the whole server, against the hour of the resource it is made to: it supports
+     * 200 an hour per resource and the server keeps below that. One key for all; nothing says whose call it was.
+     *
+     * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted
+     */
+    public function consumeComicVineCall(ComicVineResource $resource): void
+    {
+        $factory = match ($resource) {
+            ComicVineResource::Search => $this->comicVineSearchLimiter,
+            ComicVineResource::Volume => $this->comicVineVolumeLimiter,
+            ComicVineResource::Issue => $this->comicVineIssueLimiter,
+        };
+        $limit = $factory->create('server')->consume();
         if (!$limit->isAccepted()) {
             throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
         }
