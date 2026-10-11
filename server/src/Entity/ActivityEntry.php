@@ -38,12 +38,16 @@ final class ActivityEntry
         /** `http` for a request, `console` for a command: a command has no IP. */
         #[ORM\Column(length: 8)]
         private string $channel,
-        /** The account (`user.id`) that did it, or, for what the cloud does by itself, the one it was done for. */
+        /**
+         * The account (`user.id`) that did it. For a line from an operation, the account of the person of the device that
+         * signed it (null if that person has none); for what the cloud does by itself, the one it was done for.
+         */
         #[ORM\Column(type: 'uuid', nullable: true)]
         private ?Uuid $accountId = null,
         /** Keyed hash of the account's email, so «was it this address?» can be answered after the account is gone; never the address. */
         #[ORM\Column(length: 64, nullable: true)]
         private ?string $accountEmailFingerprint = null,
+        /** The device that did it; for an operation, the one that signed it (the cloud's, for what the cloud signs). */
         #[ORM\Column(length: 64, nullable: true)]
         private ?string $deviceId = null,
         /** The cloud library (`cloud_library.id`) it happened in. */
@@ -65,6 +69,12 @@ final class ActivityEntry
         private ?string $ip = null,
         #[ORM\Column(length: 255, nullable: true)]
         private ?string $userAgent = null,
+        /** For a line that comes from an operation: the account whose session uploaded it, which is not always its author's (SEG-041). */
+        #[ORM\Column(type: 'uuid', nullable: true)]
+        private ?Uuid $uploadedByAccountId = null,
+        /** The device whose session uploaded it. `ip` and `userAgent` are always those of the request, so for these lines the uploader's. */
+        #[ORM\Column(length: 64, nullable: true)]
+        private ?string $uploadedByDeviceId = null,
     ) {
         $this->id = Uuid::v7();
     }
@@ -137,5 +147,15 @@ final class ActivityEntry
     public function getUserAgent(): ?string
     {
         return $this->userAgent;
+    }
+
+    public function getUploadedByAccountId(): ?Uuid
+    {
+        return $this->uploadedByAccountId;
+    }
+
+    public function getUploadedByDeviceId(): ?string
+    {
+        return $this->uploadedByDeviceId;
     }
 }

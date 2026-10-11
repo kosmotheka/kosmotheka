@@ -31,6 +31,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $invitationCreateLimiter,
         #[Target('invitation_email')]
         private RateLimiterFactoryInterface $invitationEmailLimiter,
+        #[Target('invitation_recipient_library')]
+        private RateLimiterFactoryInterface $invitationRecipientLibraryLimiter,
         #[Target('invitation_recipient')]
         private RateLimiterFactoryInterface $invitationRecipientLimiter,
         #[Target('invitation_lookup')]
@@ -59,10 +61,7 @@ final readonly class RequestLimiter
      */
     public function requireLoginOpen(string $addressFingerprint): void
     {
-        $limit = $this->loginFailedAccountLimiter->create($addressFingerprint)->consume(0);
-        if ($limit->getRemainingTokens() < 1) {
-            throw AccountException::tooManyRequests($limit->getRetryAfter()->getTimestamp() - time());
-        }
+        $this->requireOpen($this->loginFailedAccountLimiter, $addressFingerprint);
     }
 
     /** A failed sign-in (a wrong password or second-factor code) spends one try of that account; it never throws. */
@@ -96,14 +95,26 @@ final readonly class RequestLimiter
     }
 
     /**
-     * An invitation sent by email: per account and day, so the server is not a way to mail strangers, and per
-     * recipient and day, so one address cannot be flooded from several accounts. The recipient is a keyed
-     * fingerprint, never the address. @throws AccountException with AccountErrorCode::TooManyRequests.
+     * Whether an invitation by email may go now, spending nothing: per account and day (so the server is not a way to
+     * mail strangers), per pair library and address (so another library cannot use up what this one may send to an
+     * address) and per address in all (so none is flooded from many libraries). The recipient is a keyed fingerprint,
+     * never the address. All three are looked at before any is spent (SEG-044).
+     *
+     * @throws AccountException with AccountErrorCode::TooManyRequests
      */
-    public function consumeInvitationEmail(string $userId, string $recipientFingerprint): void
+    public function requireInvitationEmailOpen(string $userId, string $libraryId, string $recipientFingerprint): void
     {
-        $this->consume($this->invitationEmailLimiter, $userId);
-        $this->consume($this->invitationRecipientLimiter, $recipientFingerprint);
+        $this->requireOpen($this->invitationEmailLimiter, $userId);
+        $this->requireOpen($this->invitationRecipientLibraryLimiter, $libraryId.'|'.$recipientFingerprint);
+        $this->requireOpen($this->invitationRecipientLimiter, $recipientFingerprint);
+    }
+
+    /** Spends the three of an invitation by email that was sent. Never throws: it is already gone. */
+    public function spendInvitationEmail(string $userId, string $libraryId, string $recipientFingerprint): void
+    {
+        $this->invitationEmailLimiter->create($userId)->consume();
+        $this->invitationRecipientLibraryLimiter->create($libraryId.'|'.$recipientFingerprint)->consume();
+        $this->invitationRecipientLimiter->create($recipientFingerprint)->consume();
     }
 
     /** Looking at or accepting an invitation, per address: the token is long, but nobody should be able to try. @throws AccountException with AccountErrorCode::TooManyRequests */
@@ -116,6 +127,15 @@ final readonly class RequestLimiter
     public function consumeInvitationAccept(string $userId): void
     {
         $this->consume($this->invitationAcceptLimiter, $userId);
+    }
+
+    /** Looks at a limit without spending from it. */
+    private function requireOpen(RateLimiterFactoryInterface $factory, string $key): void
+    {
+        $limit = $factory->create($key)->consume(0);
+        if ($limit->getRemainingTokens() < 1) {
+            throw AccountException::tooManyRequests($limit->getRetryAfter()->getTimestamp() - time());
+        }
     }
 
     private function consume(RateLimiterFactoryInterface $factory, string $key): void

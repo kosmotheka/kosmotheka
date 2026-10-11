@@ -398,6 +398,6 @@ final readonly class CloudPush
     /** The device in the HLC: what follows the time and the counter. */
     private function author(OperationPayload $payload): string
     {
-        return explode('-', $payload->hlc, 3)[2];
+        return $payload->author();
     }
 }

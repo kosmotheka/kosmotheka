@@ -72,30 +72,14 @@ final readonly class AccountMailer
 
     /**
      * The invitation to a library (D43), to an address that may have no account. Fixed text in the language of the
-     * account that invites, plain text only; the only thing that comes from the one who invites is the library's
-     * name, cleaned (`libraryNameForMail`), and nothing of their name or email goes in the subject or the body. The
+     * account that invites, plain text only, and **nothing written by whoever invites**: not the name of the library
+     * nor of anyone (SEG-042). It is sent from the official domain to addresses that are not the sender's, so any
+     * word they could choose would be a word of ours; the name is seen in the app when the link is opened. The
      * limits are the invitation's own (`RequestLimiter::consumeInvitationEmail*`), taken by the caller.
      */
-    public function sendInvitation(string $to, string $locale, string $libraryName, string $link): void
+    public function sendInvitation(string $to, string $locale, string $link): void
     {
-        $this->deliver($to, $locale, 'invitation.subject', 'invitation.body', [
-            '%library%' => self::libraryNameForMail($libraryName),
-            '%link%' => $link,
-        ]);
-    }
-
-    /**
-     * A library's name written by whoever administers it, made safe to quote in a plain-text email: control
-     * characters and line breaks out, anything that looks like an address out (it would be a link in somebody
-     * else's words), and short.
-     */
-    public static function libraryNameForMail(string $name): string
-    {
-        $name = preg_replace('/[\p{C}\p{Zl}\p{Zp}]+/u', ' ', $name) ?? '';
-        $name = preg_replace('~\S*(?:://|www\.)\S*~iu', ' ', $name) ?? '';
-        $name = trim((string) preg_replace('/\s+/u', ' ', $name));
-
-        return mb_strimwidth($name, 0, 60, '…');
+        $this->deliver($to, $locale, 'invitation.subject', 'invitation.body', ['%link%' => $link]);
     }
 
     /** @param array<string, string|int> $parameters */

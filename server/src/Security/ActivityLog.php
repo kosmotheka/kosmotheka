@@ -13,6 +13,7 @@ use App\Entity\User;
 use App\Enum\ActivityKind;
 use App\Repository\MembershipRepository;
 use App\Sync\Invitation\EmailFingerprint;
+use App\Sync\Permission\CatalogLibraryView;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Clock\ClockInterface;
@@ -89,12 +90,23 @@ final readonly class ActivityLog
             return;
         }
         $name = $this->nameOf($library);
+        $view = new CatalogLibraryView($this->entityManager, $library);
         foreach ($applied as ['operation' => $operation, 'events' => $events]) {
+            // The author is the device whose signature the server verified; the uploader is only whose session carried it (SEG-041).
+            $author = $operation->author();
             foreach ($events as $event) {
-                $account = $by?->getUser() ?? $this->accountOfCloudEvent($library, $event);
-                $this->persist($event['kind'], $account, $by?->getDeviceId(), $library, $name, $event['subject'], $operation->id, $event['detail']);
+                $account = $by instanceof Device ? $this->accountOfDevice($library, $view, $author) : $this->accountOfCloudEvent($library, $event);
+                $this->persist($event['kind'], $account, $author, $library, $name, $event['subject'], $operation->id, $event['detail'], $by?->getUser(), $by?->getDeviceId());
             }
         }
+    }
+
+    /** The account of the person this device belongs to in the library, if the person has one (the server's own tables, D96). */
+    private function accountOfDevice(CloudLibrary $library, CatalogLibraryView $view, string $device): ?User
+    {
+        $member = $view->memberOfDevice($device);
+
+        return null === $member || !Uuid::isValid($member) ? null : $this->memberships->findOfMember($library, Uuid::fromString($member))?->getUser();
     }
 
     /**
@@ -113,7 +125,7 @@ final readonly class ActivityLog
         return null === $member || !Uuid::isValid($member) ? null : $this->memberships->findOfMember($library, Uuid::fromString($member))?->getUser();
     }
 
-    private function persist(ActivityKind $kind, ?User $account, ?string $deviceId, ?CloudLibrary $library, ?string $libraryName, ?string $subject, ?string $operation, ?string $detail): void
+    private function persist(ActivityKind $kind, ?User $account, ?string $deviceId, ?CloudLibrary $library, ?string $libraryName, ?string $subject, ?string $operation, ?string $detail, ?User $uploader = null, ?string $uploaderDevice = null): void
     {
         $request = $this->requestStack->getCurrentRequest();
         $this->entityManager->persist(new ActivityEntry(
@@ -130,6 +142,8 @@ final readonly class ActivityLog
             $detail,
             $this->addressOf($request?->getClientIp()),
             $this->clean($request?->headers->get('User-Agent'), self::USER_AGENT_LENGTH),
+            $uploader?->getId(),
+            $uploaderDevice,
         ));
     }
 

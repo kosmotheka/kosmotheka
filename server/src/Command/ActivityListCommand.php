@@ -34,7 +34,7 @@ final class ActivityListCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('account', null, InputOption::VALUE_REQUIRED, 'Only this account (its id)')
+            ->addOption('account', null, InputOption::VALUE_REQUIRED, 'Only this account (its id): lines it did, or that its session uploaded')
             ->addOption('library', null, InputOption::VALUE_REQUIRED, 'Only this cloud library (its id)')
             ->addOption('kind', null, InputOption::VALUE_REQUIRED, 'Only this kind of event')
             ->addOption('since', null, InputOption::VALUE_REQUIRED, 'From this moment on, UTC (e.g. 2026-10-01)')
@@ -61,7 +61,7 @@ final class ActivityListCommand extends Command
 
         $entries = $this->entries->search($account, $library, $kind, $since, $until, $limit);
         $io->table(
-            ['When (UTC)', 'What', 'Account', 'Device', 'Library', 'About', 'Detail', 'IP', 'Agent'],
+            ['When (UTC)', 'What', 'Account', 'Device', 'Uploaded by', 'Library', 'About', 'Detail', 'IP', 'Agent'],
             array_map($this->row(...), $entries),
         );
         $io->writeln(\sprintf('%d line(s)%s.', \count($entries), \count($entries) === $limit ? ' (the limit; narrow it or raise --limit)' : ''));
@@ -80,6 +80,7 @@ final class ActivityListCommand extends Command
             $entry->getKind()->value,
             $entry->getAccountId()?->toRfc4122() ?? '-',
             $entry->getDeviceId() ?? '-',
+            !$entry->getUploadedByAccountId() instanceof Uuid && null === $entry->getUploadedByDeviceId() ? '-' : ($entry->getUploadedByAccountId()?->toRfc4122() ?? '-').' / '.($entry->getUploadedByDeviceId() ?? '-'),
             null === $library ? '-' : $library.(null === $name ? '' : ' «'.$name.'»'),
             $entry->getSubjectId() ?? '-',
             $entry->getDetail() ?? '-',

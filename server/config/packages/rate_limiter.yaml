@@ -40,9 +40,15 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '1 day'
-        invitation_recipient:
+        # Per recipient, two ways (SEG-044): per pair (library, address), so another library cannot use up what this
+        # one may send, and in all per address, so no address is flooded from many libraries.
+        invitation_recipient_library:
             policy: sliding_window
             limit: 3
+            interval: '1 day'
+        invitation_recipient:
+            policy: sliding_window
+            limit: 10
             interval: '1 day'
         # Looking at or accepting one, per IP; accepting also per account.
         invitation_lookup:

@@ -18,4 +18,4 @@ two_factor_disabled:
     body: 'Se acaba de retirar el segundo factor de tu cuenta de Kosmotheka; iniciar sesión solo necesita de nuevo tu contraseña. Si no has sido tú, contacta con nosotros: puede significar que alguien más tiene acceso a tu cuenta.'
 invitation:
     subject: 'Te han invitado a una biblioteca en Kosmotheka'
-    body: "Te han invitado a la biblioteca «%library%» en Kosmotheka.\n\nAbre este enlace en el dispositivo donde usas Kosmotheka, en las próximas 24 horas:\n%link%\n\nTendrás que iniciar sesión, o crear una cuenta, con esta misma dirección de correo. Si no esperabas esto, puedes ignorar este correo."
+    body: "Te han invitado a una biblioteca en Kosmotheka.\n\nAbre este enlace en el dispositivo donde usas Kosmotheka, en las próximas 24 horas:\n%link%\n\nTendrás que iniciar sesión, o crear una cuenta, con esta misma dirección de correo. Si no esperabas esto, puedes ignorar este correo."

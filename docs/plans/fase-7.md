@@ -191,10 +191,11 @@ Apuntado para esa revisión:
 - Registro de actividad (7.7), visto al revisarlo:
   - (arreglado el 11/10/2026) un inicio de sesión fallido escribía una fila solo si la cuenta existía, y esa escritura de más podía delatar qué direcciones tienen cuenta; ahora se apunta en los dos casos;
   - **el límite de inicios de sesión es por IP** (10 peticiones cada 15 minutos, y cada inicio gasta dos: el reto y el inicio): una familia en la misma wifi lo comparte. Decidido por el maintainer el 11/10/2026: 30 cada 15 minutos por IP, y un límite nuevo por cuenta solo de intentos fallidos, 5 cada 15 minutos (SEG-051, [encargo](../historico/encargo-arreglos-auditoria-7.6.md));
-  - **pendiente de construir** (SEG-041, D66 enmendada el 11/10/2026): el registro apunta al autor de la operación además de a quien la sube;
-  - **pendiente de construir** (SEG-042, D43 enmendada el 11/10/2026): el correo de invitación sin el nombre de la biblioteca;
-  - **pendiente de construir** (SEG-044, decidido por el maintainer el 11/10/2026): el tope de correos de invitación por destinatario pasa a 3 al día por biblioteca y dirección, con un tope general de 10 al día por dirección; la cuota no se gasta si el correo no se envía;
+  - **construido el 11/10/2026** (SEG-041, D66 enmendada el 11/10/2026): el registro apunta al autor de la operación además de a quien la sube;
+  - **construido el 11/10/2026** (SEG-042, D43 enmendada el 11/10/2026): el correo de invitación sin el nombre de la biblioteca;
+  - **construido el 11/10/2026** (SEG-044, decidido por el maintainer el 11/10/2026): el tope de correos de invitación por destinatario pasa a 3 al día por biblioteca y dirección, con un tope general de 10 al día por dirección; la cuota no se gasta si el correo no se envía;
   - el registro no tiene tope de filas y la primera subida deja la historia de la biblioteca (SEG-045): **no se toca ahora** (decidido por el maintainer el 11/10/2026); se vigila el tamaño de `activity_log` cuando haya uso real, en la revisión de carga;
+  - los topes de correo de invitación se miran y después se gastan en dos pasos: dos peticiones a la vez pueden pasar las dos; y el registro hace una consulta por operación para saber de quién es el autor (medir con subidas grandes);
   - la huella del correo sale de `APP_SECRET`: si se cambia, las huellas viejas dejan de casar con ninguna dirección;
   - la primera subida de una biblioteca deja filas por los cambios de rol y de dispositivo de toda su historia, con la hora de llegada;
   - no se apuntan: crear una persona, quitar un dispositivo de la cuenta (D81) y nombrar superadministrador por consola (D52 pide sus accesos);
@@ -211,7 +212,7 @@ Apuntado para esa revisión:
 
 **Antes de publicar la nube:** que un enlace de invitación abra la app sola (aplazado desde 7.6; la lista está en «7.6 Invitar con un enlace»).
 
-**Registro cerrado** (11/10/2026): `REGISTRATION_ALLOWED_EMAILS` deja crear cuenta solo a los correos de la lista ([accounts.md](../architecture/accounts.md#post-v1accountregister)); es como se despliega la prueba cerrada antes de la revisión de seguridad de conjunto. Hecho por la sesión coordinadora, con sus tests vistos fallar; la pasada completa de `make check` se repite al cerrar la segunda tanda de arreglos, porque se hizo mientras la otra sesión trabajaba.
+**Registro cerrado** (11/10/2026): `REGISTRATION_ALLOWED_EMAILS` deja crear cuenta solo a los correos de la lista ([accounts.md](../architecture/accounts.md#post-v1accountregister)); es como se despliega la prueba cerrada antes de la revisión de seguridad de conjunto. Hecho por la sesión coordinadora, con sus tests vistos fallar; la pasada completa de `make check` se repitió al cerrar la segunda tanda (1453 tests en verde).
 
 **El VPS** (datos del maintainer, 01/10/2026; se revisan al llegar):
 - Pequeño: poca CPU y poca memoria, un Ubuntu reciente (por mirar), disco suficiente para empezar (por mirar cuánto). Si la app pide más, se verá entonces.

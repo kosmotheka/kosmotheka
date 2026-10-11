@@ -67,8 +67,9 @@ final readonly class InvitationManager
             throw AccountException::invalidRequest();
         }
         $fingerprint = null === $email ? null : $this->fingerprints->of($email);
+        // Looked at now, spent only once the mail has gone (SEG-044): a refusal or a failure costs nothing.
         if (null !== $fingerprint) {
-            $this->limiter->consumeInvitationEmail($by->getId()->toRfc4122(), $fingerprint);
+            $this->limiter->requireInvitationEmailOpen($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
         }
 
         $token = InvitationToken::generate();
@@ -89,9 +90,13 @@ final readonly class InvitationManager
             $this->activity->record(ActivityKind::InvitationCreated, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
             $this->entityManager->flush();
             if (null !== $email) {
-                $this->mailer->sendInvitation($email, $by->getLocale(), $this->libraryName($library), $link);
+                $this->mailer->sendInvitation($email, $by->getLocale(), $link);
             }
         });
+
+        if (null !== $fingerprint) {
+            $this->limiter->spendInvitationEmail($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
+        }
 
         return ['invitation' => $invitation, 'link' => null === $email ? $link : null];
     }

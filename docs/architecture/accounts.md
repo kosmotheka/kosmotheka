@@ -60,7 +60,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 | `login_failed_account` | 5 cada 15 min | cuenta: **solo los intentos fallidos** (contraseña o código del segundo factor equivocados). La clave es la huella del correo escrito, normalizado, así que un correo sin cuenta cuenta igual que uno con cuenta |
 | `email_code` | 10 cada 15 min | IP |
 | `email_per_address` | 3 cada 15 min | dirección de correo normalizada |
-| `invitation_create`, `invitation_email`, `invitation_recipient`, `invitation_lookup`, `invitation_accept` | ver [cloud.md](cloud.md#límites-de-peticiones) | las invitaciones (7.6.1): por cuenta, por huella del correo de destino o por IP, según el caso |
+| `invitation_create`, `invitation_email`, `invitation_recipient_library`, `invitation_recipient`, `invitation_lookup`, `invitation_accept` | ver [cloud.md](cloud.md#límites-de-peticiones) | las invitaciones (7.6.1): por cuenta, por huella del correo de destino o por IP, según el caso |
 | `two_factor` | 5 cada 15 min | cuenta: cada intento de código del segundo factor, al entrar o al activarlo, desactivarlo o regenerar los de respaldo. El de `login` es por IP, y desde muchas IP se podrían probar los 6 dígitos |
 
 `email_per_address` protege a terceros: sin él, registrar repetidamente con el correo de otra persona podría inundarle la bandeja de entrada. El aviso de contraseña cambiada no lo consume: el cambio ya se ha hecho (un 429 diría que falló), y solo puede provocarlo quien tiene la contraseña o un código.

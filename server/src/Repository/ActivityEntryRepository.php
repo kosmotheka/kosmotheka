@@ -31,7 +31,8 @@ final class ActivityEntryRepository extends ServiceEntityRepository
     {
         $query = $this->createQueryBuilder('a')->orderBy('a.occurredAt', 'DESC')->addOrderBy('a.id', 'DESC')->setMaxResults($limit);
         if ($account instanceof Uuid) {
-            $query->andWhere('a.accountId = :account')->setParameter('account', $account, 'uuid');
+            // Either: whose it was (the author) or whose session uploaded it (SEG-041).
+            $query->andWhere('a.accountId = :account OR a.uploadedByAccountId = :account')->setParameter('account', $account, 'uuid');
         }
         if ($library instanceof Uuid) {
             $query->andWhere('a.libraryId = :library')->setParameter('library', $library, 'uuid');

@@ -11,6 +11,8 @@ use App\Entity\Membership;
 use App\Entity\User;
 use App\Security\AccountException;
 use App\Security\AccountPurger;
+use App\Security\RequestLimiter;
+use App\Sync\Invitation\EmailFingerprint;
 use App\Sync\Invitation\InvitationAcceptor;
 use App\Sync\Invitation\InvitationManager;
 use App\Sync\Invitation\InvitationToken;
@@ -653,6 +655,93 @@ final class InvitationControllerTest extends WebTestCase
         self::assertSame([201, 201, 201, 429, 429], $statuses);
     }
 
+    /** SEG-044: three a day per library and address; another library\'s use of an address does not use up this one\'s. */
+    public function testAStrangerFromAnotherLibraryCannotUseUpWhatTheFamilyMayMailAnAddress(): void
+    {
+        $cloud = $this->world();
+        $theirs = $this->jhonnysLibrary(true);
+        $statuses = [];
+        foreach (range(1, 5) as $ignored) {
+            $statuses[] = $this->invite($this->jhonny, $theirs, self::NORA, 'email', 'laura@example.com')['status'];
+        }
+        self::assertSame([201, 201, 201, 429, 429], $statuses, 'three a day to one address from one library');
+
+        $family = $this->invite($this->family, $cloud, self::EVA, 'email', 'laura@example.com');
+
+        self::assertSame(201, $family['status'], 'the family can still invite her');
+    }
+
+    /** SEG-044: ten a day to an address in all, whatever the library; checked before anything is spent. */
+    public function testNobodyMailsOneAddressMoreThanTenTimesADayInAllAndRefusingSpendsNothing(): void
+    {
+        $limiter = self::getContainer()->get(RequestLimiter::class);
+        $fingerprint = self::getContainer()->get(EmailFingerprint::class)->of('laura@example.com');
+        for ($i = 1; $i <= 10; ++$i) {
+            $limiter->requireInvitationEmailOpen(Uuid::v4()->toRfc4122(), Uuid::v4()->toRfc4122(), $fingerprint);
+            $limiter->spendInvitationEmail(Uuid::v4()->toRfc4122(), Uuid::v4()->toRfc4122(), $fingerprint);
+        }
+
+        $account = Uuid::v4()->toRfc4122();
+        $library = Uuid::v4()->toRfc4122();
+        try {
+            $limiter->requireInvitationEmailOpen($account, $library, $fingerprint);
+            self::fail('The eleventh to one address must be refused.');
+        } catch (AccountException $exception) {
+            self::assertSame('too_many_requests', $exception->errorCode->value);
+        }
+        // Refused, so nothing of this account nor of this pair was spent: another address is open to both.
+        $other = self::getContainer()->get(EmailFingerprint::class)->of('other@example.com');
+        for ($i = 1; $i <= 3; ++$i) {
+            $limiter->requireInvitationEmailOpen($account, $library, $other);
+            $limiter->spendInvitationEmail($account, $library, $other);
+        }
+        $this->expectException(AccountException::class);
+        $limiter->requireInvitationEmailOpen($account, $library, $other);
+    }
+
+    /** SEG-044: an email that is not sent (here, one the mailer refuses) spends nothing of the account\'s ten. */
+    public function testAnEmailThatIsNotSentSpendsNoQuota(): void
+    {
+        $cloud = $this->world();
+        $this->client->catchExceptions(false);
+        $failures = 0;
+        foreach (range(1, 6) as $ignored) {
+            try {
+                $this->invite($this->family, $cloud, self::EVA, 'email', 'broken.@example.com');
+            } catch (\Throwable) {
+                ++$failures;
+            }
+        }
+        self::assertSame(6, $failures, 'the mailer refuses that address');
+        $this->client->catchExceptions(true);
+
+        $statuses = [];
+        foreach (range(1, 11) as $i) {
+            $statuses[] = $this->invite($this->family, $cloud, self::EVA, 'email', "fine$i@example.com")['status'];
+        }
+
+        self::assertSame([...array_fill(0, 10, 201), 429], $statuses);
+    }
+
+    /** SEG-044: a refusal by one limit does not spend the others. */
+    public function testAnAddressAlreadyAtItsLimitDoesNotUseUpTheAccountsOwn(): void
+    {
+        $cloud = $this->world();
+        foreach (range(1, 3) as $ignored) {
+            self::assertSame(201, $this->invite($this->family, $cloud, self::EVA, 'email', 'laura@example.com')['status']);
+        }
+        foreach (range(1, 5) as $ignored) {
+            self::assertSame(429, $this->invite($this->family, $cloud, self::EVA, 'email', 'laura@example.com')['status']);
+        }
+
+        $statuses = [];
+        foreach (range(1, 8) as $i) {
+            $statuses[] = $this->invite($this->family, $cloud, self::EVA, 'email', "other$i@example.com")['status'];
+        }
+
+        self::assertSame([...array_fill(0, 7, 201), 429], $statuses, 'ten in all, three already used');
+    }
+
     public function testCreatingInvitationsIsLimitedPerAccount(): void
     {
         $cloud = $this->world();
@@ -665,26 +754,24 @@ final class InvitationControllerTest extends WebTestCase
         self::assertSame(429, $statuses[24]);
     }
 
-    public function testTheEmailSaysOnlyWhatIsFixedPlusTheCleanedNameOfTheLibrary(): void
+    /** SEG-042: nothing written by whoever invites reaches the mail, not even the name of the library. */
+    public function testTheEmailSaysOnlyWhatIsFixedAndNothingOfWhatWhoeverInvitesWrote(): void
     {
         $cloud = $this->world();
-        $this->laptopSigns('library.rename', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['name' => "Casa\x07\u{202E}\r\nBcc: spam@example.com\nVisit https://evil.example/pay now www.evil.example"]]]);
+        $name = "Tu cuenta caduca: entra en ejemplo-acceso.com/login\x07\u{202E}\r\nBcc: spam@example.com\nVisit https://evil.example/pay now www.evil.example";
+        $this->laptopSigns('library.rename', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['name' => $name]]]);
 
         $this->invite($this->family, $cloud, self::EVA, 'email', 'eva@example.com');
 
         $message = self::getMailerMessage();
         \assert($message instanceof Email);
-        $body = (string) $message->getTextBody();
-        $subject = (string) $message->getSubject();
-        self::assertSame('You have been invited to a library on Kosmotheka', $subject);
-        self::assertStringNotContainsString('evil', $body);
-        self::assertStringNotContainsString("\nBcc:", $body);
-        self::assertStringNotContainsString("\x07", $body);
-        self::assertStringNotContainsString("\u{202E}", $body);
-        self::assertStringContainsString('«Casa Bcc: spam@example.com Visit now»', $body);
-        foreach (['family@example.com', 'Ada', 'Laura'] as $inviter) {
-            self::assertStringNotContainsString($inviter, $subject.$body, 'nothing of who invites');
+        $everything = $message->getSubject().$message->getTextBody().$message->getHtmlBody();
+        self::assertSame('You have been invited to a library on Kosmotheka', $message->getSubject());
+        self::assertNull($message->getHtmlBody(), 'plain text only');
+        foreach (['ejemplo-acceso', 'evil', 'Bcc', 'caduca', 'Casa', 'spam', "\x07", "\u{202E}", '«', 'family@example.com', 'Ada', 'Laura'] as $trace) {
+            self::assertStringNotContainsString($trace, $everything);
         }
+        self::assertStringContainsString('invitations.test/i/', $everything, 'the link is still there');
         self::assertSame('eva@example.com', $message->getTo()[0]->getAddress());
     }
 
@@ -1003,7 +1090,7 @@ final class InvitationControllerTest extends WebTestCase
         $linked = $this->activity("kind = 'account_linked' AND subject_id = ?", [self::NORA]);
         self::assertCount(1, $linked);
         self::assertSame($this->userId('nora@example.com'), $linked[0]['account_id'], 'who the cloud did it for');
-        self::assertNull($linked[0]['device_id']);
+        self::assertSame($this->identityOf($cloud), $linked[0]['device_id'], 'the cloud signed it');
         $everything = json_encode($this->activity('TRUE'), \JSON_THROW_ON_ERROR);
         self::assertStringNotContainsString($this->tokenOf($created), $everything);
         self::assertStringNotContainsString('eva@example.com', $everything);
@@ -1023,6 +1110,89 @@ final class InvitationControllerTest extends WebTestCase
 
         self::assertNotEmpty($lines);
         self::assertSame(['Family'], array_values(array_unique(array_filter(array_map(static fn (array $line): string => \is_string($line['library_name']) ? $line['library_name'] : '', $lines)))));
+    }
+
+    /** SEG-041: an operation of one device uploaded by another is the first one\'s, «uploaded by» the second, from the second\'s address. */
+    public function testAnOperationRelayedByAnotherDeviceIsWrittenToItsAuthorAndToWhoUploadedIt(): void
+    {
+        $cloud = $this->world();
+        $hugo = $this->joinAs('hugo@example.com', self::HUGO);
+        $this->client->setServerParameter('REMOTE_ADDR', '203.0.113.77');
+        $this->client->setServerParameter('HTTP_USER_AGENT', 'Hugo-tablet/1');
+        $operation = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+
+        $this->push($hugo, $cloud, [$operation]);
+
+        $line = $this->authored("kind = 'role_changed' AND subject_id = ?", [self::EVA])[0] ?? self::fail('No line.');
+        self::assertSame($this->userId('family@example.com'), $line['account_id'], 'the author: the account of the person of the device that signed');
+        self::assertSame($this->laptop->id, $line['device_id'], 'the author: the device that signed');
+        self::assertSame($this->userId('hugo@example.com'), $line['uploaded_by_account_id']);
+        self::assertSame($hugo['device_id'], $line['uploaded_by_device_id']);
+        self::assertSame('203.0.113.77', $line['ip'], 'the address of the session that uploaded it');
+        self::assertSame('Hugo-tablet/1', $line['user_agent']);
+    }
+
+    /** SEG-041: the author is a device whose person has no account; the line says so and does not borrow the uploader\'s. */
+    public function testAnAuthorWhoseDeviceHasNoAccountLeavesTheAccountEmptyNotTheUploaders(): void
+    {
+        $cloud = $this->world();
+        $hugo = $this->joinAs('hugo@example.com', self::HUGO);
+        $tomas = SigningDevice::generate();
+        $this->push($this->family, $cloud, [$tomas->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->laptopSigns('device.assign', [$this->assign($tomas->id, self::TOMAS, $tomas->publicKey)]);
+        $operation = $tomas->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+
+        $this->push($hugo, $cloud, [$operation]);
+
+        $line = $this->authored("kind = 'role_changed' AND subject_id = ?", [self::EVA])[0] ?? self::fail('No line.');
+        self::assertSame($tomas->id, $line['device_id']);
+        self::assertNull($line['account_id'], 'Tomás has no account');
+        self::assertSame($this->userId('hugo@example.com'), $line['uploaded_by_account_id']);
+    }
+
+    /** SEG-041, hostile: the author is the one the signature verifies, not one the body names. */
+    public function testTheBodyCannotChooseTheAuthorOfALine(): void
+    {
+        $cloud = $this->world();
+        $hugo = $this->joinAs('hugo@example.com', self::HUGO);
+        $before = $this->scalar('SELECT COUNT(*) FROM activity_log');
+        $forged = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        // The laptop\'s signature, but the operation says it is Hugo\'s device that dated it.
+        $hlc = \is_string($forged['hlc']) ? $forged['hlc'] : '';
+        $forged['hlc'] = substr($hlc, 0, 26).$hugo['device_id'];
+
+        $result = $this->push($hugo, $cloud, [$forged]);
+
+        self::assertSame(1, $result['rejected'] ?? null);
+        self::assertSame($before, $this->scalar('SELECT COUNT(*) FROM activity_log'), 'nothing is written for what the signature does not prove');
+    }
+
+    /** What the cloud signs has the cloud as its author and, as before, the account it was done for. */
+    public function testWhatTheCloudDoesAloneHasTheCloudAsAuthorAndNoUploader(): void
+    {
+        $cloud = $this->world();
+        $nora = $this->account('nora@example.com');
+        $this->accept($nora, $this->tokenOf($this->invite($this->family, $cloud, self::NORA, 'link')));
+
+        $line = $this->authored("kind = 'account_linked' AND subject_id = ?", [self::NORA])[0] ?? self::fail('No line.');
+
+        self::assertSame($this->userId('nora@example.com'), $line['account_id'], 'who it was done for');
+        self::assertSame($this->identityOf($cloud), $line['device_id'], 'the cloud signed it');
+        self::assertNull($line['uploaded_by_account_id']);
+        self::assertNull($line['uploaded_by_device_id']);
+    }
+
+    /**
+     * @param list<int|string> $params
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function authored(string $where, array $params = []): array
+    {
+        return self::getContainer()->get(Connection::class)->fetchAllAssociative(
+            'SELECT kind, account_id::text AS account_id, device_id, uploaded_by_account_id::text AS uploaded_by_account_id, uploaded_by_device_id, subject_id, ip, user_agent FROM activity_log WHERE '.$where.' ORDER BY occurred_at, id',
+            $params,
+        );
     }
 
     /** @return list<string> */
