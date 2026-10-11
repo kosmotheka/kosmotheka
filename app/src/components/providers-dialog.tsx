@@ -313,7 +313,7 @@ export function ProvidersDialog({
   };
 
   const body = !settings ? null : desktop ? (
-    <div className="flex min-h-0 flex-1 gap-6">
+    <div className="flex gap-6">
       <div className="w-56 shrink-0">{kindsList}</div>
       <div className="min-w-0 flex-1 space-y-3">
         <h2 className="text-base font-semibold">{selectedKind ? kindLabel(selectedKind) : ""}</h2>
@@ -354,9 +354,12 @@ export function ProvidersDialog({
       description={t("providers.description")}
       className="sm:max-w-3xl"
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* The dialog scrolls as a whole: nothing here may shrink, or what follows is drawn over the list. */}
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2.5 rounded-lg border p-3 text-sm">
-          <span className="flex-1">{t("providers.noCloud")}</span>
+          <span className="flex-1">
+            {t(offers.googleBooks || offers.tmdb ? "providers.withCloud" : "providers.noCloud")}
+          </span>
         </div>
         {body}
         {attribution}

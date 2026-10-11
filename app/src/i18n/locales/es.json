@@ -1209,6 +1209,7 @@
     "viaCloud": "Buscar en Google Books a través de la nube",
     "viaCloudHelp": "Solo se envía el ISBN al servidor de tu cuenta, que lo busca con su propia clave y no guarda quién lo pidió. Apágalo para buscar en Google Books directamente, como antes.",
     "noCloud": "Sin nube. Las fuentes sin clave funcionan ya; para las otras, pon tu clave.",
+    "withCloud": "Con tu cuenta, la nube busca por ti en las fuentes que lo indican. Las demás funcionan sin clave o con la tuya.",
     "noKeyBadge": "Sin clave",
     "needsKeyBadge": "Pide clave",
     "keyPlaceholder": "Pega aquí tu clave",

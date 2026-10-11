@@ -1195,6 +1195,7 @@
     "viaCloud": "Search Google Books through the cloud",
     "viaCloudHelp": "Only the ISBN is sent to your account's server, which looks it up with its own key and does not keep who asked. Switch it off to search Google Books directly, as before.",
     "noCloud": "No cloud. Keyless sources already work; for the others, add your key.",
+    "withCloud": "With your account, the cloud searches for you in the sources that say so. The rest work with no key or with your own.",
     "noKeyBadge": "No key needed",
     "needsKeyBadge": "Needs a key",
     "keyPlaceholder": "Paste your key here",
