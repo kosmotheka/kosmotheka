@@ -16,6 +16,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
 #[ORM\UniqueConstraint(name: 'uniq_user_account_id', columns: ['account_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_user_google_sub', columns: ['google_sub'])]
 final class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -29,7 +30,7 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'uuid')]
     private Uuid $accountId;
 
-    /** Null for a Google-only account (later milestone). */
+    /** Null for an account that has no password (it only enters with Google, D77). */
     #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
@@ -45,6 +46,13 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $blockedAt = null;
+
+    /**
+     * The identifier Google gives this person (`sub`), once they have entered with Google; from then on the account is
+     * recognised by it and not by the address, which Google lets change. Nothing else of Google's is kept (D77).
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $googleSub = null;
 
     /** Base32 secret, set once TOTP is enabled (D78). */
     #[ORM\Column(nullable: true)]
@@ -103,6 +111,22 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): void
     {
         $this->password = $password;
+    }
+
+    /** Takes the password away: nobody can enter with it any more (D77). */
+    public function clearPassword(): void
+    {
+        $this->password = null;
+    }
+
+    public function getGoogleSub(): ?string
+    {
+        return $this->googleSub;
+    }
+
+    public function setGoogleSub(?string $googleSub): void
+    {
+        $this->googleSub = $googleSub;
     }
 
     public function getName(): string

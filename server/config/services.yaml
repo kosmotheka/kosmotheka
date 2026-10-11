@@ -66,3 +66,7 @@ when@test:
         App\Tests\Support\RecordingHub:
             public: true
         Symfony\Component\Mercure\HubInterface: '@App\Tests\Support\RecordingHub'
+        # Google, in memory: the tests never touch the network.
+        App\Tests\Support\FakeGoogle:
+            public: true
+        App\Security\Google\GoogleSignIn: '@App\Tests\Support\FakeGoogle'

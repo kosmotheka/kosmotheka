@@ -1338,7 +1338,15 @@
       }
     },
     "auth": {
+      "google": "Continue with Google",
+      "googleOr": "or",
+      "googleWaiting": "Waiting for Google in your browser…",
       "steps": {
+        "google": {
+          "title": "Continue with Google",
+          "sub": "Finish signing in in your browser, then come back here.",
+          "primary": "Cancel"
+        },
         "signin": {
           "title": "Sign in",
           "sub": "With an account, your libraries also sync remotely.",
@@ -1546,6 +1554,25 @@
     }
   },
   "accountErrors": {
+    "googleCancelled": {
+      "title": "You cancelled the sign-in with Google."
+    },
+    "googleExpired": {
+      "title": "The sign-in with Google took too long.",
+      "help": "Start again from the app."
+    },
+    "googleEmailNotVerified": {
+      "title": "Google has not confirmed your email.",
+      "help": "Confirm the address in your Google account, or sign in with your email and password."
+    },
+    "googleOtherAccount": {
+      "title": "This email belongs to another Google account.",
+      "help": "Sign in with the Google account you used before, or with your email and password."
+    },
+    "googleFailed": {
+      "title": "Google sign-in did not work.",
+      "help": "Try again in a moment, or sign in with your email and password."
+    },
     "invalidCode": {
       "title": "Incorrect code.",
       "help": "Use the one in the latest email you received."

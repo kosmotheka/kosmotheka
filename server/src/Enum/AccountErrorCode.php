@@ -66,4 +66,12 @@ enum AccountErrorCode: string
     case InvitationRevoked = 'invitation_revoked';
     case InvitationNotForThisAccount = 'invitation_not_for_this_account';
     case InvitationAccountAlreadyInLibrary = 'invitation_account_already_in_library';
+
+    // Milestone 7.1, part 5: «Continuar con Google» (D77).
+    case GoogleUnavailable = 'google_unavailable';
+    case InvalidGoogleCode = 'invalid_google_code';
+    case GoogleCancelled = 'google_cancelled';
+    case GoogleFailed = 'google_failed';
+    case GoogleEmailNotVerified = 'google_email_not_verified';
+    case GoogleOtherAccount = 'google_other_account';
 }

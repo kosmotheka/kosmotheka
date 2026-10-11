@@ -1154,6 +1154,32 @@ export function signIn(
   return invoke<AccountUser>("sign_in", { email, password, totpCode });
 }
 
+/**
+ * «Continuar con Google» (D77): asks the account's server for an attempt and opens the system browser at it. The
+ * way back arrives by `kosmotheka://auth/google` and is read by `completeGoogleReturn`; nothing of it reaches here.
+ */
+export function startGoogle(locale: string): Promise<void> {
+  return invoke("start_google", { locale });
+}
+
+/** «Cancel» while the browser is open. */
+export function cancelGoogle(): Promise<void> {
+  return invoke("cancel_google");
+}
+
+/**
+ * The way back from Google, if one arrived: signs this device in, or throws why not (`two_factor_required` asks for
+ * the code: `finishGoogle`). `null` when nothing was waiting or it was not this app's own attempt.
+ */
+export function completeGoogleReturn(): Promise<AccountUser | null> {
+  return invoke<AccountUser | null>("complete_google_return");
+}
+
+/** The second factor's code, for the way back that was waiting for it. */
+export function finishGoogle(totpCode: string): Promise<AccountUser> {
+  return invoke<AccountUser>("finish_google", { totpCode });
+}
+
 export function signOut(): Promise<void> {
   return invoke("sign_out");
 }

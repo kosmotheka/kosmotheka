@@ -25,6 +25,11 @@ final class UserRepository extends ServiceEntityRepository implements PasswordUp
         return $this->findOneBy(['email' => $email]);
     }
 
+    public function findOneByGoogleSub(string $sub): ?User
+    {
+        return $this->findOneBy(['googleSub' => $sub]);
+    }
+
     /** Rehashes on login when the hasher's cost has changed since the password was set (milestone 7.1, part 2). */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {

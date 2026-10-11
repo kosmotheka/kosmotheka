@@ -17,6 +17,11 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '15 minutes'
+        # «Continuar con Google» (D77): starting, going to Google, coming back and finishing, per address.
+        google:
+            policy: sliding_window
+            limit: 30
+            interval: '15 minutes'
         email_code:
             policy: sliding_window
             limit: 10

@@ -126,6 +126,21 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 
 *Construida en el servidor (hito 7.7). Nombre: registro de actividad (`activity_log`).*
 
+### 10. Entrar con Google
+
+**Problema:** Google es la puerta de entrada de todas las cuentas que lo usen: si alguien se cuela por ahí, entra en la cuenta de otra persona. Y la vuelta de Google a la app viaja por un enlace que cualquier otra app o página puede lanzar.
+
+- **Lo que viaja por el navegador no sirve solo.** La app empieza con un secreto que nunca sale de ella, y el servidor solo guarda su huella. El servidor devuelve un código de un solo uso (dos minutos), pero ese código **no da el token sin el secreto**: otra app que se haga pasar por la nuestra y robe el enlace de vuelta se queda con algo inútil.
+- **La app solo acepta la vuelta de un intento que ella empezó y está esperando.** Si alguien empieza un intento en su móvil, entra con *su* Google y le manda a una víctima el enlace de vuelta, la app de la víctima no lo acepta (no es suyo) y ni siquiera pregunta al servidor.
+- **El servidor liga la vuelta de Google al navegador que salió.** Tiene su propio `state`, que vale una vez, y una cookie del mismo navegador; una vuelta repetida, de otro navegador o inventada se rechaza sin llamar a Google.
+- **Solo vale un correo que Google confirma.** Si no lo confirma, no se crea ni se enlaza nada.
+- **Una cuenta que nadie confirmó pierde su contraseña.** Si alguien registró «ada@…» con una contraseña suya y nunca confirmó el código, y la verdadera Ada entra con Google, esa cuenta pasa a ser de Ada y **la contraseña que puso la otra persona deja de funcionar**.
+- **Se reconoce a la persona por el identificador de Google, no por el correo**, que Google deja cambiar: si el correo de otra cuenta de Google coincide con el de una cuenta ya enlazada, no entra en ella.
+- **Lo demás sigue igual:** el registro cerrado vale (fuera de la lista no nace ninguna cuenta), una cuenta bloqueada no entra, el segundo factor se pide también con Google, y el dispositivo prueba su clave como en un inicio de sesión normal.
+- **Se guarda lo mínimo:** el identificador de Google, el correo y el nombre. Ningún token de Google. Ni el código, ni el secreto, ni nada de Google en el registro de actividad ni en los errores. Las dos direcciones del servidor que llevan un secreto en la dirección (`connect` y `callback`) se excluyen del registro de accesos.
+
+*Construida en el servidor y en la app (hito 7.1). Detalle y rutas en [accounts.md](accounts.md#continuar-con-google-71-d77). Duda abierta para el maintainer: el segundo factor con Google (se pide).*
+
 ## Lo que no protege
 
 Dicho claro, para que nadie lo dé por supuesto:

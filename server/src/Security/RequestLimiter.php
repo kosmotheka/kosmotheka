@@ -21,6 +21,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $loginLimiter,
         #[Target('login_failed_account')]
         private RateLimiterFactoryInterface $loginFailedAccountLimiter,
+        #[Target('google')]
+        private RateLimiterFactoryInterface $googleLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -52,6 +54,12 @@ final readonly class RequestLimiter
     public function consumeLogin(string $ip): void
     {
         $this->consume($this->loginLimiter, $ip);
+    }
+
+    /** Any step of «Continuar con Google», per address. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeGoogle(string $ip): void
+    {
+        $this->consume($this->googleLimiter, $ip);
     }
 
     /**

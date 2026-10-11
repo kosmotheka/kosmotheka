@@ -37,6 +37,11 @@
           "host": "kosmotheka.app",
           "pathPrefix": ["/i/"],
           "appLink": true
+        },
+        {
+          "scheme": ["kosmotheka"],
+          "host": "auth",
+          "pathPrefix": ["/google"]
         }
       ],
       "desktop": {

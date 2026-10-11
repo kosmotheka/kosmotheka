@@ -179,7 +179,7 @@ export default function App() {
   }, [account.signedIn, overlay]);
 
   // A link the system handed to the app: it opens «I have an invitation» when nothing else is in front.
-  useArrivedLink(overlay !== null || welcome);
+  useArrivedLink(overlay !== null || welcome, overlay?.name === "auth");
 
   // The device was reset (D81): its identity is new, so the welcome flag from
   // before no longer applies and a stale `?mock`-style view would be wrong.
@@ -643,6 +643,7 @@ export default function App() {
           <AuthDialog
             open={overlay?.name === "auth"}
             initialStep={overlay?.name === "auth" ? overlay.step : undefined}
+            googleError={overlay?.name === "auth" ? overlay.googleError : undefined}
           />
           <AccountDialog open={overlay?.name === "account"} desktop={desktop} />
           <AccountDevicesDialog open={overlay?.name === "accountDevices"} desktop={desktop} />

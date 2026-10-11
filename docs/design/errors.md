@@ -103,6 +103,11 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 | `code_attempts` | `too_many_attempts` | error | Demasiados intentos con este código. | Ya no sirve. Pide otro: llega en un momento. **«Pedir otro código»** |
 | `rate_limited` | `too_many_requests` (con `Retry-After`) | aviso | Demasiadas peticiones. | Espera {n} minutos e inténtalo de nuevo. |
 | `registration_closed` | `registration_closed` (`403`) | aviso | Este servidor no admite cuentas nuevas por ahora. | Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor. |
+| `google_cancelled` | `google_cancelled` (en el enlace de vuelta) | info | Has cancelado el inicio de sesión con Google. | |
+| `google_expired` | `google_expired` (app) · `invalid_google_code` (`400`) | aviso | El inicio de sesión con Google ha tardado demasiado. | Empieza de nuevo desde la app. |
+| `google_email_unverified` | `google_email_not_verified` | error | Google no ha confirmado tu correo. | Confirma la dirección en tu cuenta de Google, o entra con tu correo y contraseña. |
+| `google_other_account` | `google_other_account` | error | Este correo pertenece a otra cuenta de Google. | Entra con la cuenta de Google que usaste antes, o con tu correo y contraseña. |
+| `google_failed` | `google_failed` · `google_unavailable` (`404`) | error | No ha funcionado entrar con Google. | Inténtalo de nuevo en un momento, o entra con tu correo y contraseña. |
 | `bad_credentials` | `invalid_credentials` | error | El email o la contraseña no son correctos. | Revisa cómo está escrito el email. Si no recuerdas la contraseña, pon una nueva. **«Recuperar la contraseña»** |
 | `email_unconfirmed` | `account_not_confirmed` | aviso | Falta confirmar tu email. | Al crear la cuenta te enviamos un código. Si no lo encuentras, pide otro. **«Enviar otro código»** |
 | `account_locked` | `account_blocked` | error | Esta cuenta está bloqueada. | Si crees que es un error, escribe a quien gestiona el servidor. |

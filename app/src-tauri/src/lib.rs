@@ -252,6 +252,10 @@ pub fn run() {
             commands::revoke_invitation,
             commands::open_invitation,
             commands::open_arrived_link,
+            commands::start_google,
+            commands::cancel_google,
+            commands::complete_google_return,
+            commands::finish_google,
             commands::pending_invitation,
             commands::discard_pending_invitation,
             commands::accept_invitation

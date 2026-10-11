@@ -11,7 +11,9 @@ import { useAccount, refreshAccount } from "@/lib/account";
 import {
   type ServerInfo,
   accountServerInfo,
+  cancelGoogle,
   confirmAccountEmail,
+  finishGoogle,
   forgotPassword,
   isCommandError,
   registerAccount,
@@ -19,7 +21,9 @@ import {
   resetPassword,
   setAccountServer,
   signIn,
+  startGoogle,
 } from "@/lib/api";
+import { GOOGLE_RESULT } from "@/lib/arrived-link";
 import { closeOverlay } from "@/lib/navigation";
 import { supportedLanguages } from "@/i18n";
 
@@ -28,6 +32,7 @@ type Step =
   | "server"
   | "signup"
   | "verify"
+  | "google"
   | "totp"
   | "backup"
   | "forgot"
@@ -61,14 +66,22 @@ const RESEND_SECONDS = 60;
 export function AuthDialog({
   open,
   initialStep,
+  googleError,
 }: {
   open: boolean;
-  initialStep?: "signin" | "signup";
+  initialStep?: "signin" | "signup" | "googleTotp";
+  /** The way back from Google failed while this was not on screen: say why (D77). */
+  googleError?: string;
 }) {
   const { t, i18n } = useTranslation();
   const account = useAccount();
 
-  const [step, setStep] = useState<Step>(initialStep ?? "signin");
+  const [step, setStep] = useState<Step>(
+    initialStep === "googleTotp" ? "totp" : (initialStep ?? "signin"),
+  );
+  // The second factor being asked is the one of a way in with Google: the code goes to `finishGoogle`.
+  const [viaGoogle, setViaGoogle] = useState(initialStep === "googleTotp");
+  const [offersGoogle, setOffersGoogle] = useState(false);
   const [seeded, setSeeded] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,7 +102,8 @@ export function AuthDialog({
   // (the same render-time reset PairDialog uses, instead of an effect).
   if (open && !seeded) {
     setSeeded(true);
-    setStep(initialStep ?? "signin");
+    setStep(initialStep === "googleTotp" ? "totp" : (initialStep ?? "signin"));
+    setViaGoogle(initialStep === "googleTotp");
     setEmail(account.emailHint ?? "");
     setPassword("");
     setName("");
@@ -97,10 +111,43 @@ export function AuthDialog({
     setServerInfo(null);
     setCode("");
     setNewPassword("");
-    setError(null);
+    setError(googleError ? { reason: googleError } : null);
   } else if (!open && seeded) {
     setSeeded(false);
   }
+
+  // Google is offered only if this server has it (D77: «the server says what it offers»).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    accountServerInfo()
+      .then((info) => !cancelled && setOffersGoogle(info.signInWithGoogle))
+      .catch(() => !cancelled && setOffersGoogle(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, account.server]);
+
+  // The way back from Google, read by the app while this is open (`useArrivedLink`): it needs the second factor, or it
+  // failed. A good one just signs in and closes this.
+  useEffect(() => {
+    if (!open) return;
+    const onResult = (event: Event) => {
+      const detail = (event as CustomEvent<{ reason: string }>).detail;
+      setBusy(false);
+      setCode("");
+      if (detail.reason === "two_factor_required") {
+        setViaGoogle(true);
+        setStep("totp");
+        setError(null);
+      } else {
+        setStep("signin");
+        setError({ reason: detail.reason });
+      }
+    };
+    window.addEventListener(GOOGLE_RESULT, onResult);
+    return () => window.removeEventListener(GOOGLE_RESULT, onResult);
+  }, [open]);
 
   useEffect(() => {
     if (resendAt === 0) return;
@@ -128,6 +175,28 @@ export function AuthDialog({
     await refreshAccount();
     closeOverlay();
   };
+
+  const doGoogle = () =>
+    run(async () => {
+      await startGoogle(i18n.resolvedLanguage ?? "en");
+      setViaGoogle(false);
+      setStep("google");
+    });
+
+  const doGoogleCode = () =>
+    run(async () => {
+      try {
+        await finishGoogle(code);
+        await afterSignedIn();
+      } catch (e) {
+        // A wrong code leaves the way back waiting; anything else ends it: back to the start, saying why.
+        const err = errorOf(e);
+        if (err.reason === "invalid_two_factor_code") throw e;
+        setViaGoogle(false);
+        setStep("signin");
+        throw e;
+      }
+    });
 
   const doSignIn = (totpCode: string | null) =>
     run(async () => {
@@ -201,6 +270,7 @@ export function AuthDialog({
       await setAccountServer(trimmed || null);
       const info = await accountServerInfo();
       setServerInfo(info);
+      setOffersGoogle(info.signInWithGoogle);
     });
 
   const chooseOfficialServer = () =>
@@ -211,7 +281,11 @@ export function AuthDialog({
       setStep("signin");
     });
 
-  const close = () => closeOverlay();
+  const close = () => {
+    // Closing while the browser is open gives up that try: a way back that comes later is nobody's.
+    if (step === "google" || viaGoogle) void cancelGoogle().catch(() => {});
+    closeOverlay();
+  };
 
   const host = account.official ? "kosmotheka.app" : hostOf(account.server);
   const resendTime = `${Math.floor(resendLeft / 60)}:${String(resendLeft % 60).padStart(2, "0")}`;
@@ -271,6 +345,25 @@ export function AuthDialog({
     </div>
   );
 
+  const googleButton = offersGoogle && (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        {t("account.auth.googleOr")}
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-12"
+        disabled={busy}
+        onClick={() => void doGoogle()}
+      >
+        {t("account.auth.google")}
+      </Button>
+    </div>
+  );
+
   let body: ReactNode;
   let footer: ReactNode = null;
 
@@ -326,6 +419,7 @@ export function AuthDialog({
         )}
         {emailField}
         {passwordField}
+        {googleButton}
       </>
     );
     footer = (
@@ -368,6 +462,7 @@ export function AuthDialog({
             ))}
           </div>,
         )}
+        {googleButton}
       </>
     );
     footer = (
@@ -413,6 +508,12 @@ export function AuthDialog({
           </button>
         </div>
       </>
+    );
+  } else if (step === "google") {
+    body = (
+      <p role="status" className="text-sm text-muted-foreground">
+        {t("account.auth.googleWaiting")}
+      </p>
     );
   } else if (step === "totp" || step === "backup") {
     body =
@@ -503,9 +604,14 @@ export function AuthDialog({
     if (step === "signin" || step === "server") void doSignIn(null);
     else if (step === "signup") void doRegister();
     else if (step === "verify") void doVerify();
-    else if (step === "totp") void doSignIn(code);
-    else if (step === "backup") void doSignIn(code);
-    else if (step === "forgot") void doForgot();
+    else if (step === "google") {
+      // «Cancel»: the way back that may still come is no longer this app's.
+      void cancelGoogle().catch(() => {});
+      setStep("signin");
+    } else if (step === "totp" || step === "backup") {
+      if (viaGoogle) void doGoogleCode();
+      else void doSignIn(code);
+    } else if (step === "forgot") void doForgot();
     else if (step === "recoverCode") doRecoverCode();
     else if (step === "newPass") void doNewPass();
     else {

@@ -49,6 +49,41 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::RegistrationClosed, 403);
     }
 
+    /** Google is not configured on this server (D77). */
+    public static function googleUnavailable(): self
+    {
+        return new self(AccountErrorCode::GoogleUnavailable, 404);
+    }
+
+    /** Google did not confirm the address: nothing is created nor linked (D77). */
+    public static function googleEmailNotVerified(): self
+    {
+        return new self(AccountErrorCode::GoogleEmailNotVerified, 403);
+    }
+
+    /** The address belongs to an account already linked to another Google account. */
+    public static function googleOtherAccount(): self
+    {
+        return new self(AccountErrorCode::GoogleOtherAccount, 403);
+    }
+
+    public static function googleCancelled(): self
+    {
+        return new self(AccountErrorCode::GoogleCancelled, 400);
+    }
+
+    /** Google could not be asked, or what it said does not hold. */
+    public static function googleFailed(): self
+    {
+        return new self(AccountErrorCode::GoogleFailed, 502);
+    }
+
+    /** Unknown, expired, used or wrong: one answer for all, so it says nothing about which. */
+    public static function invalidGoogleCode(): self
+    {
+        return new self(AccountErrorCode::InvalidGoogleCode, 400);
+    }
+
     public static function invalidChallenge(): self
     {
         return new self(AccountErrorCode::InvalidChallenge, 400);

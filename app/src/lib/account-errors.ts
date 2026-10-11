@@ -72,6 +72,34 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         titleKey: "accountErrors.registrationClosed.title",
         helpKey: "accountErrors.registrationClosed.help",
       };
+    case "google_cancelled":
+      return { level: "info", titleKey: "accountErrors.googleCancelled.title" };
+    case "google_expired":
+    case "invalid_google_code":
+      return {
+        level: "warning",
+        titleKey: "accountErrors.googleExpired.title",
+        helpKey: "accountErrors.googleExpired.help",
+      };
+    case "google_email_not_verified":
+      return {
+        level: "error",
+        titleKey: "accountErrors.googleEmailNotVerified.title",
+        helpKey: "accountErrors.googleEmailNotVerified.help",
+      };
+    case "google_other_account":
+      return {
+        level: "error",
+        titleKey: "accountErrors.googleOtherAccount.title",
+        helpKey: "accountErrors.googleOtherAccount.help",
+      };
+    case "google_failed":
+    case "google_unavailable":
+      return {
+        level: "error",
+        titleKey: "accountErrors.googleFailed.title",
+        helpKey: "accountErrors.googleFailed.help",
+      };
     case "invalid_credentials":
       return {
         level: "error",

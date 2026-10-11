@@ -106,7 +106,7 @@ Responde **200** `{"token": "<32 bytes aleatorios, base64url sin relleno>", "use
 
 Cada llamada autenticada lleva las cabeceras `X-Device-Id: <id>` y `Authorization: Bearer <token>`. El firewall `api` (`config/packages/security.yaml`, patrón `^/v1`, sin estado) usa `App\Security\DeviceTokenAuthenticator`: busca el dispositivo por el SHA-256 del token (único), comprueba con `hash_equals` que su id coincide con `X-Device-Id` y autentica a su cuenta. Varias filas pueden compartir id, por eso el token localiza la fila y no la cabecera. Si falla (dispositivo desconocido, desconectado, o token equivocado) responde **401** `{"error":"invalid_token"}`; si el dispositivo está quitado, **401** `{"error":"device_removed"}`, y la app empieza de cero (D81); si el servidor cerró su sesión porque la contraseña cambió en otro dispositivo, **401** `{"error":"signed_out_password_changed"}`, para que la app lo explique (D50). En ese caso el servidor guarda el motivo (`signOutReason`) y conserva el hash del token: así solo se lo dice a la instalación de verdad. Al volver a iniciar sesión, el motivo se borra. Una llamada sin ninguna credencial a una ruta protegida responde **401** `{"error":"authentication_required"}` (el mismo autenticador hace de punto de entrada). `App\Security\CurrentDevice` da a los controladores el dispositivo autenticado (se guarda como atributo de la petición, no en un servicio con estado, que no sería seguro de reutilizar entre peticiones de un mismo proceso PHP).
 
-Rutas públicas bajo `/v1`: `/v1/account/(register|confirm|code)`, `/v1/account/password/(forgot|reset)`, `/v1/auth/(challenge|login)` y `/v1/server`. El resto exige `ROLE_USER`.
+Rutas públicas bajo `/v1`: `/v1/account/(register|confirm|code)`, `/v1/account/password/(forgot|reset)`, `/v1/auth/(challenge|login)`, `/v1/auth/google/(start|connect|callback|finish)` y `/v1/server`. El resto exige `ROLE_USER`.
 
 `lastSeenAt` del dispositivo se actualiza como mucho una vez por hora, para no escribir en cada llamada.
 
@@ -166,7 +166,7 @@ Las bibliotecas todavía no existen en el servidor (hito 7.2): cuando existan, b
 
 ## Segundo factor (D78)
 
-Segundo factor opcional por cuenta: TOTP (RFC 6238, app autenticadora) más diez códigos de reserva, con `spomky-labs/otphp` y un flujo propio — **no** `scheb/2fa-bundle`, que depende de sesión y de un estado de firewall «a medias autenticado», algo que esta API, sin estado, no tiene: el inicio de sesión devuelve siempre un token de dispositivo de una sola vez, nunca una sesión intermedia. El host del servidor puede desactivarlo con una variable de entorno (por defecto, activado); el super-administrador puede retirar el segundo factor de una cuenta desde la consola (para quien pierde el teléfono y los códigos de reserva a la vez). Solo se pide al iniciar sesión con correo y contraseña: el inicio de sesión con Google (futuro) usará el segundo factor de Google.
+Segundo factor opcional por cuenta: TOTP (RFC 6238, app autenticadora) más diez códigos de reserva, con `spomky-labs/otphp` y un flujo propio — **no** `scheb/2fa-bundle`, que depende de sesión y de un estado de firewall «a medias autenticado», algo que esta API, sin estado, no tiene: el inicio de sesión devuelve siempre un token de dispositivo de una sola vez, nunca una sesión intermedia. El host del servidor puede desactivarlo con una variable de entorno (por defecto, activado); el super-administrador puede retirar el segundo factor de una cuenta desde la consola (para quien pierde el teléfono y los códigos de reserva a la vez). Se pide al iniciar sesión con correo y contraseña **y también al entrar con Google** (7.1, [abajo](#continuar-con-google-71-d77)).
 
 ### Datos
 
@@ -213,7 +213,54 @@ Correo desconocido en cualquiera de los dos → mensaje de error y salida distin
 
 ## Qué ofrece el servidor (D77)
 
-`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": true}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` es una constante en `App\Controller\ServerController`, el único sitio que hay que tocar cuando se construya; `two_factor` lee `TWO_FACTOR_ENABLED` (D78, más abajo).
+`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": true}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` es `true` si el servidor tiene un cliente de Google configurado (`GoogleSignIn::isConfigured`); `two_factor` lee `TWO_FACTOR_ENABLED` (D78, más abajo).
+
+## Continuar con Google (7.1, D77)
+
+Código: `GoogleController`, `App\Security\Google\{GoogleAttempts, GoogleAccounts, GoogleSignIn, LeagueGoogleSignIn}`, la entidad `GoogleAttempt`. Dependencias: solo las dos de D77, `knpuniversity/oauth2-client-bundle` (la configuración del cliente) y `league/oauth2-google` (hablar con Google); traen `league/oauth2-client` y `guzzlehttp/*` como suyas. Google queda detrás de la interfaz `GoogleSignIn`: los tests usan un doble (`FakeGoogle`) y nunca tocan la red.
+
+### El camino
+
+1. **La app empieza.** Genera un secreto al azar (el «verificador») que **no sale de ella** y llama a `POST /v1/auth/google/start` `{verifier_hash, locale?}` con su SHA-256 (base64url, 43 caracteres). El servidor guarda un **intento** (id al azar, la huella, el idioma, caducidad de **10 minutos**) y responde `{attempt, url, expires_at}`. La app solo abre `url` si es `http(s)` sin credenciales (no un fichero, ni un esquema de otra app, ni el suyo).
+2. **El navegador** del sistema va a `GET /v1/auth/google/connect?attempt=…`. El intento tiene que estar recién creado y sin usar (**sirve una vez**). El servidor genera su `state` y un valor para una cookie (`kosmotheka_google`, `HttpOnly`, `SameSite=Lax`, solo `/v1/auth/google`, 10 minutos), guarda las huellas de los dos y el secreto PKCE del trayecto servidor↔Google (no sale del servidor), y redirige a Google.
+3. **Google devuelve** a `GET /v1/auth/google/callback?code=…&state=…`. Solo sigue si el `state` es uno que dio este servidor, de un intento que espera a Google, **y la cookie es la del mismo navegador**; un `state` ajeno, repetido o sin la cookie da una página «este enlace ya no vale» y no se pregunta nada a Google. Cada `state` vale **una vez**. Si Google trae `error` (p. ej. el usuario cancela), se vuelve a la app con el motivo. Si no, el servidor cambia el código por quien es la persona (PKCE; el token de Google se usa una vez para preguntar y se tira) y **solo sigue si Google dice `email_verified`**. Decide la cuenta (abajo), crea un **código de un solo uso** (32 bytes, solo se guarda su SHA-256, **2 minutos**) y deja al navegador en una página «Ya puedes volver a Kosmotheka» que lo manda a la app: `kosmotheka://auth/google?attempt=…&code=…` (o `&error=<código>` en vez de `code`). Sin referer, sin caché, `noindex`.
+4. **La app termina.** Solo acepta la vuelta si su `attempt` es **el que ella empezó y tiene pendiente** (si no hay ninguno, o es otro, no llama a ningún servidor). Llama a `POST /v1/auth/google/finish` `{attempt, code, verifier, device_id, device_name, public_key, challenge, signature, totp_code?}`: **la misma prueba de dispositivo que `/login`** (reto de un solo uso firmado con la clave del dispositivo). El servidor comprueba, en este orden: reto y firma; intento existente, terminado, sin caducar, con código sin caducar; código **y** verificador (la huella del verificador tiene que ser la del intento; no dice cuál falló, y a los **5 fallos** el intento se borra); cuenta no bloqueada; el límite de fallos de la cuenta; el segundo factor; el dispositivo (`device_removed`, `device_taken`, `device_key_mismatch` como en `/login`). Responde lo mismo que `/login`: `{token, user}`. El código se gasta **al entregar el token**, no antes: pedir el segundo factor no lo quema.
+
+Por qué así: lo que viaja por el navegador y por el enlace (el código) **no sirve sin el verificador**, que nunca salió de la app. Otra app que registre `kosmotheka://` y robe la vuelta no consigue nada. Por eso vale el esquema propio en todas las plataformas (también en servidores propios) sin depender de enlaces verificados.
+
+### Qué cuenta resulta
+
+Tras confirmar Google la dirección (en minúsculas y sin espacios, como siempre: dos que solo difieren en eso son la misma cuenta):
+
+- **La cuenta ya enlazada a ese `sub`** (el identificador que Google da a la persona): se entra en ella, aunque su correo en Google haya cambiado. Se reconoce por el `sub`, no por el correo.
+- **El correo ya tiene una cuenta confirmada sin `sub`:** se enlaza y se entra (misma persona, misma cuenta). Su contraseña sigue valiendo.
+- **El correo tiene una cuenta ya enlazada a otro `sub`:** no entra nadie (`google_other_account`): otra cuenta de Google con una dirección que fue de la primera no hereda su cuenta.
+- **El correo tiene una cuenta SIN confirmar** (alguien la registró con contraseña y no confirmó; puede haberla hecho otra persona para quedarse con una puerta): queda confirmada, **sin contraseña** (la que tenía ya no entra) y sin los códigos pendientes. Quien quiera contraseña la pone después con «olvidé mi contraseña».
+- **No hay cuenta:** se crea, confirmada, sin contraseña, con el nombre de Google (o la parte local del correo) y el idioma que mandó la app. **El registro cerrado (`REGISTRATION_ALLOWED_EMAILS`) vale igual**: fuera de la lista no nace ninguna cuenta (`registration_closed`).
+- **Cuenta bloqueada:** no entra (`account_blocked`), ni al volver de Google ni en `finish`.
+- **Cuenta con segundo factor (D78):** entrar con Google **también lo pide** (`two_factor_required` en `finish`; la app pide el código y repite con un reto nuevo). Ver «La duda de este encargo».
+
+Del Google solo se piden `openid`, `email` y `profile`, y solo se guardan el `sub` (en la cuenta, `user.google_sub`, único), y el correo y el nombre como cualquier cuenta. **Ningún token de Google se guarda.** `no_password` deja de ser solo teórico: una cuenta de Google no tiene contraseña que cambiar; si quiere una, «olvidé mi contraseña».
+
+### Errores
+
+Los de `finish`, con el cuerpo de siempre (`{"error": "<código>"}`): `google_unavailable` (**404**, sin cliente de Google en el servidor), `invalid_google_code` (**400**; desconocido, caducado, usado o equivocado: una sola respuesta), `invalid_challenge`, `invalid_device_proof`, `account_blocked`, `two_factor_required`, `invalid_two_factor_code`, los del dispositivo y `too_many_requests`. Los del camino de vuelta a la app, en `error=` del enlace: `google_cancelled`, `google_failed`, `google_email_not_verified`, `google_other_account`, `registration_closed`, `account_blocked`; la app no enseña ninguno que no conozca.
+
+### Configuración, límites y registros
+
+- `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` (`.env.local`). **Vacías = sin Google**: las cuatro rutas responden que no está disponible (404) y `GET /v1/server` dice `sign_in_with_google: false`. La dirección de vuelta registrada en Google es **`DEFAULT_URI` + `/v1/auth/google/callback`** (en producción `DEFAULT_URI=https://api.kosmotheka.app`); `DEFAULT_URI` tiene que ser, pues, la dirección pública del servidor.
+- Límite `google`: **30 cada 15 minutos por IP** para `start`, `connect`, `callback` y `finish` juntos, más el de fallos por cuenta que ya existía (`finish` lo mira antes del segundo factor).
+- **Registro de actividad** (D66): `login_succeeded_with_google`, `account_created_with_google` y `account_linked_with_google`, con su propio tipo. Sin el `sub`, el código, el verificador ni nada de Google en la fila.
+- **Purga:** los intentos caducados se borran con la purga horaria (`AccountPurger`, `app:accounts:purge`).
+- **Rutas con un secreto en la dirección** (no se pueden evitar del todo): `GET /v1/auth/google/connect?attempt=…` (el id del intento) y `GET /v1/auth/google/callback?code=…&state=…` (el código de Google y el `state`). Hay que **excluirlas del registro de accesos** de cualquier proxy (en desarrollo, el `map $loggable` de `server/docker/nginx/nginx.conf`; ver [development/server.md](../development/server.md)). El código de la app (`kosmotheka://auth/google?attempt=…&code=…`) va en la página que se enseña y en el enlace al sistema, nunca en una petición al servidor.
+
+### La duda de este encargo (para el maintainer)
+
+Esta sección decía que el segundo factor de Google sustituiría al de D78. Se ha construido **al revés**: con Google también se pide el segundo factor de la cuenta, porque quien lo activó lo hizo para que una sola llave (aquí, entrar en Google) no baste. Si la decisión es otra, es quitar una línea en `GoogleController::finish`. Pendiente de decidir.
+
+### En la app
+
+`app/src-tauri/src/account/google.rs`: `start` (verificador al azar, solo su huella sale), `complete` (la vuelta que llega por `links.rs`, `Destination::GoogleReturn`), `finish`, `cancel`. El intento pendiente vive en `local_state` (`google_pending`: id, verificador, servidor, caducidad y, tras la vuelta, el código), se borra al terminar, cancelar, cerrar sesión o fallar, y no se escribe en registros (`Secret`). Un enlace de vuelta solo cuenta si su `attempt` es el pendiente y no ha caducado; si no, se ignora sin preguntar al servidor. El motivo de un `error=` solo se enseña si es uno de los seis conocidos; otro se enseña como `google_failed`. En la pantalla de iniciar sesión (y en la de crear cuenta) el botón «Continuar con Google» solo aparece si `GET /v1/server` dice `sign_in_with_google`; abre el navegador, espera con «Cancelar» y vuelve por el punto de entrada de enlaces de 7.6.4. La vuelta se atiende al momento, aunque haya otro diálogo delante (termina una entrada que la persona empezó), pero un fallo o el segundo factor solo se enseñan en el diálogo de iniciar sesión.
 
 ## Dar el dispositivo a otra persona (D81)
 
@@ -242,6 +289,5 @@ El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la inte
 ## Pendiente
 
 - La retirada en las bibliotecas al quitar un dispositivo (D81, hito 7.5).
-- Cuentas con Google (entonces `no_password` deja de ser un caso solo teórico, y `sign_in_with_google` pasa a `true`; su propio segundo factor sustituirá al de D78 para esas cuentas).
 - Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
 - Registro de actividad de la cuenta (hito 7.7).

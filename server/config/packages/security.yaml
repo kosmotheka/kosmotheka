@@ -46,6 +46,8 @@ security:
         - { path: ^/v1/account/password/(forgot|reset)$, roles: PUBLIC_ACCESS }
         - { path: ^/v1/account/(register|confirm|code)$, roles: PUBLIC_ACCESS }
         - { path: ^/v1/auth/(challenge|login)$, roles: PUBLIC_ACCESS }
+        # «Continuar con Google» (D77): the app starts and finishes without a token; the browser connects and comes back.
+        - { path: ^/v1/auth/google/(start|connect|callback|finish)$, roles: PUBLIC_ACCESS }
         - { path: ^/v1/server$, roles: PUBLIC_ACCESS }
         # Looking at an invitation by its token needs no session (D43); accepting one does.
         - { path: '^/v1/cloud/invitations/[^/]+$', methods: [GET], roles: PUBLIC_ACCESS }

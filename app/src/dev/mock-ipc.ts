@@ -1387,7 +1387,7 @@ mockIPC((cmd, args) => {
         name: "Kosmotheka",
         apiVersion: 1,
         registration: true,
-        signInWithGoogle: false,
+        signInWithGoogle: params.has("google"),
         twoFactor: true,
       };
       return info;
@@ -1655,6 +1655,13 @@ mockIPC((cmd, args) => {
       };
       return mockPendingInvitation;
     }
+    case "start_google":
+    case "cancel_google":
+      return null;
+    case "complete_google_return":
+      return null;
+    case "finish_google":
+      throw { kind: "account", reason: "invalid_two_factor_code" };
     case "open_arrived_link":
       // `?arrived` stands for a tap on an invitation link; `?arrivedbad` for one that is wrong.
       if (params.has("arrivedbad")) throw { kind: "cloud", reason: "invitation_bad_link" };

@@ -20,6 +20,10 @@ enum ActivityKind: string
     case TwoFactorEnabled = 'two_factor_enabled';
     case TwoFactorDisabled = 'two_factor_disabled';
     case AccountDeleted = 'account_deleted';
+    // With Google (D77): the kind, never the identifier Google gave nor anything else of it.
+    case LoginSucceededWithGoogle = 'login_succeeded_with_google';
+    case AccountCreatedWithGoogle = 'account_created_with_google';
+    case AccountLinkedWithGoogle = 'account_linked_with_google';
     case AccountBlocked = 'account_blocked';
     case AccountUnblocked = 'account_unblocked';
 

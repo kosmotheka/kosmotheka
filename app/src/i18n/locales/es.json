@@ -1352,7 +1352,15 @@
       }
     },
     "auth": {
+      "google": "Continuar con Google",
+      "googleOr": "o",
+      "googleWaiting": "Esperando a Google en tu navegador…",
       "steps": {
+        "google": {
+          "title": "Continuar con Google",
+          "sub": "Termina de entrar en el navegador y vuelve aquí.",
+          "primary": "Cancelar"
+        },
         "signin": {
           "title": "Iniciar sesión",
           "sub": "Con una cuenta, tus bibliotecas se sincronizan también a distancia.",
@@ -1560,6 +1568,25 @@
     }
   },
   "accountErrors": {
+    "googleCancelled": {
+      "title": "Has cancelado el inicio de sesión con Google."
+    },
+    "googleExpired": {
+      "title": "El inicio de sesión con Google ha tardado demasiado.",
+      "help": "Empieza de nuevo desde la app."
+    },
+    "googleEmailNotVerified": {
+      "title": "Google no ha confirmado tu correo.",
+      "help": "Confirma la dirección en tu cuenta de Google, o entra con tu correo y contraseña."
+    },
+    "googleOtherAccount": {
+      "title": "Este correo pertenece a otra cuenta de Google.",
+      "help": "Entra con la cuenta de Google que usaste antes, o con tu correo y contraseña."
+    },
+    "googleFailed": {
+      "title": "No ha funcionado entrar con Google.",
+      "help": "Inténtalo de nuevo en un momento, o entra con tu correo y contraseña."
+    },
     "invalidCode": {
       "title": "Código incorrecto.",
       "help": "Usa el del último correo que te ha llegado."

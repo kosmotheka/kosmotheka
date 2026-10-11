@@ -53,7 +53,8 @@ export type Overlay =
   | { name: "series"; seriesId: string }
   | { name: "newSeries" }
   | { name: "seriesPicker"; workId: string; workTitle: string }
-  | { name: "auth"; step?: "signin" | "signup" }
+  // `googleTotp` / `googleError`: the way back from Google asked for the second factor, or failed (D77).
+  | { name: "auth"; step?: "signin" | "signup" | "googleTotp"; googleError?: string }
   | { name: "account" }
   | { name: "accountDevices" }
   | { name: "cloudPick" }

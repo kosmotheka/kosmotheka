@@ -1,0 +1,11 @@
+# Google, for «Continuar con Google» (D77). Empty variables = no Google on this server (App\Security\Google\
+# LeagueGoogleSignIn::isConfigured). The state and PKCE are handled by the server itself, not by the bundle's session.
+knpu_oauth2_client:
+    clients:
+        google:
+            type: google
+            client_id: '%env(GOOGLE_CLIENT_ID)%'
+            client_secret: '%env(GOOGLE_CLIENT_SECRET)%'
+            redirect_route: google_callback
+            redirect_params: {}
+            use_oidc_mode: true

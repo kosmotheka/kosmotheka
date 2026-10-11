@@ -7,6 +7,7 @@ namespace App\Security;
 use App\Entity\EmailCode;
 use App\Entity\User;
 use App\Repository\ActivityEntryRepository;
+use App\Repository\GoogleAttemptRepository;
 use App\Repository\InvitationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
@@ -30,6 +31,7 @@ final readonly class AccountPurger
         private ClockInterface $clock,
         private InvitationRepository $invitations,
         private ActivityEntryRepository $activity,
+        private GoogleAttemptRepository $googleAttempts,
     ) {
     }
 
@@ -39,7 +41,7 @@ final readonly class AccountPurger
     /** How long the activity log keeps a line (D66, accepted on 01/10/2026): a year, then it is deleted. The only place the period is written. */
     public const string ACTIVITY_RETENTION = '-1 year';
 
-    /** @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int} */
+    /** @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int, google_attempts: int} */
     public function purge(): array
     {
         $now = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'));
@@ -57,6 +59,8 @@ final readonly class AccountPurger
 
         $deletedActivity = $this->activity->deleteBefore($now->modify(self::ACTIVITY_RETENTION));
 
-        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes, 'invitations' => $deletedInvitations, 'activity' => $deletedActivity];
+        $deletedAttempts = $this->googleAttempts->deleteExpiredBefore($now);
+
+        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes, 'invitations' => $deletedInvitations, 'activity' => $deletedActivity, 'google_attempts' => $deletedAttempts];
     }
 }

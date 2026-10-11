@@ -1413,6 +1413,62 @@ pub async fn open_invitation(
     invitations::open(&database, &api, &link).await
 }
 
+/// Starts «Continuar con Google» (D77): asks the account's server for an attempt and opens the system browser at
+/// the address it gives. The way back arrives by `kosmotheka://auth/google` and is read by `complete_google_return`.
+#[tauri::command]
+pub async fn start_google(
+    app: AppHandle,
+    database: State<'_, Database>,
+    locale: String,
+) -> Result<()> {
+    let url = account::google::start(&database, &locale).await?;
+    tauri_plugin_opener::OpenerExt::opener(&app)
+        .open_url(url, None::<&str>)
+        .map_err(|_| Error::account("google_failed"))
+}
+
+/// «Cancel» while the browser is open: a way back that comes later is not an attempt of this app any more.
+#[tauri::command]
+pub fn cancel_google(database: State<'_, Database>) -> Result<()> {
+    account::google::cancel(&database)
+}
+
+/// The way back from Google, if one arrived: signs this device in, or says why not. `None` when nothing is waiting or
+/// it is not for the attempt this app started (a link somebody else made), which asks no server anything.
+#[tauri::command]
+pub async fn complete_google_return(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    arrivals: State<'_, Arrivals>,
+) -> Result<Option<AccountUser>> {
+    let Some(back) = arrivals.take_google() else {
+        return Ok(None);
+    };
+    let result = account::google::complete(&database, reset.context(), back).await;
+    emit_if_reset(&app, &result);
+    if matches!(result, Ok(Some(_))) {
+        app.state::<EventsService>().start();
+    }
+    result
+}
+
+/// The second factor's code, for a way back that was waiting for it.
+#[tauri::command]
+pub async fn finish_google(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    totp_code: String,
+) -> Result<AccountUser> {
+    let result = account::google::finish(&database, reset.context(), Some(totp_code)).await;
+    emit_if_reset(&app, &result);
+    if result.is_ok() {
+        app.state::<EventsService>().start();
+    }
+    result
+}
+
 /// Looks at the link the system handed to the app, if one is waiting (milestone 7.6.4): the same road as a link
 /// pasted by hand, and no more than looking. The link never reaches the screen, only what it says.
 #[tauri::command]

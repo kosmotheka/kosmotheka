@@ -103,10 +103,16 @@ Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La cl
 |---|---|---|
 | `CLOUD_KEY_SECRET` | `.env.local` (`.env` la trae vacía; `.env.test` trae un valor de prueba que no sirve fuera de los tests) | 32 bytes aleatorios en base64. **Vacía = sin identidad de nube** (D18): el servidor funciona como antes, las bibliotecas no tienen dispositivo de nube y la API devuelve nulos |
 | `INVITATION_BASE_URL` | `.env.local` (`.env` la trae vacía; `.env.test` trae una de prueba) | Con lo que empiezan los enlaces de invitación, sin barra al final: `<esta>/i/<token>` (D43, D79). En desarrollo, p. ej. `http://localhost:8095`; en el servidor oficial, `https://kosmotheka.app`. **Vacía = sin invitaciones** (D18): `409 invitations_unavailable` y `GET /v1/server` dice `invitations: false`. Ver [cloud.md](../architecture/cloud.md#invitaciones-761-d43) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `.env.local` (`.env` las trae vacías) | El cliente OAuth de «Continuar con Google» (D77, [google-oauth.md](google-oauth.md)). **Vacías = sin Google**: sus rutas responden `404 google_unavailable` y `GET /v1/server` dice `sign_in_with_google: false`. **Nunca van al repositorio.** La dirección de vuelta que se registra en Google es `DEFAULT_URI` + `/v1/auth/google/callback` |
+| `DEFAULT_URI` | `.env.local` (`.env` trae `http://localhost`) | La dirección pública del servidor (en producción, `https://api.kosmotheka.app`): de aquí sale la dirección de vuelta de Google y la del navegador de un intento. Tiene que ser la que ve la gente, no la interna |
 | `REGISTRATION_ALLOWED_EMAILS` | `.env.local` (`.env` la trae vacía) | Correos que pueden crear una cuenta, separados por comas. **Vacía = registro abierto.** Con contenido, los demás reciben `403 registration_closed` y `GET /v1/server` dice `registration_restricted: true`. Ver [accounts.md](../architecture/accounts.md#post-v1accountregister) |
 
 - Se genera con `openssl rand -base64 32`. En producción la define el entorno (7.9) y entra en las copias de seguridad **aparte de la base de datos**: una copia de la base sin el secreto no permite firmar.
 - **Perderla deja a la nube sin poder firmar** en las bibliotecas ya creadas (la clave cifrada no se puede abrir; el servidor lo dice con una excepción, no con datos basura). Cambiarla tiene el mismo efecto. Las bibliotecas creadas con el secreto vacío reciben su identidad la primera vez que se listan o se enlazan, si el secreto ya está definido.
+
+### Qué no debe llegar al registro de accesos (7.1, D77)
+
+Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador por Google: `GET /v1/auth/google/connect?attempt=…` y `GET /v1/auth/google/callback?code=…&state=…`. **No pueden escribirse en el registro de accesos** de nginx ni de ningún proxy o CDN delante. En desarrollo lo hace `map $request_uri $loggable` en `docker/nginx/nginx.conf` con `access_log … if=$loggable` en el sitio; en producción, lo mismo (y sin guardar la cabecera `Referer` de esas rutas; el servidor ya responde `Referrer-Policy: no-referrer` y `Cache-Control: no-store`).
 
 ## Comandos habituales
 

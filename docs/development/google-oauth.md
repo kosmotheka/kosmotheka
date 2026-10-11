@@ -1,6 +1,6 @@
 # «Continuar con Google»: lo que hay que crear en Google Cloud
 
-> Pasos para el maintainer (D77), escritos el 11/10/2026 **antes** de construir el código ([encargo](../plans/encargo-7.1-google.md)). Los nombres de los menús de Google cambian a menudo: si alguno no coincide, busca el concepto (proyecto, pantalla de consentimiento, cliente OAuth). La dirección de vuelta exacta se confirma cuando el código esté hecho; está marcada abajo.
+> Pasos para el maintainer (D77), escritos el 11/10/2026 **antes** de construir el código ([encargo](../historico/encargo-7.1-google.md)). Los nombres de los menús de Google cambian a menudo: si alguno no coincide, busca el concepto (proyecto, pantalla de consentimiento, cliente OAuth). La dirección de vuelta está confirmada con el código (7.1): `DEFAULT_URI` + `/v1/auth/google/callback`.
 >
 > **Ninguna clave va al repositorio.** El identificador y el secreto del cliente van en el `.env.local` del servidor y en el gestor de contraseñas.
 
@@ -26,7 +26,7 @@
 5. **El cliente** (*Clients* → *Crear cliente*, o *Credenciales* → *Crear credenciales* → *ID de cliente de OAuth*):
    - Tipo: **Aplicación web**. Nombre: `Servidor de Kosmotheka`.
    - *Orígenes de JavaScript autorizados*: vacío.
-   - *URI de redireccionamiento autorizados* (**por confirmar con el código**; se espera que sea):
+   - *URI de redireccionamiento autorizados* (**confirmada con el código**: es `DEFAULT_URI` del servidor + `/v1/auth/google/callback`):
      - `https://api.kosmotheka.app/v1/auth/google/callback`
      - para desarrollo en local, otra con la dirección del servidor de desarrollo.
    - Google compara esa dirección letra a letra: `https`, sin barra final, sin parámetros.

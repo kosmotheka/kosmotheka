@@ -8,6 +8,7 @@
 //! `signed_out_password_changed`).
 
 pub mod client;
+pub mod google;
 
 use std::net::Ipv4Addr;
 use std::path::Path;
@@ -236,6 +237,8 @@ fn store_user(conn: &Connection, user: &AccountUser) -> Result<()> {
 pub(crate) fn clear_session(conn: &Connection) -> Result<()> {
     // An invitation waiting for a session was meant for whoever was here: not for the next one.
     crate::cloud::invitations::forget_pending(conn)?;
+    // And so is a way in with Google that was under way.
+    google::forget(conn)?;
     write_state(conn, ACCOUNT_TOKEN, None)?;
     write_state(conn, ACCOUNT_USER, None)
 }

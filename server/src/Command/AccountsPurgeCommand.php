@@ -26,11 +26,12 @@ final class AccountsPurgeCommand extends Command
         $result = $this->purger->purge();
 
         new SymfonyStyle($input, $output)->success(\sprintf(
-            'Deleted %d unconfirmed account(s), %d expired code(s), %d old invitation(s) and %d old activity line(s).',
+            'Deleted %d unconfirmed account(s), %d expired code(s), %d old invitation(s), %d old activity line(s) and %d expired Google attempt(s).',
             $result['unconfirmed_users'],
             $result['expired_codes'],
             $result['invitations'],
             $result['activity'],
+            $result['google_attempts'],
         ));
 
         return Command::SUCCESS;

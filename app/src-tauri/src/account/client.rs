@@ -319,6 +319,68 @@ pub async fn login(
     .await
 }
 
+#[derive(Deserialize)]
+pub struct GoogleStartWire {
+    pub attempt: String,
+    pub url: String,
+}
+
+/// Opens an attempt of «Continuar con Google» (D77): the server only learns the hash of the secret the app keeps.
+pub async fn google_start(
+    client: &reqwest::Client,
+    base: &str,
+    verifier_hash: &str,
+    locale: &str,
+) -> Result<GoogleStartWire> {
+    let body = json!({ "verifier_hash": verifier_hash, "locale": locale });
+    send_json(
+        client,
+        Method::POST,
+        &format!("{base}/v1/auth/google/start"),
+        None,
+        Some(&body),
+    )
+    .await
+}
+
+/// Exchanges the code Google's way back brought, with the secret that never left, and the proof of this device.
+#[allow(clippy::too_many_arguments)]
+pub async fn google_finish(
+    client: &reqwest::Client,
+    base: &str,
+    attempt: &str,
+    code: &str,
+    verifier: &str,
+    device_id: &str,
+    device_name: &str,
+    public_key: &str,
+    challenge: &str,
+    signature: &str,
+    totp_code: Option<&str>,
+) -> Result<LoginResponseWire> {
+    let mut body = json!({
+        "attempt": attempt,
+        "code": code,
+        "verifier": verifier,
+        "device_id": device_id,
+        "device_name": device_name,
+        "public_key": public_key,
+        "challenge": challenge,
+        "signature": signature,
+    });
+    if let Some(code) = totp_code {
+        body["totp_code"] = json!(code);
+    }
+    send_json(
+        client,
+        Method::POST,
+        &format!("{base}/v1/auth/google/finish"),
+        None,
+        Some(&body),
+    )
+    .await
+}
+
 pub async fn logout(
     client: &reqwest::Client,
     base: &str,

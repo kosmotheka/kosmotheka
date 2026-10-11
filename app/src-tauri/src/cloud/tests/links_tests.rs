@@ -244,3 +244,104 @@ fn a_link_is_in_no_message_and_no_debug_output() {
     let taken = arrivals.take().unwrap();
     assert!(!format!("{taken:?}").contains(TOKEN));
 }
+
+// --- The way back from Google (7.1, D77) -------------------------------------------------------------------------------
+
+fn google_back(query: &str) -> String {
+    format!("kosmotheka://auth/google?{query}")
+}
+
+#[test]
+fn only_the_exact_way_back_from_google_is_one() {
+    use crate::links::GoogleOutcome;
+
+    let Some(Destination::GoogleReturn(back)) = route(&google_back("attempt=abc_DEF-1&code=Zx9-_"))
+    else {
+        panic!("a way back");
+    };
+    assert_eq!(back.attempt, "abc_DEF-1");
+    assert!(matches!(back.outcome, GoogleOutcome::Code(_)));
+    let Some(Destination::GoogleReturn(back)) =
+        route(&google_back("attempt=abc&error=google_cancelled"))
+    else {
+        panic!("a way back with a reason");
+    };
+    assert_eq!(
+        back.outcome,
+        GoogleOutcome::Error("google_cancelled".into())
+    );
+
+    let long = "a".repeat(201);
+    for hostile in [
+        // Something else under the scheme.
+        "kosmotheka://auth/other?attempt=a&code=b".to_owned(),
+        "kosmotheka://evil/google?attempt=a&code=b".to_owned(),
+        "kosmotheka://auth/google/extra?attempt=a&code=b".to_owned(),
+        "kosmotheka://user@auth/google?attempt=a&code=b".to_owned(),
+        "kosmotheka://auth:1/google?attempt=a&code=b".to_owned(),
+        "kosmotheka://auth/google?attempt=a&code=b#x".to_owned(),
+        // Missing, doubled, extra or ambiguous parameters.
+        "kosmotheka://auth/google".to_owned(),
+        google_back("code=b"),
+        google_back("attempt=a"),
+        google_back("attempt=a&code=b&error=c"),
+        google_back("attempt=a&attempt=z&code=b"),
+        google_back("attempt=a&code=b&code=c"),
+        google_back("attempt=a&code=b&next=https://evil.example"),
+        // Wrong shapes.
+        google_back("attempt=&code=b"),
+        google_back("attempt=a&code="),
+        google_back("attempt=a%20b&code=c"),
+        google_back("attempt=a&code=b%2F..%2F"),
+        google_back(&format!("attempt=a&code={long}")),
+        google_back(&format!("attempt={}&code=b", "a".repeat(101))),
+        // The invitation scheme that is not followed, and other schemes.
+        format!("kosmotheka://i/{TOKEN}"),
+        "https://auth/google?attempt=a&code=b".to_owned(),
+        "https://kosmotheka.app/auth/google?attempt=a&code=b".to_owned(),
+    ] {
+        assert_eq!(route(&hostile), None, "ignored: {hostile:.80}");
+    }
+}
+
+#[test]
+fn a_way_back_from_google_and_an_invitation_do_not_take_each_others_place() {
+    let arrivals = Arrivals::default();
+    arrivals.arrive([official(TOKEN)]);
+    arrivals.arrive([google_back("attempt=mine&code=c0de")]);
+    // A flood of the one kind, from anywhere, does not push out the other.
+    for n in 0..100 {
+        arrivals.arrive([official(&format!("{n:0>43}"))]);
+    }
+
+    let google = arrivals.take_google().expect("the way back is still here");
+    assert_eq!(google.attempt, "mine");
+    assert_eq!(arrivals.take_google(), None);
+    assert!(arrivals.take().is_some());
+    assert!(arrivals.take().is_none());
+}
+
+#[tokio::test]
+async fn a_way_back_from_google_never_reaches_the_invitation_road_nor_asks_any_server() {
+    let cloud = FakeCloud::default();
+    let nora = Database::in_memory();
+    let api = cloud.api_on("nora", OFFICIAL_SERVER).on(&nora);
+    let arrivals = Arrivals::default();
+
+    assert!(arrivals.arrive([google_back("attempt=a&code=b")]));
+
+    assert_eq!(attend(&arrivals, &nora, &api).await.unwrap(), None);
+    assert_eq!(cloud.invitation_calls(), 0);
+    assert!(
+        arrivals.take_google().is_some(),
+        "it waits for its own road"
+    );
+}
+
+#[test]
+fn the_code_of_a_way_back_is_in_no_debug_output() {
+    let arrivals = Arrivals::default();
+    arrivals.arrive([google_back("attempt=a&code=the-secret-code")]);
+    let taken = arrivals.take_google().unwrap();
+    assert!(!format!("{taken:?}").contains("the-secret-code"));
+}
