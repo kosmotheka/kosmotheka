@@ -580,6 +580,8 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** un solo uso y 24 horas. El administrador puede revocarla antes y generar otra en cualquier momento. En la base de datos solo se guarda el hash del token.
 
+**Enmienda (11/10/2026, aceptada, SEG-042):** el correo de invitación **no lleva el nombre de la biblioteca** ni nada escrito por quien invita: dice «Te han invitado a una biblioteca de Kosmotheka» y el nombre se ve en la app al abrir el enlace. Así nadie puede poner un texto engañoso en un correo que sale del dominio oficial.
+
 **Consecuencias:** la app debe explicar, al escanear una invitación caducada o ya usada, que se pida otra al administrador (entrada nueva en `docs/design/errors.md` cuando se implemente, en la Fase 7).
 
 **Enmienda (10/10/2026, aceptada), al preparar el hito 7.6:**
