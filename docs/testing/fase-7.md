@@ -78,3 +78,37 @@ Hace falta el servidor con el hub: `cd server && make up` (el contenedor de Merc
 
 - [ ] **Cerrar sesión.** Cierra sesión en A. *Esperado:* la marca desaparece y no queda ninguna conexión abierta (`docker logs mercure_kosmotheka` no muestra suscriptores de A).
 - [ ] **Quitar un dispositivo.** Desde B, quita A de la cuenta. *Esperado:* A se reinicia como una instalación nueva y deja de escuchar.
+
+## 7.8 · Proveedores con clave (12/10/2026)
+
+Dos tandas, en este orden: la primera no necesita desplegar nada; la segunda, sí.
+
+### Tanda 1 · En local, con la app de desarrollo (`npm run tauri dev`)
+
+**La pantalla de Proveedores** (Ajustes › Proveedores de datos):
+
+- [ ] Al abrir, **«Todas»** está seleccionada y a la derecha sale cada fuente **una sola vez**, con los tipos que cubre debajo.
+- [ ] Al pulsar un tipo (Libros, Películas, Videojuegos, Cómics), la lista se filtra; al volver a «Todas», salen todas.
+- [ ] Apaga una fuente en «Todas» y mira que sale apagada también dentro de su tipo. Vuelve a encenderla.
+- [ ] Al final, tras hacer scroll, está **«Créditos»**: logo y aviso de TMDB, y RAWG y Comic Vine con su enlace. **No se monta encima de la lista** en ningún momento del scroll.
+- [ ] Los enlaces de «Créditos» y los de «Cómo conseguir una clave» abren el navegador.
+- [ ] Estrecha la ventana hasta el ancho de un móvil: primero la lista de tipos con «Todas» arriba; al entrar en uno, sus fuentes; el campo de clave cabe.
+- [ ] Modo claro (Ajustes › Apariencia): el logo de TMDB y los textos se leen.
+
+**Clave propia** (cierra sesión antes, para que nada pase por el servidor):
+
+- [ ] **TMDB:** pega el «API Read Access Token» (el largo), «Probar». *Esperado:* dice que funciona. Busca una película y una serie: salen resultados con la etiqueta TMDB, director o creadores, duración o temporadas y cartel.
+- [ ] **TMDB con una clave mala:** cambia un carácter y «Probar». *Esperado:* aviso de clave incorrecta, no un error genérico.
+- [ ] **Una película grande** (una de Marvel): sale el director.
+- [ ] **RAWG:** pega la clave, «Probar», busca un videojuego. *Esperado:* resultados con la etiqueta RAWG; los tres primeros con estudio y editor; plataforma rellena solo si el juego tiene una; portada; y debajo de los resultados la línea «Datos de RAWG» con su enlace. **Es la primera vez que se prueba contra RAWG de verdad:** si no sale nada o salen campos vacíos, apunta qué buscaste.
+- [ ] **Comic Vine** (si decides usarlo; ver la nota de sus condiciones en el plan): pega la clave, «Probar», busca una serie («batman») y un número («watchmen 1»). *Esperado:* series y números, con editorial y año; **portadas** (si no sale ninguna, el sitio de sus imágenes no es el que supusimos); autores en los números. Línea «Datos de Comic Vine».
+- [ ] Borra las claves y, sin sesión, busca una película. *Esperado:* solo Wikidata, y Proveedores explica que TMDB pide clave o cuenta.
+
+### Tanda 2 · Por el servidor (tras desplegar RAWG y, si se decide, Comic Vine)
+
+- [ ] `curl -s https://api.kosmotheka.app/v1/server` lista en `metadata` lo desplegado (`google_books`, `tmdb`, `rawg` y, en su caso, `comic_vine`).
+- [ ] Con sesión y **sin** claves propias: busca un videojuego. *Esperado:* resultados de RAWG.
+- [ ] En el VPS, `sudo -u postgres psql <la base de datos> -c "SELECT provider, left(code,12), found FROM metadata_cache ORDER BY fetched_at DESC LIMIT 10;"` enseña filas `rawg_search` y `rawg_game`, sin el título buscado en claro.
+- [ ] Repite la misma búsqueda. *Esperado:* responde igual y no hay filas nuevas (salió de la caché).
+- [ ] Con sesión **y** clave propia de TMDB puesta: busca una película y comprueba que no aparece ninguna fila nueva `tmdb_search` (la app fue directa a TMDB).
+- [ ] En el VPS, `grep -c "metadata" <el registro de nginx>` da `0`.
