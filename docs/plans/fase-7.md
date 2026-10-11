@@ -194,6 +194,7 @@ Apuntado para esa revisión:
   - **pendiente de construir** (SEG-041, D66 enmendada el 11/10/2026): el registro apunta al autor de la operación además de a quien la sube;
   - **pendiente de construir** (SEG-042, D43 enmendada el 11/10/2026): el correo de invitación sin el nombre de la biblioteca;
   - **pendiente de construir** (SEG-044, decidido por el maintainer el 11/10/2026): el tope de correos de invitación por destinatario pasa a 3 al día por biblioteca y dirección, con un tope general de 10 al día por dirección; la cuota no se gasta si el correo no se envía;
+  - el registro no tiene tope de filas y la primera subida deja la historia de la biblioteca (SEG-045): **no se toca ahora** (decidido por el maintainer el 11/10/2026); se vigila el tamaño de `activity_log` cuando haya uso real, en la revisión de carga;
   - la huella del correo sale de `APP_SECRET`: si se cambia, las huellas viejas dejan de casar con ninguna dirección;
   - la primera subida de una biblioteca deja filas por los cambios de rol y de dispositivo de toda su historia, con la hora de llegada;
   - no se apuntan: crear una persona, quitar un dispositivo de la cuenta (D81) y nombrar superadministrador por consola (D52 pide sus accesos);
