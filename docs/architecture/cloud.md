@@ -661,11 +661,11 @@ Un fallo de TMDB (cuota, error, tiempo agotado, basura) **no se guarda**; un det
 
 El servidor no usa Monolog: lo que registra es el registrador por defecto de Symfony (a `stderr`, de ahí al log del contenedor), que en producción escribe de `warning` para arriba. Visto con un registrador en memoria en los tests:
 - Una excepción de la aplicación (`AccountException`: ISBN inválido, cuota, límite…) se escribe con su **código como único texto**, sin la dirección.
-- **Una ruta que no existe sí escribe la dirección completa** (`No route found for "GET http://…/v1/metadata/google-books/isbn/978/8408176039"`, a nivel `error`), y con ella el ISBN que alguien buscó con una barra de más, o con un segmento de más después del ISBN. La ruta de TMDB no tiene este problema: el título va en el cuerpo. Un ISBN bien formado, o mal formado pero de un solo segmento, no escribe nada.
+- **Una ruta que no existe escribe la dirección completa** (`No route found for "GET http://…/v1/metadata/google-books/isbn/978/8408176039"`, a nivel `error`), y con ella el ISBN que alguien buscó con una barra de más, o con un segmento de más después del ISBN. La ruta de TMDB no tiene este problema: el título va en el cuerpo. Un ISBN bien formado, o mal formado pero de un solo segmento, no escribe nada.
 - A nivel `info` (solo en desarrollo) `Matched route` escribe `request_uri` en cada petición.
 - Un error de validación del cuerpo de la ruta de TMDB escribe solo la regla incumplida, no el valor.
 
-**Propuesta pendiente** (no hecha, queda a decidir): hacer que `{isbn}` acepte cualquier cosa, también barras (`requirements: ['isbn' => '.+']`), de modo que todo lo que cuelga de la ruta llegue al controlador y responda `422 invalid_isbn` sin escribir la dirección; o, más general, un oyente que reescriba el mensaje de `NotFoundHttpException` bajo `/v1/metadata/`.
+**Arreglado el 11/10/2026** (decidido por el maintainer): `{isbn}` acepta cualquier cosa, también barras (`requirements: ['isbn' => '.+']`), así que todo lo que cuelga de la ruta llega al controlador y responde `422 invalid_isbn` sin escribir la dirección (`testAnAddressWithMoreThanAnIsbnIsRefusedWithoutWritingItToTheLog`). El primer punto de esta lista ya no ocurre para esa ruta; una ruta nueva que lleve un dato de la persona en la dirección necesita el mismo cuidado.
 
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 

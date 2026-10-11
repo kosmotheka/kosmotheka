@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**
@@ -36,7 +37,9 @@ final class MetadataController extends AbstractController
     ) {
     }
 
-    #[Route('/google-books/isbn/{isbn}', methods: ['GET'])]
+    // `.+`: whatever hangs from this address reaches here and is refused as an ISBN. An address the router does not
+    // know is written whole to the application log, and this one holds what an account looks up.
+    #[Route('/google-books/isbn/{isbn}', requirements: ['isbn' => Requirement::CATCH_ALL], methods: ['GET'])]
     public function googleBooksIsbn(string $isbn): JsonResponse
     {
         if (!$this->googleBooks->isConfigured()) {

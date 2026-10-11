@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Security\RequestLimiter;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\FakeGoogleBooksApi;
+use App\Tests\Support\RecordingLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -197,16 +198,37 @@ final class GoogleBooksLookupTest extends WebTestCase
         self::assertSame(0, $this->cacheRows());
     }
 
-    public function testASlashIsNotAnIsbnEitherAndNothingIsAsked(): void
+    /** @return iterable<string, array{string}> */
+    public static function addressesWithMoreThanAnIsbn(): iterable
+    {
+        yield 'a slash inside' => ['/v1/metadata/google-books/isbn/978/8408176039'];
+        yield 'something after' => ['/v1/metadata/google-books/isbn/9788408176039/extra'];
+        yield 'a slash at the end' => ['/v1/metadata/google-books/isbn/9788408176039/'];
+    }
+
+    /**
+     * An address the router does not know is written to the application log whole, and here it holds what an account
+     * looks up: everything under the route reaches the controller instead, which answers without writing it.
+     */
+    #[DataProvider('addressesWithMoreThanAnIsbn')]
+    public function testAnAddressWithMoreThanAnIsbnIsRefusedWithoutWritingItToTheLog(string $address): void
     {
         $client = $this->world();
         $ada = $this->account($client, 'ada@example.com');
+        RecordingLogger::reset();
 
-        $client->request('GET', '/v1/metadata/google-books/isbn/978/8408176039', server: $ada['headers']);
+        $client->request('GET', $address, server: $ada['headers']);
 
-        self::assertResponseStatusCodeSame(404);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('invalid_isbn', $this->decode($client)['error'] ?? null);
         self::assertSame(0, FakeGoogleBooksApi::calls());
         self::assertSame(0, $this->cacheRows());
+        // What production writes: warnings and worse.
+        $written = implode("\n", array_filter(
+            RecordingLogger::$lines,
+            static fn (string $line): bool => 1 === preg_match('/^\[(warning|error|critical|alert|emergency)\]/', $line),
+        ));
+        self::assertStringNotContainsString('8408176039', $written);
     }
 
     public function testAnIsbn10AndHyphensGoToTheSameThirteenDigitsAndOneRow(): void
