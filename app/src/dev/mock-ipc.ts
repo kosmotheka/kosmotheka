@@ -124,6 +124,7 @@ const mockInvitations: MockInvitation[] = new URLSearchParams(window.location.se
       },
     ]
   : [];
+let mockArrivedSeen = false;
 let mockPendingInvitation: {
   libraryName: string;
   kind: string;
@@ -1654,6 +1655,18 @@ mockIPC((cmd, args) => {
       };
       return mockPendingInvitation;
     }
+    case "open_arrived_link":
+      // `?arrived` stands for a tap on an invitation link; `?arrivedbad` for one that is wrong.
+      if (params.has("arrivedbad")) throw { kind: "cloud", reason: "invitation_bad_link" };
+      if (!params.has("arrived") || mockArrivedSeen) return null;
+      mockArrivedSeen = true;
+      mockPendingInvitation = {
+        libraryName: "Casa",
+        kind: "link",
+        expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        signedIn: mockAccount.signedIn,
+      };
+      return mockPendingInvitation;
     case "pending_invitation":
       return mockPendingInvitation
         ? { state: "waiting", ...mockPendingInvitation }

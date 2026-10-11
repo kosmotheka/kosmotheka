@@ -13,6 +13,7 @@ mod device_reset;
 pub mod error;
 mod lan;
 mod libraries;
+mod links;
 mod marks;
 mod metadata;
 pub mod ops;
@@ -25,6 +26,7 @@ mod settings;
 mod sync;
 
 use tauri::{Emitter, Manager};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::account::ResetDeps;
 use crate::cloud::events::EventsService;
@@ -33,11 +35,26 @@ use crate::db::Database;
 use crate::device_reset::DataDir;
 use crate::lan::identity::Identity;
 use crate::lan::service::LanService;
+use crate::links::Arrivals;
 use crate::metadata::Lookup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // First of all: a second launch (the system opening a link while the app runs) must be caught before
+    // anything else starts. A second copy with its own data folder, to test the LAN (debug builds), is meant.
+    #[cfg(desktop)]
+    let builder = if cfg!(debug_assertions) && std::env::var_os("KOSMOTHEKA_DATA_DIR").is_some() {
+        builder
+    } else {
+        builder.plugin(
+            tauri_plugin_single_instance::Builder::new()
+                .callback(|app, _arguments, _directory| links::show_window(app))
+                .build(),
+        )
+    };
+    let builder = builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init());
@@ -69,6 +86,16 @@ pub fn run() {
             let events = EventsService::new(app.handle().clone(), database.clone(), reset_deps);
             events.start_if_signed_in();
             app.manage(events);
+            // Links the system hands over: the one that started the app, and those that come while it runs.
+            app.manage(Arrivals::default());
+            let link_handle = app.handle().clone();
+            if let Ok(Some(urls)) = app.deep_link().get_current() {
+                links::receive(&link_handle, urls.iter().map(url::Url::as_str));
+            }
+            app.deep_link().on_open_url(move |event| {
+                let urls = event.urls();
+                links::receive(&link_handle, urls.iter().map(url::Url::as_str));
+            });
             // A paired device that pushes something new: the UI reloads.
             let arrival_handle = app.handle().clone();
             lan.on_arrival(move || {
@@ -224,6 +251,7 @@ pub fn run() {
             commands::list_invitations,
             commands::revoke_invitation,
             commands::open_invitation,
+            commands::open_arrived_link,
             commands::pending_invitation,
             commands::discard_pending_invitation,
             commands::accept_invitation

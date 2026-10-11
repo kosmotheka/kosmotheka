@@ -76,6 +76,7 @@ struct CloudState {
     refuse_invitations: Option<&'static str>,
     /// Every call to an invitation route, whichever it is: what a device that must not ask never adds to.
     invitation_calls: usize,
+    accepts: usize,
     /// The server and the token of every peek, to see where a link was taken.
     peeks: Vec<(String, String)>,
 }
@@ -130,6 +131,10 @@ impl FakeCloud {
     /// Creating an invitation fails with this code, after the person is in the catalog.
     fn refuse_invitations(&self, code: &'static str) {
         self.0.lock().unwrap().refuse_invitations = Some(code);
+    }
+
+    fn accepts(&self) -> usize {
+        self.0.lock().unwrap().accepts
     }
 
     fn invitation_calls(&self) -> usize {
@@ -761,6 +766,7 @@ impl CloudApi for FakeApi {
     }
 
     async fn invitation_base(&self) -> Result<Option<String>> {
+        self.cloud.0.lock().unwrap().invitation_calls += 1;
         Ok(self.cloud.0.lock().unwrap().published_base.clone())
     }
 
@@ -865,6 +871,7 @@ impl CloudApi for FakeApi {
 
     async fn accept_invitation(&self, token: &str) -> Result<String> {
         let mut state = self.cloud.0.lock().unwrap();
+        state.accepts += 1;
         state.invitation_calls += 1;
         let index = state
             .invitations
@@ -1034,6 +1041,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 // --- Tests -----------------------------------------------------------------
 
 mod invitations_tests;
+mod links_tests;
 
 #[tokio::test]
 async fn uploading_links_the_library_and_sends_its_whole_log() {

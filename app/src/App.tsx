@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { CircleCheck } from "lucide-react";
 
 import { AccountDialog } from "@/components/account/account-dialog";
+import { useArrivedLink } from "@/lib/arrived-link";
 import { InvitationDialog } from "@/components/cloud/invitation-dialog";
 import { OtherOwnerDialog } from "@/components/cloud/other-owner-dialog";
 import { DownloadWait } from "@/components/cloud/download-wait";
@@ -176,6 +177,9 @@ export default function App() {
       .then((waiting) => waiting.state !== "nothing" && openOverlay({ name: "invitation" }))
       .catch(() => {});
   }, [account.signedIn, overlay]);
+
+  // A link the system handed to the app: it opens «I have an invitation» when nothing else is in front.
+  useArrivedLink(overlay !== null || welcome);
 
   // The device was reset (D81): its identity is new, so the welcome flag from
   // before no longer applies and a stale `?mock`-style view would be wrong.
@@ -648,6 +652,7 @@ export default function App() {
           />
           <InvitationDialog
             open={overlay?.name === "invitation"}
+            errorKey={overlay?.name === "invitation" ? overlay.errorKey : undefined}
             desktop={desktop}
             onDone={setNotice}
           />

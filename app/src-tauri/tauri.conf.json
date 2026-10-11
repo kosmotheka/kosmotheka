@@ -29,6 +29,21 @@
       }
     }
   },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        {
+          "scheme": ["https"],
+          "host": "kosmotheka.app",
+          "pathPrefix": ["/i/"],
+          "appLink": true
+        }
+      ],
+      "desktop": {
+        "schemes": ["kosmotheka"]
+      }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

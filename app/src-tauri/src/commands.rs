@@ -26,6 +26,7 @@ use crate::error::{Error, Result};
 use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
+use crate::links::{self, Arrivals};
 use crate::marks;
 use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult};
 use crate::ops;
@@ -1410,6 +1411,17 @@ pub async fn open_invitation(
 ) -> Result<OpenedInvitation> {
     let api = HttpCloud::anonymous(&database)?;
     invitations::open(&database, &api, &link).await
+}
+
+/// Looks at the link the system handed to the app, if one is waiting (milestone 7.6.4): the same road as a link
+/// pasted by hand, and no more than looking. The link never reaches the screen, only what it says.
+#[tauri::command]
+pub async fn open_arrived_link(
+    database: State<'_, Database>,
+    arrivals: State<'_, Arrivals>,
+) -> Result<Option<OpenedInvitation>> {
+    let api = HttpCloud::anonymous(&database)?;
+    links::attend(&arrivals, &database, &api).await
 }
 
 /// The link that is waiting for a session, if one is and has not expired.

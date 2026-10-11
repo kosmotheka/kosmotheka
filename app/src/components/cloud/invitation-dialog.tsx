@@ -31,10 +31,13 @@ import { cn } from "@/lib/utils";
  */
 export function InvitationDialog({
   open,
+  errorKey,
   desktop,
   onDone,
 }: {
   open: boolean;
+  /** The link that brought the person here was wrong: what it says, from the locales. */
+  errorKey?: string;
   desktop: boolean;
   onDone: (message: string) => void;
 }) {
@@ -57,7 +60,7 @@ export function InvitationDialog({
   if (open && !seeded) {
     setSeeded(true);
     setLink("");
-    setError(null);
+    setError(errorKey ? t(errorKey) : null);
     setJoinedLater(false);
     setSyncError(null);
     setExpiredFor(null);

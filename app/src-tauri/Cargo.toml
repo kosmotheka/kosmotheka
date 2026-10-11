@@ -44,11 +44,15 @@ rand = "0.10.3"
 gethostname = "1.1.0"
 scrypt = { version = "0.12.0", default-features = false }
 chacha20poly1305 = { version = "0.11.0", default-features = false, features = ["alloc"] }
+tauri-plugin-deep-link = "2"
 
 # Camera barcode scanning and biometric unlock exist only on phones (D35, D78).
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-barcode-scanner = "2"
 tauri-plugin-biometric = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 
 [lints]
 workspace = true

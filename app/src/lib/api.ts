@@ -1526,6 +1526,16 @@ export function openInvitation(link: string): Promise<OpenedInvitation> {
 }
 
 /**
+ * Looks at the link the system handed to the app (a tap on `https://kosmotheka.app/i/…`), if one is waiting.
+ * Same road as a pasted link, and no more than looking: the link itself never comes to the screen, so it cannot
+ * end up in its state, its history or a message. `null` when nothing was waiting; a bad link throws as
+ * `openInvitation` does.
+ */
+export function openArrivedLink(): Promise<OpenedInvitation | null> {
+  return invoke<OpenedInvitation | null>("open_arrived_link");
+}
+
+/**
  * What waits for a session after a link was opened: nothing, the link, or a link that expired while the person
  * signed in. The note of an expired one stays until `discardPendingInvitation`.
  */

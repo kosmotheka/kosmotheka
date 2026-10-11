@@ -57,7 +57,8 @@ export type Overlay =
   | { name: "account" }
   | { name: "accountDevices" }
   | { name: "cloudPick" }
-  | { name: "invitation" }
+  // `errorKey`: the link that brought the person here was bad; the text it shows is already in the locales.
+  | { name: "invitation"; errorKey?: string }
   // `codes` only when opened to show a fresh set of backup codes (regenerated from the
   // account screen) instead of starting a new setup.
   | { name: "twoFactor"; codes?: string[] };

@@ -161,14 +161,14 @@ Propuestas para construirlo:
 9. Adivinar enlaces: el token es largo y aleatorio, solo se guarda su huella, y la ruta tiene límite de peticiones.
 10. Usar el servidor para mandar correo a direcciones ajenas: límite de invitaciones por correo por cuenta y día, y un texto que no lleva nada escrito por quien invita salvo el nombre de la biblioteca.
 
-**Que el enlace abra la app sola: aplazado a antes de publicar** (decidido por el maintainer el 11/10/2026). 7.6 se cierra con «pega aquí tu enlace»: quien recibe una invitación copia el enlace y lo pega en la app. Sirve para probar todo lo demás; no sirve a un usuario normal, así que **es condición para publicar la nube** (va en 7.9). Lo que falta, ya estudiado (detalle en [cloud.md](../architecture/cloud.md#invitaciones-en-la-app-762-d43), «Enlaces profundos»):
+**Que el enlace abra la app sola (7.6.4, 11/10/2026).** Se aplazó esa mañana y el mismo día el maintainer quiso «Continuar con Google» (D77), que necesita el mismo mecanismo para volver a la app; el encargo es [encargo-7.6.4](../historico/encargo-7.6.4-enlaces-que-abren-la-app.md). Qué queda hecho y qué falta (detalle en [cloud.md](../architecture/cloud.md#invitaciones-en-la-app-762-d43), «Que un enlace abra la app»):
 
-1. **En la app:** el plugin `tauri-plugin-deep-link` (una dependencia más) y, en escritorio, `single-instance`, para que el enlace llegue a la ventana ya abierta. Lo que recibe se pasa tal cual a `open_invitation(link)`, que ya valida el enlace y ya rechaza los de otro servidor: no hay regla nueva.
-2. **En Android:** un `intent-filter` con `android:autoVerify="true"` para `https://kosmotheka.app/i/` en `gen/android/…/AndroidManifest.xml`.
-3. **En la web `kosmotheka.app`:** el fichero `/.well-known/assetlinks.json` con el nombre del paquete y la huella SHA-256 de la firma de la app (la de Google Play, no la de depuración). **Lo sube el maintainer**; sin él Android no verifica el dominio y abre el navegador.
-4. **Una página en `kosmotheka.app/i/…`** para quien no tiene la app instalada o abre el enlace en un ordenador: qué es, dónde se instala y el enlace para copiar. Hoy esa dirección no sirve nada.
-5. **Servidores propios:** los enlaces verificados solo valen para el dominio oficial (D79); para los demás, el esquema `kosmotheka://i/<token>`, que hoy `token_of_link` rechaza a propósito. Decidir entonces si se admite.
-6. **A comprobar al montarlo:** que la verificación del dominio pasa en un móvil real (`adb shell pm get-app-links`), qué ocurre con la app cerrada, abierta y sin sesión, y que volver de Google (D77) usa el mismo mecanismo.
+1. **En la app (hecho):** `tauri-plugin-deep-link` y, en escritorio, `single-instance`; un único punto de entrada en Rust (`links.rs`) que decide qué es el enlace por su forma y lo pasa por el mismo camino que el pegado (`open_invitation`); sin regla nueva sobre qué enlaces valen. El enlace de arranque, el que llega con la app abierta y el que llega sin sesión (se queda esperando como el pegado) están cubiertos; la interfaz solo lo abre si no hay otro diálogo delante.
+2. **En Android (hecho en el código, sin probar en un móvil):** el `intent-filter` con `android:autoVerify="true"` para `https://kosmotheka.app/i/` lo escribe el plugin a partir de `tauri.conf.json`.
+3. **En la web `kosmotheka.app` (falta, lo sube el maintainer):** `/.well-known/assetlinks.json` con las huellas SHA-256 de la firma de Google Play y de la clave de subida. Hay plantilla con los huecos en [docs/publicacion/kosmotheka.app/.well-known/assetlinks.json](../publicacion/kosmotheka.app/.well-known/assetlinks.json) y el cómo sacarlas y comprobarlas en [firma-android.md](../publicacion/firma-android.md). Sin él Android abre el navegador.
+4. **La página en `kosmotheka.app/i/…`** para quien no tiene la app: hecha (`invitacion.html`).
+5. **Servidores propios (por decidir):** el esquema `kosmotheka` está registrado en escritorio, pero **no abre invitaciones**: `kosmotheka://i/<token>` sigue rechazado (D79; un enlace sin dominio no dice de qué servidor es). Lo usará el encargo de Google.
+6. **A comprobar en dispositivos** (lista en el informe del encargo): que la verificación del dominio pasa en un móvil real (`adb shell pm get-app-links app.kosmotheka`), la app cerrada, abierta y sin sesión, y en escritorio el esquema y el segundo arranque. **Es condición para publicar la nube** (7.9).
 
 ### 7.7 Registro de actividad
 
@@ -210,7 +210,7 @@ Apuntado para esa revisión:
 
 ### 7.9 Producción
 
-**Antes de publicar la nube:** que un enlace de invitación abra la app sola (aplazado desde 7.6; la lista está en «7.6 Invitar con un enlace»).
+**Antes de publicar la nube:** comprobar en un móvil real que un enlace de invitación abre la app sola y subir el `assetlinks.json` con las huellas (código hecho en 7.6.4; la lista está en «7.6 Invitar con un enlace»).
 
 **Registro cerrado** (11/10/2026): `REGISTRATION_ALLOWED_EMAILS` deja crear cuenta solo a los correos de la lista ([accounts.md](../architecture/accounts.md#post-v1accountregister)); es como se despliega la prueba cerrada antes de la revisión de seguridad de conjunto. Hecho por la sesión coordinadora, con sus tests vistos fallar; la pasada completa de `make check` se repitió al cerrar la segunda tanda (1453 tests en verde).
 
