@@ -7,9 +7,12 @@ namespace App\Controller;
 use App\Dto\LoginRequest;
 use App\Entity\Device;
 use App\Entity\User;
+use App\Enum\AccountErrorCode;
+use App\Enum\ActivityKind;
 use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
 use App\Security\AccountException;
+use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\DeviceProof;
 use App\Security\LoginChallengeIssuer;
@@ -46,6 +49,7 @@ final class AuthController extends AbstractController
         private readonly RequestLimiter $requestLimiter,
         private readonly CurrentDevice $currentDevice,
         private readonly TwoFactor $twoFactor,
+        private readonly ActivityLog $activityLog,
     ) {
     }
 
@@ -81,6 +85,7 @@ final class AuthController extends AbstractController
 
         $device = $this->signInDevice($user, $payload->deviceId, $payload->deviceName, $payload->publicKey);
         $token = $this->issueToken($device);
+        $this->activityLog->record(ActivityKind::LoginSucceeded, $user, $device->getDeviceId());
         $this->entityManager->flush();
 
         return new JsonResponse([
@@ -92,7 +97,9 @@ final class AuthController extends AbstractController
     #[Route('/logout', methods: ['POST'])]
     public function logout(): Response
     {
-        $this->currentDevice->get()->setTokenHash(null);
+        $device = $this->currentDevice->get();
+        $device->setTokenHash(null);
+        $this->activityLog->record(ActivityKind::DeviceSignedOut, $device->getUser(), $device->getDeviceId());
         $this->entityManager->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);
@@ -108,6 +115,10 @@ final class AuthController extends AbstractController
         }
 
         if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+            // An account that exists, and somebody who does not know its password. The device is not named: it was only
+            // proved to hold its own key, and nothing says it is the account's (D84).
+            $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
+
             throw AccountException::invalidCredentials();
         }
 
@@ -142,7 +153,16 @@ final class AuthController extends AbstractController
             throw AccountException::twoFactorRequired();
         }
 
-        $this->twoFactor->verify($user, $totpCode);
+        try {
+            $this->twoFactor->verify($user, $totpCode);
+        } catch (AccountException $exception) {
+            // A wrong code, not a limit being hit: that one says nothing about who is trying.
+            if (AccountErrorCode::InvalidTwoFactorCode === $exception->errorCode) {
+                $this->activityLog->recordNow(ActivityKind::LoginFailed, $user);
+            }
+
+            throw $exception;
+        }
     }
 
     /** @throws AccountException with device_removed, device_taken or device_key_mismatch */

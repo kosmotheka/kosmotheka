@@ -32,7 +32,7 @@ final class AccountPurgerTest extends KernelTestCase
 
         $result = self::getContainer()->get(AccountPurger::class)->purge();
 
-        self::assertSame(['unconfirmed_users' => 1, 'expired_codes' => 1, 'invitations' => 0], $result);
+        self::assertSame(['unconfirmed_users' => 1, 'expired_codes' => 1, 'invitations' => 0, 'activity' => 0], $result);
 
         // The purger issues bulk DQL DELETEs, which bypass the identity map:
         // clear it so find() below actually hits the database.

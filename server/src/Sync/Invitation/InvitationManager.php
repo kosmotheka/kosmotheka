@@ -9,10 +9,13 @@ use App\Entity\Catalog\Library;
 use App\Entity\CloudLibrary;
 use App\Entity\Invitation;
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Enum\InvitationKind;
 use App\Repository\InvitationRepository;
 use App\Security\AccountException;
 use App\Security\AccountMailer;
+use App\Security\ActivityLog;
+use App\Security\CurrentDevice;
 use App\Security\RequestLimiter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
@@ -36,6 +39,8 @@ final readonly class InvitationManager
         private InvitationSettings $settings,
         private RequestLimiter $limiter,
         private ClockInterface $clock,
+        private ActivityLog $activity,
+        private CurrentDevice $currentDevice,
     ) {
     }
 
@@ -78,6 +83,8 @@ final readonly class InvitationManager
         // The mail goes inside the transaction: if it cannot be sent, the invitation is not left behind.
         $this->entityManager->wrapInTransaction(function () use ($invitation, $email, $by, $library, $link): void {
             $this->entityManager->persist($invitation);
+            // Which kind, never the email or the link.
+            $this->activity->record(ActivityKind::InvitationCreated, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
             $this->entityManager->flush();
             if (null !== $email) {
                 $this->mailer->sendInvitation($email, $by->getLocale(), $this->libraryName($library), $link);
@@ -124,7 +131,11 @@ final readonly class InvitationManager
         if ($invitation->isAccepted()) {
             throw AccountException::invitationUsed();
         }
+        $wasRevoked = $invitation->isRevoked();
         $invitation->revoke($this->now());
+        if (!$wasRevoked) {
+            $this->activity->record(ActivityKind::InvitationRevoked, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
+        }
         $this->entityManager->flush();
     }
 

@@ -7,10 +7,13 @@ namespace App\Sync\Invitation;
 use App\Entity\Invitation;
 use App\Entity\Membership;
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Enum\InvitationKind;
 use App\Repository\InvitationRepository;
 use App\Repository\MembershipRepository;
 use App\Security\AccountException;
+use App\Security\ActivityLog;
+use App\Security\CurrentDevice;
 use App\Sync\AccountLinker;
 use App\Sync\SyncNotifier;
 use Doctrine\DBAL\LockMode;
@@ -38,6 +41,8 @@ final readonly class InvitationAcceptor
         private AccountLinker $linker,
         private SyncNotifier $notifier,
         private ClockInterface $clock,
+        private ActivityLog $activity,
+        private CurrentDevice $currentDevice,
     ) {
     }
 
@@ -82,6 +87,7 @@ final readonly class InvitationAcceptor
                 $this->entityManager->persist(new Membership($user, $library, $member));
             }
             $found->accept($user, $now);
+            $this->activity->record(ActivityKind::InvitationAccepted, $user, $this->currentDevice->tryGet()?->getDeviceId(), $library, $found->getId()->toRfc4122(), null, $found->getKind()->value);
             $this->entityManager->flush();
             // The person's `account_id`, written by the cloud if it has the power (it was checked), like `claim` does.
             $written = $this->linker->noteAccount($library, $user, $member);

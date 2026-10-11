@@ -121,6 +121,7 @@ Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La cl
 | Purgar cuentas sin confirmar y códigos caducados (D49) | `make console C="app:accounts:purge"` |
 | Trabajador que ejecuta la purga cada hora | `make worker` (o `make console C="messenger:consume scheduler_default -vv"`) |
 | Conceder/retirar `ROLE_SUPER_ADMIN` (D51) | `make console C="app:user:super-admin correo@ejemplo.com"` (`--revoke` para retirarlo) |
+| Ver el registro de actividad (D66): `--account`, `--library`, `--kind`, `--since`, `--until`, `--limit` | `make console C="app:activity:list --account=<id>"` |
 | Bloquear/desbloquear una cuenta (D51) | `make console C="app:user:block correo@ejemplo.com"` (`--undo` para desbloquear) |
 | Reconstruir el catálogo de una biblioteca de la nube desde su registro (7.4.4) | `make console C="app:catalog:rebuild <id de la biblioteca de la nube>"` |
 | Reconstruir el catálogo de **todas** las bibliotecas de la nube, de una en una (7.4.6). **Se ejecuta una vez al desplegar 7.4.6**: las operaciones guardadas antes no están juzgadas y no hay catálogo | `make console C="app:catalog:rebuild --all"` |

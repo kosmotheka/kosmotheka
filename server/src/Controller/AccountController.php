@@ -14,6 +14,7 @@ use App\Dto\ResetPasswordRequest;
 use App\Dto\UpdateAccountRequest;
 use App\Entity\Device;
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Enum\EmailCodePurpose;
 use App\Enum\SignOutReason;
 use App\Repository\BackupCodeRepository;
@@ -21,6 +22,7 @@ use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
 use App\Security\AccountException;
 use App\Security\AccountMailer;
+use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
 use App\Security\RequestLimiter;
@@ -51,6 +53,7 @@ final class AccountController extends AbstractController
         private readonly CurrentDevice $currentDevice,
         private readonly DeviceRepository $deviceRepository,
         private readonly BackupCodeRepository $backupCodeRepository,
+        private readonly ActivityLog $activityLog,
     ) {
     }
 
@@ -100,6 +103,7 @@ final class AccountController extends AbstractController
         $this->emailCodeIssuer->verify($user, EmailCodePurpose::ConfirmEmail, $payload->code);
 
         $user->confirm(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+        $this->activityLog->record(ActivityKind::AccountRegistered, $user);
         $this->entityManager->flush();
 
         return new Response(status: Response::HTTP_NO_CONTENT);
@@ -145,6 +149,7 @@ final class AccountController extends AbstractController
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
         $this->deviceRepository->signOutAllExcept($user, $this->callingDeviceId($user), SignOutReason::PasswordChanged);
+        $this->activityLog->record(ActivityKind::PasswordReset, $user, $this->callingDeviceId($user));
         $this->entityManager->flush();
         $this->accountMailer->sendPasswordChangedNotice($user);
 
@@ -168,6 +173,7 @@ final class AccountController extends AbstractController
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
         $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getDeviceId(), SignOutReason::PasswordChanged);
+        $this->activityLog->record(ActivityKind::PasswordChanged, $user, $this->currentDevice->get()->getDeviceId());
         $this->entityManager->flush();
         $this->accountMailer->sendPasswordChangedNotice($user);
 
@@ -191,6 +197,8 @@ final class AccountController extends AbstractController
 
         // Milestone 7.2 will also need to remove or reassign the member rows
         // this account owns in its libraries before libraries exist here.
+        // The line keeps the account's id and the fingerprint of its email, not the email: it outlives the account (D66).
+        $this->activityLog->record(ActivityKind::AccountDeleted, $user, $this->currentDevice->get()->getDeviceId());
         $this->entityManager->remove($user);
         $this->entityManager->flush();
 

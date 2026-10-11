@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
+use App\Security\ActivityLog;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -26,6 +28,7 @@ final class UserBlockCommand extends Command
         private readonly DeviceRepository $deviceRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly ClockInterface $clock,
+        private readonly ActivityLog $activityLog,
     ) {
         parent::__construct();
     }
@@ -51,6 +54,7 @@ final class UserBlockCommand extends Command
 
         if ($input->getOption('undo')) {
             $user->unblock();
+            $this->activityLog->record(ActivityKind::AccountUnblocked, $user);
             $this->entityManager->flush();
             $io->success(\sprintf('Unblocked %s.', $email));
 
@@ -59,6 +63,7 @@ final class UserBlockCommand extends Command
 
         $user->block($this->clock->now());
         $this->deviceRepository->signOutAllExcept($user, null);
+        $this->activityLog->record(ActivityKind::AccountBlocked, $user);
         $this->entityManager->flush();
         $io->success(\sprintf('Blocked %s and signed out all its devices.', $email));
 

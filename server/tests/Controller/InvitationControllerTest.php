@@ -675,7 +675,7 @@ final class InvitationControllerTest extends WebTestCase
         $this->invite($this->family, $cloud, self::NORA, 'link');
         $connection = self::getContainer()->get(Connection::class);
         $connection->executeStatement("UPDATE invitation SET expires_at = now() - interval '2 days'");
-        self::assertSame(['unconfirmed_users' => 0, 'expired_codes' => 0, 'invitations' => 0], self::getContainer()->get(AccountPurger::class)->purge());
+        self::assertSame(['unconfirmed_users' => 0, 'expired_codes' => 0, 'invitations' => 0, 'activity' => 0], self::getContainer()->get(AccountPurger::class)->purge());
 
         $connection->executeStatement("UPDATE invitation SET expires_at = now() - interval '10 days'");
 
@@ -892,6 +892,119 @@ final class InvitationControllerTest extends WebTestCase
     private function schema(): int
     {
         return self::getContainer()->get(SchemaVersion::class)->current();
+    }
+
+    // ------------------------------------------------------ the activity log (7.7, D66) ---
+
+    /** Hostile 1: what the judge leaves as a request, or the server refuses, leaves no line of «changed a role». */
+    public function testAnOperationThatIsOnlyARequestOrIsRefusedLeavesNoLineOfAChange(): void
+    {
+        $cloud = $this->world();
+        $stranger = SigningDevice::generate();
+        $registration = $stranger->registration(self::LOCAL, self::T + $this->tick());
+        $forged = $stranger->sign(self::LOCAL, self::T + $this->tick(), 'role.forged', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'admin', 'can_share' => true]]]);
+        $tampered = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'role.tampered', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        $signature = $tampered['signature'];
+        \assert(\is_string($signature));
+        $tampered['signature'] = strrev($signature);
+        $before = $this->activityKinds();
+
+        $result = $this->push($this->family, $cloud, [$registration, $forged, $tampered]);
+
+        // The registration and the forged change are stored (the second one as a request); the tampered one is refused.
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 1], array_intersect_key($result, array_flip(['received', 'known', 'rejected'])));
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE status = 'request'"));
+        self::assertSame('editor', $this->scalarString('SELECT role FROM catalog_members WHERE id = ?', [self::HUGO]));
+        self::assertSame($before, $this->activityKinds(), 'no line of «changed a role» or «can share»');
+    }
+
+    /** Normal, and hostile 2: an applied change is written with the server\'s own author, library, name and time. */
+    public function testAnAppliedRoleChangeIsWrittenWithWhatTheServerKnowsNotWhatTheBodySays(): void
+    {
+        $cloud = $this->world();
+        $started = new \DateTimeImmutable('-2 seconds', new \DateTimeZone('UTC'));
+        $this->client->setServerParameter('HTTP_USER_AGENT', 'Kosmotheka/1.2 (Linux)');
+        $operation = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader', 'can_share' => false]]]);
+
+        $this->push($this->family, $cloud, [$operation]);
+
+        $lines = $this->activity("kind IN ('role_changed', 'can_share_changed') AND operation_id = ?", [\is_string($operation['id']) ? $operation['id'] : '']);
+        self::assertCount(2, $lines);
+        foreach ($lines as $line) {
+            self::assertSame($this->userId('family@example.com'), $line['account_id'], 'the account of the session');
+            self::assertSame($this->family['device_id'], $line['device_id'], 'the device of the session');
+            self::assertSame($cloud, $line['library_id'], 'the library of the table of access');
+            self::assertSame('Family', $line['library_name'], 'the name the server holds');
+            self::assertSame(self::HUGO, $line['subject_id']);
+            self::assertSame('Kosmotheka/1.2 (Linux)', $line['user_agent']);
+            self::assertGreaterThanOrEqual($started->format('Y-m-d H:i:s'), $line['occurred_at'], 'the server\'s time, not the operation\'s (2024)');
+        }
+        self::assertSame(['reader', 'false'], array_column($lines, 'detail'));
+    }
+
+    /** The upload, the roles, the withdrawal and what the cloud does by itself are written; so are the invitations. */
+    public function testTheLibraryTheInvitationsAndWhatTheCloudDoesAloneLeaveTheirLines(): void
+    {
+        $cloud = $this->world();
+        $nora = $this->account('nora@example.com');
+        $created = $this->invite($this->family, $cloud, self::NORA, 'link');
+        $this->accept($nora, $this->tokenOf($created));
+        $other = $this->invite($this->family, $cloud, self::EVA, 'email', 'eva@example.com');
+        $this->call('DELETE', "/v1/cloud/libraries/$cloud/invitations/".$this->idOf($other), $this->family);
+
+        $kinds = $this->activityKinds();
+        foreach (['library_uploaded', 'cloud_power_on', 'device_assigned', 'access_withdrawn', 'account_linked', 'invitation_created', 'invitation_accepted', 'invitation_revoked'] as $expected) {
+            self::assertContains($expected, $kinds);
+        }
+        $made = $this->activity("kind = 'invitation_created' ORDER BY occurred_at, id");
+        self::assertSame(['link', 'email'], array_column($made, 'detail'), 'the kind, never the email or the link');
+        self::assertSame('Family', $made[0]['library_name']);
+        self::assertSame($this->idOf($created), $made[0]['subject_id']);
+        $accepted = $this->activity("kind = 'invitation_accepted'")[0];
+        self::assertSame($this->userId('nora@example.com'), $accepted['account_id']);
+        self::assertSame('Family', $accepted['library_name']);
+        $linked = $this->activity("kind = 'account_linked' AND subject_id = ?", [self::NORA]);
+        self::assertCount(1, $linked);
+        self::assertSame($this->userId('nora@example.com'), $linked[0]['account_id'], 'who the cloud did it for');
+        self::assertNull($linked[0]['device_id']);
+        $everything = json_encode($this->activity('TRUE'), \JSON_THROW_ON_ERROR);
+        self::assertStringNotContainsString($this->tokenOf($created), $everything);
+        self::assertStringNotContainsString('eva@example.com', $everything);
+        self::assertStringNotContainsString('invitations.test', $everything);
+    }
+
+    /** Hostile 5: the lines of a library that no longer exists stay, with its name of then. */
+    public function testTheLinesOfALibraryThatIsDeletedStay(): void
+    {
+        $cloud = $this->world();
+        $this->invite($this->family, $cloud, self::NORA, 'link');
+        $this->client->request('DELETE', '/v1/account', server: ['CONTENT_TYPE' => 'application/json'] + $this->family['headers'], content: json_encode(['password' => self::PASSWORD], \JSON_THROW_ON_ERROR));
+        self::assertSame(204, $this->client->getResponse()->getStatusCode());
+        self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM cloud_library'));
+
+        $lines = $this->activity('library_id = ?', [$cloud]);
+
+        self::assertNotEmpty($lines);
+        self::assertSame(['Family'], array_values(array_unique(array_filter(array_map(static fn (array $line): string => \is_string($line['library_name']) ? $line['library_name'] : '', $lines)))));
+    }
+
+    /** @return list<string> */
+    private function activityKinds(): array
+    {
+        return array_map(static fn (array $row): string => \is_string($row['kind']) ? $row['kind'] : '', $this->activity('TRUE ORDER BY occurred_at, id'));
+    }
+
+    /**
+     * @param list<int|string> $params
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function activity(string $where, array $params = []): array
+    {
+        return self::getContainer()->get(Connection::class)->fetchAllAssociative(
+            'SELECT kind, occurred_at::text AS occurred_at, account_id::text AS account_id, device_id, library_id::text AS library_id, library_name, subject_id, operation_id::text AS operation_id, detail, ip, user_agent FROM activity_log WHERE '.$where,
+            $params,
+        );
     }
 
     // ------------------------------------------------------ what the server holds ---

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Repository\UserRepository;
+use App\Security\ActivityLog;
 use App\Security\TwoFactor;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -23,6 +25,7 @@ final class UserTwoFactorDisableCommand extends Command
         private readonly UserRepository $userRepository,
         private readonly TwoFactor $twoFactor,
         private readonly EntityManagerInterface $entityManager,
+        private readonly ActivityLog $activityLog,
     ) {
         parent::__construct();
     }
@@ -51,6 +54,7 @@ final class UserTwoFactorDisableCommand extends Command
         }
 
         $this->twoFactor->disable($user);
+        $this->activityLog->record(ActivityKind::TwoFactorDisabled, $user);
         $this->entityManager->flush();
         $io->success(\sprintf('Removed the second factor of %s.', $email));
 

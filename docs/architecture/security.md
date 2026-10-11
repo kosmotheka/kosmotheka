@@ -109,6 +109,21 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 
 *Construida en el servidor (hito 7.6.1). La app llega en 7.6.2 y 7.6.3. Nombres: invitación (`invitation`), por correo (`email`), enlace para copiar (`link`).*
 
+### 9. Un registro de lo que pasó
+
+**Problema:** alguien dice «yo no borré eso» o «me echaron sin motivo», y la biblioteca ya no está, o la cuenta tampoco. Sin un registro aparte, quien lo hizo y cuándo se va con lo borrado.
+
+- **El servidor apunta**, en una tabla donde solo se añade, qué pasó, a qué cuenta y a qué dispositivo se debe, cuándo y desde qué dirección y qué app. Lo apunta el servidor con lo que él sabe (la cuenta que inició sesión, su reloj, la dirección desde la que llegó la petición), **nunca con lo que dijo la app**: una app modificada no puede apuntar otra hora ni otra persona.
+- **Apunta**: crear la cuenta, entrar, entrar mal en una cuenta que existe, salir, cambiar o restablecer la contraseña, el segundo factor, borrar la cuenta o bloquearla; subir una biblioteca, cambiar un rol o el permiso de compartir, de quién es un dispositivo, retirar y devolver el acceso, y dar o quitar el poder a la nube; crear, anular y aceptar invitaciones; y lo que la nube hace sola al enlazar una cuenta con su persona.
+- **Solo lo que de verdad pasó**: un cambio que el servidor rechazó, o que dejó como petición, no queda apuntado como hecho.
+- **Sobrevive a lo borrado**: no depende de ninguna cuenta ni biblioteca. De una cuenta borrada se guarda su identificador y una **huella** de su correo, no el correo: sirve para contestar «¿fue esta dirección?», no para sacar la dirección.
+- **Qué no guarda nunca**: contraseñas, códigos, enlaces de invitación, el correo de una invitación ni el correo de nadie. De una invitación solo el tipo (por correo o para copiar).
+- **Un año, y se borra solo.** La dirección IP es un dato personal: se guarda por seguridad y con ese plazo, y la política de privacidad lo cuenta.
+- **Nadie lo ve desde la app**, ni quien administra una biblioteca: no hay ninguna ruta que devuelva sus filas. Se consulta por consola, en el servidor, hasta que exista el panel.
+- **La dirección es la de verdad** mientras el servidor sepa qué proxys son de fiar: delante de nginx hay que decírselo (ver cloud.md), o todas las filas llevarían la dirección de nginx.
+
+*Construida en el servidor (hito 7.7). Nombre: registro de actividad (`activity_log`).*
+
 ## Lo que no protege
 
 Dicho claro, para que nadie lo dé por supuesto:
@@ -118,6 +133,7 @@ Dicho claro, para que nadie lo dé por supuesto:
 - **Un enlace para copiar lo usa quien lo abra primero**, sea quien sea. La única excepción es una cuenta a la que echaron de esa biblioteca: esa no entra con un enlace para copiar, solo con una invitación por correo dirigida a ella. Por eso solo da el rol más bajo, solo a una persona nueva, vale una vez y caduca en un día; si hace falta más seguridad, se invita por correo.
 - **Un dispositivo retirado conserva lo que ya tenía**, aunque la nube ya no le entregue nada más y su app borre la biblioteca al ver la prueba. Una app modificada puede negarse a borrarla.
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
+- **El registro de actividad es tan fiable como el servidor.** Quien administra el servidor puede leerlo y, con acceso a la base de datos, cambiarlo: no está firmado ni cifrado, y sirve para responder a una reclamación, no para una pericia.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.
 - **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. Pendiente de mejorar.
 

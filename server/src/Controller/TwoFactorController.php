@@ -8,8 +8,11 @@ use App\Dto\TwoFactorDisableRequest;
 use App\Dto\TwoFactorEnableRequest;
 use App\Dto\TwoFactorRegenerateBackupCodesRequest;
 use App\Entity\User;
+use App\Enum\ActivityKind;
 use App\Security\AccountException;
 use App\Security\AccountMailer;
+use App\Security\ActivityLog;
+use App\Security\CurrentDevice;
 use App\Security\RequestLimiter;
 use App\Security\TwoFactor;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +40,8 @@ final class TwoFactorController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestLimiter $requestLimiter,
         private readonly AccountMailer $accountMailer,
+        private readonly ActivityLog $activityLog,
+        private readonly CurrentDevice $currentDevice,
     ) {
     }
 
@@ -54,6 +59,9 @@ final class TwoFactorController extends AbstractController
 
         $user = $this->currentUser();
         $backupCodes = $this->twoFactor->enable($user, $payload->code);
+        // `enable` has flushed: its own line goes in a flush of its own, and a failure here is an error that is logged, not silence.
+        $this->activityLog->record(ActivityKind::TwoFactorEnabled, $user, $this->currentDevice->get()->getDeviceId());
+        $this->entityManager->flush();
         $this->accountMailer->sendTwoFactorEnabledNotice($user);
 
         return new JsonResponse(['backup_codes' => $backupCodes]);
@@ -70,6 +78,7 @@ final class TwoFactorController extends AbstractController
         $this->twoFactor->verify($user, $payload->code);
 
         $this->twoFactor->disable($user);
+        $this->activityLog->record(ActivityKind::TwoFactorDisabled, $user, $this->currentDevice->get()->getDeviceId());
         $this->entityManager->flush();
         $this->accountMailer->sendTwoFactorDisabledNotice($user);
 

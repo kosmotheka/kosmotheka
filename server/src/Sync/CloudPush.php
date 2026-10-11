@@ -11,6 +11,7 @@ use App\Dto\PushResult;
 use App\Entity\CloudDeviceKey;
 use App\Entity\CloudLibrary;
 use App\Entity\Device;
+use App\Enum\ActivityKind;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\OperationRejection;
@@ -18,6 +19,7 @@ use App\Enum\OperationStatus;
 use App\Repository\CloudDeviceKeyRepository;
 use App\Repository\CloudOperationRepository;
 use App\Security\AccountException;
+use App\Security\ActivityLog;
 use App\Sync\Permission\CatalogJudge;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,6 +58,7 @@ final readonly class CloudPush
         #[Autowire(lazy: true)]
         private AccessCutter $cutter,
         private ClockInterface $clock,
+        private ActivityLog $activity,
     ) {
     }
 
@@ -122,6 +125,7 @@ final readonly class CloudPush
         // push are too, so the library's vector never jumps over a gap that nobody would send again (DAT-001).
         $received = $known = $rejected = 0;
         $heldBack = [];
+        $worthTelling = [];
         foreach ($this->inHlcOrder($entries) as ['pushed' => $pushed, 'payload' => $payload, 'author' => $author]) {
             if (null !== $author && isset($heldBack[$author])) {
                 ++$rejected;
@@ -134,7 +138,12 @@ final readonly class CloudPush
                 if ($this->accept($library, $pushed, $payload, $verifiedLink, $pushedBy)) {
                     ++$received;
                     // In HLC order, as `take` needs; a stored operation is judged even when it ends as a request.
-                    $this->judge->take($library, $payload);
+                    $status = $this->judge->take($library, $payload);
+                    // Only what the judge applied is a change (a request is not), and the events are read here, once.
+                    $events = OperationStatus::Applied === $status ? OperationActivity::of($payload, !$pushedBy instanceof Device) : [];
+                    if ([] !== $events) {
+                        $worthTelling[$payload->id] = ['operation' => $payload, 'events' => $events];
+                    }
                 } else {
                     ++$known;
                 }
@@ -148,8 +157,27 @@ final readonly class CloudPush
 
         $this->judge->settle($library);
         $this->requireLinkAllowed($library);
+        $this->tell($library, $worthTelling, $pushedBy);
 
         return new PushResult($received, $known, $rejected);
+    }
+
+    /**
+     * Writes the activity lines of the operations applied in this push, in the push's transaction. `settle` may have judged
+     * the library again from its log, so an operation counts only if it still ends as applied (D66, 7.7).
+     *
+     * @param array<string, array{operation: OperationPayload, events: list<array{kind: ActivityKind, subject: ?string, detail: ?string}>}> $candidates by operation id
+     */
+    private function tell(CloudLibrary $library, array $candidates, ?Device $pushedBy): void
+    {
+        if ([] === $candidates) {
+            return;
+        }
+        $statuses = $this->operations->statusesOf($library, array_keys($candidates));
+        $this->activity->recordOperations($library, array_values(array_filter(
+            $candidates,
+            static fn (array $candidate): bool => OperationStatus::Applied === ($statuses[strtolower($candidate['operation']->id)] ?? null),
+        )), $pushedBy);
     }
 
     /**

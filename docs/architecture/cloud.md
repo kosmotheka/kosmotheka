@@ -491,6 +491,60 @@ Las cifras son propuesta del hito. Los de correo se consumen después de comprob
 | 9 · adivinar enlaces | `testTokensAreLongRandomAndAnUnknownOneIsAPlainNotFound`, `testGuessingFromOneAddressIsStoppedByTheRateLimit`, `testAcceptingIsLimitedPerAccount` |
 | 10 · mandar correo a ajenos | `testEmailInvitationsAreLimitedPerAccountAndDay`, `testOneAddressCannotBeFloodedEvenFromSeveralAccounts`, `testCreatingInvitationsIsLimitedPerAccount`, `testTheEmailSaysOnlyWhatIsFixedPlusTheCleanedNameOfTheLibrary` |
 
+## El registro de actividad (7.7, D66)
+
+Una tabla de solo añadir, `activity_log`, para poder decir **quién hizo qué, cuándo y desde dónde** ante una reclamación, aunque lo afectado ya no exista. Escribe una sola pieza (`App\Security\ActivityLog`), llamada desde donde ocurre cada cosa: nada escucha todas las peticiones.
+
+**La fila.** Sin claves foráneas: los ids se copian como valores, así que la fila sobrevive a la cuenta, la biblioteca o el dispositivo borrados. Campos: `kind` (el enum cerrado `ActivityKind`), `occurred_at` (reloj del servidor, UTC), `channel` (`http` o `console`: una orden de consola no tiene IP), `account_id` (el id de `user`), `account_email_fingerprint`, `device_id`, `library_id` (la biblioteca **de la nube**) y `library_name` (el que el servidor tenía entonces), `subject_id` (la persona, dispositivo o invitación afectada), `operation_id`, `detail` (un valor corto y cerrado: un rol, `true`, el tipo de invitación o el id de una persona; nunca texto libre), `ip` y `user_agent` (cortado a 255 y sin caracteres de control). La entidad `ActivityEntry` no tiene modificadores, y lo único que borra de la tabla es la purga por antigüedad (`ActivityEntryRepository::deleteBefore`).
+
+**Quién, cuándo y desde dónde salen del servidor (D84).** La cuenta y el dispositivo son los de la sesión; la biblioteca, la de la tabla de acceso; el nombre, el que el catálogo del servidor guarda; la hora, la del reloj del servidor, nunca la HLC de la operación; la IP, `Request::getClientIp()`, que solo hace caso de `X-Forwarded-For` si quien conecta es uno de los `TRUSTED_PROXIES`. Lo que diga el cuerpo de una petición solo decide **de qué tipo** es el suceso de una operación, y solo cuando **se ha aplicado**.
+
+**Qué se escribe:**
+
+| Tipo | Dónde se escribe |
+|---|---|
+| `account_registered` | `POST /v1/account/confirm`: el registro **confirmado** |
+| `login_succeeded` · `login_failed` | `POST /v1/auth/login`. El fallo, solo contra una cuenta que existe (contraseña o código de segundo factor equivocados), sin dispositivo: la prueba del reto solo demuestra que quien llama tiene su clave, no que el dispositivo sea de la cuenta |
+| `device_signed_out` | `POST /v1/auth/logout` |
+| `password_changed` · `password_reset` | `POST /v1/account/password` · `/password/reset` |
+| `two_factor_enabled` · `two_factor_disabled` | `TwoFactorController`, y la orden `app:user:two-factor-disable` |
+| `account_deleted` | `DELETE /v1/account`, antes de borrar |
+| `account_blocked` · `account_unblocked` | `app:user:block` |
+| `library_uploaded` · `cloud_power_on` · `cloud_power_off` | una operación aplicada que cambia `library.cloud_library_id` o `library.cloud_device_id` |
+| `role_changed` · `can_share_changed` | una operación aplicada que cambia `member.role` o `member.can_share` (`detail`: el valor nuevo) |
+| `access_withdrawn` · `access_restored` | una operación aplicada que cambia `member.access_withdrawn` (D98) |
+| `device_assigned` | una operación aplicada de un dispositivo que cambia `device.member_id` («de quién es», `detail`: la persona) |
+| `device_access_revoked` | una operación aplicada que crea una `revocation` (D71) |
+| `invitation_created` · `invitation_revoked` · `invitation_accepted` | `InvitationManager` y `InvitationAcceptor`; `detail` es `email` o `link`, nunca el correo ni el enlace |
+| `account_linked` · `device_linked` | lo que **la nube hace sola** (D76): la operación `member.account_id` o `device.member_id` que firma ella misma. La cuenta es **para quien** se hizo (la que es esa persona en la tabla de acceso) y no hay dispositivo de quien lo hace |
+
+Solo se leen **cambios** (`update`, y la `revocation` que es una creación): la primera subida de una biblioteca trae toda su historia, cuyas creaciones no son «algo que cambió». Aun así, esas operaciones llegan al servidor entonces y la hora es la de llegada: una subida de una biblioteca con años de historia deja las filas de sus cambios de rol de entonces con la hora de la subida. `operation_id` permite ir a la operación firmada.
+
+**No existe todavía:** `LibraryDeleted` está en el enum y en la lectura de operaciones (un `library` con `delete`), pero **hoy no hay ninguna ruta ni operación que borre una biblioteca de la nube** (solo se borra al borrar su cuenta, que deja `account_deleted`), así que no se escribe. Tampoco se escribe «persona creada» (no estaba en la lista), ni el cierre de sesión por quitar un dispositivo (D81), ni los accesos del superadministrador por consola (`app:user:super-admin`), que D52 menciona.
+
+**La cuenta borrada.** Cada fila con cuenta lleva la **huella con clave de su correo** (la de `EmailFingerprint`: HMAC del correo normalizado con un secreto derivado de `APP_SECRET`), no el correo. Se calcula al escribir la fila, no al borrar la cuenta, para no modificar filas. Permite contestar «¿fue esta dirección?» sin guardarla. **Si cambia `APP_SECRET`, las huellas viejas ya no coinciden** con ninguna dirección (las invitaciones pendientes también se anulan, pero duran 24 horas y el registro, un año): hay que tenerlo en cuenta al rotarlo.
+
+**Dentro de la transacción, o con rastro.** `record` solo **persiste**: la fila la escribe el mismo `flush` que escribe lo que registra, y en la misma transacción donde la hay (una operación del `push`, una invitación, un cambio de contraseña, el borrado de una cuenta), de modo que no existe una sin la otra. En el `push` se escribe tras `settle` y `requireLinkAllowed`, y solo las operaciones que **siguen** aplicadas: si el push se deshace, se deshacen también sus filas. Donde no hay nada más que escribir (un inicio de sesión fallido) `recordNow` hace su propio `flush` y, si falla, **lo dice en el log de la aplicación** (`error`) y deja seguir la respuesta: el inicio fallido no da acceso a nadie, y convertirlo en un error distinto diría a un atacante qué cuentas existen. Un inicio correcto escribe su fila en el mismo `flush` que el token: si falla, no hay inicio. Activar el segundo factor es la excepción: `enable` ya hace su propio `flush`, y la fila va en el siguiente; si ese falla, queda un 500 en el log de la aplicación (no se envolvió en una transacción porque un error esperado dentro de `wrapInTransaction` cierra el `EntityManager`).
+
+**Purga.** `AccountPurger` borra al año (`AccountPurger::ACTIVITY_RETENTION`, el único sitio donde está el plazo): la misma orden (`app:accounts:purge`) y la misma planificación horaria que el resto.
+
+**Consultarlo.** `make console C="app:activity:list --account=<id> --library=<id> --kind=<tipo> --since=2026-10-01 --until=2026-11-01 --limit=100"`. Sin ruta HTTP. Tope de 1000 filas (50 por defecto); lo que imprime va sin caracteres de control ni marcas de consola.
+
+**IP y proxys.** En `.env`, `TRUSTED_PROXIES=127.0.0.1`: solo un proxy en la propia máquina es de confianza. Con nginx delante en el mismo host (7.9) basta con que nginx pase `X-Forwarded-For` con `$proxy_add_x_forwarded_for`: Symfony se queda con la dirección que nginx vio y no con lo que el cliente haya escrito a la izquierda. Si nginx corriera en otra máquina o en otra red de Docker, hay que poner **su** dirección o su rango en `TRUSTED_PROXIES`; con un valor de más, un cliente podría elegir su IP, y con uno de menos todas las filas llevarían la IP del proxy. Con un CDN delante, añadir sus rangos.
+
+**Qué test cubre cada caso hostil** (`tests/Controller/ActivityLogTest.php` e `InvitationControllerTest.php`; escritos antes de la defensa y vistos fallar contra una primera versión sin ella):
+
+| Caso | Test |
+|---|---|
+| Una operación rechazada, o que acaba como petición, no deja «cambió un rol» | `testAnOperationThatIsOnlyARequestOrIsRefusedLeavesNoLineOfAChange` |
+| El autor, la biblioteca, el nombre y la hora son los del servidor | `testAnAppliedRoleChangeIsWrittenWithWhatTheServerKnowsNotWhatTheBodySays`, `testTheAccountsOwnEventsAreWrittenWithTheServersAuthorTimeAndPlace` |
+| Un agente de megas, con saltos de línea y caracteres de control | `testAHugeUserAgentWithControlCharactersIsCutAndCleaned` |
+| Un `X-Forwarded-For` falso | `testAForgedForwardedForDoesNotChooseTheAddress` |
+| Borrar una cuenta o una biblioteca: las filas siguen y se listan | `testTheLinesOfADeletedAccountStayWithTheFingerprintAndWithoutTheEmail`, `testTheLinesOfALibraryThatIsDeletedStay` |
+| Ninguna ruta devuelve filas | `testNoRouteReturnsALineOfTheLog` |
+| La purga borra lo de más de un año y nada más reciente | `testThePurgeDeletesWhatIsOlderThanAYearAndNothingNewer` |
+| Ni contraseñas, ni códigos, ni tokens, ni correos | `testNoLineHoldsAPasswordACodeATokenOrAnEmail`, `testTheLibraryTheInvitationsAndWhatTheCloudDoesAloneLeaveTheirLines` |
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.
