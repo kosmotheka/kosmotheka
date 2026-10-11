@@ -395,7 +395,8 @@ export type Source =
   | "music_brainz"
   | "wikidata"
   | "game_upc"
-  | "tmdb";
+  | "tmdb"
+  | "rawg";
 
 export interface LookupResult {
   isbn13: string;

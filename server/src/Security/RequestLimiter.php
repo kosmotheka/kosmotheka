@@ -29,6 +29,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $googleBooksCallsLimiter,
         #[Target('tmdb_calls')]
         private RateLimiterFactoryInterface $tmdbCallsLimiter,
+        #[Target('rawg_calls')]
+        private RateLimiterFactoryInterface $rawgCallsLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -93,6 +95,18 @@ final readonly class RequestLimiter
     public function consumeTmdbCall(): void
     {
         $limit = $this->tmdbCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /**
+     * One real call to RAWG, from the whole server: its free quota is 20,000 a month, and a day gets its share. One
+     * key for all; nothing says whose call it was. @throws AccountException with AccountErrorCode::MetadataQuotaExhausted.
+     */
+    public function consumeRawgCall(): void
+    {
+        $limit = $this->rawgCallsLimiter->create('server')->consume();
         if (!$limit->isAccepted()) {
             throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
         }

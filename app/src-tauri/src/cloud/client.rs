@@ -15,7 +15,7 @@ use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::metadata::Candidate;
 use crate::metadata::Metadata;
-use crate::metadata::via_server::{parse_answer, parse_tmdb_answer};
+use crate::metadata::via_server::{parse_answer, parse_rawg_answer, parse_tmdb_answer};
 use crate::sync::{SyncOperation, VersionVector};
 use kosmotheka_domain::Isbn;
 use kosmotheka_domain::Kind;
@@ -302,6 +302,20 @@ impl CloudApi for HttpCloud {
             .any(|offered| offered == provider))
     }
 
+    async fn rawg_search(&self, query: &str) -> Result<Vec<Candidate>> {
+        let body = json!({ "query": query });
+        let mut response = send(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/rawg/search", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await?;
+        let answer = read_capped_json(&mut response, MAX_SEARCH_ANSWER).await?;
+        parse_rawg_answer(&answer).map_err(|()| Error::account("server_unavailable"))
+    }
+
     async fn tmdb_search(&self, kind: Kind, query: &str, language: &str) -> Result<Vec<Candidate>> {
         let body = json!({ "kind": kind_word(kind), "query": query, "language": language });
         let mut response = send(
@@ -535,6 +549,7 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let app = Router::new()
             .route("/v1/metadata/tmdb/search", axum::routing::post(tmdb_route))
+            .route("/v1/metadata/rawg/search", axum::routing::post(tmdb_route))
             .with_state(stub.clone());
         tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
@@ -562,6 +577,34 @@ mod tests {
             asked[0].3,
             json!({ "kind": "film", "query": "matrix & más ?x=1#/..", "language": "es" })
         );
+    }
+
+    #[tokio::test]
+    async fn the_game_text_goes_in_the_body_of_a_post_with_nothing_else() {
+        let (api, stub) = tmdb_server("ok").await;
+
+        let found = api.rawg_search("grand theft & más ?x=1#/..").await.unwrap();
+
+        assert_eq!(found.len(), 1);
+        let asked = stub.asked.lock().unwrap();
+        assert_eq!(asked[0].0, "/v1/metadata/rawg/search");
+        assert_eq!(asked[0].1.as_deref(), Some("device-1"));
+        assert_eq!(asked[0].2.as_deref(), Some("Bearer token-1"));
+        assert_eq!(asked[0].3, json!({ "query": "grand theft & más ?x=1#/.." }));
+    }
+
+    #[tokio::test]
+    async fn an_enormous_game_answer_is_a_failure() {
+        let (api, _) = tmdb_server("huge").await;
+
+        assert!(api.rawg_search("gta").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_game_answer_that_is_not_json_is_a_failure() {
+        let (api, _) = tmdb_server("text").await;
+
+        assert!(api.rawg_search("gta").await.is_err());
     }
 
     #[tokio::test]

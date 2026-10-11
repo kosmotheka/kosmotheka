@@ -29,6 +29,10 @@ final class MetadataCachePurgeTest extends KernelTestCase
         // A title search is kept a day whether or not it found anything; its detail, thirty days.
         $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::TMDB_SEARCH, str_repeat('a', 64), true, [], new \DateTimeImmutable('2026-06-29 11:00:00')));
         $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::TMDB_SEARCH, str_repeat('b', 64), true, [], new \DateTimeImmutable('2026-06-29 13:00:00')));
+        // A video game search is kept a week.
+        $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::RAWG_SEARCH, str_repeat('c', 64), true, [], new \DateTimeImmutable('2026-06-22 11:00:00')));
+        $entityManager->persist(new MetadataCacheEntry(MetadataCacheEntry::RAWG_SEARCH, str_repeat('d', 64), true, [], new \DateTimeImmutable('2026-06-24 13:00:00')));
+        $entityManager->persist(new MetadataCacheEntry('rawg_game', '3498', true, [], new \DateTimeImmutable('2026-06-01 12:00:00')));
         $entityManager->persist(new MetadataCacheEntry('tmdb_movie_en', '603', true, [], new \DateTimeImmutable('2026-06-01 12:00:00')));
         $entityManager->persist(new MetadataCacheEntry('tmdb_movie_en', '604', true, [], new \DateTimeImmutable('2026-05-30 11:00:00')));
         foreach (array_keys($entries) as $n => $name) {
@@ -39,12 +43,12 @@ final class MetadataCachePurgeTest extends KernelTestCase
 
         $result = self::getContainer()->get(AccountPurger::class)->purge();
 
-        self::assertSame(4, $result['metadata_cache']);
+        self::assertSame(5, $result['metadata_cache']);
         $entityManager->clear();
         $left = array_map(
             static fn (MetadataCacheEntry $entry): string => $entry->getCode(),
             $entityManager->getRepository(MetadataCacheEntry::class)->findBy([], ['code' => 'ASC']),
         );
-        self::assertSame(['603', '9780000000001', '9780000000003', str_repeat('b', 64)], $left);
+        self::assertSame(['3498', '603', '9780000000001', '9780000000003', str_repeat('b', 64), str_repeat('d', 64)], $left);
     }
 }

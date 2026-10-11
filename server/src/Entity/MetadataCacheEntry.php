@@ -22,9 +22,11 @@ class MetadataCacheEntry
 {
     public const string FOUND_TTL = '30 days';
     public const string MISSING_TTL = '1 day';
-    /** A title search is kept a day, found or not: the provider of those rows is this one. */
+    /** A title search is kept as long as its provider says, found or not: the provider of those rows is one of these. */
     public const string TMDB_SEARCH = 'tmdb_search';
-    public const string SEARCH_TTL = '1 day';
+    public const string RAWG_SEARCH = 'rawg_search';
+    /** @var array<string, string> how long each kind of search is kept */
+    public const array SEARCH_TTLS = [self::TMDB_SEARCH => '1 day', self::RAWG_SEARCH => '7 days'];
 
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
@@ -79,11 +81,7 @@ class MetadataCacheEntry
 
     private function ttl(): string
     {
-        if (self::TMDB_SEARCH === $this->provider) {
-            return self::SEARCH_TTL;
-        }
-
-        return $this->found ? self::FOUND_TTL : self::MISSING_TTL;
+        return self::SEARCH_TTLS[$this->provider] ?? ($this->found ? self::FOUND_TTL : self::MISSING_TTL);
     }
 
     /** @param array<string, mixed> $payload */

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 
 import { Switch } from "@/components/people/role-parts";
@@ -19,6 +19,7 @@ import {
   saveSettings,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ExternalLink, RAWG_URL } from "@/components/external-link";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
@@ -27,7 +28,7 @@ const SOURCES_BY_KIND: Record<Kind, Source[]> = {
   boardgame: ["wikidata", "game_upc"],
   film: ["tmdb", "wikidata"],
   tv_series: ["tmdb", "wikidata"],
-  videogame: ["wikidata"],
+  videogame: ["rawg", "wikidata"],
   music: ["music_brainz"],
   other: [],
 };
@@ -35,7 +36,7 @@ const SOURCES_BY_KIND: Record<Kind, Source[]> = {
 const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc"]);
 
 /** Sources that only arrive with an account: the server of the account asks them (D62). */
-const ACCOUNT_SOURCES = new Set<Source>(["tmdb"]);
+const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
@@ -62,7 +63,10 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
 interface Offers {
   googleBooks: boolean;
   tmdb: boolean;
+  rawg: boolean;
 }
+
+const NO_OFFERS: Offers = { googleBooks: false, tmdb: false, rawg: false };
 
 function usableCount(kind: Kind, settings: Settings, offers: Offers): number {
   return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings, offers)).length;
@@ -76,7 +80,7 @@ function needsOwnKey(source: Source, settings: Settings, offers: Offers): boolea
 
 function isUsable(source: Source, settings: Settings, offers: Offers): boolean {
   if (settings.disabledSources.includes(source)) return false;
-  if (ACCOUNT_SOURCES.has(source)) return offers.tmdb;
+  if (ACCOUNT_SOURCES.has(source)) return offers[source as "tmdb" | "rawg"];
   return !needsOwnKey(source, settings, offers) || Boolean(settings.apiKeys[source]?.trim());
 }
 
@@ -97,7 +101,7 @@ export function ProvidersDialog({
   >({});
   const [seeded, setSeeded] = useState(false);
   // What the server of the session looks up for its accounts (7.8): only then are those shown as available.
-  const [offers, setOffers] = useState<Offers>({ googleBooks: false, tmdb: false });
+  const [offers, setOffers] = useState<Offers>(NO_OFFERS);
 
   // Fresh settings each time the page opens, as Design asks (same pattern as PairDialog).
   if (open && !seeded) {
@@ -112,14 +116,15 @@ export function ProvidersDialog({
         setOffers({
           googleBooks: offered.includes("google_books"),
           tmdb: offered.includes("tmdb"),
+          rawg: offered.includes("rawg"),
         }),
       )
-      .catch(() => setOffers({ googleBooks: false, tmdb: false }));
+      .catch(() => setOffers(NO_OFFERS));
   }
   if (!open && seeded) {
     setSeeded(false);
     setSettings(null);
-    setOffers({ googleBooks: false, tmdb: false });
+    setOffers(NO_OFFERS);
   }
 
   const update = async (next: Settings) => {
@@ -206,7 +211,7 @@ export function ProvidersDialog({
           const accountOnly = ACCOUNT_SOURCES.has(source);
           const on = settings ? isUsable(source, settings, offers) : false;
           const canToggle = accountOnly
-            ? offers.tmdb
+            ? offers[source as "tmdb" | "rawg"]
             : !settings || !needsOwnKey(source, settings, offers) || hasKey;
           const cloudSwitch = source === "google_books" && offers.googleBooks && settings !== null;
           const status = testStatus[source];
@@ -239,7 +244,11 @@ export function ProvidersDialog({
               </div>
               {accountOnly && (
                 <p className="text-[13px] text-muted-foreground">
-                  {t(offers.tmdb ? "providers.tmdbSends" : "providers.tmdbWithAccount")}
+                  {t(
+                    offers[source as "tmdb" | "rawg"]
+                      ? `providers.${source}Sends`
+                      : `providers.${source}WithAccount`,
+                  )}
                 </p>
               )}
               {cloudSwitch && (
@@ -343,6 +352,12 @@ export function ProvidersDialog({
         <img src={tmdbLogo} alt="TMDB" className="h-3.5 w-auto" />
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("providers.tmdbNotice")}</p>
       </div>
+      <p className="text-xs text-muted-foreground">
+        <Trans
+          i18nKey="providers.rawgNotice"
+          components={{ link: <ExternalLink url={RAWG_URL} /> }}
+        />
+      </p>
     </section>
   );
 
@@ -358,7 +373,11 @@ export function ProvidersDialog({
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2.5 rounded-lg border p-3 text-sm">
           <span className="flex-1">
-            {t(offers.googleBooks || offers.tmdb ? "providers.withCloud" : "providers.noCloud")}
+            {t(
+              offers.googleBooks || offers.tmdb || offers.rawg
+                ? "providers.withCloud"
+                : "providers.noCloud",
+            )}
           </span>
         </div>
         {body}

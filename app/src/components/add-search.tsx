@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { Globe, Info, Loader2, PencilLine, ScanBarcode, Search, X } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { KindGrid } from "@/components/book-form";
 import { Cover } from "@/components/cover";
+import { ExternalLink, RAWG_URL } from "@/components/external-link";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -433,6 +434,13 @@ export function AddSearch({
     </div>
   );
 
+  // RAWG asks for an active link to it on every page where its data is used (D62): the results are such a page.
+  const rawgAttribution = candidates.some((candidate) => candidate.source === "rawg") && (
+    <p className="px-2 pt-1 text-xs text-muted-foreground">
+      <Trans i18nKey="lookup.rawgData" components={{ link: <ExternalLink url={RAWG_URL} /> }} />
+    </p>
+  );
+
   const warningsList = warnings.length > 0 && (
     <div className="space-y-0.5 px-2 text-xs text-muted-foreground">
       {warnings.map((w, i) => (
@@ -494,6 +502,7 @@ export function AddSearch({
             <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
               {askStep}
               {resultsList}
+              {rawgAttribution}
               {warningsList}
             </div>
             <div className="shrink-0 border-t px-4 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
@@ -525,6 +534,7 @@ export function AddSearch({
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3.5 pb-2">
           {askStep}
           {resultsList}
+          {rawgAttribution}
           {warningsList}
         </div>
         <div className="mt-auto flex items-center gap-2.5 border-t px-6 py-3.5">

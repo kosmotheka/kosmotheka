@@ -28,7 +28,7 @@ use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::links::{self, Arrivals};
 use crate::marks;
-use crate::metadata::via_server::{GOOGLE_BOOKS, TMDB, choose_access};
+use crate::metadata::via_server::{GOOGLE_BOOKS, RAWG, TMDB, choose_access};
 use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
 use crate::people::{self, People};
@@ -224,7 +224,7 @@ fn books_cloud(database: &Database, settings: &Settings) -> Option<HttpCloud> {
     allowed.then(|| HttpCloud::connect(database).ok()).flatten()
 }
 
-/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`), so
+/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`, `rawg`), so
 /// Providers shows what is worth showing (7.8). Any failure, and no session, is an empty list.
 #[tauri::command]
 pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<String>> {
@@ -232,7 +232,7 @@ pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<
         return Ok(Vec::new());
     };
     let mut offered = Vec::new();
-    for provider in [GOOGLE_BOOKS, TMDB] {
+    for provider in [GOOGLE_BOOKS, TMDB, RAWG] {
         if cloud.offers_metadata(provider).await.unwrap_or(false) {
             offered.push(provider.to_owned());
         }
@@ -282,11 +282,16 @@ pub async fn search_works(
         let conn = database.lock()?;
         settings::load(&conn)?.disabled_sources
     };
-    // The account's server only for what TMDB covers, only with a session and only if the source is not switched off.
-    let cloud = (matches!(kind, Kind::Film | Kind::TvSeries)
-        && !disabled_sources.contains(Source::Tmdb.id()))
-    .then(|| HttpCloud::connect(&database).ok())
-    .flatten();
+    // The account's server only for what TMDB (films, series) or RAWG (video games) cover, only with a session and
+    // only if that source is not switched off.
+    let source = match kind {
+        Kind::Film | Kind::TvSeries => Some(Source::Tmdb),
+        Kind::Videogame => Some(Source::Rawg),
+        _ => None,
+    };
+    let cloud = source
+        .filter(|source| !disabled_sources.contains(source.id()))
+        .and_then(|_| HttpCloud::connect(&database).ok());
     let language = if language.as_deref() == Some("es") {
         "es"
     } else {

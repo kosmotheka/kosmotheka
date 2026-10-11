@@ -19,7 +19,7 @@ use kosmotheka_domain::{Isbn, Kind};
 
 use crate::cloud::CloudApi;
 use serde::Serialize;
-use via_server::{GoogleAccess, lookup_google, search_tmdb};
+use via_server::{GoogleAccess, lookup_google, search_rawg, search_tmdb};
 
 pub use candidate::{Candidate, CandidateContributor};
 
@@ -48,6 +48,7 @@ pub enum Source {
     Wikidata,
     GameUpc,
     Tmdb,
+    Rawg,
 }
 
 impl Source {
@@ -63,6 +64,7 @@ impl Source {
             Source::Wikidata => "wikidata",
             Source::GameUpc => "game_upc",
             Source::Tmdb => "tmdb",
+            Source::Rawg => "rawg",
         }
     }
 }
@@ -188,7 +190,8 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
         | Source::MusicBrainz
         | Source::Wikidata
         | Source::GameUpc
-        | Source::Tmdb => None,
+        | Source::Tmdb
+        | Source::Rawg => None,
     };
     candidate
 }
@@ -244,7 +247,7 @@ impl Lookup {
         kind: Kind,
         query: &str,
         disabled: &BTreeSet<String>,
-        tmdb: Option<&C>,
+        cloud: Option<&C>,
         language: &str,
     ) -> SearchResult {
         let query = query.trim();
@@ -289,11 +292,11 @@ impl Lookup {
             }
             Kind::Film | Kind::TvSeries => {
                 // TMDB first: it knows more of a film than Wikidata. It is only asked through the server of an
-                // account that offers it (`tmdb` is `None` otherwise), and at the same time as Wikidata.
+                // account that offers it (`cloud` is `None` otherwise), and at the same time as Wikidata.
                 let (tmdb_result, wikidata) = tokio::join!(
                     maybe_vec(
                         disabled.contains(Source::Tmdb.id()),
-                        search_tmdb(tmdb, kind, query, language),
+                        search_tmdb(cloud, kind, query, language),
                     ),
                     maybe_vec(
                         disabled.contains(Source::Wikidata.id()),
@@ -305,7 +308,21 @@ impl Lookup {
                     (Source::Wikidata, wikidata),
                 ])
             }
-            Kind::Videogame | Kind::Comic | Kind::Boardgame => {
+            Kind::Videogame => {
+                // RAWG first, as TMDB for films: through the account's server, at the same time as Wikidata.
+                let (rawg, wikidata) = tokio::join!(
+                    maybe_vec(
+                        disabled.contains(Source::Rawg.id()),
+                        search_rawg(cloud, query),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Wikidata.id()),
+                        wikidata::search(&self.client, kind, query),
+                    ),
+                );
+                collect_candidates(vec![(Source::Rawg, rawg), (Source::Wikidata, wikidata)])
+            }
+            Kind::Comic | Kind::Boardgame => {
                 if disabled.contains(Source::Wikidata.id()) {
                     return SearchResult::default();
                 }

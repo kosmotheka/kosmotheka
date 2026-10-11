@@ -37,6 +37,12 @@ framework:
             policy: sliding_window
             limit: 5000
             interval: '1 day'
+        # RAWG (7.8, D62): free up to 20,000 requests a month, so the server's share is 600 real calls a day (a search and
+        # the details of its first three being up to four). The key is the same for all.
+        rawg_calls:
+            policy: sliding_window
+            limit: 600
+            interval: '1 day'
         email_code:
             policy: sliding_window
             limit: 10

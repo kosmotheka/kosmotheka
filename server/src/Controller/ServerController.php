@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Metadata\BookProvider;
+use App\Metadata\RawgSource;
 use App\Metadata\TmdbSource;
 use App\Security\Google\GoogleSignIn;
 use App\Security\RegistrationGate;
@@ -37,6 +38,7 @@ final class ServerController extends AbstractController
         private readonly GoogleSignIn $google,
         private readonly BookProvider $books,
         private readonly TmdbSource $tmdb,
+        private readonly RawgSource $rawg,
     ) {
     }
 
@@ -58,6 +60,7 @@ final class ServerController extends AbstractController
             'metadata' => array_values(array_filter([
                 $this->books->isConfigured() ? $this->books->name() : null,
                 $this->tmdb->isConfigured() ? TmdbSource::NAME : null,
+                $this->rawg->isConfigured() ? RawgSource::NAME : null,
             ])),
         ]);
     }

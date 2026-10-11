@@ -217,12 +217,7 @@ pub async fn search_tmdb<C: CloudApi>(
     .await;
     match asked {
         Ok(Ok(candidates)) => Ok(candidates),
-        Ok(Err(Error::Account { code, .. }))
-            if code == "metadata_quota_exhausted" || code == "too_many_requests" =>
-        {
-            Err(ProviderError::Quota)
-        }
-        Ok(Err(_)) => Err(ProviderError::Unexpected("server".to_owned())),
+        Ok(Err(error)) => Err(server_error(&error)),
         Err(_) => Err(ProviderError::Unexpected("server too slow".to_owned())),
     }
 }
@@ -326,4 +321,144 @@ fn is_poster_file(file: &str) -> bool {
             && name.bytes().all(|b| b.is_ascii_alphanumeric())
             && matches!(extension, "jpg" | "png")
     })
+}
+
+/// The provider's id for RAWG in `GET /v1/server`'s `metadata` list.
+pub const RAWG: &str = "rawg";
+
+/// The longest platform name a copy can hold (`MAX_COPY_TEXT_LENGTH`): a longer one is not suggested.
+const MAX_PLATFORM: usize = 60;
+const MAX_PLATFORMS: usize = 10;
+const MAX_PUBLISHERS: usize = 200;
+/// Where the images of RAWG live: the server validates the address, the app checks it again, and only this is downloaded.
+const RAWG_COVER_HOST: &str = "media.rawg.io";
+
+/// Searches video games by title in RAWG through the server of the account, with the same care as TMDB's search:
+/// without a session, or on a server that does not say it offers it, nothing is sent at all.
+pub async fn search_rawg<C: CloudApi>(
+    cloud: Option<&C>,
+    query: &str,
+) -> Result<Vec<Candidate>, ProviderError> {
+    let Some(cloud) = cloud else {
+        return Ok(Vec::new());
+    };
+
+    let asked = tokio::time::timeout(TMDB_PATIENCE, async {
+        if !cloud.offers_metadata(RAWG).await.unwrap_or(false) {
+            return Ok(Vec::new());
+        }
+        cloud.rawg_search(query.trim()).await
+    })
+    .await;
+    match asked {
+        Ok(Ok(candidates)) => Ok(candidates),
+        Ok(Err(error)) => Err(server_error(&error)),
+        Err(_) => Err(ProviderError::Unexpected("server too slow".to_owned())),
+    }
+}
+
+/// How a failure of the server reads as a warning: its quota is a quota, anything else is unexpected.
+fn server_error(error: &Error) -> ProviderError {
+    match error {
+        Error::Account { code, .. }
+            if code == "metadata_quota_exhausted" || code == "too_many_requests" =>
+        {
+            ProviderError::Quota
+        }
+        _ => ProviderError::Unexpected("server".to_owned()),
+    }
+}
+
+/// Reads the server's answer to a video game search: at most eight candidates of the fixed shape, each field checked
+/// and cut, what does not fit dropped. `Err` when it is not the shape at all.
+pub fn parse_rawg_answer(body: &Value) -> Result<Vec<Candidate>, ()> {
+    let list = body.get("candidates").and_then(Value::as_array).ok_or(())?;
+    Ok(list
+        .iter()
+        .take(10 * MAX_CANDIDATES)
+        .filter_map(rawg_candidate)
+        .take(MAX_CANDIDATES)
+        .collect())
+}
+
+fn rawg_candidate(item: &Value) -> Option<Candidate> {
+    let id = item.get("external_id")?.as_u64().filter(|id| *id > 0)?;
+    let title = text(item.get("title"), MAX_TEXT)?;
+
+    let mut candidate = Candidate::new(Kind::Videogame, Source::Rawg, title);
+    candidate.external_id = Some(id.to_string());
+    candidate.published_year = item
+        .get("year")
+        .and_then(Value::as_i64)
+        .filter(|year| (1950..=2200).contains(year))
+        .and_then(|year| i32::try_from(year).ok());
+    candidate.cover_url = item
+        .get("cover_url")
+        .and_then(Value::as_str)
+        .filter(|url| is_rawg_cover(url))
+        .map(str::to_owned);
+
+    // RAWG lists every platform a game came out on; the copy is of one, so the person chooses it, unless it is the only.
+    let platforms: Vec<String> = item
+        .get("platforms")
+        .and_then(Value::as_array)
+        .map(|list| {
+            list.iter()
+                .take(10 * MAX_PLATFORMS)
+                .filter_map(|platform| text(Some(platform), MAX_NAME))
+                .take(MAX_PLATFORMS)
+                .collect()
+        })
+        .unwrap_or_default();
+    if let [only] = platforms.as_slice() {
+        candidate.platform = Some(only.clone()).filter(|name| name.chars().count() <= MAX_PLATFORM);
+    }
+
+    // The studio is who made it; the publisher goes in its own field (the same as Wikidata's video games).
+    candidate.contributors = names(item.get("developers"))
+        .into_iter()
+        .map(|name| CandidateContributor {
+            name,
+            role: ContributorRole::Studio,
+        })
+        .collect();
+    let publishers = names(item.get("publishers")).join(", ");
+    candidate.publisher =
+        (!publishers.is_empty()).then(|| publishers.chars().take(MAX_PUBLISHERS).collect());
+    Some(candidate)
+}
+
+/// `https://media.rawg.io/media/…` ending in an image extension, made only of plain names.
+fn is_rawg_cover(raw: &str) -> bool {
+    if raw.len() > MAX_URL || raw.chars().any(|c| c.is_control() || c.is_whitespace()) {
+        return false;
+    }
+    Url::parse(raw).is_ok_and(|url| {
+        let path = url.path().strip_prefix("/media/");
+        url.scheme() == "https"
+            && url.host_str() == Some(RAWG_COVER_HOST)
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && url.query().is_none()
+            && url.fragment().is_none()
+            && path.is_some_and(is_rawg_image_path)
+    })
+}
+
+/// `games/456/abc.jpg`: plain names between slashes, the last with an image extension.
+fn is_rawg_image_path(path: &str) -> bool {
+    let plain = |name: &str| {
+        !name.is_empty()
+            && name
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    };
+    let mut parts: Vec<&str> = path.split('/').collect();
+    let Some(file) = parts.pop() else {
+        return false;
+    };
+    file.rsplit_once('.').is_some_and(|(name, extension)| {
+        plain(name) && matches!(extension, "jpg" | "jpeg" | "png" | "webp")
+    }) && parts.iter().all(|part| plain(part))
 }

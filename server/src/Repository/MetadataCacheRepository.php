@@ -23,17 +23,23 @@ final class MetadataCacheRepository extends ServiceEntityRepository
         return $this->findOneBy(['provider' => $provider, 'code' => $code]);
     }
 
-    /** Deletes what is past its age: found books after their period, missing ones after theirs. */
+    /** Deletes what is past its age: each kind of search after its own period, found books and missing ones after theirs. */
     public function deleteStaleBefore(\DateTimeImmutable $now): int
     {
-        return (int) $this->getEntityManager()->createQuery(
+        $searches = array_keys(MetadataCacheEntry::SEARCH_TTLS);
+        $query = $this->getEntityManager()->createQuery(
             \sprintf(
-                'DELETE FROM %1$s e WHERE (e.provider = :search AND e.fetchedAt <= :searchAge) OR (e.provider <> :search AND ((e.found = true AND e.fetchedAt <= :found) OR (e.found = false AND e.fetchedAt <= :missing)))',
+                'DELETE FROM %1$s e WHERE (e.provider = :tmdb AND e.fetchedAt <= :tmdbAge) OR (e.provider = :rawg AND e.fetchedAt <= :rawgAge) OR (e.provider NOT IN (:searches) AND ((e.found = true AND e.fetchedAt <= :found) OR (e.found = false AND e.fetchedAt <= :missing)))',
                 MetadataCacheEntry::class,
             )
-        )
-            ->setParameter('search', MetadataCacheEntry::TMDB_SEARCH)
-            ->setParameter('searchAge', $now->modify('-'.MetadataCacheEntry::SEARCH_TTL))
+        );
+
+        return (int) $query
+            ->setParameter('tmdb', MetadataCacheEntry::TMDB_SEARCH)
+            ->setParameter('tmdbAge', $now->modify('-'.MetadataCacheEntry::SEARCH_TTLS[MetadataCacheEntry::TMDB_SEARCH]))
+            ->setParameter('rawg', MetadataCacheEntry::RAWG_SEARCH)
+            ->setParameter('rawgAge', $now->modify('-'.MetadataCacheEntry::SEARCH_TTLS[MetadataCacheEntry::RAWG_SEARCH]))
+            ->setParameter('searches', $searches)
             ->setParameter('found', $now->modify('-'.MetadataCacheEntry::FOUND_TTL))
             ->setParameter('missing', $now->modify('-'.MetadataCacheEntry::MISSING_TTL))
             ->execute();

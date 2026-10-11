@@ -124,6 +124,10 @@ Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador 
 
 `TMDB_API_TOKEN` (en `.env.local`; `.env` lo trae vacío): el «API Read Access Token» de la cuenta de TMDB (Ajustes › API en themoviedb.org; hay que aceptar su uso no comercial y la atribución). Con él, las cuentas pueden buscar películas y series por título y `GET /v1/server` lista `tmdb` en `metadata`; vacío, la ruta responde `404 metadata_unavailable`. Viaja siempre en la cabecera `Authorization: Bearer`. Los límites, la caché y el freno ante TMDB están en [cloud.md](../architecture/cloud.md#buscar-películas-y-series-por-título-en-tmdb-78-segunda-parte-d62).
 
+### RAWG: videojuegos por el servidor (7.8, D62)
+
+`RAWG_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de la API de RAWG (rawg.io/apidocs, hay que aceptar sus condiciones y la atribución). Con ella, las cuentas pueden buscar videojuegos por título y `GET /v1/server` lista `rawg` en `metadata`; vacía, la ruta responde `404 metadata_unavailable`. **RAWG solo la admite en la dirección de la llamada saliente**, no en una cabecera: por eso esa llamada se hace con un cliente HTTP sin registrador y todas sus excepciones se relanzan sin la dirección (ver [cloud.md](../architecture/cloud.md#buscar-videojuegos-por-título-en-rawg-78-tercera-parte-d62)). Si se añade un proxy o un registro de llamadas salientes, no debe guardar las direcciones de `api.rawg.io`.
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

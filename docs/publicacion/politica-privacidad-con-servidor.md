@@ -45,6 +45,10 @@ Si no has puesto una clave tuya de Google Books, y tu servidor la ofrece, la app
 
 Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar una película o una serie por su título la app **envía a tu servidor lo que escribes, si es película o serie y el idioma de la app**, junto con tu sesión. El servidor lo busca en TMDB con su propia clave, así que **TMDB ve la búsqueda como del servidor, no tuya**. Lo que el servidor guarda es la respuesta, unos días (como mucho 30; la búsqueda, un día), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros). Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo.
 
+## Si buscas un videojuego con la cuenta
+
+Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar un videojuego por su título la app **envía a tu servidor lo que escribes**, junto con tu sesión. El servidor lo busca en RAWG con su propia clave, así que **RAWG ve la búsqueda como del servidor, no tuya**. El servidor guarda la respuesta unos días (hasta 30; la búsqueda, 7), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros y películas). Los datos de videojuegos vienen de [RAWG](https://rawg.io).
+
 ## Si invitas a alguien
 
 Si invitas por correo, el servidor envía un mensaje a esa dirección. **No guardamos la dirección**: solo una huella que permite comprobar que quien acepta es quien invitaste. El mensaje no incluye tu nombre ni el de la biblioteca.

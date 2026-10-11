@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\RawgSearchRequest;
 use App\Dto\TmdbSearchRequest;
 use App\Entity\User;
 use App\Metadata\BookLookup;
 use App\Metadata\BookMetadata;
 use App\Metadata\BookProvider;
 use App\Metadata\Isbn;
+use App\Metadata\RawgSearch;
+use App\Metadata\RawgSource;
 use App\Metadata\TmdbSearch;
 use App\Metadata\TmdbSource;
 use App\Security\AccountException;
@@ -33,6 +36,8 @@ final class MetadataController extends AbstractController
         private readonly BookLookup $lookup,
         private readonly TmdbSource $tmdbSource,
         private readonly TmdbSearch $tmdbSearch,
+        private readonly RawgSource $rawgSource,
+        private readonly RawgSearch $rawgSearch,
         private readonly RequestLimiter $limiter,
     ) {
     }
@@ -79,6 +84,24 @@ final class MetadataController extends AbstractController
         $candidates = $this->tmdbSearch->search($payload->mediaKind(), $payload->askedLanguage(), TmdbSearch::normalise($payload->query));
 
         $response = new JsonResponse(['candidates' => $candidates]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /** A POST on purpose, as TMDB's: the title a person looks for is never in an address. */
+    #[Route('/rawg/search', methods: ['POST'])]
+    public function rawgSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] RawgSearchRequest $payload): JsonResponse
+    {
+        if (!$this->rawgSource->isConfigured()) {
+            throw AccountException::metadataUnavailable();
+        }
+
+        $user = $this->getUser();
+        \assert($user instanceof User);
+        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
+
+        $response = new JsonResponse(['candidates' => $this->rawgSearch->search($payload->query)]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

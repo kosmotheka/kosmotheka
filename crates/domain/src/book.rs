@@ -467,6 +467,8 @@ pub const COVER_HOSTS: &[&str] = &[
     "cf.geekdo-images.com",
     // TMDB's posters, whose address the server builds and the app checks again (see metadata::via_server).
     "image.tmdb.org",
+    // RAWG's images, whose address the server validates and the app checks again (see metadata::via_server).
+    "media.rawg.io",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {

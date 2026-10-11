@@ -314,9 +314,11 @@
       "wikidata": "Wikidata",
       "music_brainz": "MusicBrainz",
       "game_upc": "GameUPC",
-      "tmdb": "TMDB"
+      "tmdb": "TMDB",
+      "rawg": "RAWG"
     },
-    "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers."
+    "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers.",
+    "rawgData": "Data from <link>RAWG</link>"
   },
   "settings": {
     "title": "Settings",
@@ -1232,6 +1234,7 @@
         "wikidata": "Title and seasons"
       },
       "videogame": {
+        "rawg": "Title, studio, publisher, platforms and cover",
         "wikidata": "Title, studio and year"
       },
       "music": {
@@ -1243,7 +1246,10 @@
     "tmdbWithAccount": "Arrives with an account on a server that offers it. Without one, Wikidata is used.",
     "tmdbSends": "Sends what you type, the kind and the app's language to your account's server, which asks TMDB. Nothing else.",
     "dataSources": "Data sources",
-    "tmdbNotice": "This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
+    "tmdbNotice": "This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.",
+    "rawgWithAccount": "Arrives with an account on a server that offers it. Without one, Wikidata is used.",
+    "rawgSends": "Sends what you type to your account's server, which asks RAWG. Nothing else.",
+    "rawgNotice": "Video game data from <link>RAWG</link>."
   },
   "series": {
     "new": "New series",

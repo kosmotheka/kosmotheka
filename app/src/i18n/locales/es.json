@@ -328,9 +328,11 @@
       "wikidata": "Wikidata",
       "music_brainz": "MusicBrainz",
       "game_upc": "GameUPC",
-      "tmdb": "TMDB"
+      "tmdb": "TMDB",
+      "rawg": "RAWG"
     },
-    "badKey": "{{source}} ha rechazado la clave guardada. Revísala en Ajustes → Proveedores de datos."
+    "badKey": "{{source}} ha rechazado la clave guardada. Revísala en Ajustes → Proveedores de datos.",
+    "rawgData": "Datos de <link>RAWG</link>"
   },
   "settings": {
     "title": "Ajustes",
@@ -1246,6 +1248,7 @@
         "wikidata": "Título y temporadas"
       },
       "videogame": {
+        "rawg": "Título, estudio, editor, plataformas y carátula",
         "wikidata": "Título, estudio y año"
       },
       "music": {
@@ -1257,7 +1260,10 @@
     "tmdbWithAccount": "Llega con una cuenta en un servidor que lo ofrezca. Sin ella se usa Wikidata.",
     "tmdbSends": "Envía lo que escribes, el tipo y el idioma de la app al servidor de tu cuenta, que pregunta a TMDB. Nada más.",
     "dataSources": "Fuentes de datos",
-    "tmdbNotice": "Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo."
+    "tmdbNotice": "Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo.",
+    "rawgWithAccount": "Llega con una cuenta en un servidor que lo ofrezca. Sin ella se usa Wikidata.",
+    "rawgSends": "Envía lo que escribes al servidor de tu cuenta, que pregunta a RAWG. Nada más.",
+    "rawgNotice": "Datos de videojuegos de <link>RAWG</link>."
   },
   "series": {
     "new": "Nueva serie",

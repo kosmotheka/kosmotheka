@@ -27,6 +27,15 @@ services:
         # Fixtures extend a dev-only bundle: they exist only in dev and test (below).
         exclude: '../src/DataFixtures/'
 
+    # RAWG only takes its key in the address of the call, so it is asked with a client of its own (7.8): see
+    # App\Metadata\RawgClientFactory. The tests replace this one with RAWG in memory.
+    app.http_client.rawg:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['App\Metadata\RawgClientFactory', 'create']
+    App\Metadata\RawgHttpSource:
+        arguments:
+            $httpClient: '@app.http_client.rawg'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
     App\Security\EmailCodeIssuer:
@@ -84,6 +93,10 @@ when@test:
         App\Metadata\TmdbHttpSource:
             arguments:
                 $httpClient: '@app.http_client.tmdb_test'
+        # RAWG, in memory: the same.
+        app.http_client.rawg:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeRawgApi', 'client']
         # The log, in memory: a test can say that something never reached it.
         logger:
             class: App\Tests\Support\RecordingLogger
