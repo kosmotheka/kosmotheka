@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invitación · Kosmotheka</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<style>
+:root{--paper:#fff;--ink:#0a0a0a;--muted:#5c5d66;--line:#e2e2e8;--soft:#f4f4fa;--accent:#4b53c2;--on-accent:#fff}
+@media (prefers-color-scheme:dark){:root{--paper:#0a0a0a;--ink:#f3f3f6;--muted:#b3b4bf;--line:#2c2d36;--soft:#16171f;--accent:#8d9df5;--on-accent:#0a0a0a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:34rem;margin:0 auto;padding:3rem 1.25rem 4rem}
+.brand{font-weight:700;letter-spacing:-.01em;font-size:1.1rem;margin:0 0 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:0 0 .75rem;letter-spacing:-.02em}
+p{margin:0 0 1rem}
+.muted{color:var(--muted);font-size:.95rem}
+ol{padding-left:1.25rem;margin:0 0 1.5rem}
+li{margin:0 0 .5rem}
+.link{display:block;width:100%;padding:.8rem .9rem;border:1px solid var(--line);border-radius:.75rem;background:var(--soft);color:var(--ink);font:14px/1.4 ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere;margin:0 0 .75rem}
+button{appearance:none;border:0;border-radius:.75rem;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:600;padding:.8rem 1.2rem;min-height:3rem;cursor:pointer;width:100%}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+a{color:var(--accent)}
+hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+.js [data-lang]{display:none}
+.js [data-lang].on{display:block}
+</style>
+<script>document.documentElement.className='js'</script>
+</head>
+<body>
+<main>
+<p class="brand">Kosmotheka</p>
+
+<section data-lang="es" lang="es">
+<h1>Te han invitado a una biblioteca</h1>
+<p>Este enlace se abre dentro de la aplicación Kosmotheka, no en el navegador.</p>
+<ol>
+<li>Copia el enlace.</li>
+<li>Abre Kosmotheka y entra en <strong>Tengo una invitación</strong> (en la pantalla de tu cuenta o en la de bienvenida).</li>
+<li>Pégalo ahí. Verás el nombre de la biblioteca antes de aceptar.</li>
+</ol>
+<output class="link" data-link aria-label="Enlace de la invitación"></output>
+<button type="button" data-copy data-done="Copiado">Copiar el enlace</button>
+<p class="muted" style="margin-top:1rem">Vale una sola vez y caduca a las 24 horas. No lo compartas: quien lo tenga puede usarlo.</p>
+<hr>
+<p class="muted">¿Aún no tienes la aplicación? <a href="https://kosmotheka.com/es/descargas.html" rel="noreferrer">Descárgala aquí</a> y vuelve después a este mensaje.</p>
+</section>
+
+<section data-lang="en" lang="en">
+<h1>You have been invited to a library</h1>
+<p>This link opens inside the Kosmotheka app, not in the browser.</p>
+<ol>
+<li>Copy the link.</li>
+<li>Open Kosmotheka and go to <strong>I have an invitation</strong> (on your account screen or the welcome screen).</li>
+<li>Paste it there. You will see the name of the library before you accept.</li>
+</ol>
+<output class="link" data-link aria-label="Invitation link"></output>
+<button type="button" data-copy data-done="Copied">Copy the link</button>
+<p class="muted" style="margin-top:1rem">It works once and expires after 24 hours. Do not share it: whoever has it can use it.</p>
+<hr>
+<p class="muted">Don't have the app yet? <a href="https://kosmotheka.com/en/download.html" rel="noreferrer">Get it here</a> and come back to this message afterwards.</p>
+</section>
+</main>
+<script>
+(function () {
+  var english = !/^es\b/i.test(navigator.language || 'es');
+  var link = location.origin + location.pathname;
+  document.documentElement.lang = english ? 'en' : 'es';
+  document.querySelectorAll('[data-lang]').forEach(function (section) {
+    section.classList.toggle('on', section.dataset.lang === (english ? 'en' : 'es'));
+  });
+  document.querySelectorAll('[data-link]').forEach(function (box) { box.textContent = link; });
+  document.querySelectorAll('[data-copy]').forEach(function (button) {
+    var label = button.textContent;
+    button.addEventListener('click', function () {
+      var done = function () {
+        button.textContent = button.dataset.done;
+        setTimeout(function () { button.textContent = label; }, 2500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(done, function () {});
+      } else {
+        var range = document.createRange();
+        range.selectNodeContents(button.parentNode.querySelector('[data-link]'));
+        var selection = getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        try { if (document.execCommand('copy')) done(); } catch (e) {}
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
