@@ -134,12 +134,7 @@ final readonly class GoogleBooksHttpProvider implements BookProvider
 
     private function text(mixed $value, int $max): ?string
     {
-        if (!\is_string($value) || !mb_check_encoding($value, 'UTF-8')) {
-            return null;
-        }
-        $clean = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value));
-
-        return '' === $clean ? null : mb_substr($clean, 0, $max);
+        return TextCleaner::clean($value, $max);
     }
 
     /** @return list<string> */

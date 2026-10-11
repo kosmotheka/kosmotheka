@@ -5,12 +5,13 @@
 use std::future::Future;
 use std::time::Duration;
 
-use kosmotheka_domain::Isbn;
+use kosmotheka_domain::{ContributorRole, Isbn, Kind};
 use serde_json::Value;
 use url::Url;
 
-use super::{Metadata, ProviderError};
+use super::{Candidate, CandidateContributor, Metadata, ProviderError, Source};
 use crate::cloud::CloudApi;
+use crate::error::Error;
 
 /// Who asks Google Books for this lookup.
 pub enum GoogleAccess<'a, C> {
@@ -180,5 +181,149 @@ fn is_google_cover(raw: &str) -> bool {
             && url.username().is_empty()
             && url.password().is_none()
             && url.port().is_none()
+    })
+}
+
+/// The provider's id for TMDB in `GET /v1/server`'s `metadata` list.
+pub const TMDB: &str = "tmdb";
+
+/// More than Google Books: a search asks the details of up to eight results, together.
+const TMDB_PATIENCE: Duration = Duration::from_secs(12);
+const MAX_CANDIDATES: usize = 8;
+const MAX_PEOPLE: usize = 5;
+/// Where the posters of TMDB live: the server builds the address, the app checks it again, and only this is downloaded.
+const TMDB_COVER_HOST: &str = "image.tmdb.org";
+const TMDB_COVER_DIR: &str = "/t/p/w500/";
+
+/// Searches films or series by title in TMDB through the server of the account. Without a session (`cloud` is
+/// `None`), for a kind TMDB does not cover, or on a server that does not say it offers the search, nothing is sent at
+/// all and there is nothing to add. A server that fails or is slow is a warning, as for any other provider.
+pub async fn search_tmdb<C: CloudApi>(
+    cloud: Option<&C>,
+    kind: Kind,
+    query: &str,
+    language: &str,
+) -> Result<Vec<Candidate>, ProviderError> {
+    let Some(cloud) = cloud.filter(|_| matches!(kind, Kind::Film | Kind::TvSeries)) else {
+        return Ok(Vec::new());
+    };
+
+    let asked = tokio::time::timeout(TMDB_PATIENCE, async {
+        if !cloud.offers_metadata(TMDB).await.unwrap_or(false) {
+            return Ok(Vec::new());
+        }
+        cloud.tmdb_search(kind, query.trim(), language).await
+    })
+    .await;
+    match asked {
+        Ok(Ok(candidates)) => Ok(candidates),
+        Ok(Err(Error::Account { code, .. }))
+            if code == "metadata_quota_exhausted" || code == "too_many_requests" =>
+        {
+            Err(ProviderError::Quota)
+        }
+        Ok(Err(_)) => Err(ProviderError::Unexpected("server".to_owned())),
+        Err(_) => Err(ProviderError::Unexpected("server too slow".to_owned())),
+    }
+}
+
+/// Reads the server's answer to a title search: at most eight candidates of the fixed shape, each field checked and
+/// cut, what does not fit dropped. `Err` when it is not the shape at all (the caller treats that as a failed server).
+pub fn parse_tmdb_answer(body: &Value, kind: Kind) -> Result<Vec<Candidate>, ()> {
+    let list = body.get("candidates").and_then(Value::as_array).ok_or(())?;
+    Ok(list
+        .iter()
+        .take(10 * MAX_CANDIDATES)
+        .filter_map(|item| tmdb_candidate(item, kind))
+        .take(MAX_CANDIDATES)
+        .collect())
+}
+
+fn tmdb_candidate(item: &Value, kind: Kind) -> Option<Candidate> {
+    let id = item.get("external_id")?.as_u64().filter(|id| *id > 0)?;
+    let original = text(item.get("original_title"), MAX_TEXT);
+    let title = text(item.get("title"), MAX_TEXT).or_else(|| original.clone())?;
+
+    let mut candidate = Candidate::new(kind, Source::Tmdb, title);
+    candidate.external_id = Some(id.to_string());
+    candidate.published_year = item
+        .get("year")
+        .and_then(Value::as_i64)
+        .filter(|year| (1800..=2200).contains(year))
+        .and_then(|year| i32::try_from(year).ok());
+    candidate.language = item
+        .get("language")
+        .and_then(Value::as_str)
+        .filter(|language| is_language(language))
+        .map(str::to_owned);
+    candidate.cover_url = item
+        .get("cover_url")
+        .and_then(Value::as_str)
+        .filter(|url| is_tmdb_cover(url))
+        .map(str::to_owned);
+
+    let (people, role) = match kind {
+        Kind::TvSeries => ("creators", ContributorRole::Writer),
+        _ => ("directors", ContributorRole::Director),
+    };
+    candidate.contributors = names(item.get(people))
+        .into_iter()
+        .map(|name| CandidateContributor { name, role })
+        .collect();
+    match kind {
+        Kind::TvSeries => {
+            candidate.seasons = item
+                .get("seasons")
+                .and_then(Value::as_i64)
+                .filter(|seasons| (1..=500).contains(seasons));
+        }
+        _ => {
+            candidate.duration_minutes = item
+                .get("duration_minutes")
+                .and_then(Value::as_i64)
+                .filter(|minutes| (1..=1000).contains(minutes));
+        }
+    }
+    Some(candidate)
+}
+
+fn names(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|people| {
+            people
+                .iter()
+                .take(10 * MAX_PEOPLE)
+                .filter_map(|person| text(Some(person), MAX_NAME))
+                .take(MAX_PEOPLE)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// `https://image.tmdb.org/t/p/w500/<letters and numbers>.jpg`: nothing else is ever downloaded for a candidate.
+fn is_tmdb_cover(raw: &str) -> bool {
+    if raw.len() > MAX_URL || raw.chars().any(|c| c.is_control() || c.is_whitespace()) {
+        return false;
+    }
+    Url::parse(raw).is_ok_and(|url| {
+        let file = url.path().strip_prefix(TMDB_COVER_DIR);
+        url.scheme() == "https"
+            && url.host_str() == Some(TMDB_COVER_HOST)
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && url.query().is_none()
+            && url.fragment().is_none()
+            && file.is_some_and(is_poster_file)
+    })
+}
+
+/// `abc123.jpg` or `.png`.
+fn is_poster_file(file: &str) -> bool {
+    file.rsplit_once('.').is_some_and(|(name, extension)| {
+        (1..=100).contains(&name.len())
+            && name.bytes().all(|b| b.is_ascii_alphanumeric())
+            && matches!(extension, "jpg" | "png")
     })
 }

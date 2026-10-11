@@ -27,6 +27,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $metadataAccountLimiter,
         #[Target('google_books_calls')]
         private RateLimiterFactoryInterface $googleBooksCallsLimiter,
+        #[Target('tmdb_calls')]
+        private RateLimiterFactoryInterface $tmdbCallsLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -79,6 +81,18 @@ final readonly class RequestLimiter
     public function consumeGoogleBooksCall(): void
     {
         $limit = $this->googleBooksCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /**
+     * One real call to TMDB, from the whole server: the day's cap that keeps anybody from making the server hammer it.
+     * One key for all; nothing says whose call it was. @throws AccountException with AccountErrorCode::MetadataQuotaExhausted.
+     */
+    public function consumeTmdbCall(): void
+    {
+        $limit = $this->tmdbCallsLimiter->create('server')->consume();
         if (!$limit->isAccepted()) {
             throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
         }

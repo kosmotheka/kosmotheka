@@ -388,7 +388,14 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
 }
 
 export type Source =
-  "bne" | "google_books" | "open_library" | "inventaire" | "music_brainz" | "wikidata" | "game_upc";
+  | "bne"
+  | "google_books"
+  | "open_library"
+  | "inventaire"
+  | "music_brainz"
+  | "wikidata"
+  | "game_upc"
+  | "tmdb";
 
 export interface LookupResult {
   isbn13: string;
@@ -451,8 +458,8 @@ export interface SearchResult {
   warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
 }
 
-export function searchWorks(kind: Kind, query: string): Promise<SearchResult> {
-  return invoke<SearchResult>("search_works", { kind, query });
+export function searchWorks(kind: Kind, query: string, language?: string): Promise<SearchResult> {
+  return invoke<SearchResult>("search_works", { kind, query, language });
 }
 
 export interface CodeResult {
@@ -477,9 +484,9 @@ export function getSettings(): Promise<Settings> {
   return invoke<Settings>("get_settings");
 }
 
-/** Whether this device is signed in to a server that looks Google Books up for its accounts, so the setting shows. */
-export function cloudOffersGoogleBooks(): Promise<boolean> {
-  return invoke<boolean>("cloud_offers_google_books");
+/** Which catalogues (`google_books`, `tmdb`) the server of this device's session looks up for its accounts; none without a session. */
+export function cloudMetadataOffers(): Promise<string[]> {
+  return invoke<string[]>("cloud_metadata_offers");
 }
 
 export function saveSettings(settings: Settings): Promise<void> {

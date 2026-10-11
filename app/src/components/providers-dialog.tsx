@@ -12,26 +12,30 @@ import {
   type Settings,
   type Source,
   kinds,
-  cloudOffersGoogleBooks,
+  cloudMetadataOffers,
   getSettings,
   lookupCode,
   lookupIsbn,
   saveSettings,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import tmdbLogo from "@/assets/tmdb-logo.svg";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
   book: ["bne", "open_library", "inventaire", "wikidata", "google_books"],
   comic: ["wikidata"],
   boardgame: ["wikidata", "game_upc"],
-  film: ["wikidata"],
-  tv_series: ["wikidata"],
+  film: ["tmdb", "wikidata"],
+  tv_series: ["tmdb", "wikidata"],
   videogame: ["wikidata"],
   music: ["music_brainz"],
   other: [],
 };
 
 const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc"]);
+
+/** Sources that only arrive with an account: the server of the account asks them (D62). */
+const ACCOUNT_SOURCES = new Set<Source>(["tmdb"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
@@ -54,19 +58,26 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
   }
 }
 
-function usableCount(kind: Kind, settings: Settings, viaCloud: boolean): number {
-  return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings, viaCloud)).length;
+/** What the server of the session looks up for its accounts (7.8); empty without a session. */
+interface Offers {
+  googleBooks: boolean;
+  tmdb: boolean;
+}
+
+function usableCount(kind: Kind, settings: Settings, offers: Offers): number {
+  return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings, offers)).length;
 }
 
 /** Google Books works without a key of their own when the account's server looks it up (7.8). */
-function needsOwnKey(source: Source, settings: Settings, viaCloud: boolean): boolean {
+function needsOwnKey(source: Source, settings: Settings, offers: Offers): boolean {
   if (!KEYED_SOURCES.has(source)) return false;
-  return !(source === "google_books" && viaCloud && settings.googleBooksViaServer);
+  return !(source === "google_books" && offers.googleBooks && settings.googleBooksViaServer);
 }
 
-function isUsable(source: Source, settings: Settings, viaCloud: boolean): boolean {
+function isUsable(source: Source, settings: Settings, offers: Offers): boolean {
   if (settings.disabledSources.includes(source)) return false;
-  return !needsOwnKey(source, settings, viaCloud) || Boolean(settings.apiKeys[source]?.trim());
+  if (ACCOUNT_SOURCES.has(source)) return offers.tmdb;
+  return !needsOwnKey(source, settings, offers) || Boolean(settings.apiKeys[source]?.trim());
 }
 
 export function ProvidersDialog({
@@ -85,8 +96,8 @@ export function ProvidersDialog({
     Partial<Record<Source, "testing" | "ok" | "bad_key" | "failed">>
   >({});
   const [seeded, setSeeded] = useState(false);
-  // Signed in to a server that looks Google Books up for its accounts (7.8): only then is the setting shown.
-  const [viaCloud, setViaCloud] = useState(false);
+  // What the server of the session looks up for its accounts (7.8): only then are those shown as available.
+  const [offers, setOffers] = useState<Offers>({ googleBooks: false, tmdb: false });
 
   // Fresh settings each time the page opens, as Design asks (same pattern as PairDialog).
   if (open && !seeded) {
@@ -96,14 +107,19 @@ export function ProvidersDialog({
       setSettings(loaded);
       setKeyDrafts(loaded.apiKeys);
     });
-    void cloudOffersGoogleBooks()
-      .then(setViaCloud)
-      .catch(() => setViaCloud(false));
+    void cloudMetadataOffers()
+      .then((offered) =>
+        setOffers({
+          googleBooks: offered.includes("google_books"),
+          tmdb: offered.includes("tmdb"),
+        }),
+      )
+      .catch(() => setOffers({ googleBooks: false, tmdb: false }));
   }
   if (!open && seeded) {
     setSeeded(false);
     setSettings(null);
-    setViaCloud(false);
+    setOffers({ googleBooks: false, tmdb: false });
   }
 
   const update = async (next: Settings) => {
@@ -143,7 +159,7 @@ export function ProvidersDialog({
     <nav aria-label={t("providers.title")} className="flex flex-col gap-0.5">
       {kinds.map((kind) => {
         const sources = SOURCES_BY_KIND[kind];
-        const n = settings ? usableCount(kind, settings, viaCloud) : 0;
+        const n = settings ? usableCount(kind, settings, offers) : 0;
         const weak = sources.length > 0 && n < 2;
         return (
           <button
@@ -187,9 +203,12 @@ export function ProvidersDialog({
         {sources.map((source) => {
           const keyed = KEYED_SOURCES.has(source);
           const hasKey = Boolean(settings?.apiKeys[source]?.trim());
-          const on = settings ? isUsable(source, settings, viaCloud) : false;
-          const canToggle = !settings || !needsOwnKey(source, settings, viaCloud) || hasKey;
-          const cloudSwitch = source === "google_books" && viaCloud && settings !== null;
+          const accountOnly = ACCOUNT_SOURCES.has(source);
+          const on = settings ? isUsable(source, settings, offers) : false;
+          const canToggle = accountOnly
+            ? offers.tmdb
+            : !settings || !needsOwnKey(source, settings, offers) || hasKey;
+          const cloudSwitch = source === "google_books" && offers.googleBooks && settings !== null;
           const status = testStatus[source];
           return (
             <div key={source} className="flex flex-col gap-2.5 rounded-lg border p-3.5">
@@ -198,7 +217,13 @@ export function ProvidersDialog({
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     {t(`lookup.sources.${source}`)}
                     <span className="rounded-full border px-2 py-px text-xs font-medium text-muted-foreground">
-                      {t(keyed ? "providers.needsKeyBadge" : "providers.noKeyBadge")}
+                      {t(
+                        accountOnly
+                          ? "providers.needsAccountBadge"
+                          : keyed
+                            ? "providers.needsKeyBadge"
+                            : "providers.noKeyBadge",
+                      )}
                     </span>
                   </span>
                   <span className="text-[13px] text-muted-foreground">
@@ -212,6 +237,11 @@ export function ProvidersDialog({
                   onChange={() => toggleSource(source)}
                 />
               </div>
+              {accountOnly && (
+                <p className="text-[13px] text-muted-foreground">
+                  {t(offers.tmdb ? "providers.tmdbSends" : "providers.tmdbWithAccount")}
+                </p>
+              )}
               {cloudSwitch && (
                 <div className="flex items-center gap-3 border-t pt-2.5">
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -306,6 +336,16 @@ export function ProvidersDialog({
     kindsList
   );
 
+  const attribution = (
+    <section className="flex flex-col gap-2 border-t pt-3.5">
+      <h3 className="text-sm font-semibold">{t("providers.dataSources")}</h3>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <img src={tmdbLogo} alt="TMDB" className="h-3.5 w-auto" />
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("providers.tmdbNotice")}</p>
+      </div>
+    </section>
+  );
+
   return (
     <ResponsiveDialog
       open={open}
@@ -319,6 +359,7 @@ export function ProvidersDialog({
           <span className="flex-1">{t("providers.noCloud")}</span>
         </div>
         {body}
+        {attribution}
       </div>
     </ResponsiveDialog>
   );

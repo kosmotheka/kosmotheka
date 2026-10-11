@@ -139,7 +139,7 @@ export function AddSearch({
   onRequested,
   missing,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [kind, setKind] = useState<Kind>("book");
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -186,7 +186,11 @@ export function AddSearch({
           setCandidates([]);
           setWarnings([]);
         } else {
-          const result = await searchWorks(forKind, trimmed);
+          const result = await searchWorks(
+            forKind,
+            trimmed,
+            i18n.language.startsWith("es") ? "es" : "en",
+          );
           if (id === requestId.current) {
             setCandidates(result.candidates);
             setWarnings(result.warnings);

@@ -28,7 +28,7 @@ use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::links::{self, Arrivals};
 use crate::marks;
-use crate::metadata::via_server::{GOOGLE_BOOKS, choose_access};
+use crate::metadata::via_server::{GOOGLE_BOOKS, TMDB, choose_access};
 use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
 use crate::people::{self, People};
@@ -224,14 +224,20 @@ fn books_cloud(database: &Database, settings: &Settings) -> Option<HttpCloud> {
     allowed.then(|| HttpCloud::connect(database).ok()).flatten()
 }
 
-/// Whether this device has a session on a server that looks Google Books up for its accounts, so the setting is
-/// worth showing (7.8). Any failure is «no»: the setting then stays out of the way.
+/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`), so
+/// Providers shows what is worth showing (7.8). Any failure, and no session, is an empty list.
 #[tauri::command]
-pub async fn cloud_offers_google_books(database: State<'_, Database>) -> Result<bool> {
+pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<String>> {
     let Ok(cloud) = HttpCloud::connect(&database) else {
-        return Ok(false);
+        return Ok(Vec::new());
     };
-    Ok(cloud.offers_metadata(GOOGLE_BOOKS).await.unwrap_or(false))
+    let mut offered = Vec::new();
+    for provider in [GOOGLE_BOOKS, TMDB] {
+        if cloud.offers_metadata(provider).await.unwrap_or(false) {
+            offered.push(provider.to_owned());
+        }
+    }
+    Ok(offered)
 }
 
 #[tauri::command]
@@ -270,12 +276,25 @@ pub async fn search_works(
     lookup: State<'_, Lookup>,
     kind: Kind,
     query: String,
+    language: Option<String>,
 ) -> Result<SearchResult> {
     let disabled_sources = {
         let conn = database.lock()?;
         settings::load(&conn)?.disabled_sources
     };
-    let mut result = lookup.search(kind, &query, &disabled_sources).await;
+    // The account's server only for what TMDB covers, only with a session and only if the source is not switched off.
+    let cloud = (matches!(kind, Kind::Film | Kind::TvSeries)
+        && !disabled_sources.contains(Source::Tmdb.id()))
+    .then(|| HttpCloud::connect(&database).ok())
+    .flatten();
+    let language = if language.as_deref() == Some("es") {
+        "es"
+    } else {
+        "en"
+    };
+    let mut result = lookup
+        .search(kind, &query, &disabled_sources, cloud.as_ref(), language)
+        .await;
     // The block ends before this function returns and there is no further await,
     // so the lock is never held across one.
     let conn = database.lock()?;

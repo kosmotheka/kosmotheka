@@ -145,7 +145,7 @@ pub fn run() {
             commands::request_delete_copy,
             commands::request_delete_book,
             commands::book_history,
-            commands::cloud_offers_google_books,
+            commands::cloud_metadata_offers,
             commands::lookup_isbn,
             commands::search_works,
             commands::lookup_code,

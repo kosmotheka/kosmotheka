@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use kosmotheka_domain::{
-    Change, CopyInput, DeviceKey, EditionInput, Entity, Format, Hlc, Operation, ValidBook,
+    Change, CopyInput, DeviceKey, EditionInput, Entity, Format, Hlc, Kind, Operation, ValidBook,
 };
 use serde_json::{Map, Value, json};
 
@@ -81,6 +81,11 @@ struct CloudState {
     metadata: Vec<String>,
     /// What the book route answers, in order; the code is the server's own error.
     book_answers: std::collections::VecDeque<std::result::Result<Option<Metadata>, &'static str>>,
+    /// What the title search answers, in order, and every search it was asked: kind, text and language.
+    tmdb_answers: std::collections::VecDeque<
+        std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
+    >,
+    tmdb_asks: Vec<(Kind, String, String)>,
     /// The ISBNs the book route was asked, and how many times `GET /v1/server` was read for the catalogues.
     book_asks: Vec<String>,
     offer_checks: usize,
@@ -136,6 +141,20 @@ impl FakeCloud {
         let mut state = self.0.lock().unwrap();
         state.metadata = vec!["google_books".to_owned()];
         state.book_answers = answers.into();
+    }
+
+    /// A server that searches films and series in TMDB, answering these in order.
+    fn with_tmdb(
+        &self,
+        answers: Vec<std::result::Result<Vec<crate::metadata::Candidate>, &'static str>>,
+    ) {
+        let mut state = self.0.lock().unwrap();
+        state.metadata.push("tmdb".to_owned());
+        state.tmdb_answers = answers.into();
+    }
+
+    fn tmdb_asks(&self) -> Vec<(Kind, String, String)> {
+        self.0.lock().unwrap().tmdb_asks.clone()
     }
 
     fn book_asks(&self) -> Vec<String> {
@@ -794,6 +813,23 @@ impl CloudApi for FakeApi {
         Ok(state.metadata.iter().any(|offered| offered == provider))
     }
 
+    async fn tmdb_search(
+        &self,
+        kind: Kind,
+        query: &str,
+        language: &str,
+    ) -> Result<Vec<crate::metadata::Candidate>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state
+            .tmdb_asks
+            .push((kind, query.to_owned(), language.to_owned()));
+        match state.tmdb_answers.pop_front() {
+            Some(Ok(candidates)) => Ok(candidates),
+            Some(Err(code)) => Err(Error::account(code)),
+            None => Err(Error::account("server_unavailable")),
+        }
+    }
+
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>> {
         let mut state = self.cloud.0.lock().unwrap();
         state.book_asks.push(isbn.as_str().to_owned());
@@ -1082,6 +1118,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 mod invitations_tests;
 mod links_tests;
 mod metadata_tests;
+mod tmdb_tests;
 
 #[tokio::test]
 async fn uploading_links_the_library_and_sends_its_whole_log() {

@@ -41,6 +41,8 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 **Hecho en 7.8 (primera parte, 11/10/2026): Google Books a través del servidor, solo por ISBN.** Con cuenta, un servidor que tiene `GOOGLE_BOOKS_API_KEY` busca el ISBN por la app y guarda una caché sin saber quién preguntó (30 días lo encontrado, 1 día lo no encontrado). Clave propia en Ajustes sigue teniendo preferencia (D83). Las condiciones de Google (la cuota gratuita es de 1.000 llamadas al día; el servidor se limita a 900) y el diseño están en [architecture/cloud.md](../architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83). Pendiente para el resto: BoardGameGeek, TMDB, IGDB o RAWG y Comic Vine, cada uno con sus condiciones revisadas antes.
 
+**Hecho en 7.8 (segunda parte, 11/10/2026): TMDB (películas y series) por título a través del servidor.** Con cuenta, un servidor con `TMDB_API_TOKEN` busca por título (hasta 8 candidatos con su detalle: directores o creadores, duración o temporadas, cartel). Condiciones releídas el 11/10/2026 (términos del 20/10/2023): uso no comercial; no guardar sus datos más de 6 meses (la caché guarda 30 días como mucho); atribución con su logo y su aviso, que la app muestra en Ajustes › Proveedores de datos › «Fuentes de datos». Diseño en [architecture/cloud.md](../architecture/cloud.md#buscar-películas-y-series-por-título-en-tmdb-78-segunda-parte-d62). Pendiente: clave propia de TMDB en Ajustes, y BoardGameGeek, IGDB o RAWG y Comic Vine.
+
 ## Lo que esto implica para la arquitectura
 
 - **Claves en una app de código abierto.** Una clave no puede ir dentro de la app: el código es público y cualquiera la extraería (D03, D21). Tres salidas:

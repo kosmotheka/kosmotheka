@@ -77,3 +77,14 @@ when@test:
         App\Metadata\GoogleBooksHttpProvider:
             arguments:
                 $httpClient: '@app.http_client.google_books_test'
+        # TMDB, in memory: the same.
+        app.http_client.tmdb_test:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeTmdbApi', 'client']
+        App\Metadata\TmdbHttpSource:
+            arguments:
+                $httpClient: '@app.http_client.tmdb_test'
+        # The log, in memory: a test can say that something never reached it.
+        logger:
+            class: App\Tests\Support\RecordingLogger
+            public: true

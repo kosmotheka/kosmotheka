@@ -19,7 +19,7 @@ use kosmotheka_domain::{Isbn, Kind};
 
 use crate::cloud::CloudApi;
 use serde::Serialize;
-use via_server::{GoogleAccess, lookup_google};
+use via_server::{GoogleAccess, lookup_google, search_tmdb};
 
 pub use candidate::{Candidate, CandidateContributor};
 
@@ -47,6 +47,7 @@ pub enum Source {
     MusicBrainz,
     Wikidata,
     GameUpc,
+    Tmdb,
 }
 
 impl Source {
@@ -61,6 +62,7 @@ impl Source {
             Source::MusicBrainz => "music_brainz",
             Source::Wikidata => "wikidata",
             Source::GameUpc => "game_upc",
+            Source::Tmdb => "tmdb",
         }
     }
 }
@@ -185,7 +187,8 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
         | Source::Inventaire
         | Source::MusicBrainz
         | Source::Wikidata
-        | Source::GameUpc => None,
+        | Source::GameUpc
+        | Source::Tmdb => None,
     };
     candidate
 }
@@ -236,11 +239,13 @@ impl Lookup {
 
     /// Title search: books, music, and now everything Wikidata covers (films,
     /// TV series, video games, comics, board games).
-    pub async fn search(
+    pub async fn search<C: CloudApi>(
         &self,
         kind: Kind,
         query: &str,
         disabled: &BTreeSet<String>,
+        tmdb: Option<&C>,
+        language: &str,
     ) -> SearchResult {
         let query = query.trim();
         if query.chars().count() < 2 {
@@ -282,7 +287,25 @@ impl Lookup {
                 let musicbrainz = musicbrainz::search(&self.client, query).await;
                 collect_candidates(vec![(Source::MusicBrainz, musicbrainz)])
             }
-            Kind::Film | Kind::TvSeries | Kind::Videogame | Kind::Comic | Kind::Boardgame => {
+            Kind::Film | Kind::TvSeries => {
+                // TMDB first: it knows more of a film than Wikidata. It is only asked through the server of an
+                // account that offers it (`tmdb` is `None` otherwise), and at the same time as Wikidata.
+                let (tmdb_result, wikidata) = tokio::join!(
+                    maybe_vec(
+                        disabled.contains(Source::Tmdb.id()),
+                        search_tmdb(tmdb, kind, query, language),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Wikidata.id()),
+                        wikidata::search(&self.client, kind, query),
+                    ),
+                );
+                collect_candidates(vec![
+                    (Source::Tmdb, tmdb_result),
+                    (Source::Wikidata, wikidata),
+                ])
+            }
+            Kind::Videogame | Kind::Comic | Kind::Boardgame => {
                 if disabled.contains(Source::Wikidata.id()) {
                     return SearchResult::default();
                 }

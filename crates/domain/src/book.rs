@@ -465,6 +465,8 @@ pub const COVER_HOSTS: &[&str] = &[
     "commons.wikimedia.org",
     // BoardGameGeek's own image CDN, returned by GameUPC (see metadata::gameupc).
     "cf.geekdo-images.com",
+    // TMDB's posters, whose address the server builds and the app checks again (see metadata::via_server).
+    "image.tmdb.org",
 ];
 
 pub fn parse_cover_url(raw: &str) -> Option<Url> {

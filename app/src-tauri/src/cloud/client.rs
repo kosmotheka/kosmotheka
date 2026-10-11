@@ -13,13 +13,42 @@ use crate::account::{
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
+use crate::metadata::Candidate;
 use crate::metadata::Metadata;
-use crate::metadata::via_server::parse_answer;
+use crate::metadata::via_server::{parse_answer, parse_tmdb_answer};
 use crate::sync::{SyncOperation, VersionVector};
 use kosmotheka_domain::Isbn;
+use kosmotheka_domain::Kind;
 
 /// The most the app reads of the answer to one book (7.8): the fixed shape is far smaller.
 const MAX_BOOK_ANSWER: usize = 64 * 1024;
+
+/// Eight candidates of the fixed shape fit in far less.
+const MAX_SEARCH_ANSWER: usize = 128 * 1024;
+
+/// The body of an answer as JSON, if it is no bigger than `max`: a server that sends more is not sending what was asked.
+async fn read_capped_json(response: &mut reqwest::Response, max: usize) -> Result<Value> {
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| Error::account("server_unavailable"))?
+    {
+        if body.len() + chunk.len() > max {
+            return Err(Error::account("server_unavailable"));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    serde_json::from_slice(&body).map_err(|_| Error::account("server_unavailable"))
+}
+
+/// The words the server uses for the kinds it searches by title (7.8).
+fn kind_word(kind: Kind) -> &'static str {
+    match kind {
+        Kind::TvSeries => "tv_series",
+        _ => "film",
+    }
+}
 
 /// The server accepts at most this many operations per push.
 const PUSH_BATCH: usize = 1000;
@@ -273,6 +302,20 @@ impl CloudApi for HttpCloud {
             .any(|offered| offered == provider))
     }
 
+    async fn tmdb_search(&self, kind: Kind, query: &str, language: &str) -> Result<Vec<Candidate>> {
+        let body = json!({ "kind": kind_word(kind), "query": query, "language": language });
+        let mut response = send(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/tmdb/search", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await?;
+        let answer = read_capped_json(&mut response, MAX_SEARCH_ANSWER).await?;
+        parse_tmdb_answer(&answer, kind).map_err(|()| Error::account("server_unavailable"))
+    }
+
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>> {
         let mut response = send(
             &self.client,
@@ -287,19 +330,7 @@ impl CloudApi for HttpCloud {
         )
         .await?;
         // The fixed shape is small: a server that sends more than this is not sending that.
-        let mut body = Vec::new();
-        while let Some(chunk) = response
-            .chunk()
-            .await
-            .map_err(|_| Error::account("server_unavailable"))?
-        {
-            if body.len() + chunk.len() > MAX_BOOK_ANSWER {
-                return Err(Error::account("server_unavailable"));
-            }
-            body.extend_from_slice(&chunk);
-        }
-        let answer: Value =
-            serde_json::from_slice(&body).map_err(|_| Error::account("server_unavailable"))?;
+        let answer = read_capped_json(&mut response, MAX_BOOK_ANSWER).await?;
         parse_answer(&answer).map_err(|()| Error::account("server_unavailable"))
     }
 
@@ -448,6 +479,126 @@ mod tests {
             }))
             .into_response(),
         }
+    }
+
+    /// The address as asked (with any query), the session headers and the body of each search sent.
+    type TmdbAsk = (String, Option<String>, Option<String>, Value);
+
+    #[derive(Clone)]
+    struct Tmdb {
+        mode: &'static str,
+        asked: Arc<Mutex<Vec<TmdbAsk>>>,
+    }
+
+    async fn tmdb_route(
+        State(stub): State<Tmdb>,
+        uri: axum::http::Uri,
+        headers: HeaderMap,
+        body: String,
+    ) -> axum::response::Response {
+        let header = |name: &str| {
+            headers
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_owned)
+        };
+        stub.asked.lock().unwrap().push((
+            uri.to_string(),
+            header("x-device-id"),
+            header("authorization"),
+            serde_json::from_str(&body).unwrap_or(Value::Null),
+        ));
+        match stub.mode {
+            "huge" => axum::Json(json!({
+                "candidates": [{ "external_id": 1, "title": "Matrix" }], "padding": "x".repeat(5_000_000),
+            }))
+            .into_response(),
+            "text" => (StatusCode::OK, "<html>hello</html>").into_response(),
+            "invalid" => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                axum::Json(json!({ "error": "invalid_request" })),
+            )
+                .into_response(),
+            _ => axum::Json(json!({
+                "candidates": [{ "external_id": 603, "title": "Matrix", "directors": ["Lana Wachowski"] }],
+            }))
+            .into_response(),
+        }
+    }
+
+    async fn tmdb_server(mode: &'static str) -> (HttpCloud, Tmdb) {
+        let stub = Tmdb {
+            mode,
+            asked: Arc::default(),
+        };
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let app = Router::new()
+            .route("/v1/metadata/tmdb/search", axum::routing::post(tmdb_route))
+            .with_state(stub.clone());
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (HttpCloud::for_test(&format!("http://{address}")), stub)
+    }
+
+    #[tokio::test]
+    async fn the_text_goes_in_the_body_of_a_post_and_never_in_the_address() {
+        let (api, stub) = tmdb_server("ok").await;
+
+        let found = api
+            .tmdb_search(Kind::Film, "matrix & más ?x=1#/..", "es")
+            .await
+            .unwrap();
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].title, "Matrix");
+        let asked = stub.asked.lock().unwrap();
+        assert_eq!(asked.len(), 1);
+        assert_eq!(asked[0].0, "/v1/metadata/tmdb/search");
+        assert_eq!(asked[0].1.as_deref(), Some("device-1"));
+        assert_eq!(asked[0].2.as_deref(), Some("Bearer token-1"));
+        assert_eq!(
+            asked[0].3,
+            json!({ "kind": "film", "query": "matrix & más ?x=1#/..", "language": "es" })
+        );
+    }
+
+    #[tokio::test]
+    async fn a_series_is_asked_with_its_own_word() {
+        let (api, stub) = tmdb_server("ok").await;
+
+        api.tmdb_search(Kind::TvSeries, "breaking bad", "en")
+            .await
+            .unwrap();
+
+        assert_eq!(stub.asked.lock().unwrap()[0].3["kind"], "tv_series");
+    }
+
+    #[tokio::test]
+    async fn an_enormous_search_answer_is_a_failure() {
+        let (api, _) = tmdb_server("huge").await;
+
+        assert!(api.tmdb_search(Kind::Film, "matrix", "es").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_search_answer_that_is_not_json_is_a_failure() {
+        let (api, _) = tmdb_server("text").await;
+
+        assert!(api.tmdb_search(Kind::Film, "matrix", "es").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_refused_search_is_a_failure_with_the_servers_code() {
+        let (api, _) = tmdb_server("invalid").await;
+
+        let error = api
+            .tmdb_search(Kind::Film, "matrix", "es")
+            .await
+            .unwrap_err();
+
+        assert!(matches!(error, Error::Account { code, .. } if code == "invalid_request"));
     }
 
     async fn server_route(State(stub): State<Book>) -> axum::Json<Value> {

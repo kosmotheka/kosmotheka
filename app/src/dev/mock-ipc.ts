@@ -1358,8 +1358,8 @@ mockIPC((cmd, args) => {
       return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":
       return mockSettings;
-    case "cloud_offers_google_books":
-      return mockAccount.signedIn;
+    case "cloud_metadata_offers":
+      return mockAccount.signedIn ? ["google_books", "tmdb"] : [];
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;

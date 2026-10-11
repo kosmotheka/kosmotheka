@@ -12,7 +12,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * What a provider said about one book (7.8, D83): a row per provider and ISBN-13, already in the fixed shape. It
  * deliberately says nothing about who asked, and a failure of the provider is never kept here. A found book stays 30
- * days, a missing one a day; the two periods live here and nowhere else (the purge reads them too).
+ * days, a missing one a day, a title search a day; the two periods live here and nowhere else (the purge reads them too).
  */
 #[ORM\Entity(repositoryClass: MetadataCacheRepository::class)]
 #[ORM\Table(name: 'metadata_cache')]
@@ -22,6 +22,9 @@ class MetadataCacheEntry
 {
     public const string FOUND_TTL = '30 days';
     public const string MISSING_TTL = '1 day';
+    /** A title search is kept a day, found or not: the provider of those rows is this one. */
+    public const string TMDB_SEARCH = 'tmdb_search';
+    public const string SEARCH_TTL = '1 day';
 
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
@@ -30,7 +33,7 @@ class MetadataCacheEntry
     public function __construct(
         #[ORM\Column(length: 32)]
         private readonly string $provider,
-        #[ORM\Column(length: 13)]
+        #[ORM\Column(length: 64)]
         private readonly string $code,
         #[ORM\Column]
         private bool $found,
@@ -71,7 +74,16 @@ class MetadataCacheEntry
 
     public function isFreshAt(\DateTimeImmutable $now): bool
     {
-        return $this->fetchedAt > $now->modify('-'.($this->found ? self::FOUND_TTL : self::MISSING_TTL));
+        return $this->fetchedAt > $now->modify('-'.$this->ttl());
+    }
+
+    private function ttl(): string
+    {
+        if (self::TMDB_SEARCH === $this->provider) {
+            return self::SEARCH_TTL;
+        }
+
+        return $this->found ? self::FOUND_TTL : self::MISSING_TTL;
     }
 
     /** @param array<string, mixed> $payload */

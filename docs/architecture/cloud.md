@@ -607,6 +607,66 @@ Si el servidor falla (red, no disponible, cuota, límite, más de 8 s, una respu
 | 7. Dos cuentas, un ISBN | `testTwoAccountsAskingTheSameIsbnCostOneCallAndNoRowSaysWho` |
 | 8. En la app | `a_key_of_their_own_goes_straight…`, `a_server_that_does_not_offer_it_never_gets_the_request`, `whatever_the_server_fails_at…`, `fields_of_the_wrong_type_are_dropped…`, `enormous_fields_are_cut`, `a_cover_that_is_not_from_google_books_is_dropped`, `an_enormous_answer_is_a_failure…`, `a_list_of_the_wrong_type_offers_nothing…` |
 
+## Buscar películas y series por título en TMDB (7.8, segunda parte, D62)
+
+Hoy películas y series se buscan solo en Wikidata, con poco detalle. Quien tiene cuenta puede buscarlas **por título** en TMDB a través del servidor, que pone su token. Es el primer proveedor que busca por título por el servidor y el primero que exige atribución.
+
+**Condiciones de TMDB** (releídas el 11/10/2026; sus términos son del 20/10/2023): uso no comercial (la app gratuita encaja); **no guardar sus datos más de 6 meses** (la caché del servidor guarda como mucho 30 días); **atribución obligatoria**: su logo, menos destacado que el de la app, y el aviso «This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.». No dicen nada de que un servidor busque en nombre de sus cuentas.
+
+**La ruta.** `POST /v1/metadata/tmdb/search`, con sesión como el resto. **Es un `POST` a propósito: el título que busca una persona no va nunca en una dirección** (las direcciones se escriben en registros). Cuerpo, estricto (un campo de más es `422 invalid_request`):
+
+```json
+{ "kind": "film", "query": "matrix", "language": "es" }
+```
+
+- `kind`: `film` o `tv_series`; otro valor, `422`.
+- `query`: de 2 a 100 caracteres una vez limpiado (se quitan los blancos de los lados y los repetidos, también los de no separación). Con saltos de línea, tabuladores u otros caracteres de control, `422`. El servidor pregunta a TMDB por la forma limpia y en minúsculas.
+- `language`: `es` o `en`; cualquier otro valor se toma por `en` (no es un error).
+
+Responde `{"candidates": [...]}` con **8 como mucho**. Cada candidato tiene siempre la misma forma: `external_id` (el número de TMDB), `title`, `original_title`, `year`, `language` (el original), `cover_url`, `directors` (película), `creators` (serie), `duration_minutes` (película) y `seasons` (serie); lo que no aplica va vacío o `null`. Si el detalle de un resultado falla, ese candidato va sin esos campos: no se cae la búsqueda.
+
+**La llamada** (`TmdbHttpSource`, detrás de `TmdbSource`; no es un `BookProvider`, que es de libros por ISBN). API v3 de TMDB: `search/movie` o `search/tv` con `include_adult=false`, y después el detalle de cada resultado (`/movie/{id}` con `append_to_response=credits`, o `/tv/{id}`), **todos a la vez**. Direcciones fijas; del cliente solo entran el tipo y el idioma (listas cerradas) y el texto como **un solo parámetro codificado**; el número del detalle es uno que **devolvió TMDB**, nunca uno del cliente. El token (el «API Read Access Token») va en `Authorization: Bearer`, nunca en una dirección. Tiempo máximo de 5 s, sin redirecciones, lectura con tope de 512 KB, excepciones sin `previous`, y reintento ante un `5xx` (hasta tres veces, como con Google Books: lo comparte `ProviderGate`). Se miran como mucho 40 resultados para quedarse con 8 bien formados; título y subtítulo a 300 caracteres, nombres a 200, como mucho 5 personas, año entre 1800 y 2200, id un entero positivo, y **el cartel solo si el `poster_path` es `/<letras y números>.<jpg|png>`**: la dirección la construye el servidor (`https://image.tmdb.org/t/p/w500/<fichero>`).
+
+**La caché.** La misma tabla `metadata_cache` (su columna `code` pasa de 13 a 64 caracteres, migración `Version20261011183746`, para guardar una huella). Dos clases de fila, sin nada que diga quién preguntó:
+- **La búsqueda**, 1 día, con `provider = tmdb_search` y como código la **huella (sha256) del tipo, el idioma y el texto normalizado**: la tabla no guarda en claro qué títulos se buscan. Guarda los resultados sin detalle.
+- **El detalle**, 30 días, con `provider = tmdb_movie_<idioma>` o `tmdb_tv_<idioma>` y como código el número de TMDB.
+Un fallo de TMDB (cuota, error, tiempo agotado, basura) **no se guarda**; un detalle que falla deja ese candidato incompleto y se vuelve a pedir la próxima vez. La purga horaria existente borra lo caducado (`MetadataCacheRepository::deleteStaleBefore`).
+
+**Los límites.** El mismo de **600 por hora por cuenta**, **compartido con Google Books** (una búsqueda cuenta una, aunque dentro haga varias llamadas), y un tope propio del servidor de **5.000 llamadas reales a TMDB al día** (la búsqueda y cada detalle cuentan una; `tmdb_calls`). Agotado el día, la caché sigue sirviendo y lo demás responde `metadata_quota_exhausted`; si se agota a mitad de los detalles, los que faltan van incompletos. Si TMDB responde `429`, `401` o `403`, el servidor **no le vuelve a llamar durante 30 minutos** (el mismo freno que con Google, con su propia clave de pausa); un `401` suele ser un token mal puesto y se trata igual, porque insistir tampoco ayuda. `/v1/server` lista `tmdb` en `metadata` si hay `TMDB_API_TOKEN`; sin él la ruta responde `404 metadata_unavailable`.
+
+**Lo que no se escribe.** El texto buscado no va al registro de actividad, ni a ninguna fila, ni a ningún log: viaja en el cuerpo de un `POST`, y los errores de TMDB son un texto fijo. Un test recorre el log de la aplicación con un texto centinela y varias formas de error (cuerpo roto, campo de más, tipo equivocado, TMDB que falla). Ver también «Lo que se escribe en el log» más abajo.
+
+**En la app** (`metadata/via_server.rs`, `CloudApi::tmdb_search`, `Lookup::search`). `Source` gana `Tmdb`. Para `Film` y `TvSeries`, si hay **sesión**, el servidor **dice ofrecerlo** (`metadata` de `/v1/server`) y la fuente no está desactivada en Proveedores, se pregunta al servidor **a la vez** que a Wikidata, y los candidatos de TMDB van primero. Lo que se manda: el texto escrito (sin blancos en los lados), el tipo y el idioma de la app, nada más. Sin sesión, sin oferta o para otro tipo, **no sale ninguna petición**. Si el servidor falla o tarda más de 12 s, quedan los de Wikidata y el aviso de siempre. La respuesta se lee con tope de 128 KB y se vuelve a cortar y comprobar con las mismas reglas (8 candidatos, textos cortados, año y duración posibles, y **el cartel solo de `https://image.tmdb.org/t/p/w500/<fichero>`**, porque la app lo descargará; `image.tmdb.org` se añade a `COVER_HOSTS` de `crates/domain`). De una película, los directores van como colaboradores con el papel `director`; de una serie, los creadores con el papel `writer` (no hay un papel «creador»).
+
+**Proveedores y atribución.** TMDB aparece primero en la lista de fuentes de películas y series, con la etiqueta «Pide una cuenta»; solo se puede encender con sesión en un servidor que lo ofrezca (si no, un texto explica que llega con la cuenta, D62) y se apaga como las demás. Un texto corto dice qué se envía. Una sección **«Fuentes de datos»** dentro de Proveedores lleva el logo de TMDB (el oficial, de su página de marca: `app/src/assets/tmdb-logo.svg`, empaquetado con la app, nada se carga de fuera) y el aviso, en inglés y su traducción en español. En los resultados, la etiqueta de texto «TMDB» como las demás fuentes; **ningún logo en las fichas** (decisión del maintainer, opción A).
+
+**Pendiente:** la clave propia de TMDB en Ajustes (D62 la prevé para todo proveedor con clave) queda fuera de esta pieza.
+
+**Qué test cubre cada caso hostil** (`tests/Controller/TmdbSearchTest.php` y, en la app, `cloud/tests/tmdb_tests.rs` y `cloud/client.rs`):
+
+| Caso | Tests |
+|---|---|
+| 1. Sin sesión, token inválido, cuenta sin confirmar o bloqueada | `testWithoutASessionThereIsNoAnswerAndNoCall`, `testAnInvalidToken…`, `testAnAccountNoLongerConfirmed…`, `testABlockedAccount…` |
+| 2. Cuerpo que no es lo pedido | `testABodyThatIsNotTheOneAsked…` (17 formas), `testAQueryOfOneOverTheLimitAndOfAMegabyteAreRefused`, `testAnOddLanguageMeansEnglish…` |
+| 3. Símbolos en el título | `testATitleWithSymbolsTravelsAsOneEncodedParameter`, `testSurroundingBlanksAndRepeatedSpaces…` |
+| 4. El token no aparece | `testTheTokenIsNowhereInWhatTheServerAnswersStoresOrLogs` |
+| 5. TMDB envía basura | `testAThousandResultsReachTheAppAsEight…`, `testFieldsOfTheWrongTypeAndHugeOnes…`, `testAPosterThatIsNotAPlainFileIsDropped` (12 formas), `testAnswersThatAreNotUsable…`, `testAnEnormousAnswer…` |
+| 6. TMDB dice 429 o 401; 5xx | `testTmdbRefusingIsReported…`, `testAfterARefusalTheServerStopsAskingTmdb…`, `testAServerErrorIsTriedAgain…`, `testAServerErrorThatKeepsComing…`, `testASlowTmdbIsNotAskedAgain` |
+| 7. Un detalle falla | `testADetailThatFails…`, `testADetailRefusedOnQuotaPauses…`, `testADetailThatFailedIsNotRemembered…` |
+| 8. Dos cuentas, mismo título | `testTwoAccountsLookingForTheSame…`, `testTheSearchedTitleReachesNoLog…` |
+| 9. Límites | `testAnAccountPastItsSharedLimit…`, `testWhenTheServersDayIsSpent…`, `testTheDayRunningOutWhileTheDetails…` |
+| 10. En la app | `without_a_session_nothing_goes_anywhere`, `only_films_and_series_are_ever_sent`, `a_server_that_does_not_offer_tmdb_never_gets_the_text`, `a_list_of_a_hundred_is_cut_to_eight`, `fields_of_the_wrong_type…`, `enormous_fields_are_cut`, `a_cover_that_is_not_a_poster…`, `the_text_goes_in_the_body_of_a_post…`, `an_enormous_search_answer_is_a_failure` |
+
+### Lo que se escribe en el log (revisado el 11/10/2026)
+
+El servidor no usa Monolog: lo que registra es el registrador por defecto de Symfony (a `stderr`, de ahí al log del contenedor), que en producción escribe de `warning` para arriba. Visto con un registrador en memoria en los tests:
+- Una excepción de la aplicación (`AccountException`: ISBN inválido, cuota, límite…) se escribe con su **código como único texto**, sin la dirección.
+- **Una ruta que no existe sí escribe la dirección completa** (`No route found for "GET http://…/v1/metadata/google-books/isbn/978/8408176039"`, a nivel `error`), y con ella el ISBN que alguien buscó con una barra de más, o con un segmento de más después del ISBN. La ruta de TMDB no tiene este problema: el título va en el cuerpo. Un ISBN bien formado, o mal formado pero de un solo segmento, no escribe nada.
+- A nivel `info` (solo en desarrollo) `Matched route` escribe `request_uri` en cada petición.
+- Un error de validación del cuerpo de la ruta de TMDB escribe solo la regla incumplida, no el valor.
+
+**Propuesta pendiente** (no hecha, queda a decidir): hacer que `{isbn}` acepte cualquier cosa, también barras (`requirements: ['isbn' => '.+']`), de modo que todo lo que cuelga de la ruta llegue al controlador y responda `422 invalid_isbn` sin escribir la dirección; o, más general, un oyente que reescriba el mensaje de `NotFoundHttpException` bajo `/v1/metadata/`.
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.

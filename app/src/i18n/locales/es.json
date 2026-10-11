@@ -327,7 +327,8 @@
       "inventaire": "Inventaire",
       "wikidata": "Wikidata",
       "music_brainz": "MusicBrainz",
-      "game_upc": "GameUPC"
+      "game_upc": "GameUPC",
+      "tmdb": "TMDB"
     },
     "badKey": "{{source}} ha rechazado la clave guardada. Revísala en Ajustes → Proveedores de datos."
   },
@@ -1236,9 +1237,11 @@
         "game_upc": "Por el código de barras de la caja"
       },
       "film": {
+        "tmdb": "Título, director, duración y cartel",
         "wikidata": "Título, dirección y año"
       },
       "tv_series": {
+        "tmdb": "Título, creadores, temporadas y cartel",
         "wikidata": "Título y temporadas"
       },
       "videogame": {
@@ -1248,7 +1251,12 @@
         "music_brainz": "Discos por título o código"
       }
     },
-    "toggleAria": "Usar {{name}}"
+    "toggleAria": "Usar {{name}}",
+    "needsAccountBadge": "Pide una cuenta",
+    "tmdbWithAccount": "Llega con una cuenta en un servidor que lo ofrezca. Sin ella se usa Wikidata.",
+    "tmdbSends": "Envía lo que escribes, el tipo y el idioma de la app al servidor de tu cuenta, que pregunta a TMDB. Nada más.",
+    "dataSources": "Fuentes de datos",
+    "tmdbNotice": "Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo."
   },
   "series": {
     "new": "Nueva serie",

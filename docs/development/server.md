@@ -120,6 +120,10 @@ Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador 
 
 **Tampoco se escriben en el registro de accesos** las direcciones `/v1/metadata/…`, porque llevan el ISBN que busca una cuenta. En desarrollo ya está en `docker/nginx/nginx.conf` (`map $request_uri $loggable`, junto a las de Google); en producción hay que repetirlo.
 
+### TMDB: películas y series por el servidor (7.8, D62)
+
+`TMDB_API_TOKEN` (en `.env.local`; `.env` lo trae vacío): el «API Read Access Token» de la cuenta de TMDB (Ajustes › API en themoviedb.org; hay que aceptar su uso no comercial y la atribución). Con él, las cuentas pueden buscar películas y series por título y `GET /v1/server` lista `tmdb` en `metadata`; vacío, la ruta responde `404 metadata_unavailable`. Viaja siempre en la cabecera `Authorization: Bearer`. Los límites, la caché y el freno ante TMDB están en [cloud.md](../architecture/cloud.md#buscar-películas-y-series-por-título-en-tmdb-78-segunda-parte-d62).
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

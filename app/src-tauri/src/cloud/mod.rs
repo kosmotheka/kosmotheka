@@ -77,6 +77,14 @@ pub trait CloudApi {
     async fn accept_invitation(&self, token: &str) -> Result<String>;
     /// Whether this server looks books up in `provider` (`google_books`) for its accounts (`GET /v1/server`).
     async fn offers_metadata(&self, provider: &str) -> Result<bool>;
+    /// A film or series searched by title in TMDB through the server (7.8, D62). The text goes in the body of a `POST`,
+    /// never in an address. The answer is already cut to the fixed shape and to at most eight candidates.
+    async fn tmdb_search(
+        &self,
+        kind: kosmotheka_domain::Kind,
+        query: &str,
+        language: &str,
+    ) -> Result<Vec<crate::metadata::Candidate>>;
     /// One ISBN in Google Books through the server (7.8, D83): `Ok(None)` is the server saying it is not found.
     /// Only the ISBN leaves the app.
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>>;

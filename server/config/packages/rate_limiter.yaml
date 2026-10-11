@@ -32,6 +32,11 @@ framework:
             policy: sliding_window
             limit: 900
             interval: '1 day'
+        # TMDB (7.8, D62): the server's own cap on real calls, a search and each detail being one. The key is the same for all.
+        tmdb_calls:
+            policy: sliding_window
+            limit: 5000
+            interval: '1 day'
         email_code:
             policy: sliding_window
             limit: 10
