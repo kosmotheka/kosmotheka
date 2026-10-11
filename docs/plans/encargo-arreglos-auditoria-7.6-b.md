@@ -1,6 +1,6 @@
-# Encargo · Segunda tanda tras la auditoría del 11/10/2026, y el registro cerrado
+# Encargo · Segunda tanda tras la auditoría del 11/10/2026
 
-> Encargo cerrado para la sesión de hitos, 11/10/2026. Sin commit, sin push, sin cambiar de rama. Las tres primeras piezas son hallazgos de [docs/audits/2026-10-11.md](../audits/2026-10-11.md) ya decididos por el maintainer; la cuarta prepara el primer despliegue de prueba. Para cada una: el test del caso primero, visto fallar, y después el cambio.
+> Encargo cerrado para la sesión de hitos, 11/10/2026. Sin commit, sin push, sin cambiar de rama. Las tres primeras piezas son hallazgos de [docs/audits/2026-10-11.md](../audits/2026-10-11.md) ya decididos por el maintainer. Para cada una: el test del caso primero, visto fallar, y después el cambio.
 
 ## 1 · SEG-041 · El registro apunta quién lo hizo y quién lo subió (D66, enmienda del 11/10/2026)
 
@@ -23,21 +23,13 @@ Hoy una fila que sale de una operación lleva la cuenta, el dispositivo y la IP 
 - Tests hostiles: Jhonny manda 3 invitaciones a Laura desde su biblioteca y la familia aún puede invitarla; al llegar a 10 en total, nadie más ese día; un envío que falla no gasta cuota.
 - `laura+1@…` frente a `laura@…`: **no lo normalices** (cada proveedor trata los alias a su manera); déjalo apuntado en `cloud.md` como límite conocido.
 
-## 4 · Registro cerrado (para el despliegue de prueba; propuesta del coordinador, aceptada por el maintainer como parte del plan del 11/10/2026)
+## 4 · Registro cerrado: **no es tuyo**
 
-El servidor estará en internet antes de la revisión de seguridad de conjunto: solo deben poder registrarse los correos que el maintainer elija.
-
-- Variable `REGISTRATION_ALLOWED_EMAILS`: lista de correos separados por comas. **Vacía = registro abierto** (lo de hoy, y el valor por defecto para quien monte su servidor). Con contenido, solo esos correos, comparados con la misma normalización que usa el registro.
-- Un correo fuera de la lista recibe un error propio, `registration_closed`, **antes** de crear nada ni mandar ningún correo, y sin gastar más que el límite de registro por IP. La app lo enseña con un texto llano en `en` y `es`: «Este servidor no admite cuentas nuevas por ahora».
-- `GET /v1/server` dice `registration: "open" | "closed"`, para que la app avise antes de pedir los datos. La lista no se publica nunca.
-- Vale para todas las puertas por las que nace una cuenta (hoy, el registro con correo; si Google existiera, también). Quien ya tiene cuenta entra igual. Aceptar una invitación no crea cuentas: no cambia.
-- Límite conocido, a apuntar en `cloud.md`: la respuesta distingue si un correo está en la lista. Se acepta para una prueba cerrada.
-- Tests hostiles: un correo fuera de la lista no crea cuenta, ni fila, ni correo; mayúsculas y espacios no la esquivan; con la lista vacía todo sigue como hoy; la lista no aparece en ninguna respuesta.
-- Documenta la variable donde están las demás (`docs/development/server.md`) y en `security.md`, en llano.
+Lo construye la sesión coordinadora en paralelo (registro con lista de correos permitidos: `REGISTRATION_ALLOWED_EMAILS`, error `registration_closed`, `registration` en `GET /v1/server`). **No toques** `AccountController::register` y sus tests, `ServerController`, ni las claves de traducción de la cuenta; si necesitas tocar un fichero que huela a eso, para y dímelo. En `en.json`, `es.json`, `cloud.md` y `security.md` toca solo tus secciones.
 
 ## Límites
 
-- Solo estas cuatro piezas. `server/`, lo mínimo de `app/` para el texto de `registration_closed` y el aviso previo, y `docs/`. Nada en `spec/` ni `crates/`. **No toques `docs/audits/`.**
+- Solo las piezas 1 a 3. `server/` y `docs/`; nada en `app/`. Nada en `spec/` ni `crates/`. **No toques `docs/audits/`.**
 - Doctrine primero, consultas con parámetros, sin dependencias nuevas. Si algo contradice una decisión aceptada o crece, **para y dímelo**.
 - No deshagas nada con git.
 
