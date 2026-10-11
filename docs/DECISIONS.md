@@ -919,6 +919,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Cuenta borrada:** sus entradas conservan el id de la cuenta y una **huella con clave de su correo**, nunca el correo. Permite contestar «¿fue esta dirección?» sin guardar la dirección.
 - **Se apuntan también** las invitaciones (crear, anular, aceptar; nunca el correo ni el enlace, D43) y lo que hace la nube sola: enlazar una cuenta con una persona y vincular un dispositivo (D76).
 - **Se consulta por consola**, sin ninguna ruta web, hasta que exista el panel (D52).
+- **Quién lo hizo y quién lo subió** (aceptado el 11/10/2026, SEG-041): un cambio que llega en una operación se apunta con **su autor** (el dispositivo que la firmó y la cuenta de su persona en esa biblioteca, leídos del servidor) y, aparte, con **quien la subió** (cuenta, dispositivo e IP de la conexión). Entre dispositivos de una casa es normal que uno suba cambios de otro. La IP es siempre la de quien sube: es la única que el servidor ve, y el registro lo dice así.
 
 **Consecuencias:** amplía D52 (su tabla de eventos para los KPI puede ser la misma) y D65. La parte local entra en la Fase 4, con el borrado de bibliotecas; la de la nube, en la Fase 7.
 
