@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | **`info@kosmotheka.com`**: ImprovMX reenvía al buzón de Gmail del proyecto | Dar de alta los demás servicios con una dirección del proyecto, y el contacto de la web y de Google Play | Antes del hito 7.1 | D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Cuenta en X** con el nombre del proyecto | Reservar el nombre; no para iniciar sesión | Cuando haya correo propio | D70 | Pendiente |
-| **Google Cloud: proyecto, pantalla de consentimiento OAuth y credenciales** | «Continuar con Google» | Hito 7.1 | D77 | Pendiente |
+| **Google Cloud: proyecto, pantalla de consentimiento OAuth y credenciales** | «Continuar con Google» | Hito 7.1 | D77 | Pendiente; pasos en [google-oauth.md](google-oauth.md) |
 | **Brevo** y DNS del dominio (SPF, DKIM, DMARC) | Códigos de registro y de recuperación | Hito 7.1 | D49, D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Dominios** (D79): `api.kosmotheka.app`, `kosmotheka.app` con su página de instalación y `assetlinks.json` (sin la redirección actual a `.com`), y sus certificados HTTPS | Que la app hable con la nube, las invitaciones y volver de Google a la app | Hito 7.1 (`assetlinks.json`) y 7.9 | D48, D79 | Pendiente |
 | **Claves de proveedores:** BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine | Búsquedas con clave a través de la nube | Hito 7.8 | D62 | Pendiente |
