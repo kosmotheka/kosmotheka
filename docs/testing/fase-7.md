@@ -101,12 +101,12 @@ Dos tandas, en este orden: la primera no necesita desplegar nada; la segunda, s�
 - [ ] **TMDB con una clave mala:** cambia un carácter y «Probar». *Esperado:* aviso de clave incorrecta, no un error genérico.
 - [ ] **Una película grande** (una de Marvel): sale el director.
 - [ ] **RAWG:** pega la clave, «Probar», busca un videojuego. *Esperado:* resultados con la etiqueta RAWG; los tres primeros con estudio y editor; plataforma rellena solo si el juego tiene una; portada; y debajo de los resultados la línea «Datos de RAWG» con su enlace. **Es la primera vez que se prueba contra RAWG de verdad:** si no sale nada o salen campos vacíos, apunta qué buscaste.
-- [ ] **Comic Vine** (si decides usarlo; ver la nota de sus condiciones en el plan): pega la clave, «Probar», busca una serie («batman») y un número («watchmen 1»). *Esperado:* series y números, con editorial y año; **portadas** (si no sale ninguna, el sitio de sus imágenes no es el que supusimos); autores en los números. Línea «Datos de Comic Vine».
+- [ ] **Comic Vine** (solo con clave propia; el servidor oficial no la pone, D62): pega la clave, «Probar», busca una serie («batman») y un número («watchmen 1»). *Esperado:* series y números, con editorial y año; **portadas** (si no sale ninguna, el sitio de sus imágenes no es el que supusimos); autores en los números. Línea «Datos de Comic Vine».
 - [ ] Borra las claves y, sin sesión, busca una película. *Esperado:* solo Wikidata, y Proveedores explica que TMDB pide clave o cuenta.
 
-### Tanda 2 · Por el servidor (tras desplegar RAWG y, si se decide, Comic Vine)
+### Tanda 2 · Por el servidor (tras desplegar RAWG; Comic Vine no se despliega con clave)
 
-- [ ] `curl -s https://api.kosmotheka.app/v1/server` lista en `metadata` lo desplegado (`google_books`, `tmdb`, `rawg` y, en su caso, `comic_vine`).
+- [ ] `curl -s https://api.kosmotheka.app/v1/server` lista en `metadata` lo desplegado (`google_books`, `tmdb`, `rawg`; `comic_vine` no debe salir).
 - [ ] Con sesión y **sin** claves propias: busca un videojuego. *Esperado:* resultados de RAWG.
 - [ ] En el VPS, `sudo -u postgres psql <la base de datos> -c "SELECT provider, left(code,12), found FROM metadata_cache ORDER BY fetched_at DESC LIMIT 10;"` enseña filas `rawg_search` y `rawg_game`, sin el título buscado en claro.
 - [ ] Repite la misma búsqueda. *Esperado:* responde igual y no hay filas nuevas (salió de la caché).

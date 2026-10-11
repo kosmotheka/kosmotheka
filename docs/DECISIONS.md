@@ -67,7 +67,7 @@
 | D59 | Organizaciones: la puerta abierta, sin construirlas | aceptada |
 | D60 | Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar | aceptada |
 | D61 | Series y estados: lo tengo, me falta, lo deseo | aceptada |
-| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada |
+| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia) |
 | D63 | Distribución: Google Play, sin iOS | aceptada |
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
@@ -859,6 +859,18 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 **Consecuencias:** varios proveedores prohíben el uso comercial (BoardGameGeek, TMDB, IGDB, Comic Vine): un servicio de pago necesitaría licencias. Sustituye a D21.
 
 **Criterio unificado (28/09/2026):** cualquier proveedor que pida clave admite la **clave propia** del usuario en Ajustes, sin nube, como ya hacía Google Books; con la nube, las pone el servidor. En la Fase 6 se construyen los proveedores sin clave y Ajustes preparado para claves de cualquier proveedor; los de clave llegan después, uno a uno.
+
+**Comic Vine, solo con clave propia en el servidor oficial (maintainer, 12/10/2026).** Al construir el proveedor (7.8) se leyó la página de su API entera. Dice, en su presentación, «Don't just steal it and build some crappy collection app. Build something awesome», y en sus normas «Don't build a competing product», además de uso estrictamente no comercial y enlace de vuelta. Kosmotheka es una app de colección: usa sus datos solo para rellenar la ficha de quien busca, enlaza de vuelta y no cobra, pero la frase está ahí, quien decide si encaja son ellos y la sanción es revocar la clave.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **El servidor oficial no pone clave; quien quiera usa la suya** | Cada persona la pide a su nombre y bajo su propio acuerdo, que es el uso personal que ellos contemplan; el proyecto no se compromete en nombre de todos | Los cómics no «se activan solos» con la cuenta, al contrario que los demás |
+| Pedir la clave para el servidor explicando qué hacemos | Si la conceden sabiéndolo, queda claro | Depende de su respuesta |
+| Poner la clave sin más | Funciona ya | Una clave del proyecto, usada por todas las cuentas, en lo que ellos piden no hacer |
+
+**Decisión:** la primera. El código admite las dos vías (por el servidor y con clave propia); en el servidor oficial `COMIC_VINE_API_KEY` se queda vacía. Quien monte su propio servidor decide por sí mismo con su clave. **Más adelante se les escribe** explicando el uso exacto ([borrador](research/proveedores.md#correo-a-comic-vine-borrador)); si contestan que sí, se activa en el servidor y se anota aquí.
+
+**Lo que esto enseña para los siguientes:** las condiciones de un proveedor se leen **enteras y en su página**, no de memoria ni de un resumen, antes de encargar nada (con BoardGameGeek, antes de construir).
 
 ## D63 · Distribución: Google Play, sin iOS — `aceptada`
 

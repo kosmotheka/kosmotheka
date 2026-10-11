@@ -63,3 +63,29 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 - **Importar desde las plataformas digitales:** Steam tiene una API para leer la biblioteca de un usuario (con su clave o su perfil público). Epic no tiene API pública. Sería una forma rápida de dar de alta todos los videojuegos digitales.
 - **IA como complemento de cualquier catálogo** (D20): reconocer una foto (una portada, una caja, un lomo), sacar el título y buscarlo en el proveedor del tipo. Opcional y con la clave del usuario o de la nube. Queda lejos.
+
+## Comic Vine: por qué no tiene clave en el servidor oficial
+
+Decidido el 12/10/2026 ([D62](../DECISIONS.md)). La página de su API pide no construir «some crappy collection app» ni un producto que compita con ellos. Por eso el servidor oficial no pone clave y en la app funciona solo con la clave propia de cada persona. El código del servidor está hecho y probado: basta poner `COMIC_VINE_API_KEY` el día que haya permiso.
+
+### Correo a Comic Vine (borrador)
+
+Sin enviar. Lo manda el maintainer cuando quiera, desde el correo del proyecto, al contacto que indique su página de la API o su foro de desarrolladores.
+
+> **Subject:** Using the Comic Vine API in a free, open-source household catalogue app
+>
+> Hello,
+>
+> I maintain Kosmotheka (https://kosmotheka.com), a free, open-source (AGPL-3.0), non-commercial app that a household uses to keep a catalogue of what it owns: books, comics, board games, films and games. No ads, no paid tiers, no sale of data.
+>
+> I have read your API terms, including "don't just build a collection app" and "don't build a competing product", so I would rather ask than assume.
+>
+> What we would do with the API: when a person adds a comic to their own catalogue, they search by title and pick a result to prefill the entry (series or issue name, number, year, publisher, cover, writer and artist). Nothing else: we do not mirror the database, show wiki content, or offer your data as a product. Every screen that shows your data links back to Comic Vine.
+>
+> Today this only works if each person enters their own API key. My question is whether you would also allow our server to make those same searches with one project key on behalf of signed-in users. The server caches answers (searches for 7 days, details for 30), stays under 150 requests per resource per hour, and never makes bulk or background requests.
+>
+> If the answer is no, we will keep it to personal keys, or remove it if you prefer. Thank you for the API either way.
+>
+> Sergio Rebollo
+> info@kosmotheka.com
+
