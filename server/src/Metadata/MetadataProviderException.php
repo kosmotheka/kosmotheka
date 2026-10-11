@@ -14,6 +14,8 @@ final class MetadataProviderException extends \RuntimeException
         string $message,
         /** The provider said its quota is gone (or refused the key), not that it broke. */
         public readonly bool $quota,
+        /** The provider itself broke (a 5xx): the same question may get an answer a moment later. */
+        public readonly bool $brokeItself = false,
     ) {
         parent::__construct($message);
     }
@@ -21,6 +23,11 @@ final class MetadataProviderException extends \RuntimeException
     public static function quota(): self
     {
         return new self('The provider refused the request: quota.', true);
+    }
+
+    public static function brokeItself(): self
+    {
+        return new self('The provider answered that it is broken.', false, true);
     }
 
     public static function failed(): self

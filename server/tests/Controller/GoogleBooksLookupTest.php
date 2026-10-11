@@ -234,7 +234,10 @@ final class GoogleBooksLookupTest extends WebTestCase
 
         // Google echoes the key in every error body, the way a badly configured proxy might.
         foreach ([429, 403, 500, 404] as $status) {
-            FakeGoogleBooksApi::answer($status, '{"error":"bad key '.self::KEY.'"}');
+            // A 500 is asked again (three times at most): every answer carries the key.
+            foreach (500 === $status ? [1, 2, 3] : [1] as $_) {
+                FakeGoogleBooksApi::answer($status, '{"error":"bad key '.self::KEY.'"}');
+            }
             $this->clearBrake();
             $seen[] = $this->lookupRaw($client, $ada, self::INFERNO);
         }
@@ -245,7 +248,7 @@ final class GoogleBooksLookupTest extends WebTestCase
         $this->clearBrake();
         $seen[] = $this->lookupRaw($client, $ada, self::INFERNO);
 
-        self::assertSame(6, FakeGoogleBooksApi::calls());
+        self::assertSame(8, FakeGoogleBooksApi::calls());
         foreach ($seen as $answer) {
             self::assertStringNotContainsString(self::KEY, $answer);
         }
@@ -369,7 +372,9 @@ final class GoogleBooksLookupTest extends WebTestCase
     {
         $client = $this->world();
         $ada = $this->account($client, 'ada@example.com');
-        FakeGoogleBooksApi::answer(500, 'oops');
+        foreach ([1, 2, 3] as $_) {
+            FakeGoogleBooksApi::answer(500, 'oops');
+        }
         FakeGoogleBooksApi::failWith(new TransportException('Idle timeout reached'));
 
         foreach ([1, 2] as $_) {
@@ -379,6 +384,72 @@ final class GoogleBooksLookupTest extends WebTestCase
         }
 
         self::assertSame(0, $this->cacheRows());
+    }
+
+    public function testAGoogleThatBreaksOnceIsAskedAgainAndTheBookArrives(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeGoogleBooksApi::answer(503, '{"error":{"code":503,"message":"Service temporarily unavailable."}}');
+        FakeGoogleBooksApi::found(FakeGoogleBooksApi::volume());
+
+        $body = $this->lookup($client, $ada, self::INFERNO);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('Inferno', $body['title'] ?? null);
+        self::assertSame(2, FakeGoogleBooksApi::calls());
+        self::assertSame(1, $this->cacheRows());
+    }
+
+    public function testAGoogleThatKeepsBreakingIsAskedThreeTimesAndNoMore(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        foreach ([503, 500, 503] as $status) {
+            FakeGoogleBooksApi::answer($status, 'oops');
+        }
+        // Never reached: three is the most one lookup may cost.
+        FakeGoogleBooksApi::found(FakeGoogleBooksApi::volume());
+
+        $body = $this->lookup($client, $ada, self::INFERNO);
+
+        self::assertResponseStatusCodeSame(502);
+        self::assertSame('metadata_failed', $body['error'] ?? null);
+        self::assertSame(3, FakeGoogleBooksApi::calls());
+        self::assertSame(0, $this->cacheRows());
+    }
+
+    public function testOnlyAGoogleThatBrokeIsAskedAgainNotASlowOneNorARefusal(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+
+        // Slow: asking again would make the person wait three times as long.
+        FakeGoogleBooksApi::failWith(new TransportException('Idle timeout reached'));
+        $this->lookup($client, $ada, self::INFERNO);
+        self::assertResponseStatusCodeSame(502);
+        self::assertSame(1, FakeGoogleBooksApi::calls());
+
+        // A refusal of the request itself (a bad key is a 400): the same request gets the same answer.
+        FakeGoogleBooksApi::answer(400, '{"error":{"code":400}}');
+        $this->lookup($client, $ada, self::INFERNO);
+        self::assertResponseStatusCodeSame(502);
+        self::assertSame(2, FakeGoogleBooksApi::calls());
+    }
+
+    public function testEveryAttemptSpendsTheServersDay(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeGoogleBooksApi::answer(503, 'oops');
+        FakeGoogleBooksApi::answer(503, 'oops');
+        FakeGoogleBooksApi::found(FakeGoogleBooksApi::volume());
+
+        $this->lookup($client, $ada, self::INFERNO);
+
+        self::assertResponseIsSuccessful();
+        $left = self::getContainer()->get('limiter.google_books_calls')->create('server')->consume(0)->getRemainingTokens();
+        self::assertSame(900 - 3, $left);
     }
 
     // --- 6. Limits ----------------------------------------------------------------------------------------------------

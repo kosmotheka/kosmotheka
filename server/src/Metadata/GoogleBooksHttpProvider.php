@@ -67,6 +67,11 @@ final readonly class GoogleBooksHttpProvider implements BookProvider
 
                 throw MetadataProviderException::quota();
             }
+            if ($status >= 500) {
+                $response->cancel();
+
+                throw MetadataProviderException::brokeItself();
+            }
             if (200 !== $status) {
                 $response->cancel();
 
