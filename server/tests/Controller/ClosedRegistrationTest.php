@@ -21,9 +21,10 @@ final class ClosedRegistrationTest extends WebTestCase
 
     private const string VARIABLE = 'REGISTRATION_ALLOWED_EMAILS';
 
+    /** Put back as `.env` has it: without the variable the next test's kernel could not resolve it at all. */
     protected function tearDown(): void
     {
-        unset($_ENV[self::VARIABLE], $_SERVER[self::VARIABLE]);
+        $_ENV[self::VARIABLE] = $_SERVER[self::VARIABLE] = '';
         parent::tearDown();
     }
 
