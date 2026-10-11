@@ -53,3 +53,23 @@ De Google solo se recibe el identificador de la cuenta, el correo (y si está ve
 ## Para quien monte su propio servidor
 
 Todo esto es opcional: sin `GOOGLE_CLIENT_ID`, el servidor no ofrece Google y la app no enseña el botón.
+
+## Probarlo en Linux con la app de desarrollo
+
+La vuelta de Google a la app es un enlace `kosmotheka://auth/google?…`. Una app instalada lo registra sola; con `npm run tauri dev` no lo registra nadie y el navegador se queda en la página «Ya puedes volver a Kosmotheka». Para registrarlo en tu sesión de usuario (probado el 11/10/2026: la segunda copia de la app le pasa el enlace a la que ya está abierta, también dentro del contenedor):
+
+1. Crear `~/.local/share/applications/kosmotheka-link.desktop`, con la ruta de tu copia del repositorio:
+
+   ```ini
+   [Desktop Entry]
+   Type=Application
+   Name=Kosmotheka (enlaces, desarrollo)
+   Exec=distrobox enter library-dev -- <repositorio>/target/debug/kosmotheka %u
+   Terminal=false
+   NoDisplay=true
+   MimeType=x-scheme-handler/kosmotheka;
+   ```
+
+2. `xdg-mime default kosmotheka-link.desktop x-scheme-handler/kosmotheka`
+
+Se deshace borrando el fichero y la línea `x-scheme-handler/kosmotheka` de `~/.config/mimeapps.list`. Sirve igual para los enlaces de invitación con el esquema propio.

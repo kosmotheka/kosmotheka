@@ -202,6 +202,7 @@ Apuntado para esa revisión:
   - borrar una biblioteca de la nube no existe todavía; el tipo está en el registro y hoy nunca se escribe;
   - el servidor deja crear dos invitaciones pendientes para la misma persona (7.6.3).
 - «Continuar con Google» (hecho el 11/10/2026, sin probar contra Google de verdad), visto al revisarlo:
+  - **probado por el maintainer el 11/10/2026:** en Linux, con la app de desarrollo contra producción, entra con Google de punta a punta ([cómo registrar el enlace en desarrollo](../development/google-oauth.md#probarlo-en-linux-con-la-app-de-desarrollo)). Sin probar en Android ni en Windows;
   - **a confirmar por el maintainer:** con Google también se pide el segundo factor de Kosmotheka a quien lo tiene activado; y al entrar con Google en una cuenta que estaba sin confirmar se le quita la contraseña que tuviera;
   - la vuelta a la app usa el esquema `kosmotheka://`, que en un móvil puede registrar otra app. Sola no le sirve de nada (le falta el secreto que guarda la app de verdad), pero junto con un enlace de inicio mandado por un atacante sí permitiría entrar como la víctima. En Android se cierra volviendo por un enlace verificado de `kosmotheka.app`;
   - el código de un solo uso vale dos minutos: quien tenga segundo factor debe escribirlo en ese tiempo. Comprobar en un móvil que da tiempo;
