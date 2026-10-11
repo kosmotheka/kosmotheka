@@ -70,3 +70,10 @@ when@test:
         App\Tests\Support\FakeGoogle:
             public: true
         App\Security\Google\GoogleSignIn: '@App\Tests\Support\FakeGoogle'
+        # Google Books, in memory: the real provider runs, over a scripted http client; the tests never touch the network.
+        app.http_client.google_books_test:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeGoogleBooksApi', 'client']
+        App\Metadata\GoogleBooksHttpProvider:
+            arguments:
+                $httpClient: '@app.http_client.google_books_test'

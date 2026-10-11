@@ -9,11 +9,17 @@ use super::invitations::{CreatedInvitation, InvitationItem, InvitationKind, Invi
 use super::{Claimed, CloudApi, CloudLibrary, Listing, Pulled, PushReport};
 use crate::account::{
     self,
-    client::{Auth, build_client, send_empty, send_json},
+    client::{Auth, build_client, send, send_empty, send_json},
 };
 use crate::db::Database;
 use crate::error::{Error, Result};
+use crate::metadata::Metadata;
+use crate::metadata::via_server::parse_answer;
 use crate::sync::{SyncOperation, VersionVector};
+use kosmotheka_domain::Isbn;
+
+/// The most the app reads of the answer to one book (7.8): the fixed shape is far smaller.
+const MAX_BOOK_ANSWER: usize = 64 * 1024;
 
 /// The server accepts at most this many operations per push.
 const PUSH_BATCH: usize = 1000;
@@ -50,6 +56,15 @@ impl HttpCloud {
             base: account::server(&*database.lock()?)?,
             session: None,
         })
+    }
+
+    #[cfg(test)]
+    fn for_test(base: &str) -> Self {
+        Self {
+            client: build_client().unwrap(),
+            base: base.to_owned(),
+            session: Some(("device-1".to_owned(), "token-1".to_owned())),
+        }
     }
 
     fn auth(&self) -> Option<Auth<'_>> {
@@ -250,6 +265,44 @@ impl CloudApi for HttpCloud {
             .invitation_base)
     }
 
+    async fn offers_metadata(&self, provider: &str) -> Result<bool> {
+        Ok(account::client::server_info(&self.client, &self.base)
+            .await?
+            .metadata
+            .iter()
+            .any(|offered| offered == provider))
+    }
+
+    async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>> {
+        let mut response = send(
+            &self.client,
+            Method::GET,
+            &format!(
+                "{}/v1/metadata/google-books/isbn/{}",
+                self.base,
+                isbn.as_str()
+            ),
+            self.auth(),
+            None,
+        )
+        .await?;
+        // The fixed shape is small: a server that sends more than this is not sending that.
+        let mut body = Vec::new();
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|_| Error::account("server_unavailable"))?
+        {
+            if body.len() + chunk.len() > MAX_BOOK_ANSWER {
+                return Err(Error::account("server_unavailable"));
+            }
+            body.extend_from_slice(&chunk);
+        }
+        let answer: Value =
+            serde_json::from_slice(&body).map_err(|_| Error::account("server_unavailable"))?;
+        parse_answer(&answer).map_err(|()| Error::account("server_unavailable"))
+    }
+
     async fn create_invitation(
         &self,
         cloud: &str,
@@ -338,6 +391,176 @@ mod tests {
             cloud_error(Error::account("schema_version")),
             Error::Cloud("schema_version")
         ));
+    }
+
+    // --- Google Books through the server (7.8) -------------------------------------------------------------------
+
+    use std::sync::{Arc, Mutex};
+
+    use axum::Router;
+    use axum::extract::{Path, State};
+    use axum::http::{HeaderMap, StatusCode};
+    use axum::response::IntoResponse;
+    use axum::routing::get;
+    use tokio::net::TcpListener;
+
+    /// The path and the session headers of one request to the book route.
+    type BookAsk = (String, Option<String>, Option<String>);
+
+    #[derive(Clone)]
+    struct Book {
+        /// `ok`, `huge`, `text`, `missing`, `quota`.
+        mode: &'static str,
+        asked: Arc<Mutex<Vec<BookAsk>>>,
+        /// What `GET /v1/server` says under `metadata`.
+        offered: Value,
+    }
+
+    async fn book_route(
+        State(stub): State<Book>,
+        Path(isbn): Path<String>,
+        headers: HeaderMap,
+    ) -> axum::response::Response {
+        let header = |name: &str| {
+            headers
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_owned)
+        };
+        stub.asked
+            .lock()
+            .unwrap()
+            .push((isbn, header("x-device-id"), header("authorization")));
+        match stub.mode {
+            "huge" => axum::Json(json!({
+                "found": true, "title": "Inferno", "authors": [], "padding": "x".repeat(5_000_000),
+            }))
+            .into_response(),
+            "text" => (StatusCode::OK, "<html>hello</html>").into_response(),
+            "missing" => axum::Json(json!({ "found": false })).into_response(),
+            "quota" => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                axum::Json(json!({ "error": "metadata_quota_exhausted" })),
+            )
+                .into_response(),
+            _ => axum::Json(json!({
+                "found": true, "title": "Inferno", "authors": ["Dan Brown"], "extra": 1,
+            }))
+            .into_response(),
+        }
+    }
+
+    async fn server_route(State(stub): State<Book>) -> axum::Json<Value> {
+        axum::Json(json!({
+            "name": "Kosmotheka", "api_version": 1, "registration": true,
+            "sign_in_with_google": false, "two_factor": true, "invitations": true,
+            "metadata": stub.offered,
+        }))
+    }
+
+    async fn book_server(mode: &'static str, offered: Value) -> (HttpCloud, Book) {
+        let stub = Book {
+            mode,
+            asked: Arc::default(),
+            offered,
+        };
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let app = Router::new()
+            .route("/v1/server", get(server_route))
+            .route("/v1/metadata/google-books/isbn/{isbn}", get(book_route))
+            .with_state(stub.clone());
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (HttpCloud::for_test(&format!("http://{address}")), stub)
+    }
+
+    fn the_isbn() -> Isbn {
+        Isbn::parse("978-84-08-17603-9").unwrap()
+    }
+
+    #[tokio::test]
+    async fn the_book_route_gets_the_isbn_and_the_session_and_nothing_else() {
+        let (api, stub) = book_server("ok", json!(["google_books"])).await;
+
+        let found = api.google_books_isbn(&the_isbn()).await.unwrap().unwrap();
+
+        assert_eq!(found.title.as_deref(), Some("Inferno"));
+        assert_eq!(
+            *stub.asked.lock().unwrap(),
+            vec![(
+                "9788408176039".to_owned(),
+                Some("device-1".to_owned()),
+                Some("Bearer token-1".to_owned())
+            )]
+        );
+    }
+
+    #[tokio::test]
+    async fn a_server_that_says_no_book_is_none() {
+        let (api, _) = book_server("missing", json!(["google_books"])).await;
+
+        assert_eq!(api.google_books_isbn(&the_isbn()).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn an_enormous_answer_is_a_failure_not_a_form_full_of_rubbish() {
+        let (api, _) = book_server("huge", json!(["google_books"])).await;
+
+        assert!(api.google_books_isbn(&the_isbn()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn an_answer_that_is_not_json_is_a_failure() {
+        let (api, _) = book_server("text", json!(["google_books"])).await;
+
+        assert!(api.google_books_isbn(&the_isbn()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn the_servers_refusals_are_failures_with_its_code() {
+        let (api, _) = book_server("quota", json!(["google_books"])).await;
+
+        let error = api.google_books_isbn(&the_isbn()).await.unwrap_err();
+
+        assert!(matches!(error, Error::Account { code, .. } if code == "metadata_quota_exhausted"));
+    }
+
+    #[tokio::test]
+    async fn the_offer_is_read_from_the_servers_list() {
+        let (offering, _) = book_server("ok", json!(["google_books"])).await;
+        let (other, _) = book_server("ok", json!(["open_library"])).await;
+        let (none, _) = book_server("ok", json!([])).await;
+
+        assert!(offering.offers_metadata("google_books").await.unwrap());
+        assert!(!other.offers_metadata("google_books").await.unwrap());
+        assert!(!none.offers_metadata("google_books").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn a_list_of_the_wrong_type_offers_nothing_and_breaks_nothing_else() {
+        for offered in [
+            json!(5),
+            json!("google_books"),
+            json!({ "google_books": true }),
+            json!(null),
+        ] {
+            let (api, _) = book_server("ok", offered.clone()).await;
+
+            assert!(
+                !api.offers_metadata("google_books").await.unwrap(),
+                "{offered}"
+            );
+            assert!(api.offers_invitations().await.unwrap(), "{offered}");
+        }
+    }
+
+    #[tokio::test]
+    async fn only_the_strings_of_a_mixed_list_count() {
+        let (api, _) = book_server("ok", json!([1, null, ["x"], "google_books"])).await;
+
+        assert!(api.offers_metadata("google_books").await.unwrap());
     }
 
     #[test]

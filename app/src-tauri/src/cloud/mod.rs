@@ -17,11 +17,12 @@ use rusqlite::{Connection, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use kosmotheka_domain::{Change, Entity};
+use kosmotheka_domain::{Change, Entity, Isbn};
 
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::lan;
+use crate::metadata::Metadata;
 use crate::sync::{self, LibraryVectors, MergeReport, SyncOperation, VersionVector};
 use crate::{libraries, ops, people};
 
@@ -74,6 +75,11 @@ pub trait CloudApi {
     async fn peek_invitation(&self, token: &str) -> Result<invitations::InvitationPreview>;
     /// With a session: the cloud library the account was let into.
     async fn accept_invitation(&self, token: &str) -> Result<String>;
+    /// Whether this server looks books up in `provider` (`google_books`) for its accounts (`GET /v1/server`).
+    async fn offers_metadata(&self, provider: &str) -> Result<bool>;
+    /// One ISBN in Google Books through the server (7.8, D83): `Ok(None)` is the server saying it is not found.
+    /// Only the ISBN leaves the app.
+    async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>>;
 }
 
 /// The answer to «what do I have?»: the libraries, and apart the ids of those the account had and was cut from.

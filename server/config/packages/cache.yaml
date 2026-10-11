@@ -20,3 +20,5 @@ framework:
             # TTL, kept apart from cache.rate_limiter so tests can clear one
             # without clearing the other.
             cache.auth_challenge: null
+            # The pause after a catalogue says its quota is gone (7.8): one short-lived item per provider.
+            cache.metadata: null

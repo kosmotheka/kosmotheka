@@ -469,10 +469,17 @@ export function lookupCode(code: string): Promise<CodeResult> {
 export interface Settings {
   apiKeys: Record<string, string>;
   disabledSources: string[];
+  /** Ask Google Books through the account's server when there is no key of their own (7.8, D83). */
+  googleBooksViaServer: boolean;
 }
 
 export function getSettings(): Promise<Settings> {
   return invoke<Settings>("get_settings");
+}
+
+/** Whether this device is signed in to a server that looks Google Books up for its accounts, so the setting shows. */
+export function cloudOffersGoogleBooks(): Promise<boolean> {
+  return invoke<boolean>("cloud_offers_google_books");
 }
 
 export function saveSettings(settings: Settings): Promise<void> {

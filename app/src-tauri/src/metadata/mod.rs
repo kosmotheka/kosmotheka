@@ -8,6 +8,7 @@ pub mod google;
 pub mod inventaire;
 pub mod musicbrainz;
 pub mod openlibrary;
+pub mod via_server;
 pub mod wikidata;
 
 use std::collections::BTreeSet;
@@ -15,7 +16,10 @@ use std::future::Future;
 use std::time::Duration;
 
 use kosmotheka_domain::{Isbn, Kind};
+
+use crate::cloud::CloudApi;
 use serde::Serialize;
+use via_server::{GoogleAccess, lookup_google};
 
 pub use candidate::{Candidate, CandidateContributor};
 
@@ -205,10 +209,10 @@ impl Lookup {
     }
 
     /// Asks every provider at the same time and merges the answers.
-    pub async fn run(
+    pub async fn run<C: CloudApi>(
         &self,
         isbn: &Isbn,
-        google_api_key: Option<&str>,
+        google: GoogleAccess<'_, C>,
         disabled: &BTreeSet<String>,
     ) -> LookupResult {
         let (bne, google, open_library) = tokio::join!(
@@ -218,7 +222,9 @@ impl Lookup {
             ),
             maybe(
                 disabled.contains(Source::GoogleBooks.id()),
-                google::lookup(&self.client, isbn, google_api_key),
+                lookup_google(google, isbn, |key| async move {
+                    google::lookup(&self.client, isbn, key.as_deref()).await
+                }),
             ),
             maybe(
                 disabled.contains(Source::OpenLibrary.id()),
@@ -289,15 +295,15 @@ impl Lookup {
 
     /// A scanned or typed code: an ISBN is a book, anything else is tried
     /// against the non-ISBN providers (music, board games).
-    pub async fn lookup_code(
+    pub async fn lookup_code<C: CloudApi>(
         &self,
         code: &str,
-        google_api_key: Option<&str>,
+        google: GoogleAccess<'_, C>,
         gameupc_api_key: Option<&str>,
         disabled: &BTreeSet<String>,
     ) -> CodeResult {
         match Isbn::parse(code) {
-            Ok(isbn) => self.lookup_isbn_code(&isbn, google_api_key, disabled).await,
+            Ok(isbn) => self.lookup_isbn_code(&isbn, google, disabled).await,
             Err(_) => {
                 self.lookup_non_isbn_code(code, gameupc_api_key, disabled)
                     .await
@@ -305,14 +311,14 @@ impl Lookup {
         }
     }
 
-    async fn lookup_isbn_code(
+    async fn lookup_isbn_code<C: CloudApi>(
         &self,
         isbn: &Isbn,
-        google_api_key: Option<&str>,
+        google: GoogleAccess<'_, C>,
         disabled: &BTreeSet<String>,
     ) -> CodeResult {
         let (merged, inventaire) = tokio::join!(
-            self.run(isbn, google_api_key, disabled),
+            self.run(isbn, google, disabled),
             maybe(
                 disabled.contains(Source::Inventaire.id()),
                 inventaire::lookup(&self.client, isbn),
@@ -654,6 +660,7 @@ mod tests {
 #[cfg(test)]
 mod live {
     use super::*;
+    use crate::cloud::client::HttpCloud;
 
     #[tokio::test]
     #[ignore = "needs network"]
@@ -661,7 +668,13 @@ mod live {
         let lookup = Lookup::new().unwrap();
         let isbn = Isbn::parse("9780140328721").unwrap();
 
-        let result = lookup.run(&isbn, None, &BTreeSet::new()).await;
+        let result = lookup
+            .run(
+                &isbn,
+                GoogleAccess::<HttpCloud>::Anonymous,
+                &BTreeSet::new(),
+            )
+            .await;
 
         println!("{result:#?}");
         assert!(result.sources.contains(&Source::OpenLibrary));

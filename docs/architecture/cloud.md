@@ -548,6 +548,64 @@ Solo se leen **cambios** (`update`, y la `revocation` que es una creación): la 
 | La purga borra lo de más de un año y nada más reciente | `testThePurgeDeletesWhatIsOlderThanAYearAndNothingNewer` |
 | Ni contraseñas, ni códigos, ni tokens, ni correos | `testNoLineHoldsAPasswordACodeATokenOrAnEmail`, `testTheLibraryTheInvitationsAndWhatTheCloudDoesAloneLeaveTheirLines` |
 
+## Buscar libros a través del servidor (7.8, D83)
+
+Google Books sin clave falla a menudo (la cuota anónima es de todo el mundo); con clave del servidor, no. Quien tiene cuenta puede pedir al servidor que busque un ISBN en Google Books. **Solo el ISBN.** Es la primera parte de 7.8: ni búsqueda por título, ni otros proveedores, ni portadas a través del servidor.
+
+**La ruta.** `GET /v1/metadata/google-books/isbn/{isbn}`, con sesión de dispositivo como el resto de la nube (cuenta confirmada y no bloqueada; sin sesión, `401`, y no se llama a Google). Responde siempre la misma forma, pequeña y propia, nunca la de Google:
+
+```json
+{ "found": true, "title": "Inferno", "subtitle": null, "authors": ["Dan Brown"], "publisher": "Planeta",
+  "published_year": 2013, "language": "es", "cover_url": "https://books.google.com/…", "external_id": "abc123" }
+```
+
+Si no se encuentra: `found: false` y el resto a `null` (y `authors: []`). Un «no encontrado» es una respuesta, no un error.
+
+**Qué ofrece el servidor.** `GET /v1/server` lleva `metadata`: la lista de catálogos que busca para sus cuentas (`["google_books"]`, o `[]` si no tiene `GOOGLE_BOOKS_API_KEY`). Un servidor antiguo no la trae. La app solo pregunta a un servidor que lo dice.
+
+**El ISBN.** El servidor acepta ISBN-13 e ISBN-10, con guiones o espacios, y guarda **solo la forma de 13 dígitos**: la caché tiene una fila por libro. Lo que no es un ISBN (letras, dígito de control malo, más de 40 caracteres, saltos de línea, `..`) responde `422 invalid_isbn` sin llamar a Google ni tocar la caché. Con una barra dentro, la ruta ni existe (`404`).
+
+**La llamada.** `GoogleBooksHttpProvider`, detrás de la interfaz `BookProvider` (para probar con un cliente simulado; la forma sirve para añadir otro proveedor sin rehacerla). Dirección fija (`https://www.googleapis.com/books/v1/volumes`), de la que solo cambia el ISBN ya validado; **la clave va en la cabecera `X-Goog-Api-Key`, nunca en la dirección**; tiempo máximo de 5 s, sin seguir redirecciones, y la respuesta se lee con un tope de 512 KB. Lo que Google envía se corta y se comprueba campo a campo: título y subtítulo a 300 caracteres, editorial y autores a 200, como mucho 20 autores, año entre 1000 y 2100, idioma tipo `es` o `pt-BR`, id de Google con letras, cifras, `-` y `_`, y **la portada solo si es de `books.google.com`** (el `http://` se sube a `https://`, y se quita el efecto `edge=curl`). Si no hay ni título ni autores, es «no encontrado». Una respuesta que no es JSON, que pasa del tope o que viene con otro código se trata como fallo.
+
+**Los códigos.**
+
+| Código | Estado | Cuándo |
+|---|---|---|
+| `metadata_unavailable` | `404` | El servidor no tiene clave |
+| `invalid_isbn` | `422` | No es un ISBN |
+| `too_many_requests` | `429` | La cuenta pasó su límite (con `Retry-After`) |
+| `metadata_quota_exhausted` | `503` | Google dijo que no hay cuota (`429` o `403`), o el servidor ya gastó su parte del día; con `Retry-After` |
+| `metadata_failed` | `502` | Google no respondió, tardó, o contestó algo inservible |
+
+**La caché.** Tabla `metadata_cache`: proveedor, ISBN-13, si se encontró, la respuesta ya normalizada y cuándo se pidió. **Ninguna columna dice quién preguntó** (un test lo comprueba por el esquema). Se guarda también el «no encontrado». Los plazos están en `MetadataCacheEntry` y en ningún otro sitio: **30 días** lo encontrado, **1 día** lo no encontrado. Un fallo de Google (cuota, error, tiempo agotado, basura) **no se guarda**. La purga horaria que ya existe (`AccountPurger`, `app:accounts:purge`) borra lo caducado.
+
+**Los límites** (`RequestLimiter`, `rate_limiter.yaml`):
+- **Por cuenta:** 600 búsquedas por hora, contando todas, también las que salen de la caché. Se corta a la cuenta que pasa, no a las demás.
+- **Del servidor entero:** 900 llamadas **reales** a Google al día (su cuota gratuita es de 1.000). Agotado, la ruta sigue sirviendo lo que haya en caché y responde `metadata_quota_exhausted` para lo demás.
+- **El freno ante Google:** si Google responde `429` o `403`, el servidor **no vuelve a llamarle durante 30 minutos** (un elemento de la caché `cache.metadata`), responda quien responda. Sin él, cada petición de cada cuenta machacaría una cuota ya agotada. Un `403` también puede ser una clave mal puesta: se trata igual, porque insistir tampoco ayuda.
+
+**Lo que no se escribe.** Qué ISBN busca cada cuenta no va al registro de actividad ni a ningún log del servidor: la ruta no llama a `ActivityLog` y los errores de Google son un texto fijo, sin la excepción original (puede llevar la dirección). Lo único que lo vería es el **registro de accesos de nginx**: hay que desactivarlo para `/v1/metadata/` (ver [development/server.md](../development/server.md) y [publicacion/servidor-produccion.md](../publicacion/servidor-produccion.md)).
+
+**En la app** (`metadata/via_server.rs`, `CloudApi::google_books_isbn`). Para Google Books, en `lookup_isbn` y `lookup_code`, en este orden:
+1. **Clave propia** en Ajustes → directo a Google con ella, como siempre (tiene preferencia, D83). El servidor ni se entera.
+2. Si no, con **sesión**, un servidor que dice ofrecerlo (`metadata` de `/v1/server`) y el ajuste **«Buscar en Google Books a través de la nube»** encendido (lo está por defecto) → se pregunta al servidor, con el ISBN y nada más.
+3. Si no → Google sin clave, como hoy.
+
+Si el servidor falla (red, no disponible, cuota, límite, más de 8 s, una respuesta que no es la forma fija o pasa de 64 KB), se prueba Google sin clave y, si también falla, el aviso es el de siempre. Lo que el servidor envía se vuelve a cortar y comprobar en la app, con las mismas reglas, porque un servidor es de otro: **la portada solo se acepta de `books.google.com`**, ya que la app la descargará. Si Google Books está desactivado en Proveedores, no se pregunta a nadie. El `Source` sigue siendo `GoogleBooks`. El ajuste solo se muestra con sesión en un servidor que lo ofrece.
+
+**Qué test cubre cada caso hostil** (`tests/Controller/GoogleBooksLookupTest.php`, `tests/Metadata/`, y en la app `cloud/tests/metadata_tests.rs` y `cloud/client.rs`):
+
+| Caso | Tests |
+|---|---|
+| 1. Sin sesión, token inválido, cuenta sin confirmar o bloqueada | `testWithoutASessionThereIsNoAnswerAndNoCall`, `testAnInvalidToken…`, `testAnAccountThatIsNoLongerConfirmed…`, `testABlockedAccount…` |
+| 2. Lo que no es un ISBN | `testSomethingThatIsNotAnIsbnIsRefused…` (12 formas), `testASlashIsNotAnIsbnEither…`, `testAnIsbn10AndHyphensGoToTheSameThirteenDigitsAndOneRow`, `IsbnTest` |
+| 3. La clave no aparece | `testTheKeyIsNowhereInWhatTheServerAnswersOrStores`, `testTheKeyGoesInAHeaderAndNeverInTheAddress`, `testFailuresSayOnlyWhetherItWasTheQuota…` |
+| 4. Google envía basura | `testRubbishFromGoogleReachesTheAppOnlyAsTheFixedShape`, `testAGoogleThatAnswersNonsense…`, `testAnEnormousAnswerFromGoogle…`, `testOnlyACoverFromGoogleBooksSurvives` |
+| 5. Google dice 429 o 403 | `testGoogleSayingNoOnQuota…`, `testAfterAQuotaAnswerTheServerStopsAskingGoogleForAWhile`, `testAGoogleThatFailsOrIsSlow…` |
+| 6. Límites | `testAnAccountPastItsLimitIsCutAndTheOthersAreNot`, `testWhenTheServersDayIsSpentTheCacheKeepsServing` |
+| 7. Dos cuentas, un ISBN | `testTwoAccountsAskingTheSameIsbnCostOneCallAndNoRowSaysWho` |
+| 8. En la app | `a_key_of_their_own_goes_straight…`, `a_server_that_does_not_offer_it_never_gets_the_request`, `whatever_the_server_fails_at…`, `fields_of_the_wrong_type_are_dropped…`, `enormous_fields_are_cut`, `a_cover_that_is_not_from_google_books_is_dropped`, `an_enormous_answer_is_a_failure…`, `a_list_of_the_wrong_type_offers_nothing…` |
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.

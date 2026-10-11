@@ -77,6 +77,15 @@ struct CloudState {
     /// Every call to an invitation route, whichever it is: what a device that must not ask never adds to.
     invitation_calls: usize,
     accepts: usize,
+    /// The catalogues `GET /v1/server` says the server looks books up in (7.8).
+    metadata: Vec<String>,
+    /// What the book route answers, in order; the code is the server's own error.
+    book_answers: std::collections::VecDeque<std::result::Result<Option<Metadata>, &'static str>>,
+    /// The ISBNs the book route was asked, and how many times `GET /v1/server` was read for the catalogues.
+    book_asks: Vec<String>,
+    offer_checks: usize,
+    /// Reading what the server offers fails.
+    offer_fails: bool,
     /// The server and the token of every peek, to see where a link was taken.
     peeks: Vec<(String, String)>,
 }
@@ -120,6 +129,17 @@ impl FakeCloud {
             server: server.to_owned(),
             device: None,
         }
+    }
+
+    /// A server that looks books up in Google Books for its accounts, answering these in order.
+    fn with_google_books(&self, answers: Vec<std::result::Result<Option<Metadata>, &'static str>>) {
+        let mut state = self.0.lock().unwrap();
+        state.metadata = vec!["google_books".to_owned()];
+        state.book_answers = answers.into();
+    }
+
+    fn book_asks(&self) -> Vec<String> {
+        self.0.lock().unwrap().book_asks.clone()
     }
 
     /// A server that makes no invitations.
@@ -765,6 +785,25 @@ impl CloudApi for FakeApi {
         Ok(!self.cloud.0.lock().unwrap().without_invitations)
     }
 
+    async fn offers_metadata(&self, provider: &str) -> Result<bool> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.offer_checks += 1;
+        if state.offer_fails {
+            return Err(Error::account("server_unavailable"));
+        }
+        Ok(state.metadata.iter().any(|offered| offered == provider))
+    }
+
+    async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.book_asks.push(isbn.as_str().to_owned());
+        match state.book_answers.pop_front() {
+            Some(Ok(book)) => Ok(book),
+            Some(Err(code)) => Err(Error::account(code)),
+            None => Err(Error::account("server_unavailable")),
+        }
+    }
+
     async fn invitation_base(&self) -> Result<Option<String>> {
         self.cloud.0.lock().unwrap().invitation_calls += 1;
         Ok(self.cloud.0.lock().unwrap().published_base.clone())
@@ -1042,6 +1081,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 
 mod invitations_tests;
 mod links_tests;
+mod metadata_tests;
 
 #[tokio::test]
 async fn uploading_links_the_library_and_sends_its_whole_log() {

@@ -37,6 +37,10 @@ Subir una biblioteca es una decisión aparte de crear la cuenta, y la toma quien
 
 Las bibliotecas que no subes no salen de tus dispositivos, tengas cuenta o no.
 
+## Si buscas un libro con la cuenta
+
+Si no has puesto una clave tuya de Google Books, y tu servidor la ofrece, la app puede preguntar al servidor por un ISBN en lugar de preguntar directamente a Google Books (que falla a menudo para quien no tiene clave). **Se envía el ISBN y nada más**, junto con tu sesión, que el servidor necesita para comprobar que tienes cuenta. El servidor lo busca en Google Books con su propia clave, así que **Google ve las búsquedas como del servidor, no tuyas**. El servidor guarda la respuesta unos días (30 si encontró el libro, 1 si no) para no repetir la pregunta, **sin guardar quién la hizo** ni apuntarlo en ningún registro; solo cuenta cuántas búsquedas haces para ponerte un límite (600 por hora) y no lo guarda más allá de esa hora. Puedes apagarlo en Ajustes › Proveedores de datos (viene encendido) o poner tu propia clave de Google Books, que tiene preferencia: entonces el servidor ni se entera. *Pendiente para el texto final:* que el servidor de la prueba cerrada tenga su registro de accesos apagado para estas rutas.
+
 ## Si invitas a alguien
 
 Si invitas por correo, el servidor envía un mensaje a esa dirección. **No guardamos la dirección**: solo una huella que permite comprobar que quien acepta es quien invitaste. El mensaje no incluye tu nombre ni el de la biblioteca.

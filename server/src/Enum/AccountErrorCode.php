@@ -74,4 +74,10 @@ enum AccountErrorCode: string
     case GoogleFailed = 'google_failed';
     case GoogleEmailNotVerified = 'google_email_not_verified';
     case GoogleOtherAccount = 'google_other_account';
+
+    // Milestone 7.8: books looked up through the server (D83).
+    case MetadataUnavailable = 'metadata_unavailable';
+    case MetadataQuotaExhausted = 'metadata_quota_exhausted';
+    case MetadataFailed = 'metadata_failed';
+    case InvalidIsbn = 'invalid_isbn';
 }

@@ -9,7 +9,8 @@
 | **Google Cloud: proyecto, pantalla de consentimiento OAuth y credenciales** | «Continuar con Google» | Hito 7.1 | D77 | Pendiente; pasos en [google-oauth.md](google-oauth.md). El código está hecho (11/10/2026) y sin probar contra Google: faltan `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en el `.env.local` |
 | **Brevo** y DNS del dominio (SPF, DKIM, DMARC) | Códigos de registro y de recuperación | Hito 7.1 | D49, D80 | Pendiente; pasos en [correo.md](correo.md) |
 | **Dominios** (D79): `api.kosmotheka.app`, `kosmotheka.app` con su página de instalación y `assetlinks.json` (sin la redirección actual a `.com`), y sus certificados HTTPS | Que la app hable con la nube, las invitaciones y volver de Google a la app | Hito 7.1 (`assetlinks.json`) y 7.9 | D48, D79 | Pendiente |
-| **Claves de proveedores:** BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine | Búsquedas con clave a través de la nube | Hito 7.8 | D62 | Pendiente |
+| **Clave de la API de Google Books** (la del servidor, no la de cada persona) | Que las cuentas busquen ISBN por el servidor sin la cuota anónima | Hito 7.8 | D83 | Código hecho (11/10/2026), sin probar con una clave real: falta crearla en Google Cloud y ponerla como `GOOGLE_BOOKS_API_KEY` en el `.env.local`; ver [server.md](server.md) |
+| **Claves de proveedores:** BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine | Búsquedas con clave a través de la nube | Hito 7.8 (resto) | D62 | Pendiente |
 | **Firebase: proyecto, FCM y cuenta de servicio del servidor** | Notificaciones con la app cerrada en Android | Fase 8 | D75 | Pendiente |
 | **Google Play: cuenta de servicio para la API** y clave de subida | Subir el `.aab` desde el CI | Fase 8 | D74 | Cuenta de desarrollador aprobada; lo demás, pendiente |
 

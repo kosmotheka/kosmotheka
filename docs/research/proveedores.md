@@ -39,6 +39,8 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 - **App conectada a la nube:** se activan automáticamente los proveedores con clave, porque es el servidor quien resuelve la búsqueda.
 - **Google Books sin nube:** se mantiene la opción de poner una clave propia en Ajustes (D26), para quien quiera; sin ella, la app avisa de que ese servicio no está disponible.
 
+**Hecho en 7.8 (primera parte, 11/10/2026): Google Books a través del servidor, solo por ISBN.** Con cuenta, un servidor que tiene `GOOGLE_BOOKS_API_KEY` busca el ISBN por la app y guarda una caché sin saber quién preguntó (30 días lo encontrado, 1 día lo no encontrado). Clave propia en Ajustes sigue teniendo preferencia (D83). Las condiciones de Google (la cuota gratuita es de 1.000 llamadas al día; el servidor se limita a 900) y el diseño están en [architecture/cloud.md](../architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83). Pendiente para el resto: BoardGameGeek, TMDB, IGDB o RAWG y Comic Vine, cada uno con sus condiciones revisadas antes.
+
 ## Lo que esto implica para la arquitectura
 
 - **Claves en una app de código abierto.** Una clave no puede ir dentro de la app: el código es público y cualquiera la extraería (D03, D21). Tres salidas:

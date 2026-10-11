@@ -87,7 +87,7 @@ pub fn map_response_error(status: StatusCode, retry_after: Option<&str>, body: &
     }
 }
 
-async fn send(
+pub(crate) async fn send(
     client: &reqwest::Client,
     method: Method,
     url: &str,
@@ -161,6 +161,27 @@ pub struct ServerInfoWire {
     /// What the links of this server's invitations start with (D79), if it says. Older servers omit it.
     #[serde(default)]
     pub invitation_base: Option<String>,
+    /// The catalogues the server looks books up in for its accounts (7.8, D83). Older servers omit it.
+    #[serde(default, deserialize_with = "strings_only")]
+    pub metadata: Vec<String>,
+}
+
+/// A list of strings from a server that may send anything: what is not a string is dropped, and so is a value that
+/// is not a list at all, so a wrong field here never breaks reading the rest of what the server offers.
+fn strings_only<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<Vec<String>, D::Error> {
+    let value = Value::deserialize(deserializer)?;
+    Ok(match value {
+        Value::Array(items) => items
+            .into_iter()
+            .filter_map(|item| match item {
+                Value::String(text) => Some(text),
+                _ => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    })
 }
 
 pub async fn server_info(client: &reqwest::Client, base: &str) -> Result<ServerInfoWire> {

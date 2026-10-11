@@ -27,6 +27,7 @@ final class ServerControllerTest extends WebTestCase
             'events' => true,
             'invitations' => true,
             'invitation_base' => 'https://invitations.test',
+            'metadata' => [],
         ], json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR));
     }
 }

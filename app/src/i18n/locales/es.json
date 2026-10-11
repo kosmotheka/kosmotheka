@@ -1205,6 +1205,8 @@
   "providers": {
     "title": "Proveedores de datos",
     "description": "Dónde busca la app cuando añades algo. Las que piden clave funcionan con la tuya; con la nube, todas funcionan sin claves.",
+    "viaCloud": "Buscar en Google Books a través de la nube",
+    "viaCloudHelp": "Solo se envía el ISBN al servidor de tu cuenta, que lo busca con su propia clave y no guarda quién lo pidió. Apágalo para buscar en Google Books directamente, como antes.",
     "noCloud": "Sin nube. Las fuentes sin clave funcionan ya; para las otras, pon tu clave.",
     "noKeyBadge": "Sin clave",
     "needsKeyBadge": "Pide clave",

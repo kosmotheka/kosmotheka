@@ -271,4 +271,27 @@ final class AccountException extends \RuntimeException
     {
         return new self(AccountErrorCode::InvitationAccountAlreadyInLibrary, 409);
     }
+
+    /** This server has no key for that catalogue (7.8). */
+    public static function metadataUnavailable(): self
+    {
+        return new self(AccountErrorCode::MetadataUnavailable, 404);
+    }
+
+    /** The catalogue's quota, or the share the server allows itself of it, is spent for now (7.8). */
+    public static function metadataQuotaExhausted(int $retryAfterSeconds): self
+    {
+        return new self(AccountErrorCode::MetadataQuotaExhausted, 503, max(1, $retryAfterSeconds));
+    }
+
+    /** The catalogue could not be asked, or answered something unusable (7.8). */
+    public static function metadataFailed(): self
+    {
+        return new self(AccountErrorCode::MetadataFailed, 502);
+    }
+
+    public static function invalidIsbn(): self
+    {
+        return new self(AccountErrorCode::InvalidIsbn, 422);
+    }
 }

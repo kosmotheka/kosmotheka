@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Metadata\BookProvider;
 use App\Security\Google\GoogleSignIn;
 use App\Security\RegistrationGate;
 use App\Sync\HubSettings;
@@ -33,6 +34,7 @@ final class ServerController extends AbstractController
         private readonly InvitationSettings $invitations,
         private readonly RegistrationGate $registrationGate,
         private readonly GoogleSignIn $google,
+        private readonly BookProvider $books,
     ) {
     }
 
@@ -50,6 +52,8 @@ final class ServerController extends AbstractController
             'events' => $this->hub->isEnabled(),
             'invitations' => $this->invitations->isEnabled(),
             'invitation_base' => $this->invitations->baseUrl(),
+            // Catalogues the server looks books up in for its accounts (7.8, D83); a new one is added here and in the app.
+            'metadata' => $this->books->isConfigured() ? [$this->books->name()] : [],
         ]);
     }
 }

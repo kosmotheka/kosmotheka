@@ -13,6 +13,7 @@ use kosmotheka_domain::{ErrorCode, FieldError};
 /// The old, single-provider key. Read for migration, never written again.
 const LEGACY_GOOGLE_BOOKS_API_KEY: &str = "google_books_api_key";
 const DISABLED_SOURCES_KEY: &str = "disabled_sources";
+const GOOGLE_BOOKS_VIA_SERVER_KEY: &str = "google_books_via_server";
 
 /// Provider ids that need a key (see `metadata::Source` for every source,
 /// keyless ones included).
@@ -22,11 +23,29 @@ fn api_key_state_key(provider: &str) -> String {
     format!("api_key.{provider}")
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub api_keys: BTreeMap<String, String>,
     pub disabled_sources: BTreeSet<String>,
+    /// Ask Google Books through the account's server when there is no key of their own (7.8, D83). On by default;
+    /// it only matters with a session on a server that offers it.
+    #[serde(default = "on")]
+    pub google_books_via_server: bool,
+}
+
+fn on() -> bool {
+    true
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            api_keys: BTreeMap::new(),
+            disabled_sources: BTreeSet::new(),
+            google_books_via_server: true,
+        }
+    }
 }
 
 pub fn load(conn: &Connection) -> Result<Settings> {
@@ -44,9 +63,13 @@ pub fn load(conn: &Connection) -> Result<Settings> {
     let disabled_sources = read_state(conn, DISABLED_SOURCES_KEY)?
         .map(|value| value.split(',').map(str::to_owned).collect())
         .unwrap_or_default();
+    // Absent means on; only an explicit «0» turns it off.
+    let google_books_via_server =
+        read_state(conn, GOOGLE_BOOKS_VIA_SERVER_KEY)?.is_none_or(|value| value != "0");
     Ok(Settings {
         api_keys,
         disabled_sources,
+        google_books_via_server,
     })
 }
 
@@ -80,12 +103,12 @@ pub fn save(conn: &Connection, settings: &Settings) -> Result<()> {
             .collect::<Vec<_>>()
             .join(",")
     });
-    write_state(conn, DISABLED_SOURCES_KEY, disabled.as_deref())
-}
-
-/// The stored key for one provider, trimmed; `None` when unset.
-pub fn api_key(conn: &Connection, provider: &str) -> Result<Option<String>> {
-    Ok(load(conn)?.api_keys.remove(provider))
+    write_state(conn, DISABLED_SOURCES_KEY, disabled.as_deref())?;
+    write_state(
+        conn,
+        GOOGLE_BOOKS_VIA_SERVER_KEY,
+        (!settings.google_books_via_server).then_some("0"),
+    )
 }
 
 const WELCOME_SEEN_KEY: &str = "welcome_seen";
@@ -152,6 +175,30 @@ mod tests {
     }
 
     #[test]
+    fn google_books_through_the_cloud_is_on_until_switched_off() {
+        let conn = db::open_in_memory().unwrap();
+        assert!(load(&conn).unwrap().google_books_via_server);
+
+        let off = Settings {
+            google_books_via_server: false,
+            ..Settings::default()
+        };
+        save(&conn, &off).unwrap();
+        assert!(!load(&conn).unwrap().google_books_via_server);
+
+        save(&conn, &Settings::default()).unwrap();
+        assert!(load(&conn).unwrap().google_books_via_server);
+    }
+
+    #[test]
+    fn a_stored_value_nobody_wrote_leaves_it_on() {
+        let conn = db::open_in_memory().unwrap();
+        write_state(&conn, "google_books_via_server", Some("maybe")).unwrap();
+
+        assert!(load(&conn).unwrap().google_books_via_server);
+    }
+
+    #[test]
     fn saves_trims_and_clears() {
         let conn = db::open_in_memory().unwrap();
         assert_eq!(load(&conn).unwrap(), Settings::default());
@@ -161,11 +208,16 @@ mod tests {
             &Settings {
                 api_keys: keys(&[("google_books", "  abc ")]),
                 disabled_sources: BTreeSet::new(),
+                ..Settings::default()
             },
         )
         .unwrap();
         assert_eq!(
-            api_key(&conn, "google_books").unwrap().as_deref(),
+            load(&conn)
+                .unwrap()
+                .api_keys
+                .get("google_books")
+                .map(String::as_str),
             Some("abc")
         );
 
@@ -174,10 +226,11 @@ mod tests {
             &Settings {
                 api_keys: keys(&[("google_books", "")]),
                 disabled_sources: BTreeSet::new(),
+                ..Settings::default()
             },
         )
         .unwrap();
-        assert_eq!(api_key(&conn, "google_books").unwrap(), None);
+        assert_eq!(load(&conn).unwrap().api_keys.get("google_books"), None);
     }
 
     #[test]
@@ -198,7 +251,11 @@ mod tests {
             None
         );
         assert_eq!(
-            api_key(&conn, "google_books").unwrap().as_deref(),
+            load(&conn)
+                .unwrap()
+                .api_keys
+                .get("google_books")
+                .map(String::as_str),
             Some("legacy-key")
         );
     }
@@ -211,6 +268,7 @@ mod tests {
             &Settings {
                 api_keys: keys(&[("unknown", "x")]),
                 disabled_sources: BTreeSet::new(),
+                ..Settings::default()
             },
         );
         match result {
@@ -273,6 +331,7 @@ mod tests {
             &Settings {
                 api_keys: BTreeMap::new(),
                 disabled_sources: disabled.clone(),
+                ..Settings::default()
             },
         )
         .unwrap();

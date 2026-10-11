@@ -114,6 +114,12 @@ Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La cl
 
 Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador por Google: `GET /v1/auth/google/connect?attempt=…` y `GET /v1/auth/google/callback?code=…&state=…`. **No pueden escribirse en el registro de accesos** de nginx ni de ningún proxy o CDN delante. En desarrollo lo hace `map $request_uri $loggable` en `docker/nginx/nginx.conf` con `access_log … if=$loggable` en el sitio; en producción, lo mismo (y sin guardar la cabecera `Referer` de esas rutas; el servidor ya responde `Referrer-Policy: no-referrer` y `Cache-Control: no-store`).
 
+### Google Books a través del servidor (7.8, D83)
+
+`GOOGLE_BOOKS_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de la API de Google Books. Con ella, las cuentas pueden buscar un ISBN por el servidor y `GET /v1/server` dice `metadata: ["google_books"]`; vacía, la ruta responde `404 metadata_unavailable`. Se crea en la consola de Google Cloud (API «Books API», clave de API restringida a esa API) y viaja siempre en la cabecera `X-Goog-Api-Key`, nunca en una dirección. Los límites y la caché, en [cloud.md](../architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83).
+
+**Tampoco se escriben en el registro de accesos** las direcciones `/v1/metadata/…`, porque llevan el ISBN que busca una cuenta. En desarrollo ya está en `docker/nginx/nginx.conf` (`map $request_uri $loggable`, junto a las de Google); en producción hay que repetirlo.
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

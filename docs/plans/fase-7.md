@@ -211,6 +211,11 @@ Apuntado para esa revisión:
 
 ### 7.8 Proveedores con clave
 
+**Primera parte hecha (11/10/2026, pendiente de revisión): Google Books por ISBN a través del servidor** ([encargo](../historico/encargo-7.8-google-books.md)). `GET /v1/metadata/google-books/isbn/{isbn}` con sesión; clave en `GOOGLE_BOOKS_API_KEY` por cabecera; respuesta propia y pequeña; caché sin quién preguntó (30 días / 1 día); límite por cuenta (600/h) y tope del servidor (900 llamadas reales/día) con freno de 30 minutos tras un `429`/`403`. En la app, `CloudApi` gana la búsqueda y se usa solo sin clave propia, con sesión, si el servidor lo ofrece (`/v1/server` › `metadata`) y el ajuste «Buscar en Google Books a través de la nube» está encendido. Diseño, códigos y tests por caso hostil en [cloud.md](../architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83). **Falta:** probarlo con una clave real de Google, el resto de proveedores (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) y la búsqueda por título.
+- **Sin probar:** nada contra Google de verdad (falta la clave), ni el interruptor en pantalla, ni la espera de 8 s de la app.
+- **Para la revisión de conjunto:** cada búsqueda lee antes `/v1/server` (una petición de más, sin caché); si dos peticiones guardan a la vez el mismo libro, la segunda deja cerrado el gestor de entidades de esa petición (hoy no se usa después); un `403` de clave mal puesta se trata como cuota agotada y calla 30 minutos.
+- **Puesto por la sesión coordinadora, a confirmar por el maintainer:** los números (600/h, 900/día, 30 días y 1 día) y que el ajuste venga encendido.
+
 - Rutas del servidor que buscan por la app (`/v1/metadata/…`) con sus claves, con límite por cuenta y caché. En la app, la nube es una fuente más del mismo *trait*; si no responde, siguen los proveedores sin clave (D18).
 - Las condiciones de cada proveedor (uso no comercial, atribución) se revisan en [research/proveedores.md](../research/proveedores.md) antes de integrarlo; uno a uno.
 

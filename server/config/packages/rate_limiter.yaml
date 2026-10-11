@@ -22,6 +22,16 @@ framework:
             policy: sliding_window
             limit: 30
             interval: '15 minutes'
+        # Books looked up through the server (7.8, D83): per account, cache hits included; and the server's own share of
+        # Google Books' free quota (1,000 a day), counted on real calls only. The key of the second is the same for all.
+        metadata_account:
+            policy: sliding_window
+            limit: 600
+            interval: '1 hour'
+        google_books_calls:
+            policy: sliding_window
+            limit: 900
+            interval: '1 day'
         email_code:
             policy: sliding_window
             limit: 10

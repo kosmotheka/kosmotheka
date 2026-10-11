@@ -18,7 +18,7 @@ use crate::cloud::invitations::{
     self, Accepted, InvitationItem, InviteRequest, InviteResult, InviteStatus, OpenedInvitation,
     PendingInvitation,
 };
-use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
+use crate::cloud::{self, CloudApi, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
 use crate::db::Database;
@@ -28,7 +28,8 @@ use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
 use crate::links::{self, Arrivals};
 use crate::marks;
-use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult};
+use crate::metadata::via_server::{GOOGLE_BOOKS, choose_access};
+use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
 use crate::people::{self, People};
 use crate::requests::{self, Request};
@@ -209,6 +210,30 @@ async fn download_cover(
     }
 }
 
+/// The account's server, only when it could be asked about a book (7.8, D83): this device has a session, Google
+/// Books is on, there is no key of their own (which has preference) and the person has not switched it off. Nothing
+/// else ever reaches the server.
+fn books_cloud(database: &Database, settings: &Settings) -> Option<HttpCloud> {
+    let own_key = settings
+        .api_keys
+        .get("google_books")
+        .is_some_and(|key| !key.trim().is_empty());
+    let allowed = settings.google_books_via_server
+        && !own_key
+        && !settings.disabled_sources.contains(Source::GoogleBooks.id());
+    allowed.then(|| HttpCloud::connect(database).ok()).flatten()
+}
+
+/// Whether this device has a session on a server that looks Google Books up for its accounts, so the setting is
+/// worth showing (7.8). Any failure is «no»: the setting then stays out of the way.
+#[tauri::command]
+pub async fn cloud_offers_google_books(database: State<'_, Database>) -> Result<bool> {
+    let Ok(cloud) = HttpCloud::connect(&database) else {
+        return Ok(false);
+    };
+    Ok(cloud.offers_metadata(GOOGLE_BOOKS).await.unwrap_or(false))
+}
+
 #[tauri::command]
 pub async fn lookup_isbn(
     database: State<'_, Database>,
@@ -219,16 +244,21 @@ pub async fn lookup_isbn(
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
     // The block ends before `.await`, releasing the lock. Holding a MutexGuard across
     // an await would not even compile here: the guard cannot move between threads.
-    let (api_key, disabled_sources, existing_edition_id) = {
+    let (settings, existing_edition_id) = {
         let conn = database.lock()?;
         (
-            settings::api_key(&conn, "google_books")?,
-            settings::load(&conn)?.disabled_sources,
+            settings::load(&conn)?,
             catalog::edition_with_isbn(&conn, &ops::active_library(&conn)?, isbn.as_str())?,
         )
     };
+    let api_key = settings.api_keys.get("google_books").map(String::as_str);
+    let cloud = books_cloud(&database, &settings);
     let mut result = lookup
-        .run(&isbn, api_key.as_deref(), &disabled_sources)
+        .run(
+            &isbn,
+            choose_access(api_key, settings.google_books_via_server, cloud.as_ref()),
+            &settings.disabled_sources,
+        )
         .await;
     result.existing_edition_id = existing_edition_id;
     Ok(result)
@@ -267,27 +297,26 @@ pub async fn lookup_code(
     lookup: State<'_, Lookup>,
     code: String,
 ) -> Result<CodeResult> {
-    let (google_api_key, gameupc_api_key, disabled_sources, existing_edition_id) = {
+    let (settings, existing_edition_id) = {
         let conn = database.lock()?;
         let library = ops::active_library(&conn)?;
         let existing = match Isbn::parse(&code) {
             Ok(isbn) => catalog::edition_with_isbn(&conn, &library, isbn.as_str())?,
             Err(_) => catalog::edition_with_barcode(&conn, &library, &code)?,
         };
-        let settings = settings::load(&conn)?;
-        (
-            settings.api_keys.get("google_books").cloned(),
-            settings.api_keys.get("gameupc").cloned(),
-            settings.disabled_sources,
-            existing,
-        )
+        (settings::load(&conn)?, existing)
     };
+    let cloud = books_cloud(&database, &settings);
     let mut result = lookup
         .lookup_code(
             &code,
-            google_api_key.as_deref(),
-            gameupc_api_key.as_deref(),
-            &disabled_sources,
+            choose_access(
+                settings.api_keys.get("google_books").map(String::as_str),
+                settings.google_books_via_server,
+                cloud.as_ref(),
+            ),
+            settings.api_keys.get("gameupc").map(String::as_str),
+            &settings.disabled_sources,
         )
         .await;
     result.existing_edition_id = existing_edition_id;

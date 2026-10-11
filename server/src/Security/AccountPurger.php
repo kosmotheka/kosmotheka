@@ -9,13 +9,15 @@ use App\Entity\User;
 use App\Repository\ActivityEntryRepository;
 use App\Repository\GoogleAttemptRepository;
 use App\Repository\InvitationRepository;
+use App\Repository\MetadataCacheRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 
 /**
  * Deletes what D49 says must not linger: accounts never confirmed after 24h,
- * invitations a week after they expire (D43), activity-log lines after a year (D66), and email codes past their expiry (confirmed accounts can also leave dead
- * codes behind, e.g. an unused reset_password code). Run hourly by
+ * invitations a week after they expire (D43), activity-log lines after a year (D66), and email codes past their expiry
+ * (confirmed accounts can also leave dead codes behind, e.g. an unused reset_password code). It also empties the
+ * metadata cache of books past their age (7.8). Run hourly by
  * App\Scheduler\PurgeAccountsMessageHandler, and by hand with
  * `app:accounts:purge`.
  *
@@ -32,6 +34,7 @@ final readonly class AccountPurger
         private InvitationRepository $invitations,
         private ActivityEntryRepository $activity,
         private GoogleAttemptRepository $googleAttempts,
+        private MetadataCacheRepository $metadataCache,
     ) {
     }
 
@@ -41,7 +44,7 @@ final readonly class AccountPurger
     /** How long the activity log keeps a line (D66, accepted on 01/10/2026): a year, then it is deleted. The only place the period is written. */
     public const string ACTIVITY_RETENTION = '-1 year';
 
-    /** @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int, google_attempts: int} */
+    /** @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int, google_attempts: int, metadata_cache: int} */
     public function purge(): array
     {
         $now = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'));
@@ -61,6 +64,8 @@ final readonly class AccountPurger
 
         $deletedAttempts = $this->googleAttempts->deleteExpiredBefore($now);
 
-        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes, 'invitations' => $deletedInvitations, 'activity' => $deletedActivity, 'google_attempts' => $deletedAttempts];
+        $deletedMetadata = $this->metadataCache->deleteStaleBefore($now);
+
+        return ['unconfirmed_users' => $deletedUsers, 'expired_codes' => $deletedCodes, 'invitations' => $deletedInvitations, 'activity' => $deletedActivity, 'google_attempts' => $deletedAttempts, 'metadata_cache' => $deletedMetadata];
     }
 }

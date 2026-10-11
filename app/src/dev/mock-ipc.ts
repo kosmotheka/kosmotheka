@@ -31,7 +31,7 @@ import type {
 
 // Mutable so the Providers screen can save keys and toggles across calls,
 // preserved only for the life of this dev-server tab.
-let mockSettings: Settings = { apiKeys: {}, disabledSources: [] };
+let mockSettings: Settings = { apiKeys: {}, disabledSources: [], googleBooksViaServer: true };
 
 // The biometric plugin itself cannot be mocked through IPC, so the switch always
 // shows as unavailable here; `?lock` renders the lock screen directly instead.
@@ -1358,6 +1358,8 @@ mockIPC((cmd, args) => {
       return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":
       return mockSettings;
+    case "cloud_offers_google_books":
+      return mockAccount.signedIn;
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;

@@ -12,6 +12,7 @@ import {
   type Settings,
   type Source,
   kinds,
+  cloudOffersGoogleBooks,
   getSettings,
   lookupCode,
   lookupIsbn,
@@ -53,13 +54,19 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
   }
 }
 
-function usableCount(kind: Kind, settings: Settings): number {
-  return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings)).length;
+function usableCount(kind: Kind, settings: Settings, viaCloud: boolean): number {
+  return SOURCES_BY_KIND[kind].filter((source) => isUsable(source, settings, viaCloud)).length;
 }
 
-function isUsable(source: Source, settings: Settings): boolean {
+/** Google Books works without a key of their own when the account's server looks it up (7.8). */
+function needsOwnKey(source: Source, settings: Settings, viaCloud: boolean): boolean {
+  if (!KEYED_SOURCES.has(source)) return false;
+  return !(source === "google_books" && viaCloud && settings.googleBooksViaServer);
+}
+
+function isUsable(source: Source, settings: Settings, viaCloud: boolean): boolean {
   if (settings.disabledSources.includes(source)) return false;
-  return !KEYED_SOURCES.has(source) || Boolean(settings.apiKeys[source]?.trim());
+  return !needsOwnKey(source, settings, viaCloud) || Boolean(settings.apiKeys[source]?.trim());
 }
 
 export function ProvidersDialog({
@@ -78,6 +85,8 @@ export function ProvidersDialog({
     Partial<Record<Source, "testing" | "ok" | "bad_key" | "failed">>
   >({});
   const [seeded, setSeeded] = useState(false);
+  // Signed in to a server that looks Google Books up for its accounts (7.8): only then is the setting shown.
+  const [viaCloud, setViaCloud] = useState(false);
 
   // Fresh settings each time the page opens, as Design asks (same pattern as PairDialog).
   if (open && !seeded) {
@@ -87,10 +96,14 @@ export function ProvidersDialog({
       setSettings(loaded);
       setKeyDrafts(loaded.apiKeys);
     });
+    void cloudOffersGoogleBooks()
+      .then(setViaCloud)
+      .catch(() => setViaCloud(false));
   }
   if (!open && seeded) {
     setSeeded(false);
     setSettings(null);
+    setViaCloud(false);
   }
 
   const update = async (next: Settings) => {
@@ -104,6 +117,11 @@ export function ProvidersDialog({
     if (disabled.has(source)) disabled.delete(source);
     else disabled.add(source);
     void update({ ...settings, disabledSources: [...disabled] });
+  };
+
+  const toggleViaCloud = () => {
+    if (!settings) return;
+    void update({ ...settings, googleBooksViaServer: !settings.googleBooksViaServer });
   };
 
   const saveKey = (source: Source) => {
@@ -125,7 +143,7 @@ export function ProvidersDialog({
     <nav aria-label={t("providers.title")} className="flex flex-col gap-0.5">
       {kinds.map((kind) => {
         const sources = SOURCES_BY_KIND[kind];
-        const n = settings ? usableCount(kind, settings) : 0;
+        const n = settings ? usableCount(kind, settings, viaCloud) : 0;
         const weak = sources.length > 0 && n < 2;
         return (
           <button
@@ -169,8 +187,9 @@ export function ProvidersDialog({
         {sources.map((source) => {
           const keyed = KEYED_SOURCES.has(source);
           const hasKey = Boolean(settings?.apiKeys[source]?.trim());
-          const on = settings ? isUsable(source, settings) : false;
-          const canToggle = !keyed || hasKey;
+          const on = settings ? isUsable(source, settings, viaCloud) : false;
+          const canToggle = !settings || !needsOwnKey(source, settings, viaCloud) || hasKey;
+          const cloudSwitch = source === "google_books" && viaCloud && settings !== null;
           const status = testStatus[source];
           return (
             <div key={source} className="flex flex-col gap-2.5 rounded-lg border p-3.5">
@@ -193,6 +212,21 @@ export function ProvidersDialog({
                   onChange={() => toggleSource(source)}
                 />
               </div>
+              {cloudSwitch && (
+                <div className="flex items-center gap-3 border-t pt-2.5">
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-sm font-medium">{t("providers.viaCloud")}</span>
+                    <span className="text-[13px] text-muted-foreground">
+                      {t("providers.viaCloudHelp")}
+                    </span>
+                  </div>
+                  <Switch
+                    checked={settings.googleBooksViaServer}
+                    label={t("providers.viaCloud")}
+                    onChange={toggleViaCloud}
+                  />
+                </div>
+              )}
               {keyed && (
                 <div className="flex flex-wrap items-center gap-2">
                   <Input

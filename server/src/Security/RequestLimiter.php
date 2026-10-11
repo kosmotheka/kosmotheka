@@ -23,6 +23,10 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $loginFailedAccountLimiter,
         #[Target('google')]
         private RateLimiterFactoryInterface $googleLimiter,
+        #[Target('metadata_account')]
+        private RateLimiterFactoryInterface $metadataAccountLimiter,
+        #[Target('google_books_calls')]
+        private RateLimiterFactoryInterface $googleBooksCallsLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -60,6 +64,24 @@ final readonly class RequestLimiter
     public function consumeGoogle(string $ip): void
     {
         $this->consume($this->googleLimiter, $ip);
+    }
+
+    /** Any lookup of a book through the server, per account, cache hits included (7.8). @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeMetadata(string $userId): void
+    {
+        $this->consume($this->metadataAccountLimiter, $userId);
+    }
+
+    /**
+     * One real call to Google Books, from the whole server: its free quota is a thousand a day and everybody shares it.
+     * One key for all; nothing says whose call it was. @throws AccountException with AccountErrorCode::MetadataQuotaExhausted.
+     */
+    public function consumeGoogleBooksCall(): void
+    {
+        $limit = $this->googleBooksCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
     }
 
     /**
