@@ -28,3 +28,5 @@ parameters:
             identifier: method.unused
             path: src/Kernel.php
             message: '#getAllowedEnvs#'
+            # Newer Symfony versions no longer report it: do not fail when it is gone.
+            reportUnmatched: false

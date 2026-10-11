@@ -1,5 +1,9 @@
 # Weekly update PRs, grouped per ecosystem so they do not flood the queue. Actions
 # are pinned by commit, and Dependabot moves the pin and its version comment.
+#
+# Tauri is left out on purpose: its Rust crates and its npm packages must move together
+# (`tauri build` refuses mismatched minors), and Dependabot cannot update two ecosystems
+# in one PR. They are updated by hand, both sides at once.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -13,6 +17,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "tauri"
+      - dependency-name: "tauri-build"
+      - dependency-name: "tauri-plugin-*"
     groups:
       cargo:
         patterns: ["*"]
@@ -20,6 +28,11 @@ updates:
     directory: /app
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: "@tauri-apps/*"
+      # typescript-eslint sets the ceiling: a new TypeScript major waits until it supports it.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       npm:
         patterns: ["*"]
