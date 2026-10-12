@@ -1218,6 +1218,7 @@
     "keyPlaceholder": "Pega aquí tu clave",
     "save": "Guardar",
     "removeKey": "Quitar la clave de {{name}}",
+    "missingKey": "Está activada, pero no puede usarse sin tu clave.",
     "test": "Probar",
     "testOk": "La clave funciona.",
     "testBadKey": "Esta clave se ha rechazado.",

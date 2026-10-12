@@ -249,8 +249,10 @@ export function ProvidersDialog({
           const keyed = KEYED_SOURCES.has(source);
           const hasKey = Boolean(settings?.apiKeys[source]?.trim());
           const accountToo = ACCOUNT_SOURCES.has(source);
-          const on = settings ? isUsable(source, settings, offers) : false;
-          const canToggle = !settings || isAvailable(source, settings, offers);
+          // The switch is what the person chose, never whether the source can work now: taking a key away must not
+          // look like switching the source off. A source that is on and cannot work says so below.
+          const on = settings ? !settings.disabledSources.includes(source) : false;
+          const stuck = settings !== null && on && !isAvailable(source, settings, offers);
           const cloudSwitch = source === "google_books" && offers.googleBooks && settings !== null;
           const status = testStatus[source];
           return (
@@ -282,13 +284,25 @@ export function ProvidersDialog({
                 </div>
                 <Switch
                   checked={on}
-                  disabled={!canToggle}
+                  disabled={!settings}
                   label={t("providers.toggleAria", { name: t(`lookup.sources.${source}`) })}
                   onChange={() => toggleSource(source)}
                 />
               </div>
+              {stuck && !accountToo && (
+                <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400">
+                  {t("providers.missingKey")}
+                </p>
+              )}
               {accountToo && settings && (
-                <p className="text-[13px] text-muted-foreground">
+                <p
+                  className={cn(
+                    "text-[13px]",
+                    stuck
+                      ? "font-medium text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground",
+                  )}
+                >
                   {t(
                     hasKey
                       ? "providers.ownKeyUsed"

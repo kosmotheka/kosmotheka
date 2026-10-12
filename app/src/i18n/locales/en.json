@@ -1204,6 +1204,7 @@
     "keyPlaceholder": "Paste your key here",
     "save": "Save",
     "removeKey": "Remove the {{name}} key",
+    "missingKey": "It is on, but cannot be used without your key.",
     "test": "Test",
     "testOk": "Key works.",
     "testBadKey": "This key was rejected.",
