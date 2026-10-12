@@ -1203,6 +1203,7 @@
     "needsKeyBadge": "Needs a key",
     "keyPlaceholder": "Paste your key here",
     "save": "Save",
+    "removeKey": "Remove the {{name}} key",
     "test": "Test",
     "testOk": "Key works.",
     "testBadKey": "This key was rejected.",

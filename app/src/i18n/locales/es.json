@@ -1217,6 +1217,7 @@
     "needsKeyBadge": "Pide clave",
     "keyPlaceholder": "Pega aquí tu clave",
     "save": "Guardar",
+    "removeKey": "Quitar la clave de {{name}}",
     "test": "Probar",
     "testOk": "La clave funciona.",
     "testBadKey": "Esta clave se ha rechazado.",

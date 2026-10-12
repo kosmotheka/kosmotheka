@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trash2 } from "lucide-react";
 
 import { Switch } from "@/components/people/role-parts";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
@@ -182,6 +182,14 @@ export function ProvidersDialog({
     setTestStatus((s) => ({ ...s, [source]: undefined }));
   };
 
+  // Taking the key away is not switching the source off: it stays on, and works again if the account's server offers it.
+  const removeKey = (source: Source) => {
+    if (!settings) return;
+    setKeyDrafts((d) => ({ ...d, [source]: "" }));
+    void update({ ...settings, apiKeys: { ...settings.apiKeys, [source]: "" } });
+    setTestStatus((s) => ({ ...s, [source]: undefined }));
+  };
+
   const runTest = async (source: Source) => {
     setTestStatus((s) => ({ ...s, [source]: "testing" }));
     const status = await testSource(source);
@@ -331,6 +339,18 @@ export function ProvidersDialog({
                       onClick={() => void runTest(source)}
                     >
                       {t("providers.test")}
+                    </Button>
+                  )}
+                  {hasKey && (
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={t("providers.removeKey", { name: t(`lookup.sources.${source}`) })}
+                      title={t("providers.removeKey", { name: t(`lookup.sources.${source}`) })}
+                      onClick={() => removeKey(source)}
+                    >
+                      <Trash2 />
                     </Button>
                   )}
                   {GET_KEY_URL[source] && (

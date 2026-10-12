@@ -225,7 +225,8 @@ Apuntado para esa revisión:
 
 **Tercera parte hecha (11/10/2026, revisado por la sesión coordinadora, comprobaciones repetidas): videojuegos con RAWG a través del servidor** ([encargo](../historico/encargo-7.8-rawg.md)). `POST /v1/metadata/rawg/search` con sesión; clave en `RAWG_API_KEY`, que RAWG solo admite en la dirección de la llamada saliente (cliente HTTP aparte y sin registrador, excepciones sin `previous`, test con clave centinela sobre respuestas, filas y log); 8 candidatos, detalle de los tres primeros; búsqueda 7 días bajo huella, detalle 30 días; tope de 600 llamadas reales al día (20.000 al mes en sus condiciones). En la app, `Source::Rawg` junto a Wikidata; plataforma solo si RAWG da una; desarrolladores como estudio, editores en el campo de editorial; atribución con enlace en Proveedores y en la pantalla de resultados. Detalle en [cloud.md](../architecture/cloud.md).
 
-- **Sin probar:** nada contra RAWG de verdad (la clave existe, falta desplegar); el formato de su API se tomó de lo que se sabe de ella, no de su documentación (no se pudo leer). En pantalla: la línea «Datos de RAWG», su enlace y la tarjeta.
+- **Desplegado y probado por el maintainer el 12/10/2026:** RAWG responde con clave propia y también por el servidor (sin clave propia y con sesión), y las búsquedas quedan en la caché. De la prueba salió un botón para quitar la clave en Proveedores (antes había que vaciar el campo y guardar).
+- **Quedaba sin probar al revisar:** nada contra RAWG de verdad (la clave existe, falta desplegar); el formato de su API se tomó de lo que se sabe de ella, no de su documentación (no se pudo leer). En pantalla: la línea «Datos de RAWG», su enlace y la tarjeta.
 - **En producción:** el nivel de log del servidor no debe bajar de `warning`.
 - **Siguiente:** [cuarta parte](../historico/encargo-7.8-claves-propias-y-todas.md), acordada con el maintainer el 11/10/2026: clave propia para TMDB y RAWG, «Todas» en Proveedores y «Créditos».
 
