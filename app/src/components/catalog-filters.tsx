@@ -189,8 +189,16 @@ export function FilterBar({
   );
 
   return (
-    // On a narrow desktop window the chips wrap: a scrollbar there sits on top of them. A phone scrolls with no bar.
-    <div className={cn("flex items-center gap-2", desktop ? "flex-wrap" : "overflow-x-auto")}>
+    // The chips scroll sideways only where a finger does it (a phone, with no scrollbar). With a mouse, whatever the
+    // width of the window, they wrap: a scrollbar there sits on top of them.
+    <div
+      className={cn(
+        "flex items-center gap-2",
+        desktop
+          ? "flex-wrap"
+          : "overflow-x-auto pointer-fine:flex-wrap pointer-fine:overflow-x-visible",
+      )}
+    >
       {!desktop && filtersButton}
       {kindChips}
       {wishChip}

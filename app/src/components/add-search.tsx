@@ -273,7 +273,8 @@ export function AddSearch({
         "flex gap-1.5",
         desktop
           ? "flex-wrap"
-          : "overflow-x-auto pb-2 [mask-image:linear-gradient(90deg,#000_85%,transparent)]",
+          : // Sideways only for a finger; a narrow window with a mouse wraps, with no scrollbar over the chips.
+            "overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)] pointer-fine:flex-wrap pointer-fine:overflow-x-visible pointer-fine:[mask-image:none]",
       )}
     >
       {kinds.map((k) => {
