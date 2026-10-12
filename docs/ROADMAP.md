@@ -193,7 +193,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
 - **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
 - **Etiquetas QR imprimibles** para pegar en los ejemplares (D67), útiles en el modo inventario y en ludotecas: código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
-- **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20).
+- **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20). Primera prueba con fotos reales, el 12/10/2026: [notas](research/foto-estanteria.md).
 - **Leer el ISBN impreso con la cámara** (05/10/2026), para cuando el código de barras es una etiqueta de tienda: reconocimiento de texto en el propio móvil (ML Kit, sin red), buscar un número que empiece por 978 o 979 y comprobar su dígito de control. No hay plugin de Tauri para esto: se escribe uno y se publica como **plugin libre de Tauri en su propio repositorio**, como las passkeys. Mientras tanto, el escáner salta los códigos de tienda y deja escribir el número.
 - **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla. Referencias: Google Lens, bookidentifier.com; probar antes el OCR local con el título y la autoría de la portada ([notas](testing/ux-escanear-y-editar.md)).
 - **Importar desde plataformas** digitales (Steam).

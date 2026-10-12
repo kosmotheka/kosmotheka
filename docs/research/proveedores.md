@@ -64,6 +64,23 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 - **Importar desde las plataformas digitales:** Steam tiene una API para leer la biblioteca de un usuario (con su clave o su perfil público). Epic no tiene API pública. Sería una forma rápida de dar de alta todos los videojuegos digitales.
 - **IA como complemento de cualquier catálogo** (D20): reconocer una foto (una portada, una caja, un lomo), sacar el título y buscarlo en el proveedor del tipo. Opcional y con la clave del usuario o de la nube. Queda lejos.
 
+## Juegos de rol: DriveThruRPG y RPGGeek (mirado el 12/10/2026)
+
+**DriveThruRPG no sirve como proveedor, tal como está.**
+- **No tiene una API pública de catálogo.** Lo único que da de forma oficial es una clave de aplicación en los ajustes de la cuenta, y lo que se sabe que devuelve es la biblioteca de compras de esa persona, no la tienda.
+- Hay herramientas de terceros (un plugin de metadatos para Calibre, `drpg`) que usan llamadas internas de su web. La documentación que había desapareció, y sus propios autores avisan de que puede romperse sin aviso.
+- A los afiliados les da RSS, banners y un widget de más vendidos, no un catálogo para buscar.
+- **Sus condiciones de uso no se han podido leer** (la página rechaza la lectura automática). Antes de plantear nada con ellos hay que leerlas enteras en su web y pedir permiso por escrito, como con Comic Vine.
+- Además, es una tienda de PDF y de impresión bajo demanda, casi toda en inglés: las ediciones en papel en español no están.
+
+**RPGGeek es la vía que encaja.** Es de BoardGameGeek y usa la misma API y el mismo token que ya está pedido (11/10/2026): los tipos `rpgitem` y `rpgissue` (revistas) se buscan igual que `boardgame`. Sin comprobar todavía: cuánto cubre de las ediciones en español, y si las condiciones del token valen también para rol. Se mira cuando llegue el token, junto con los juegos de mesa.
+
+**En español no se conoce ningún catálogo de rol con API.** Lo que sí hay: los libros de rol publicados en España llevan ISBN (Devir, La Factoría, Nosolorol), así que el código de barras y la BNE ya los encuentran en parte. Los módulos finos y las revistas se quedan fuera.
+
+**Distribuidoras españolas (mirado el 12/10/2026): nada que se pueda usar.** Distribuciones Sombra (dbsombra.com) tiene el catálogo a la vista en su web, con portada y descripción, pero sin ISBN visible, sin descargas, sin API y sin condiciones de uso de los datos. Es un escaparate para tiendas. Leerlo sería copiar su web sin permiso, y no se plantea.
+
+**Acordado el 12/10/2026:** RPGGeek se añade, junto con los juegos de mesa de BoardGameGeek, cuando llegue el token. Para el rol en español, la BNE es lo que hay.
+
 ## Comic Vine: por qué no tiene clave en el servidor oficial
 
 Decidido el 12/10/2026 ([D62](../DECISIONS.md)). La página de su API pide no construir «some crappy collection app» ni un producto que compita con ellos. Por eso el servidor oficial no pone clave y en la app funciona solo con la clave propia de cada persona. El código del servidor está hecho y probado: basta poner `COMIC_VINE_API_KEY` el día que haya permiso.
