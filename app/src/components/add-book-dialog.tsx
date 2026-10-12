@@ -273,9 +273,14 @@ export function AddBookDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <form onSubmit={(e) => void submit(e)} noValidate className="space-y-6">
-          <DialogHeader>
+      {/* The body scrolls; the title and the buttons stay in sight. */}
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
+        <form
+          onSubmit={(e) => void submit(e)}
+          noValidate
+          className="flex min-h-0 flex-1 flex-col gap-4"
+        >
+          <DialogHeader className="shrink-0">
             {onBack && (
               <Button
                 type="button"
@@ -290,12 +295,14 @@ export function AddBookDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription className="sr-only">{t("form.description")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("form.whatIsIt")}</p>
-            <KindGrid value={edition.kind} onChange={pickKind} columns={8} />
+          <div className="-mx-4 min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-1">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("form.whatIsIt")}</p>
+              <KindGrid value={edition.kind} onChange={pickKind} columns={8} />
+            </div>
+            {fields}
           </div>
-          {fields}
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               {t("form.cancel")}
             </Button>

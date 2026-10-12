@@ -4,7 +4,6 @@
   },
   "catalog": {
     "loading": "Loading the catalog…",
-    "add": "Add book",
     "added": "“{{title}}” was added to the catalog.",
     "addedCopy": "You already had this edition of “{{title}}”: a new copy was added to it.",
     "views": {

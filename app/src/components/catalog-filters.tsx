@@ -189,7 +189,8 @@ export function FilterBar({
   );
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto">
+    // Room below for the scrollbar, which otherwise covers the chips when they do not fit.
+    <div className="flex items-center gap-2 overflow-x-auto pb-2">
       {!desktop && filtersButton}
       {kindChips}
       {wishChip}

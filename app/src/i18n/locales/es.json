@@ -4,7 +4,6 @@
   },
   "catalog": {
     "loading": "Cargando el catálogo…",
-    "add": "Añadir libro",
     "added": "«{{title}}» se ha añadido al catálogo.",
     "addedCopy": "Ya teníais esta edición de «{{title}}»: se le ha añadido un ejemplar más.",
     "views": {

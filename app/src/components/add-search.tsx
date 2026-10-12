@@ -273,7 +273,7 @@ export function AddSearch({
         "flex gap-1.5",
         desktop
           ? "flex-wrap"
-          : "overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)]",
+          : "overflow-x-auto pb-2 [mask-image:linear-gradient(90deg,#000_85%,transparent)]",
       )}
     >
       {kinds.map((k) => {

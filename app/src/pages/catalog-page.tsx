@@ -242,15 +242,7 @@ export function CatalogPage({
             }
           >
             <Plus />{" "}
-            {t(
-              reader
-                ? "ask.add"
-                : missing
-                  ? desktop
-                    ? "nav.add"
-                    : "nav.addMissing"
-                  : "catalog.add",
-            )}
+            {t(reader ? "ask.add" : missing ? (desktop ? "nav.add" : "nav.addMissing") : "nav.add")}
           </Button>
         </EmptyState>
       )}
