@@ -175,11 +175,19 @@ export function ProvidersDialog({
     void update({ ...settings, googleBooksViaServer: !settings.googleBooksViaServer });
   };
 
-  const saveKey = (source: Source) => {
+  const runTest = async (source: Source) => {
+    setTestStatus((s) => ({ ...s, [source]: "testing" }));
+    const status = await testSource(source);
+    setTestStatus((s) => ({ ...s, [source]: status }));
+  };
+
+  // A key is tried the moment it is saved: otherwise anything typed here looks accepted until the next search fails.
+  const saveKey = async (source: Source) => {
     if (!settings) return;
     const value = (keyDrafts[source] ?? "").trim();
-    void update({ ...settings, apiKeys: { ...settings.apiKeys, [source]: value } });
     setTestStatus((s) => ({ ...s, [source]: undefined }));
+    await update({ ...settings, apiKeys: { ...settings.apiKeys, [source]: value } });
+    if (value) await runTest(source);
   };
 
   // Taking the key away is not switching the source off: it stays on, and works again if the account's server offers it.
@@ -188,12 +196,6 @@ export function ProvidersDialog({
     setKeyDrafts((d) => ({ ...d, [source]: "" }));
     void update({ ...settings, apiKeys: { ...settings.apiKeys, [source]: "" } });
     setTestStatus((s) => ({ ...s, [source]: undefined }));
-  };
-
-  const runTest = async (source: Source) => {
-    setTestStatus((s) => ({ ...s, [source]: "testing" }));
-    const status = await testSource(source);
-    setTestStatus((s) => ({ ...s, [source]: status }));
   };
 
   const kindLabel = (kind: Kind) => t(`typesPlural.${kind}`);
@@ -341,7 +343,12 @@ export function ProvidersDialog({
                     value={keyDrafts[source] ?? ""}
                     onChange={(e) => setKeyDrafts((d) => ({ ...d, [source]: e.target.value }))}
                   />
-                  <Button type="button" size="sm" variant="outline" onClick={() => saveKey(source)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void saveKey(source)}
+                  >
                     {t("providers.save")}
                   </Button>
                   {hasKey && (
