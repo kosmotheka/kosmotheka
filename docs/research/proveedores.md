@@ -108,7 +108,7 @@ Sin enviar. Lo manda el maintainer cuando quiera, desde el correo del proyecto, 
 
 ### Correo a GameUPC (borrador)
 
-Sin enviar. Lo manda el maintainer desde el correo del proyecto.
+Enviado por el maintainer el 12/10/2026, tal cual. A la espera de respuesta.
 
 > **Subject:** API key for Kosmotheka, a free open-source household catalogue app
 >
