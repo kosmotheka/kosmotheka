@@ -89,3 +89,43 @@ Sin enviar. Lo manda el maintainer cuando quiera, desde el correo del proyecto, 
 > Sergio Rebollo
 > info@kosmotheka.com
 
+## GameUPC: lo que hay y lo que falta (leído en su página el 12/10/2026)
+
+**Qué es.** Un servicio de una sola persona, alimentado por la comunidad: dado el código de barras de una caja, dice qué juego de BoardGameGeek es (nombre, identificador de BGG y sus imágenes). Si no está seguro, devuelve varios candidatos para que la persona elija, y admite que la app le devuelva la elección para verificarla (unos 15.000 códigos verificados).
+
+**Cómo está hoy en la app** (Fase 6): solo funciona con la **clave propia** de quien la ponga en Proveedores; sin clave no se le llama. No hay ruta en el servidor: con cuenta no «se activa solo», al contrario que los demás (D62).
+
+**Lo leído** en `gameupc.com` y en su descripción de la API (`gameupc-oas.yaml`):
+
+- Dos entornos: `test`, con una clave pública de pruebas, y `v1`, «Production database; **email for API key**». La clave va en la cabecera `x-api-key`.
+- **No hay página de condiciones**: ni uso comercial, ni atribución, ni caché. Lo único escrito es un límite: **100 códigos nuevos al día** (nuevos = que su base aún no conoce; responde «Overloaded; try again later»).
+- Contacto: el nombre del sitio en `@grettir.org`.
+- Las imágenes son las de BoardGameGeek (`cf.geekdo-images.com`), que la app ya acepta.
+
+**Lo que no sabemos y hay que preguntar en el mismo correo en que se pide la clave:** si le parece bien que un servidor busque con una clave del proyecto en nombre de sus cuentas, cuánto se pueden guardar las respuestas y si quiere algún crédito.
+
+**Plan** (maintainer, 12/10/2026): la ruta del servidor para GameUPC se hace **junto con BoardGameGeek**, cuando BGG conceda el token: GameUPC traduce el código y BGG da la ficha; por separado, por el servidor solo aportaría el nombre.
+
+### Correo a GameUPC (borrador)
+
+Sin enviar. Lo manda el maintainer desde el correo del proyecto.
+
+> **Subject:** API key for Kosmotheka, a free open-source household catalogue app
+>
+> Hello,
+>
+> I maintain Kosmotheka (https://kosmotheka.com), a free, open-source (AGPL-3.0), non-commercial app for Android, Windows and Linux that a household uses to catalogue what it owns, board games included. When someone scans the barcode on a game box, we would like to ask GameUPC which game it is and prefill their entry.
+>
+> Could I have a production API key? And three questions, since I found no terms page and would rather ask than assume:
+>
+> 1. Is it fine if our own server makes the lookups with one project key on behalf of signed-in users? The key would stay on the server, never inside the app. People without an account would enter their own key.
+> 2. May the server cache answers (we use 30 days for a found barcode, 1 day for an unknown one)? It keeps traffic to you low.
+> 3. Would you like a credit or a link in the app? We already have a credits section for data sources.
+>
+> Volume is very low (a handful of users in closed testing). When a person picks the right game among several suggestions, we can also post that choice back to you so it gets verified.
+>
+> Thank you for running the service.
+>
+> Sergio Rebollo
+> info@kosmotheka.com
+
