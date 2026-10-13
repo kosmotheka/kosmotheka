@@ -1545,6 +1545,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - **Documentación pública en Markdown en el repo**, convertida en una web estática con un generador (se propone **Starlight**, de Astro: trae varios idiomas y búsqueda sin servidor). Se aloja nosotros mismos en **docs.kosmotheka.com**. Se organiza para tres públicos (usuarios, autoalojamiento, colaboradores) siguiendo Diátaxis, y en la raíz del repo van `README`, `CONTRIBUTING`, `CODE_OF_CONDUCT` y `SECURITY`.
 - **Despliegue automático, sin rsync:** la documentación y la landing (`web/`) se publican solas al cambiar `main`. Queda por decidir cómo: un `git pull` en el servidor o un workflow que construye y despliega. La documentación necesita compilarse; la landing, no.
 
+**Acordado con el maintainer el 13/10/2026** (el resto de la decisión sigue como propuesta): el subdominio docs.kosmotheka.com, enlazado desde el pie de la web; los dos idiomas; y Starlight como generador. Primer índice de páginas en [plans/documentacion-publica.md](plans/documentacion-publica.md).
+
 **Opciones descartadas:** convertir a HTML a mano; la wiki de GitHub (es un repo aparte, sin revisión por PR y mal para dos idiomas); servicios externos como ReadMe o Read the Docs (se prefiere alojarlo nosotros); empezar un repositorio sin historial.
 
 **Consecuencias:** el escaneo y la reescritura se hacen antes de abrir el repositorio (D03). La traducción de `docs/` al inglés (D02) pasa a ser la parte grande del trabajo. Los hashes de los commits cambian una vez.
