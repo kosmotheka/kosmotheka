@@ -8,7 +8,7 @@ import { type Settings, type Source, getSettings, isMobile, saveSettings } from 
 import { cn } from "@/lib/utils";
 
 /** Raise it when the welcome adds a search service, so everyone sees it again (D91). */
-export const WELCOME_VERSION = 1;
+export const WELCOME_VERSION = 2;
 
 /** The services the app asks without a key, so they are on unless turned off. */
 const KEYLESS_SOURCES: Source[] = [

@@ -32,6 +32,7 @@ export type Overlay =
   | { name: "pair" }
   | { name: "settings" }
   | { name: "providers" }
+  | { name: "about" }
   | { name: "backups" }
   | { name: "filters" }
   | { name: "burst" }

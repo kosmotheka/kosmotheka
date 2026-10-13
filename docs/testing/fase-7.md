@@ -123,3 +123,11 @@ En local, con la app de desarrollo. No hay nada que desplegar.
 - [ ] Apagarla en Proveedores y repetir: ya no sale.
 - [ ] Un ISBN español (`9788401339639`) sigue saliendo con los datos de la BNE.
 - [ ] En el móvil, lo mismo con un ISBN en inglés.
+- [ ] Quien ya había pasado la bienvenida la vuelve a ver una vez, con la Library of Congress entre las fuentes.
+
+## «Acerca de» (13/10/2026)
+
+- [ ] En el menú, «Acerca de» ya no dice «Pronto» y abre una pantalla con la versión instalada (0.2.0 o la que toque).
+- [ ] Los enlaces a la web y a la política de privacidad abren el navegador; la política sale en el idioma de la app.
+- [ ] «Fuentes de datos» abre Proveedores.
+- [ ] En el móvil, lo mismo, a pantalla completa y con su botón de cerrar.

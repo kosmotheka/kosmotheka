@@ -1,4 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { getVersion } from "@tauri-apps/api/app";
 import { join } from "@tauri-apps/api/path";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
@@ -673,6 +674,11 @@ export function isMobile(): Promise<boolean> {
 /** Whether the fingerprint/face lock is on (D78). Per-device, never synced. */
 export function appLockEnabled(): Promise<boolean> {
   return invoke<boolean>("app_lock_enabled");
+}
+
+/** The version of the app that is installed, as its package says it. */
+export function appVersion(): Promise<string> {
+  return getVersion();
 }
 
 /** The version of the first-run welcome this device has seen (D91); 0 when none. */

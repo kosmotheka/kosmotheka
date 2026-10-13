@@ -31,6 +31,7 @@ import {
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
 import { PairDialog } from "@/components/pair-dialog";
+import { AboutDialog } from "@/components/about-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
 import { WELCOME_VERSION, WelcomeDialog } from "@/components/welcome-dialog";
 import { NewSeriesDialog } from "@/components/new-series-dialog";
@@ -600,6 +601,10 @@ export default function App() {
           <WelcomeDialog open={welcome} onDone={closeWelcome} />
           <ProvidersDialog
             open={overlay?.name === "providers"}
+            onOpenChange={(open) => !open && closeOverlay()}
+          />
+          <AboutDialog
+            open={overlay?.name === "about"}
             onOpenChange={(open) => !open && closeOverlay()}
           />
           <BackupsDialog

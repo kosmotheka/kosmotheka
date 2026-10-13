@@ -48,7 +48,7 @@ export const appNav: NavItem[] = [
   { id: "devices", icon: Share2, label: "nav.share", section: "devices" },
   { id: "settings", icon: Settings, label: "nav.settings", overlay: { name: "settings" } },
   { id: "help", icon: CircleHelp, label: "nav.help", section: "help" },
-  { id: "about", icon: Info, label: "nav.about", soon: true },
+  { id: "about", icon: Info, label: "nav.about", overlay: { name: "about" } },
 ];
 
 export function go(item: NavItem) {

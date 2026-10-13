@@ -1040,6 +1040,8 @@ mockIPC((cmd, args) => {
       };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
+    case "plugin:app|version":
+      return "0.0.0-dev";
     case "welcome_seen":
       return mockWelcomeSeen;
     case "set_welcome_seen":

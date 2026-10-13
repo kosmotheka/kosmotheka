@@ -1,4 +1,14 @@
 {
+  "about": {
+    "title": "Acerca de",
+    "version": "Versión {{version}}",
+    "versionUnknown": "Versión desconocida",
+    "summary": "Un catálogo compartido para la biblioteca de casa: qué tenéis, dónde está, quién lo ha leído y a quién se lo habéis prestado.",
+    "license": "Software libre, con licencia AGPL-3.0 o posterior.",
+    "website": "Web de Kosmotheka",
+    "privacy": "Política de privacidad",
+    "sources": "Fuentes de datos"
+  },
   "app": {
     "title": "Kosmotheka"
   },
