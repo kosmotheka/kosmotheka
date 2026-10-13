@@ -219,7 +219,17 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §3](research/referentes.md)).
 
 - **Añadir varios resultados de una búsqueda a la vez** (pedido por el maintainer el 11/10/2026, probando TMDB): buscar «matrix» y dar de alta toda la saga de una vez, en lugar de una a una. En el móvil, manteniendo pulsado para seleccionar; en escritorio, quizá con casillas. Por pensar: qué datos de ejemplar (formato, ubicación, dueño) se aplican a todos, como hace ya Alta rápida.
+- **Buscar dónde comprar lo que falta o se desea** (idea del maintainer, 13/10/2026; para después del lanzamiento): desde «Me falta», los huecos de una serie y «Lo deseo», un botón que abre el navegador con una búsqueda ya escrita. Sin ganar dinero: ni afiliados ni enlaces con comisión. Un buscador general y no tiendas concretas, porque cada tipo de obra tiene las suyas. **Un comparador de precios propio queda descartado:** son miles de tiendas, y reducirlo a una sola no interesa. Apuntes sin decidir: buscar por ISBN o código de barras cuando lo haya, que es exacto; la pestaña de compras del buscador ya compara precios sin que la app haga nada; y dejar elegir el buscador en Ajustes. La segunda mano no lleva tiendas ni plataformas propias: sale en el mismo buscador. La app no envía nada por su cuenta: solo abre el enlace cuando la persona lo pulsa.
 - **La dimensión social:** comentarios, préstamo entre desconocidos, compartir en redes (§3.3).
+- **Encontrar cerca quién tiene una obra** (idea del maintainer, 13/10/2026; unida a la dimensión social): saber quién en tu ciudad tiene un libro o un videojuego y lo presta. Condiciones que puso:
+  - **Nada activado por defecto.** Ni aparecer, ni la ubicación, ni qué obras se enseñan: cada cosa la enciende la persona.
+  - **La ubicación es lo sensible** y hay que hacerlo muy bien: una zona amplia que la persona escribe (ciudad o barrio), nunca la posición del dispositivo ni una dirección.
+  - **No es un negocio ni un mercado.** La app pone en contacto y ahí termina: sin precios, sin compraventa, sin comisiones. Lo que las personas acuerden después es cosa suya. Además de no querer convertirlo en negocio, es lo que lo mantiene sencillo: con dinero de por medio llegan estafas, reclamaciones y obligaciones legales que el proyecto no puede atender.
+  - **Es la primera vez que la app enseñaría algo a desconocidos**: hasta ahora todo lo que se comparte va a gente invitada. Antes de diseñarlo hace falta su propio repaso de riesgos (acordado con el maintainer el 13/10/2026), con al menos esto:
+    - **Qué cuenta un catálogo de quien lo tiene:** gustos, ideas, o que en casa hay niños. La persona elige qué obras enseña; nunca «toda mi biblioteca».
+    - **Objetos más zona:** una lista de consolas y colecciones caras con una ubicación precisa dice qué hay en una casa. De ahí la zona amplia.
+    - **El contacto:** escribir a alguien sin ver su correo ni su teléfono, y poder bloquear y denunciar desde el primer día.
+    - **El servidor:** solo funciona con la nube, y cambia lo que el servidor guarda y la política de privacidad.
 - **Bibliotecas públicas** que se descubren buscando y se navegan sin invitación.
 - **Reservar un ejemplar prestado.**
 - **Importar desde Calibre** (muy opcional).
