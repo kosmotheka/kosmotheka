@@ -389,6 +389,7 @@ export function requestDeleteBook(editionId: string, note: string | null): Promi
 
 export type Source =
   | "bne"
+  | "library_of_congress"
   | "google_books"
   | "open_library"
   | "inventaire"

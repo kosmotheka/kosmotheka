@@ -11,7 +11,14 @@ import { cn } from "@/lib/utils";
 export const WELCOME_VERSION = 1;
 
 /** The services the app asks without a key, so they are on unless turned off. */
-const KEYLESS_SOURCES: Source[] = ["bne", "open_library", "inventaire", "wikidata", "music_brainz"];
+const KEYLESS_SOURCES: Source[] = [
+  "bne",
+  "library_of_congress",
+  "open_library",
+  "inventaire",
+  "wikidata",
+  "music_brainz",
+];
 
 type Step = "local" | "scan" | "search" | "share";
 

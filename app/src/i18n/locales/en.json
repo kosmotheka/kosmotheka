@@ -307,6 +307,7 @@
     "failed": "The search failed. Check your connection.",
     "sources": {
       "bne": "National Library of Spain",
+      "library_of_congress": "Library of Congress",
       "google_books": "Google Books",
       "open_library": "Open Library",
       "inventaire": "Inventaire",
@@ -1216,6 +1217,7 @@
     "descriptions": {
       "book": {
         "bne": "Books published in Spain, with authors and publisher",
+        "library_of_congress": "Books in English, with authors and publisher",
         "open_library": "Title, authors and ISBN",
         "inventaire": "Spanish editions and covers",
         "wikidata": "Works and authorship",
@@ -1259,6 +1261,7 @@
     "keyPlaceholderTmdb": "Paste your API Read Access Token (not the short API key)",
     "sourceDescriptions": {
       "bne": "Books published in Spain, with authors and publisher",
+      "library_of_congress": "Books published in English, with authors and publisher",
       "open_library": "Books from around the world: title, authors and ISBN",
       "inventaire": "Editions and covers",
       "wikidata": "Works and authorship, for every type",
@@ -2029,6 +2032,7 @@
     },
     "sources": {
       "bne": "Books published in Spain",
+      "library_of_congress": "Books published in English",
       "open_library": "Books from around the world",
       "inventaire": "Editions and covers",
       "wikidata": "Books, films, games and more",

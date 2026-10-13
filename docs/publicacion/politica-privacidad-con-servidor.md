@@ -18,7 +18,7 @@ Kosmotheka es una aplicación para catalogar lo que tiene una familia o un grupo
 
 - Tu catálogo, las personas de cada biblioteca y los nombres de tus dispositivos se guardan **solo en tu dispositivo**.
 - Si emparejas dos dispositivos con un código QR, se sincronizan directamente entre ellos por tu red local, cifrados. No pasa nada por un servidor nuestro.
-- Para rellenar los datos de una obra, la app puede consultar catálogos públicos (Biblioteca Nacional de España, Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave). Solo se envía lo que buscas: un ISBN, un código de barras o un título.
+- Para rellenar los datos de una obra, la app puede consultar catálogos públicos (Biblioteca Nacional de España, Library of Congress (Estados Unidos), Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave). Solo se envía lo que buscas: un ISBN, un código de barras o un título.
 - La cámara se usa solo para leer códigos de barras, cuando tú lo pides. Las imágenes no se guardan ni se envían.
 
 ## Si creas una cuenta

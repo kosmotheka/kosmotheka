@@ -25,7 +25,7 @@ import { SOURCES_WITH_A_LINK } from "@/components/source-credits";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
-  book: ["bne", "open_library", "inventaire", "wikidata", "google_books"],
+  book: ["bne", "library_of_congress", "open_library", "inventaire", "wikidata", "google_books"],
   comic: ["comic_vine", "wikidata"],
   boardgame: ["wikidata", "game_upc"],
   film: ["tmdb", "wikidata"],

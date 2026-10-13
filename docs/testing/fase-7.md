@@ -112,3 +112,14 @@ Dos tandas, en este orden: la primera no necesita desplegar nada; la segunda, s�
 - [ ] Repite la misma búsqueda. *Esperado:* responde igual y no hay filas nuevas (salió de la caché).
 - [ ] Con sesión **y** clave propia de TMDB puesta: busca una película y comprueba que no aparece ninguna fila nueva `tmdb_search` (la app fue directa a TMDB).
 - [ ] En el VPS, `grep -c "metadata" <el registro de nginx>` da `0`.
+
+## Library of Congress (13/10/2026)
+
+En local, con la app de desarrollo. No hay nada que desplegar.
+
+- [ ] En Ajustes › Proveedores de datos, filtro «Libros»: aparece «Library of Congress», encendida, sin pedir clave ni cuenta.
+- [ ] Añadir por ISBN un libro en inglés (`9780756404734`): se rellenan autoría, editorial y año, y entre las fuentes sale la Library of Congress.
+- [ ] Buscar por título «the name of the wind» en Libros: salen resultados de la Library of Congress, todos libros (ningún disco ni fotografía).
+- [ ] Apagarla en Proveedores y repetir: ya no sale.
+- [ ] Un ISBN español (`9788401339639`) sigue saliendo con los datos de la BNE.
+- [ ] En el móvil, lo mismo con un ISBN en inglés.

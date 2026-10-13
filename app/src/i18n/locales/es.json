@@ -321,6 +321,7 @@
     "failed": "La búsqueda ha fallado. Revisa la conexión.",
     "sources": {
       "bne": "Biblioteca Nacional de España",
+      "library_of_congress": "Library of Congress",
       "google_books": "Google Books",
       "open_library": "Open Library",
       "inventaire": "Inventaire",
@@ -1230,6 +1231,7 @@
     "descriptions": {
       "book": {
         "bne": "Libros editados en España, con autoría y editorial",
+        "library_of_congress": "Libros en inglés, con autoría y editorial",
         "open_library": "Título, autoría e ISBN",
         "inventaire": "Ediciones en español y portadas",
         "wikidata": "Obras y autorías",
@@ -1273,6 +1275,7 @@
     "keyPlaceholderTmdb": "Pega tu «API Read Access Token» (no la clave corta de la API)",
     "sourceDescriptions": {
       "bne": "Libros publicados en España, con autores y editorial",
+      "library_of_congress": "Libros publicados en inglés, con autores y editorial",
       "open_library": "Libros de todo el mundo: título, autores e ISBN",
       "inventaire": "Ediciones y portadas",
       "wikidata": "Obras y autoría, para todos los tipos",
@@ -2043,6 +2046,7 @@
     },
     "sources": {
       "bne": "Libros editados en España",
+      "library_of_congress": "Libros editados en inglés",
       "open_library": "Libros de todo el mundo",
       "inventaire": "Ediciones y portadas",
       "wikidata": "Libros, películas, juegos y más",

@@ -1558,7 +1558,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 ## D91 · Bienvenida al primer arranque, con los servicios externos explicados y desactivables — `aceptada`
 
-**Contexto:** las búsquedas en catálogos externos mejoran mucho el alta (las bibliotecas nacionales, [fuentes-libros-es.md](research/fuentes-libros-es.md)). Algunas solo pueden ir a través del servidor (la Library of Congress solo responde por HTTP sin cifrar). Hoy la app ya consulta Open Library, Inventaire, Wikidata y MusicBrainz desde el móvil, y solo lo dice la política de privacidad. El maintainer quiere activarlas por defecto para que la experiencia sea buena, pero **siendo totalmente transparente**: esconderlo en la política de privacidad es una trampa, porque nadie la lee.
+**Contexto:** las búsquedas en catálogos externos mejoran mucho el alta (las bibliotecas nacionales, [fuentes-libros-es.md](research/fuentes-libros-es.md)). Algunas solo pueden ir a través del servidor (la Library of Congress solo responde por HTTP sin cifrar). *(Nota del 13/10/2026: la Library of Congress ya tiene dirección cifrada y la app la consulta directamente, como la BNE; ver [fuentes-libros-es.md](research/fuentes-libros-es.md).)* Hoy la app ya consulta Open Library, Inventaire, Wikidata y MusicBrainz desde el móvil, y solo lo dice la política de privacidad. El maintainer quiere activarlas por defecto para que la experiencia sea buena, pero **siendo totalmente transparente**: esconderlo en la política de privacidad es una trampa, porque nadie la lee.
 
 **Opciones:**
 

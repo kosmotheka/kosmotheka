@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
  * that bar, so a Google Books key (set in Settings) never changes the outcome.
  */
 const KIND_SOURCES: Record<Kind, Source[]> = {
-  book: ["bne", "open_library", "inventaire", "wikidata"],
+  book: ["bne", "library_of_congress", "open_library", "inventaire", "wikidata"],
   comic: ["wikidata"],
   boardgame: ["wikidata"],
   film: ["wikidata"],

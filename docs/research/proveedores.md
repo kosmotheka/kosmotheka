@@ -15,6 +15,7 @@
 | Tipo | Proveedor | Busca por | Clave | Condiciones | Notas |
 |---|---|---|---|---|---|
 | **Libros** | [Biblioteca Nacional de España](https://bne.alma.exlibrisgroup.com/) (SRU del catálogo Alma) | ISBN, título | No | Datos del catálogo público | Sin clave; SRU del catálogo Alma; integrado el 05/10/2026. Primer proveedor de libros: manda en ediciones españolas; sin portadas |
+| | [Library of Congress](https://www.loc.gov/z3950/lcserver.html) (SRU del catálogo) | ISBN, título | No | Sin usuario ni clave; piden no pasar de 10 peticiones por minuto por programa | Integrado el 13/10/2026, desde la app y cifrado. La mejor para ediciones en inglés; sin portadas. [Notas](fuentes-libros-es.md) |
 | | [Open Library](https://openlibrary.org/developers/api) | ISBN, título, autor | No | Datos abiertos | Integrado (D26). Huecos en ediciones españolas |
 | | [Google Books](https://developers.google.com/books/docs/v1/using) | ISBN, título, autor | Sí, en la práctica | ~1.000 peticiones al día con clave; sin clave comparte una cuota global que se agota | Integrado (D26), con clave opcional. Mejor en español |
 | | [Inventaire](https://data.inventaire.io/) | ISBN, título | No | Datos CC0, federado con Wikidata | Consulta las bibliotecas nacionales británica, francesa y **española**. Candidato para ediciones españolas |

@@ -49,10 +49,23 @@ Probada con tres ISBN en inglés (*The Wise Man's Fear*, *The Hobbit*, *Project 
 http://lx2.loc.gov:210/lcdb?version=1.1&operation=searchRetrieve&recordSchema=marcxml&query=bath.isbn=9780756404734
 ```
 
-- **Solo responde por HTTP, sin cifrar** (el puerto 210 no acepta HTTPS). Desde el móvil, Android bloquea el tráfico sin cifrar por defecto y las búsquedas viajarían a la vista. Encaja mejor **a través del servidor**.
+- ~~Solo responde por HTTP, sin cifrar.~~ **Corregido el 13/10/2026:** su [página de conexión](https://www.loc.gov/z3950/lcserver.html) da también una dirección cifrada, `https://lx2.loc.gov/sru/lcdb`, con certificado válido y la misma respuesta. Es la única que usa la app; la del puerto 210 no se usa nunca.
 - El MARC trae la puntuación de catalogación al final de los campos («The wise man's fear /», «Rothfuss, Patrick,»): hay que limpiarla, para la BNE también.
 - La British Library no se ha probado: su catálogo quedó muy limitado tras el ciberataque de 2023.
 
 ## Propuesta de orden (por decidir)
 
 Para libros, consultar primero las bibliotecas nacionales según el idioma de la app (BNE en español, Library of Congress en inglés), después Open Library e Inventaire, y Google Books al final, solo con clave.
+
+## Library of Congress: integrada el 13/10/2026
+
+Acordado con el maintainer: **desde la app, como la BNE**, y no por el servidor. El motivo para pasarla por el servidor era que no cifraba, y ya no es cierto.
+
+- **Por qué no por el servidor:** piden que un programa no pase de 10 peticiones por minuto y se reservan bloquear las IP que lo superen ([aviso legal](https://www.loc.gov/legal/), leído el 13/10/2026). Por el servidor, todas las cuentas saldrían por la misma IP. Desde la app, cada dispositivo va por la suya y una búsqueda es una petición.
+- **Qué ve la biblioteca:** la IP del dispositivo y el ISBN o el título, igual que la BNE u Open Library. Está en Estados Unidos, y la política de privacidad la nombra.
+- **No pide usuario ni clave**, ni atribución.
+- **Derechos sobre los registros: sin confirmar.** Las dos páginas leídas no dicen nada, ni a favor ni en contra. La Library of Congress reparte sus registros gratis y en bloque (MARC Open-Access), pero la declaración de derechos no se ha leído en su página: queda pendiente.
+- **Tras el cambio de su catálogo a Folio (julio de 2025)** admite menos formas de buscar. Probadas y en uso: `bath.isbn` y `dc.title`.
+- **Un título encuentra de todo:** discos, fotografías, mapas. La app se queda solo con los libros (posiciones 6 y 7 de la cabecera del registro).
+- **Los títulos en inglés vienen en minúsculas** («The wise man's fear»), como catalogan los bibliotecarios. Por eso, al juntar las fuentes de un ISBN, el título se toma antes de Google Books u Open Library, y la autoría, la editorial y el año, antes de la Library of Congress.
+- No se ha hecho lo de «consultar según el idioma de la app»: se pregunta a las dos bibliotecas a la vez, y cada una se apaga en Proveedores.
