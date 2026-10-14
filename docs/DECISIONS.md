@@ -67,7 +67,7 @@
 | D59 | Organizaciones: la puerta abierta, sin construirlas | aceptada |
 | D60 | Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar | aceptada |
 | D61 | Series y estados: lo tengo, me falta, lo deseo | aceptada |
-| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia) |
+| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia; y el 14/10/2026: BoardGameGeek, solo por el servidor y con cuenta) |
 | D63 | Distribución: Google Play, sin iOS | aceptada |
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
@@ -871,6 +871,22 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 **Decisión:** la primera. El código admite las dos vías (por el servidor y con clave propia); en el servidor oficial `COMIC_VINE_API_KEY` se queda vacía. Quien monte su propio servidor decide por sí mismo con su clave. **Más adelante se les escribe** explicando el uso exacto ([borrador](research/proveedores.md#correo-a-comic-vine-borrador)); si contestan que sí, se activa en el servidor y se anota aquí.
 
 **Lo que esto enseña para los siguientes:** las condiciones de un proveedor se leen **enteras y en su página**, no de memoria ni de un resumen, antes de encargar nada (con BoardGameGeek, antes de construir).
+
+**Precisión del 14/10/2026 (aceptada): BoardGameGeek, solo por el servidor y solo con cuenta.** Es el caso contrario de Comic Vine.
+
+**Contexto.** Sus reglas, leídas enteras ([notas](research/proveedores.md)), piden dos cosas que chocan con dar clave propia a todos. En una app para usuarios que no programan, el token lo pone quien la desarrolla, y no se pide a la gente que consiga el suyo. Y las llamadas deben salir de un servidor con caché: si salen de las apps, pueden suspender la licencia.
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Por el servidor, solo con cuenta** | Cumple sus reglas; cada cuenta tiene su límite y se sabe quién gasta | Sin cuenta no hay BoardGameGeek |
+| Por el servidor, también sin cuenta | Lo usa todo el mundo | Una ruta pública daría los datos de BGG a cualquier programa sin token, y prohíben expresamente los servicios que dan sus datos a otras aplicaciones; sin cuenta no hay forma de poner límites por persona en un VPS pequeño |
+| Con clave propia en la app | Igual que los demás | Lo contrario de lo que piden |
+
+**Decisión:** la primera. El maintainer aceptó la excepción y vio bien cualquiera de las dos primeras; se eligió la de cuenta por el motivo de la segunda fila.
+- La app no tiene campo de clave propia para BoardGameGeek.
+- Quien monte su propio servidor registra su propia aplicación en BGG y pone su token, que es lo que piden: cada aplicación, su token.
+- **Transparencia:** la tarjeta de Proveedores dice qué se manda al servidor (solo el título buscado, sin nada más) antes de que la persona la deje encendida, como pidió el maintainer.
+- RPGGeek va igual, porque es la misma API y el mismo token.
 
 ## D63 · Distribución: Google Play, sin iOS — `aceptada`
 
