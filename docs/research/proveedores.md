@@ -92,6 +92,17 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 - **Pueden negar o retirar la licencia** a lo que compita con BGG o le perjudique, y cambiar las reglas cuando quieran. Sin soporte técnico.
 - Límites de uso todavía sin cifras; se consultan en «Usage» de la aplicación registrada.
 
+**BoardGameGeek: «XML API Terms of Use» leído entero el 14/10/2026** (texto pegado por el maintainer). Remite además a las condiciones generales del sitio (`boardgamegeek.com/terms`), que no se han leído.
+- **Licencia gratuita para reproducir y mostrar los datos, solo con fines estrictamente no comerciales.** La pueden retirar a cualquiera, cuando quieran y sin dar motivo.
+- **«No puedes modificar los datos […] de ninguna forma».** Es la condición que más afecta al diseño:
+  - El servidor no recorta ni retoca ningún valor de BGG: si un valor no cabe en lo que la app acepta, se descarta entero, no se corta. Elegir qué campos se usan no es modificar; cambiar un valor sí.
+  - No se usan sus descripciones: muchas vienen de Wikipedia con licencia CC BY-NC-SA, y recortarlas sería modificarlas.
+  - Lo que la persona cambia después en su propio catálogo es su ficha, no los datos de BGG que se muestran como tales. Es una lectura nuestra, no algo que digan.
+- **Siempre hay que nombrar a BoardGameGeek como fuente**, y en lo público, el logo «Powered by BGG» con enlace, legible.
+- **Prohibido usar sus datos para entrenar IA.** No aplica a nada de lo previsto.
+- **No dicen cuánto se pueden guardar los datos.** Una caché de 30 días como la de TMDB no contradice nada de lo leído.
+- Pueden cambiar la API y las condiciones cuando quieran, avisando en esa misma página.
+
 **Dónde sale el rol (propuesta del maintainer, 14/10/2026):** el rol es un nicho dentro de los libros, y la app es para todo el mundo. Por eso **RPGGeek solo se consulta al buscar libros por título, nunca por ISBN** (su API tampoco busca por ISBN). Si encuentra algo, sale; si no, no se nota. Apuntes de la sesión coordinadora, por confirmar al construirlo:
 - Sus resultados van **al final** de los de libros y con su nombre de fuente, para que un «Dune» no llene la lista de suplementos de rol.
 - Solo libros de rol (`rpgitem`); las revistas (`rpgissue`) quedan fuera por ahora.
