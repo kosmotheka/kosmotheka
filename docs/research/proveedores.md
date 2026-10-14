@@ -82,6 +82,16 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 **Acordado el 12/10/2026:** RPGGeek se añade, junto con los juegos de mesa de BoardGameGeek, cuando llegue el token. Para el rol en español, la BNE es lo que hay.
 
+**BoardGameGeek: «Using the XML API» leído entero el 14/10/2026** (versión del 02/07/2025, texto pegado por el maintainer; la web bloquea la lectura automática). Falta leer las condiciones de uso, que es otra página.
+- **Registro y token obligatorios** (cabecera `Authorization: Bearer …`, siempre a `boardgamegeek.com`, sin `www`). Pueden tardar una semana o más en contestar.
+- **Piden las llamadas desde un servidor y con caché.** Si llegan directamente desde las apps puede ser motivo para suspender la licencia. Encaja con hacerlo por el servidor.
+- **No piden token a la gente:** «si tu aplicación es para usuarios finales (no programadores), obtén tu propio token […] no deberías pedir a usuarios finales que no programan que consigan su propio token». **Choca con D62**, que da clave propia a todos los proveedores con clave. Propuesta: sin clave propia en la app para BoardGameGeek, solo por el servidor. Quien monte su servidor registra su propia aplicación y pone su token, que es lo que piden («cada aplicación con su propio token»).
+- **Prohibidos los servicios que dan sus datos a otras aplicaciones.** El servidor solo atiende a la app; no se puede abrir para terceros.
+- **Atribución obligatoria en apps públicas:** el logo «Powered by BGG», con enlace a BoardGameGeek, a un tamaño en que se lea. Los ficheros del logo los dan ellos; hay que descargarlos.
+- **Uso comercial:** es comercial si hay ánimo de lucro, publicidad, cualquier ventaja a cambio de pago, **o donativos**, aunque no den nada a cambio. Con donativos haría falta licencia comercial, «muy probablemente gratis». Hoy no aplica; si algún día se aceptan donativos, hay que pedirla antes.
+- **Pueden negar o retirar la licencia** a lo que compita con BGG o le perjudique, y cambiar las reglas cuando quieran. Sin soporte técnico.
+- Límites de uso todavía sin cifras; se consultan en «Usage» de la aplicación registrada.
+
 **Dónde sale el rol (propuesta del maintainer, 14/10/2026):** el rol es un nicho dentro de los libros, y la app es para todo el mundo. Por eso **RPGGeek solo se consulta al buscar libros por título, nunca por ISBN** (su API tampoco busca por ISBN). Si encuentra algo, sale; si no, no se nota. Apuntes de la sesión coordinadora, por confirmar al construirlo:
 - Sus resultados van **al final** de los de libros y con su nombre de fuente, para que un «Dune» no llene la lista de suplementos de rol.
 - Solo libros de rol (`rpgitem`); las revistas (`rpgissue`) quedan fuera por ahora.
