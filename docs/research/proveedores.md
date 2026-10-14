@@ -82,6 +82,13 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 
 **Acordado el 12/10/2026:** RPGGeek se añade, junto con los juegos de mesa de BoardGameGeek, cuando llegue el token. Para el rol en español, la BNE es lo que hay.
 
+**Dónde sale el rol (propuesta del maintainer, 14/10/2026):** el rol es un nicho dentro de los libros, y la app es para todo el mundo. Por eso **RPGGeek solo se consulta al buscar libros por título, nunca por ISBN** (su API tampoco busca por ISBN). Si encuentra algo, sale; si no, no se nota. Apuntes de la sesión coordinadora, por confirmar al construirlo:
+- Sus resultados van **al final** de los de libros y con su nombre de fuente, para que un «Dune» no llene la lista de suplementos de rol.
+- Solo libros de rol (`rpgitem`); las revistas (`rpgissue`) quedan fuera por ahora.
+- Se puede apagar en Proveedores, como cualquier fuente.
+- Cada búsqueda de libros por título gasta una llamada a BoardGameGeek: cuenta para sus límites y los del servidor.
+- Sin tipo «rol» nuevo en la app: lo que se añade desde RPGGeek es un libro.
+
 ## Comic Vine: por qué no tiene clave en el servidor oficial
 
 Decidido el 12/10/2026 ([D62](../DECISIONS.md)). La página de su API pide no construir «some crappy collection app» ni un producto que compita con ellos. Por eso el servidor oficial no pone clave y en la app funciona solo con la clave propia de cada persona. El código del servidor está hecho y probado: basta poner `COMIC_VINE_API_KEY` el día que haya permiso.
