@@ -104,6 +104,8 @@
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
 | D97 | ¿Roles obligatorios desde que se crea la biblioteca? | abierta |
 | D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
+| D99 | No se puede borrar la cuenta dueña de una biblioteca de la nube con más personas | aceptada |
+| D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
 
 ---
 
@@ -1819,3 +1821,32 @@ Aceptada el 10/10/2026, al preparar 7.5.4. Concreta D71 con cuentas y sustituye 
 **Lo que no se construye:** borrar del todo a una persona del catálogo. Si un día hace falta, es otra acción.
 
 **Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 34. Regla nueva en `spec/` con sus casos. Glosario: `access_withdrawn`.
+
+## D99 · No se puede borrar la cuenta dueña de una biblioteca de la nube con más personas — `aceptada`
+
+Aceptada por el maintainer el 15/10/2026, tras la auditoría de cuentas (SEG-061). Concreta D65 y D98 para la nube.
+
+**Contexto.** Cada biblioteca de la nube es «de» la cuenta que la subió (`cloud_library.owner`), y la base de datos la borra en cascada con esa cuenta. Si quien la subió borra su cuenta, la biblioteca desaparece de la nube para todos sus miembros, sin la firma de quien administra. Ya estaba apuntado en el plan para el caso de quien es echado; pasa igual con cualquiera.
+
+**Decisión.** El servidor no deja borrar una cuenta mientras sea dueña de una biblioteca de la nube con más personas: responde 409, y en la base la relación pasa de `CASCADE` a `RESTRICT`. La app le explica que antes la pase a otra persona o la borre. Una biblioteca en la que solo está esa cuenta se borra con ella, como hoy.
+
+**Consecuencias.** Hace falta poder pasar una biblioteca de la nube a otra cuenta, y el borrado de bibliotecas de la nube que ya estaba pendiente (SEG-023). Migración del servidor; código de error nuevo con su texto en la app.
+
+## D100 · Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada — `aceptada`
+
+Aceptada por el maintainer el 15/10/2026, tras la auditoría de cuentas (SEG-062 a SEG-067, SEG-070, SEG-073). Precisa D49, D50, D77 y D78.
+
+**Contexto.** La sesión de un dispositivo dura mucho, y un móvil desbloqueado en otras manos la tiene. Las acciones que cambian cómo se entra en la cuenta deben pedir algo más que la sesión. Además, una cuenta creada con Google no tiene contraseña, y lo que la pedía quedaba fuera de su alcance.
+
+**Decisión.**
+- **No se pide desbloquear el móvil** (PIN o biometría) para entrar en esas pantallas: al maintainer le parece demasiado.
+- **El segundo factor se pide, si está activado,** para cambiar la contraseña, restablecerla con el código del correo, borrar la cuenta y quitar el propio segundo factor.
+- **Activar el segundo factor** pide la contraseña, o un código por correo a una cuenta sin contraseña.
+- **Una cuenta sin contraseña** (solo Google) borra la cuenta con un código por correo, y quita el segundo factor y regenera sus códigos de respaldo con un código del segundo factor.
+- **El secreto del segundo factor se guarda cifrado**, con el mismo cofre que las claves de la nube.
+- **La firma con la que un dispositivo entra nombra el servidor y el propósito**, para que no sirva en otro servidor. Cambian la app y el servidor a la vez.
+- **Registrar otra vez una dirección sin confirmar** no cambia su contraseña al momento: la contraseña se guarda con el código y queda al confirmar con ese código.
+- **Las respuestas no delatan si una dirección tiene cuenta o está en la lista de registro**, y se arregla ya, no al abrir el registro: siempre 202 aunque salte el límite de correos, el correo se manda en diferido para que el tiempo de respuesta no lo diga, y una dirección que no está en la lista recibe la misma respuesta que las demás. La app ya sabe por la información del servidor (`registration_restricted`) que el registro está limitado a una lista, y lo puede explicar sin decir quién está en ella.
+
+**Consecuencias.** Cambios en el servidor y en la app (campos y pantallas nuevas para pedir el segundo factor o un código). Encargo propio.
+
