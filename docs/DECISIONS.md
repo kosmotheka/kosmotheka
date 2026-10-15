@@ -99,7 +99,7 @@
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
-| D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
+| D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | reemplazada por D97 (15/10/2026) |
 | D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
 | D97 | Roles obligatorios desde que se crea la biblioteca | aceptada (precisada el 15/10/2026: sin modo sin roles ni en `spec/`; el nombre, en la bienvenida) |
@@ -646,7 +646,7 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 - **Mover un libro crea ids nuevos** en el destino, y la app guarda de dónde vino. Se puede mover de ida y vuelta, porque las lápidas del origen (D32) no afectan a ids nuevos. El historial anterior se queda en la biblioteca de origen.
 - ~~**Migración con continuidad** (cambiado el 26/09/2026; antes era «sin continuidad»): al actualizar, cada dispositivo pasa sus datos a una biblioteca con **el mismo id fijo en todos los dispositivos**. Los que ya se sincronizaban tienen las mismas filas con los mismos ids, así que al volver a emparejar se funden sin duplicados. Riesgo aceptado: dos instalaciones que nunca se sincronizaron juntarían sus catálogos si se emparejan y comparten esa biblioteca; hoy solo hay una en uso.~~ **Reemplazado el 03/10/2026 por D85:** toda biblioteca nace con id aleatorio.
 - **Interfaz: una biblioteca a la vez, con selector.** Catálogo, deseos y altas son de la biblioteca activa; el buscador tiene la opción «en todas» y «¿Lo tengo?» mira siempre en todas.
-- **Copias: las dos cosas.** Una copia completa del dispositivo, con todas las bibliotecas, y además exportar e importar una biblioteca suelta (copia o CSV), para compartirla o restaurarla sin tocar las demás. Una biblioteca suelta se puede restaurar si no existe ya en el dispositivo.
+- **Copias: las dos cosas.** Una copia completa del dispositivo, con todas las bibliotecas, y además exportar e importar una biblioteca suelta (copia o CSV), para compartirla o restaurarla sin tocar las demás. Una biblioteca suelta se puede restaurar si no existe ya en el dispositivo. **Precisado el 15/10/2026 por D97, con el sí del maintainer:** restaurar escribe el catálogo como operaciones de quien restaura, y el id de una biblioteca sale de la clave de quien la funda, así que una biblioteca restaurada conserva su id solo si este dispositivo es quien la fundó (con la misma clave); si no, se restaura como biblioteca nueva, con otro id, como al duplicarla.
 - **Miembro y usuario, enlace opcional.** Un miembro (dueño de ejemplares) puede enlazarse con un usuario de esa biblioteca, o no (un niño sin cuenta). Sirve para «mis libros» y, en la Fase 4, para asociar las lecturas a la persona. En una biblioteca local no hay enlace. Los permisos sobre «lo suyo» siguen basándose en quién creó la fila (D44, D45).
 
 **Consecuencias:**
@@ -1694,7 +1694,9 @@ Aceptada el 09/10/2026. Cierra el diseño de SEG-013 (auditoría [2026-10-03-2](
 
 **Consecuencias.** D84 no cambia. SEG-013 se cierra cuando 7.4.6 tenga la regla y su test hostil. La app no cambia: ya comprueba el permiso antes de crear la biblioteca en la nube, así que una app sin modificar nunca recibe ese error.
 
-## D94 · Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más — `aceptada`
+## D94 · Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más — `reemplazada por D97`
+
+> **Reemplazada el 15/10/2026 por D97**, con el sí del maintainer: el sello solo servía para el paso de «sin roles» a «con roles», que ya no existe. Lo que no se puede antedatar es ahora la fundación de la biblioteca (ver D97). Las vallas (D84, D87) siguen.
 
 Aceptada el 09/10/2026. Cierra el diseño de SEG-025; se construye en 7.4.7.
 
@@ -1784,6 +1786,8 @@ Aceptada el 10/10/2026, al diseñar 7.5.2b. Concreta el enlace automático de D7
 
 **Precisado por el maintainer el 15/10/2026:**
 - **Sin código para lo que ya existe.** La regla «sin roles, cualquiera puede todo» (regla 1 de `spec/`) **desaparece también de las reglas compartidas**, no solo de la app. Lo que hay hoy son datos de prueba: el maintainer borra sus bibliotecas (también las de la nube) y las vuelve a crear. «No se mantiene algo que no va a usarse nunca.» No hay conversión de bibliotecas viejas.
+- **La fundación no se puede antedatar (añadido el 15/10/2026, con el sí del maintainer).** Con roles obligatorios, la primera operación de una biblioteca (su **fundación**: la fila `library`, su primera persona con `role: admin` y el dispositivo autor asignado a ella con su clave avalada) es la única que se permite sin rol. Como la fecha la pone el autor, una app modificada podría firmar una fundación falsa fechada antes de la verdadera y quedarse de administradora. Por eso **el id de la biblioteca sale de la clave de quien la funda**, como el del dispositivo de la nube (D95): primeros 16 bytes del SHA-256 de la clave pública y de un valor aleatorio que viaja en la fila `library` (`founding_nonce`), escritos como UUID de versión 8. Una fundación solo vale si su autor deriva el id; nadie puede fundar un id que no deriva de su clave, ponga la fecha que ponga.
+- **El sello (D94) desaparece**, con el sí del maintainer: solo servía para el paso a los roles. Las vallas siguen.
 - **El nombre de la persona se pide en la bienvenida.** Todo el mundo tiene «Mi biblioteca» desde que entra, aunque luego la borre, así que su creador es su administrador desde la primera operación, con el nombre que da en la bienvenida.
 
 Planteada por el maintainer el 10/10/2026. Se decide en la revisión de seguridad de conjunto de la Fase 7 (tras 7.7), antes de producción (7.9).

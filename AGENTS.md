@@ -96,6 +96,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | dispositivo de la nube | `cloud_device_id` | Field of the `library` row: the device that is the cloud in this library, and the only one with the cloud's power (D76, D95) |
 | cuenta de una persona | `account_id` | Field of a `member`: a random id of the account linked to that person; only the cloud writes it (D76) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
+| fundación (de una biblioteca) | `founding` | Its first operation: the `library` row, its first person as `admin` and the author's device assigned to that person. The only one allowed without a role; valid only if the library's id derives from the author's key and `founding_nonce` (D97) |
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |
 | biblioteca | `library` | On the server, the unit that owns data (D38) |
