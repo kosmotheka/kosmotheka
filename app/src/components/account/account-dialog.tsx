@@ -12,8 +12,15 @@ import {
 } from "lucide-react";
 
 import { AuthErrorBlock } from "@/components/account/auth-error-block";
-import { CodeInput } from "@/components/account/code-input";
+import { SecondFactorInput } from "@/components/account/second-factor-input";
 import { EditFieldDialog } from "@/components/account/edit-field-dialog";
+import {
+  type ProofNeeds,
+  ProofFields,
+  emptyProof,
+  proofComplete,
+  toActionProof,
+} from "@/components/account/proof-fields";
 import { Field } from "@/components/book-form";
 import { useCloudRows } from "@/components/cloud/cloud-state";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
@@ -25,6 +32,7 @@ import { refreshAccount, useAccount } from "@/lib/account";
 import { type AccountActionError, accountErrorOf } from "@/lib/account-errors";
 import {
   type AccountDetails,
+  type ActionProof,
   type ServerInfo,
   accountDevices,
   accountServerInfo,
@@ -37,6 +45,7 @@ import {
   updateAccount,
 } from "@/lib/api";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
+import { isSecondFactorCode } from "@/lib/second-factor-code";
 
 /** The host part only ("biblio.casa-ruiz.es", not the scheme), as AuthDialog shows it. */
 function hostOf(url: string): string {
@@ -151,19 +160,23 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
     closeOverlay();
   };
 
-  const doDelete = async (password: string) => {
-    await deleteAccount(password);
+  // Until the account is loaded, what the screen shows is what an account with a password has: the usual case.
+  const hasPassword = details?.hasPassword !== false;
+  const twoFactorOn = details?.twoFactorEnabled === true;
+
+  const doDelete = async (proof: ActionProof) => {
+    await deleteAccount(proof);
     await refreshAccount();
     closeOverlay();
   };
 
-  const doTwofaDisable = async (password: string, code: string) => {
+  const doTwofaDisable = async (password: string | null, code: string) => {
     await twoFactorDisable(password, code);
     setTwofaAction(null);
     load();
   };
 
-  const doTwofaRegenerate = async (password: string, code: string) => {
+  const doTwofaRegenerate = async (password: string | null, code: string) => {
     const codes = await regenerateBackupCodes(password, code);
     setTwofaAction(null);
     openOverlay({ name: "twoFactor", codes });
@@ -206,7 +219,7 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
               {t("account.screen.security")}
             </h2>
             <div className="flex flex-col rounded-2xl border">
-              {details?.hasPassword !== false &&
+              {hasPassword &&
                 actionRow(
                   <KeyRound className="size-[18px] shrink-0" />,
                   t("account.screen.changePassword"),
@@ -359,6 +372,7 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
         open={changingPassword}
         desktop={desktop}
         onOpenChange={setChangingPassword}
+        twoFactor={twoFactorOn}
         onChanged={changePassword}
       />
 
@@ -375,11 +389,13 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
         onOpenChange={setDeleting}
         host={host}
         deviceCount={deviceCount}
+        needs={{ who: hasPassword ? "password" : "email", secondFactor: twoFactorOn }}
         onConfirm={doDelete}
       />
 
       <TwofaOffConfirm
         action={twofaAction}
+        hasPassword={hasPassword}
         desktop={desktop}
         onOpenChange={(open) => !open && setTwofaAction(null)}
         onConfirm={twofaAction === "regenerate" ? doTwofaRegenerate : doTwofaDisable}
@@ -393,16 +409,20 @@ function ChangePasswordDialog({
   open,
   desktop,
   onOpenChange,
+  twoFactor,
   onChanged,
 }: {
   open: boolean;
   desktop: boolean;
   onOpenChange: (open: boolean) => void;
-  onChanged: (current: string, next: string) => Promise<void>;
+  /** The account has the second factor on: its code is asked too (D100). */
+  twoFactor: boolean;
+  onChanged: (current: string, next: string, totpCode: string | null) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const [totpCode, setTotpCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AccountActionError | null>(null);
   const [done, setDone] = useState(false);
@@ -412,6 +432,7 @@ function ChangePasswordDialog({
     setSeeded(true);
     setCurrent("");
     setNext("");
+    setTotpCode("");
     setError(null);
     setDone(false);
   } else if (!open && seeded) {
@@ -424,7 +445,7 @@ function ChangePasswordDialog({
     setBusy(true);
     setError(null);
     try {
-      await onChanged(current, next);
+      await onChanged(current, next, twoFactor ? totpCode : null);
       setDone(true);
     } catch (e) {
       setError(accountErrorOf(e));
@@ -478,6 +499,17 @@ function ChangePasswordDialog({
               disabled={busy}
             />
           </Field>
+          {twoFactor && (
+            <Field id="change-password-app-code" label={t("account.confirm.appCodeLabel")}>
+              <SecondFactorInput
+                id="change-password-app-code"
+                value={totpCode}
+                onChange={setTotpCode}
+                disabled={busy}
+                invalid={Boolean(error)}
+              />
+            </Field>
+          )}
           <div className="flex gap-3 rounded-xl bg-muted p-3.5 text-sm text-pretty">
             <LogOut className="mt-0.5 size-[18px] shrink-0" />
             <span>{t("account.changePassword.warning")}</span>
@@ -485,7 +517,9 @@ function ChangePasswordDialog({
           {error && <AuthErrorBlock reason={error.reason} retryAfter={error.retryAfter} />}
           <Button
             className="h-12"
-            disabled={busy || !current || next.length < 8}
+            disabled={
+              busy || !current || next.length < 8 || (twoFactor && !isSecondFactorCode(totpCode))
+            }
             onClick={() => void save()}
           >
             {t("account.changePassword.save")}
@@ -561,6 +595,7 @@ function DeleteAccountConfirm({
   onOpenChange,
   host,
   deviceCount,
+  needs,
   onConfirm,
 }: {
   open: boolean;
@@ -568,17 +603,19 @@ function DeleteAccountConfirm({
   onOpenChange: (open: boolean) => void;
   host: string;
   deviceCount: number | null;
-  onConfirm: (password: string) => Promise<void>;
+  /** The password, or a code from the email for an account with none; and the second factor's code if it has it (D100). */
+  needs: ProofNeeds;
+  onConfirm: (proof: ActionProof) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const [password, setPassword] = useState("");
+  const [proof, setProof] = useState(emptyProof);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AccountActionError | null>(null);
   const [seeded, setSeeded] = useState(false);
 
   if (open && !seeded) {
     setSeeded(true);
-    setPassword("");
+    setProof(emptyProof);
     setError(null);
   } else if (!open && seeded) {
     setSeeded(false);
@@ -588,7 +625,7 @@ function DeleteAccountConfirm({
     setBusy(true);
     setError(null);
     try {
-      await onConfirm(password);
+      await onConfirm(toActionProof(proof, needs));
     } catch (e) {
       setError(accountErrorOf(e));
     } finally {
@@ -618,16 +655,14 @@ function DeleteAccountConfirm({
         <Button variant="outline" className="h-11" onClick={() => openOverlay({ name: "backups" })}>
           {t("account.confirm.backupFirst")}
         </Button>
-        <Field id="delete-account-password" label={t("account.confirm.passwordLabel")}>
-          <Input
-            id="delete-account-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={busy}
-          />
-        </Field>
+        <ProofFields
+          idPrefix="delete-account"
+          needs={needs}
+          proof={proof}
+          onChange={setProof}
+          disabled={busy}
+          invalid={Boolean(error)}
+        />
         {error && <AuthErrorBlock reason={error.reason} retryAfter={error.retryAfter} />}
         <div className="grid grid-cols-2 gap-2.5 pt-1">
           <Button variant="outline" className="h-12" onClick={() => onOpenChange(false)}>
@@ -636,7 +671,7 @@ function DeleteAccountConfirm({
           <Button
             variant="destructive"
             className="h-12"
-            disabled={busy || !password}
+            disabled={busy || !proofComplete(proof, needs)}
             onClick={() => void run()}
           >
             {t("account.confirm.deleteAccount.action")}
@@ -649,14 +684,17 @@ function DeleteAccountConfirm({
 
 function TwofaOffConfirm({
   action,
+  hasPassword,
   desktop,
   onOpenChange,
   onConfirm,
 }: {
   action: TwofaAction | null;
+  /** An account made with Google has none: the code of the second factor is then the whole proof (D100). */
+  hasPassword: boolean;
   desktop: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (password: string, code: string) => Promise<void>;
+  onConfirm: (password: string | null, code: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [password, setPassword] = useState("");
@@ -686,7 +724,7 @@ function TwofaOffConfirm({
     setBusy(true);
     setError(null);
     try {
-      await onConfirm(password, code);
+      await onConfirm(hasPassword ? password : null, code);
     } catch (e) {
       setError(accountErrorOf(e));
     } finally {
@@ -709,18 +747,26 @@ function TwofaOffConfirm({
     >
       <div className="flex flex-col gap-3">
         <p className="text-[15px] text-pretty">{t(bodyKey)}</p>
-        <Field id="twofa-off-password" label={t("account.confirm.passwordLabel")}>
-          <Input
-            id="twofa-off-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={busy}
-          />
-        </Field>
+        {hasPassword && (
+          <Field id="twofa-off-password" label={t("account.confirm.passwordLabel")}>
+            <Input
+              id="twofa-off-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={busy}
+            />
+          </Field>
+        )}
         <Field id="twofa-off-code" label={t("account.confirm.appCodeLabel")}>
-          <CodeInput value={code} onChange={setCode} disabled={busy} invalid={Boolean(error)} />
+          <SecondFactorInput
+            id="twofa-off-code"
+            value={code}
+            onChange={setCode}
+            disabled={busy}
+            invalid={Boolean(error)}
+          />
         </Field>
         <p className="text-[13px] text-pretty text-muted-foreground">{t(noteKey)}</p>
         {error && <AuthErrorBlock reason={error.reason} retryAfter={error.retryAfter} />}
@@ -731,7 +777,7 @@ function TwofaOffConfirm({
           <Button
             variant="destructive"
             className="h-12"
-            disabled={busy || !password || code.length !== 6}
+            disabled={busy || (hasPassword && !password) || !isSecondFactorCode(code)}
             onClick={() => void run()}
           >
             {t(actionKey)}

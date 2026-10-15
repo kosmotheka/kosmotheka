@@ -14,6 +14,7 @@ use App\Dto\ResetPasswordRequest;
 use App\Dto\UpdateAccountRequest;
 use App\Entity\Device;
 use App\Entity\User;
+use App\Enum\AccountErrorCode;
 use App\Enum\ActivityKind;
 use App\Enum\EmailCodePurpose;
 use App\Enum\SignOutReason;
@@ -27,13 +28,14 @@ use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
 use App\Security\RegistrationGate;
 use App\Security\RequestLimiter;
-use App\Sync\Invitation\EmailFingerprint;
+use App\Security\SensitiveAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -57,45 +59,53 @@ final class AccountController extends AbstractController
         private readonly BackupCodeRepository $backupCodeRepository,
         private readonly ActivityLog $activityLog,
         private readonly RegistrationGate $registrationGate,
-        private readonly EmailFingerprint $fingerprints,
+        private readonly SensitiveAction $sensitiveAction,
+        private readonly PasswordHasherFactoryInterface $hasherFactory,
     ) {
     }
 
+    /**
+     * Always 202 (D100): the answer says nothing of whether the address has an account, is on the list of a closed
+     * server, or has spent its mails. The password of a new account is only a placeholder that lets signing in say
+     * "confirm your email": it is chosen again with the code, in `confirm()`, so the one that stays is always the one
+     * of whoever has the email; a second registration of the same address touches nothing, it only sends a new code. The hash is made on
+     * every path so that none is quicker than the others.
+     */
     #[Route('/register', methods: ['POST'])]
     public function register(#[MapRequestPayload] RegisterAccountRequest $payload, Request $request): JsonResponse
     {
         $this->requestLimiter->consumeRegistration((string) $request->getClientIp());
+        $passwordHash = $this->hasherFactory->getPasswordHasher(User::class)->hash($payload->password);
 
         $email = $this->normaliseEmail($payload->email);
         // Before anything is created or sent: a server that only lets some addresses in leaves nothing behind for the rest.
         if (!$this->registrationGate->allows($email)) {
-            throw AccountException::registrationClosed();
+            return $this->accepted();
         }
         $user = $this->userRepository->findOneByEmail($email);
 
         if (!$user instanceof User) {
             $user = new User($email, $payload->name, $payload->locale);
-            $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
+            $user->setPassword($passwordHash);
             $this->entityManager->persist($user);
             $this->entityManager->flush();
-            $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ConfirmEmail);
+            $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ConfirmEmail));
 
-            return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+            return $this->accepted();
         }
 
         if (!$user->isConfirmed()) {
-            $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
-            $user->setName($payload->name);
-            $user->setLocale($payload->locale);
-            $this->entityManager->flush();
-            $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ConfirmEmail);
+            // Nothing of the account changes: not the password, not the name, not the language. A second registration
+            // of the same address kills the first one's code, so whoever comes last would be the one whose data
+            // stays. The password is chosen with the code.
+            $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ConfirmEmail));
 
-            return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+            return $this->accepted();
         }
 
-        $this->accountMailer->sendExistingAccountNotice($user);
+        $this->quietly(fn () => $this->accountMailer->sendExistingAccountNotice($user));
 
-        return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+        return $this->accepted();
     }
 
     #[Route('/confirm', methods: ['POST'])]
@@ -110,6 +120,7 @@ final class AccountController extends AbstractController
 
         $this->emailCodeIssuer->verify($user, EmailCodePurpose::ConfirmEmail, $payload->code);
 
+        $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
         $user->confirm(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
         $this->activityLog->record(ActivityKind::AccountRegistered, $user);
         $this->entityManager->flush();
@@ -124,10 +135,25 @@ final class AccountController extends AbstractController
 
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if ($user instanceof User && !$user->isConfirmed()) {
-            $this->emailCodeIssuer->issueAndSend($user, $payload->getPurpose());
+            $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, $payload->getPurpose()));
         }
 
-        return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+        return $this->accepted();
+    }
+
+    /**
+     * The code a signed-in account asks for to confirm something delicate when it has no password to give (D100). It
+     * goes to its own address, so a limit on the address says nothing that is not already its own.
+     */
+    #[Route('/code/action', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function requestActionCode(Request $request): JsonResponse
+    {
+        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
+
+        $this->emailCodeIssuer->issueAndSend($this->currentUser(), EmailCodePurpose::ConfirmAction);
+
+        return $this->accepted();
     }
 
     #[Route('/password/forgot', methods: ['POST'])]
@@ -137,10 +163,10 @@ final class AccountController extends AbstractController
 
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if ($user instanceof User && $user->isConfirmed() && null !== $user->getPassword()) {
-            $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ResetPassword);
+            $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ResetPassword));
         }
 
-        return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+        return $this->accepted();
     }
 
     #[Route('/password/reset', methods: ['POST'])]
@@ -153,7 +179,11 @@ final class AccountController extends AbstractController
             throw AccountException::invalidCode();
         }
 
-        $this->emailCodeIssuer->verify($user, EmailCodePurpose::ResetPassword, $payload->code);
+        // Looked at, not spent, until the second factor is also right: the email alone is not enough for an account that
+        // has it (D100), and asking for the code again for a slip there would cost another email.
+        $this->emailCodeIssuer->check($user, EmailCodePurpose::ResetPassword, $payload->code);
+        $this->sensitiveAction->requireSecondFactor($user, $payload->totpCode);
+        $this->emailCodeIssuer->spend($user, EmailCodePurpose::ResetPassword);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
         $this->deviceRepository->signOutAllExcept($user, $this->callingDeviceId($user), SignOutReason::PasswordChanged);
@@ -175,7 +205,8 @@ final class AccountController extends AbstractController
             throw AccountException::noPassword();
         }
 
-        $this->checkCurrentPassword($user, $payload->currentPassword);
+        $this->sensitiveAction->proveWhoAsks($user, $payload->currentPassword, null);
+        $this->sensitiveAction->requireSecondFactor($user, $payload->totpCode);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
         $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getDeviceId(), SignOutReason::PasswordChanged);
@@ -193,11 +224,9 @@ final class AccountController extends AbstractController
         $this->requestLimiter->consumeLogin((string) $request->getClientIp());
 
         $user = $this->currentUser();
-        if (null === $user->getPassword()) {
-            throw AccountException::noPassword();
-        }
-
-        $this->checkCurrentPassword($user, $payload->password);
+        $this->sensitiveAction->proveWhoAsks($user, $payload->password, $payload->emailCode);
+        $this->sensitiveAction->requireSecondFactor($user, $payload->totpCode);
+        $this->sensitiveAction->spendProof($user);
 
         // Milestone 7.2 will also need to remove or reassign the member rows
         // this account owns in its libraries before libraries exist here.
@@ -334,29 +363,34 @@ final class AccountController extends AbstractController
         return mb_strtolower(trim($email));
     }
 
+    /** The same answer whatever was or was not done (D100). */
+    private function accepted(): JsonResponse
+    {
+        return new JsonResponse(new \stdClass(), Response::HTTP_ACCEPTED);
+    }
+
+    /**
+     * Sends a code or a notice for an address, and says nothing when its mails are spent: the answer must not tell an
+     * address with an account from one without (D100). Nothing is sent nor changed then, which `EmailCodeIssuer`
+     * guarantees by spending the limit before it touches a code. The limit by IP is not this one and still answers 429.
+     */
+    private function quietly(\Closure $send): void
+    {
+        try {
+            $send();
+        } catch (AccountException $exception) {
+            if (AccountErrorCode::TooManyRequests !== $exception->errorCode) {
+                throw $exception;
+            }
+        }
+    }
+
     /**
      * The device id of this request's own device token, kept signed in by
      * resetPassword(), but only when it belongs to the account being reset:
      * the route is public, so a token for a different account must not
      * protect anything of this one.
      */
-    /**
-     * The same cut per account as signing in (SEG-051): a session on a phone left unlocked must not be a way to try
-     * passwords, since the password outlives the session.
-     *
-     * @throws AccountException with too_many_requests or invalid_credentials
-     */
-    private function checkCurrentPassword(User $user, string $password): void
-    {
-        $fingerprint = $this->fingerprints->of($user->getEmail());
-        $this->requestLimiter->requireLoginOpen($fingerprint);
-        if (!$this->passwordHasher->isPasswordValid($user, $password)) {
-            $this->requestLimiter->noteLoginFailure($fingerprint);
-
-            throw AccountException::invalidCredentials();
-        }
-    }
-
     private function callingDeviceId(User $user): ?string
     {
         $device = $this->currentDevice->tryGet();

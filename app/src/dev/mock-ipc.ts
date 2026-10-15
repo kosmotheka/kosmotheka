@@ -8,6 +8,7 @@ import type {
   AccountDevice,
   AccountStatus,
   AccountUser,
+  ActionProof,
   BookFilter,
   BookSummary,
   Candidate,
@@ -1393,6 +1394,7 @@ mockIPC((cmd, args) => {
         registration: true,
         signInWithGoogle: params.has("google"),
         twoFactor: true,
+        registrationRestricted: params.has("restricted"),
       };
       return info;
     }
@@ -1401,8 +1403,9 @@ mockIPC((cmd, args) => {
       return null;
     case "confirm_account_email": {
       if (offline()) throw { kind: "account", reason: "server_unavailable" };
-      const { code } = args as { code: string };
+      const { code, password } = args as { code: string; password: string };
       if (code === "000000") throw { kind: "account", reason: "invalid_code" };
+      if (password.length < 8) throw { kind: "account", reason: "invalid_input" };
       return null;
     }
     case "resend_account_code":
@@ -1432,8 +1435,16 @@ mockIPC((cmd, args) => {
       return null;
     case "reset_password": {
       if (offline()) throw { kind: "account", reason: "server_unavailable" };
-      const { code } = args as { code: string };
+      const { code, email, totpCode } = args as {
+        code: string;
+        email: string;
+        totpCode: string | null;
+      };
       if (code === "000000") throw { kind: "account", reason: "invalid_code" };
+      if (email.startsWith("2fa@")) {
+        if (!totpCode) throw { kind: "account", reason: "two_factor_required" };
+        if (totpCode === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
+      }
       mockAccount = { ...mockAccount, signedIn: false, user: null };
       return null;
     }
@@ -1465,14 +1476,24 @@ mockIPC((cmd, args) => {
     }
     case "change_password": {
       if (offline()) throw { kind: "account", reason: "server_unavailable" };
-      const { currentPassword } = args as { currentPassword: string };
+      const { currentPassword, totpCode } = args as {
+        currentPassword: string;
+        totpCode: string | null;
+      };
       if (currentPassword === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      if (mockAccountDetails.twoFactorEnabled && !totpCode)
+        throw { kind: "account", reason: "two_factor_required" };
       return null;
     }
+    case "request_action_code":
+      if (offline()) throw { kind: "account", reason: "server_unavailable" };
+      return null;
     case "delete_account": {
       if (offline()) throw { kind: "account", reason: "server_unavailable" };
-      const { password } = args as { password: string };
-      if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      const { proof } = args as { proof: ActionProof };
+      if (proof.password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
+      if (mockAccountDetails.twoFactorEnabled && !proof.totpCode)
+        throw { kind: "account", reason: "two_factor_required" };
       mockAccount = { ...mockAccount, signedIn: false, user: null };
       return null;
     }
@@ -1507,20 +1528,23 @@ mockIPC((cmd, args) => {
       return setup;
     }
     case "two_factor_enable": {
-      const { code } = args as { code: string };
+      const { code, proof } = args as { code: string; proof: ActionProof };
+      if (!proof.password && !proof.emailCode)
+        throw { kind: "account", reason: "invalid_credentials" };
+      if (proof.password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
       if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
       mockAccountDetails = { ...mockAccountDetails, twoFactorEnabled: true, backupCodesLeft: 10 };
       return ACCOUNT_BACKUP_CODES;
     }
     case "two_factor_disable": {
-      const { password, code } = args as { password: string; code: string };
+      const { password, code } = args as { password: string | null; code: string };
       if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
       if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
       mockAccountDetails = { ...mockAccountDetails, twoFactorEnabled: false, backupCodesLeft: 0 };
       return null;
     }
     case "regenerate_backup_codes": {
-      const { password, code } = args as { password: string; code: string };
+      const { password, code } = args as { password: string | null; code: string };
       if (password === "wrong") throw { kind: "account", reason: "invalid_credentials" };
       if (code === "000000") throw { kind: "account", reason: "invalid_two_factor_code" };
       mockAccountDetails = { ...mockAccountDetails, backupCodesLeft: 10 };

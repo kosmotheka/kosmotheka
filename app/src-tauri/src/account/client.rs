@@ -152,6 +152,9 @@ pub struct ServerInfoWire {
     pub registration: bool,
     pub sign_in_with_google: bool,
     pub two_factor: bool,
+    /// Whether only some addresses may make an account (D100). Older servers omit it.
+    #[serde(default)]
+    pub registration_restricted: bool,
     /// Whether the server has the live-notices hub (D75). Older servers omit it.
     #[serde(default)]
     pub events: bool,
@@ -214,13 +217,15 @@ pub async fn register(
     .await
 }
 
+/// The password is chosen here, with the code (D100): the one of whoever has the email.
 pub async fn confirm_email(
     client: &reqwest::Client,
     base: &str,
     email: &str,
     code: &str,
+    password: &str,
 ) -> Result<()> {
-    let body = json!({ "email": email, "code": code });
+    let body = json!({ "email": email, "code": code, "password": password });
     send_empty(
         client,
         Method::POST,
@@ -261,9 +266,13 @@ pub async fn reset_password(
     email: &str,
     code: &str,
     password: &str,
+    totp_code: Option<&str>,
     auth: Option<Auth<'_>>,
 ) -> Result<()> {
-    let body = json!({ "email": email, "code": code, "password": password });
+    let mut body = json!({ "email": email, "code": code, "password": password });
+    if let Some(totp_code) = totp_code {
+        body["totp_code"] = json!(totp_code);
+    }
     send_empty(
         client,
         Method::POST,
@@ -478,8 +487,12 @@ pub async fn change_password(
     token: &str,
     current_password: &str,
     new_password: &str,
+    totp_code: Option<&str>,
 ) -> Result<()> {
-    let body = json!({ "current_password": current_password, "new_password": new_password });
+    let mut body = json!({ "current_password": current_password, "new_password": new_password });
+    if let Some(totp_code) = totp_code {
+        body["totp_code"] = json!(totp_code);
+    }
     send_empty(
         client,
         Method::POST,
@@ -490,14 +503,57 @@ pub async fn change_password(
     .await
 }
 
+/// What an account gives, besides its session, to do something that changes how it is entered (D100): the password,
+/// or for an account with none a code from its email; and a code of the second factor if it has it on. What is
+/// missing or empty is not sent.
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActionProof {
+    pub password: Option<String>,
+    pub email_code: Option<String>,
+    pub totp_code: Option<String>,
+}
+
+impl ActionProof {
+    fn add_to(&self, body: &mut Value) {
+        for (key, value) in [
+            ("password", &self.password),
+            ("email_code", &self.email_code),
+            ("totp_code", &self.totp_code),
+        ] {
+            if let Some(value) = value.as_deref().filter(|value| !value.is_empty()) {
+                body[key] = json!(value);
+            }
+        }
+    }
+}
+
+/// Asks for the code a signed-in account without a password gives by email to confirm an action (D100).
+pub async fn request_action_code(
+    client: &reqwest::Client,
+    base: &str,
+    device_id: &str,
+    token: &str,
+) -> Result<()> {
+    send_empty(
+        client,
+        Method::POST,
+        &format!("{base}/v1/account/code/action"),
+        Some(Auth { device_id, token }),
+        None,
+    )
+    .await
+}
+
 pub async fn delete_account(
     client: &reqwest::Client,
     base: &str,
     device_id: &str,
     token: &str,
-    password: &str,
+    proof: &ActionProof,
 ) -> Result<()> {
-    let body = json!({ "password": password });
+    let mut body = json!({});
+    proof.add_to(&mut body);
     send_empty(
         client,
         Method::DELETE,
@@ -603,8 +659,10 @@ pub async fn two_factor_enable(
     device_id: &str,
     token: &str,
     code: &str,
+    proof: &ActionProof,
 ) -> Result<Vec<String>> {
-    let body = json!({ "code": code });
+    let mut body = json!({ "code": code });
+    proof.add_to(&mut body);
     let response: BackupCodesWire = send_json(
         client,
         Method::POST,
@@ -616,15 +674,24 @@ pub async fn two_factor_enable(
     Ok(response.backup_codes)
 }
 
+/// The password only when there is one: an account made with Google has none, and the code alone is its proof (D100).
+fn password_and_code(password: Option<&str>, code: &str) -> Value {
+    let mut body = json!({ "code": code });
+    if let Some(password) = password.filter(|password| !password.is_empty()) {
+        body["password"] = json!(password);
+    }
+    body
+}
+
 pub async fn two_factor_disable(
     client: &reqwest::Client,
     base: &str,
     device_id: &str,
     token: &str,
-    password: &str,
+    password: Option<&str>,
     code: &str,
 ) -> Result<()> {
-    let body = json!({ "password": password, "code": code });
+    let body = password_and_code(password, code);
     send_empty(
         client,
         Method::DELETE,
@@ -640,10 +707,10 @@ pub async fn regenerate_backup_codes(
     base: &str,
     device_id: &str,
     token: &str,
-    password: &str,
+    password: Option<&str>,
     code: &str,
 ) -> Result<Vec<String>> {
-    let body = json!({ "password": password, "code": code });
+    let body = password_and_code(password, code);
     let response: BackupCodesWire = send_json(
         client,
         Method::POST,

@@ -133,6 +133,12 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
             titleKey: "accountErrors.invalidBackupCode.title",
             helpKey: "accountErrors.invalidBackupCode.help",
           };
+    case "two_factor_required":
+      return {
+        level: "error",
+        titleKey: "accountErrors.twoFactorRequired.title",
+        helpKey: "accountErrors.twoFactorRequired.help",
+      };
     case "server_unavailable":
       return {
         level: "warning",

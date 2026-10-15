@@ -5,11 +5,18 @@ import { Copy, ShieldCheck } from "lucide-react";
 
 import { AuthErrorBlock } from "@/components/account/auth-error-block";
 import { CodeInput } from "@/components/account/code-input";
+import {
+  type ProofNeeds,
+  ProofFields,
+  emptyProof,
+  proofComplete,
+  toActionProof,
+} from "@/components/account/proof-fields";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import { type AccountActionError, accountErrorOf } from "@/lib/account-errors";
-import { type TwoFactorSetup, twoFactorEnable, twoFactorSetup } from "@/lib/api";
+import { type TwoFactorSetup, getAccount, twoFactorEnable, twoFactorSetup } from "@/lib/api";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 
 /** The secret in groups of 4, as the design shows it ("JBSW Y3DP EHPK 3PXP"). */
@@ -39,6 +46,9 @@ export function TwoFactorDialog({
   const [setup, setSetup] = useState<TwoFactorSetup | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [code, setCode] = useState("");
+  // Turning it on asks who is asking (D100): the password, or a code from the email for an account that has none.
+  const [proof, setProof] = useState(emptyProof);
+  const [hasPassword, setHasPassword] = useState(true);
   const [codes, setCodes] = useState<string[]>(givenCodes ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AccountActionError | null>(null);
@@ -50,6 +60,7 @@ export function TwoFactorDialog({
     setStep(givenCodes ? "codes" : "setup");
     setCodes(givenCodes ?? []);
     setCode("");
+    setProof(emptyProof);
     setError(null);
     setAskKeepCodes(false);
   } else if (!open && seeded) {
@@ -71,11 +82,25 @@ export function TwoFactorDialog({
     };
   }, [open, step]);
 
+  // Whether the account has a password; if it cannot be known, the usual case.
+  useEffect(() => {
+    if (!open || givenCodes) return;
+    let cancelled = false;
+    getAccount()
+      .then((loaded) => !cancelled && setHasPassword(loaded.hasPassword))
+      .catch(() => !cancelled && setHasPassword(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, givenCodes]);
+
+  const needs: ProofNeeds = { who: hasPassword ? "password" : "email", secondFactor: false };
+
   const enable = async () => {
     setBusy(true);
     setError(null);
     try {
-      const generated = await twoFactorEnable(code);
+      const generated = await twoFactorEnable(code, toActionProof(proof, needs));
       setCodes(generated);
       setStep("codes");
     } catch (e) {
@@ -155,10 +180,21 @@ export function TwoFactorDialog({
               <span className="text-sm font-medium">{t("account.twoFactorSetup.step2")}</span>
               <CodeInput value={code} onChange={setCode} disabled={busy} invalid={Boolean(error)} />
             </div>
+            <div className="flex flex-col gap-2.5">
+              <span className="text-sm font-medium">{t("account.twoFactorSetup.step3")}</span>
+              <ProofFields
+                idPrefix="two-factor-enable"
+                needs={needs}
+                proof={proof}
+                onChange={setProof}
+                disabled={busy}
+                invalid={Boolean(error)}
+              />
+            </div>
             {error && <AuthErrorBlock reason={error.reason} retryAfter={error.retryAfter} />}
             <Button
               className="h-12"
-              disabled={busy || code.length !== 6}
+              disabled={busy || code.length !== 6 || !proofComplete(proof, needs)}
               onClick={() => void enable()}
             >
               {t("account.twoFactorSetup.enable")}

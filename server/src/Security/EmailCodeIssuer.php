@@ -58,13 +58,39 @@ final readonly class EmailCodeIssuer
         match ($purpose) {
             EmailCodePurpose::ConfirmEmail => $this->accountMailer->sendConfirmationCode($user, $code, self::EXPIRY_MINUTES),
             EmailCodePurpose::ResetPassword => $this->accountMailer->sendPasswordResetCode($user, $code, self::EXPIRY_MINUTES),
+            EmailCodePurpose::ConfirmAction => $this->accountMailer->sendActionCode($user, $code, self::EXPIRY_MINUTES),
         };
     }
 
     /**
+     * Checks the code and spends it.
+     *
      * @throws AccountException with invalid_code, code_expired or too_many_attempts
      */
     public function verify(User $user, EmailCodePurpose $purpose, string $code): void
+    {
+        $this->check($user, $purpose, $code);
+        $this->spend($user, $purpose);
+    }
+
+    /** Takes a spent code away, once whatever it was for has been done. */
+    public function spend(User $user, EmailCodePurpose $purpose): void
+    {
+        $emailCode = $this->emailCodeRepository->findOneByUserAndPurpose($user, $purpose);
+        if ($emailCode instanceof EmailCode) {
+            $this->entityManager->remove($emailCode);
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
+     * Whether the code is the live one, without spending it: for what also asks for something else that may be
+     * wrong (the second factor), so that a slip there does not cost the person another email. A wrong code counts
+     * as an attempt all the same.
+     *
+     * @throws AccountException with invalid_code, code_expired or too_many_attempts
+     */
+    public function check(User $user, EmailCodePurpose $purpose, string $code): void
     {
         $emailCode = $this->emailCodeRepository->findOneByUserAndPurpose($user, $purpose);
         if (!$emailCode instanceof EmailCode) {
@@ -79,9 +105,6 @@ final readonly class EmailCodeIssuer
         }
 
         if (hash_equals($emailCode->getCodeHash(), $this->hash($code))) {
-            $this->entityManager->remove($emailCode);
-            $this->entityManager->flush();
-
             return;
         }
 

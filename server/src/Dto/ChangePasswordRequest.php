@@ -18,6 +18,10 @@ final readonly class ChangePasswordRequest
         #[Assert\Length(min: 8, max: 4096)]
         #[SerializedName('new_password')]
         public string $newPassword,
+        /** Required when the account has the second factor on (D100). */
+        #[Assert\Length(max: 20)]
+        #[SerializedName('totp_code')]
+        public ?string $totpCode = null,
     ) {
     }
 }

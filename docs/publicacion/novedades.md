@@ -2,6 +2,18 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## Próxima versión (sin número; a elegir por el maintainer)
+
+**Lo que cambia para quien usa la app** (cuentas tras la auditoría del 15/10/2026, D100):
+
+- **Hay que actualizar la app a la vez que el servidor.** La firma con la que un móvil entra en su cuenta ahora dice a qué servidor y para qué es (`kosmotheka-login-v2`), y el servidor **no acepta la forma anterior**: aceptarla dejaría abierto justo lo que se cierra. Una app 0.2.0 no podrá iniciar sesión (ni con contraseña ni con Google) en un servidor con este cambio, y recibirá `invalid_device_proof`. Quien ya tiene sesión abierta no se ve afectado hasta que cierre sesión. **Antes de actualizar el servidor de producción, la versión nueva tiene que estar disponible en la prueba interna.**
+- Cambiar la contraseña, restablecerla y borrar la cuenta piden el código de la app de autenticación, si la cuenta lo tiene. Activar el segundo factor pide la contraseña.
+- Una cuenta creada con Google ya puede borrarse y activar el segundo factor: pide un código que llega a su correo.
+- Al crear la cuenta, la contraseña se elige con el código del correo.
+- En un servidor que solo admite algunas direcciones, la app lo avisa antes de registrarse.
+
+**Antes de publicar:** comprobar que `DEFAULT_URI` del servidor de producción es exactamente `https://api.kosmotheka.app` (es parte de lo que se firma; ver [development/server.md](../development/server.md)), y que la app de la prueba interna ya está actualizada.
+
 ## 0.2.0 (11/10/2026, subida a la prueba interna)
 
 **Lo que cambia para quien usa la app** (60 commits desde la 0.1.6, del 05/10/2026):

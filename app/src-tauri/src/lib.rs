@@ -234,6 +234,7 @@ pub fn run() {
             commands::account_devices,
             commands::remove_account_device,
             commands::restore_account_device,
+            commands::request_action_code,
             commands::two_factor_setup,
             commands::two_factor_enable,
             commands::two_factor_disable,

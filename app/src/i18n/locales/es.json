@@ -1457,6 +1457,11 @@
           "primary": "Continuar",
           "stepLabel": "Paso 2 de 3"
         },
+        "recoverTotp": {
+          "title": "Código de verificación",
+          "sub": "Esta cuenta tiene un segundo factor. Escribe el código de tu app de autenticación para cambiar la contraseña.",
+          "primary": "Cambiar contraseña"
+        },
         "newPass": {
           "title": "Contraseña nueva",
           "sub": "La usarás en todos tus dispositivos.",
@@ -1480,6 +1485,8 @@
       "name": "Nombre",
       "nameHint": "Así te verán en las bibliotecas que compartas.",
       "passwordHint": "Mínimo 8 caracteres",
+      "restrictedServer": "Este servidor solo admite algunas direcciones. Si la tuya no está, no te llegará ningún código.",
+      "verifyPassword": "Elige tu contraseña",
       "language": "Idioma",
       "footer": {
         "signin": "¿No tienes cuenta?",
@@ -1541,6 +1548,7 @@
       "cantScan": "¿No puedes? Copia el secreto y pégalo en ella.",
       "copySecret": "Copiar el secreto",
       "step2": "2 · Escribe el primer código que te dé",
+      "step3": "3 · Confirma que eres tú",
       "enable": "Activar",
       "stepLabel1": "Paso 1 de 2",
       "stepLabel2": "Paso 2 de 2"
@@ -1570,9 +1578,16 @@
       "removedFinal": "Quitado",
       "undo": "Deshacer"
     },
+    "proof": {
+      "noPassword": "Esta cuenta no tiene contraseña. Para confirmar que eres tú, te enviaremos un código a tu correo.",
+      "sendCode": "Enviarme un código",
+      "sendAgain": "Enviarlo otra vez",
+      "emailCodeLabel": "Código de tu correo"
+    },
     "confirm": {
       "passwordLabel": "Contraseña",
-      "appCodeLabel": "Código de la app",
+      "appCodeLabel": "Código de la app, o un código de respaldo",
+      "appCodeHelp": "Seis cifras de tu app de autenticación, o un código de respaldo (XXXXX-XXXXX).",
       "backupFirst": "Guardar una copia antes",
       "removeDevice": {
         "title": "¿Quitar {{name}}?",
@@ -1660,6 +1675,10 @@
     "registrationClosed": {
       "title": "Este servidor no admite cuentas nuevas por ahora.",
       "help": "Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor."
+    },
+    "twoFactorRequired": {
+      "title": "Esta cuenta pide el código de su app.",
+      "help": "Escribe el código de tu app de autenticación e inténtalo de nuevo."
     },
     "invalidCredentials": {
       "title": "El email o la contraseña no son correctos.",

@@ -9,4 +9,5 @@ enum EmailCodePurpose: string
 {
     case ConfirmEmail = 'confirm_email';
     case ResetPassword = 'reset_password';
+    case ConfirmAction = 'confirm_action';
 }

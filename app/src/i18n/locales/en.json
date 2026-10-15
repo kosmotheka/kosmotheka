@@ -1443,6 +1443,11 @@
           "primary": "Continue",
           "stepLabel": "Step 2 of 3"
         },
+        "recoverTotp": {
+          "title": "Verification code",
+          "sub": "This account has a second factor. Enter the code from your authenticator app to change the password.",
+          "primary": "Change password"
+        },
         "newPass": {
           "title": "New password",
           "sub": "You'll use it on all your devices.",
@@ -1466,6 +1471,8 @@
       "name": "Name",
       "nameHint": "This is how you'll appear in the libraries you share.",
       "passwordHint": "At least 8 characters",
+      "restrictedServer": "This server only admits some addresses. If yours isn't one of them, no code will reach you.",
+      "verifyPassword": "Choose your password",
       "language": "Language",
       "footer": {
         "signin": "Don't have an account?",
@@ -1527,6 +1534,7 @@
       "cantScan": "Can't scan it? Copy the secret and paste it there.",
       "copySecret": "Copy the secret",
       "step2": "2 · Enter the first code it gives you",
+      "step3": "3 · Confirm it's you",
       "enable": "Turn on",
       "stepLabel1": "Step 1 of 2",
       "stepLabel2": "Step 2 of 2"
@@ -1556,9 +1564,16 @@
       "removedFinal": "Removed",
       "undo": "Undo"
     },
+    "proof": {
+      "noPassword": "This account has no password. To confirm it's you, we'll send a code to your email.",
+      "sendCode": "Send me a code",
+      "sendAgain": "Send it again",
+      "emailCodeLabel": "Code from your email"
+    },
     "confirm": {
       "passwordLabel": "Password",
-      "appCodeLabel": "Code from the app",
+      "appCodeLabel": "Code from the app, or a backup code",
+      "appCodeHelp": "Six digits from your authenticator app, or a backup code (XXXXX-XXXXX).",
       "backupFirst": "Save a backup first",
       "removeDevice": {
         "title": "Remove {{name}}?",
@@ -1646,6 +1661,10 @@
     "registrationClosed": {
       "title": "This server is not taking new accounts for now.",
       "help": "If you already have an account, sign in. If you expected to be able to create one, talk to whoever runs the server."
+    },
+    "twoFactorRequired": {
+      "title": "This account asks for the code from its app.",
+      "help": "Enter the code from your authenticator app and try again."
     },
     "invalidCredentials": {
       "title": "The email or password is incorrect.",

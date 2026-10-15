@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Enum\DeviceProofPurpose;
 use App\Security\DeviceProof;
 use OTPHP\TOTP;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -45,6 +46,7 @@ trait DeviceAuthTestTrait
         $client->request('POST', '/v1/account/confirm', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
             'email' => $email,
             'code' => $matches[0] ?? self::fail('No code in the email.'),
+            'password' => $password,
         ], \JSON_THROW_ON_ERROR));
     }
 
@@ -110,9 +112,10 @@ trait DeviceAuthTestTrait
         ];
     }
 
-    private function sign(string $challenge, string $deviceId, string $secretKey): string
+    /** What the app signs to sign in: this server's origin (`DEFAULT_URI` in `.env`), what it is for, the challenge, the device. */
+    private function sign(string $challenge, string $deviceId, string $secretKey, DeviceProofPurpose $purpose = DeviceProofPurpose::Login): string
     {
-        $message = \sprintf(DeviceProof::MESSAGE_FORMAT, $challenge, $deviceId);
+        $message = \sprintf(DeviceProof::MESSAGE_FORMAT, 'http://localhost', $purpose->value, $challenge, $deviceId);
         \assert('' !== $secretKey);
 
         return $this->encode(sodium_crypto_sign_detached($message, $secretKey));

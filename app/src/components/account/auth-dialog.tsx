@@ -1,9 +1,10 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Globe, LogOut, Server } from "lucide-react";
+import { Check, Globe, Info, LogOut, Server } from "lucide-react";
 
 import { AuthErrorBlock } from "@/components/account/auth-error-block";
 import { CodeInput } from "@/components/account/code-input";
+import { SecondFactorInput } from "@/components/account/second-factor-input";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/api";
 import { GOOGLE_RESULT } from "@/lib/arrived-link";
 import { closeOverlay } from "@/lib/navigation";
+import { isSecondFactorCode } from "@/lib/second-factor-code";
 import { supportedLanguages } from "@/i18n";
 
 type Step =
@@ -38,6 +40,7 @@ type Step =
   | "forgot"
   | "recoverCode"
   | "newPass"
+  | "recoverTotp"
   | "passChanged";
 
 interface ActionError {
@@ -82,6 +85,8 @@ export function AuthDialog({
   // The second factor being asked is the one of a way in with Google: the code goes to `finishGoogle`.
   const [viaGoogle, setViaGoogle] = useState(initialStep === "googleTotp");
   const [offersGoogle, setOffersGoogle] = useState(false);
+  // Only some addresses may make an account here (D100): said before registering, without saying which.
+  const [restricted, setRestricted] = useState(false);
   const [seeded, setSeeded] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,6 +98,8 @@ export function AuthDialog({
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  // The code of the second factor, asked to recover the password of an account that has it on (D100).
+  const [appCode, setAppCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ActionError | null>(null);
   const [resendAt, setResendAt] = useState(0);
@@ -111,6 +118,7 @@ export function AuthDialog({
     setServerInfo(null);
     setCode("");
     setNewPassword("");
+    setAppCode("");
     setError(googleError ? { reason: googleError } : null);
   } else if (!open && seeded) {
     setSeeded(false);
@@ -121,8 +129,16 @@ export function AuthDialog({
     if (!open) return;
     let cancelled = false;
     accountServerInfo()
-      .then((info) => !cancelled && setOffersGoogle(info.signInWithGoogle))
-      .catch(() => !cancelled && setOffersGoogle(false));
+      .then((info) => {
+        if (cancelled) return;
+        setOffersGoogle(info.signInWithGoogle);
+        setRestricted(info.registrationRestricted);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOffersGoogle(false);
+        setRestricted(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -228,7 +244,12 @@ export function AuthDialog({
 
   const doVerify = () =>
     run(async () => {
-      await confirmAccountEmail(email.trim(), code);
+      // The password is chosen here, with the code (D100): the one of whoever has the email.
+      if (password.length < 8) {
+        setError({ reason: "password_short" });
+        return;
+      }
+      await confirmAccountEmail(email.trim(), code, password);
       // Creating an account ends signed in, with the password just typed.
       await signIn(email.trim(), password, null);
       await afterSignedIn();
@@ -239,6 +260,17 @@ export function AuthDialog({
       await resendAccountCode(email.trim());
       setResendAt(Date.now());
       setNow(Date.now());
+    });
+
+  /** An account that was never confirmed: a new code, and the screen to type it with the password it will have. */
+  const doConfirmLater = () =>
+    run(async () => {
+      await resendAccountCode(email.trim());
+      setResendAt(Date.now());
+      setNow(Date.now());
+      setCode("");
+      setPassword("");
+      setStep("verify");
     });
 
   const doForgot = () =>
@@ -254,14 +286,24 @@ export function AuthDialog({
     setStep("newPass");
   };
 
-  const doNewPass = () =>
+  const doNewPass = (totpCode: string | null) =>
     run(async () => {
       if (newPassword.length < 8) {
         setError({ reason: "password_short" });
         return;
       }
-      await resetPassword(email.trim(), code, newPassword);
-      setStep("passChanged");
+      try {
+        await resetPassword(email.trim(), code, newPassword, totpCode);
+        setStep("passChanged");
+      } catch (e) {
+        // The email alone is not enough for an account with the second factor on: its code, then the same request (D100).
+        if (errorOf(e).reason === "two_factor_required") {
+          setAppCode("");
+          setStep("recoverTotp");
+          return;
+        }
+        throw e;
+      }
     });
 
   const doCheckServer = () =>
@@ -271,6 +313,7 @@ export function AuthDialog({
       const info = await accountServerInfo();
       setServerInfo(info);
       setOffersGoogle(info.signInWithGoogle);
+      setRestricted(info.registrationRestricted);
     });
 
   const chooseOfficialServer = () =>
@@ -446,6 +489,12 @@ export function AuthDialog({
         )}
         {emailField}
         {passwordField}
+        {restricted && (
+          <div role="status" className="flex gap-3 rounded-xl bg-muted p-3.5 text-sm text-pretty">
+            <Info className="mt-0.5 size-[18px] shrink-0" />
+            <span>{t("account.auth.restrictedServer")}</span>
+          </div>
+        )}
         {field(
           t("account.auth.language"),
           <div className="flex gap-2">
@@ -482,6 +531,25 @@ export function AuthDialog({
     body = (
       <>
         <CodeInput value={code} onChange={setCode} disabled={busy} invalid={Boolean(error)} />
+        {step === "verify" && password.length < 8 && (
+          <>
+            {field(
+              t("account.auth.verifyPassword"),
+              <>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={busy}
+                />
+                <span className="flex items-center gap-1.5 text-[13px] text-success">
+                  <Check className="size-3.5" /> {t("account.auth.passwordHint")}
+                </span>
+              </>,
+            )}
+          </>
+        )}
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
           {resendLeft > 0 ? (
             <span className="text-muted-foreground">
@@ -561,6 +629,15 @@ export function AuthDialog({
           </button>
         </>
       );
+  } else if (step === "recoverTotp") {
+    body = (
+      <SecondFactorInput
+        value={appCode}
+        onChange={setAppCode}
+        disabled={busy}
+        invalid={Boolean(error)}
+      />
+    );
   } else if (step === "forgot") {
     body = (
       <>
@@ -613,7 +690,8 @@ export function AuthDialog({
       else void doSignIn(code);
     } else if (step === "forgot") void doForgot();
     else if (step === "recoverCode") doRecoverCode();
-    else if (step === "newPass") void doNewPass();
+    else if (step === "newPass") void doNewPass(null);
+    else if (step === "recoverTotp") void doNewPass(appCode);
     else {
       // "passChanged", the last step: back to signing in.
       setStep("signin");
@@ -627,6 +705,8 @@ export function AuthDialog({
     ((step === "signin" || step === "server") && (!email.trim() || !password)) ||
     (step === "signup" && (!name.trim() || !email.trim() || password.length < 8)) ||
     ((step === "verify" || step === "recoverCode" || step === "totp") && code.length !== 6) ||
+    (step === "verify" && password.length < 8) ||
+    (step === "recoverTotp" && !isSecondFactorCode(appCode)) ||
     (step === "backup" && !code.trim()) ||
     (step === "forgot" && !email.trim()) ||
     (step === "newPass" && newPassword.length < 8);
@@ -652,10 +732,10 @@ export function AuthDialog({
           <AuthErrorBlock
             reason={error.reason}
             retryAfter={error.retryAfter}
-            totpStep={step === "totp"}
+            totpStep={step === "totp" || step === "recoverTotp"}
             onAction={() => {
               if (error.reason === "invalid_credentials") setStep("forgot");
-              else if (error.reason === "account_not_confirmed") void doResendVerify();
+              else if (error.reason === "account_not_confirmed") void doConfirmLater();
               else if (error.reason === "code_expired" || error.reason === "too_many_attempts") {
                 void (step === "recoverCode" ? doForgot() : doResendVerify());
               } else if (error.reason === "invalid_two_factor_code" && step === "totp") {

@@ -14,11 +14,11 @@ final readonly class TwoFactorDisableRequest
 {
     public function __construct(
         #[Assert\NotBlank]
-        #[Assert\Length(max: 4096)]
-        public string $password,
-        #[Assert\NotBlank]
         #[Assert\Length(max: 20)]
         public string $code,
+        /** Asked for only when the account has one: one made with Google has none, and the code alone is the proof (D100). */
+        #[Assert\Length(max: 4096)]
+        public ?string $password = null,
     ) {
     }
 }

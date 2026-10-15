@@ -160,7 +160,7 @@ final class ActivityLogTest extends WebTestCase
         \assert($mail instanceof Email);
         preg_match('/\d{6}/', (string) $mail->getTextBody(), $mailed);
         $secrets[] = $mailed[0] ?? self::fail('No code.');
-        $this->post('/v1/account/confirm', ['email' => 'ada@example.com', 'code' => $mailed[0]], ['headers' => []]);
+        $this->post('/v1/account/confirm', ['email' => 'ada@example.com', 'code' => $mailed[0], 'password' => self::PASSWORD], ['headers' => []]);
         $session = $this->loginDevice($this->client, 'ada@example.com', self::PASSWORD, Uuid::v4()->toRfc4122(), 'Phone');
         $secrets[] = $session['token'];
         $secrets[] = $session['secret_key'];
@@ -174,7 +174,7 @@ final class ActivityLogTest extends WebTestCase
         $secret = $setup['body']['secret'] ?? null;
         \assert(\is_string($secret) && '' !== $secret);
         $code = TOTP::createFromSecret($secret)->now();
-        $enabled = $this->post('/v1/account/two-factor/enable', ['code' => $code], $session);
+        $enabled = $this->post('/v1/account/two-factor/enable', ['code' => $code, 'password' => 'a brand new password'], $session);
         $backup = $enabled['body']['backup_codes'] ?? [];
         \assert(\is_array($backup));
         $secrets = [...$secrets, $secret, $code, ...array_filter($backup, \is_string(...)), self::PASSWORD, 'wrong password 123', 'a brand new password', $session['token']];
@@ -238,7 +238,7 @@ final class ActivityLogTest extends WebTestCase
         $setup = $this->post('/v1/account/two-factor/setup', null, $session);
         $secret = $setup['body']['secret'] ?? null;
         \assert(\is_string($secret) && '' !== $secret);
-        $enabled = $this->post('/v1/account/two-factor/enable', ['code' => TOTP::createFromSecret($secret)->now()], $session);
+        $enabled = $this->post('/v1/account/two-factor/enable', ['code' => TOTP::createFromSecret($secret)->now(), 'password' => 'a brand new password'], $session);
         $codes = $enabled['body']['backup_codes'] ?? null;
         \assert(\is_array($codes) && \is_string($codes[0] ?? null));
         $backup = $codes[0];

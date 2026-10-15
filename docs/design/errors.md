@@ -102,7 +102,7 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 | `code_expired` | `code_expired` | error | Este código ha caducado. | Los códigos valen 15 minutos. Pide otro y úsalo en cuanto llegue. **«Enviar otro código»** |
 | `code_attempts` | `too_many_attempts` | error | Demasiados intentos con este código. | Ya no sirve. Pide otro: llega en un momento. **«Pedir otro código»** |
 | `rate_limited` | `too_many_requests` (con `Retry-After`) | aviso | Demasiadas peticiones. | Espera {n} minutos e inténtalo de nuevo. |
-| `registration_closed` | `registration_closed` (`403`) | aviso | Este servidor no admite cuentas nuevas por ahora. | Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor. |
+| `registration_closed` | `registration_closed` (`403`) | aviso | Este servidor no admite cuentas nuevas por ahora. | Si ya tienes una cuenta, inicia sesión. Si esperabas poder crear una, habla con quien lleva el servidor. **Desde D100 solo sale al volver de Google** (quien llega ahí ha probado que la dirección es suya); al registrarse con correo el servidor responde lo mismo para todos y no dice nada. |
 | `google_cancelled` | `google_cancelled` (en el enlace de vuelta) | info | Has cancelado el inicio de sesión con Google. | |
 | `google_expired` | `google_expired` (app) · `invalid_google_code` (`400`) | aviso | El inicio de sesión con Google ha tardado demasiado. | Empieza de nuevo desde la app. |
 | `google_email_unverified` | `google_email_not_verified` | error | Google no ha confirmado tu correo. | Confirma la dirección en tu cuenta de Google, o entra con tu correo y contraseña. |
@@ -113,6 +113,7 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 | `account_locked` | `account_blocked` | error | Esta cuenta está bloqueada. | Si crees que es un error, escribe a quien gestiona el servidor. |
 | `totp_incorrect` | `invalid_two_factor_code` (con el código de la app) | error | El código no es correcto. | Usa el que se ve ahora en la app: cambia cada 30 segundos. Comprueba que la hora del móvil sea automática. **«Usar un código de respaldo»** |
 | `backup_incorrect` | `invalid_two_factor_code` (con un código de respaldo) | error | Ese código de respaldo no vale. | Puede que ya lo usaras: cada uno vale una vez. Prueba con otro de la lista. |
+| `second_factor_required` | `two_factor_required` (en acciones delicadas, D100) | error | Esta cuenta pide el código de su app. | Escribe el código de tu app de autenticación e inténtalo de nuevo. Normalmente la pantalla ya lo pide antes; este texto sale si el segundo factor se activó en otro dispositivo mientras estaba abierta. |
 | `session_revoked` | `signed_out_password_changed` | info | Se ha cerrado la sesión. | La contraseña se cambió en otro dispositivo. No se pierde nada: los cambios sin subir se enviarán al volver a entrar. **«Iniciar sesión»** |
 | `device_removed` | `device_removed` | info | Este dispositivo se quitó de una cuenta. | Se quitó desde otro dispositivo y sus bibliotecas se han borrado. La app está lista para usar, con o sin cuenta. |
 | `cloud_offline` | (sin respuesta) | aviso | Sin conexión con la nube. | Todo sigue funcionando aquí y por la red de casa; los cambios se subirán cuando vuelva la conexión. |
@@ -127,7 +128,9 @@ Propuestos por Design el 02/10/2026 ([pantallas](screens/cloud-account/), [origi
 - `session_revoked` y `device_removed`: pantalla propia al abrir la app.
 - `cloud_offline`: indicador discreto (barra superior en escritorio, cabecera de Compartir en móvil) y fila de la nube; nunca bloquea.
 - `invite_invalid`: pantalla propia al abrir el enlace.
-- El servidor no dice cuántos intentos quedan ni si un email ya tiene cuenta: crear cuenta siempre pasa a la pantalla del código, y si el email ya tenía cuenta le llega un correo avisando.
+- El servidor no dice cuántos intentos quedan ni si un email ya tiene cuenta: crear cuenta siempre pasa a la pantalla del código, y si el email ya tenía cuenta le llega un correo avisando. Desde D100 tampoco lo dicen el límite de correos de la dirección (siempre 202) ni la lista de un servidor cerrado.
+- **Aviso al registrarse en un servidor cerrado** (D100, sin código del servidor: lo sabe por `registration_restricted` de `GET /v1/server`), en un bloque informativo bajo los campos de crear cuenta: «Este servidor solo admite algunas direcciones. Si la tuya no está, no te llegará ningún código.» No dice quién está en la lista.
+- **Acciones delicadas (D100)** — cambiar o restablecer la contraseña, borrar la cuenta, activar o quitar el segundo factor: piden la contraseña (o «Enviarme un código» a una cuenta sin contraseña) y el código de la app si la cuenta lo tiene; textos de los campos en `account.proof.*` y `account.confirm.*`. La contraseña mal puesta y el código de la app mal puesto salen con los textos de siempre (`bad_credentials`, `totp_incorrect`).
 
 ## La cuenta dentro de la biblioteca (Fase 7, 2.ª tanda)
 

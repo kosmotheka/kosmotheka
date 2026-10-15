@@ -20,6 +20,7 @@ final readonly class AccountMailer
 {
     public function __construct(
         private MailerInterface $mailer,
+        private MailOutbox $outbox,
         private TranslatorInterface $translator,
         private RequestLimiter $requestLimiter,
         private string $mailerFrom,
@@ -32,7 +33,7 @@ final readonly class AccountMailer
         $this->send($user, 'confirm_email.subject', 'confirm_email.body', [
             '%code%' => $code,
             '%minutes%' => $expiryMinutes,
-        ], false);
+        ], false, true);
     }
 
     /** The per-address limit was spent by `EmailCodeIssuer`, before it replaced the live code. */
@@ -41,13 +42,22 @@ final readonly class AccountMailer
         $this->send($user, 'reset_password.subject', 'reset_password.body', [
             '%code%' => $code,
             '%minutes%' => $expiryMinutes,
-        ], false);
+        ], false, true);
+    }
+
+    /** The code a signed-in account asks for before something delicate (D100). Limit spent by `EmailCodeIssuer`. */
+    public function sendActionCode(User $user, string $code, int $expiryMinutes): void
+    {
+        $this->send($user, 'confirm_action.subject', 'confirm_action.body', [
+            '%code%' => $code,
+            '%minutes%' => $expiryMinutes,
+        ], false, true);
     }
 
     /** Sent instead of a code when someone tries to register an already-confirmed address. */
     public function sendExistingAccountNotice(User $user): void
     {
-        $this->send($user, 'existing_account.subject', 'existing_account.body', []);
+        $this->send($user, 'existing_account.subject', 'existing_account.body', [], true, true);
     }
 
     /**
@@ -85,18 +95,22 @@ final readonly class AccountMailer
         $this->deliver($to, $locale, 'invitation.subject', 'invitation.body', ['%link%' => $link]);
     }
 
-    /** @param array<string, string|int> $parameters */
-    private function send(User $user, string $subjectKey, string $bodyKey, array $parameters, bool $limited = true): void
+    /**
+     * @param array<string, string|int> $parameters
+     * @param bool                      $deferred   goes out after the response (D100): for the mail whose answer must not
+     *                                              depend on the address having an account
+     */
+    private function send(User $user, string $subjectKey, string $bodyKey, array $parameters, bool $limited = true, bool $deferred = false): void
     {
         if ($limited) {
             $this->requestLimiter->consumeEmailPerAddress($user->getEmail());
         }
 
-        $this->deliver($user->getEmail(), $user->getLocale(), $subjectKey, $bodyKey, $parameters);
+        $this->deliver($user->getEmail(), $user->getLocale(), $subjectKey, $bodyKey, $parameters, $deferred);
     }
 
     /** @param array<string, string|int> $parameters */
-    private function deliver(string $to, string $locale, string $subjectKey, string $bodyKey, array $parameters): void
+    private function deliver(string $to, string $locale, string $subjectKey, string $bodyKey, array $parameters, bool $deferred = false): void
     {
         $subject = $this->translator->trans($subjectKey, [], 'emails', $locale);
         $body = $this->translator->trans($bodyKey, $parameters, 'emails', $locale);
@@ -106,6 +120,12 @@ final readonly class AccountMailer
             ->to($to)
             ->subject($subject)
             ->text($body);
+
+        if ($deferred) {
+            $this->outbox->send($email);
+
+            return;
+        }
 
         $this->mailer->send($email);
     }

@@ -12,8 +12,8 @@ use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * A server whose host only lets some addresses make an account (`REGISTRATION_ALLOWED_EMAILS`): everybody else gets
- * `registration_closed` and leaves nothing behind. With the list empty, registration is open, as it always was.
+ * A server whose host only lets some addresses make an account (`REGISTRATION_ALLOWED_EMAILS`): everybody else gets the
+ * same 202 as anybody and leaves nothing behind: the answer never says who is on the list (D100). With the list empty, registration is open, as it always was.
  */
 final class ClosedRegistrationTest extends WebTestCase
 {
@@ -34,8 +34,8 @@ final class ClosedRegistrationTest extends WebTestCase
 
         $this->register($client, 'jhonny@example.com');
 
-        self::assertResponseStatusCodeSame(403);
-        self::assertSame('registration_closed', $this->body($client)['error'] ?? null);
+        self::assertResponseStatusCodeSame(202);
+        self::assertSame('{}', $client->getResponse()->getContent());
         self::assertEmailCount(0);
         self::assertNull($this->findUser('jhonny@example.com'));
     }
@@ -55,10 +55,13 @@ final class ClosedRegistrationTest extends WebTestCase
     {
         $client = $this->clientAllowing('ada@example.com');
 
-        foreach (['ada@example.com.evil.test', 'xada@example.com', 'ada@example.comx', 'ada+1@example.com', 'ada@example.com,jhonny@example.com'] as $email) {
+        foreach (['ada@example.com.evil.test', 'xada@example.com', 'ada@example.comx', 'ada+1@example.com'] as $email) {
             $this->register($client, $email);
-            self::assertNotSame(202, $client->getResponse()->getStatusCode(), $email);
+            self::assertSame(202, $client->getResponse()->getStatusCode(), $email);
         }
+        // Two addresses in one is no address at all.
+        $this->register($client, 'ada@example.com,jhonny@example.com');
+        self::assertResponseStatusCodeSame(422);
         self::assertEmailCount(0);
         self::assertSame(0, $this->entityManager()->getRepository(User::class)->count([]));
     }

@@ -10,12 +10,12 @@ Una cuenta se crea **sin confirmar**: hasta que se confirma el correo con un có
 
 ## Códigos por correo (D49, D50)
 
-Dos usos comparten el mismo mecanismo (`App\Entity\EmailCode`, `App\Security\EmailCodeIssuer`): confirmar el correo al registrarse y recuperar la contraseña olvidada (esta segunda, en la parte 3).
+Tres usos comparten el mismo mecanismo (`App\Entity\EmailCode`, `App\Security\EmailCodeIssuer`): confirmar el correo al registrarse (`confirm_email`), recuperar la contraseña olvidada (`reset_password`, parte 3) y confirmar una acción delicada de una cuenta sin contraseña (`confirm_action`, D100). Un código de un propósito no sirve para otro: el código vivo se busca por cuenta y propósito.
 
 - El código son **6 cifras** (`random_int`, con ceros a la izquierda).
 - Caduca a los **15 minutos**.
 - Permite **5 intentos** fallidos; al quinto, el código se borra y no se puede reintentar (hay que pedir uno nuevo).
-- Es de **un solo uso**: acertarlo lo borra.
+- Es de **un solo uso**: acertarlo lo borra. Cuando lo que se confirma pide además otra cosa que puede salir mal (el código del segundo factor), el código del correo se **mira sin gastar** (`EmailCodeIssuer::check()`, que cuenta el intento si es erróneo) y se gasta al final (`spend()`): un descuido en lo otro no cuesta otro correo.
 - Solo existe **un código vivo por cuenta y propósito**: pedir uno nuevo borra el anterior.
 - Se guarda el **HMAC-SHA256** del código (con `kernel.secret`), nunca el código en claro. La comparación usa `hash_equals`.
 
@@ -33,21 +33,31 @@ Todos bajo `/v1/account`, JSON, `snake_case`.
 
 Cuerpo: `{email, password, name, locale}` (contraseña 8–4096 caracteres, nombre 1–100 tras recortar espacios, `locale` `en` o `es`). Limitado por `registration` (por IP).
 
-Responde siempre **202** con `{}`, **nunca revela si el correo ya existe** (evita que alguien compruebe qué direcciones están registradas):
+Responde siempre **202** con `{}` (D100): **nunca revela** si el correo ya tiene cuenta, si está en la lista de un servidor cerrado, ni si ha gastado sus correos (evita que alguien compruebe qué direcciones están registradas). Lo único que se sale del 202 es el límite **por IP**, que no habla de la dirección (**429**).
 
-- correo nuevo → crea la cuenta sin confirmar y envía un código `confirm_email`;
-- correo existente **sin confirmar** → actualiza contraseña, nombre e idioma, y envía un código nuevo (sirve también para reenviar un código perdido, cambiando los datos a la vez);
+- correo nuevo → crea la cuenta sin confirmar, con la contraseña del cuerpo, y envía un código `confirm_email`. Esa contraseña es provisional: solo hace que iniciar sesión diga «falta confirmar» (`account_not_confirmed`) en lugar de «credenciales incorrectas», y se sustituye por la de `confirm`;
+- correo existente **sin confirmar** → solo envía un código nuevo (sirve también para reenviar un código perdido). **No cambia nada de la cuenta: ni la contraseña, ni el nombre, ni el idioma**: solo hay un código vivo por cuenta, así que quien se inscribe el último invalida el código del primero, y si la contraseña se guardara con el código, la que quedaría sería la de quien llegó después. La contraseña se elige **al confirmar**, con el código del correo, y por eso la pone siempre quien controla el correo;
 - correo existente **confirmado** → no cambia nada; envía un correo corto, en su idioma, avisando de que alguien ha intentado crear una cuenta con su dirección y que puede iniciar sesión o recuperar la contraseña si fue quien lo intentó.
 
-**Registro cerrado** (11/10/2026, para el despliegue de prueba): con `REGISTRATION_ALLOWED_EMAILS` (correos separados por comas) solo esas direcciones pueden crear una cuenta; las demás reciben `403 registration_closed` **antes** de crear nada ni mandar ningún correo, y solo gastan el límite de registro por IP. Vacía (el valor por defecto), el registro está abierto. La comparación usa la misma normalización que el registro (sin espacios, en minúsculas) y es exacta: `ada+1@…` no es `ada@…`. Quien ya tiene cuenta entra igual; aceptar una invitación no crea cuentas, así que un invitado nuevo también tiene que estar en la lista. `GET /v1/server` dice `registration_restricted: true` y nunca la lista. La decide `App\Security\RegistrationGate`. **Límite conocido:** la respuesta distingue si una dirección está en la lista; se acepta para una prueba cerrada. Tests: `ClosedRegistrationTest`.
+La contraseña del cuerpo se pasa por el hasher en todos los caminos (también el de una dirección fuera de la lista o con cuenta ya confirmada) para que ninguno responda antes que otro.
+
+Si los correos de la dirección están gastados (`email_per_address`), no se manda nada ni se cambia ningún código (el límite se gasta antes de tocar el código vivo), y la respuesta es la misma 202.
+
+**El correo sale después de responder** (`App\Security\MailOutbox`): durante la petición solo se guarda, y sale en `kernel.terminate`, cuando con PHP-FPM la respuesta ya ha salido; así lo que tarda la respuesta no dice si la dirección tiene cuenta. Sin transporte de Messenger. Si un envío falla ahí, se registra sin la dirección (solo la clase de la excepción) y no cambia nada de lo respondido. Fuera de una petición (consola) sale en el acto. Solo van diferidos los correos cuya respuesta no debe depender de la dirección: el código de confirmación, el de recuperación, el de acción y el aviso de «ya tienes cuenta»; los avisos de algo hecho (contraseña cambiada, segundo factor) y las invitaciones salen en el acto.
+
+**Registro cerrado** (11/10/2026, para el despliegue de prueba): con `REGISTRATION_ALLOWED_EMAILS` (correos separados por comas) solo esas direcciones pueden crear una cuenta; para las demás, `register` responde el mismo **202** y **no crea nada ni manda ningún correo** (D100: ya no hay `403 registration_closed` aquí), y solo gasta el límite de registro por IP. Vacía (el valor por defecto), el registro está abierto. La comparación usa la misma normalización que el registro (sin espacios, en minúsculas) y es exacta: `ada+1@…` no es `ada@…`. Quien ya tiene cuenta entra igual; aceptar una invitación no crea cuentas, así que un invitado nuevo también tiene que estar en la lista. `GET /v1/server` dice `registration_restricted: true` y nunca la lista, y la app avisa antes de registrarse en un servidor así («si tu dirección no está, no te llegará ningún código»). La decide `App\Security\RegistrationGate`. **Excepción:** al entrar con Google (`GoogleAccounts`), una dirección que Google acaba de confirmar y que no está en la lista sí recibe `registration_closed`: quien lo recibe ha probado que la dirección es suya, así que no enseña la lista a nadie más, y no le deja a oscuras tras ir al navegador. Tests: `ClosedRegistrationTest`, `GoogleSignInTest`.
 
 ### `POST /v1/account/confirm`
 
-Cuerpo: `{email, code}`. Limitado por `email_code` (por IP). Responde **204** si el código es correcto y marca `confirmedAt`. Si la cuenta no existe, ya está confirmada, o el código es incorrecto, caducado o ha agotado los intentos, responde **400** con `invalid_code`, `code_expired` o `too_many_attempts` — confirmar una cuenta ya confirmada da `invalid_code`, no un error distinto, por la misma razón de no revelar estado.
+Cuerpo: `{email, code, password}` (contraseña 8–4096 caracteres: **la que queda**, D100). Limitado por `email_code` (por IP). Responde **204** si el código es correcto, guarda la contraseña y marca `confirmedAt`. Si la cuenta no existe, ya está confirmada, o el código es incorrecto, caducado o ha agotado los intentos, responde **400** con `invalid_code`, `code_expired` o `too_many_attempts` — confirmar una cuenta ya confirmada da `invalid_code`, no un error distinto, por la misma razón de no revelar estado.
 
 ### `POST /v1/account/code`
 
-Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**422** para cualquier otro valor; `reset_password` llega en la parte 3 con su propio endpoint). Limitado por `email_code` (por IP). Responde siempre **202** con `{}`; solo reenvía el código si la cuenta existe y no está confirmada.
+Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**422** para cualquier otro valor; `reset_password` llega en la parte 3 con su propio endpoint). Limitado por `email_code` (por IP). Responde siempre **202** con `{}`, también cuando la dirección ha gastado sus correos (D100); solo reenvía el código si la cuenta existe, no está confirmada y le quedan correos.
+
+### `POST /v1/account/code/action` (autenticada)
+
+Sin cuerpo. Limitada por `email_code` (por IP) y por `email_per_address`. Manda a la cuenta **su propio** correo un código `confirm_action` y responde **202**. Es lo que da una cuenta sin contraseña (solo Google) en lugar de la contraseña para borrar la cuenta o activar el segundo factor (ver «Acciones delicadas»). Como es la dirección de la propia cuenta, un límite alcanzado responde **429** con normalidad.
 
 ## Límites de peticiones
 
@@ -82,10 +92,10 @@ Un dispositivo tiene tres estados: **con sesión**, **sesión cerrada** (`tokenH
 La app demuestra que tiene la clave privada firmando, con Ed25519, los bytes UTF-8 exactos de:
 
 ```
-kosmotheka-login\n<challenge>\n<device_id>
+kosmotheka-login-v2\n<origen del servidor>\n<propósito>\n<challenge>\n<device_id>
 ```
 
-(`App\Security\DeviceProof::MESSAGE_FORMAT`). La firma viaja en base64url sin relleno (64 bytes). `App\Security\DeviceProof::verify()` decodifica reto, clave pública y firma igual que `OperationSignature`, y lanza `invalid_device_proof` si no cuadra.
+(`App\Security\DeviceProof::MESSAGE_FORMAT`, D100). El **propósito** es `login` (contraseña) o `google`; el **origen** es `scheme://host[:port]` en minúsculas, sin barra final y sin el puerto si es el del esquema (`App\Security\ServerOrigin`, que lo saca de `DEFAULT_URI`, la dirección pública del servidor; en desarrollo `SERVER_EXTRA_ORIGINS`, vacía por defecto y siempre vacía en producción, añade otras direcciones por las que se llega al mismo servidor (emulador, red de casa) y la firma vale para cualquiera de ellas y ninguna más; la app escribe lo mismo con `Url::origin()` en `app/src-tauri/src/account/origin.rs`). Así una firma hecha para otro servidor, o para entrar con Google, no vale aquí para entrar con contraseña, ni al revés. **No se acepta el formato viejo** (`kosmotheka-login\n<challenge>\n<device_id>`): aceptarlo dejaría el hueco abierto. Las apps de la prueba interna tienen que actualizarse a la vez que el servidor. La firma viaja en base64url sin relleno (64 bytes). `App\Security\DeviceProof::verify()` decodifica reto, clave pública y firma igual que `OperationSignature`, y lanza `invalid_device_proof` si no cuadra.
 
 ### `POST /v1/auth/login`
 
@@ -133,7 +143,9 @@ Cuerpo: `{email}`. Pública. Limitada por `email_code` (por IP). Responde siempr
 
 ### `POST /v1/account/password/reset`
 
-Cuerpo: `{email, code, password}`. Pública. Limitada por `email_code` (por IP). Verifica el código como `confirm` (mismos códigos de error: `invalid_code`, `code_expired`, `too_many_attempts`), guarda la contraseña nueva y responde **204**.
+Cuerpo: `{email, code, password, totp_code?}`. Pública. Limitada por `email_code` (por IP). Verifica el código como `confirm` (mismos códigos de error: `invalid_code`, `code_expired`, `too_many_attempts`), guarda la contraseña nueva y responde **204**.
+
+**Con el segundo factor activado** (D100) el correo no basta: sin `totp_code` responde **401** `two_factor_required`, con uno malo **400** `invalid_two_factor_code`, y no cambia nada. El código del correo se mira **sin gastar** hasta que el del segundo factor también es bueno: la app lo pide y repite la misma petición. Solo se llega a ese punto con un código del correo válido, así que la ruta no sirve para saber qué cuentas tienen segundo factor.
 
 Desconecta todos los dispositivos de la cuenta **excepto** el que hace la llamada, si lleva un token de dispositivo válido de esa misma cuenta (las cabeceras son opcionales en esta ruta). Esto es una excepción deliberada al comportamiento normal del firewall `api`: en el resto de rutas protegidas, un token inválido corta la petición con `invalid_token`; aquí no puede, porque la ruta es pública y quien ha olvidado la contraseña puede no llevar ningún dispositivo autenticado, o llevar uno con un token ya caducado. `App\Security\DeviceTokenAuthenticator::onAuthenticationFailure()` devuelve `null` (en vez de la respuesta 401 habitual) para esta ruta concreta, lo que dentro de Symfony significa «sigue sin autenticar», y `PUBLIC_ACCESS` deja pasar la petición. Si el token es válido, `App\Security\CurrentDevice::tryGet()` da ese dispositivo al controlador; si no hay ninguno, o pertenece a otra cuenta, no se excluye ningún dispositivo y se desconectan todos.
 
@@ -141,7 +153,7 @@ Envía un correo corto («se ha cambiado tu contraseña») en el idioma de la cu
 
 ### `POST /v1/account/password` (autenticada)
 
-Cuerpo: `{current_password, new_password}`. Limitada por `login` (por IP). Contraseña actual incorrecta → **401** `invalid_credentials`. Cuenta sin contraseña (futura cuenta solo con Google) → **409** `no_password`. Si acierta, guarda la contraseña nueva, desconecta el resto de dispositivos de la cuenta (nunca el que llama) y envía el mismo correo de aviso.
+Cuerpo: `{current_password, new_password, totp_code?}`. Limitada por `login` (por IP). Contraseña actual incorrecta → **401** `invalid_credentials`. Con el segundo factor activado, además `totp_code` (D100): sin él **401** `two_factor_required`, malo **400** `invalid_two_factor_code`. Cuenta sin contraseña (solo Google) → **409** `no_password`. Si acierta, guarda la contraseña nueva, desconecta el resto de dispositivos de la cuenta (nunca el que llama) y envía el mismo correo de aviso.
 
 Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOutAllExcept()`, una actualización masiva (DQL `UPDATE`) en vez de cargar cada `Device` en memoria.
 
@@ -151,7 +163,7 @@ Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOu
 
 ## Borrado de cuenta
 
-`DELETE /v1/account` (autenticada). Cuerpo: `{password}`. Limitada por `login` (por IP). Contraseña incorrecta → **401** `invalid_credentials`; cuenta sin contraseña → **409** `no_password`. Si acierta, borra la cuenta (`EntityManager::remove`) y responde **204**. Los dispositivos y códigos de la cuenta se borran en cascada a nivel de base de datos (`ON DELETE CASCADE`).
+`DELETE /v1/account` (autenticada). Cuerpo: `{password?, email_code?, totp_code?}` (D100). Limitada por `login` (por IP). Pide **la contraseña** o, a una cuenta que no la tiene, **un código del correo** (`email_code`, de `POST /v1/account/code/action`): nunca ninguno de los dos, y un código del correo no vale en lugar de una contraseña que existe. Contraseña incorrecta o ausente → **401** `invalid_credentials`. Con el segundo factor activado, además `totp_code` (**401** `two_factor_required` / **400** `invalid_two_factor_code`). Si acierta, borra la cuenta (`EntityManager::remove`) y responde **204**. Los dispositivos y códigos de la cuenta se borran en cascada a nivel de base de datos (`ON DELETE CASCADE`).
 
 Las bibliotecas todavía no existen en el servidor (hito 7.2): cuando existan, borrar una cuenta también tendrá que decidir qué pasa con los `member` que posee en cada una (reasignar o borrar); por ahora no hay nada que hacer aquí.
 
@@ -190,11 +202,30 @@ Autenticados (`ROLE_USER`), bajo `/v1/account/two-factor`:
 | Endpoint | Responde |
 |---|---|
 | `POST /setup` | **200** `{secret, otpauth_uri}` |
-| `POST /enable` `{code}` | **200** `{backup_codes: [...]}`. Consume `login`. Envía el aviso «segundo factor activado» (sin límite de peticiones, como el de contraseña cambiada) |
-| `DELETE` `{password, code}` | **204**; `code` es un código TOTP o uno de reserva. Contraseña incorrecta → **401** `invalid_credentials`; sin segundo factor activado → **409** `two_factor_not_enabled`; código incorrecto → **400** `invalid_two_factor_code`. Consume `login`. Envía el aviso «segundo factor retirado» |
-| `POST /backup-codes` `{password, code}` | **200** `{backup_codes: [...]}`; mismas comprobaciones y orden que `DELETE`. Consume `login` |
+| `POST /enable` `{code, password?, email_code?}` | **200** `{backup_codes: [...]}`. Antes de nada pide quién lo pide (D100, ver «Acciones delicadas»): la contraseña o, a una cuenta sin ella, `email_code`; la sesión sola no basta (**401** `invalid_credentials`). Consume `login`. Envía el aviso «segundo factor activado» (sin límite de peticiones, como el de contraseña cambiada) |
+| `DELETE` `{code, password?}` | **204**; `code` es un código TOTP o uno de reserva. Pide `password` solo si la cuenta tiene una; si no (Google), basta el código (D100). Contraseña incorrecta o ausente → **401** `invalid_credentials`; sin segundo factor activado → **409** `two_factor_not_enabled`; código incorrecto → **400** `invalid_two_factor_code`. Consume `login`. Envía el aviso «segundo factor retirado» |
+| `POST /backup-codes` `{code, password?}` | **200** `{backup_codes: [...]}`; mismas comprobaciones y orden que `DELETE`. Consume `login` |
 
 `GET /v1/account` gana `two_factor_enabled` y `backup_codes_left`.
+
+### Acciones delicadas (D100)
+
+Una sesión dura mucho, y un móvil desbloqueado en otras manos la tiene. Lo que cambia **cómo se entra en la cuenta** pide algo más que la sesión (`App\Security\SensitiveAction`). **No se pide desbloquear el móvil** (PIN o huella): el maintainer lo descartó.
+
+| Acción | Quién lo pide | Segundo factor, si lo tiene activado |
+|---|---|---|
+| Cambiar la contraseña (`POST /v1/account/password`) | la contraseña actual | `totp_code` |
+| Restablecerla con el código del correo (`POST /v1/account/password/reset`) | el código del correo | `totp_code` |
+| Borrar la cuenta (`DELETE /v1/account`) | la contraseña, o `email_code` si no tiene | `totp_code` |
+| Activar el segundo factor (`POST /two-factor/enable`) | la contraseña, o `email_code` si no tiene | su propio `code` |
+| Quitarlo (`DELETE /two-factor`) y regenerar los códigos (`POST /two-factor/backup-codes`) | la contraseña si tiene; si no, basta `code` | `code` (siempre) |
+
+- Sin `totp_code` la respuesta es **401** `two_factor_required`, el mismo código que el inicio de sesión; con uno malo, **400** `invalid_two_factor_code`. `TwoFactor::verify` gasta su límite por cuenta.
+- **Una cuenta sin contraseña** (solo Google) pide un código del correo en lugar de la contraseña (`email_code`, propósito `confirm_action`, `POST /v1/account/code/action`). Nunca al revés: una cuenta que tiene contraseña no la sustituye por un código del correo, que alguien con el correo abierto también tendría. Falta de prueba → **401** `invalid_credentials`; código malo → **400** `invalid_code` / `code_expired` / `too_many_attempts`.
+- El código del segundo factor puede ser el de 6 cifras de la app **o un código de respaldo**, con o sin guion y en mayúsculas o minúsculas (`TwoFactor` lo normaliza); los campos de la app aceptan las dos formas (`src/lib/second-factor-code.ts`, comprobado con `npm run check:codes`).
+- Los fallos de contraseña cuentan contra el tope por cuenta de los inicios de sesión (SEG-051), lo mismo que cambiar la contraseña o borrar la cuenta.
+- Orden: primero quién lo pide, luego el segundo factor, y solo al final se gasta el código del correo.
+- Tests: `SensitiveAccountActionsTest` (los casos hostiles de D100).
 
 ### En el inicio de sesión
 
@@ -280,7 +311,9 @@ El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la inte
 
 - **Qué guarda el dispositivo**, en `local_state` (nunca se sincroniza ni va en las copias): el servidor elegido (si no hay ninguno, el oficial, `https://api.kosmotheka.app`), el token, una copia del usuario, el último email usado (para rellenar el formulario) y un aviso pendiente (`device_removed` o `signed_out_password_changed`) que la interfaz muestra una vez.
 - **Otro servidor:** HTTPS siempre; HTTP solo en `localhost`, una IP privada, `10.0.2.2` (el emulador de Android) o en compilaciones de depuración. Para cambiar de servidor hay que cerrar sesión antes.
-- **Iniciar sesión** pide un reto nuevo en cada intento (también al reintentar con el código del segundo factor) y lo firma con la clave del dispositivo.
+- **Iniciar sesión** pide un reto nuevo en cada intento (también al reintentar con el código del segundo factor) y lo firma con la clave del dispositivo, junto con el origen del servidor y el propósito (`login` o `google`; `account/origin.rs`, D100). El origen sale de la dirección del servidor que la app tiene guardada (`Url::origin()`: minúsculas, sin barra, sin el puerto del esquema).
+- **Acciones delicadas** (D100): cambiar la contraseña, restablecerla, borrar la cuenta y activar o quitar el segundo factor piden lo que dice «Acciones delicadas» arriba. La app lo sabe por `has_password` y `two_factor_enabled` de `GET /v1/account`, y al restablecer la contraseña (sin sesión) por la respuesta `two_factor_required`, que la lleva a una pantalla para el código de la app y repite la petición con el mismo código del correo. A una cuenta sin contraseña se le ofrece «Enviarme un código» (`request_action_code`) en lugar del campo de contraseña (`proof-fields.tsx`).
+- **Crear cuenta:** la contraseña se escribe al registrarse, se queda en memoria y viaja otra vez con el código en `confirm`. Si la persona entra más tarde en una cuenta sin confirmar, la pantalla del código la pide de nuevo. Un servidor con `registration_restricted` avisa antes de registrarse, sin decir quién está en la lista.
 - **Errores:** llegan a la interfaz como `{kind: "account", reason, retryAfter}`, con el código del servidor tal cual; la interfaz los traduce con [design/errors.md](../design/errors.md). Sin respuesta, o una respuesta que no se entiende, es `server_unavailable`.
 - **Reacción central:** tras cualquier llamada, `device_removed` reinicia el dispositivo; `signed_out_password_changed` e `invalid_token` olvidan la sesión, y la primera deja el aviso.
 - **Al abrir la app**, si hay sesión, se pide `GET /v1/account` en segundo plano: así se entera un dispositivo que se quitó mientras estaba cerrado.

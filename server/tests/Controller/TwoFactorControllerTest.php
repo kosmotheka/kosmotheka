@@ -103,7 +103,7 @@ final class TwoFactorControllerTest extends WebTestCase
         $client = $this->createTestClient();
         $session = $this->signInNewDevice($client, 'no-setup@example.com');
 
-        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '123456'], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '123456', 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
         self::assertSame('{"error":"two_factor_not_started"}', $client->getResponse()->getContent());
@@ -116,7 +116,7 @@ final class TwoFactorControllerTest extends WebTestCase
         $session = $this->signInNewDevice($client, 'wrong-code@example.com');
         $this->setupTwoFactor($client, $session['headers']);
 
-        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000'], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000', 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
         self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
@@ -130,11 +130,11 @@ final class TwoFactorControllerTest extends WebTestCase
         $this->setupTwoFactor($client, $session['headers']);
 
         for ($attempt = 1; $attempt <= 5; ++$attempt) {
-            $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000'], \JSON_THROW_ON_ERROR));
+            $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000', 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
             self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
         }
 
-        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000'], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => '000000', 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);
         self::assertSame('{"error":"too_many_requests"}', $client->getResponse()->getContent());
@@ -298,6 +298,21 @@ final class TwoFactorControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
     }
 
+    public function testABackupCodeIsAcceptedInLowerCaseAndWithoutItsDash(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'disable-backup-typed@example.com');
+        $backupCodes = $this->enableTwoFactor($client, $session['headers']);
+
+        $client->request('DELETE', '/v1/account/two-factor', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode([
+            'password' => 'correct horse battery',
+            'code' => ' '.strtolower(str_replace('-', '', $backupCodes[0])).' ',
+        ], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+    }
+
     public function testRegenerateBackupCodesReplacesTheOldOnes(): void
     {
         self::mockTime(self::AT);
@@ -356,6 +371,7 @@ final class TwoFactorControllerTest extends WebTestCase
     {
         $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode([
             'code' => $this->totpCodeAt($secret, self::AT),
+            'password' => 'correct horse battery',
         ], \JSON_THROW_ON_ERROR));
 
         /** @var array{backup_codes: list<string>} $body */

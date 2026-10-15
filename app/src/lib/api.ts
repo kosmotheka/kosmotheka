@@ -1131,6 +1131,8 @@ export interface ServerInfo {
   registration: boolean;
   signInWithGoogle: boolean;
   twoFactor: boolean;
+  /** Only some addresses may make an account; which ones is never said (D100). */
+  registrationRestricted: boolean;
 }
 
 /** Local only, no network: what the account screens show right away. */
@@ -1160,8 +1162,9 @@ export function registerAccount(
   return invoke("register_account", { email, password, name, locale });
 }
 
-export function confirmAccountEmail(email: string, code: string): Promise<void> {
-  return invoke("confirm_account_email", { email, code });
+/** The password is chosen here, with the code (D100): the one of whoever has the email. */
+export function confirmAccountEmail(email: string, code: string, password: string): Promise<void> {
+  return invoke("confirm_account_email", { email, code, password });
 }
 
 export function resendAccountCode(email: string): Promise<void> {
@@ -1211,8 +1214,14 @@ export function forgotPassword(email: string): Promise<void> {
   return invoke("forgot_password", { email });
 }
 
-export function resetPassword(email: string, code: string, password: string): Promise<void> {
-  return invoke("reset_password", { email, code, password });
+/** `two_factor_required`: the email alone is not enough; ask for the code and call again with `totpCode` (D100). */
+export function resetPassword(
+  email: string,
+  code: string,
+  password: string,
+  totpCode: string | null = null,
+): Promise<void> {
+  return invoke("reset_password", { email, code, password, totpCode });
 }
 
 // --- Account screen, second factor, devices and handing the device away (hito 7.1) ---
@@ -1240,12 +1249,31 @@ export function updateAccount(fields: { name?: string; locale?: string }): Promi
   });
 }
 
-export function changePassword(currentPassword: string, newPassword: string): Promise<void> {
-  return invoke("change_password", { currentPassword, newPassword });
+export function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  totpCode: string | null = null,
+): Promise<void> {
+  return invoke("change_password", { currentPassword, newPassword, totpCode });
 }
 
-export function deleteAccount(password: string): Promise<void> {
-  return invoke("delete_account", { password });
+/**
+ * What an account gives, besides its session, to do something that changes how it is entered (D100): the password,
+ * or for one with none (it came in with Google) a code from its email; and a code of the second factor if it has it on.
+ */
+export interface ActionProof {
+  password?: string;
+  emailCode?: string;
+  totpCode?: string;
+}
+
+/** Sends the account's own email the code that stands in for a password it does not have. */
+export function requestActionCode(): Promise<void> {
+  return invoke("request_action_code");
+}
+
+export function deleteAccount(proof: ActionProof): Promise<void> {
+  return invoke("delete_account", { proof });
 }
 
 export interface AccountDevice {
@@ -1283,16 +1311,17 @@ export function twoFactorSetup(): Promise<TwoFactorSetup> {
 }
 
 /** Returns the ten backup codes, shown only this once. */
-export function twoFactorEnable(code: string): Promise<string[]> {
-  return invoke<string[]>("two_factor_enable", { code });
+export function twoFactorEnable(code: string, proof: ActionProof): Promise<string[]> {
+  return invoke<string[]>("two_factor_enable", { code, proof });
 }
 
-export function twoFactorDisable(password: string, code: string): Promise<void> {
+/** `password` only for an account that has one: without it (Google) the code of the second factor is the proof. */
+export function twoFactorDisable(password: string | null, code: string): Promise<void> {
   return invoke("two_factor_disable", { password, code });
 }
 
 /** Returns a fresh set of ten backup codes; the old ones stop working. */
-export function regenerateBackupCodes(password: string, code: string): Promise<string[]> {
+export function regenerateBackupCodes(password: string | null, code: string): Promise<string[]> {
   return invoke<string[]>("regenerate_backup_codes", { password, code });
 }
 

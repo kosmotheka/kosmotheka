@@ -9,6 +9,7 @@ use App\Entity\Device;
 use App\Entity\EmailCode;
 use App\Entity\GoogleAttempt;
 use App\Entity\User;
+use App\Enum\DeviceProofPurpose;
 use App\Enum\EmailCodePurpose;
 use App\Repository\UserRepository;
 use App\Security\AccountPurger;
@@ -166,7 +167,7 @@ final class GoogleSignInTest extends WebTestCase
 
         $cases = [
             ['signature' => $this->encode(random_bytes(64))],
-            ['signature' => $this->sign($this->requestChallenge($client)['challenge'], Uuid::v4()->toRfc4122(), sodium_crypto_sign_secretkey($elsewhere))],
+            ['signature' => $this->sign($this->requestChallenge($client)['challenge'], Uuid::v4()->toRfc4122(), sodium_crypto_sign_secretkey($elsewhere), DeviceProofPurpose::Google)],
             ['challenge' => 'never-issued'],
         ];
         foreach ($cases as $change) {
@@ -177,6 +178,27 @@ final class GoogleSignInTest extends WebTestCase
         // Not a one of them burned the code: the real device still gets in.
         $this->finish($client, $came);
         self::assertResponseStatusCodeSame(200);
+    }
+
+    public function testASignatureMadeToSignInWithAPasswordIsNoProofForGoogle(): void
+    {
+        [$client, $google] = $this->world();
+        FakeGoogle::$identity = new GoogleIdentity('sub-ada', 'ada@example.com', true, 'Ada');
+        $came = $this->comeBack($client, $this->start($client));
+        $deviceId = Uuid::v4()->toRfc4122();
+        $keyPair = sodium_crypto_sign_keypair();
+        $challenge = $this->requestChallenge($client)['challenge'];
+
+        $this->finish($client, [
+            'device_id' => $deviceId,
+            'public_key' => $this->encode(sodium_crypto_sign_publickey($keyPair)),
+            'challenge' => $challenge,
+            'signature' => $this->sign($challenge, $deviceId, sodium_crypto_sign_secretkey($keyPair), DeviceProofPurpose::Login),
+        ], $came);
+
+        self::assertResponseStatusCodeSame(400);
+        self::assertSame('invalid_device_proof', $this->body($client)['error'] ?? null);
+        self::assertArrayNotHasKey('token', $this->body($client));
     }
 
     // --- 5. Google does not confirm the address ----------------------------------------------------------------------
@@ -616,7 +638,7 @@ final class GoogleSignInTest extends WebTestCase
             'device_name' => 'Phone',
             'public_key' => $this->encode(sodium_crypto_sign_publickey($keyPair)),
             'challenge' => $challenge,
-            'signature' => $this->sign($challenge, $deviceId, sodium_crypto_sign_secretkey($keyPair)),
+            'signature' => $this->sign($challenge, $deviceId, sodium_crypto_sign_secretkey($keyPair), DeviceProofPurpose::Google),
         ];
         $client->request('POST', '/v1/auth/google/finish', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode($body, \JSON_THROW_ON_ERROR));
 

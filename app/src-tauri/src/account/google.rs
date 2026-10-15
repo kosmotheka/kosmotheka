@@ -11,12 +11,15 @@ use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use super::{AccountUser, ResetContext, client, react_to_account_error, server, store_session};
+use super::{
+    AccountUser, ResetContext, client, origin, react_to_account_error, server, sign_proof,
+    store_session,
+};
 use crate::cloud::invitations::Secret;
 use crate::db::Database;
 use crate::error::{Error, Result};
-use crate::ops::{self, read_state, write_state};
-use crate::{lan, links::GoogleOutcome, links::GoogleReturn};
+use crate::ops::{read_state, write_state};
+use crate::{links::GoogleOutcome, links::GoogleReturn};
 
 const PENDING: &str = "google_pending";
 
@@ -162,15 +165,12 @@ pub async fn finish(
         .ok_or_else(|| Error::account("google_expired"))?;
     let http = client::build_client()?;
     let challenge = client::auth_challenge(&http, &pending.server).await?;
-    let (device_id, device_name, public_key, signature) = {
-        let conn = database.lock()?;
-        let device_id = ops::device_id(&conn)?;
-        let device_name = lan::device_name(&conn)?;
-        let key = ops::signing_key(&conn)?;
-        let message = format!("kosmotheka-login\n{challenge}\n{device_id}");
-        let signature = key.sign_bytes(message.as_bytes());
-        (device_id, device_name, key.public_key(), signature)
-    };
+    let (device_id, device_name, public_key, signature) = sign_proof(
+        database,
+        &pending.server,
+        origin::ProofPurpose::Google,
+        &challenge,
+    )?;
     let result = client::google_finish(
         &http,
         &pending.server,
@@ -228,6 +228,7 @@ mod tests {
     use crate::covers::Covers;
     use crate::lan::identity::Identity;
     use crate::lan::service::LanService;
+    use crate::ops;
 
     /// What the server stub was asked, in order: `(route, body)`.
     type Asked = Arc<Mutex<Vec<(String, Value)>>>;
@@ -606,6 +607,44 @@ mod tests {
         assert_eq!(reason(&refused.unwrap_err()), "invalid_google_code");
         assert!(pending_of(&world).is_none());
         assert!(!account_status(&world.database).unwrap().signed_in);
+    }
+
+    /// D100: what the device signs names the server it is signing in to and says it is for Google, so the same
+    /// signature is no use to sign in with a password, nor at another server. Ed25519 is deterministic: the same key
+    /// and text always give the same signature, so the text signed can be told by comparing signatures.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_proof_names_the_server_and_says_it_is_for_google() {
+        let world = world("ok", BROWSER).await;
+        start(&world.database, "es").await.unwrap();
+        complete(
+            &world.database,
+            world.context(),
+            back("ATTEMPT-1", code("c0de")),
+        )
+        .await
+        .unwrap();
+
+        let finish_body = world.asked_of("finish").remove(0);
+        let device_id = finish_body["device_id"].as_str().unwrap();
+        let server = server(&world.database.lock().unwrap()).unwrap();
+        let key = ops::signing_key(&world.database.lock().unwrap()).unwrap();
+        let signed = |origin: &str, purpose: &str| {
+            key.sign_bytes(
+                format!("kosmotheka-login-v2\n{origin}\n{purpose}\nc\n{device_id}").as_bytes(),
+            )
+        };
+
+        assert_eq!(finish_body["signature"], signed(&server, "google"));
+        assert_ne!(finish_body["signature"], signed(&server, "login"));
+        assert_ne!(
+            finish_body["signature"],
+            signed("https://api.other.example", "google")
+        );
+        assert_ne!(
+            finish_body["signature"],
+            key.sign_bytes(format!("kosmotheka-login\nc\n{device_id}").as_bytes()),
+            "the old text is not what is signed"
+        );
     }
 
     #[test]

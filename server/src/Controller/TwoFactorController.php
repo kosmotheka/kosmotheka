@@ -14,6 +14,7 @@ use App\Security\AccountMailer;
 use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\RequestLimiter;
+use App\Security\SensitiveAction;
 use App\Security\TwoFactor;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +22,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -36,7 +36,7 @@ final class TwoFactorController extends AbstractController
 {
     public function __construct(
         private readonly TwoFactor $twoFactor,
-        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly SensitiveAction $sensitiveAction,
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestLimiter $requestLimiter,
         private readonly AccountMailer $accountMailer,
@@ -58,7 +58,10 @@ final class TwoFactorController extends AbstractController
         $this->requestLimiter->consumeLogin((string) $request->getClientIp());
 
         $user = $this->currentUser();
+        // A session alone does not turn it on (D100): the password, or for an account with none a code from its email.
+        $this->sensitiveAction->proveWhoAsks($user, $payload->password, $payload->emailCode);
         $backupCodes = $this->twoFactor->enable($user, $payload->code);
+        $this->sensitiveAction->spendProof($user);
         // `enable` has flushed: its own line goes in a flush of its own, and a failure here is an error that is logged, not silence.
         $this->activityLog->record(ActivityKind::TwoFactorEnabled, $user, $this->currentDevice->get()->getDeviceId());
         $this->entityManager->flush();
@@ -73,7 +76,7 @@ final class TwoFactorController extends AbstractController
         $this->requestLimiter->consumeLogin((string) $request->getClientIp());
 
         $user = $this->currentUser();
-        $this->checkPassword($user, $payload->password);
+        $this->sensitiveAction->requirePasswordIfAny($user, $payload->password);
         $this->checkEnabled($user);
         $this->twoFactor->verify($user, $payload->code);
 
@@ -91,7 +94,7 @@ final class TwoFactorController extends AbstractController
         $this->requestLimiter->consumeLogin((string) $request->getClientIp());
 
         $user = $this->currentUser();
-        $this->checkPassword($user, $payload->password);
+        $this->sensitiveAction->requirePasswordIfAny($user, $payload->password);
         $this->checkEnabled($user);
         $this->twoFactor->verify($user, $payload->code);
 
@@ -99,18 +102,6 @@ final class TwoFactorController extends AbstractController
         $codes = $this->twoFactor->regenerateBackupCodes($user);
 
         return new JsonResponse(['backup_codes' => $codes]);
-    }
-
-    /** @throws AccountException with invalid_credentials or no_password */
-    private function checkPassword(User $user, string $password): void
-    {
-        if (null === $user->getPassword()) {
-            throw AccountException::noPassword();
-        }
-
-        if (!$this->passwordHasher->isPasswordValid($user, $password)) {
-            throw AccountException::invalidCredentials();
-        }
     }
 
     /** @throws AccountException with two_factor_not_enabled */

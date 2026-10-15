@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::account::{
     self, AccountDetails, AccountDevice, AccountStatus, AccountUser, ResetDeps, ServerInfo,
-    TwoFactorSetup,
+    TwoFactorSetup, client::ActionProof,
 };
 use crate::backup::{self, BackupSummary, RestoreSummary};
 use crate::catalog::{
@@ -1106,8 +1106,9 @@ pub async fn confirm_account_email(
     database: State<'_, Database>,
     email: String,
     code: String,
+    password: String,
 ) -> Result<()> {
-    account::confirm_email(&database, &email, &code).await
+    account::confirm_email(&database, &email, &code, &password).await
 }
 
 #[tauri::command]
@@ -1153,9 +1154,17 @@ pub async fn reset_password(
     email: String,
     code: String,
     password: String,
+    totp_code: Option<String>,
 ) -> Result<()> {
-    let result =
-        account::reset_password(&database, reset.context(), &email, &code, &password).await;
+    let result = account::reset_password(
+        &database,
+        reset.context(),
+        &email,
+        &code,
+        &password,
+        totp_code.as_deref(),
+    )
+    .await;
     emit_if_reset(&app, &result);
     result
 }
@@ -1191,10 +1200,16 @@ pub async fn change_password(
     reset: State<'_, ResetDeps>,
     current_password: String,
     new_password: String,
+    totp_code: Option<String>,
 ) -> Result<()> {
-    let result =
-        account::change_password(&database, reset.context(), &current_password, &new_password)
-            .await;
+    let result = account::change_password(
+        &database,
+        reset.context(),
+        &current_password,
+        &new_password,
+        totp_code.as_deref(),
+    )
+    .await;
     emit_if_reset(&app, &result);
     result
 }
@@ -1204,9 +1219,9 @@ pub async fn delete_account(
     app: AppHandle,
     database: State<'_, Database>,
     reset: State<'_, ResetDeps>,
-    password: String,
+    proof: ActionProof,
 ) -> Result<()> {
-    let result = account::delete_account(&database, reset.context(), &password).await;
+    let result = account::delete_account(&database, reset.context(), &proof).await;
     emit_if_reset(&app, &result);
     if result.is_ok() {
         app.state::<EventsService>().stop();
@@ -1249,6 +1264,18 @@ pub async fn restore_account_device(
     result
 }
 
+/// The code, sent to the account's own email, that an account with no password gives to confirm an action (D100).
+#[tauri::command]
+pub async fn request_action_code(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+) -> Result<()> {
+    let result = account::request_action_code(&database, reset.context()).await;
+    emit_if_reset(&app, &result);
+    result
+}
+
 #[tauri::command]
 pub async fn two_factor_setup(
     app: AppHandle,
@@ -1266,8 +1293,9 @@ pub async fn two_factor_enable(
     database: State<'_, Database>,
     reset: State<'_, ResetDeps>,
     code: String,
+    proof: ActionProof,
 ) -> Result<Vec<String>> {
-    let result = account::two_factor_enable(&database, reset.context(), &code).await;
+    let result = account::two_factor_enable(&database, reset.context(), &code, &proof).await;
     emit_if_reset(&app, &result);
     result
 }
@@ -1277,10 +1305,11 @@ pub async fn two_factor_disable(
     app: AppHandle,
     database: State<'_, Database>,
     reset: State<'_, ResetDeps>,
-    password: String,
+    password: Option<String>,
     code: String,
 ) -> Result<()> {
-    let result = account::two_factor_disable(&database, reset.context(), &password, &code).await;
+    let result =
+        account::two_factor_disable(&database, reset.context(), password.as_deref(), &code).await;
     emit_if_reset(&app, &result);
     result
 }
@@ -1290,11 +1319,12 @@ pub async fn regenerate_backup_codes(
     app: AppHandle,
     database: State<'_, Database>,
     reset: State<'_, ResetDeps>,
-    password: String,
+    password: Option<String>,
     code: String,
 ) -> Result<Vec<String>> {
     let result =
-        account::regenerate_backup_codes(&database, reset.context(), &password, &code).await;
+        account::regenerate_backup_codes(&database, reset.context(), password.as_deref(), &code)
+            .await;
     emit_if_reset(&app, &result);
     result
 }

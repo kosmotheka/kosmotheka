@@ -19,3 +19,6 @@ two_factor_disabled:
 invitation:
     subject: 'You have been invited to a library on Kosmotheka'
     body: "You have been invited to a library on Kosmotheka.\n\nOpen this link on the device where you use Kosmotheka, within 24 hours:\n%link%\n\nYou will need to sign in, or create an account, with this same email address. If you were not expecting this, you can ignore this email."
+confirm_action:
+    subject: 'Confirm an action on your Kosmotheka account'
+    body: 'Your code to confirm an action on your Kosmotheka account is %code%. It expires in %minutes% minutes. If you did not ask for this, someone may be using your account: you can ignore this email, and it is a good moment to review its devices.'

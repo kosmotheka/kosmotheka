@@ -43,7 +43,10 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::TooManyRequests, 429, $retryAfterSeconds);
     }
 
-    /** The server only lets the addresses its host chose make an account (`REGISTRATION_ALLOWED_EMAILS`). */
+    /**
+     * The server only lets the addresses its host chose make an account (`REGISTRATION_ALLOWED_EMAILS`). Only said to
+     * somebody Google has just confirmed the address of: `register` answers 202 whatever the list says (D100).
+     */
     public static function registrationClosed(): self
     {
         return new self(AccountErrorCode::RegistrationClosed, 403);

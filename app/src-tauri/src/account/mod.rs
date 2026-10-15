@@ -9,6 +9,7 @@
 
 pub mod client;
 pub mod google;
+pub mod origin;
 
 use std::net::Ipv4Addr;
 use std::path::Path;
@@ -109,6 +110,8 @@ pub struct ServerInfo {
     pub registration: bool,
     pub sign_in_with_google: bool,
     pub two_factor: bool,
+    /// Only some addresses may make an account: the app warns before registering, without saying which (D100).
+    pub registration_restricted: bool,
 }
 
 impl From<client::ServerInfoWire> for ServerInfo {
@@ -119,6 +122,7 @@ impl From<client::ServerInfoWire> for ServerInfo {
             registration: wire.registration,
             sign_in_with_google: wire.sign_in_with_google,
             two_factor: wire.two_factor,
+            registration_restricted: wire.registration_restricted,
         }
     }
 }
@@ -385,10 +389,16 @@ pub async fn register(
     client::register(&client, &base, email, password, name, locale).await
 }
 
-pub async fn confirm_email(database: &Database, email: &str, code: &str) -> Result<()> {
+pub async fn confirm_email(
+    database: &Database,
+    email: &str,
+    code: &str,
+    password: &str,
+) -> Result<()> {
+    check_password_length(password)?;
     let base = server(&*database.lock()?)?;
     let client = client::build_client()?;
-    client::confirm_email(&client, &base, email, code).await
+    client::confirm_email(&client, &base, email, code, password).await
 }
 
 pub async fn resend_code(database: &Database, email: &str) -> Result<()> {
@@ -409,6 +419,7 @@ pub async fn reset_password(
     email: &str,
     code: &str,
     password: &str,
+    totp_code: Option<&str>,
 ) -> Result<()> {
     check_password_length(password)?;
     let (base, auth) = optional_auth(database)?;
@@ -416,7 +427,8 @@ pub async fn reset_password(
     let auth_ref = auth
         .as_ref()
         .map(|(device_id, token)| client::Auth { device_id, token });
-    let result = client::reset_password(&client, &base, email, code, password, auth_ref).await;
+    let result =
+        client::reset_password(&client, &base, email, code, password, totp_code, auth_ref).await;
     react_to_account_error(database, reset, result).await
 }
 
@@ -434,15 +446,8 @@ pub async fn sign_in(
     let base = server(&*database.lock()?)?;
     let client = client::build_client()?;
     let challenge = client::auth_challenge(&client, &base).await?;
-    let (device_id, device_name, public_key, signature) = {
-        let conn = database.lock()?;
-        let device_id = ops::device_id(&conn)?;
-        let device_name = lan::device_name(&conn)?;
-        let key = ops::signing_key(&conn)?;
-        let message = format!("kosmotheka-login\n{challenge}\n{device_id}");
-        let signature = key.sign_bytes(message.as_bytes());
-        (device_id, device_name, key.public_key(), signature)
-    };
+    let (device_id, device_name, public_key, signature) =
+        sign_proof(database, &base, origin::ProofPurpose::Login, &challenge)?;
     let result = client::login(
         &client,
         &base,
@@ -460,6 +465,23 @@ pub async fn sign_in(
     let user = AccountUser::from(login.user);
     store_session(&*database.lock()?, &login.token, &user, email)?;
     Ok(user)
+}
+
+/// This device's proof that it holds its key, for a server and a purpose: its id, name, public key and the signature
+/// of `origin::proof_message`.
+pub(crate) fn sign_proof(
+    database: &Database,
+    base: &str,
+    purpose: origin::ProofPurpose,
+    challenge: &str,
+) -> Result<(String, String, String, String)> {
+    let conn = database.lock()?;
+    let device_id = ops::device_id(&conn)?;
+    let device_name = lan::device_name(&conn)?;
+    let key = ops::signing_key(&conn)?;
+    let message = origin::proof_message(base, purpose, challenge, &device_id)?;
+    let signature = key.sign_bytes(message.as_bytes());
+    Ok((device_id, device_name, key.public_key(), signature))
 }
 
 /// Whatever the server answers (including no network at all), the session is
@@ -523,6 +545,7 @@ pub async fn change_password(
     reset: ResetContext<'_>,
     current_password: &str,
     new_password: &str,
+    totp_code: Option<&str>,
 ) -> Result<()> {
     check_password_length(new_password)?;
     let (base, device_id, token) = authed_context(database)?;
@@ -534,6 +557,7 @@ pub async fn change_password(
         &token,
         current_password,
         new_password,
+        totp_code,
     )
     .await;
     react_to_account_error(database, reset, result).await
@@ -543,11 +567,11 @@ pub async fn change_password(
 pub async fn delete_account(
     database: &Database,
     reset: ResetContext<'_>,
-    password: &str,
+    proof: &client::ActionProof,
 ) -> Result<()> {
     let (base, device_id, token) = authed_context(database)?;
     let client = client::build_client()?;
-    let result = client::delete_account(&client, &base, &device_id, &token, password).await;
+    let result = client::delete_account(&client, &base, &device_id, &token, proof).await;
     let result = react_to_account_error(database, reset, result).await;
     result?;
     clear_session(&*database.lock()?)
@@ -586,6 +610,15 @@ pub async fn restore_account_device(
     react_to_account_error(database, reset, result).await
 }
 
+/// Asks for the code, sent to the account's own email, that stands in for the password of an account that has none
+/// (D100).
+pub async fn request_action_code(database: &Database, reset: ResetContext<'_>) -> Result<()> {
+    let (base, device_id, token) = authed_context(database)?;
+    let client = client::build_client()?;
+    let result = client::request_action_code(&client, &base, &device_id, &token).await;
+    react_to_account_error(database, reset, result).await
+}
+
 pub async fn two_factor_setup(
     database: &Database,
     reset: ResetContext<'_>,
@@ -602,17 +635,18 @@ pub async fn two_factor_enable(
     database: &Database,
     reset: ResetContext<'_>,
     code: &str,
+    proof: &client::ActionProof,
 ) -> Result<Vec<String>> {
     let (base, device_id, token) = authed_context(database)?;
     let client = client::build_client()?;
-    let result = client::two_factor_enable(&client, &base, &device_id, &token, code).await;
+    let result = client::two_factor_enable(&client, &base, &device_id, &token, code, proof).await;
     react_to_account_error(database, reset, result).await
 }
 
 pub async fn two_factor_disable(
     database: &Database,
     reset: ResetContext<'_>,
-    password: &str,
+    password: Option<&str>,
     code: &str,
 ) -> Result<()> {
     let (base, device_id, token) = authed_context(database)?;
@@ -625,7 +659,7 @@ pub async fn two_factor_disable(
 pub async fn regenerate_backup_codes(
     database: &Database,
     reset: ResetContext<'_>,
-    password: &str,
+    password: Option<&str>,
     code: &str,
 ) -> Result<Vec<String>> {
     let (base, device_id, token) = authed_context(database)?;
@@ -783,13 +817,20 @@ mod tests {
     struct Stub {
         address: SocketAddr,
         challenges: Arc<AtomicUsize>,
+        /// The bodies the login route was given, in order.
+        logins: Arc<std::sync::Mutex<Vec<Value>>>,
     }
 
-    fn stub_router(behavior: &'static str, challenges: Arc<AtomicUsize>) -> Router {
+    fn stub_router(
+        behavior: &'static str,
+        challenges: Arc<AtomicUsize>,
+        logins: Arc<std::sync::Mutex<Vec<Value>>>,
+    ) -> Router {
         #[derive(Clone)]
         struct StubState {
             behavior: &'static str,
             challenges: Arc<AtomicUsize>,
+            logins: Arc<std::sync::Mutex<Vec<Value>>>,
         }
         async fn challenge(State(state): State<StubState>) -> Json<Value> {
             state.challenges.fetch_add(1, Ordering::SeqCst);
@@ -801,6 +842,7 @@ mod tests {
         ) -> axum::response::Response {
             use axum::http::StatusCode;
             use axum::response::IntoResponse;
+            state.logins.lock().unwrap().push(body.clone());
             match state.behavior {
                 "ok" => Json(json!({
                     "token": "tok",
@@ -828,20 +870,23 @@ mod tests {
             .with_state(StubState {
                 behavior,
                 challenges,
+                logins,
             })
     }
 
     async fn start_stub(behavior: &'static str) -> Stub {
         let challenges = Arc::new(AtomicUsize::new(0));
+        let logins = Arc::new(std::sync::Mutex::new(Vec::new()));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
-        let app = stub_router(behavior, challenges.clone());
+        let app = stub_router(behavior, challenges.clone(), logins.clone());
         tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
         });
         Stub {
             address,
             challenges,
+            logins,
         }
     }
 
@@ -887,6 +932,53 @@ mod tests {
         assert_eq!(stub.challenges.load(Ordering::SeqCst), 1);
         let status = account_status(&database).unwrap();
         assert!(status.signed_in);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// D100: what the device signs names the server it signs in to and says it is for a password, so the same signature
+    /// is no use at another server nor to come in with Google. Ed25519 is deterministic: the same key and text always
+    /// give the same signature, so the text that was signed can be told by comparing signatures.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_proof_names_the_server_and_says_it_is_for_a_password() {
+        let stub = start_stub("ok").await;
+        let database = Database::in_memory();
+        let server = format!("http://{}", stub.address);
+        write_state(&database.lock().unwrap(), ACCOUNT_SERVER, Some(&server)).unwrap();
+        let dir =
+            std::env::temp_dir().join(format!("library-account-proof-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let lan = LanService::new(database.clone(), Identity::generate().unwrap());
+
+        sign_in(
+            &database,
+            reset_context(&covers, &lan, &dir),
+            "ana@example.com",
+            "password123",
+            None,
+        )
+        .await
+        .unwrap();
+
+        let body = stub.logins.lock().unwrap()[0].clone();
+        let device_id = body["device_id"].as_str().unwrap();
+        let key = ops::signing_key(&database.lock().unwrap()).unwrap();
+        let signed = |origin: &str, purpose: &str| {
+            key.sign_bytes(
+                format!("kosmotheka-login-v2\n{origin}\n{purpose}\nc\n{device_id}").as_bytes(),
+            )
+        };
+        assert_eq!(body["signature"], signed(&server, "login"));
+        assert_ne!(body["signature"], signed(&server, "google"));
+        assert_ne!(
+            body["signature"],
+            signed("https://api.other.example", "login")
+        );
+        assert_ne!(
+            body["signature"],
+            key.sign_bytes(format!("kosmotheka-login\nc\n{device_id}").as_bytes()),
+            "the old text is not what is signed"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

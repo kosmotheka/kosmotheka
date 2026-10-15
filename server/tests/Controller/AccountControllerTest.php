@@ -65,7 +65,7 @@ final class AccountControllerTest extends WebTestCase
         self::assertFalse($user->isConfirmed());
     }
 
-    public function testRegisterExistingUnconfirmedUserUpdatesItAndResendsACode(): void
+    public function testRegisterExistingUnconfirmedUserChangesNothingAndResendsACode(): void
     {
         $client = $this->createTestClient();
         $this->register($client, 'pending@example.com', 'Old Name', 'en');
@@ -77,8 +77,8 @@ final class AccountControllerTest extends WebTestCase
 
         $user = $this->findUser('pending@example.com');
         self::assertNotNull($user);
-        self::assertSame('New Name', $user->getName());
-        self::assertSame('es', $user->getLocale());
+        self::assertSame('Old Name', $user->getName());
+        self::assertSame('en', $user->getLocale());
     }
 
     public function testRegisterExistingConfirmedUserChangesNothingAndSendsANotice(): void
@@ -303,9 +303,10 @@ final class AccountControllerTest extends WebTestCase
         preg_match('/\d{6}/', (string) $message->getTextBody(), $matches);
         $lastCode = $matches[0] ?? self::fail('No code in the email.');
 
-        // Anyone may ask for a code for this address; once its mails are spent, the code it already has must stay.
+        // Anyone may ask for a code for this address; once its mails are spent, the code it already has must stay,
+        // and the answer is the same as ever (D100).
         $this->requestCode($client, $email);
-        self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);
+        self::assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
         self::assertEmailCount(0);
 
         $this->confirm($client, $email, $lastCode);
@@ -338,7 +339,7 @@ final class AccountControllerTest extends WebTestCase
 
     private function confirm(KernelBrowser $client, string $email, string $code): void
     {
-        $client->request('POST', '/v1/account/confirm', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['email' => $email, 'code' => $code], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/confirm', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['email' => $email, 'code' => $code, 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
     }
 
     private function requestCode(KernelBrowser $client, string $email, string $purpose = 'confirm_email'): void
@@ -780,15 +781,17 @@ final class AccountControllerTest extends WebTestCase
         self::assertNotNull($this->findUser('delete-wrong@example.com'));
     }
 
-    public function testDeleteForAnAccountWithoutAPasswordFails(): void
+    public function testDeleteForAnAccountWithoutAPasswordIsNotDoneWithAPassword(): void
     {
         $client = $this->createTestClient();
         $headers = $this->createPasswordlessDeviceSession('no-password-delete@example.com');
 
         $client->request('DELETE', '/v1/account', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['password' => 'whatever'], \JSON_THROW_ON_ERROR));
 
-        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
-        self::assertSame('{"error":"no_password"}', $client->getResponse()->getContent());
+        // It asks for a code from its email instead (SensitiveAccountActionsTest).
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        self::assertSame('{"error":"invalid_credentials"}', $client->getResponse()->getContent());
+        self::assertNotNull($this->findUser('no-password-delete@example.com'));
     }
 
     private function forgotPassword(KernelBrowser $client, string $email): void

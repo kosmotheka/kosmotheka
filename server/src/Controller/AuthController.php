@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Dto\LoginRequest;
 use App\Entity\User;
 use App\Enum\ActivityKind;
+use App\Enum\DeviceProofPurpose;
 use App\Repository\UserRepository;
 use App\Security\AccountException;
 use App\Security\ActivityLog;
@@ -72,7 +73,7 @@ final class AuthController extends AbstractController
         // Order matters (docs/architecture/accounts.md): challenge, then proof,
         // then credentials, then account status, then the device itself.
         $this->challengeIssuer->consume($payload->challenge);
-        $this->deviceProof->verify($payload->challenge, $payload->deviceId, $payload->publicKey, $payload->signature);
+        $this->deviceProof->verify(DeviceProofPurpose::Login, $payload->challenge, $payload->deviceId, $payload->publicKey, $payload->signature);
 
         // Before the password is looked at: a cut account answers the same with the right one, and the same for an address
         // with no account (SEG-051).

@@ -564,7 +564,7 @@ final class AuthControllerTest extends WebTestCase
         $secret = $this->setupTwoFactor($client, $headers);
         $code = self::totpAt($secret, self::AT);
 
-        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code, 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
 
         /** @var array{backup_codes: list<string>} $body */
         $body = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
@@ -578,7 +578,7 @@ final class AuthControllerTest extends WebTestCase
         $secret = $this->setupTwoFactor($client, $headers);
         $code = self::totpAt($secret, self::AT);
 
-        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code], \JSON_THROW_ON_ERROR));
+        $client->request('POST', '/v1/account/two-factor/enable', server: [...$headers, 'CONTENT_TYPE' => 'application/json'], content: json_encode(['code' => $code, 'password' => 'correct horse battery'], \JSON_THROW_ON_ERROR));
 
         return $secret;
     }

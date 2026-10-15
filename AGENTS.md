@@ -140,6 +140,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | Rust format / lint / test | `cargo fmt --all` · `cargo clippy --all-targets -- -D warnings` · `cargo test` |
 | UI build / typecheck / lint / format / dead code | `cd app && npm run build` · `npm run typecheck` · `npm run lint` · `npm run format` (check: `npm run format:check`) · `npm run knip` |
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
+| Second-factor code rule (6 digits or a backup code) | `cd app && npm run check:codes` |
 | Rust dependencies (CI job `rust-deps`) | `cargo deny check` (rules in `deny.toml`) · `cargo machete` |
 | Live tests against real services (network, not in CI) | `cargo test -p kosmotheka -- --ignored live_` |
 | Second instance with its own data (debug builds), to test LAN sync | `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b target/debug/kosmotheka` (with `npm run tauri dev` running) |

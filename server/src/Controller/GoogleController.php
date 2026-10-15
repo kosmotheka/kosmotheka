@@ -8,6 +8,7 @@ use App\Dto\GoogleFinishRequest;
 use App\Dto\GoogleStartRequest;
 use App\Entity\User;
 use App\Enum\ActivityKind;
+use App\Enum\DeviceProofPurpose;
 use App\Security\AccountException;
 use App\Security\ActivityLog;
 use App\Security\DeviceProof;
@@ -122,7 +123,7 @@ final class GoogleController extends AbstractController
 
         // The same proof a login makes: a challenge that is spent whatever happens, signed by the device's own key.
         $this->challengeIssuer->consume($payload->challenge);
-        $this->deviceProof->verify($payload->challenge, $payload->deviceId, $payload->publicKey, $payload->signature);
+        $this->deviceProof->verify(DeviceProofPurpose::Google, $payload->challenge, $payload->deviceId, $payload->publicKey, $payload->signature);
 
         $attempt = $this->attempts->claim($payload->attempt, $payload->code, $payload->verifier);
         $user = $attempt->getUser();
