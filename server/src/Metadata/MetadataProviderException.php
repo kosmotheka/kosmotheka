@@ -16,6 +16,8 @@ final class MetadataProviderException extends \RuntimeException
         public readonly bool $quota,
         /** The provider itself broke (a 5xx): the same question may get an answer a moment later. */
         public readonly bool $brokeItself = false,
+        /** The provider answered, and what it answered is no use (a 404, a body that is not what it says it sends): asking again a moment later gets the same (SEG-053). */
+        public readonly bool $answeredUnusable = false,
     ) {
         parent::__construct($message);
     }
@@ -30,8 +32,14 @@ final class MetadataProviderException extends \RuntimeException
         return new self('The provider answered that it is broken.', false, true);
     }
 
+    public static function unusable(): self
+    {
+        return new self('The provider answered something unusable.', false, false, true);
+    }
+
+    /** It could not be asked, or did not finish answering. */
     public static function failed(): self
     {
-        return new self('The provider could not be asked or answered something unusable.', false);
+        return new self('The provider could not be asked.', false);
     }
 }

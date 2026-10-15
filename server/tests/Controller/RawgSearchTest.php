@@ -642,6 +642,32 @@ final class RawgSearchTest extends WebTestCase
         self::assertSame(1, $this->detailRows());
     }
 
+    public function testADetailRawgSaysDoesNotExistIsRememberedForAnHour(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeRawgApi::searchFinds([FakeRawgApi::game()]);
+        FakeRawgApi::detailAnswers(3498, 404, '{"detail":"Not found."}');
+
+        $this->search($client, $ada, 'game');
+        $again = $this->search($client, $ada, 'game');
+
+        // Repeating the search does not ask again for what Rawg answered it does not have (SEG-053).
+        self::assertSame(2, FakeRawgApi::calls());
+        self::assertSame([], $this->candidates($again)[0]['developers']);
+        self::assertSame(1, $this->detailRows());
+
+        $this->entityManager()->createQuery(\sprintf('UPDATE %s e SET e.fetchedAt = :at WHERE e.found = false', MetadataCacheEntry::class))
+            ->setParameter('at', new \DateTimeImmutable('-61 minutes'))->execute();
+        $this->entityManager()->clear();
+        FakeRawgApi::detailIs(3498, FakeRawgApi::gameDetail());
+
+        $later = $this->search($client, $ada, 'game');
+
+        self::assertSame(3, FakeRawgApi::calls());
+        self::assertSame(['Rockstar North'], $this->candidates($later)[0]['developers']);
+    }
+
     // --- 8. Nobody is remembered --------------------------------------------------------------------------------------
 
     public function testTwoAccountsLookingForTheSameCostOneRoundOfCallsAndNoRowSaysWhoOrWhat(): void

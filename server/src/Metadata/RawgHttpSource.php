@@ -92,6 +92,9 @@ final readonly class RawgHttpSource implements RawgSource
                 if ($exception->quota) {
                     $onQuota();
                 }
+                if ($exception->answeredUnusable) {
+                    $details[$id] = null;
+                }
             } catch (\Throwable) {
                 // A detail that cannot be had is a candidate without it.
             }
@@ -141,7 +144,7 @@ final readonly class RawgHttpSource implements RawgSource
             if (200 !== $status) {
                 $response->cancel();
 
-                throw MetadataProviderException::failed();
+                throw MetadataProviderException::unusable();
             }
 
             $body = '';
@@ -150,7 +153,7 @@ final readonly class RawgHttpSource implements RawgSource
                 if (\strlen($body) > self::MAX_BODY_BYTES) {
                     $response->cancel();
 
-                    throw MetadataProviderException::failed();
+                    throw MetadataProviderException::unusable();
                 }
             }
 
@@ -207,7 +210,7 @@ final readonly class RawgHttpSource implements RawgSource
     {
         $decoded = json_decode($body, true, 16);
         if (!\is_array($decoded)) {
-            throw MetadataProviderException::failed();
+            throw MetadataProviderException::unusable();
         }
 
         return new RawgDetail($this->names($decoded['developers'] ?? null), $this->names($decoded['publishers'] ?? null));

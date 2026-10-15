@@ -30,7 +30,7 @@ interface RawgSource
      * @param \Closure(): bool $mayCall asked before every real call; false = the day's cap is spent, skip it
      * @param \Closure(): void $onQuota called when RAWG refuses on quota
      *
-     * @return array<int, RawgDetail>
+     * @return array<int, RawgDetail|null> null when the provider answered that it has none, or nothing usable; missing when it could not be asked
      */
     public function details(array $ids, \Closure $mayCall, \Closure $onQuota): array;
 }

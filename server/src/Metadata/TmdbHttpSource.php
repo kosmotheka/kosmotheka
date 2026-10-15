@@ -94,6 +94,9 @@ final readonly class TmdbHttpSource implements TmdbSource
                 if ($exception->quota) {
                     $onQuota();
                 }
+                if ($exception->answeredUnusable) {
+                    $details[$id] = null;
+                }
             } catch (\Throwable) {
                 // A detail that cannot be had is a candidate without it.
             }
@@ -142,7 +145,7 @@ final readonly class TmdbHttpSource implements TmdbSource
             if (200 !== $status) {
                 $response->cancel();
 
-                throw MetadataProviderException::failed();
+                throw MetadataProviderException::unusable();
             }
 
             $body = '';
@@ -151,7 +154,7 @@ final readonly class TmdbHttpSource implements TmdbSource
                 if (\strlen($body) > self::MAX_BODY_BYTES) {
                     $response->cancel();
 
-                    throw MetadataProviderException::failed();
+                    throw MetadataProviderException::unusable();
                 }
             }
 
@@ -197,7 +200,7 @@ final readonly class TmdbHttpSource implements TmdbSource
     {
         $decoded = json_decode($body, true, 16);
         if (!\is_array($decoded)) {
-            throw MetadataProviderException::failed();
+            throw MetadataProviderException::unusable();
         }
 
         if (MediaKind::TvSeries === $kind) {

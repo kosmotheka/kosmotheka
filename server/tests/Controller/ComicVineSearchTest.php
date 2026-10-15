@@ -807,6 +807,32 @@ final class ComicVineSearchTest extends WebTestCase
         self::assertSame(1, $this->detailRows());
     }
 
+    public function testADetailComicVineSaysDoesNotExistIsRememberedForAnHour(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeComicVineApi::searchFinds([FakeComicVineApi::volume()]);
+        FakeComicVineApi::detailAnswers('volume', 796, 200, '{"status_code":101,"error":"Object Not Found","results":[]}');
+
+        $this->search($client, $ada, 'comic');
+        $again = $this->search($client, $ada, 'comic');
+
+        // Repeating the search does not ask again for what ComicVine answered it does not have (SEG-053).
+        self::assertSame(2, FakeComicVineApi::calls());
+        self::assertSame([], $this->candidates($again)[0]['writers']);
+        self::assertSame(1, $this->detailRows());
+
+        $this->entityManager()->createQuery(\sprintf('UPDATE %s e SET e.fetchedAt = :at WHERE e.found = false', MetadataCacheEntry::class))
+            ->setParameter('at', new \DateTimeImmutable('-61 minutes'))->execute();
+        $this->entityManager()->clear();
+        FakeComicVineApi::detailIs('volume', 796, FakeComicVineApi::credits());
+
+        $later = $this->search($client, $ada, 'comic');
+
+        self::assertSame(3, FakeComicVineApi::calls());
+        self::assertSame(['Bill Finger'], $this->candidates($later)[0]['writers']);
+    }
+
     // --- 8. Nobody is remembered --------------------------------------------------------------------------------------
 
     public function testTwoAccountsLookingForTheSameCostOneRoundOfCallsAndNoRowSaysWhoOrWhat(): void

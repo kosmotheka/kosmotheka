@@ -649,6 +649,32 @@ final class TmdbSearchTest extends WebTestCase
         self::assertSame(1, $this->detailRows());
     }
 
+    public function testADetailTmdbSaysDoesNotExistIsRememberedForAnHour(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeTmdbApi::searchFinds([FakeTmdbApi::film()]);
+        FakeTmdbApi::detailAnswers('movie', 603, 404, '{"status_code":34}');
+
+        $this->search($client, $ada, 'film', 'matrix', 'en');
+        $again = $this->search($client, $ada, 'film', 'matrix', 'en');
+
+        // Repeating the search does not ask again for what Tmdb answered it does not have (SEG-053).
+        self::assertSame(2, FakeTmdbApi::calls());
+        self::assertSame([], $this->candidates($again)[0]['directors']);
+        self::assertSame(1, $this->detailRows());
+
+        $this->entityManager()->createQuery(\sprintf('UPDATE %s e SET e.fetchedAt = :at WHERE e.found = false', MetadataCacheEntry::class))
+            ->setParameter('at', new \DateTimeImmutable('-61 minutes'))->execute();
+        $this->entityManager()->clear();
+        FakeTmdbApi::detailIs('movie', 603, FakeTmdbApi::filmDetail());
+
+        $later = $this->search($client, $ada, 'film', 'matrix', 'en');
+
+        self::assertSame(3, FakeTmdbApi::calls());
+        self::assertSame(['Lana Wachowski', 'Lilly Wachowski'], $this->candidates($later)[0]['directors']);
+    }
+
     // --- 8. Nobody is remembered --------------------------------------------------------------------------------------
 
     public function testTwoAccountsLookingForTheSameCostOneRoundOfCallsAndNoRowSaysWhoOrWhat(): void

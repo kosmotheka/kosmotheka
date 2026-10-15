@@ -22,6 +22,9 @@ class MetadataCacheEntry
 {
     public const string FOUND_TTL = '30 days';
     public const string MISSING_TTL = '1 day';
+    /** A detail a title search wanted and its provider answered it has none of: kept briefly, so that repeating the search does not ask for it every time (SEG-053). */
+    public const string MISSING_DETAIL_TTL = '1 hour';
+    public const array DETAIL_PREFIXES = ['tmdb_', 'rawg_', 'comic_vine_'];
     /** A title search is kept as long as its provider says, found or not: the provider of those rows is one of these. */
     public const string TMDB_SEARCH = 'tmdb_search';
     public const string RAWG_SEARCH = 'rawg_search';
@@ -82,7 +85,19 @@ class MetadataCacheEntry
 
     private function ttl(): string
     {
-        return self::SEARCH_TTLS[$this->provider] ?? ($this->found ? self::FOUND_TTL : self::MISSING_TTL);
+        if (isset(self::SEARCH_TTLS[$this->provider])) {
+            return self::SEARCH_TTLS[$this->provider];
+        }
+        if ($this->found) {
+            return self::FOUND_TTL;
+        }
+        foreach (self::DETAIL_PREFIXES as $prefix) {
+            if (str_starts_with($this->provider, $prefix)) {
+                return self::MISSING_DETAIL_TTL;
+            }
+        }
+
+        return self::MISSING_TTL;
     }
 
     /** @param array<string, mixed> $payload */

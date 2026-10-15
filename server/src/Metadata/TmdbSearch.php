@@ -144,6 +144,11 @@ final readonly class TmdbSearch
             fn () => $this->gate->pause(TmdbSource::NAME),
         );
         foreach ($fetched as $id => $detail) {
+            if (null === $detail) {
+                // What it answered it has none of is kept as missing, for an hour: asking again in a moment gets the same (SEG-053).
+                $this->remember($entries[$id] ?? null, $provider, (string) $id, false, [], $now);
+                continue;
+            }
             $details[$id] = $detail;
             $this->remember($entries[$id] ?? null, $provider, (string) $id, true, $detail->toArray(), $now);
         }

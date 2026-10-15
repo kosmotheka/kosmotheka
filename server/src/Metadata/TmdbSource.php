@@ -33,7 +33,7 @@ interface TmdbSource
      * @param \Closure(): bool $mayCall asked before every real call; false = the day's cap is spent, skip it
      * @param \Closure(): void $onQuota called when TMDB refuses on quota
      *
-     * @return array<int, TmdbDetail>
+     * @return array<int, TmdbDetail|null> null when the provider answered that it has none, or nothing usable; missing when it could not be asked
      */
     public function details(MediaKind $kind, string $language, array $ids, \Closure $mayCall, \Closure $onQuota): array;
 }

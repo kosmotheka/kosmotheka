@@ -136,8 +136,13 @@ final readonly class ComicVineSearch
             fn () => $this->gate->pause(ComicVineSource::NAME),
         );
         foreach ($missing as $hit) {
-            $detail = $fetched[$this->key($hit)] ?? null;
-            if (null === $detail) {
+            if (!\array_key_exists($this->key($hit), $fetched)) {
+                continue;
+            }
+            $detail = $fetched[$this->key($hit)];
+            if (!$detail instanceof ComicVineDetail) {
+                // What it answered it has none of is kept as missing, for an hour: asking again in a moment gets the same (SEG-053).
+                $this->remember($entries[$this->key($hit)] ?? null, self::detailProvider($hit->resource), (string) $hit->id, false, [], $now);
                 continue;
             }
             $details[$this->key($hit)] = $detail;

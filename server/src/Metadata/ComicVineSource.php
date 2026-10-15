@@ -34,7 +34,7 @@ interface ComicVineSource
      * @param \Closure(ComicVineResource): bool $mayCall asked before every real call; false = that resource's hour is spent, skip it
      * @param \Closure(): void                  $onQuota called when Comic Vine refuses on quota
      *
-     * @return array<string, ComicVineDetail> by `volume:796` or `issue:6`
+     * @return array<string, ComicVineDetail|null> by `volume:796` or `issue:6`; null when the provider answered that it has none, or nothing usable; missing when it could not be asked
      */
     public function details(array $hits, \Closure $mayCall, \Closure $onQuota): array;
 }
