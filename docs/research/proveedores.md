@@ -165,6 +165,15 @@ Sin enviar. Lo manda el maintainer cuando quiera, desde el correo del proyecto, 
 
 **Plan** (maintainer, 12/10/2026): la ruta del servidor para GameUPC se hace **junto con BoardGameGeek**, cuando BGG conceda el token: GameUPC traduce el código y BGG da la ficha; por separado, por el servidor solo aportaría el nombre.
 
+**Respuesta de GameUPC (15/10/2026, pegada por el maintainer; la clave de producción ya la tiene él, fuera del repositorio):**
+- **Le parece bien que el servidor llame con la clave del proyecto en nombre de sus cuentas.** Solo dan claves a quien hace la app, nunca a usuarios: no tienen el concepto de que cada persona tenga la suya.
+- **Lo que pide:** que en cada escritura (devolverle el id de BGG elegido) vaya un identificador del usuario, para poder deshacer lo que escriba alguien de mala fe sin tirar todo lo de nuestra clave. Dice que nunca ha tenido que hacerlo.
+  - Propuesta de la sesión coordinadora, por confirmar: un identificador seudónimo y estable por cuenta, sacado en el servidor con una clave secreta (como la huella del correo), nunca el id real de la cuenta ni el correo. Sirve para lo que pide y no les dice quién es nadie. Sin cuenta no se escribe.
+- **Tres caminos que pide implementar:** código validado (una respuesta segura); código con sugerencias (la persona elige); código sin datos (la persona busca el juego). En los dos últimos, **devolver el id de BGG elegido** a `/upc/{upc}/bgg_id/{bgg_id}`: el 20 % de los códigos son nuevos y de eso vive su base.
+- Códigos de prueba: `111111111117` (respuesta segura), `222222222224` (sugerencias), `333333333331` (sin datos), y un PDF con sus códigos de barras en su web.
+- Sin condiciones de caché ni de atribución, igual que antes.
+- **Choca con D62 (clave propia para todos)** igual que BoardGameGeek: él solo contempla la clave del proyecto. A decidir al construirlo junto con BGG.
+
 ### Correo a GameUPC (borrador)
 
 Enviado por el maintainer el 12/10/2026, tal cual. A la espera de respuesta.
