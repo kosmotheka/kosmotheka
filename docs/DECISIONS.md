@@ -104,7 +104,7 @@
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
 | D97 | Roles obligatorios desde que se crea la biblioteca | aceptada (las preguntas de cómo, en su encargo) |
 | D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
-| D99 | No se puede borrar la cuenta dueña de una biblioteca de la nube con más personas | aceptada |
+| D99 | Al borrar la cuenta dueña de una biblioteca de la nube, la biblioteca pasa a otra cuenta con acceso | aceptada (revisada el 15/10/2026) |
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
 
 ---
@@ -1829,15 +1829,19 @@ Aceptada el 10/10/2026, al preparar 7.5.4. Concreta D71 con cuentas y sustituye 
 
 **Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 34. Regla nueva en `spec/` con sus casos. Glosario: `access_withdrawn`.
 
-## D99 · No se puede borrar la cuenta dueña de una biblioteca de la nube con más personas — `aceptada`
+## D99 · Al borrar la cuenta dueña de una biblioteca de la nube, la biblioteca pasa a otra cuenta con acceso — `aceptada`
 
-Aceptada por el maintainer el 15/10/2026, tras la auditoría de cuentas (SEG-061). Concreta D65 y D98 para la nube.
+Aceptada por el maintainer el 15/10/2026, tras la auditoría de cuentas (SEG-061), y revisada el mismo día. Concreta D65 y D98 para la nube.
 
 **Contexto.** Cada biblioteca de la nube es «de» la cuenta que la subió (`cloud_library.owner`), y la base de datos la borra en cascada con esa cuenta. Si quien la subió borra su cuenta, la biblioteca desaparece de la nube para todos sus miembros, sin la firma de quien administra. Ya estaba apuntado en el plan para el caso de quien es echado; pasa igual con cualquiera.
 
-**Decisión.** El servidor no deja borrar una cuenta mientras sea dueña de una biblioteca de la nube con más personas: responde 409, y en la base la relación pasa de `CASCADE` a `RESTRICT`. La app le explica que antes la pase a otra persona o la borre. Una biblioteca en la que solo está esa cuenta se borra con ella, como hoy.
+**Primera decisión (sustituida).** No dejar borrar la cuenta mientras fuera dueña de una biblioteca con más personas (409, `RESTRICT`), y que la app pidiera antes pasarla a otra persona o borrarla. Pedía construir una acción para pasar la biblioteca y el borrado de bibliotecas de la nube.
 
-**Consecuencias.** Hace falta poder pasar una biblioteca de la nube a otra cuenta, y el borrado de bibliotecas de la nube que ya estaba pendiente (SEG-023). Migración del servidor; código de error nuevo con su texto en la app.
+**Lo que se vio al preparar el encargo.** El dueño solo cuenta para el primer enlace (solo un dispositivo de esa cuenta puede enlazar la biblioteca) y para el borrado en cascada. Una vez enlazada, quién entra y qué puede hacer sale de las personas, sus roles y la tabla de acceso (D76, D84, D98), no del dueño.
+
+**Decisión (revisada el 15/10/2026).** El maintainer: «bien visto, se simplifica todo». Al borrar una cuenta, cada biblioteca de la nube de la que es dueña pasa a otra cuenta con acceso a ella: primero una cuya persona es administradora y, si no hay, cualquier otra con acceso. Solo si no queda ninguna se borra con la cuenta, como hasta ahora. No hay bloqueo ni pantalla nueva.
+
+**Consecuencias.** Solo servidor, más una línea en el aviso de la app al borrar la cuenta. La relación en la base pasa a `RESTRICT`, para que nunca se borre una biblioteca en cascada sin pasar por esta regla. El borrado de bibliotecas de la nube (SEG-023) sigue pendiente, aparte.
 
 ## D100 · Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada — `aceptada`
 
