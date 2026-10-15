@@ -183,8 +183,8 @@ Pedida por el maintainer el 10/10/2026. Con 7.1 a 7.7 construidos (desde 7.8 no 
 **Hecha la primera pasada el 15/10/2026** ([auditoría](../audits/2026-10-15.md)): 11 hallazgos, ninguno crítico ni alto; 7 arreglados el mismo día. Queda pendiente la parte de cuentas (entrar con Google, segundo factor, límites) y `library-access` completo. Decisiones abiertas de esa pasada: los topes por cuenta de los proveedores (SEG-052), guardar como ausente un detalle que falla (SEG-053) y los límites de las rutas de la nube (abajo).
 
 Apuntado para esa revisión:
-- Las rutas de la nube (`pull`, `push`, `claim`) no tienen límite de peticiones; solo las de la cuenta.
-- Un móvil desbloqueado de alguien **sin cuenta**, en manos de otro, permite registrar una cuenta desde él y quedar enlazado como esa persona de forma duradera (el enlace sobrevive a devolver el móvil).
+- Las rutas de la nube (`pull`, `push`, `claim`) no tienen límite de peticiones; solo las de la cuenta. **Decidido por el maintainer el 15/10/2026:** por cuenta, subir y bajar 600 por hora; reclamar y enlazar, 30 por hora; el token de avisos, 60 por hora. Sin construir.
+- Un móvil desbloqueado de alguien **sin cuenta**, en manos de otro, permite registrar una cuenta desde él y quedar enlazado como esa persona de forma duradera (el enlace sobrevive a devolver el móvil). **Decidido por el maintainer el 15/10/2026:** se acepta como riesgo; quien administra ve quién tiene cuenta y puede retirarle el acceso (D98).
 - La nube solo vincula sola un dispositivo que nadie ha vallado nunca. Los que ya existían cuando se selló la biblioteca (D94) llevan su marca, así que, si son de nadie, los vincula quien administra. Comprobar que no deja fuera ningún caso legítimo.
 - `CloudEventsControllerTest::testTheTokenCoversTheAccountAndItsLibrariesAndExpiresInAnHour` falló una vez en una pasada completa y pasa sola: depende del reloj.
 - Echan a quien subió la biblioteca a la nube: se le corta como a cualquiera y la biblioteca sigue en la nube para los demás, pero sigue siendo «de su cuenta» (`cloud_library.owner`) y desaparecería si borra la cuenta. Decidir con el borrado de bibliotecas de la nube (y SEG-023). Confirmado en la auditoría del 15/10/2026 (SEG-061): pasa también con quien no ha sido echado, porque `cloud_library.owner` borra en cascada.
@@ -205,12 +205,12 @@ Apuntado para esa revisión:
   - el servidor deja crear dos invitaciones pendientes para la misma persona (7.6.3).
 - «Continuar con Google» (hecho el 11/10/2026, sin probar contra Google de verdad), visto al revisarlo:
   - **probado por el maintainer el 11/10/2026:** en Linux, con la app de desarrollo contra producción, entra con Google de punta a punta ([cómo registrar el enlace en desarrollo](../development/google-oauth.md#probarlo-en-linux-con-la-app-de-desarrollo)). Sin probar en Android ni en Windows;
-  - **a confirmar por el maintainer:** con Google también se pide el segundo factor de Kosmotheka a quien lo tiene activado; y al entrar con Google en una cuenta que estaba sin confirmar se le quita la contraseña que tuviera;
+  - **confirmado por el maintainer el 15/10/2026:** con Google también se pide el segundo factor de Kosmotheka a quien lo tiene activado; y al entrar con Google en una cuenta que estaba sin confirmar se le quita la contraseña que tuviera;
   - la vuelta a la app usa el esquema `kosmotheka://`, que en un móvil puede registrar otra app. Sola no le sirve de nada (le falta el secreto que guarda la app de verdad), pero junto con un enlace de inicio mandado por un atacante sí permitiría entrar como la víctima. En Android se cierra volviendo por un enlace verificado de `kosmotheka.app`;
   - el código de un solo uso vale dos minutos: quien tenga segundo factor debe escribirlo en ese tiempo. Comprobar en un móvil que da tiempo;
   - el límite de las cuatro rutas de Google es por IP (30 cada 15 minutos) y lo comparte una casa;
   - la cuenta se crea o se enlaza cuando Google devuelve al navegador, antes de que la app termine: quien abra un enlace de inicio ajeno y entre con su Google deja su cuenta enlazada, aunque nadie llegue a entrar.
-- D97, roles obligatorios.
+- D97, roles obligatorios. **Decidido por el maintainer el 15/10/2026:** aceptada, se hace antes de publicar.
 
 ### 7.8 Proveedores con clave
 

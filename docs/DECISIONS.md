@@ -67,7 +67,7 @@
 | D59 | Organizaciones: la puerta abierta, sin construirlas | aceptada |
 | D60 | Tipos de catálogo: lista cerrada y «Otro»; el alta empieza por buscar | aceptada |
 | D61 | Series y estados: lo tengo, me falta, lo deseo | aceptada |
-| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia; y el 14/10/2026: BoardGameGeek, solo por el servidor y con cuenta) |
+| D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia; el 14/10/2026: BoardGameGeek, solo por el servidor y con cuenta; y el 15/10/2026: GameUPC, igual) |
 | D63 | Distribución: Google Play, sin iOS | aceptada |
 | D64 | La documentación de trabajo, fuera de la versión pública | abierta |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
@@ -102,7 +102,7 @@
 | D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
 | D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
-| D97 | ¿Roles obligatorios desde que se crea la biblioteca? | abierta |
+| D97 | Roles obligatorios desde que se crea la biblioteca | aceptada (las preguntas de cómo, en su encargo) |
 | D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
 | D99 | No se puede borrar la cuenta dueña de una biblioteca de la nube con más personas | aceptada |
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
@@ -889,6 +889,11 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 - Quien monte su propio servidor registra su propia aplicación en BGG y pone su token, que es lo que piden: cada aplicación, su token.
 - **Transparencia:** la tarjeta de Proveedores dice qué se manda al servidor (solo el título buscado, sin nada más) antes de que la persona la deje encendida, como pidió el maintainer.
 - RPGGeek va igual, porque es la misma API y el mismo token.
+
+**Precisión del 15/10/2026 (aceptada, con el sí explícito del maintainer): GameUPC, también solo por el servidor y solo con cuenta.** Su autor contestó el 15/10/2026 ([notas](research/proveedores.md)) que solo da claves a quien hace la app, nunca a sus usuarios, y que le parece bien que el servidor busque con la clave del proyecto.
+- La app pierde el campo de clave propia de GameUPC que tenía desde la Fase 6.
+- Cada vez que se le devuelve el juego elegido, va un **identificador por cuenta inventado por el servidor** (con un secreto suyo, como la huella del correo), nunca el correo ni el id de la cuenta: le sirve para deshacer lo que escriba alguien de mala fe sin saber quién es nadie.
+- Se construye junto con BoardGameGeek: GameUPC traduce el código de barras y BGG da la ficha.
 
 ## D63 · Distribución: Google Play, sin iOS — `aceptada`
 
@@ -1773,7 +1778,9 @@ Aceptada el 10/10/2026, al diseñar 7.5.2b. Concreta el enlace automático de D7
 
 **Consecuencias.** Migración, `schema.rs`, `spec/` y `CatalogEntity.php` a la vez; `spec/sync.json` sube a 33. SEG-019 se cierra cuando esto esté construido, con la parte que queda apuntada a D88. D95 no cambia en lo demás.
 
-## D97 · ¿Roles obligatorios desde que se crea la biblioteca? — `abierta`
+## D97 · Roles obligatorios desde que se crea la biblioteca — `aceptada`
+
+**Aceptada por el maintainer el 15/10/2026, sin medir antes:** «no es un tema de ahorrar código, sino de ahorrar dolores de cabeza y puntos de fallo». Se hace antes de publicar, para no tener que mantener nunca bibliotecas sin roles. Las preguntas abiertas de abajo (las bibliotecas que ya existen, cómo se presenta el paso al emparejar) se resuelven en su encargo, con propuesta antes de construir.
 
 Planteada por el maintainer el 10/10/2026. Se decide en la revisión de seguridad de conjunto de la Fase 7 (tras 7.7), antes de producción (7.9).
 

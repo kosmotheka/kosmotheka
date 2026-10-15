@@ -172,7 +172,7 @@ Sin enviar. Lo manda el maintainer cuando quiera, desde el correo del proyecto, 
 - **Tres caminos que pide implementar:** código validado (una respuesta segura); código con sugerencias (la persona elige); código sin datos (la persona busca el juego). En los dos últimos, **devolver el id de BGG elegido** a `/upc/{upc}/bgg_id/{bgg_id}`: el 20 % de los códigos son nuevos y de eso vive su base.
 - Códigos de prueba: `111111111117` (respuesta segura), `222222222224` (sugerencias), `333333333331` (sin datos), y un PDF con sus códigos de barras en su web.
 - Sin condiciones de caché ni de atribución, igual que antes.
-- **Choca con D62 (clave propia para todos)** igual que BoardGameGeek: él solo contempla la clave del proyecto. A decidir al construirlo junto con BGG.
+- **Choca con D62 (clave propia para todos)** igual que BoardGameGeek: él solo contempla la clave del proyecto. **Decidido por el maintainer el 15/10/2026 (D62):** solo por el servidor y con cuenta, sin clave propia en la app, y con el identificador seudónimo por cuenta.
 
 ### Correo a GameUPC (borrador)
 
