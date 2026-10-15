@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Enum\ComicVineResource;
+use App\Sync\Invitation\EmailFingerprint;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
@@ -56,6 +57,7 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $invitationLookupLimiter,
         #[Target('invitation_accept')]
         private RateLimiterFactoryInterface $invitationAcceptLimiter,
+        private EmailFingerprint $fingerprints,
     ) {
     }
 
@@ -160,10 +162,15 @@ final readonly class RequestLimiter
         $this->consume($this->emailCodeLimiter, $ip);
     }
 
-    /** @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeEmailPerAddress(string $normalisedEmail): void
+    /**
+     * Keyed by the fingerprint of the address, like the other limits on an address: the limiter's store never holds
+     * the address itself (D66).
+     *
+     * @throws AccountException with AccountErrorCode::TooManyRequests
+     */
+    public function consumeEmailPerAddress(string $email): void
     {
-        $this->consume($this->emailPerAddressLimiter, $normalisedEmail);
+        $this->consume($this->emailPerAddressLimiter, $this->fingerprints->of($email));
     }
 
     /** @throws AccountException with AccountErrorCode::TooManyRequests */

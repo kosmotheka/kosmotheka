@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\EmailCodePurpose;
 use App\Repository\DeviceRepository;
 use App\Repository\EmailCodeRepository;
+use App\Sync\Invitation\EmailFingerprint;
 use App\Tests\Support\DeviceAuthTestTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -309,6 +310,20 @@ final class AccountControllerTest extends WebTestCase
 
         $this->confirm($client, $email, $lastCode);
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+    }
+
+    public function testTheMailLimitOfAnAddressDoesNotKeepTheAddress(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'not-in-the-cache@example.com';
+
+        $this->register($client, $email, 'Ada', 'en');
+        self::assertEmailCount(1);
+
+        $pool = self::getContainer()->get('cache.rate_limiter');
+        $fingerprint = self::getContainer()->get(EmailFingerprint::class)->of($email);
+        self::assertFalse($pool->hasItem(sha1('email_per_address-'.$email)));
+        self::assertTrue($pool->hasItem(sha1('email_per_address-'.$fingerprint)));
     }
 
     private function register(KernelBrowser $client, string $email, string $name, string $locale, string $password = 'correct horse battery'): void
