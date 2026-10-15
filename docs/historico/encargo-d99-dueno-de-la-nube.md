@@ -1,6 +1,6 @@
 # Encargo · La biblioteca de la nube no se va con la cuenta de quien la subió (D99)
 
-> Encargo cerrado para la sesión de hitos, escrito el 15/10/2026. **Se envía cuando termine el de cuentas** ([encargo](encargo-cuentas-d100.md)), porque los dos tocan `DELETE /v1/account`. Sin commit, sin push, sin cambiar de rama. Toca `server/`, una línea de `app/` y `docs/`. Nada en `spec/`.
+> Encargo cerrado para la sesión de hitos, escrito el 15/10/2026. Enviado el 15/10/2026, después del de cuentas ([encargo](encargo-cuentas-d100.md), `63f2a90`), que también tocaba `DELETE /v1/account`. Sin commit, sin push, sin cambiar de rama. Toca `server/`, una línea de `app/` y `docs/`. Nada en `spec/`.
 
 ## Para qué
 
