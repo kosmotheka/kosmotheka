@@ -57,7 +57,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 |---|---|---|
 | `registration` | 5 por hora | IP |
 | `login` | 30 cada 15 min | IP: el reto y el inicio de sesión gastan uno cada uno, también los que salen bien. Es ancho a propósito: una familia en la misma wifi comparte IP (SEG-051) |
-| `login_failed_account` | 5 cada 15 min | cuenta: **solo los intentos fallidos** (contraseña o código del segundo factor equivocados). La clave es la huella del correo escrito, normalizado, así que un correo sin cuenta cuenta igual que uno con cuenta |
+| `login_failed_account` | 5 cada 15 min | cuenta: **solo los intentos fallidos** (contraseña o código del segundo factor equivocados), también la contraseña actual equivocada al cambiarla o al borrar la cuenta: una sesión en un móvil desbloqueado no sirve para probar contraseñas. La clave es la huella del correo escrito, normalizado, así que un correo sin cuenta cuenta igual que uno con cuenta |
 | `email_code` | 10 cada 15 min | IP |
 | `email_per_address` | 3 cada 15 min | dirección: la huella del correo normalizado, nunca el correo |
 | `invitation_create`, `invitation_email`, `invitation_recipient_library`, `invitation_recipient`, `invitation_lookup`, `invitation_accept` | ver [cloud.md](cloud.md#límites-de-peticiones) | las invitaciones (7.6.1): por cuenta, por huella del correo de destino o por IP, según el caso |

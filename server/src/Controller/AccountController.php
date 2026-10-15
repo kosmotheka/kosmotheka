@@ -27,6 +27,7 @@ use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
 use App\Security\RegistrationGate;
 use App\Security\RequestLimiter;
+use App\Sync\Invitation\EmailFingerprint;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -56,6 +57,7 @@ final class AccountController extends AbstractController
         private readonly BackupCodeRepository $backupCodeRepository,
         private readonly ActivityLog $activityLog,
         private readonly RegistrationGate $registrationGate,
+        private readonly EmailFingerprint $fingerprints,
     ) {
     }
 
@@ -173,9 +175,7 @@ final class AccountController extends AbstractController
             throw AccountException::noPassword();
         }
 
-        if (!$this->passwordHasher->isPasswordValid($user, $payload->currentPassword)) {
-            throw AccountException::invalidCredentials();
-        }
+        $this->checkCurrentPassword($user, $payload->currentPassword);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->newPassword));
         $this->deviceRepository->signOutAllExcept($user, $this->currentDevice->get()->getDeviceId(), SignOutReason::PasswordChanged);
@@ -197,9 +197,7 @@ final class AccountController extends AbstractController
             throw AccountException::noPassword();
         }
 
-        if (!$this->passwordHasher->isPasswordValid($user, $payload->password)) {
-            throw AccountException::invalidCredentials();
-        }
+        $this->checkCurrentPassword($user, $payload->password);
 
         // Milestone 7.2 will also need to remove or reassign the member rows
         // this account owns in its libraries before libraries exist here.
@@ -342,6 +340,23 @@ final class AccountController extends AbstractController
      * the route is public, so a token for a different account must not
      * protect anything of this one.
      */
+    /**
+     * The same cut per account as signing in (SEG-051): a session on a phone left unlocked must not be a way to try
+     * passwords, since the password outlives the session.
+     *
+     * @throws AccountException with too_many_requests or invalid_credentials
+     */
+    private function checkCurrentPassword(User $user, string $password): void
+    {
+        $fingerprint = $this->fingerprints->of($user->getEmail());
+        $this->requestLimiter->requireLoginOpen($fingerprint);
+        if (!$this->passwordHasher->isPasswordValid($user, $password)) {
+            $this->requestLimiter->noteLoginFailure($fingerprint);
+
+            throw AccountException::invalidCredentials();
+        }
+    }
+
     private function callingDeviceId(User $user): ?string
     {
         $device = $this->currentDevice->tryGet();

@@ -731,6 +731,27 @@ final class AccountControllerTest extends WebTestCase
         self::assertSame('{"error":"no_password"}', $client->getResponse()->getContent());
     }
 
+    public function testGuessingTheCurrentPasswordIsCutPerAccountLikeSigningIn(): void
+    {
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'change-guess@example.com');
+
+        // A phone left unlocked: whoever holds it tries passwords to learn the one that outlives its token.
+        for ($i = 0; $i < 5; ++$i) {
+            if (0 === $i % 2) {
+                $this->changePassword($client, $session['headers'], 'guess number '.$i, 'a brand new password');
+            } else {
+                $client->request('DELETE', '/v1/account', server: [...$session['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode(['password' => 'guess number '.$i], \JSON_THROW_ON_ERROR));
+            }
+            self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+        }
+
+        $this->changePassword($client, $session['headers'], 'correct horse battery', 'a brand new password');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);
+        self::assertNotNull($this->findUser('change-guess@example.com'));
+    }
+
     public function testDeleteWithTheRightPasswordRemovesTheAccount(): void
     {
         $client = $this->createTestClient();
