@@ -306,7 +306,7 @@ impl CloudApi for HttpCloud {
 
     async fn comic_vine_search(&self, query: &str) -> Result<Vec<Candidate>> {
         let body = json!({ "query": query });
-        let answer: Value = send_json(
+        let mut response = send(
             &self.client,
             Method::POST,
             &format!("{}/v1/metadata/comic-vine/search", self.base),
@@ -314,6 +314,7 @@ impl CloudApi for HttpCloud {
             Some(&body),
         )
         .await?;
+        let answer = read_capped_json(&mut response, MAX_SEARCH_ANSWER).await?;
         parse_comic_vine_answer(&answer).map_err(|()| Error::account("server_unavailable"))
     }
 
@@ -565,6 +566,10 @@ mod tests {
         let app = Router::new()
             .route("/v1/metadata/tmdb/search", axum::routing::post(tmdb_route))
             .route("/v1/metadata/rawg/search", axum::routing::post(tmdb_route))
+            .route(
+                "/v1/metadata/comic-vine/search",
+                axum::routing::post(tmdb_route),
+            )
             .with_state(stub.clone());
         tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
@@ -613,6 +618,13 @@ mod tests {
         let (api, _) = tmdb_server("huge").await;
 
         assert!(api.rawg_search("gta").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn an_enormous_comic_answer_is_a_failure() {
+        let (api, _) = tmdb_server("huge").await;
+
+        assert!(api.comic_vine_search("batman").await.is_err());
     }
 
     #[tokio::test]
