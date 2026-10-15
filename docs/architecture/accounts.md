@@ -63,7 +63,7 @@ Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**
 | `invitation_create`, `invitation_email`, `invitation_recipient_library`, `invitation_recipient`, `invitation_lookup`, `invitation_accept` | ver [cloud.md](cloud.md#límites-de-peticiones) | las invitaciones (7.6.1): por cuenta, por huella del correo de destino o por IP, según el caso |
 | `two_factor` | 5 cada 15 min | cuenta: cada intento de código del segundo factor, al entrar o al activarlo, desactivarlo o regenerar los de respaldo. El de `login` es por IP, y desde muchas IP se podrían probar los 6 dígitos |
 
-`email_per_address` protege a terceros: sin él, registrar repetidamente con el correo de otra persona podría inundarle la bandeja de entrada. El aviso de contraseña cambiada no lo consume: el cambio ya se ha hecho (un 429 diría que falló), y solo puede provocarlo quien tiene la contraseña o un código.
+`email_per_address` protege a terceros: sin él, registrar repetidamente con el correo de otra persona podría inundarle la bandeja de entrada. Para los códigos se gasta **antes** de cambiar el código vigente: cualquiera puede pedir un código para una dirección, y pedirlo cuando ya no quedan correos no le quita a su dueño el que ya tiene (auditoría del 15/10/2026). El aviso de contraseña cambiada no lo consume: el cambio ya se ha hecho (un 429 diría que falló), y solo puede provocarlo quien tiene la contraseña o un código.
 
 ## Correo
 

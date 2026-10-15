@@ -23,6 +23,7 @@ final readonly class EmailCodeIssuer
         private EntityManagerInterface $entityManager,
         private EmailCodeRepository $emailCodeRepository,
         private AccountMailer $accountMailer,
+        private RequestLimiter $requestLimiter,
         #[\SensitiveParameter]
         private string $secret,
     ) {
@@ -34,6 +35,10 @@ final readonly class EmailCodeIssuer
     /** Issues a fresh code, replacing any live one for the same user and purpose, and emails it. */
     public function issueAndSend(User $user, EmailCodePurpose $purpose): void
     {
+        // Spent before the live code is replaced: anyone may ask for a code for an address, and asking past its limit
+        // must not take away the code its owner already has.
+        $this->requestLimiter->consumeEmailPerAddress($user->getEmail());
+
         $existing = $this->emailCodeRepository->findOneByUserAndPurpose($user, $purpose);
         if ($existing instanceof EmailCode) {
             // Flushed on its own: Doctrine runs inserts before deletes in a

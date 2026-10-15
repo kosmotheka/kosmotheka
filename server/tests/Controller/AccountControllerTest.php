@@ -290,6 +290,27 @@ final class AccountControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
+    public function testACodeAskedPastTheLimitOfTheAddressLeavesTheLastCodeSentWorking(): void
+    {
+        $client = $this->createTestClient();
+        $email = 'kept-code@example.com';
+        $this->register($client, $email, 'Ada', 'en');
+        $this->requestCode($client, $email);
+        $this->requestCode($client, $email);
+        $message = self::getMailerMessage();
+        self::assertInstanceOf(Email::class, $message);
+        preg_match('/\d{6}/', (string) $message->getTextBody(), $matches);
+        $lastCode = $matches[0] ?? self::fail('No code in the email.');
+
+        // Anyone may ask for a code for this address; once its mails are spent, the code it already has must stay.
+        $this->requestCode($client, $email);
+        self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);
+        self::assertEmailCount(0);
+
+        $this->confirm($client, $email, $lastCode);
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+    }
+
     private function register(KernelBrowser $client, string $email, string $name, string $locale, string $password = 'correct horse battery'): void
     {
         $client->request('POST', '/v1/account/register', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([

@@ -13,7 +13,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Sends the account emails (D49, D50): plain text, subject and body from the
  * `emails` translation domain in the user's locale. The only place that calls
  * the mailer for account mail, so every email goes through the per-address
- * rate limit (docs/architecture/accounts.md).
+ * rate limit (docs/architecture/accounts.md); for the codes, `EmailCodeIssuer`
+ * spends it first.
  */
 final readonly class AccountMailer
 {
@@ -25,20 +26,22 @@ final readonly class AccountMailer
     ) {
     }
 
+    /** The per-address limit was spent by `EmailCodeIssuer`, before it replaced the live code. */
     public function sendConfirmationCode(User $user, string $code, int $expiryMinutes): void
     {
         $this->send($user, 'confirm_email.subject', 'confirm_email.body', [
             '%code%' => $code,
             '%minutes%' => $expiryMinutes,
-        ]);
+        ], false);
     }
 
+    /** The per-address limit was spent by `EmailCodeIssuer`, before it replaced the live code. */
     public function sendPasswordResetCode(User $user, string $code, int $expiryMinutes): void
     {
         $this->send($user, 'reset_password.subject', 'reset_password.body', [
             '%code%' => $code,
             '%minutes%' => $expiryMinutes,
-        ]);
+        ], false);
     }
 
     /** Sent instead of a code when someone tries to register an already-confirmed address. */
