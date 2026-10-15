@@ -102,7 +102,7 @@
 | D94 | Un sello pone valla a todos los dispositivos: lo fechado antes de activar los roles no se cree sin más | aceptada |
 | D95 | La nube firma con una clave por biblioteca; la identidad de un dispositivo en la nube es su id y su clave | aceptada |
 | D96 | Quien dice de quién es un dispositivo avala su clave; la nube solo enlaza una cuenta por una clave avalada | aceptada |
-| D97 | Roles obligatorios desde que se crea la biblioteca | aceptada (las preguntas de cómo, en su encargo) |
+| D97 | Roles obligatorios desde que se crea la biblioteca | aceptada (precisada el 15/10/2026: sin modo sin roles ni en `spec/`; el nombre, en la bienvenida) |
 | D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
 | D99 | Al borrar la cuenta dueña de una biblioteca de la nube, la biblioteca pasa a otra cuenta con acceso | aceptada (revisada el 15/10/2026) |
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
@@ -1781,6 +1781,10 @@ Aceptada el 10/10/2026, al diseñar 7.5.2b. Concreta el enlace automático de D7
 ## D97 · Roles obligatorios desde que se crea la biblioteca — `aceptada`
 
 **Aceptada por el maintainer el 15/10/2026, sin medir antes:** «no es un tema de ahorrar código, sino de ahorrar dolores de cabeza y puntos de fallo». Se hace antes de publicar, para no tener que mantener nunca bibliotecas sin roles. Las preguntas abiertas de abajo (las bibliotecas que ya existen, cómo se presenta el paso al emparejar) se resuelven en su encargo, con propuesta antes de construir.
+
+**Precisado por el maintainer el 15/10/2026:**
+- **Sin código para lo que ya existe.** La regla «sin roles, cualquiera puede todo» (regla 1 de `spec/`) **desaparece también de las reglas compartidas**, no solo de la app. Lo que hay hoy son datos de prueba: el maintainer borra sus bibliotecas (también las de la nube) y las vuelve a crear. «No se mantiene algo que no va a usarse nunca.» No hay conversión de bibliotecas viejas.
+- **El nombre de la persona se pide en la bienvenida.** Todo el mundo tiene «Mi biblioteca» desde que entra, aunque luego la borre, así que su creador es su administrador desde la primera operación, con el nombre que da en la bienvenida.
 
 Planteada por el maintainer el 10/10/2026. Se decide en la revisión de seguridad de conjunto de la Fase 7 (tras 7.7), antes de producción (7.9).
 
