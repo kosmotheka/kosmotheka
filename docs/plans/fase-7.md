@@ -180,6 +180,8 @@ Propuestas para construirlo:
 
 Pedida por el maintainer el 10/10/2026. Con 7.1 a 7.7 construidos (desde 7.8 no hay piezas de seguridad nuevas), se revisa la seguridad entera de una vez, no pieza a pieza: cada revisión parcial ha encontrado una costura entre piezas. Sirve también para ver dónde nos complicamos de más. Se apoya en [architecture/security.md](../architecture/security.md), la página en lenguaje llano que se publicará: si esa página no se entiende o no cuadra con el código, es un hallazgo.
 
+**Hecha la primera pasada el 15/10/2026** ([auditoría](../audits/2026-10-15.md)): 11 hallazgos, ninguno crítico ni alto; 7 arreglados el mismo día. Queda pendiente la parte de cuentas (entrar con Google, segundo factor, límites) y `library-access` completo. Decisiones abiertas de esa pasada: los topes por cuenta de los proveedores (SEG-052), guardar como ausente un detalle que falla (SEG-053) y los límites de las rutas de la nube (abajo).
+
 Apuntado para esa revisión:
 - Las rutas de la nube (`pull`, `push`, `claim`) no tienen límite de peticiones; solo las de la cuenta.
 - Un móvil desbloqueado de alguien **sin cuenta**, en manos de otro, permite registrar una cuenta desde él y quedar enlazado como esa persona de forma duradera (el enlace sobrevive a devolver el móvil).
@@ -195,7 +197,7 @@ Apuntado para esa revisión:
   - **construido el 11/10/2026** (SEG-042, D43 enmendada el 11/10/2026): el correo de invitación sin el nombre de la biblioteca;
   - **construido el 11/10/2026** (SEG-044, decidido por el maintainer el 11/10/2026): el tope de correos de invitación por destinatario pasa a 3 al día por biblioteca y dirección, con un tope general de 10 al día por dirección; la cuota no se gasta si el correo no se envía;
   - el registro no tiene tope de filas y la primera subida deja la historia de la biblioteca (SEG-045): **no se toca ahora** (decidido por el maintainer el 11/10/2026); se vigila el tamaño de `activity_log` cuando haya uso real, en la revisión de carga;
-  - los topes de correo de invitación se miran y después se gastan en dos pasos: dos peticiones a la vez pueden pasar las dos; y el registro hace una consulta por operación para saber de quién es el autor (medir con subidas grandes);
+  - (arreglado el 15/10/2026, SEG-054, `31720ee`) los topes de correo de invitación se miran y después se gastan en dos pasos: dos peticiones a la vez pueden pasar las dos; y el registro hace una consulta por operación para saber de quién es el autor (medir con subidas grandes);
   - la huella del correo sale de `APP_SECRET`: si se cambia, las huellas viejas dejan de casar con ninguna dirección;
   - la primera subida de una biblioteca deja filas por los cambios de rol y de dispositivo de toda su historia, con la hora de llegada;
   - no se apuntan: crear una persona, quitar un dispositivo de la cuenta (D81) y nombrar superadministrador por consola (D52 pide sus accesos);
