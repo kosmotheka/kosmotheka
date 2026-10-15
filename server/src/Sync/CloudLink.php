@@ -23,6 +23,10 @@ use Symfony\Component\Uid\Uuid;
  * library, and is signed by a device of the account that owns it. Two ways in, one set of checks: the
  * link route, which links without storing the operation, and CloudPush, when the link comes in a batch
  * (apps from before the route).
+ *
+ * The owner counts only for the first link (D93, D99). The key that signed it is remembered with the link
+ * (`link_signer_key`), and the same operation is recognised by that key afterwards, whoever uploads it and
+ * whatever account owns the library by then: the owner can change when the account that uploaded it is deleted.
  */
 final readonly class CloudLink
 {
@@ -55,17 +59,17 @@ final readonly class CloudLink
                     throw new OperationRejectedException(OperationRejection::NewerVersion);
                 }
                 $payload = $this->reader->read($pushed->operation);
-                $this->check($library, $pushed, $payload);
+                $signer = $this->check($library, $pushed, $payload);
                 if ($library->isLinked()) {
                     if (strtolower($payload->library) !== $library->getLocalLibraryId()) {
                         throw new OperationRejectedException(OperationRejection::OtherLibrary);
                     }
                     // A library linked before the link was remembered (7.4.6) learns it here.
-                    $this->note($library, $payload);
+                    $this->note($library, $payload, $signer);
 
                     return;
                 }
-                $this->bind($library, $payload);
+                $this->bind($library, $payload, $signer);
             } catch (OperationRejectedException) {
                 throw AccountException::linkRejected();
             }
@@ -79,37 +83,51 @@ final readonly class CloudLink
      */
     public function link(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): void
     {
-        $this->check($library, $pushed, $payload);
-        $this->bind($library, $payload);
+        $this->bind($library, $payload, $this->check($library, $pushed, $payload));
     }
 
     /**
-     * Whether this is the library's link, signed by a device of its owner: what an operation must be to be stored
-     * under the id remembered as the link's. A device removed since then still counts; it signed while it could.
+     * Whether this is the library's link: what an operation must be to be stored under the id remembered as the
+     * link's. It names this cloud library and is signed with the key that signed the link, remembered with it; a
+     * device removed since then, or an owner changed since then, does not matter (D99). A library linked before the
+     * key was remembered is judged as the first link was, by a device of its owner, and learns the key if it holds.
      */
     public function holds(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): bool
     {
         try {
-            $this->signedByOwner($library, $pushed, $payload);
+            if (null !== $library->getLinkSignerKey()) {
+                $this->signedByLinkSigner($library, $pushed, $payload);
 
-            return true;
+                return true;
+            }
+            $device = $this->signedByOwner($library, $pushed, $payload);
         } catch (OperationRejectedException) {
             return false;
         }
+        $library->noteLinkSigner($device->getPublicKey());
+        $this->entityManager->flush();
+
+        return true;
     }
 
-    /** Remembers the link of a library that has none remembered; the caller has checked the operation. */
-    public function note(CloudLibrary $library, OperationPayload $payload): void
+    /**
+     * Remembers the link of a library that has none remembered, and the key that signed it; the caller has checked the
+     * operation.
+     */
+    public function note(CloudLibrary $library, OperationPayload $payload, ?string $signerKey = null): void
     {
         $library->noteLinkOperation(Uuid::fromString($payload->id));
+        if (null !== $signerKey) {
+            $library->noteLinkSigner($signerKey);
+        }
         $this->entityManager->flush();
     }
 
-    /** Links the library and remembers which operation did: the one whose signature was just checked (D93), whenever it is stored. */
-    private function bind(CloudLibrary $library, OperationPayload $payload): void
+    /** Links the library and remembers which operation did, and which key signed it: the ones just checked (D93), whenever it is stored. */
+    private function bind(CloudLibrary $library, OperationPayload $payload, string $signerKey): void
     {
         $library->link($payload->library);
-        $this->note($library, $payload);
+        $this->note($library, $payload, $signerKey);
     }
 
     public function isLink(CloudLibrary $library, OperationPayload $payload): bool
@@ -127,15 +145,47 @@ final readonly class CloudLink
     }
 
     /**
+     * @return string the public key that signed the link
+     *
      * @throws OperationRejectedException
      */
-    private function check(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): void
+    private function check(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): string
     {
         // The link may name the cloud's device (D95), and it can only name it with the key the server registered.
         $this->refuseKeyChanges($library, $payload);
-        if ($this->signedByOwner($library, $pushed, $payload)->isRemoved()) {
+        // Linked already, with the signer remembered: the same signer again, whoever owns the library now (D99).
+        if ($library->isLinked() && null !== $library->getLinkSignerKey()) {
+            return $this->signedByLinkSigner($library, $pushed, $payload);
+        }
+        $device = $this->signedByOwner($library, $pushed, $payload);
+        if ($device->isRemoved()) {
             throw new OperationRejectedException(OperationRejection::UnknownKey);
         }
+
+        return $device->getPublicKey();
+    }
+
+    /**
+     * The link as it is recognised once it is linked: it names this cloud library and carries a good signature of the
+     * key that signed the link. Never the owner's devices (D99).
+     *
+     * @return string that key
+     *
+     * @throws OperationRejectedException
+     */
+    private function signedByLinkSigner(CloudLibrary $library, PushedOperation $pushed, OperationPayload $payload): string
+    {
+        $key = $library->getLinkSignerKey();
+        if (null === $key || !$this->isLink($library, $payload)) {
+            throw new OperationRejectedException(OperationRejection::NotLinked);
+        }
+        try {
+            $this->signature->verify($pushed->operation, $key);
+        } catch (InvalidSignatureException) {
+            throw new OperationRejectedException(OperationRejection::BadSignature);
+        }
+
+        return $key;
     }
 
     /**

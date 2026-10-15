@@ -1599,6 +1599,7 @@
       "deleteAccount": {
         "title": "¿Borrar tu cuenta?",
         "body": "Se borra para siempre de {{host}} y se cierra la sesión en tus {{count}} dispositivos.",
+        "cloudNote": "Las bibliotecas que compartes en la nube siguen para las demás personas. Las que eran solo tuyas se borran de la nube.",
         "bodyNoCount": "Se borra para siempre de {{host}} y se cierra la sesión en tus otros dispositivos.",
         "action": "Borrar la cuenta"
       },

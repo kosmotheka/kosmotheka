@@ -652,6 +652,9 @@ function DeleteAccountConfirm({
             ? t("account.confirm.deleteAccount.body", { host, count: deviceCount })
             : t("account.confirm.deleteAccount.bodyNoCount", { host })}
         </p>
+        <p className="text-[13px] text-pretty text-muted-foreground">
+          {t("account.confirm.deleteAccount.cloudNote")}
+        </p>
         <Button variant="outline" className="h-11" onClick={() => openOverlay({ name: "backups" })}>
           {t("account.confirm.backupFirst")}
         </Button>

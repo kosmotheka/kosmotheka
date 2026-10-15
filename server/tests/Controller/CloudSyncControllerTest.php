@@ -176,6 +176,99 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
     }
 
+    // --- D99: the link outlives its owner's account ------------------------------------------------------------------
+
+    /** The link route linked the library but did not store the operation; the owner then changes, and somebody else uploads the log. */
+    public function testALinkMadeByTheRouteIsStoredWhenAnotherAccountUploadsTheLogAfterTheOwnerChanged(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $operations = $this->upload($this->laptop, $cloud);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $operations[1])['status']);
+        $this->shareWithJhonny($cloud);
+        $this->changeOwner($cloud, 'jhonny@example.com');
+
+        $response = $this->push($this->jhonnySession, $cloud, $operations);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 4, 'known' => 0, 'rejected' => 0]], $response);
+        $linkId = $operations[1]['id'];
+        \assert(\is_string($linkId));
+        self::assertSame(1, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE operation_id = ?', [$linkId]));
+        self::assertSame(4, $this->rows('cloud_operation'));
+    }
+
+    /** The same operation, serialised another way (keys in another order): the signature is checked on the canonical form. */
+    public function testTheSameLinkWithItsKeysInAnotherOrderIsAcceptedAfterTheOwnerChanged(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $operations = $this->upload($this->laptop, $cloud);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $operations[1])['status']);
+        $this->shareWithJhonny($cloud);
+        $this->changeOwner($cloud, 'jhonny@example.com');
+        $reversed = array_reverse($operations[1], true);
+        $changes = $reversed['changes'];
+        \assert(\is_array($changes));
+        $reversed['changes'] = array_map(static fn (mixed $change): mixed => \is_array($change) ? array_reverse($change, true) : $change, $changes);
+        $operations[1] = $reversed;
+
+        $response = $this->push($this->jhonnySession, $cloud, $operations);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 4, 'known' => 0, 'rejected' => 0]], $response);
+        self::assertSame(4, $this->rows('cloud_operation'));
+    }
+
+    public function testAfterTheOwnerChangedTheLinksIdStillBelongsToTheLinkAlone(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $registration = $this->laptop->registration(self::LOCAL, self::T);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 2);
+        $linkId = $link['id'];
+        \assert(\is_string($linkId));
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        $this->shareWithJhonny($cloud);
+        $this->changeOwner($cloud, 'jhonny@example.com');
+        // Signed by the very device that signed the link, with the link's id, but it is not a link.
+        $disguised = $this->laptop->sign(self::LOCAL, self::T + 1, 'device.register', [
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop']],
+        ], $linkId, null);
+        // A link-shaped operation with the link's id, signed by Jhonny's own key.
+        $forged = $this->jhonny->link(self::LOCAL, $cloud, self::T + 3);
+        $forged['id'] = $linkId;
+
+        $response = $this->push($this->jhonnySession, $cloud, [$registration, $disguised, $forged]);
+
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 1, 'known' => 0, 'rejected' => 2]], $response);
+        self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE operation_id = ?', [$linkId]));
+    }
+
+    /** The first link still asks for a device of the owner of that moment: whoever stops being the owner cannot link. */
+    public function testWhoIsNoLongerTheOwnerCannotMakeTheFirstLink(): void
+    {
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $this->shareWithJhonny($cloud);
+        $this->changeOwner($cloud, 'jhonny@example.com');
+
+        $response = $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 1));
+
+        self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
+        self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_library WHERE id = ? AND local_library_id IS NOT NULL', [$cloud]));
+    }
+
+    public function testTheKeyThatSignedTheLinkIsRememberedWithItAndLearnedByALibraryLinkedBefore(): void
+    {
+        $connection = self::getContainer()->get(Connection::class);
+        $cloud = $this->createCloudLibrary($this->familySession);
+        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $signer = static fn (): mixed => $connection->fetchOne('SELECT link_signer_key FROM cloud_library WHERE id = ?', [$cloud]);
+
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        self::assertSame($this->laptop->publicKey, $signer());
+
+        // A library linked before the key was remembered learns it, as long as its owner is still who signed.
+        $connection->executeStatement('UPDATE cloud_library SET link_signer_key = NULL WHERE id = ?', [$cloud]);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
+        self::assertSame($this->laptop->publicKey, $signer());
+    }
+
     public function testADeviceRemovedFromTheOwnersAccountCannotSignTheLink(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
@@ -1629,6 +1722,12 @@ final class CloudSyncControllerTest extends WebTestCase
     private function publishersIn(string $cloud): int
     {
         return $this->scalarCount('SELECT COUNT(*) FROM catalog_publishers WHERE cloud_library_id = ?', [$cloud]);
+    }
+
+    /** What the account deletion does by itself (D99), done by hand here to test the link on its own. */
+    private function changeOwner(string $cloud, string $email): void
+    {
+        self::getContainer()->get(Connection::class)->executeStatement('UPDATE cloud_library SET owner_id = ? WHERE id = ?', [$this->userId($email), $cloud]);
     }
 
     private function userId(string $email): string

@@ -38,6 +38,8 @@ enum ActivityKind: string
     case AccessRestored = 'access_restored';
     case CloudPowerOn = 'cloud_power_on';
     case CloudPowerOff = 'cloud_power_off';
+    // D99: the account that uploaded the library was deleted and the library passed to another one (both by id).
+    case LibraryOwnerChanged = 'library_owner_changed';
 
     // The invitations (D43): the kind of invitation, never the email or the token.
     case InvitationCreated = 'invitation_created';

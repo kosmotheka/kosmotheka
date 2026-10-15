@@ -165,7 +165,7 @@ Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOu
 
 `DELETE /v1/account` (autenticada). Cuerpo: `{password?, email_code?, totp_code?}` (D100). Limitada por `login` (por IP). Pide **la contraseña** o, a una cuenta que no la tiene, **un código del correo** (`email_code`, de `POST /v1/account/code/action`): nunca ninguno de los dos, y un código del correo no vale en lugar de una contraseña que existe. Contraseña incorrecta o ausente → **401** `invalid_credentials`. Con el segundo factor activado, además `totp_code` (**401** `two_factor_required` / **400** `invalid_two_factor_code`). Si acierta, borra la cuenta (`EntityManager::remove`) y responde **204**. Los dispositivos y códigos de la cuenta se borran en cascada a nivel de base de datos (`ON DELETE CASCADE`).
 
-Las bibliotecas todavía no existen en el servidor (hito 7.2): cuando existan, borrar una cuenta también tendrá que decidir qué pasa con los `member` que posee en cada una (reasignar o borrar); por ahora no hay nada que hacer aquí.
+**Sus bibliotecas de la nube (D99).** Una biblioteca no se pierde con la cuenta de quien la subió: antes de borrarla, y en la misma transacción, cada biblioteca de la que es dueña pasa a otra cuenta con un sitio activo en ella (administradora primero, y entre iguales la membresía más antigua), y solo se borra con la cuenta si no queda nadie. La base ya no lo hace por su cuenta (`owner_id` es `RESTRICT`). Detalle en [cloud.md](cloud.md#quién-es-la-dueña-de-una-biblioteca-de-la-nube-d99).
 
 ## Purga de cuentas e invitaciones caducadas (D49)
 

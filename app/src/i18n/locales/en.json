@@ -1586,6 +1586,7 @@
         "title": "Delete your account?",
         "body": "It's permanently deleted from {{host}} and your {{count}} devices are signed out.",
         "bodyNoCount": "It's permanently deleted from {{host}} and your other devices are signed out.",
+        "cloudNote": "Libraries you share in the cloud stay for the other people. The ones that were only yours are deleted from the cloud.",
         "action": "Delete account"
       },
       "handOver": {

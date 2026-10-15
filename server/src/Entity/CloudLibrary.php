@@ -31,6 +31,14 @@ final class CloudLibrary
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $linkOperationId = null;
 
+    /**
+     * The public key of the device that signed that operation (D93, D99), written with the id. The link is recognised by
+     * it, wherever and by whoever it is uploaded again, whatever account owns the library by then; it is not a device
+     * of the library and nothing else uses it. Ed25519, base64url without padding, like every public key.
+     */
+    #[ORM\Column(length: 43, nullable: true)]
+    private ?string $linkSignerKey = null;
+
     /** The id of the device that is the cloud in this library (D95): the server's own, random, and fixed for good. Null when the server has no secret. */
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $cloudDeviceId = null;
@@ -47,9 +55,14 @@ final class CloudLibrary
     private \DateTimeImmutable $createdAt;
 
     public function __construct(
+        /**
+         * Who uploaded it, or whoever the library passed to when that account was deleted (D99). It counts for the first
+         * link and for that deletion; the access of everybody, this account included, is its `membership`. RESTRICT: no
+         * library is deleted by the database along with an account, only by the rule that hands it over first.
+         */
         #[ORM\ManyToOne(targetEntity: User::class)]
-        #[ORM\JoinColumn(name: 'owner_id', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_cloud_library_owner')]
-        private readonly User $owner,
+        #[ORM\JoinColumn(name: 'owner_id', nullable: false, onDelete: 'RESTRICT', foreignKeyName: 'fk_cloud_library_owner')]
+        private User $owner,
     ) {
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -63,6 +76,12 @@ final class CloudLibrary
     public function getOwner(): User
     {
         return $this->owner;
+    }
+
+    /** The library passes to another account that has a place in it (D99); the caller holds the library's lock. */
+    public function passTo(User $owner): void
+    {
+        $this->owner = $owner;
     }
 
     public function getLocalLibraryId(): ?string
@@ -79,6 +98,17 @@ final class CloudLibrary
     public function noteLinkOperation(Uuid $operationId): void
     {
         $this->linkOperationId ??= $operationId;
+    }
+
+    public function getLinkSignerKey(): ?string
+    {
+        return $this->linkSignerKey;
+    }
+
+    /** Remembers the key that signed the link; the first one stays. */
+    public function noteLinkSigner(string $publicKey): void
+    {
+        $this->linkSignerKey ??= $publicKey;
     }
 
     public function isLinked(): bool
