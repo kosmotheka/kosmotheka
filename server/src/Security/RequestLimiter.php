@@ -39,6 +39,14 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $comicVineVolumeLimiter,
         #[Target('comic_vine_issue')]
         private RateLimiterFactoryInterface $comicVineIssueLimiter,
+        #[Target('google_books_account')]
+        private RateLimiterFactoryInterface $googleBooksAccountLimiter,
+        #[Target('tmdb_account')]
+        private RateLimiterFactoryInterface $tmdbAccountLimiter,
+        #[Target('rawg_account')]
+        private RateLimiterFactoryInterface $rawgAccountLimiter,
+        #[Target('comic_vine_account')]
+        private RateLimiterFactoryInterface $comicVineAccountLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -138,6 +146,39 @@ final readonly class RequestLimiter
         if (!$limit->isAccepted()) {
             throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
         }
+    }
+
+    /**
+     * One real call to Google Books for this account: its own share of the day first, so that no account can spend
+     * the server's for everybody (SEG-052), then the server's. What comes from the cache spends neither.
+     *
+     * @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted
+     */
+    public function consumeGoogleBooksCallOf(string $accountId): void
+    {
+        $this->consume($this->googleBooksAccountLimiter, $accountId);
+        $this->consumeGoogleBooksCall();
+    }
+
+    /** As `consumeGoogleBooksCallOf`, for TMDB. @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted */
+    public function consumeTmdbCallOf(string $accountId): void
+    {
+        $this->consume($this->tmdbAccountLimiter, $accountId);
+        $this->consumeTmdbCall();
+    }
+
+    /** As `consumeGoogleBooksCallOf`, for RAWG. @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted */
+    public function consumeRawgCallOf(string $accountId): void
+    {
+        $this->consume($this->rawgAccountLimiter, $accountId);
+        $this->consumeRawgCall();
+    }
+
+    /** As `consumeGoogleBooksCallOf`, for Comic Vine, whose share is per resource and hour. @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted */
+    public function consumeComicVineCallOf(string $accountId, ComicVineResource $resource): void
+    {
+        $this->consume($this->comicVineAccountLimiter, $accountId.'|'.$resource->value);
+        $this->consumeComicVineCall($resource);
     }
 
     /**

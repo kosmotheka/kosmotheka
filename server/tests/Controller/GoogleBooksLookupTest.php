@@ -476,6 +476,26 @@ final class GoogleBooksLookupTest extends WebTestCase
 
     // --- 6. Limits ----------------------------------------------------------------------------------------------------
 
+    public function testAnAccountPastItsOwnShareOfRealCallsIsCutAndTheCacheStillServesIt(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $grace = $this->account($client, 'grace@example.com');
+        // Ada spent her share of the real calls; the server's is still almost whole (SEG-052).
+        self::getContainer()->get('limiter.google_books_account')->create($this->user('ada@example.com')->getId()->toRfc4122())->consume(90);
+        FakeGoogleBooksApi::found(FakeGoogleBooksApi::volume());
+
+        $refused = $this->lookup($client, $ada, self::INFERNO);
+        self::assertResponseStatusCodeSame(429);
+        self::assertSame('too_many_requests', $refused['error'] ?? null);
+
+        $this->lookup($client, $grace, self::INFERNO);
+        self::assertResponseStatusCodeSame(200);
+        $this->lookup($client, $ada, self::INFERNO);
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame(1, FakeGoogleBooksApi::calls());
+    }
+
     public function testAnAccountPastItsLimitIsCutAndTheOthersAreNot(): void
     {
         $client = $this->world();

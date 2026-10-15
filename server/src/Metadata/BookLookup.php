@@ -35,7 +35,7 @@ final readonly class BookLookup
      *
      * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted or MetadataFailed
      */
-    public function lookup(BookProvider $provider, Isbn $isbn): ?BookMetadata
+    public function lookup(BookProvider $provider, Isbn $isbn, string $accountId): ?BookMetadata
     {
         $now = $this->clock->now();
         $entry = $this->cache->findOneByProviderAndCode($provider->name(), $isbn->value);
@@ -46,7 +46,7 @@ final readonly class BookLookup
         $this->gate->requireOpen($provider->name());
         $book = $this->gate->call(
             $provider->name(),
-            $this->limiter->consumeGoogleBooksCall(...),
+            fn () => $this->limiter->consumeGoogleBooksCallOf($accountId),
             static fn (): ?BookMetadata => $provider->lookup($isbn),
         );
         $this->remember($entry, $provider, $isbn, $book, $now);

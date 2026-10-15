@@ -49,11 +49,11 @@ final readonly class RawgSearch
      *
      * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted or MetadataFailed
      */
-    public function search(string $query): array
+    public function search(string $query, string $accountId): array
     {
         $now = $this->clock->now();
-        $hits = $this->hits(self::normalise($query), $now);
-        $details = $this->details(\array_slice($hits, 0, self::DETAILS_OF), $now);
+        $hits = $this->hits(self::normalise($query), $accountId, $now);
+        $details = $this->details(\array_slice($hits, 0, self::DETAILS_OF), $accountId, $now);
         // Stored once, at the end: a row another request stored meanwhile must not leave anything to do after it (SEG-055).
         $this->flush();
 
@@ -71,7 +71,7 @@ final readonly class RawgSearch
      *
      * @throws AccountException
      */
-    private function hits(string $query, \DateTimeImmutable $now): array
+    private function hits(string $query, string $accountId, \DateTimeImmutable $now): array
     {
         $code = self::fingerprint($query);
         $entry = $this->cache->findOneByProviderAndCode(MetadataCacheEntry::RAWG_SEARCH, $code);
@@ -84,7 +84,7 @@ final readonly class RawgSearch
         $this->gate->requireOpen(RawgSource::NAME);
         $hits = $this->gate->call(
             RawgSource::NAME,
-            $this->limiter->consumeRawgCall(...),
+            fn () => $this->limiter->consumeRawgCallOf($accountId),
             fn (): array => $this->source->search($query),
         );
 
@@ -98,7 +98,7 @@ final readonly class RawgSearch
      *
      * @return array<int, RawgDetail>
      */
-    private function details(array $hits, \DateTimeImmutable $now): array
+    private function details(array $hits, string $accountId, \DateTimeImmutable $now): array
     {
         $details = [];
         $missing = [];
@@ -125,9 +125,9 @@ final readonly class RawgSearch
 
         $fetched = $this->source->details(
             $missing,
-            function (): bool {
+            function () use ($accountId): bool {
                 try {
-                    $this->limiter->consumeRawgCall();
+                    $this->limiter->consumeRawgCallOf($accountId);
                 } catch (AccountException) {
                     return false;
                 }

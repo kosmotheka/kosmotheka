@@ -66,7 +66,7 @@ final class MetadataController extends AbstractController
         \assert($user instanceof User);
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
-        $book = $this->lookup->lookup($this->googleBooks, $code);
+        $book = $this->lookup->lookup($this->googleBooks, $code, $user->getId()->toRfc4122());
 
         $response = new JsonResponse($book instanceof BookMetadata ? $book->toArray() : BookMetadata::notFoundPayload());
         $response->headers->set('Cache-Control', 'no-store');
@@ -86,7 +86,7 @@ final class MetadataController extends AbstractController
         \assert($user instanceof User);
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
-        $candidates = $this->tmdbSearch->search($payload->mediaKind(), $payload->askedLanguage(), TmdbSearch::normalise($payload->query));
+        $candidates = $this->tmdbSearch->search($payload->mediaKind(), $payload->askedLanguage(), TmdbSearch::normalise($payload->query), $user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $candidates]);
         $response->headers->set('Cache-Control', 'no-store');
@@ -106,7 +106,7 @@ final class MetadataController extends AbstractController
         \assert($user instanceof User);
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
-        $response = new JsonResponse(['candidates' => $this->rawgSearch->search($payload->query)]);
+        $response = new JsonResponse(['candidates' => $this->rawgSearch->search($payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;
@@ -124,7 +124,7 @@ final class MetadataController extends AbstractController
         \assert($user instanceof User);
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
-        $response = new JsonResponse(['candidates' => $this->comicVineSearch->search($payload->query)]);
+        $response = new JsonResponse(['candidates' => $this->comicVineSearch->search($payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

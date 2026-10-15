@@ -57,6 +57,25 @@ framework:
             policy: sliding_window
             limit: 150
             interval: '1 hour'
+        # Each account's share of the real calls to each provider, about a tenth of the server's, so that no account can
+        # spend the server's for everybody (SEG-052, decided on 2026-10-15). What comes from the cache spends nothing.
+        google_books_account:
+            policy: sliding_window
+            limit: 90
+            interval: '1 day'
+        tmdb_account:
+            policy: sliding_window
+            limit: 500
+            interval: '1 day'
+        rawg_account:
+            policy: sliding_window
+            limit: 60
+            interval: '1 day'
+        # Per account and resource, like the server's.
+        comic_vine_account:
+            policy: sliding_window
+            limit: 15
+            interval: '1 hour'
         email_code:
             policy: sliding_window
             limit: 10

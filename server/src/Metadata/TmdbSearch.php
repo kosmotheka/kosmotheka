@@ -50,11 +50,11 @@ final readonly class TmdbSearch
      *
      * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted or MetadataFailed
      */
-    public function search(MediaKind $kind, string $language, string $query): array
+    public function search(MediaKind $kind, string $language, string $query, string $accountId): array
     {
         $now = $this->clock->now();
-        $hits = $this->hits($kind, $language, self::normalise($query), $now);
-        $details = $this->details($kind, $language, $hits, $now);
+        $hits = $this->hits($kind, $language, self::normalise($query), $accountId, $now);
+        $details = $this->details($kind, $language, $hits, $accountId, $now);
         // Stored once, at the end: a row another request stored meanwhile must not leave anything to do after it (SEG-055).
         $this->flush();
 
@@ -72,7 +72,7 @@ final readonly class TmdbSearch
      *
      * @throws AccountException
      */
-    private function hits(MediaKind $kind, string $language, string $query, \DateTimeImmutable $now): array
+    private function hits(MediaKind $kind, string $language, string $query, string $accountId, \DateTimeImmutable $now): array
     {
         $code = self::fingerprint($kind->value, $language, $query);
         $entry = $this->cache->findOneByProviderAndCode(MetadataCacheEntry::TMDB_SEARCH, $code);
@@ -85,7 +85,7 @@ final readonly class TmdbSearch
         $this->gate->requireOpen(TmdbSource::NAME);
         $hits = $this->gate->call(
             TmdbSource::NAME,
-            $this->limiter->consumeTmdbCall(...),
+            fn () => $this->limiter->consumeTmdbCallOf($accountId),
             fn (): array => $this->source->search($kind, $language, $query),
         );
 
@@ -102,7 +102,7 @@ final readonly class TmdbSearch
      *
      * @return array<int, TmdbDetail>
      */
-    private function details(MediaKind $kind, string $language, array $hits, \DateTimeImmutable $now): array
+    private function details(MediaKind $kind, string $language, array $hits, string $accountId, \DateTimeImmutable $now): array
     {
         $provider = self::detailProvider($kind, $language);
         $details = [];
@@ -132,9 +132,9 @@ final readonly class TmdbSearch
             $kind,
             $language,
             $missing,
-            function (): bool {
+            function () use ($accountId): bool {
                 try {
-                    $this->limiter->consumeTmdbCall();
+                    $this->limiter->consumeTmdbCallOf($accountId);
                 } catch (AccountException) {
                     return false;
                 }

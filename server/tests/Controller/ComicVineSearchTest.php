@@ -856,6 +856,26 @@ final class ComicVineSearchTest extends WebTestCase
 
     // --- 9 and 21. Limits ---------------------------------------------------------------------------------------------
 
+    public function testAnAccountPastItsOwnShareOfRealCallsIsCutAndTheCacheStillServesIt(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $grace = $this->account($client, 'grace@example.com');
+        // Ada spent her share of the real calls; the server's is still almost whole (SEG-052).
+        self::getContainer()->get('limiter.comic_vine_account')->create($this->user('ada@example.com')->getId()->toRfc4122().'|search')->consume(15);
+        FakeComicVineApi::searchFinds([]);
+
+        $refused = $this->search($client, $ada, 'batman');
+        self::assertResponseStatusCodeSame(429);
+        self::assertSame('too_many_requests', $refused['error'] ?? null);
+
+        $this->search($client, $grace, 'batman');
+        self::assertResponseStatusCodeSame(200);
+        $this->search($client, $ada, 'batman');
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame(1, FakeComicVineApi::calls());
+    }
+
     public function testAnAccountPastItsSharedLimitIsCutAndTheOthersAreNot(): void
     {
         $client = $this->world();

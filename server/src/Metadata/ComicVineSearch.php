@@ -48,11 +48,11 @@ final readonly class ComicVineSearch
      *
      * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted or MetadataFailed
      */
-    public function search(string $query): array
+    public function search(string $query, string $accountId): array
     {
         $now = $this->clock->now();
-        $hits = $this->hits(self::normalise($query), $now);
-        $details = $this->details(\array_slice($hits, 0, self::DETAILS_OF), $now);
+        $hits = $this->hits(self::normalise($query), $accountId, $now);
+        $details = $this->details(\array_slice($hits, 0, self::DETAILS_OF), $accountId, $now);
         // Stored once, at the end: a row another request stored meanwhile must not leave anything to do after it (SEG-055).
         $this->flush();
 
@@ -70,7 +70,7 @@ final readonly class ComicVineSearch
      *
      * @throws AccountException
      */
-    private function hits(string $query, \DateTimeImmutable $now): array
+    private function hits(string $query, string $accountId, \DateTimeImmutable $now): array
     {
         $code = self::fingerprint($query);
         $entry = $this->cache->findOneByProviderAndCode(MetadataCacheEntry::COMIC_VINE_SEARCH, $code);
@@ -83,7 +83,7 @@ final readonly class ComicVineSearch
         $this->gate->requireOpen(ComicVineSource::NAME);
         $hits = $this->gate->call(
             ComicVineSource::NAME,
-            fn () => $this->limiter->consumeComicVineCall(ComicVineResource::Search),
+            fn () => $this->limiter->consumeComicVineCallOf($accountId, ComicVineResource::Search),
             fn (): array => $this->source->search($query),
         );
 
@@ -97,7 +97,7 @@ final readonly class ComicVineSearch
      *
      * @return array<string, ComicVineDetail>
      */
-    private function details(array $hits, \DateTimeImmutable $now): array
+    private function details(array $hits, string $accountId, \DateTimeImmutable $now): array
     {
         $details = [];
         $missing = [];
@@ -124,9 +124,9 @@ final readonly class ComicVineSearch
 
         $fetched = $this->source->details(
             $missing,
-            function (ComicVineResource $resource): bool {
+            function (ComicVineResource $resource) use ($accountId): bool {
                 try {
-                    $this->limiter->consumeComicVineCall($resource);
+                    $this->limiter->consumeComicVineCallOf($accountId, $resource);
                 } catch (AccountException) {
                     return false;
                 }
