@@ -54,11 +54,11 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $googleSub = null;
 
-    /** Base32 secret, set once TOTP is enabled (D78). */
+    /** Base32 secret, set once TOTP is enabled (D78), sealed by `TwoFactorSecretBox` for this account (SEG-063). */
     #[ORM\Column(nullable: true)]
     private ?string $totpSecret = null;
 
-    /** Base32 secret awaiting confirmation (`POST /v1/account/two-factor/setup`), until `enable()` moves it above. */
+    /** Base32 secret awaiting confirmation (`POST /v1/account/two-factor/setup`), until `enable()` moves it above; sealed like it. */
     #[ORM\Column(nullable: true)]
     private ?string $totpPendingSecret = null;
 

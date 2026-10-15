@@ -32,6 +32,7 @@ final readonly class TwoFactor
         private BackupCodeRepository $backupCodeRepository,
         private RequestLimiter $requestLimiter,
         private ClockInterface $clock,
+        private TwoFactorSecretBox $secretBox,
         #[Autowire(param: 'kernel.secret')]
         #[\SensitiveParameter]
         private string $secret,
@@ -64,7 +65,7 @@ final readonly class TwoFactor
         $totp->setLabel($user->getUserIdentifier());
         $totp->setIssuer(self::ISSUER);
 
-        $user->setTotpPendingSecret($totp->getSecret());
+        $user->setTotpPendingSecret($this->secretBox->seal($user->getId()->toRfc4122(), $totp->getSecret()));
         $this->entityManager->flush();
 
         return ['secret' => $totp->getSecret(), 'otpauth_uri' => $totp->getProvisioningUri()];
@@ -85,11 +86,17 @@ final readonly class TwoFactor
         }
 
         $this->requestLimiter->consumeTwoFactor($user->getId()->toRfc4122());
-        $timestep = $this->matchTimestep($this->totpFor($pending), trim($code), $user->getTotpLastTimestep());
+        try {
+            $plain = $this->secretBox->open($user->getId()->toRfc4122(), $pending);
+        } catch (TwoFactorSecretException) {
+            throw AccountException::twoFactorNotStarted();
+        }
+        $timestep = $this->matchTimestep($this->totpFor($plain), trim($code), $user->getTotpLastTimestep());
         if (null === $timestep) {
             throw AccountException::invalidTwoFactorCode();
         }
 
+        // Moved sealed as it is: it was sealed for this same account.
         $user->setTotpSecret($pending);
         $user->setTotpPendingSecret(null);
         $user->setTotpLastTimestep($timestep);
@@ -113,7 +120,7 @@ final readonly class TwoFactor
     {
         $this->requestLimiter->consumeTwoFactor($user->getId()->toRfc4122());
         $code = trim($code);
-        $secret = $user->getTotpSecret();
+        $secret = $this->openSecret($user);
         if (null !== $secret) {
             $timestep = $this->matchTimestep($this->totpFor($secret), $code, $user->getTotpLastTimestep());
             if (null !== $timestep) {
@@ -128,6 +135,20 @@ final readonly class TwoFactor
         }
 
         throw AccountException::invalidTwoFactorCode();
+    }
+
+    /** The account's TOTP secret in clear, or null when it has none or it does not open here (only the backup codes are left then). */
+    private function openSecret(User $user): ?string
+    {
+        $sealed = $user->getTotpSecret();
+        if (null === $sealed) {
+            return null;
+        }
+        try {
+            return $this->secretBox->open($user->getId()->toRfc4122(), $sealed);
+        } catch (TwoFactorSecretException) {
+            return null;
+        }
     }
 
     public function disable(User $user): void

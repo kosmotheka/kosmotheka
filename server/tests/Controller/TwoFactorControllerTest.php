@@ -165,6 +165,47 @@ final class TwoFactorControllerTest extends WebTestCase
         self::assertTrue($user->isTwoFactorEnabled());
     }
 
+    public function testACopyOfTheDatabaseDoesNotHoldTheSecretOfTheSecondFactor(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $session = $this->signInNewDevice($client, 'sealed@example.com');
+
+        $secret = $this->setupTwoFactor($client, $session['headers']);
+        self::assertStringNotContainsString($secret, $this->storedSecrets('sealed@example.com'));
+
+        $this->enableWithCode($client, $session['headers'], $secret);
+        self::assertResponseIsSuccessful();
+        // Whoever has a copy of the database must not be able to make the codes (SEG-063).
+        self::assertStringNotContainsString($secret, $this->storedSecrets('sealed@example.com'));
+        self::assertNotSame('', $this->storedSecrets('sealed@example.com'));
+    }
+
+    public function testTheSealedSecretOfOneAccountIsNoUseInAnother(): void
+    {
+        self::mockTime(self::AT);
+        $client = $this->createTestClient();
+        $ada = $this->signInNewDevice($client, 'ada-sealed@example.com');
+        $grace = $this->signInNewDevice($client, 'grace-sealed@example.com');
+        $secret = $this->setupTwoFactor($client, $ada['headers']);
+        $this->enableWithCode($client, $ada['headers'], $secret);
+
+        // Someone who can write in the database copies Ada's sealed secret onto Grace's account.
+        $this->entityManager()->getConnection()->executeStatement(
+            'UPDATE "user" SET totp_secret = (SELECT totp_secret FROM "user" WHERE email = :ada), totp_enabled_at = NOW() WHERE email = :grace',
+            ['ada' => 'ada-sealed@example.com', 'grace' => 'grace-sealed@example.com'],
+        );
+
+        self::mockTime(self::LATER);
+        $client->request('DELETE', '/v1/account/two-factor', server: [...$grace['headers'], 'CONTENT_TYPE' => 'application/json'], content: json_encode([
+            'password' => 'correct horse battery',
+            'code' => $this->totpCodeAt($secret, self::LATER),
+        ], \JSON_THROW_ON_ERROR));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        self::assertSame('{"error":"invalid_two_factor_code"}', $client->getResponse()->getContent());
+    }
+
     public function testGetAccountReportsTwoFactorFields(): void
     {
         self::mockTime(self::AT);
@@ -338,6 +379,14 @@ final class TwoFactorControllerTest extends WebTestCase
     private function totpCodeAt(string $secret, string $at): string
     {
         return self::totpAt($secret, $at);
+    }
+
+    private function storedSecrets(string $email): string
+    {
+        $row = $this->entityManager()->getConnection()->fetchAssociative('SELECT totp_secret, totp_pending_secret FROM "user" WHERE email = :email', ['email' => $email]);
+        self::assertIsArray($row);
+
+        return \sprintf('%s|%s', \is_string($row['totp_secret']) ? $row['totp_secret'] : '', \is_string($row['totp_pending_secret']) ? $row['totp_pending_secret'] : '');
     }
 
     private function findUser(string $email): ?User

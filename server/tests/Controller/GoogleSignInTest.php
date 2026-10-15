@@ -13,6 +13,7 @@ use App\Enum\EmailCodePurpose;
 use App\Repository\UserRepository;
 use App\Security\AccountPurger;
 use App\Security\Google\GoogleIdentity;
+use App\Security\TwoFactorSecretBox;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\FakeGoogle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -334,7 +335,7 @@ final class GoogleSignInTest extends WebTestCase
         $this->confirmedAccount($client, 'ada@example.com');
         $user = $this->user('ada@example.com');
         $secret = 'JBSWY3DPEHPK3PXP';
-        $user->setTotpSecret($secret);
+        $user->setTotpSecret(self::getContainer()->get(TwoFactorSecretBox::class)->seal($user->getId()->toRfc4122(), $secret));
         $user->setTotpEnabledAt(new \DateTimeImmutable());
         $this->entityManager()->flush();
         FakeGoogle::$identity = new GoogleIdentity('sub-ada', 'ada@example.com', true, 'Ada');
