@@ -141,3 +141,14 @@ Una fila por candidato: categoría, fichero, función que lo contiene y código 
 | ts.listen | `app/src/App.tsx` | `App` | `listen<InvitationAcceptedNotice>("invitation-accepted", (event) => {` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
 | ts.listen | `app/src/App.tsx` | `App` | `listen("local-changed", () => void syncAll(true)),` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
 | ts.listen | `app/src/App.tsx` | `App` | `listen("library-changed", () => {` | la limpieza del efecto llama a `unlisten` de todo el array | `f2ce3e1` |
+| php.empty-catch | `server/src/Metadata/BookLookup.php` | `remember` | `catch (UniqueConstraintViolationException) { // Another request stored the same book a moment ago: its row is as good as ours. }` | Deliberado: nada se guarda después del flush | `71f8b09` |
+| php.empty-catch | `server/src/Metadata/ComicVineHttpSource.php` | `details` | `catch (\Throwable) { // On purpose without `previous`: what the http client throws carries the address, and the key. }` | Deliberado: no filtrar la clave | `71f8b09` |
+| php.empty-catch | `server/src/Metadata/ComicVineHttpSource.php` | `details` | `catch (\Throwable) { // A detail that cannot be had is a candidate without it. }` | Deliberado: un detalle que falta no es un error | `71f8b09` |
+| php.empty-catch | `server/src/Sync/CloudPush.php` | `linkWith` | `catch (OperationRejectedException) { // Judged again, and counted, in its place. }` | Deliberado: se juzga y cuenta más adelante | `71f8b09` |
+| php.enum-from | `server/src/Dto/TmdbSearchRequest.php` | `mediaKind` | `return MediaKind::from($this->kind);` | Va tras Assert\Choice(['film', 'tv_series']) | `71f8b09` |
+| ts.listen | `app/src/App.tsx` | `App` | `const unlisten = listen("device-reset", () => {` | Se cancela al desmontar | `71f8b09` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("cloud-changed", () => void onCloudChanged()),` | Se cancela al desmontar (array unlisten) | `71f8b09` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen<InvitationAcceptedNotice>("invitation-accepted", (event) => {` | Se cancela al desmontar (array unlisten) | `71f8b09` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("local-changed", () => void syncAll(true)),` | Se cancela al desmontar (array unlisten) | `71f8b09` |
+| ts.listen | `app/src/App.tsx` | `App` | `listen("library-changed", () => {` | Se cancela al desmontar (array unlisten) | `71f8b09` |
+| ts.listen | `app/src/lib/arrived-link.ts` | `useArrivedLink` | `const unlisten = listen("link-arrived", () => {` | Se cancela al desmontar | `71f8b09` |
