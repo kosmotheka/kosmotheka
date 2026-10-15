@@ -1,6 +1,6 @@
 # Encargo · Cuentas tras la auditoría del 15/10/2026 (D100)
 
-> Encargo cerrado para la sesión de hitos, escrito el 15/10/2026 y **sin enviar** hasta que el maintainer confirme el punto 4. Sin commit, sin push, sin cambiar de rama. Toca `server/`, `app/` y `docs/`, y una prueba de `crates/domain` si hace falta. Nada en `spec/`.
+> Encargo cerrado para la sesión de hitos, escrito el 15/10/2026; el punto 4 lo confirmó el maintainer el mismo día. Sin commit, sin push, sin cambiar de rama. Toca `server/`, `app/` y `docs/`, y una prueba de `crates/domain` si hace falta. Nada en `spec/`.
 
 ## Para qué
 
@@ -32,13 +32,11 @@ App: los diálogos de cambiar la contraseña, restablecerla y borrar la cuenta m
 
 App: en esas pantallas, a una cuenta sin contraseña (`has_password: false`) se le ofrece «Enviarme un código» en lugar del campo de contraseña.
 
-## 4 · Registrar otra vez una dirección sin confirmar (SEG-066) — **pendiente del sí del maintainer**
+## 4 · Registrar otra vez una dirección sin confirmar (SEG-066)
 
 D100 dice: «la contraseña se guarda con el código y queda al confirmar con ese código». Al prepararlo, la sesión coordinadora vio que así no basta. Solo hay un código vivo por cuenta y propósito, así que si la atacante registra otra vez después de Ana, el código de Ana muere, a Ana le llega el de la atacante y, al teclearlo, quedaría la contraseña de la atacante.
 
-**Propuesta, a confirmar:** la contraseña se elige **al confirmar**. `POST /v1/account/confirm` pide `{email, code, password}`, y esa contraseña es la que queda. El registro deja de cambiar la contraseña de una cuenta sin confirmar (solo manda un código nuevo). Así, la contraseña la pone siempre quien controla el correo. La app ya la tiene en memoria entre registrarse y confirmar; si se cerró entre medias, la pide otra vez en la pantalla del código.
-
-**No construyas este punto hasta que la sesión coordinadora te diga que está confirmado.**
+**Confirmado por el maintainer (D100, precisado el 15/10/2026):** la contraseña se elige **al confirmar**. `POST /v1/account/confirm` pide `{email, code, password}`, y esa contraseña es la que queda. El registro deja de cambiar la contraseña de una cuenta sin confirmar (solo manda un código nuevo). Así, la contraseña la pone siempre quien controla el correo. La app ya la tiene en memoria entre registrarse y confirmar; si se cerró entre medias, la pide otra vez en la pantalla del código.
 
 ## 5 · La firma del dispositivo nombra el servidor y el propósito (SEG-065)
 
@@ -67,7 +65,7 @@ Caso hostil: una firma hecha para otro origen, o para el otro propósito, se rec
 5. Una firma de inicio de sesión hecha con otro origen, o para `google`, no sirve para `login` en este servidor.
 6. Cuarta petición de código a una dirección con cuenta → 202 igual que a una sin cuenta.
 7. Registro de una dirección fuera de la lista → 202, sin fila ni correo.
-8. (Si se confirma el punto 4.) Registrar otra vez una dirección sin confirmar no cambia su contraseña. La que queda es la que se da al confirmar.
+8. Registrar otra vez una dirección sin confirmar no cambia su contraseña. La que queda es la que se da al confirmar.
 
 ## Reglas
 
