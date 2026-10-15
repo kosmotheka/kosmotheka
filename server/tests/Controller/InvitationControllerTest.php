@@ -24,6 +24,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Uid\Uuid;
@@ -669,6 +670,28 @@ final class InvitationControllerTest extends WebTestCase
         $family = $this->invite($this->family, $cloud, self::EVA, 'email', 'laura@example.com');
 
         self::assertSame(201, $family['status'], 'the family can still invite her');
+    }
+
+    /**
+     * SEG-054: another invitation to the same address is between looking at the limits and spending them (its mail is
+     * on its way). This one must wait its turn, not pass the same look: else twenty at once all get through.
+     */
+    public function testAnInvitationToAnAddressThatIsBeingMailedRightNowIsRefusedAndMailsNothing(): void
+    {
+        $cloud = $this->world();
+        $fingerprint = self::getContainer()->get(EmailFingerprint::class)->of('victim@example.com');
+        $other = self::getContainer()->get(LockFactory::class)->createLock(InvitationManager::mailLockKey($fingerprint));
+        self::assertTrue($other->acquire());
+
+        try {
+            $refused = $this->invite($this->family, $cloud, self::EVA, 'email', 'victim@example.com');
+        } finally {
+            $other->release();
+        }
+
+        self::assertSame(429, $refused['status']);
+        self::assertEmailCount(0);
+        self::assertSame(201, $this->invite($this->family, $cloud, self::EVA, 'email', 'victim@example.com')['status'], 'once the other is done, it goes');
     }
 
     /** SEG-044: ten a day to an address in all, whatever the library; checked before anything is spent. */

@@ -20,6 +20,8 @@ use App\Security\RequestLimiter;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\SharedLockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -30,6 +32,14 @@ use Symfony\Component\Uid\Uuid;
 final readonly class InvitationManager
 {
     public const string LIFETIME = '+24 hours';
+    /** Longer than sending a mail can take; a crashed request lets go of the address after it. */
+    private const int MAIL_LOCK_SECONDS = 30;
+
+    /** What two invitations to one address at the same time hold in turn (SEG-054). */
+    public static function mailLockKey(string $recipientFingerprint): string
+    {
+        return 'invitation_mail_'.$recipientFingerprint;
+    }
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -42,6 +52,7 @@ final readonly class InvitationManager
         private ClockInterface $clock,
         private ActivityLog $activity,
         private CurrentDevice $currentDevice,
+        private LockFactory $locks,
     ) {
     }
 
@@ -67,35 +78,46 @@ final readonly class InvitationManager
             throw AccountException::invalidRequest();
         }
         $fingerprint = null === $email ? null : $this->fingerprints->of($email);
-        // Looked at now, spent only once the mail has gone (SEG-044): a refusal or a failure costs nothing.
-        if (null !== $fingerprint) {
-            $this->limiter->requireInvitationEmailOpen($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
+        // One invitation to an address at a time, from looking at its limits to spending them (SEG-054): another one on
+        // its way to the same address is not waited for, it is refused like any other too many.
+        $lock = null === $fingerprint ? null : $this->locks->createLock(self::mailLockKey($fingerprint), self::MAIL_LOCK_SECONDS);
+        if ($lock instanceof SharedLockInterface && !$lock->acquire()) {
+            throw AccountException::tooManyRequests(self::MAIL_LOCK_SECONDS);
         }
 
-        $token = InvitationToken::generate();
-        $invitation = new Invitation(
-            $library,
-            $member,
-            $request->kind,
-            InvitationToken::fingerprint($token),
-            $by,
-            $this->now()->modify(self::LIFETIME),
-            $fingerprint,
-        );
-        $link = $this->settings->linkFor($token);
-        // The mail goes inside the transaction: if it cannot be sent, the invitation is not left behind.
-        $this->entityManager->wrapInTransaction(function () use ($invitation, $email, $by, $library, $link): void {
-            $this->entityManager->persist($invitation);
-            // Which kind, never the email or the link.
-            $this->activity->record(ActivityKind::InvitationCreated, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
-            $this->entityManager->flush();
-            if (null !== $email) {
-                $this->mailer->sendInvitation($email, $by->getLocale(), $link);
+        try {
+            // Looked at now, spent only once the mail has gone (SEG-044): a refusal or a failure costs nothing.
+            if (null !== $fingerprint) {
+                $this->limiter->requireInvitationEmailOpen($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
             }
-        });
 
-        if (null !== $fingerprint) {
-            $this->limiter->spendInvitationEmail($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
+            $token = InvitationToken::generate();
+            $invitation = new Invitation(
+                $library,
+                $member,
+                $request->kind,
+                InvitationToken::fingerprint($token),
+                $by,
+                $this->now()->modify(self::LIFETIME),
+                $fingerprint,
+            );
+            $link = $this->settings->linkFor($token);
+            // The mail goes inside the transaction: if it cannot be sent, the invitation is not left behind.
+            $this->entityManager->wrapInTransaction(function () use ($invitation, $email, $by, $library, $link): void {
+                $this->entityManager->persist($invitation);
+                // Which kind, never the email or the link.
+                $this->activity->record(ActivityKind::InvitationCreated, $by, $this->currentDevice->tryGet()?->getDeviceId(), $library, $invitation->getId()->toRfc4122(), null, $invitation->getKind()->value);
+                $this->entityManager->flush();
+                if (null !== $email) {
+                    $this->mailer->sendInvitation($email, $by->getLocale(), $link);
+                }
+            });
+
+            if (null !== $fingerprint) {
+                $this->limiter->spendInvitationEmail($by->getId()->toRfc4122(), $library->getId()->toRfc4122(), $fingerprint);
+            }
+        } finally {
+            $lock?->release();
         }
 
         return ['invitation' => $invitation, 'link' => null === $email ? $link : null];
