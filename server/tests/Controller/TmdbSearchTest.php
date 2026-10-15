@@ -767,6 +767,20 @@ final class TmdbSearchTest extends WebTestCase
 
     // --- The cache's age ------------------------------------------------------------------------------------------------
 
+    /** SEG-057: what comes back from the cache passes the same poster check as what came from TMDB. */
+    public function testAPosterInTheCacheThatTmdbCouldNotHaveSentIsDropped(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $this->store('tmdb_search', TmdbSearch::fingerprint('film', 'en', 'matrix'), true, ['hits' => [['external_id' => 603, 'title' => 'Matrix', 'original_title' => null, 'year' => 1999, 'language' => 'en', 'cover_url' => 'javascript:alert(1)']]], new \DateTimeImmutable());
+        $this->store('tmdb_movie_en', '603', true, ['directors' => [], 'creators' => [], 'duration_minutes' => null, 'seasons' => null], new \DateTimeImmutable());
+
+        $body = $this->search($client, $ada, 'film', 'matrix', 'en');
+
+        self::assertSame(0, FakeTmdbApi::calls());
+        self::assertNull($this->candidates($body)[0]['cover_url']);
+    }
+
     public function testASearchIsKeptADayAndADetailThirtyDays(): void
     {
         $client = $this->world();

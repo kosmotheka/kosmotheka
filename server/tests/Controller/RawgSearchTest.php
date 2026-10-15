@@ -758,6 +758,20 @@ final class RawgSearchTest extends WebTestCase
 
     // --- The cache's age ------------------------------------------------------------------------------------------------
 
+    /** SEG-057: what comes back from the cache passes the same cover check as what came from RAWG. */
+    public function testACoverInTheCacheThatRawgCouldNotHaveSentIsDropped(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $this->store('rawg_search', RawgSearch::fingerprint('game'), true, ['hits' => [['external_id' => 3498, 'title' => 'GTA', 'year' => 2013, 'cover_url' => 'https://evil.example/x.jpg', 'platforms' => []]]], new \DateTimeImmutable());
+        $this->store('rawg_game', '3498', true, ['developers' => [], 'publishers' => []], new \DateTimeImmutable());
+
+        $body = $this->search($client, $ada, 'game');
+
+        self::assertSame(0, FakeRawgApi::calls());
+        self::assertNull($this->candidates($body)[0]['cover_url']);
+    }
+
     public function testASearchIsKeptAWeekAndADetailThirtyDays(): void
     {
         $client = $this->world();

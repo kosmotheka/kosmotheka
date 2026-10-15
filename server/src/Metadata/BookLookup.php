@@ -94,7 +94,7 @@ final readonly class BookLookup
             publisher: $this->string($p['publisher'] ?? null),
             publishedYear: \is_int($p['published_year'] ?? null) ? $p['published_year'] : null,
             language: $this->string($p['language'] ?? null),
-            coverUrl: $this->string($p['cover_url'] ?? null),
+            coverUrl: GoogleBooksHttpProvider::cover($p['cover_url'] ?? null),
             externalId: $this->string($p['external_id'] ?? null),
         );
     }

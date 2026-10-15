@@ -41,7 +41,7 @@ final readonly class RawgHit
             $id,
             \is_string($data['title'] ?? null) ? $data['title'] : null,
             \is_int($data['year'] ?? null) ? $data['year'] : null,
-            \is_string($data['cover_url'] ?? null) ? $data['cover_url'] : null,
+            RawgHttpSource::cover($data['cover_url'] ?? null),
             $platforms,
         );
     }

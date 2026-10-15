@@ -37,7 +37,7 @@ final readonly class TmdbHit
             \is_string($data['original_title'] ?? null) ? $data['original_title'] : null,
             \is_int($data['year'] ?? null) ? $data['year'] : null,
             \is_string($data['language'] ?? null) ? $data['language'] : null,
-            \is_string($data['cover_url'] ?? null) ? $data['cover_url'] : null,
+            TmdbHttpSource::posterAddress($data['cover_url'] ?? null),
         );
     }
 }

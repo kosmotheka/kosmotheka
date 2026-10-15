@@ -127,7 +127,7 @@ final readonly class GoogleBooksHttpProvider implements BookProvider
             publisher: $this->text($info['publisher'] ?? null, self::MAX_NAME),
             publishedYear: $this->year($info['publishedDate'] ?? null),
             language: $this->language($info['language'] ?? null),
-            coverUrl: \is_array($images) ? $this->cover($images['thumbnail'] ?? null) : null,
+            coverUrl: \is_array($images) ? self::cover($images['thumbnail'] ?? null) : null,
             externalId: $this->externalId($volume['id'] ?? null),
         );
     }
@@ -178,8 +178,11 @@ final readonly class GoogleBooksHttpProvider implements BookProvider
         return \is_string($value) && 1 === preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $value) ? $value : null;
     }
 
-    /** Google sends `http://` thumbnails with a page-curl effect (as the app knew): https, flat, and only from its own host. */
-    private function cover(mixed $value): ?string
+    /**
+     * Google sends `http://` thumbnails with a page-curl effect (as the app knew): https, flat, and only from its own host.
+     * What is read back from the cache passes it again (SEG-057).
+     */
+    public static function cover(mixed $value): ?string
     {
         if (!\is_string($value) || \strlen($value) > self::MAX_URL || 1 === preg_match('/[\x00-\x20\x7F]/', $value)) {
             return null;

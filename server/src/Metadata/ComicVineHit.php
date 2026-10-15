@@ -45,7 +45,7 @@ final readonly class ComicVineHit
             \is_string($data['number'] ?? null) ? $data['number'] : null,
             \is_int($data['year'] ?? null) ? $data['year'] : null,
             \is_string($data['publisher'] ?? null) ? $data['publisher'] : null,
-            \is_string($data['cover_url'] ?? null) ? $data['cover_url'] : null,
+            ComicVineHttpSource::coverAddress($data['cover_url'] ?? null),
         );
     }
 }

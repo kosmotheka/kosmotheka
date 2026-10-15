@@ -597,6 +597,20 @@ final class GoogleBooksLookupTest extends WebTestCase
         return $this->signInNewDevice($client, $email);
     }
 
+    /** SEG-057: what comes back from the cache passes the same cover check as what came from Google. */
+    public function testACoverInTheCacheThatGoogleCouldNotHaveSentIsDropped(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $this->store(self::INFERNO, true, ['title' => 'Inferno', 'cover_url' => 'https://books.google.com.evil.example/x'], new \DateTimeImmutable());
+
+        $book = $this->lookup($client, $ada, self::INFERNO);
+
+        self::assertSame('Inferno', $book['title']);
+        self::assertNull($book['cover_url']);
+        self::assertSame(0, FakeGoogleBooksApi::calls());
+    }
+
     /**
      * @param array{headers: array<string, string>} $session
      *

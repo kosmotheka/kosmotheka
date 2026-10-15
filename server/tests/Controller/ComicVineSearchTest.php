@@ -954,6 +954,20 @@ final class ComicVineSearchTest extends WebTestCase
 
     // --- The cache's age ------------------------------------------------------------------------------------------------
 
+    /** SEG-057: what comes back from the cache passes the same cover check as what came from Comic Vine. */
+    public function testACoverInTheCacheThatComicVineCouldNotHaveSentIsDropped(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        $this->store('comic_vine_search', ComicVineSearch::fingerprint('comic'), true, ['hits' => [['resource' => 'volume', 'external_id' => 796, 'title' => 'Batman', 'series' => null, 'number' => null, 'year' => 1940, 'publisher' => 'DC', 'cover_url' => 'http://comicvine.gamespot.com/a/uploads/x.jpg']]], new \DateTimeImmutable());
+        $this->store('comic_vine_volume', '796', true, ['writers' => [], 'artists' => []], new \DateTimeImmutable());
+
+        $body = $this->search($client, $ada, 'comic');
+
+        self::assertSame(0, FakeComicVineApi::calls());
+        self::assertNull($this->candidates($body)[0]['cover_url']);
+    }
+
     public function testASearchIsKeptAWeekAndADetailThirtyDays(): void
     {
         $client = $this->world();

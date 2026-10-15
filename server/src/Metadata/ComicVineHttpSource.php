@@ -306,14 +306,20 @@ final readonly class ComicVineHttpSource implements ComicVineSource
             return null;
         }
         foreach (['medium_url', 'small_url'] as $size) {
-            $url = $image[$size] ?? null;
-            if (\is_string($url) && \strlen($url) <= self::MAX_URL
-                && 1 === preg_match('#^https://comicvine\.gamespot\.com/a/uploads/(?:[A-Za-z0-9_-]+/)+[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|gif|webp)$#D', $url)
-            ) {
+            $url = self::coverAddress($image[$size] ?? null);
+            if (null !== $url) {
                 return $url;
             }
         }
 
         return null;
+    }
+
+    /** One cover address as Comic Vine serves them, and nothing else: also what is read back from the cache (SEG-057). */
+    public static function coverAddress(mixed $url): ?string
+    {
+        return \is_string($url) && \strlen($url) <= self::MAX_URL
+            && 1 === preg_match('#^https://comicvine\.gamespot\.com/a/uploads/(?:[A-Za-z0-9_-]+/)+[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|gif|webp)$#D', $url)
+            ? $url : null;
     }
 }

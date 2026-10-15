@@ -248,4 +248,10 @@ final readonly class TmdbHttpSource implements TmdbSource
     {
         return 'es' === $language ? 'es-ES' : 'en-US';
     }
+
+    /** A poster address as this source makes them, and nothing else: what is read back from the cache passes it (SEG-057). */
+    public static function posterAddress(mixed $url): ?string
+    {
+        return \is_string($url) && 1 === preg_match('#^'.preg_quote(self::IMAGES, '#').'/[A-Za-z0-9]{1,100}\.(jpg|png)$#D', $url) ? $url : null;
+    }
 }

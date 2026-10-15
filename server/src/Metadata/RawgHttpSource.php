@@ -180,7 +180,7 @@ final readonly class RawgHttpSource implements RawgSource
             $id,
             $title,
             \is_string($released) && 1 === preg_match('/^(\d{4})/', $released, $year) && (int) $year[1] >= 1950 && (int) $year[1] <= 2200 ? (int) $year[1] : null,
-            $this->cover($result['background_image'] ?? null),
+            self::cover($result['background_image'] ?? null),
             $this->platforms($result['platforms'] ?? null),
         );
     }
@@ -247,7 +247,8 @@ final readonly class RawgHttpSource implements RawgSource
     }
 
     /** `https://media.rawg.io/media/…` ending in an image extension, with nothing in it that is not a plain name. */
-    private function cover(mixed $value): ?string
+    /** A cover as RAWG serves them, and nothing else: also what is read back from the cache passes it (SEG-057). */
+    public static function cover(mixed $value): ?string
     {
         if (!\is_string($value) || \strlen($value) > self::MAX_URL
             || 1 !== preg_match('#^https://'.preg_quote(self::COVER_HOST, '#').'/media/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)$#D', $value)
