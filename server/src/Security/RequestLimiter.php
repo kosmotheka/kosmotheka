@@ -47,6 +47,12 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $rawgAccountLimiter,
         #[Target('comic_vine_account')]
         private RateLimiterFactoryInterface $comicVineAccountLimiter,
+        #[Target('cloud_sync')]
+        private RateLimiterFactoryInterface $cloudSyncLimiter,
+        #[Target('cloud_link')]
+        private RateLimiterFactoryInterface $cloudLinkLimiter,
+        #[Target('cloud_events')]
+        private RateLimiterFactoryInterface $cloudEventsLimiter,
         #[Target('email_code')]
         private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
@@ -179,6 +185,30 @@ final readonly class RequestLimiter
     {
         $this->consume($this->comicVineAccountLimiter, $accountId.'|'.$resource->value);
         $this->consumeComicVineCall($resource);
+    }
+
+    /** One upload to a cloud library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeCloudPush(string $userId): void
+    {
+        $this->consume($this->cloudSyncLimiter, $userId.'|push');
+    }
+
+    /** One download from a cloud library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeCloudPull(string $userId): void
+    {
+        $this->consume($this->cloudSyncLimiter, $userId.'|pull');
+    }
+
+    /** Claiming a person or linking a library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeCloudLink(string $userId): void
+    {
+        $this->consume($this->cloudLinkLimiter, $userId);
+    }
+
+    /** The token of the live notices, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
+    public function consumeCloudEvents(string $userId): void
+    {
+        $this->consume($this->cloudEventsLimiter, $userId);
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Dto\PushRequest;
 use App\Entity\CloudLibrary;
 use App\Entity\User;
 use App\Security\CurrentDevice;
+use App\Security\RequestLimiter;
 use App\Sync\AccountLinker;
 use App\Sync\CloudIdentityIssuer;
 use App\Sync\CloudLibraryAccess;
@@ -43,6 +44,7 @@ final class CloudController extends AbstractController
         private readonly CloudPush $cloudPush,
         private readonly CurrentDevice $currentDevice,
         private readonly AccountLinker $linker,
+        private readonly RequestLimiter $limiter,
     ) {
     }
 
@@ -87,12 +89,15 @@ final class CloudController extends AbstractController
     #[Route('/claim', methods: ['POST'])]
     public function claim(): JsonResponse
     {
+        $this->limiter->consumeCloudLink($this->currentUser()->getId()->toRfc4122());
+
         return new JsonResponse($this->linker->claim($this->currentDevice->get()));
     }
 
     #[Route('/{id}/pull', methods: ['POST'])]
     public function pull(string $id, #[MapRequestPayload] PullRequest $payload): JsonResponse
     {
+        $this->limiter->consumeCloudPull($this->currentUser()->getId()->toRfc4122());
         $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), $payload->vector);
 
         return new JsonResponse($this->cloudPull->pull($library, $payload));
@@ -102,6 +107,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/link', methods: ['POST'])]
     public function link(string $id, Request $request): JsonResponse
     {
+        $this->limiter->consumeCloudLink($this->currentUser()->getId()->toRfc4122());
         $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
         $this->cloudLink->linkFrom($library, PushedOperation::fromJson($request->getContent()));
 
@@ -111,6 +117,7 @@ final class CloudController extends AbstractController
     #[Route('/{id}/push', methods: ['POST'])]
     public function push(string $id, Request $request): JsonResponse
     {
+        $this->limiter->consumeCloudPush($this->currentUser()->getId()->toRfc4122());
         $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
 
         return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());

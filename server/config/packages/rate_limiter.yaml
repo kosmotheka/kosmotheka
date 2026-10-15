@@ -76,6 +76,22 @@ framework:
             policy: sliding_window
             limit: 15
             interval: '1 hour'
+        # The cloud's routes, per account (decided on 2026-10-15): wide enough for the first upload of a large library.
+        # Uploading and downloading each have their own 600 an hour (keys `<account>|push` and `<account>|pull`).
+        cloud_sync:
+            policy: sliding_window
+            limit: 600
+            interval: '1 hour'
+        # Claiming a person and linking a library to its local id, together.
+        cloud_link:
+            policy: sliding_window
+            limit: 30
+            interval: '1 hour'
+        # The token of the live notices.
+        cloud_events:
+            policy: sliding_window
+            limit: 60
+            interval: '1 hour'
         email_code:
             policy: sliding_window
             limit: 10

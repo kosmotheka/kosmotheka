@@ -458,8 +458,11 @@ Con los limitadores de siempre (`RequestLimiter`, `config/packages/rate_limiter.
 | `invitation_recipient` | **10 al día** | huella del correo de destino, en total, para que no se pueda inundar una dirección desde muchas bibliotecas |
 | `invitation_lookup` | 30 cada 15 min | IP (mirar y aceptar) |
 | `invitation_accept` | 10 cada 15 min | cuenta |
+| `cloud_sync` | 600 por hora para subir y otros 600 para bajar | cuenta (`push` y `pull`, aparte) |
+| `cloud_link` | 30 por hora | cuenta (reclamar la persona y enlazar una biblioteca, juntos) |
+| `cloud_events` | 60 por hora | cuenta (el token de los avisos) |
 
-Las cifras de correo las decidió el maintainer el 11/10/2026 (SEG-044). Los tres límites de correo (cuenta, pareja y dirección) se **miran todos antes de gastar ninguno** (`RequestLimiter::requireInvitationEmailOpen`) y se **gastan solo cuando el correo ya se ha enviado** (`spendInvitationEmail`): una validación, una regla o un envío que falla no cuestan cuota, y un límite agotado no gasta los otros. **Límite conocido:** la huella es la del correo tal como se escribe, normalizado solo a minúsculas y sin espacios. `laura+1@…` y `laura@…` cuentan como direcciones distintas, a propósito: cada proveedor trata los alias a su manera y no se adivina cuál es el mismo buzón. El tope por cuenta (10 al día) sigue acotando lo que una cuenta puede mandar.
+Las cifras de las rutas de la nube las decidió el maintainer el 15/10/2026: son anchas para que no frenen la primera subida de una biblioteca grande (lotes de 1.000 operaciones), y se gastan antes de mirar nada. Crear y listar bibliotecas no tienen límite propio. Las cifras de correo las decidió el maintainer el 11/10/2026 (SEG-044). Los tres límites de correo (cuenta, pareja y dirección) se **miran todos antes de gastar ninguno** (`RequestLimiter::requireInvitationEmailOpen`) y se **gastan solo cuando el correo ya se ha enviado** (`spendInvitationEmail`): una validación, una regla o un envío que falla no cuestan cuota, y un límite agotado no gasta los otros. **Límite conocido:** la huella es la del correo tal como se escribe, normalizado solo a minúsculas y sin espacios. `laura+1@…` y `laura@…` cuentan como direcciones distintas, a propósito: cada proveedor trata los alias a su manera y no se adivina cuál es el mismo buzón. El tope por cuenta (10 al día) sigue acotando lo que una cuenta puede mandar.
 
 ### El correo
 
