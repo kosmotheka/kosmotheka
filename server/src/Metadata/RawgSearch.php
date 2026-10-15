@@ -54,6 +54,8 @@ final readonly class RawgSearch
         $now = $this->clock->now();
         $hits = $this->hits(self::normalise($query), $now);
         $details = $this->details(\array_slice($hits, 0, self::DETAILS_OF), $now);
+        // Stored once, at the end: a row another request stored meanwhile must not leave anything to do after it (SEG-055).
+        $this->flush();
 
         $candidates = [];
         foreach ($hits as $hit) {
@@ -136,9 +138,8 @@ final readonly class RawgSearch
         );
         foreach ($fetched as $id => $detail) {
             $details[$id] = $detail;
-            $this->remember($entries[$id] ?? null, self::DETAIL_PROVIDER, (string) $id, true, $detail->toArray(), $now, false);
+            $this->remember($entries[$id] ?? null, self::DETAIL_PROVIDER, (string) $id, true, $detail->toArray(), $now);
         }
-        $this->flush();
 
         return $details;
     }
@@ -162,15 +163,12 @@ final readonly class RawgSearch
     }
 
     /** @param array<string, mixed> $payload */
-    private function remember(?MetadataCacheEntry $entry, string $provider, string $code, bool $found, array $payload, \DateTimeImmutable $now, bool $flush = true): void
+    private function remember(?MetadataCacheEntry $entry, string $provider, string $code, bool $found, array $payload, \DateTimeImmutable $now): void
     {
         if ($entry instanceof MetadataCacheEntry) {
             $entry->renew($found, $payload, $now);
         } else {
             $this->entityManager->persist(new MetadataCacheEntry($provider, $code, $found, $payload, $now));
-        }
-        if ($flush) {
-            $this->flush();
         }
     }
 

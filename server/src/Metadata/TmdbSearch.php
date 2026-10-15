@@ -55,6 +55,8 @@ final readonly class TmdbSearch
         $now = $this->clock->now();
         $hits = $this->hits($kind, $language, self::normalise($query), $now);
         $details = $this->details($kind, $language, $hits, $now);
+        // Stored once, at the end: a row another request stored meanwhile must not leave anything to do after it (SEG-055).
+        $this->flush();
 
         $candidates = [];
         foreach ($hits as $hit) {
@@ -143,9 +145,8 @@ final readonly class TmdbSearch
         );
         foreach ($fetched as $id => $detail) {
             $details[$id] = $detail;
-            $this->remember($entries[$id] ?? null, $provider, (string) $id, true, $detail->toArray(), $now, false);
+            $this->remember($entries[$id] ?? null, $provider, (string) $id, true, $detail->toArray(), $now);
         }
-        $this->flush();
 
         return $details;
     }
@@ -174,15 +175,12 @@ final readonly class TmdbSearch
     }
 
     /** @param array<string, mixed> $payload */
-    private function remember(?MetadataCacheEntry $entry, string $provider, string $code, bool $found, array $payload, \DateTimeImmutable $now, bool $flush = true): void
+    private function remember(?MetadataCacheEntry $entry, string $provider, string $code, bool $found, array $payload, \DateTimeImmutable $now): void
     {
         if ($entry instanceof MetadataCacheEntry) {
             $entry->renew($found, $payload, $now);
         } else {
             $this->entityManager->persist(new MetadataCacheEntry($provider, $code, $found, $payload, $now));
-        }
-        if ($flush) {
-            $this->flush();
         }
     }
 

@@ -12,6 +12,7 @@ use App\Security\RequestLimiter;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\FakeTmdbApi;
 use App\Tests\Support\RecordingLogger;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -605,6 +606,30 @@ final class TmdbSearchTest extends WebTestCase
         self::assertResponseStatusCodeSame(503);
         self::assertSame('metadata_quota_exhausted', $body['error'] ?? null);
         self::assertSame($calls, FakeTmdbApi::calls());
+    }
+
+    /** SEG-055: two people (or one double tap) search the same at once; the one that stores it second still answers. */
+    public function testASearchStoredByAnotherRequestMeanwhileStillAnswers(): void
+    {
+        $client = $this->world();
+        $ada = $this->account($client, 'ada@example.com');
+        FakeTmdbApi::searchFinds([FakeTmdbApi::film()]);
+        FakeTmdbApi::detailIs('movie', 603, FakeTmdbApi::filmDetail());
+        $connection = self::getContainer()->get(Connection::class);
+        FakeTmdbApi::$whileSearching = static function () use ($connection): void {
+            $connection->executeStatement(
+                "INSERT INTO metadata_cache (id, provider, code, found, payload, fetched_at) VALUES (gen_random_uuid(), ?, ?, true, '{\"hits\": []}', now())",
+                [MetadataCacheEntry::TMDB_SEARCH, TmdbSearch::fingerprint('film', 'es', 'matrix')],
+            );
+        };
+
+        $body = $this->search($client, $ada, 'film', 'matrix', 'es');
+
+        self::assertResponseStatusCodeSame(200);
+        $candidates = $body['candidates'] ?? null;
+        self::assertIsArray($candidates);
+        self::assertIsArray($candidates[0] ?? null);
+        self::assertSame(603, $candidates[0]['external_id'] ?? null);
     }
 
     public function testADetailThatFailedIsNotRememberedAndIsAskedAgainNextTime(): void

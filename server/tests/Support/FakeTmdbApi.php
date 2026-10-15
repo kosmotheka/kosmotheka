@@ -22,11 +22,15 @@ final class FakeTmdbApi
     /** @var list<array{method: string, url: string, path: string, query: array<string, mixed>, headers: array<string, list<string>>}> */
     public static array $requests = [];
 
+    /** Runs while TMDB is answering a search: what another request does in the meantime. */
+    public static ?\Closure $whileSearching = null;
+
     public static function reset(): void
     {
         self::$searches = [];
         self::$details = [];
         self::$requests = [];
+        self::$whileSearching = null;
     }
 
     public static function calls(): int
@@ -138,6 +142,9 @@ final class FakeTmdbApi
 
             if (1 === preg_match('#^/3/search/(movie|tv)$#', $path)) {
                 $next = array_shift(self::$searches);
+                if (self::$whileSearching instanceof \Closure) {
+                    (self::$whileSearching)();
+                }
             } elseif (1 === preg_match('#^/3/(movie|tv)/(\d+)$#', $path, $match)) {
                 $queue = self::$details[$match[1].'/'.$match[2]] ?? [];
                 $next = array_shift($queue);
