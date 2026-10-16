@@ -13,6 +13,7 @@ mod device_reset;
 pub mod error;
 mod lan;
 mod libraries;
+mod licenses;
 mod links;
 mod marks;
 mod metadata;
@@ -159,6 +160,7 @@ pub fn run() {
             commands::restore_backup,
             commands::export_csv,
             commands::import_csv,
+            commands::export_licenses,
             commands::lan_status,
             commands::set_device_name,
             commands::open_pairing,

@@ -558,6 +558,10 @@ export function exportCsv(path: string): Promise<number> {
   return invoke<number>("export_csv", { path });
 }
 
+export function exportLicenses(path: string): Promise<void> {
+  return invoke("export_licenses", { path });
+}
+
 export interface CsvImportSummary {
   booksCreated: number;
   copiesAdded: number;

@@ -984,6 +984,8 @@ mockIPC((cmd, args) => {
       }
       return { libraries: libraries.length, books: 12, copies: 14, covers: 3 };
     }
+    case "export_licenses":
+      return null;
     case "restore_backup": {
       const { path, passphrase } = args as { path: string; passphrase?: string };
       if (path.includes("encrypted")) {

@@ -26,6 +26,7 @@ use crate::error::{Error, Result};
 use crate::lan::service::{LanService, LanStatus, PairingInfo};
 use crate::lan::{self, SyncReport};
 use crate::libraries::{self, LibrarySummary};
+use crate::licenses;
 use crate::links::{self, Arrivals};
 use crate::marks;
 use crate::metadata::via_server::{COMIC_VINE, GOOGLE_BOOKS, RAWG, TMDB, choose_access};
@@ -552,6 +553,15 @@ pub fn export_csv(app: AppHandle, database: State<'_, Database>, path: String) -
     let conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     csv_io::export(&conn, &library, open_picked(&app, &path, true)?)
+}
+
+/// The list of third-party licences, built from what the app carries (no text comes from the UI).
+#[tauri::command]
+pub fn export_licenses(app: AppHandle, path: String) -> Result<()> {
+    licenses::export(
+        open_picked(&app, &path, true)?,
+        &app.package_info().version.to_string(),
+    )
 }
 
 #[tauri::command]
