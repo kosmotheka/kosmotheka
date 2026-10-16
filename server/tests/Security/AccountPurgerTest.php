@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Security;
 
 use App\Entity\EmailCode;
+use App\Entity\MetadataCacheEntry;
 use App\Entity\User;
 use App\Enum\EmailCodePurpose;
 use App\Security\AccountPurger;
+use App\Security\PurgeFailedException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Clock\Test\ClockSensitiveTrait;
@@ -46,6 +48,27 @@ final class AccountPurgerTest extends KernelTestCase
         $codeRepository = $entityManager->getRepository(EmailCode::class);
         self::assertNull($codeRepository->find($expiredCode->getId()));
         self::assertNotNull($codeRepository->find($liveCode->getId()));
+    }
+
+    public function testAStepThatFailsDoesNotKeepTheNextOnesFromRunning(): void
+    {
+        self::mockTime('2026-06-30 12:00:00');
+        self::bootKernel();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist(new MetadataCacheEntry('google_books', '9780000000002', true, [], new \DateTimeImmutable('2026-05-01 00:00:00')));
+        $entityManager->flush();
+        // Undone with the test's transaction: the step for invitations fails, as with a table locked or broken.
+        $entityManager->getConnection()->executeStatement('ALTER TABLE invitation RENAME TO invitation_away');
+
+        try {
+            self::getContainer()->get(AccountPurger::class)->purge();
+            self::fail('The failed step must still be told.');
+        } catch (PurgeFailedException $exception) {
+            self::assertSame(['invitations'], $exception->steps);
+        }
+
+        $entityManager->clear();
+        self::assertSame([], $entityManager->getRepository(MetadataCacheEntry::class)->findBy(['code' => '9780000000002']));
     }
 
     private function persistUser(EntityManagerInterface $entityManager, string $slug, bool $confirmed, string $createdAt): User
