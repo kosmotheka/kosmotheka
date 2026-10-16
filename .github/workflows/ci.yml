@@ -60,6 +60,9 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+      # After the build: `cargo tree` needs the crates, and the screen's list must still cover what ships.
+      - run: npm run check:licenses
+        working-directory: app
 
   rust-deps:
     name: Rust dependencies

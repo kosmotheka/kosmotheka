@@ -1,0 +1,106 @@
+{
+  "_comment": "Written by hand: what ships in the Android app and in no lockfile, and SQLite. The versions are those the Gradle files of the app and of the Tauri plugins ask for (app/src-tauri/gen/android and the plugins' android/build.gradle.kts); look again when the plugins are updated. `terms` entries are not a licence notice: they are a service with terms of its own, and the screen shows their name, what they are for and the link. `clarify` gives the licence text of an npm package that ships none.",
+  "notices": [
+    {
+      "name": "androidx.core:core-ktx",
+      "version": "1.7.0 - 1.9.0",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/core"
+    },
+    {
+      "name": "androidx.appcompat:appcompat",
+      "version": "1.6.0 - 1.7.1",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/appcompat"
+    },
+    {
+      "name": "androidx.activity:activity-ktx",
+      "version": "1.10.1",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/activity"
+    },
+    {
+      "name": "androidx.lifecycle:lifecycle-process",
+      "version": "2.10.0",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/lifecycle"
+    },
+    {
+      "name": "androidx.webkit:webkit",
+      "version": "1.14.0",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/webkit"
+    },
+    {
+      "name": "androidx.browser:browser",
+      "version": "1.8.0",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/browser"
+    },
+    {
+      "name": "androidx.biometric:biometric",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/biometric"
+    },
+    {
+      "name": "androidx.camera:camera-core, camera-camera2, camera-lifecycle, camera-view",
+      "version": "1.5.1",
+      "license": "Apache-2.0",
+      "repository": "https://developer.android.com/jetpack/androidx/releases/camera"
+    },
+    {
+      "name": "com.google.android.material:material",
+      "version": "1.7.0 - 1.13.0",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/material-components/material-components-android"
+    },
+    {
+      "name": "com.fasterxml.jackson.core:jackson-databind, com.fasterxml.jackson.datatype:jackson-datatype-json-org",
+      "version": "2.15.3",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/FasterXML/jackson-databind"
+    }
+  ],
+  "terms": [
+    {
+      "name": "ML Kit barcode scanning (com.google.android.gms:play-services-mlkit-barcode-scanning)",
+      "version": "18.1.0",
+      "purpose": "scanner",
+      "links": [
+        {
+          "label": "ML Kit Terms of Service",
+          "url": "https://developers.google.com/ml-kit/terms"
+        },
+        {
+          "label": "Google APIs Terms of Service",
+          "url": "https://developers.google.com/terms"
+        }
+      ]
+    },
+    {
+      "name": "Google Play services libraries (play-services-base, -basement, -tasks)",
+      "version": "",
+      "purpose": "scanner",
+      "links": [
+        {
+          "label": "Android Software Development Kit License Agreement",
+          "url": "https://developer.android.com/studio/terms"
+        }
+      ]
+    }
+  ],
+  "public_domain": [
+    {
+      "name": "SQLite (inside libsqlite3-sys)",
+      "version": "",
+      "repository": "https://www.sqlite.org/copyright.html"
+    }
+  ],
+  "clarify": {
+    "react-remove-scroll-bar": {
+      "why": "The package ships no licence file (its README says MIT); this is the LICENSE of its repository https://github.com/theKashey/react-remove-scroll-bar, fetched on 2026-10-16.",
+      "text": "MIT License\n\nCopyright (c) 2025 Anton Korzunov <thekashey@gmail.com>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    }
+  }
+}

@@ -7,7 +7,28 @@
     "close": "Got it",
     "switchFailed": "The change could not be saved."
   },
+  "licenses": {
+    "title": "Licences",
+    "intro": "Kosmotheka is built with the work of many other people. These are the libraries that go inside the app, with the licence each one is under. Their licences ask for this notice to travel with the app.",
+    "own": "Kosmotheka itself is free software under the AGPL-3.0-or-later licence.",
+    "failed": "The list could not be loaded.",
+    "search": "Search a library",
+    "noResults": "No library matches.",
+    "count_one": "{{count}} library",
+    "count_other": "{{count}} libraries",
+    "source": "source",
+    "showText": "licence text",
+    "hideText": "hide",
+    "terms": {
+      "title": "Services with their own terms",
+      "intro": "These are not licences you receive a copy of: they are services with terms of their own, which you accept by using the part of the app that needs them.",
+      "purpose": {
+        "scanner": "Used by the barcode scanner on phones."
+      }
+    }
+  },
   "about": {
+    "licenses": "Licences",
     "whatsNew": "What's new",
     "title": "About",
     "version": "Version {{version}}",

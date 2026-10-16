@@ -42,6 +42,7 @@ Sin servidor: la app **no recoge datos** y **no comparte datos**. Las búsquedas
 
 ## Pendiente para publicar
 
+- El escáner usa **ML Kit** (Google, a través de Google Play Services) y se rige por sus términos ([ML Kit](https://developers.google.com/ml-kit/terms), [APIs de Google](https://developers.google.com/terms)). La política de privacidad y el formulario «Seguridad de los datos» tienen que nombrar ML Kit y sus términos de datos.
 - URL de la política de privacidad: `https://kosmotheka.com/es/privacidad.html`, en la web del proyecto ([web.md](web.md)).
 - Icono de 512 × 512 y gráfico destacado de 1024 × 500 (en `brand/`), al menos dos capturas de móvil.
 - Si la cuenta de desarrollador es personal y nueva: prueba cerrada con al menos 12 personas durante 14 días antes de producción.

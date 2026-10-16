@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink } from "@/components/external-link";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
+import { LicensesDialog } from "@/components/licenses-dialog";
 import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { type WhatsNew, appVersion, whatsNewRecent } from "@/lib/api";
 import { openOverlay } from "@/lib/navigation";
@@ -26,6 +27,7 @@ export function AboutDialog({
   const [version, setVersion] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [news, setNews] = useState<WhatsNew | null>(null);
+  const [licenses, setLicenses] = useState(false);
 
   // Asked each time it opens, like ProvidersDialog.
   if (open && !seeded) {
@@ -76,8 +78,12 @@ export function AboutDialog({
           <Button variant="outline" onClick={() => openOverlay({ name: "providers" })}>
             {t("about.sources")}
           </Button>
+          <Button variant="outline" onClick={() => setLicenses(true)}>
+            {t("about.licenses")}
+          </Button>
         </div>
       </div>
+      <LicensesDialog open={licenses} onOpenChange={setLicenses} />
       {news && <WhatsNewDialog open news={news} onClose={() => setNews(null)} />}
     </ResponsiveDialog>
   );

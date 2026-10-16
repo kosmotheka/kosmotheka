@@ -2,7 +2,7 @@
 
 Kosmotheka is licensed under the AGPL-3.0-or-later (see `LICENSE`). It ships the following work by others, whose licences ask for this notice.
 
-Every other dependency keeps its own licence file in its package: `Cargo.lock`, `app/package-lock.json` and `server/composer.lock` list them all.
+The libraries that go inside the app's installers (Rust crates and npm packages) are listed, with their licence texts, in the app (About → Licences) and in `app/src/licenses.json`, which `npm run licenses` generates from `Cargo.lock` and the UI build. This file keeps what those lists do not cover: fonts, icons, SQLite and the Android libraries. The server's dependencies are in `server/composer.lock`.
 
 ## Figtree (font)
 
@@ -55,3 +55,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## SQLite
+
+The app stores its data with SQLite, compiled into the program through the `libsqlite3-sys` crate. SQLite is in the public domain (https://www.sqlite.org/copyright.html).
+
+## Android libraries
+
+The Android app also contains these libraries (the versions the Gradle files of the app and of the Tauri plugins ask for):
+
+- AndroidX (`core-ktx`, `appcompat`, `activity-ktx`, `lifecycle-process`, `webkit`, `browser`, `biometric`, `camera-*`), Material Components for Android and Jackson (`jackson-databind`, `jackson-datatype-json-org`). All are under the Apache License, Version 2.0, whose text is in the app (About → Licences) and at https://www.apache.org/licenses/LICENSE-2.0. Copyright The Android Open Source Project, Google LLC and FasterXML, LLC, respectively.
+- **ML Kit barcode scanning and Google Play services** (`com.google.android.gms:play-services-mlkit-barcode-scanning`, `play-services-base`, `-basement` and `-tasks`). They are not open source: they are services of Google with terms of their own, and the app needs Google Play services on the phone to scan barcodes. They are used only by the barcode scanner. Terms: [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms), [Google APIs Terms of Service](https://developers.google.com/terms) and [Android Software Development Kit License Agreement](https://developer.android.com/studio/terms).
+
+The list lives, written by hand, in `app/licenses/extra.json`.

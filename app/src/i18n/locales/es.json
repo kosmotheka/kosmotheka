@@ -7,7 +7,28 @@
     "close": "Entendido",
     "switchFailed": "No se ha podido guardar el cambio."
   },
+  "licenses": {
+    "title": "Licencias",
+    "intro": "Kosmotheka está hecha con el trabajo de muchas otras personas. Estas son las librerías que van dentro de la app, con la licencia de cada una. Sus licencias piden que este aviso viaje con la app.",
+    "own": "Kosmotheka es software libre bajo la licencia AGPL-3.0-or-later.",
+    "failed": "No se ha podido cargar la lista.",
+    "search": "Buscar una librería",
+    "noResults": "Ninguna librería coincide.",
+    "count_one": "{{count}} librería",
+    "count_other": "{{count}} librerías",
+    "source": "código",
+    "showText": "texto de la licencia",
+    "hideText": "ocultar",
+    "terms": {
+      "title": "Servicios con sus propios términos",
+      "intro": "No son licencias de las que recibas una copia: son servicios con términos propios, que aceptas al usar la parte de la app que los necesita.",
+      "purpose": {
+        "scanner": "Los usa el escáner de códigos de barras en el móvil."
+      }
+    }
+  },
   "about": {
+    "licenses": "Licencias",
     "whatsNew": "Novedades",
     "title": "Acerca de",
     "version": "Versión {{version}}",
