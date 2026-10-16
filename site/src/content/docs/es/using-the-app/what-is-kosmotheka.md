@@ -9,27 +9,27 @@ Kosmotheka es una app para apuntar lo que hay en casa y saber, en un momento, qu
 
 ## Qué puedes apuntar
 
-Libros, cómics, juegos de mesa, películas, series, videojuegos y música. Para todo lo demás (maquetas, puzles, juguetes…) hay un tipo llamado «Otro».
+Libros, cómics, juegos de mesa, películas, series, videojuegos y música. Cada cosa que apuntas es de un tipo: libro, película, juego… Para todo lo demás (maquetas, puzles, juguetes…) hay un tipo llamado «Otro».
 
-Cada tipo tiene su propia ficha. Un juego de mesa lleva jugadores y duración; una serie, sus temporadas; un libro, su autoría y su editorial.
+Cada tipo tiene su propia ficha. Un juego de mesa lleva jugadores y duración; una serie, sus temporadas; un libro, quién lo escribió y su editorial.
 
 ## Para qué sirve
 
 - **Saber qué tienes y dónde está.** Cada cosa lleva su formato, de quién es y en qué estantería está.
-- **Comprobar si ya lo tienes.** En una tienda, la pantalla «¿Lo tengo?» te lo dice al momento, sin conexión. En el móvil, con la cámara; en el ordenador, escribiendo el número.
+- **Comprobar si ya lo tienes.** En una tienda, la pantalla «¿Lo tengo?» te lo dice al momento, sin conexión. En el móvil, con la cámara; en el ordenador, escribiendo el número que lleva el libro (el ISBN).
 - **Apuntar lo que quieres y aún no tienes.** Está en «Me falta».
-- **Que cada persona apunte lo suyo.** Por leer, leyendo, leído, abandonado, estrellas, favoritos y «Lo deseo».
+- **Que cada persona apunte lo suyo.** Cada una marca su estado (por leer, leyendo, leído o abandonado), pone estrellas, elige favoritos o marca lo que desea con «Lo deseo».
 - **Tener varias bibliotecas.** Por ejemplo, la de casa y la del club de rol.
 - **Compartirlas con quien vive contigo,** por la wifi de casa, y decidir quién puede cambiar qué.
-- **Guardar copias de seguridad** y traer o llevar tu lista como hoja de cálculo.
+- **Guardar copias de seguridad** y traer o llevar tu lista a un programa como Excel.
 
 ## Cómo funciona
 
-Tus datos se guardan en tu dispositivo. La app funciona sin cuenta y sin conexión a internet. Solo usa internet para buscar los datos de un libro (título, autoría, portada…), y esa búsqueda se puede apagar. Lo cuenta con detalle la página [Qué sale de tu dispositivo y qué no](../what-leaves-your-device/).
+Tus datos se guardan en tu móvil u ordenador. La app funciona sin cuenta y sin conexión a internet. Solo usa internet para buscar los datos de un libro (título, quién lo escribió, portada…), y esa búsqueda se puede apagar. Lo cuenta con detalle la página [Qué sale de tu dispositivo y qué no](../what-leaves-your-device/).
 
-Hay también una cuenta opcional, para tener tus bibliotecas en más dispositivos aunque no estén en la misma wifi. Por ahora está en pruebas. Sin cuenta, todo funciona igual.
+Hay también una cuenta opcional (como la de un correo), para tener tus bibliotecas en más aparatos aunque no estén en la misma wifi. Por ahora es una prueba. Sin cuenta, todo funciona igual.
 
-Es gratis y no tiene anuncios ni seguimiento. Es software libre: su código está abierto para que cualquiera pueda leerlo.
+Es gratis, sin anuncios y sin seguimiento. Cualquiera puede ver cómo está hecha.
 
 ## Qué no es
 
