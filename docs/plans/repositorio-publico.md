@@ -89,4 +89,10 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 - **Diario de desarrollo público** (D90, enmendada): se publican las decisiones, los planes, el histórico de encargos, la arquitectura y las pruebas. Lo privado de verdad (hallazgos abiertos, firma, notas de producción) va a `library-privado/`. Sin segundo repositorio.
 - **Los ids de hallazgos se quedan en el código** y se publica el registro de los cerrados.
 - **Esqueleto de docs.kosmotheka.com hecho** (paso 2, 16/10/2026): Starlight en `site/`, `/es/` y `/en/` con el español por defecto (lo no traducido sale en español con aviso), mismas carpetas en inglés en los dos idiomas, sin nada de terceros, compilado en la CI y sin publicar. No se publica antes de abrir el repositorio: enlaza a `github.com/kosmotheka/kosmotheka`.
+- **Guía de usuario, primera tanda** (paso 4, 16/10/2026): siete páginas en español de lo que funciona sin cuenta. Falta la revisión de jerga por otra sesión, sobre todo «Compartir en casa» y «Copias de seguridad». Diferencias con la app que salieron al escribirla, por arreglar:
+  - **La Ayuda de la app está desfasada:** nombra «Mostrar código» y «Guardar copia», que ya no se llaman así, y no cuenta el «¿De quién es?» con el rol al emparejar (D97).
+  - **La landing** dice «Dar acceso a otro dispositivo» para emparejar, los estados de lectura antiguos y promete préstamos, que aún no existen. **La política de privacidad** habla de la nube en futuro y no menciona Google Books a través de la cuenta, TMDB, RAWG ni Comic Vine, ni que cada catálogo ve la dirección de internet y la versión de la app.
+  - **«Añadir» no reconoce un ISBN con guiones o de 10 cifras** en el buscador: lo busca como título. La casilla ISBN del formulario sí lo acepta.
+  - **El botón «Escanear» del escritorio** lleva a «¿Lo tengo?», no escanea.
+  - **El CSV** solo lleva datos de libros, y al importar todo entra como libro.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
