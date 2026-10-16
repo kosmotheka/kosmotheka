@@ -24,13 +24,13 @@
 | `docs/architecture/` | Cómo está construido | 6 ficheros | Se publica; es la base de la parte para colaboradores. Traducir |
 | `docs/development/` | Entorno, servidor, correo, Google | 8 | Se publica casi todo; `revision-servidor.md`, a mirar |
 | `docs/ROADMAP.md`, `docs/VISION.md` | Plan y visión | | Se publican; el ROADMAP, resumido, sin notas de trabajo |
-| `docs/plans/`, `docs/historico/` | Planes y encargos | 4 + 42 | Interno (o «diario de desarrollo», D90). Ver la pregunta 1 |
-| `docs/audits/` | Hallazgos de seguridad | 13 | Se publican el método y el modelo de amenazas; los informes y el registro, no (D90) |
+| `docs/plans/`, `docs/historico/` | Planes y encargos | 4 + 42 | Se publica, como diario de desarrollo (D90, 16/10/2026) |
+| `docs/audits/` | Hallazgos de seguridad | 13 | Se publican el método, el modelo de amenazas y los hallazgos cerrados; los abiertos, a `library-privado/` hasta cerrarse |
 | `docs/research/` | Investigación | 60 ficheros, 5,8 MB | Interno: hay capturas de terceros. Se puede publicar alguna nota, como la de motores de sincronización |
 | `docs/design/` | Encargos y pantallas de Claude Design | 282 ficheros, 19 MB | Interno: imágenes y encargos. `errors.md` (catálogo de errores) se queda a la vista |
-| `docs/testing/` | Pruebas a mano por fase | 7 | Interno; su material alimenta la guía de usuario |
+| `docs/testing/` | Pruebas a mano por fase | 7 | Se publica; su material alimenta también la guía de usuario |
 | `docs/publicacion/` | Ficha, firma, políticas, web | 21 | Mezcla: las políticas ya son públicas en la web; la firma, el servidor de producción y la ficha, internos |
-| Código y tests | 75 ficheros nombran hallazgos (`SEG-058`…) y 8 apuntan a `docs/plans`, `docs/audits` o `docs/design` | | Los ids se pueden quedar (explican el porqué de un test), pero el registro no será público; ver la pregunta 2. Las rutas a lo interno se cambian por la página pública que lo explique |
+| Código y tests | 75 ficheros nombran hallazgos (`SEG-058`…) y 8 apuntan a `docs/plans`, `docs/audits` o `docs/design` | | Los ids se quedan y el registro de los cerrados se publica. Las rutas a lo interno se cambian por la página pública que lo explique |
 
 El repositorio tiene 470 commits y `.git` ocupa 55 MB. La mayor parte son las imágenes de `docs/design/` y `docs/research/`; al quitarlas del historial bajará mucho.
 
@@ -82,7 +82,8 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 7. **Quitar las rutas a lo interno** de `AGENTS.md`, las skills y el código; los scripts de auditoría, que funcionen sin los ficheros privados (D90).
 8. **Con el maintainer:** escanear secretos, ensayar la reescritura del historial en una copia, mover lo interno a su carpeta y abrir `kosmotheka/kosmotheka`.
 
-## Preguntas para el maintainer
+## Decidido (16/10/2026)
 
-1. **Dónde vive la documentación interna.** D90 la pone en una carpeta ignorada que es otro repositorio privado: son dos repositorios, aunque uno viva dentro del otro. Hay otra salida: **publicar casi todo como diario de desarrollo** (decisiones, planes, el histórico de encargos) y dejar fuera solo lo poco que de verdad es privado: los hallazgos de seguridad, la ficha, la firma y las notas del servidor de producción, que pueden vivir en `library-privado/`, como ya se hace con lo del VPS. **Recomendación:** esta segunda. Es un solo repositorio de verdad y enseña cómo se ha hecho el proyecto, que tiene valor para quien quiera colaborar.
-2. **Los ids de hallazgos en el código** (`SEG-058` en 75 ficheros). **Recomendación:** dejarlos. Si se publica el diario de desarrollo, se publica también el registro de hallazgos ya cerrados (no los abiertos), y los ids llevan a algún sitio.
+- **Diario de desarrollo público** (D90, enmendada): se publican las decisiones, los planes, el histórico de encargos, la arquitectura y las pruebas. Lo privado de verdad (hallazgos abiertos, firma, notas de producción) va a `library-privado/`. Sin segundo repositorio.
+- **Los ids de hallazgos se quedan en el código** y se publica el registro de los cerrados.
+- **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. Queda que el maintainer confirme la frase de licencia de las contribuciones en `CONTRIBUTING.md`.

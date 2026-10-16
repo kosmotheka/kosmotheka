@@ -95,7 +95,7 @@
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
-| D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta |
+| D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta (acordados el 13 y el 16/10/2026: docs.kosmotheka.com con Starlight y un diario de desarrollo público, sin segundo repositorio) |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
@@ -1570,11 +1570,17 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   3. Cambiar el autor de los commits por la dirección `noreply` de GitHub y quitar las líneas `Claude-Session:` de los mensajes.
   4. Ensayarlo en una copia hasta que el resultado sea correcto. Guardar un `git bundle` del historial original fuera de GitHub.
   5. Subir el historial limpio a un repositorio **nuevo, `kosmotheka/kosmotheka`**, en la organización, y hacerlo público. Al repositorio local se le cambia el remoto. El privado (`library`, en el perfil personal) se borra cuando el público esté comprobado. No se fuerza la subida sobre el privado ni se transfiere: GitHub conserva los commits sobrescritos, accesibles por su hash, y un secreto que se hubiera escapado seguiría ahí.
-- **La documentación interna sigue en el repo, pero ignorada:** una carpeta de trabajo dentro de `docs/` que está en `.gitignore`. Esa carpeta es **su propio repositorio git**, con un remoto privado, para que tenga historial y copia. También hay que mover ahí las rutas que usan `AGENTS.md` y las skills (`docs/plans/`, `docs/audits/`).
+- ~~**La documentación interna sigue en el repo, pero ignorada:** una carpeta de trabajo dentro de `docs/` que está en `.gitignore`. Esa carpeta es **su propio repositorio git**, con un remoto privado, para que tenga historial y copia. También hay que mover ahí las rutas que usan `AGENTS.md` y las skills (`docs/plans/`, `docs/audits/`).~~ Sustituido el 16/10/2026 (ver abajo): **diario de desarrollo público**.
 - **Documentación pública en Markdown en el repo**, convertida en una web estática con un generador (se propone **Starlight**, de Astro: trae varios idiomas y búsqueda sin servidor). Se aloja nosotros mismos en **docs.kosmotheka.com**. Se organiza para tres públicos (usuarios, autoalojamiento, colaboradores) siguiendo Diátaxis, y en la raíz del repo van `README`, `CONTRIBUTING`, `CODE_OF_CONDUCT` y `SECURITY`.
 - **Despliegue automático, sin rsync:** la documentación y la landing (`web/`) se publican solas al cambiar `main`. Queda por decidir cómo: un `git pull` en el servidor o un workflow que construye y despliega. La documentación necesita compilarse; la landing, no.
 
 **Acordado con el maintainer el 13/10/2026** (el resto de la decisión sigue como propuesta): el subdominio docs.kosmotheka.com, enlazado desde el pie de la web; los dos idiomas; y Starlight como generador. Primer índice de páginas en [plans/documentacion-publica.md](plans/documentacion-publica.md).
+
+**Acordado con el maintainer el 16/10/2026: un diario de desarrollo público, sin un segundo repositorio.** «Es transparencia, con nuestros aciertos y nuestros fallos.»
+- **Se publica la documentación de trabajo:** decisiones, planes, el histórico de encargos, la arquitectura y las pruebas a mano. Es el diario de cómo se ha hecho el proyecto.
+- **Se publica el registro de hallazgos ya cerrados**, para que los ids del código (`SEG-058`…) lleven a algún sitio. Los abiertos, no, hasta que se cierren.
+- **Fuera del repositorio, en `library-privado/`** (como ya se hace con lo del VPS), solo lo privado de verdad: los hallazgos abiertos, la firma de Android, las notas del servidor de producción y lo que haya que quitar de la ficha. Lo que tiene imágenes de terceros (`docs/design/`, parte de `docs/research/`) se revisa fichero a fichero.
+- Nada de carpeta ignorada con su propio repositorio: **un solo repositorio de verdad**.
 
 **Opciones descartadas:** convertir a HTML a mano; la wiki de GitHub (es un repo aparte, sin revisión por PR y mal para dos idiomas); servicios externos como ReadMe o Read the Docs (se prefiere alojarlo nosotros); empezar un repositorio sin historial.
 
