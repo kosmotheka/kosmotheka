@@ -53,7 +53,7 @@
 | D45 | El editor solo borra lo que creó | aceptada |
 | D46 | Varias bibliotecas en la app, como entidad en una sola base de datos | aceptada |
 | D47 | Cambio rechazado por el servidor: se corrige solo en ese dispositivo | reemplazada por D73 |
-| D48 | Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo | aceptada |
+| D48 | Producción con nginx + PHP-FPM + PostgreSQL, como en desarrollo | aceptada (precisada el 16/10/2026: la guía, sin Docker y con Docker) |
 | D49 | Verificación obligatoria del email con un código en la app | aceptada |
 | D50 | Recuperar la contraseña con un código en la app; revoca los demás dispositivos | aceptada |
 | D51 | Superadministrador del servidor, con acceso a todo | aceptada |
@@ -80,7 +80,7 @@
 | D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
 | D73 | Cómo se comprueban los permisos, sin servidor y con él | aceptada |
 | D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | propuesta |
-| D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada |
+| D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada (revisada el 16/10/2026: sin UnifiedPush) |
 | D76 | La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos | aceptada |
 | D77 | Entrar con email o con Google | aceptada |
 | D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada (revisada el 02/10/2026: `otphp` en lugar de `scheb/2fa-bundle`) |
@@ -686,6 +686,10 @@ La app sabe qué rol tiene su usuario en cada biblioteca (le llega del servidor)
 
 **Decisión:** nginx + PHP-FPM + PostgreSQL también en producción. El HTTPS lo termina un proxy delante (el que ya haya en el VPS, o Certbot).
 
+**Precisión del maintainer (16/10/2026), para la guía de instalación:** su VPS no usa Docker: nginx, PHP-FPM y PostgreSQL van instalados en el sistema. La guía ofrece los dos caminos, con las mismas piezas:
+- **Sin Docker, como el servidor oficial:** los requisitos (versiones de PHP y sus extensiones, PostgreSQL, nginx, el worker de Messenger, Mercure) y los pasos.
+- **Con Docker:** el `Dockerfile` (o la imagen) y un `docker-compose` de producción.
+
 **Consecuencias:** sustituye a la idea de «una imagen Docker con FrankenPHP» del ROADMAP. En la Fase 7 hacen falta imágenes de producción (sin Xdebug ni dependencias de desarrollo), un `docker-compose` de producción y una guía de instalación para quien se aloje el suyo, incluido cómo poner el proxy con HTTPS.
 
 ## D49 · Verificación obligatoria del email con un código en la app — `aceptada`
@@ -1168,7 +1172,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Decisión:**
 - **Con la app abierta** (escritorio y móvil), una conexión abierta con el servidor que avisa «hay algo nuevo en esta biblioteca», sin datos; la app entonces sincroniza por el protocolo de siempre (D39). En el servidor, **Mercure** (el estándar de Symfony; un contenedor más, porque PHP-FPM no mantiene conexiones abiertas). Hito 7.3.
-- **Con la app cerrada, en Android, notificaciones push** con FCM (Firebase Cloud Messaging), y UnifiedPush como alternativa sin Google. En la **Fase 8**, junto a Google Play. Tauri no tiene plugin oficial de push (el oficial solo hace notificaciones locales); hay varios de la comunidad.
+- **Con la app cerrada, en Android, notificaciones push** con FCM (Firebase Cloud Messaging). ~~Y UnifiedPush como alternativa sin Google~~: quitado por el maintainer el 16/10/2026, porque sin F-Droid (D63) la app solo llega a móviles con Google Play, que ya tienen FCM; pasa a «Ideas para el futuro». Un servidor propio no puede mandar avisos a la app de Google Play (solo quien tiene la cuenta de servicio de nuestro proyecto de Firebase), así que en un servidor propio no hay avisos con la app cerrada ([notificaciones.md](research/notificaciones.md)). En la **Fase 8**, junto a Google Play. Tauri no tiene plugin oficial de push (el oficial solo hace notificaciones locales); hay varios de la comunidad.
 - **Avisos con la app cerrada, para empezar:** una petición nueva (para quien administra), una petición propia aceptada o rechazada, y alguien que acepta tu invitación. Los cambios normales del catálogo no avisan, solo se sincronizan. Se añadirán más si hacen falta.
 - **Lo que pasa por Google es genérico** («Tienes una petición nueva»), nunca el contenido de la biblioteca; se cuenta en la política de privacidad.
 - **En escritorio, con la app cerrada, nada:** sincroniza al abrirse.

@@ -40,14 +40,17 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 4. **8.4 en paralelo**, porque no depende de nada. Las páginas «A» tienen que estar antes de pasar a producción.
 5. **8.5 al final**, y con él 8.6. Abrir el repositorio es lo único de la fase que no tiene vuelta atrás.
 
-## Preguntas para el maintainer
+## Decidido al revisar el plan (16/10/2026)
 
-1. **UnifiedPush.** D75 (aceptada) dice FCM y, como alternativa sin Google, UnifiedPush. Con F-Droid descartado, la app solo llega a móviles con Google Play, que tienen FCM. **Recomendación:** solo FCM, y UnifiedPush a «Ideas para el futuro». Como cambia una decisión aceptada, no se toca sin tu sí.
-2. **D64 sigue abierta,** aunque D90 la resuelve en la práctica: un solo repositorio con el historial limpio y la documentación interna en una carpeta ignorada. **Recomendación:** cerrar D64 como reemplazada por D90 y pasar D90 a aceptada cuando lo hablemos en 8.5. No corre prisa.
+- **Sin UnifiedPush:** solo FCM. D75 queda revisada y UnifiedPush pasa a «Ideas para el futuro».
+- **La guía de instalación, con dos caminos** (D48 precisada): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción. Es parte de 7.9, pero se escribe junto a la documentación pública (8.4).
+- **Dejar todo ordenado para abrir el repositorio, y la documentación publicada, en paralelo a la prueba cerrada.** El maintainer dedica ese tiempo a la ficha de Google Play, que lleva muchos datos; la sesión coordinadora y la de hitos, a ordenar el repositorio y la documentación.
+- **D64:** pendiente de que el maintainer confirme cerrarla como reemplazada por D90.
 
 ## Lo que se puede hacer ya, sin ti
 
 - ✅ La primera nota de investigación de 8.3: [notificaciones.md](../research/notificaciones.md) (16/10/2026). Trae dos cosas nuevas: un servidor propio no puede mandar avisos a la app de Google Play, y Play pide además una página web para pedir que se borre la cuenta.
+- ✅ La página web para pedir que se borre la cuenta: `web/es/borrar-cuenta.html` y `web/en/delete-account.html` (16/10/2026), sin subir.
 - Revisar la ficha de Play y el formulario de seguridad de los datos contra lo que hace hoy la app, y preparar el texto nuevo (8.1), sin subir nada.
 - El workflow de 8.2, escrito y comprobado en local hasta donde se pueda. Sin los secretos no publica nada, y solo corre cuando tú hagas push.
 - Montar el esqueleto de Starlight y las primeras páginas «A» que no hablan del servidor (8.4).

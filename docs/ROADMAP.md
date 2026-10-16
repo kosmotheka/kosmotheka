@@ -152,7 +152,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Dar un dispositivo a otra persona** (D81): «Dejar este dispositivo a otra persona» borra sus bibliotecas y crea una identidad nueva, también sin cuenta; un dispositivo quitado desde otro hace lo mismo y pierde el acceso a las bibliotecas.
 - **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad. *Servidor hecho en 7.7 (11/10/2026, pendiente de revisión): tabla `activity_log`, purga al año, consulta por consola; ver [cloud.md](architecture/cloud.md#el-registro-de-actividad-77-d66).*
 - **Seguridad del servidor antes de producción:** una sesión con el maintainer para revisarla, proporcionada a un VPS pequeño y compartido; ahí se decide cómo hacer las copias de PostgreSQL sin gastar o gastando lo mínimo.
-- **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo.
+- **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
@@ -161,7 +161,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Plan de la fase:** [plans/fase-8.md](plans/fase-8.md), con hitos, orden y preguntas (16/10/2026).
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
-- **Notificaciones push en Android** con la app cerrada (D75): FCM, y UnifiedPush sin Google. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
+- **Notificaciones push en Android** con la app cerrada (D75): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
 - ~~**F-Droid**~~ — descartado por el maintainer (16/10/2026): con la verificación de desarrolladores de Google y la app ya en Google Play, no compensa. De paso, el escáner (`tauri-plugin-barcode-scanner`) puede seguir con ML Kit a través de Google Play Services, que es lo que F-Droid no admitía.
 - ✅ **Landing pública** (02/10/2026): web estática de Claude Design en `web/`, publicada en kosmotheka.com con inicio, cómo funciona, descargas, el proyecto y privacidad, en español e inglés ([web.md](publicacion/web.md)). Falta el enlace al código cuando el repositorio sea público.
 - **Experiencia de uso del alta y la ficha** (prueba del 05/10/2026): hecho lo urgente (escáner, BNE, editar en su propia pantalla, idioma, portadas); lo que falta, en [ux-escanear-y-editar.md](testing/ux-escanear-y-editar.md#pendiente).
@@ -249,6 +249,7 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **Reconocer mejor los dispositivos «sin persona»** (27/09/2026): con muchos dispositivos y sin servidor pueden juntarse varios sin persona difíciles de distinguir. Ideas: en Android, usar como nombre por defecto el de los ajustes del móvil (el mismo que ve el Bluetooth del coche) o el modelo, en vez de «Kosmotheka»; enseñar el nombre al emparejar («Te verán como…», con «Cambiar»); y mostrar en la fila cuándo apareció y cuándo se sincronizó por última vez. Se dejó para más adelante para no añadir código nativo de Android por un detalle.
 - **Precio de compra** de cada ejemplar: fuera de la Fase 6 (28/09/2026); obligaría a elegir divisa, entre otras cosas.
 - **Llaves de acceso (passkeys)** para entrar sin contraseña (01/10/2026): Tauri no tiene plugin oficial; si se construye la integración, publicarla como plugin libre de Tauri. La biometría y el segundo factor entran ya en la Fase 7 (D78).
+- **Avisos sin Google (UnifiedPush)** (16/10/2026): quitado de la Fase 8. Solo tendría sentido si la app llegara a móviles sin Google Play (D63, D75).
 - **Modelo de pago:** no se espera; la app es gratuita. Si llegara, sería un módulo aparte, fuera del repositorio público.
 
 ---
