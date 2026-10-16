@@ -1,5 +1,14 @@
 {
+  "whatsNew": {
+    "title": "What's new",
+    "leaves": "This changes what leaves your device. You decide:",
+    "version": "Version {{version}}",
+    "next": "Coming in the next version",
+    "close": "Got it",
+    "switchFailed": "The change could not be saved."
+  },
   "about": {
+    "whatsNew": "What's new",
     "title": "About",
     "version": "Version {{version}}",
     "versionUnknown": "Unknown version",

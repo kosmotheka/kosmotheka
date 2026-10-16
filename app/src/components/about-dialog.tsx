@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink } from "@/components/external-link";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
-import { appVersion } from "@/lib/api";
+import { WhatsNewDialog } from "@/components/whats-new-dialog";
+import { type WhatsNew, appVersion, whatsNewRecent } from "@/lib/api";
 import { openOverlay } from "@/lib/navigation";
 
 const WEBSITE = "https://kosmotheka.com/";
@@ -24,6 +25,7 @@ export function AboutDialog({
   const { t, i18n } = useTranslation();
   const [version, setVersion] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
+  const [news, setNews] = useState<WhatsNew | null>(null);
 
   // Asked each time it opens, like ProvidersDialog.
   if (open && !seeded) {
@@ -60,14 +62,23 @@ export function AboutDialog({
             <ExternalLink url={privacy}>{t("about.privacy")}</ExternalLink>
           </li>
         </ul>
-        <Button
-          variant="outline"
-          className="self-start"
-          onClick={() => openOverlay({ name: "providers" })}
-        >
-          {t("about.sources")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              void whatsNewRecent()
+                .then(setNews)
+                .catch(() => setNews(null))
+            }
+          >
+            {t("about.whatsNew")}
+          </Button>
+          <Button variant="outline" onClick={() => openOverlay({ name: "providers" })}>
+            {t("about.sources")}
+          </Button>
+        </div>
       </div>
+      {news && <WhatsNewDialog open news={news} onClose={() => setNews(null)} />}
     </ResponsiveDialog>
   );
 }

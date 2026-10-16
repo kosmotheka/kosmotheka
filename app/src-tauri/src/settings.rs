@@ -125,6 +125,17 @@ pub fn set_welcome_seen(conn: &Connection, version: u32) -> Result<()> {
     write_state(conn, WELCOME_SEEN_KEY, Some(&version.to_string()))
 }
 
+const WHATS_NEW_SEEN_KEY: &str = "whats_new_seen";
+
+/// The app version whose news this device has seen; `None` when it never has (what-s-new screen).
+pub fn whats_new_seen(conn: &Connection) -> Result<Option<String>> {
+    read_state(conn, WHATS_NEW_SEEN_KEY)
+}
+
+pub fn set_whats_new_seen(conn: &Connection, version: &str) -> Result<()> {
+    write_state(conn, WHATS_NEW_SEEN_KEY, Some(version))
+}
+
 const PERSON_NAME_KEY: &str = "person_name";
 
 /// The name this device's person founds libraries with (D97): one per device, asked at the welcome. `None`

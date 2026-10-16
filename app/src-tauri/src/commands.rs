@@ -35,6 +35,7 @@ use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
+use crate::whats_new::{self, WhatsNew};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -908,6 +909,32 @@ pub fn set_person_name(database: State<'_, Database>, name: String) -> Result<St
 pub fn welcome_seen(database: State<'_, Database>) -> Result<u32> {
     let conn = database.lock()?;
     settings::welcome_seen(&conn)
+}
+
+/// What is new since the last version this device saw, to show once after an update.
+#[tauri::command]
+pub fn whats_new_pending(database: State<'_, Database>) -> Result<WhatsNew> {
+    let conn = database.lock()?;
+    whats_new::pending(&conn, env!("CARGO_PKG_VERSION"))
+}
+
+/// The latest versions' news, to read again from «About».
+#[tauri::command]
+pub fn whats_new_recent(database: State<'_, Database>) -> Result<WhatsNew> {
+    let conn = database.lock()?;
+    whats_new::recent(&conn, env!("CARGO_PKG_VERSION"))
+}
+
+#[tauri::command]
+pub fn set_whats_new_switch(database: State<'_, Database>, key: String, on: bool) -> Result<()> {
+    let conn = database.lock()?;
+    whats_new::set_switch(&conn, &key, on)
+}
+
+#[tauri::command]
+pub fn set_whats_new_seen(database: State<'_, Database>) -> Result<()> {
+    let conn = database.lock()?;
+    settings::set_whats_new_seen(&conn, env!("CARGO_PKG_VERSION"))
 }
 
 #[tauri::command]

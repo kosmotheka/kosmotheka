@@ -55,6 +55,8 @@ jobs:
         working-directory: app
       - run: npm run check:codes
         working-directory: app
+      - run: npm run check:whats-new
+        working-directory: app
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test

@@ -42,6 +42,35 @@ let mockPersonName: string | null = new URLSearchParams(window.location.search).
   ? null
   : "Ana";
 let mockAppLockAfter = 60;
+// News to see in the mock: one line tied to a switch (the «Library of Congress» case) and plain ones.
+let mockNewsSeen = false;
+let mockNewsSwitch = true;
+const mockNews = () => ({
+  switches: [
+    {
+      es: "Ahora se puede buscar también en la Library of Congress. Se envía el ISBN que escaneas.",
+      en: "You can now also search the Library of Congress. The ISBN you scan is sent to it.",
+      switch: { key: "source:library_of_congress", on: mockNewsSwitch },
+    },
+  ],
+  versions: [
+    {
+      version: "0.3.0",
+      lines: [
+        {
+          es: "La primera vez, la app te pide tu nombre.",
+          en: "The first time, the app asks for your name.",
+          switch: null,
+        },
+        {
+          es: "Al emparejar un dispositivo hay que decir de quién es y con qué rol.",
+          en: "When you pair a device you must say whose it is and what role it has.",
+          switch: null,
+        },
+      ],
+    },
+  ],
+});
 
 const HOME = "01997c7e-0000-7000-8000-00000000a0e1";
 const CLUB = "01997c7e-0000-7000-8000-00000000c1b0";
@@ -1041,6 +1070,16 @@ mockIPC((cmd, args) => {
     case "set_person_name":
       mockPersonName = (args as { name: string }).name.trim();
       return mockPersonName;
+    case "whats_new_pending":
+      return mockNewsSeen ? { switches: [], versions: [] } : mockNews();
+    case "whats_new_recent":
+      return mockNews();
+    case "set_whats_new_seen":
+      mockNewsSeen = true;
+      return null;
+    case "set_whats_new_switch":
+      mockNewsSwitch = (args as { on: boolean }).on;
+      return null;
     case "welcome_seen":
       return mockWelcomeSeen;
     case "set_welcome_seen":

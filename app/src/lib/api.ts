@@ -686,6 +686,40 @@ export function welcomeSeen(): Promise<number> {
   return invoke<number>("welcome_seen");
 }
 
+export interface WhatsNewLine {
+  es: string;
+  en: string;
+  /** The setting this change is tied to, with how it is now. */
+  switch: { key: string; on: boolean } | null;
+}
+
+export interface WhatsNew {
+  /** What changes what leaves the device: shown first, each with its switch. */
+  switches: WhatsNewLine[];
+  /** Newest first; `next` is a build between releases. */
+  versions: { version: string; lines: WhatsNewLine[] }[];
+}
+
+/** What this device still has to see after an update; empty on a new install. */
+export function whatsNewPending(): Promise<WhatsNew> {
+  return invoke<WhatsNew>("whats_new_pending");
+}
+
+/** The latest versions' news, to read again. */
+export function whatsNewRecent(): Promise<WhatsNew> {
+  return invoke<WhatsNew>("whats_new_recent");
+}
+
+/** Marks the installed version's news as seen. */
+export function setWhatsNewSeen(): Promise<void> {
+  return invoke("set_whats_new_seen");
+}
+
+/** Turns on or off the setting a news line is tied to. */
+export function setWhatsNewSwitch(key: string, on: boolean): Promise<void> {
+  return invoke("set_whats_new_switch", { key, on });
+}
+
 /** The name this device's person goes by (D97); `null` until the welcome has it. */
 export function personName(): Promise<string | null> {
   return invoke<string | null>("person_name");

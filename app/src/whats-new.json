@@ -1,0 +1,42 @@
+{
+  "next": [
+    {
+      "es": "La primera vez, la app te pide tu nombre. Tu biblioteca se crea a tu nombre, como administrador o administradora. Lo cambias luego en Ajustes.",
+      "en": "The first time, the app asks for your name. Your library is created in your name, as its administrator. You can change it later in Settings."
+    },
+    {
+      "es": "Al emparejar un dispositivo hay que decir de quién es y con qué rol («editor» por defecto).",
+      "en": "When you pair a device you must say whose it is and what role it has (\"editor\" by default)."
+    },
+    {
+      "es": "Restaurar una copia en un móvil nuevo no une la biblioteca con la original: queda como una biblioteca nueva con los mismos libros.",
+      "en": "Restoring a backup on a new phone does not join the original library: it becomes a new library with the same books."
+    },
+    {
+      "es": "Hay que borrar los datos de prueba antes de usar esta versión: en cada dispositivo, «Dejar este dispositivo a otra persona» en Ajustes; y en la nube, borrar la cuenta y registrarse otra vez.",
+      "en": "Test data must be deleted before using this version: on each device, \"Hand this device to someone else\" in Settings; and in the cloud, delete the account and sign up again."
+    },
+    {
+      "es": "Cambiar o restablecer la contraseña y borrar la cuenta piden el código de la app de autenticación, si la cuenta lo tiene.",
+      "en": "Changing or resetting the password and deleting the account ask for the code from the authenticator app, if the account has one."
+    }
+  ],
+  "0.2.0": [
+    {
+      "es": "Llega la nube, opcional y por invitación: con una cuenta (con correo o con Google) tienes tu biblioteca en todos tus dispositivos sin compartir wifi. Sin cuenta, todo sigue igual.",
+      "en": "The cloud arrives, optional and by invitation: with an account (email or Google) you keep your library on all your devices without sharing wifi. With no account, everything works as before."
+    },
+    {
+      "es": "Puedes invitar a otras personas a una biblioteca, por correo o con un enlace.",
+      "en": "You can invite other people to a library, by email or with a link."
+    },
+    {
+      "es": "Con cuenta, buscar un libro por su ISBN falla menos.",
+      "en": "With an account, looking a book up by ISBN fails less often."
+    },
+    {
+      "es": "Puedes quitar a una persona de una biblioteca y devolverle el acceso.",
+      "en": "You can remove a person from a library and give their access back."
+    }
+  ]
+}

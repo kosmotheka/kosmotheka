@@ -4,6 +4,8 @@
 
 ## Próxima versión (sin número; a elegir por el maintainer)
 
+> **Las novedades que ve la gente dentro de la app salen de `app/src/whats-new.json`** (las líneas de «next»). Este documento es el borrador del texto de Google Play: sale de ese fichero, no al revés. Al elegir el número de versión, renombra `next` por él en el fichero (si no, `npm run check:whats-new` falla) y copia aquí lo que valga para Play (500 caracteres por idioma).
+
 **Lo que cambia para quien usa la app** (cuentas tras la auditoría del 15/10/2026, D100):
 
 - **Hay que actualizar la app a la vez que el servidor.** La firma con la que un móvil entra en su cuenta ahora dice a qué servidor y para qué es (`kosmotheka-login-v2`), y el servidor **no acepta la forma anterior**: aceptarla dejaría abierto justo lo que se cierra. Una app 0.2.0 no podrá iniciar sesión (ni con contraseña ni con Google) en un servidor con este cambio, y recibirá `invalid_device_proof`. Quien ya tiene sesión abierta no se ve afectado hasta que cierre sesión. **Antes de actualizar el servidor de producción, la versión nueva tiene que estar disponible en la prueba interna.**

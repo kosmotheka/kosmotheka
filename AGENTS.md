@@ -63,6 +63,7 @@ Each part keeps its own tooling: the app and crates build in the `library-dev` D
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
 - Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`. The only other ignored tests are fixture generators, named `print_*`, run by hand when a format changes.
+- **A change a person would notice is not finished without its line in `app/src/whats-new.json`** (what is new after an update): one line in Spanish and English, under `next` until the maintainer gives the version a number, written for people (no internals, no refactors). A line that changes what leaves the device carries a `switch` tied to the setting that controls it. `npm run check:whats-new` fails when the app's version has no entry; it checks that there is one, not that it is complete. The Google Play text (`docs/publicacion/novedades.md`) is made from this file.
 - **No user-facing string is hard-coded**: use i18n keys and add both `en` and `es` translations.
 - **Never commit secrets** (API keys, passwords, tokens). The repository will become public, so its history must be clean.
 
@@ -142,6 +143,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | UI build / typecheck / lint / format / dead code | `cd app && npm run build` · `npm run typecheck` · `npm run lint` · `npm run format` (check: `npm run format:check`) · `npm run knip` |
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
 | Second-factor code rule (6 digits or a backup code) | `cd app && npm run check:codes` |
+| What's-new file has the app version's entry | `cd app && npm run check:whats-new` |
 | Rust dependencies (CI job `rust-deps`) | `cargo deny check` (rules in `deny.toml`) · `cargo machete` |
 | Live tests against real services (network, not in CI) | `cargo test -p kosmotheka -- --ignored live_` |
 | Second instance with its own data (debug builds), to test LAN sync | `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b target/debug/kosmotheka` (with `npm run tauri dev` running) |

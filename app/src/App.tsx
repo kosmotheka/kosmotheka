@@ -34,6 +34,7 @@ import { PairDialog } from "@/components/pair-dialog";
 import { AboutDialog } from "@/components/about-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
 import { WELCOME_VERSION, WelcomeDialog } from "@/components/welcome-dialog";
+import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { NewSeriesDialog } from "@/components/new-series-dialog";
 import { RequestNotices } from "@/components/request-notices";
 import { RequestsContext, useRequestsState } from "@/components/requests-context";
@@ -68,7 +69,10 @@ import {
   personName,
   setActiveLibrary,
   setWelcomeSeen,
+  setWhatsNewSeen,
   welcomeSeen,
+  whatsNewPending,
+  type WhatsNew,
 } from "@/lib/api";
 import { refreshAccount, useAccount } from "@/lib/account";
 import { cloudNotices, refreshCloudStatus, runCloudSync, watchCloudConnection } from "@/lib/cloud";
@@ -104,9 +108,13 @@ const LAN_POLL_MS = 5 * 60_000;
 export default function App() {
   const [gate, setGate] = useState<"loading" | "naming" | "ready">("loading");
   const [restSeen, setRestSeen] = useState(false);
+  const [news, setNews] = useState<WhatsNew | null>(null);
   useEffect(() => {
-    Promise.all([personName(), welcomeSeen()])
-      .then(([name, seen]) => {
+    // The news are asked here, once, before the welcome has a say: a device that never saw the welcome is new and
+    // gets none. They show after the welcome, never together with it.
+    Promise.all([personName(), welcomeSeen(), whatsNewPending().catch(() => null)])
+      .then(([name, seen, pending]) => {
+        setNews(pending);
         setRestSeen(seen >= WELCOME_VERSION);
         setGate(name === null ? "naming" : "ready");
       })
@@ -127,10 +135,10 @@ export default function App() {
       />
     );
   }
-  return <AppShell />;
+  return <AppShell news={news} />;
 }
 
-function AppShell() {
+function AppShell({ news }: { news: WhatsNew | null }) {
   const { t } = useTranslation();
   const { section, overlay } = useLocation();
   const desktop = useDesktop();
@@ -141,10 +149,20 @@ function AppShell() {
   const [notice, setNotice] = useState<string | null>(null);
   // What pressing a notice does, tied to its text: any other notice replaces it and the action goes with it.
   const [noticeAction, setNoticeAction] = useState<{ text: string; run: () => void } | null>(null);
-  const [welcome, setWelcome] = useState(false);
+  // `null` until it is known whether the welcome shows: the news wait for that.
+  const [welcome, setWelcome] = useState<boolean | null>(null);
+  const [newsOpen, setNewsOpen] = useState(
+    news !== null && (news.switches.length > 0 || news.versions.length > 0),
+  );
   useEffect(() => {
-    void welcomeSeen().then((seen) => setWelcome(seen < WELCOME_VERSION));
+    void welcomeSeen()
+      .then((seen) => setWelcome(seen < WELCOME_VERSION))
+      .catch(() => setWelcome(false));
   }, []);
+  const closeNews = () => {
+    setNewsOpen(false);
+    void setWhatsNewSeen();
+  };
   const closeWelcome = () => {
     setWelcome(false);
     void setWelcomeSeen(WELCOME_VERSION);
@@ -214,7 +232,7 @@ function AppShell() {
   }, [account.signedIn, overlay]);
 
   // A link the system handed to the app: it opens «I have an invitation» when nothing else is in front.
-  useArrivedLink(overlay !== null || welcome, overlay?.name === "auth");
+  useArrivedLink(overlay !== null || welcome === true || newsOpen, overlay?.name === "auth");
 
   // The device was reset (D81): its identity is new, so the welcome flag from
   // before no longer applies and a stale `?mock`-style view would be wrong.
@@ -632,7 +650,10 @@ function AppShell() {
             desktop={desktop}
             onOpenChange={(open) => !open && closeOverlay()}
           />
-          <WelcomeDialog open={welcome} onDone={closeWelcome} />
+          <WelcomeDialog open={welcome === true} onDone={closeWelcome} />
+          {news && (
+            <WhatsNewDialog open={newsOpen && welcome === false} news={news} onClose={closeNews} />
+          )}
           <ProvidersDialog
             open={overlay?.name === "providers"}
             onOpenChange={(open) => !open && closeOverlay()}

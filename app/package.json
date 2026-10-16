@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "check:spec": "node scripts/check-spec.mjs",
     "check:codes": "node scripts/check-second-factor-code.mjs",
+    "check:whats-new": "node scripts/check-whats-new.mjs",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "knip": "knip --no-progress"

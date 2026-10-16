@@ -63,6 +63,20 @@ pub enum Source {
 }
 
 impl Source {
+    pub const ALL: [Source; 11] = [
+        Source::Bne,
+        Source::LibraryOfCongress,
+        Source::GoogleBooks,
+        Source::OpenLibrary,
+        Source::Inventaire,
+        Source::MusicBrainz,
+        Source::Wikidata,
+        Source::GameUpc,
+        Source::Tmdb,
+        Source::Rawg,
+        Source::ComicVine,
+    ];
+
     /// Stable id used for `Settings::disabled_sources`, matching the snake_case
     /// serialization above.
     pub fn id(self) -> &'static str {

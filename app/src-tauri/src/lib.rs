@@ -24,6 +24,7 @@ mod search;
 mod series;
 mod settings;
 mod sync;
+mod whats_new;
 
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -172,6 +173,10 @@ pub fn run() {
             commands::set_person_name,
             commands::welcome_seen,
             commands::set_welcome_seen,
+            commands::whats_new_pending,
+            commands::whats_new_recent,
+            commands::set_whats_new_switch,
+            commands::set_whats_new_seen,
             commands::app_lock_enabled,
             commands::set_app_lock,
             commands::app_lock_after,
