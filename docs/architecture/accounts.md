@@ -15,7 +15,7 @@ Tres usos comparten el mismo mecanismo (`App\Entity\EmailCode`, `App\Security\Em
 - El código son **6 cifras** (`random_int`, con ceros a la izquierda).
 - Caduca a los **15 minutos**.
 - Permite **5 intentos** fallidos; al quinto, el código se borra y no se puede reintentar (hay que pedir uno nuevo).
-- Es de **un solo uso**: acertarlo lo borra. Cuando lo que se confirma pide además otra cosa que puede salir mal (el código del segundo factor), el código del correo se **mira sin gastar** (`EmailCodeIssuer::check()`, que cuenta el intento si es erróneo) y se gasta al final (`spend()`): un descuido en lo otro no cuesta otro correo.
+- Es de **un solo uso**: acertarlo lo borra. Cuando lo que se confirma pide además otra cosa que puede salir mal (el código del segundo factor), el código del correo se **mira sin gastar** (`EmailCodeIssuer::check()`, que cuenta el intento si es erróneo) y se gasta al final (`spend()`): un descuido en lo otro no cuesta otro correo. Gastarlo es un `DELETE` que dice si encontró el código, y los intentos fallidos se suman en la base, no en memoria: de dos peticiones a la vez con el mismo código, solo una lo gasta, y ningún intento se pierde (SEG-072). Lo mismo para los códigos de respaldo y el último paso TOTP usado (un `UPDATE` condicionado), y el reto de inicio de sesión se consume bajo un cerrojo.
 - Solo existe **un código vivo por cuenta y propósito**: pedir uno nuevo borra el anterior.
 - Se guarda el **HMAC-SHA256** del código (con `kernel.secret`), nunca el código en claro. La comparación usa `hash_equals`.
 
@@ -169,7 +169,7 @@ Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOu
 
 ## Purga de cuentas e invitaciones caducadas (D49)
 
-`App\Security\AccountPurger` borra, en una pasada: las cuentas nunca confirmadas con más de 24 h desde su creación, y los códigos de email caducados (de cualquier cuenta: un `reset_password` sin usar también caduca). Cada borrado es un `DELETE` DQL masivo; borrar un usuario arrastra sus dispositivos y códigos por la cascada de la base de datos.
+`App\Security\AccountPurger` borra, en una pasada: las cuentas nunca confirmadas con más de 24 h desde su creación, y los códigos de email caducados (de cualquier cuenta: un `reset_password` sin usar también caduca). Cada borrado es un `DELETE` DQL masivo; borrar un usuario arrastra sus dispositivos y códigos por la cascada de la base de datos. Cada paso va en su propia transacción: si uno falla, los demás se hacen igual, y al final la purga avisa con `PurgeFailedException` de cuáles fallaron (CAL-008).
 
 - **A mano**: `app:accounts:purge` (ver `docs/development/server.md`).
 - **Cada hora**: `App\Scheduler\PurgeSchedule` (`#[AsSchedule]`) programa un `App\Scheduler\PurgeAccountsMessage`, que `App\Scheduler\PurgeAccountsMessageHandler` (`#[AsMessageHandler]`) recoge y ejecuta. Solo se dispara mientras algo consume el transporte `scheduler_default` que crea automáticamente el atributo `#[AsSchedule]`; sin un worker corriendo, no pasa nada (`docs/development/server.md` explica cómo arrancarlo en desarrollo).
