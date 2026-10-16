@@ -73,13 +73,16 @@ final readonly class EmailCodeIssuer
         $this->spend($user, $purpose);
     }
 
-    /** Takes a spent code away, once whatever it was for has been done. */
+    /**
+     * Takes a checked code away, before whatever it was for is done: if another request spent it first, this one fails.
+     *
+     * @throws AccountException with invalid_code
+     */
     public function spend(User $user, EmailCodePurpose $purpose): void
     {
         $emailCode = $this->emailCodeRepository->findOneByUserAndPurpose($user, $purpose);
-        if ($emailCode instanceof EmailCode) {
-            $this->entityManager->remove($emailCode);
-            $this->entityManager->flush();
+        if (!$emailCode instanceof EmailCode || !$this->emailCodeRepository->delete($emailCode)) {
+            throw AccountException::invalidCode();
         }
     }
 
@@ -98,8 +101,7 @@ final readonly class EmailCodeIssuer
         }
 
         if ($emailCode->isExpired(new \DateTimeImmutable('now', new \DateTimeZone('UTC')))) {
-            $this->entityManager->remove($emailCode);
-            $this->entityManager->flush();
+            $this->emailCodeRepository->delete($emailCode);
 
             throw AccountException::codeExpired();
         }
@@ -108,15 +110,12 @@ final readonly class EmailCodeIssuer
             return;
         }
 
-        $emailCode->registerFailedAttempt();
-        if ($emailCode->getAttempts() >= self::MAX_ATTEMPTS) {
-            $this->entityManager->remove($emailCode);
-            $this->entityManager->flush();
+        $attempts = $this->emailCodeRepository->countFailedAttempt($emailCode);
+        if (null !== $attempts && $attempts >= self::MAX_ATTEMPTS) {
+            $this->emailCodeRepository->delete($emailCode);
 
             throw AccountException::tooManyAttempts();
         }
-
-        $this->entityManager->flush();
 
         throw AccountException::invalidCode();
     }

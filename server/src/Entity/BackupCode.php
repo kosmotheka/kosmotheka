@@ -60,9 +60,4 @@ final class BackupCode
     {
         return $this->usedAt instanceof \DateTimeImmutable;
     }
-
-    public function markUsed(\DateTimeImmutable $at): void
-    {
-        $this->usedAt ??= $at;
-    }
 }

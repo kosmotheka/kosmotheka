@@ -6,6 +6,7 @@ namespace App\Security;
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Lock\LockFactory;
 
 /**
  * Login challenges (milestone 7.1, part 2): 32 random bytes, valid 5 minutes,
@@ -19,7 +20,14 @@ final readonly class LoginChallengeIssuer
     public function __construct(
         #[Autowire(service: 'cache.auth_challenge')]
         private CacheItemPoolInterface $cache,
+        private LockFactory $locks,
     ) {
+    }
+
+    /** What two requests with one challenge hold in turn (SEG-072): the cache cannot say which of them deleted it. */
+    public static function lockKey(string $challenge): string
+    {
+        return 'login_challenge_'.hash('sha256', $challenge);
     }
 
     /** @return array{challenge: string, expiresAt: \DateTimeImmutable} */
@@ -44,9 +52,19 @@ final readonly class LoginChallengeIssuer
      */
     public function consume(string $challenge): void
     {
-        $key = $this->key($challenge);
-        $isValid = $this->cache->getItem($key)->isHit();
-        $this->cache->deleteItem($key);
+        // Another request with it is not waited for: one of the two is enough.
+        $lock = $this->locks->createLock(self::lockKey($challenge), 10);
+        if (!$lock->acquire()) {
+            throw AccountException::invalidChallenge();
+        }
+
+        try {
+            $key = $this->key($challenge);
+            $isValid = $this->cache->getItem($key)->isHit();
+            $this->cache->deleteItem($key);
+        } finally {
+            $lock->release();
+        }
 
         if (!$isValid) {
             throw AccountException::invalidChallenge();

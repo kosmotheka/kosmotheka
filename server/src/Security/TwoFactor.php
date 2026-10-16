@@ -7,6 +7,7 @@ namespace App\Security;
 use App\Entity\BackupCode;
 use App\Entity\User;
 use App\Repository\BackupCodeRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use OTPHP\TOTP;
 use Symfony\Component\Clock\ClockInterface;
@@ -30,6 +31,7 @@ final readonly class TwoFactor
     public function __construct(
         private EntityManagerInterface $entityManager,
         private BackupCodeRepository $backupCodeRepository,
+        private UserRepository $userRepository,
         private RequestLimiter $requestLimiter,
         private ClockInterface $clock,
         private TwoFactorSecretBox $secretBox,
@@ -111,8 +113,8 @@ final readonly class TwoFactor
     /**
      * Verifies a TOTP code (window ±1 step, anti-replay) or an unused backup
      * code, marking it used. Every attempt counts against a per-account limit,
-     * because the login limit is per IP. Does not flush; the caller does, in its own
-     * transaction.
+     * because the login limit is per IP. The use is written at once, not left for
+     * the caller's flush, so that two requests with one code cannot both pass (SEG-072).
      *
      * @throws AccountException with invalid_two_factor_code
      */
@@ -123,9 +125,7 @@ final readonly class TwoFactor
         $secret = $this->openSecret($user);
         if (null !== $secret) {
             $timestep = $this->matchTimestep($this->totpFor($secret), $code, $user->getTotpLastTimestep());
-            if (null !== $timestep) {
-                $user->setTotpLastTimestep($timestep);
-
+            if (null !== $timestep && $this->userRepository->claimTotpTimestep($user, $timestep)) {
                 return;
             }
         }
@@ -191,9 +191,7 @@ final readonly class TwoFactor
             return false;
         }
 
-        $backupCode->markUsed($this->clock->now());
-
-        return true;
+        return $this->backupCodeRepository->markUsed($backupCode, $this->clock->now());
     }
 
     /**

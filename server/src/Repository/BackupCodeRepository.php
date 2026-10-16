@@ -24,6 +24,20 @@ final class BackupCodeRepository extends ServiceEntityRepository
         return $this->findOneBy(['user' => $user, 'codeHash' => $codeHash, 'usedAt' => null]);
     }
 
+    /** Marks the code used if it was not yet, in the database: of two requests with it at once, one gets it (SEG-072). */
+    public function markUsed(BackupCode $code, \DateTimeImmutable $at): bool
+    {
+        return 1 === $this->createQueryBuilder('b')
+            ->update()
+            ->set('b.usedAt', ':at')
+            ->where('b.id = :id')
+            ->andWhere('b.usedAt IS NULL')
+            ->setParameter('at', $at, 'datetime_immutable')
+            ->setParameter('id', $code->getId(), 'uuid')
+            ->getQuery()
+            ->execute();
+    }
+
     public function countUnusedByUser(User $user): int
     {
         return (int) $this->createQueryBuilder('b')

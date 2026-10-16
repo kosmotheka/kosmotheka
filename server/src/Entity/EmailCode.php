@@ -80,9 +80,4 @@ final class EmailCode
     {
         return $this->attempts;
     }
-
-    public function registerFailedAttempt(): void
-    {
-        ++$this->attempts;
-    }
 }
