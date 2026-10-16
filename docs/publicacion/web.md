@@ -5,12 +5,13 @@ Web estática hecha por Claude Design ([encargo](../design/encargo-web.md)), des
 ```
 web/
   index.html        elige el idioma (el guardado o el del navegador) y redirige a es/ o en/
-  es/               index, preguntas, descargas, proyecto, privacidad
-  en/               index, faq, download, about, privacy
+  es/               index, preguntas, descargas, proyecto, privacidad, borrar-cuenta
+  en/               index, faq, download, about, privacy, delete-account
   assets/           site.css, site.js, fuentes Figtree (con su licencia, `OFL.txt`), marca (SVG) y capturas (webp, claro y oscuro)
 ```
 
 - La política de privacidad está en `es/privacidad.html` y `en/privacy.html`. Si cambia, se cambia a la vez en [politica-privacidad.md](politica-privacidad.md) y en las dos páginas, con la fecha de «Última actualización».
+- Borrar la cuenta (lo exige Google Play a toda app con cuentas, 16/10/2026): `es/borrar-cuenta.html` y `en/delete-account.html`, hechas a partir de la de privacidad. URL para Play Console: `https://kosmotheka.com/es/borrar-cuenta.html`. Prometen borrar en 30 días como mucho lo que llegue por correo; si cambia lo que se borra al borrar la cuenta (D99), se cambian también.
 - URL para Play Console: `https://kosmotheka.com/es/privacidad.html` (la provisional era `/privacidad.html`, que con la web nueva deja de existir).
 
 ## Subirla al servidor
