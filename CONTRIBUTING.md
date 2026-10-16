@@ -110,5 +110,4 @@ Never report a vulnerability in a public issue. Follow [`SECURITY.md`](SECURITY.
 
 ## Licence of your contributions
 
-<!-- TO CONFIRM: the maintainer must confirm this paragraph (no CLA, inbound = outbound licence; D11 left the door open to a CLA or a DCO). -->
 What you contribute is released under the licence of the part it touches: AGPL-3.0-or-later for the app and the server, MIT for `spec/`. There is no contributor licence agreement to sign.

@@ -86,4 +86,4 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 
 - **Diario de desarrollo público** (D90, enmendada): se publican las decisiones, los planes, el histórico de encargos, la arquitectura y las pruebas. Lo privado de verdad (hallazgos abiertos, firma, notas de producción) va a `library-privado/`. Sin segundo repositorio.
 - **Los ids de hallazgos se quedan en el código** y se publica el registro de los cerrados.
-- **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. Queda que el maintainer confirme la frase de licencia de las contribuciones en `CONTRIBUTING.md`.
+- **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.

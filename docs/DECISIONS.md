@@ -16,7 +16,7 @@
 | D08 | Catálogos con herencia por tablas | aceptada |
 | D09 | Autenticación simple | aceptada (el alcance multibiblioteca lo amplía D38; Google, D77) |
 | D10 | Alojamiento en VPS | aceptada |
-| D11 | Licencia AGPL para todo; especificación con licencia permisiva | aceptada |
+| D11 | Licencia AGPL para todo; especificación con licencia permisiva | aceptada (precisada el 16/10/2026: sin CLA) |
 | D12 | Documentación continua | aceptada |
 | D13 | Sincronización local entre dispositivos con emparejamiento por QR | aceptada |
 | D14 | Acceso a SQLite desde Rust: `rusqlite` | aceptada |
@@ -193,7 +193,7 @@ No es urgente hasta la fase del servidor.
 **Por qué no Apache o MIT para todo.** Permitirían que alguien publicara una versión cerrada de la app o del servidor. No es grave (Koillection es MIT y le va bien), pero choca con el espíritu de D04.
 
 **Matices a tener en cuenta.**
-- Mientras seas el único autor puedes cambiar la licencia cuando quieras. Cuando lleguen contribuciones externas, cambiarla requerirá el permiso de cada colaborador. Se puede resolver más adelante con un acuerdo de contribución (CLA) o con una firma de origen (DCO), si hace falta.
+- Mientras seas el único autor puedes cambiar la licencia cuando quieras. Cuando lleguen contribuciones externas, cambiarla requerirá el permiso de cada colaborador. Se puede resolver más adelante con un acuerdo de contribución (CLA) o con una firma de origen (DCO), si hace falta. **Decidido el 16/10/2026, al escribir `CONTRIBUTING.md`:** sin CLA. Lo que se aporta entra con la licencia de la parte que toca (AGPL, o MIT en `spec/`). Consecuencia: a partir de la primera contribución externa, cambiar la licencia de esa parte pediría el permiso de quien la escribió.
 - La App Store de iOS es incompatible con las licencias GPL y AGPL cuando la app incluye código de terceros bajo esas licencias. Como titular puedes publicarla tú, pero el problema aparece con las contribuciones externas. Hoy no afecta: solo hay Android por APK, e iOS no está en el plan.
 
 ## D12 · Documentación continua — `aceptada`
