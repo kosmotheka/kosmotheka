@@ -82,7 +82,7 @@ Dónde se nombran sus ids (no necesariamente con detalle): los 8 informes de `au
 ## Resto de categorías
 
 2. **Datos del servidor de producción:** ninguna IP, usuario ni ruta real. Sí aparecen en varios ficheros públicos: el proveedor del VPS, su memoria y que se comparte con otro proyecto (`DECISIONS.md`, `cloud.md`, `plans/fase-7.md`), una observación de comportamiento («503 desde el VPS») y dos rutas del servidor real en `testing/fase-7.md`. Ninguna huella de claves salvo las de `assetlinks.json` (arriba). No hay datos de la cuenta de Play (ni identificador de desarrollador).
-3. **Datos personales:** correos que no son los permitidos: el buzón de Gmail del proyecto (9 apariciones en `DECISIONS.md`, `correo.md`, `google-oauth.md`, `servicios-externos.md`; es el buzón al que se reenvía `info@`) y correos inventados (`ana.ruiz@correo.es` en el diseño, `*@*.test` en fixtures, `correo@ejemplo.com`). Rutas `/home/…`: ninguna. Nombres de personas ajenas: solo los titulares de marcas de `tmview/` y `naming.md`. El maintainer sale con su nombre en `proveedores.md` (firma de borradores), con su alias en `VISION.md` y `plans/renombrado-kosmotheka.md` y en la URL del repositorio (`github.com/Tersoal/library`).
+3. **Datos personales:** correos que no son los permitidos: la dirección del buzón de Gmail del proyecto (9 apariciones en `DECISIONS.md`, `correo.md`, `google-oauth.md`, `servicios-externos.md`; es el buzón al que se reenvía `info@`) y correos inventados (`ana.ruiz@correo.es` en el diseño, `*@*.test` en fixtures, `correo@ejemplo.com`). Rutas `/home/…`: ninguna. Nombres de personas ajenas: solo los titulares de marcas de `tmview/` y `naming.md`. El maintainer sale con su nombre en `proveedores.md` (firma de borradores), con su alias en `VISION.md` y `plans/renombrado-kosmotheka.md` y en la URL del repositorio (`github.com/Tersoal/library`).
 4. **Secretos:** ninguno en `docs/`, `brand/` ni `web/`. Lo que parece uno son marcadores (`<valor>`, `openssl rand`) y la contraseña de fixtures, que ya está en el código. Un detalle del historial, abajo.
 5. **Material de terceros:** `research/tmview/` (sin licencia clara); el motor de Claude Design (`support.js`, `ds-base.js`: sin licencia clara); Figtree (OFL, con su licencia). Los diseños y capturas de `docs/design/` y `web/` son propios; no hay portadas de libros ni imágenes de otras apps.
 6. **Para decidir con el maintainer, sin juzgar:** `VISION.md`, `ROADMAP.md`, `DECISIONS.md` y `plans/` hablan de «mi hijo», «mi pareja» y «mi mujer» como casos de uso, y `VISION.md` cuenta su trabajo y sus otros proyectos. No he encontrado opiniones negativas sobre terceros ni comentarios personales fuera de eso; las notas sobre apps de otros (`referentes.md`, `koillection.md`) son técnicas.
@@ -147,3 +147,45 @@ Por carpeta, sumando todas las versiones: `docs/design/screens/` 21,8 MB, `app/`
 8. **Los nombres de personas físicas** que salen en `naming.md` y `tmview/` (titulares de marcas): salen del repositorio, ¿de acuerdo?
 9. **`server/.env.dev` en el historial:** pasarlo por el escaneo del paso 8 y decidir si ese `APP_SECRET` vale en algún sitio.
 10. **Lo personal de `VISION.md`** (familia, trabajo, alias) y el nombre del fichero con eñe en `historico/`.
+
+## Para el día de abrirlo
+
+Lo que se deja a propósito mientras el repositorio es privado y hay que cambiar al abrirlo (paso 8 del plan). Números de línea del 16/10/2026; se comprueban con `git grep` antes de aplicar. Las decisiones están tomadas (el maintainer aceptó las recomendaciones el 16/10/2026).
+
+**1. Enlaces a lo que sale del repositorio**
+
+| Fichero (línea) | Cambio |
+|---|---|
+| `architecture/cloud.md` (619) → `servidor-produccion.md` | Quitar el enlace o apuntar a la guía de autoalojamiento |
+| `plans/documentacion-publica.md` (49, 51, 56, 58, 61) → `servidor-produccion.md` | Quitar los enlaces o apuntar a la guía |
+| `architecture/cloud.md` (922), `plans/fase-7.md` (168), `plans/fase-8.md` (9), `plans/documentacion-publica.md` (86), `publicacion/ficha-google-play.md` (62), `publicacion/kosmotheka.app/README.md` (6) → `firma-android.md` | Quitar el enlace o apuntar a la parte genérica que pase a la guía |
+| `historico/encargo-7.6.4-enlaces-que-abren-la-app.md` (18, 41), `encargo-7.8-comic-vine.md`, `encargo-7.8-google-books.md`, `encargo-7.8-rawg.md`, `encargo-7.8-tmdb.md`, `encargo-cuentas-d100.md` → los dos ficheros | El histórico no se edita (`docs/historico/` queda como está): se aceptan esos enlaces rotos, o se deja una nota en `docs/README.md` |
+| `app/src-tauri/gen/android/app/build.gradle.kts` (17, comentario) y `.gitignore` (12, comentario) → `firma-android.md` | Cambiar el comentario por la guía pública o quitar la ruta |
+| `publicacion/servidor-produccion.md` y `publicacion/firma-android.md` | La parte genérica pasa a la guía de autoalojamiento; el resto, a `library-privado/`; se quitan del repositorio y del historial |
+
+**2. TMview, sus scripts y los nombres de titulares**
+
+| Qué | Cambio |
+|---|---|
+| `research/tmview/` (48 ficheros) | Quitar del historial (`git filter-repo --path docs/research/tmview --invert-paths`) |
+| `research/tmview-check.mjs`, `research/tmview-image-check.mjs`, `research/play-check.mjs` | Quitar del historial. Citan `tmview/` (líneas 3, 15, 16, 24, 29 y 3, 11, 18, 21, 57) |
+| `research/logo.md` (7, 13, 15, 41, 56, 60, 63, 64) y `research/naming.md` (45, 124, 201) | Reescribir los enlaces a las imágenes y a los scripts: texto sin imagen, o «resultado de la búsqueda del 26/09/2026» sin enlace |
+| `DECISIONS.md` (1081) | Es un enlace externo a TMview y a la OMPI: no se rompe |
+| Nombres de titulares que son personas físicas | Ya cambiados en `naming.md` (esta limpieza); los originales siguen solo en `tmview/` hasta que salga |
+
+**3. Claude Design**
+
+`design/screens/*/support.js` y `design/screens/*/ds-base.js` (28 ficheros, 14 carpetas): quitar del historial. Las pantallas `*.dc.html` los cargan (`ds-base.js` carga estilos desde `../..`): sin ellos no se ven en local; `design/screens/README.md` (párrafo «Para verlas en local») hay que reescribirlo o quitarlo.
+
+**4. Hallazgos**
+
+Antes de abrir, las 10 filas abiertas de `audits/hallazgos.md` se cierran o se aceptan: CAL-003 (9), CAL-004 (10), CON-007 (18), SEG-006 (41), SEG-008 (43), SEG-027 (62), SEG-037 (72), SEG-040 (75), SEG-045 (80), SEG-074 (109). Cuando cada una cambie de estado, hay que actualizar a la vez: `audits/amenazas.md` (45, 82, sobre SEG-006), `plans/fase-7.md` (199 y 400, sobre SEG-045 y CON-007), `historico/encargo-arreglos-auditoria-7.6.md` (3, SEG-045; histórico, se queda) y los ocho informes de `audits/`, que dicen «siguen abiertos». Después, `git grep -n -E "abierto" docs/audits/hallazgos.md` no debe dar ninguna fila.
+
+**5. Otros**
+
+- `server/.env.dev`: sale del historial tras el escaneo de secretos (el valor que tuviera `APP_SECRET`, tratarlo como conocido).
+- `historico/encargo-d99-dueño-de-la-nube.md`: renombrar sin eñe (`encargo-d99-dueno-de-la-nube.md`) y cambiar el único enlace que lo nombra, `plans/fase-7.md` (190). Se hace con `git filter-repo --path-rename` para que el historial también lo recoja.
+- `VISION.md`: aplicar la propuesta que apruebe el maintainer.
+- `publicacion/provisional-pages/` (10 ficheros): opcional, quitar (histórico superado por `web/`).
+- `plans/repositorio-publico.md`: actualizar la tabla «Qué hay hoy» y la sección de la carpeta ignorada, que ya no valen tras la enmienda de D90.
+- Comprobación final del día: `git grep -n -i -E "gmail\.com|digitalocean" -- . ':!app/src/licenses.json'` sin resultados, y el escáner de secretos sobre todo el historial.

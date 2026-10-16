@@ -99,7 +99,7 @@ En cada pasada incremental se revisa un tema entero, por este orden de riesgo:
   - `PRU`: pruebas;
   - `CAL`: calidad.
 
-  Basta con decir en la sesión de desarrollo «arregla SEG-003».
+  Basta con decir en la sesión de desarrollo «arregla SEG-999».
 - `amenazas.md`: el modelo de amenazas.
 - `descartes.md`: los candidatos mecánicos ya revisados que no son un problema. No vuelven a los paquetes de triaje mientras su fichero no cambie, así que cada pasada solo paga por lo nuevo.
 
