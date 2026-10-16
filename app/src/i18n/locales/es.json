@@ -25,13 +25,13 @@
       "isc": "Permite usarlo, copiarlo y cambiarlo si se mantiene el aviso de autoría.",
       "zlib": "Permite usarlo; no se puede decir que lo has escrito tú, y las copias cambiadas deben indicarlo.",
       "unicode": "Permite usarlo si se mantiene el aviso de autoría de Unicode.",
-      "mpl": "Los cambios en sus propios ficheros hay que compartirlos con la misma licencia; el resto de la app no se ve afectado.",
+      "mpl": "Los cambios en sus propios archivos hay que compartirlos con la misma licencia; el resto de la app no se ve afectado.",
       "publicDomain": "Sin condiciones: sus autores renunciaron a sus derechos.",
       "other": "Una licencia permisiva. Su texto completo está en la lista guardada."
     },
-    "fullList": "La lista completa, con cada componente, su licencia y los textos de las licencias, es un fichero de texto que puedes guardar.",
+    "fullList": "La lista completa, con cada componente, su licencia y los textos de las licencias, es un archivo de texto que puedes guardar.",
     "save": "Guardar la lista completa",
-    "fileType": "Fichero de texto",
+    "fileType": "Archivo de texto",
     "saved": "Lista guardada.",
     "saveFailed": "No se ha podido guardar la lista.",
     "terms": {
@@ -482,7 +482,7 @@
   },
   "data": {
     "title": "Copias de seguridad",
-    "description": "Un fichero con los libros y sus portadas, protegido con contraseña. Se restaura en cualquier dispositivo.",
+    "description": "Un archivo con los libros y sus portadas, protegido con contraseña. Se restaura en cualquier dispositivo.",
     "restore": "Restaurar copia",
     "exportCsv": "Exportar CSV",
     "importCsv": "Importar CSV",
@@ -493,7 +493,7 @@
     "csvImported": "Importado: {{books}} libros nuevos, {{copies}} ejemplares añadidos a libros existentes, {{rejected}} filas rechazadas.",
     "rejectedLine": "Línea {{line}}:",
     "backupErrors": {
-      "not_a_backup": "Este fichero no es una copia de seguridad de esta app.",
+      "not_a_backup": "Este archivo no es una copia de seguridad de esta app.",
       "unreadable": "La copia está dañada y no se puede leer.",
       "other_version": "Esta copia se hizo con otra versión de la app.",
       "not_empty": "Esta copia es de una versión anterior y solo se restaura sobre una biblioteca vacía. Crea una biblioteca nueva, ábrela y restáurala ahí.",
@@ -685,9 +685,9 @@
       "backups": {
         "title": "Copias de seguridad",
         "steps": [
-          "En «Copias de seguridad», «Guardar copia de» y el nombre de la biblioteca crea un fichero con sus libros y portadas. Viene protegido con contraseña, de al menos 8 caracteres.",
+          "En «Copias de seguridad», «Guardar copia de» y el nombre de la biblioteca crea un archivo con sus libros y portadas. Viene protegido con contraseña, de al menos 8 caracteres.",
           "Sin la contraseña nadie puede abrirlo, y la app no la guarda: apúntala.",
-          "Guarda el fichero donde quieras: una carpeta, Google Drive, un pendrive.",
+          "Guarda el archivo donde quieras: una carpeta, Google Drive, una memoria USB.",
           "Para recuperarlo, «Restaurar copia» y escribe la contraseña. En otro dispositivo, la biblioteca vuelve como una nueva con los mismos libros: no se une a la original."
         ]
       },
