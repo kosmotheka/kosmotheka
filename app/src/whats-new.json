@@ -1,12 +1,8 @@
 {
   "next": [
     {
-      "es": "La primera vez, la app te pide tu nombre. Tu biblioteca se crea a tu nombre, como administrador o administradora. Lo cambias luego en Ajustes.",
-      "en": "The first time, the app asks for your name. Your library is created in your name, as its administrator. You can change it later in Settings."
-    },
-    {
-      "es": "Al emparejar un dispositivo hay que decir de quién es y con qué rol («editor» por defecto).",
-      "en": "When you pair a device you must say whose it is and what role it has (\"editor\" by default)."
+      "es": "La primera vez, la app te pide tu nombre: tu biblioteca se crea a tu nombre, como administrador o administradora, y lo cambias luego en Ajustes. Al emparejar un dispositivo hay que decir de quién es y con qué rol («editor» por defecto).",
+      "en": "The first time, the app asks for your name: your library is created in your name, as its administrator, and you can change it later in Settings. When you pair a device you must say whose it is and what role it has (\"editor\" by default)."
     },
     {
       "es": "Restaurar una copia en un móvil nuevo no une la biblioteca con la original: queda como una biblioteca nueva con los mismos libros.",
@@ -19,6 +15,10 @@
     {
       "es": "Cambiar o restablecer la contraseña y borrar la cuenta piden el código de la app de autenticación, si la cuenta lo tiene.",
       "en": "Changing or resetting the password and deleting the account ask for the code from the authenticator app, if the account has one."
+    },
+    {
+      "es": "Al añadir, un ISBN con guiones o de 10 cifras se busca como ISBN.",
+      "en": "When adding, an ISBN with hyphens or ten digits is looked up as an ISBN."
     }
   ],
   "0.2.0": [

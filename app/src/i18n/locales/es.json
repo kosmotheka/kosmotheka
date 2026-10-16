@@ -657,9 +657,10 @@
       "share": {
         "title": "Compartir el catálogo en casa",
         "steps": [
-          "En un dispositivo, abre «Compartir y dispositivos» y pulsa «Mostrar código».",
-          "En el otro, en el mismo sitio, escanea el QR o pega el código.",
-          "Listo: se sincronizan solos cada vez que coinciden en la misma wifi."
+          "En un dispositivo, abre «Compartir y dispositivos» y pulsa «Emparejar otro dispositivo» (en el ordenador, «Emparejar un dispositivo»). Marca qué bibliotecas se comparten: aparece un código QR.",
+          "En el otro, abre el mismo sitio, entra en la pestaña «Escanear el suyo» y escanea el QR. Sin cámara, pega el código y pulsa «Emparejar».",
+          "Si administras la biblioteca, la app te pregunta «¿De quién es?» el dispositivo nuevo y qué rol tendrá (editor, si no eliges otro).",
+          "Listo: se ponen al día solos cada vez que coinciden en la misma wifi."
         ]
       },
       "away": {
@@ -667,7 +668,7 @@
         "steps": [
           "Activa el punto de acceso («compartir internet») en un móvil.",
           "Conecta el otro dispositivo a esa red.",
-          "Empareja o sincroniza como en casa. No gasta datos: todo va entre los dos aparatos."
+          "Empareja o pasa los cambios como en casa. No gasta datos: todo va entre los dos aparatos."
         ]
       },
       "pairing": {
@@ -684,26 +685,27 @@
       "backups": {
         "title": "Copias de seguridad",
         "steps": [
-          "En «Copias de seguridad», «Guardar copia» crea un fichero con todo, portadas incluidas. Por defecto va protegido con contraseña.",
+          "En «Copias de seguridad», «Guardar copia de» y el nombre de la biblioteca crea un fichero con sus libros y portadas. Viene protegido con contraseña, de al menos 8 caracteres.",
           "Sin la contraseña nadie puede abrirlo, y la app no la guarda: apúntala.",
           "Guarda el fichero donde quieras: una carpeta, Google Drive, un pendrive.",
-          "Para recuperarlo, «Restaurar copia» y escribe la contraseña."
+          "Para recuperarlo, «Restaurar copia» y escribe la contraseña. En otro dispositivo, la biblioteca vuelve como una nueva con los mismos libros: no se une a la original."
         ]
       },
       "lost": {
         "title": "Si pierdes el móvil",
         "steps": [
-          "Lo que tenías sigue en los dispositivos con los que sincronizaba y en tus copias.",
-          "En otro dispositivo, abre «Compartir y dispositivos» y olvida el perdido.",
+          "Lo que tenías sigue en los dispositivos con los que compartías la biblioteca y en tus copias.",
+          "En otro dispositivo, abre «Compartir y dispositivos» y, en el menú de tres puntos del perdido, pulsa «Olvidar dispositivo».",
           "En el móvil nuevo, instala la app y empareja otra vez."
         ]
       },
       "search": {
         "title": "Buscar los datos de un libro",
         "steps": [
-          "Al añadir, escribe o escanea el ISBN y pulsa «Buscar»: los datos llegan de Open Library y Google Books.",
-          "Sin conexión, puedes añadirlo a mano y completarlo después.",
-          "Google Books funciona mejor con una clave propia, que se pone en Ajustes."
+          "Pulsa «Añadir» y escribe el título o el número del código de barras (ISBN), o escanéalo con el botón de la cámara. Los resultados salen solos mientras escribes.",
+          "Los datos llegan de catálogos públicos, como la Biblioteca Nacional de España, Open Library o Wikidata. Revísalos antes de guardar.",
+          "Sin conexión, pulsa «Añadir a mano» y complétalo después.",
+          "Algunos catálogos, como Google Books, piden una clave propia: se pone en «Ajustes», «Proveedores de datos»."
         ]
       }
     },

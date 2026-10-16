@@ -41,11 +41,24 @@ const KIND_SOURCES: Record<Kind, Source[]> = {
   other: [],
 };
 
-const CODE_LENGTHS = new Set([8, 12, 13]);
+// Digits as printed on a product: EAN-8, ISBN-10, UPC-A (12) and EAN-13 or ISBN-13.
+const CODE_LENGTHS = new Set([8, 10, 12, 13]);
+// What a book's number looks like once its hyphens and spaces are taken out.
+const ISBN_LENGTHS = new Set([10, 13]);
 const DEBOUNCE_MS = 400;
 
-function isCode(text: string): boolean {
-  return /^\d+$/.test(text) && CODE_LENGTHS.has(text.length);
+/**
+ * The code the search box holds, or null when it is a title. Only its shape is read here (digits, a
+ * final X on ten, hyphens and spaces left out): whether it is a valid ISBN, and of what, is Rust's call.
+ * Separated groups only count as a code with the length of an ISBN, so a title like "2010 2020" stays a title.
+ */
+function codeOf(text: string): string | null {
+  const typed = text.trim();
+  if (!/^[\d\s-]+X?$/i.test(typed)) return null;
+  const code = typed.replace(/[\s-]/g, "").toUpperCase();
+  const separated = code !== typed.toUpperCase();
+  if (!(separated ? ISBN_LENGTHS : CODE_LENGTHS).has(code.length)) return null;
+  return /^\d+$/.test(code) || /^\d{9}X$/.test(code) ? code : null;
 }
 
 function emptyNewBook(kind: Kind, barcode: string | null = null): NewBook {
@@ -176,9 +189,10 @@ export function AddSearch({
     const trimmed = text.trim();
     setLoading(true);
     try {
-      if (isCode(trimmed)) {
-        const result = await lookupCode(trimmed);
-        if (id === requestId.current) applyCodeResult(trimmed, result);
+      const code = codeOf(trimmed);
+      if (code) {
+        const result = await lookupCode(code);
+        if (id === requestId.current) applyCodeResult(code, result);
       } else {
         setFoundByCode(false);
         setExistingByCode(null);
@@ -314,7 +328,7 @@ export function AddSearch({
       >
         {loading ? (
           <Loader2 className="size-[18px] shrink-0 animate-spin text-muted-foreground" />
-        ) : isCode(query.trim()) ? (
+        ) : codeOf(query) !== null ? (
           <ScanBarcode className="size-[18px] shrink-0 text-muted-foreground" />
         ) : (
           <Search className="size-[18px] shrink-0 text-muted-foreground" />

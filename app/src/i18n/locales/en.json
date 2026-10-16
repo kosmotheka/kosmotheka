@@ -643,9 +643,10 @@
       "share": {
         "title": "Share the catalog at home",
         "steps": [
-          "On one device, open \"Sharing and devices\" and tap \"Show code\".",
-          "On the other, in the same place, scan the QR or paste the code.",
-          "Done: they sync on their own whenever they are on the same Wi-Fi."
+          "On one device, open \"Sharing and devices\" and tap \"Pair another device\" (on a computer, \"Pair a device\"). Tick which libraries to share: a QR code appears.",
+          "On the other, open the same place, go to the \"Scan theirs\" tab and scan the QR. With no camera, paste the code and tap \"Pair\".",
+          "If you administer the library, the app asks \"Whose is\" the new device and what role it gets (editor, unless you choose another).",
+          "Done: they catch up on their own whenever they are on the same Wi-Fi."
         ]
       },
       "away": {
@@ -653,7 +654,7 @@
         "steps": [
           "Turn on the hotspot (\"internet sharing\") on a phone.",
           "Connect the other device to that network.",
-          "Pair or sync as at home. It uses no data: everything goes between the two devices."
+          "Pair or pass the changes as at home. It uses no data: everything goes between the two devices."
         ]
       },
       "pairing": {
@@ -670,26 +671,27 @@
       "backups": {
         "title": "Backups",
         "steps": [
-          "In \"Backups\", \"Save backup\" creates a file with everything, covers included. It is protected with a password by default.",
+          "In \"Backups\", \"Save a backup of\" and the library's name creates a file with its books and covers. It comes protected with a password of at least 8 characters.",
           "Without the password nobody can open it, and the app does not keep it: write it down.",
           "Keep the file wherever you like: a folder, Google Drive, a USB stick.",
-          "To get it back, use \"Restore backup\" and enter the password."
+          "To get it back, use \"Restore backup\" and enter the password. On another device, the library comes back as a new one with the same books: it does not join the original."
         ]
       },
       "lost": {
         "title": "If you lose your phone",
         "steps": [
-          "What you had is still on the devices it synced with, and in your backups.",
-          "On another device, open \"Sharing and devices\" and forget the lost one.",
+          "What you had is still on the devices you shared the library with, and in your backups.",
+          "On another device, open \"Sharing and devices\" and, in the three-dot menu of the lost one, tap \"Forget device\".",
           "On the new phone, install the app and pair again."
         ]
       },
       "search": {
         "title": "Look up a book's details",
         "steps": [
-          "When adding, type or scan the ISBN and tap \"Search\": details come from Open Library and Google Books.",
-          "Offline, you can add it by hand and complete it later.",
-          "Google Books works better with your own key, set in Settings."
+          "Tap \"Add\" and type the title or the barcode number (ISBN), or scan it with the camera button. Results appear as you type.",
+          "The details come from public catalogues, such as Spain's National Library, Open Library or Wikidata. Check them before saving.",
+          "Offline, tap \"Add manually\" and complete it later.",
+          "Some catalogues, such as Google Books, need your own key: set it in \"Settings\", \"Data providers\"."
         ]
       }
     },
