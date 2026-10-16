@@ -77,4 +77,4 @@ Tres tipos de nota valen igual: «esto está mal», «esto no lo entiendo» (si 
 
 ## Lo que ya se sabe, para no apuntarlo dos veces
 
-Los hallazgos abiertos están en [audits/hallazgos.md](../audits/hallazgos.md). De este código, los que siguen abiertos son bajos: dos `catch` vacíos comentados (CAL-004), el token de la invitación en la ruta (SEG-046). Las rutas `pull`, `push` y `claim` **no tienen límite de peticiones**: está apuntado para la revisión de seguridad de conjunto.
+Los hallazgos abiertos están en [audits/hallazgos.md](../audits/hallazgos.md). De este código, los que siguen abiertos son bajos: dos `catch` vacíos comentados (CAL-004). El token de la invitación en la ruta (SEG-046) se descartó el 16/10/2026. Las rutas `pull`, `push`, `claim` y `link` ya tienen su límite de peticiones (`cloud_sync` y `cloud_link` en `config/packages/rate_limiter.yaml`).
