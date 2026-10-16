@@ -205,11 +205,11 @@ const book = (
 ): BookSummary => work(n, "book", title, authors, year, formats, owners, "Debolsillo");
 
 const books: BookSummary[] = [
-  book(1, "Dune", ["Frank Herbert"], 1965, ["paperback", "ebook"], ["Tersoal", "Laura"]),
-  book(2, "El mesías de Dune", ["Frank Herbert"], 1969, ["paperback"], ["Tersoal"]),
-  book(3, "Fundación", ["Isaac Asimov"], 1951, ["pocket"], ["Tersoal"]),
+  book(1, "Dune", ["Frank Herbert"], 1965, ["paperback", "ebook"], ["Ana", "Laura"]),
+  book(2, "El mesías de Dune", ["Frank Herbert"], 1969, ["paperback"], ["Ana"]),
+  book(3, "Fundación", ["Isaac Asimov"], 1951, ["pocket"], ["Ana"]),
   book(4, "La mano izquierda de la oscuridad", ["Ursula K. Le Guin"], 1969, ["ebook"], ["Laura"]),
-  book(5, "El nombre del viento", ["Patrick Rothfuss"], 2007, ["hardcover"], ["Tersoal"]),
+  book(5, "El nombre del viento", ["Patrick Rothfuss"], 2007, ["hardcover"], ["Ana"]),
   book(
     6,
     "Crónicas de la Dragonlance",
@@ -218,9 +218,9 @@ const books: BookSummary[] = [
     ["paperback"],
     ["Hugo"],
   ),
-  book(7, "Vampiro: la mascarada", ["Mark Rein-Hagen"], 1991, ["hardcover", "other"], ["Tersoal"]),
+  book(7, "Vampiro: la mascarada", ["Mark Rein-Hagen"], 1991, ["hardcover", "other"], ["Ana"]),
   // Non-book kinds (D60), so the catalog can be seen mixed.
-  work(8, "film", "Blade Runner 2049", ["Denis Villeneuve"], 2017, ["bluray"], ["Tersoal"]),
+  work(8, "film", "Blade Runner 2049", ["Denis Villeneuve"], 2017, ["bluray"], ["Ana"]),
   work(9, "boardgame", "Catán", [], 1995, ["box"], ["Hugo", "Laura"], "Devir"),
   work(
     10,
@@ -229,10 +229,10 @@ const books: BookSummary[] = [
     [],
     2023,
     ["physical", "digital"],
-    ["Hugo", "Tersoal"],
+    ["Hugo", "Ana"],
   ),
-  work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd", "digital"], ["Tersoal", "Laura"]),
-  work(12, "music", "Abbey Road", ["The Beatles"], 1969, ["vinyl"], ["Tersoal"]),
+  work(11, "tv_series", "Twin Peaks", [], 1990, ["dvd", "digital"], ["Ana", "Laura"]),
+  work(12, "music", "Abbey Road", ["The Beatles"], 1969, ["vinyl"], ["Ana"]),
   work(13, "other", "Playmobil Barco pirata 5135", [], 2006, ["other"], ["Laura"]),
   // "Me falta" (D61): catalogued, no copies yet. Who else wishes each one is set below.
   work(14, "book", "Dune: El emperador-dios", ["Frank Herbert"], 1981, [], []),
@@ -241,18 +241,9 @@ const books: BookSummary[] = [
   work(17, "film", "Blade Runner", ["Ridley Scott"], 1982, [], []),
   // Series and «necesita» (D61): Casa Capitular fills the Dune saga's position 6, leaving 5
   // open as a gap; Imperium's expansion needs its base, which nobody has.
-  work(18, "book", "Casa Capitular: Dune", ["Frank Herbert"], 1985, ["hardcover"], ["Tersoal"]),
+  work(18, "book", "Casa Capitular: Dune", ["Frank Herbert"], 1985, ["hardcover"], ["Ana"]),
   work(19, "boardgame", "Dune: Imperium", [], 2020, [], [], "Dire Wolf"),
-  work(
-    20,
-    "boardgame",
-    "Dune: Imperium – Ascenso de Ix",
-    [],
-    2022,
-    ["box"],
-    ["Tersoal"],
-    "Dire Wolf",
-  ),
+  work(20, "boardgame", "Dune: Imperium – Ascenso de Ix", [], 2022, ["box"], ["Ana"], "Dire Wolf"),
 ];
 
 /** A fixture book by its index: the fixtures are fixed, so a miss is a typo here. */
@@ -984,6 +975,8 @@ mockIPC((cmd, args) => {
       }
       return { libraries: libraries.length, books: 12, copies: 14, covers: 3 };
     }
+    case "cloud_other_owners":
+      return [];
     case "export_licenses":
       return null;
     case "restore_backup": {
@@ -1022,7 +1015,7 @@ mockIPC((cmd, args) => {
       return {
         authors: [],
         publishers: [],
-        owners: ["Tersoal", "Laura", "Hugo"],
+        owners: ["Ana", "Laura", "Hugo"],
         locations: ["Salón", "Estudio"],
       };
     case "lan_status":
