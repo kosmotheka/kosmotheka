@@ -68,6 +68,7 @@ final readonly class InvitationManager
             throw AccountException::invitationsUnavailable();
         }
         $this->limiter->consumeInvitationCreate($by->getId()->toRfc4122());
+        // Not looked at again under a lock, unlike revoking: accepting asks whether its maker still administers (SEG-058).
         $this->rules->requireAdministrator($library, $by);
         $this->rules->requireReady($library);
         $member = Uuid::fromString($request->memberId);
@@ -162,6 +163,8 @@ final readonly class InvitationManager
         $this->entityManager->wrapInTransaction(function () use ($library, $by, $invitation): void {
             $this->entityManager->refresh($library, LockMode::PESSIMISTIC_WRITE);
             $this->entityManager->refresh($invitation, LockMode::PESSIMISTIC_WRITE);
+            // Again under the lock: a push that took the role away at the same moment has either landed or waits (SEG-058).
+            $this->rules->requireAdministrator($library, $by);
             if ($invitation->isAccepted()) {
                 throw AccountException::invitationUsed();
             }

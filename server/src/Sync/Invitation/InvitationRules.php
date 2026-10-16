@@ -110,8 +110,7 @@ final readonly class InvitationRules
 
     /**
      * What an invitation is worth now. A used, revoked or expired one is said as such; one whose conditions stopped
-     * holding (the one who made it no longer administers, the library lost its roles or the cloud its power, the
-     * person changed) is treated as revoked: the app asks for another one.
+     * holding (the one who made it no longer administers, the cloud lost its power, the person changed) is treated as revoked: the app asks for another one.
      */
     public function requireUsable(Invitation $invitation, \DateTimeImmutable $now): void
     {
