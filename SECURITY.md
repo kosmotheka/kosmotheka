@@ -25,4 +25,4 @@ Only the latest release of the app and the `main` branch of the server get secur
 
 Servers that other people host are run by them; report problems in this code, not in someone else's installation.
 
-The threat model the project works from is in [`docs/audits/amenazas.md`](docs/audits/amenazas.md) (in Spanish).
+The threat model the project works from is in [`docs/audits/amenazas.md`](docs/audits/amenazas.md) (in Spanish; it will be translated).
