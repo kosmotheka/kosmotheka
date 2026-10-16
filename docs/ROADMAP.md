@@ -158,6 +158,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 
 ## Fase 8 — Publicación
 
+- **Plan de la fase:** [plans/fase-8.md](plans/fase-8.md), con hitos, orden y preguntas (16/10/2026).
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
 - **Notificaciones push en Android** con la app cerrada (D75): FCM, y UnifiedPush sin Google. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
