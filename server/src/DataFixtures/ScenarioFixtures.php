@@ -218,8 +218,8 @@ final class ScenarioFixtures extends Fixture
         $scenario = 'Seam 1: Jhonny pushes the Garcías\' operation ids into his own library';
         $library = $this->creator->create($jhonny);
         $link = Cast::jhonnyPhone()->link(Cast::garciaLocal(), $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-garcia-id'));
-        // By the link route and not stored: pushed with the Garcías' history his link would fall under the seal (D94)
-        // and be a request, and the push would be undone (D93). The history is what this seam is about.
+        // By the link route and not stored: pushed with the Garcías' history his link would be judged as a request
+        // (he is nobody in their library), and the push would be undone (D93). The history is what this seam is about.
         $this->cloudLink->linkFrom($library, $this->pushed($link));
 
         $this->expectStored($this->push($library, $garcia->operations), \count($garcia->operations), $scenario);

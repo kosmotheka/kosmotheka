@@ -916,8 +916,8 @@ mod tests {
         permissions::become_a_cloud_device(&phone, 7);
         let lib = ops::active_library(&laptop).unwrap();
         pull(&mut phone, &laptop, &lib);
-        // The cloud registers itself as a device of the library. Synced before the roles
-        // are turned on, so the seal believes that registration.
+        // The cloud registers itself as a device of the library, and the laptop gets
+        // that registration before naming it.
         let tx = phone.transaction().unwrap();
         ops::ensure_registered(&tx, &lib).unwrap();
         tx.commit().unwrap();

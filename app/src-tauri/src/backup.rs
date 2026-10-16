@@ -432,8 +432,8 @@ fn record_rows(tx: &Transaction<'_>, library: &str, rows: &Rows) -> Result<()> {
 }
 
 /// Records every row as created, in one operation. Roles stay behind: whoever
-/// restores or duplicates a library starts it without roles and can take them on;
-/// restored roles would point at devices that are not there (D58).
+/// restores or duplicates a library is its only administrator (D97); restored
+/// roles would point at devices that are not there (D58).
 fn record_rows_as(tx: &Transaction<'_>, library: &str, rows: &Rows, intent: &str) -> Result<()> {
     let mut changes = Vec::new();
     for entity in CONTENTS {

@@ -754,8 +754,8 @@ export function deleteLibrary(id: string): Promise<string> {
 }
 
 /**
- * Copies its catalogue into a new library this device administers, without roles,
- * devices or history: the last resort when nobody can administer it (D58).
+ * Copies its catalogue into a new library this device founds and administers, without
+ * the other people's roles, devices or history: the last resort when nobody can administer it (D58).
  * Returns the new library's id, which becomes the active one.
  */
 export function duplicateLibrary(id: string, name: string): Promise<string> {
