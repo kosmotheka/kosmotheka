@@ -47,7 +47,7 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 
 ## Lo que se puede hacer ya, sin ti
 
-- La nota de investigación de 8.3: plugins de push para Tauri 2, qué pide FCM y qué datos ve Google.
+- ✅ La primera nota de investigación de 8.3: [notificaciones.md](../research/notificaciones.md) (16/10/2026). Trae dos cosas nuevas: un servidor propio no puede mandar avisos a la app de Google Play, y Play pide además una página web para pedir que se borre la cuenta.
 - Revisar la ficha de Play y el formulario de seguridad de los datos contra lo que hace hoy la app, y preparar el texto nuevo (8.1), sin subir nada.
 - El workflow de 8.2, escrito y comprobado en local hasta donde se pueda. Sin los secretos no publica nada, y solo corre cuando tú hagas push.
 - Montar el esqueleto de Starlight y las primeras páginas «A» que no hablan del servidor (8.4).
