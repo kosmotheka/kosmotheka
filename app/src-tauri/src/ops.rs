@@ -453,6 +453,15 @@ pub fn write_versions(conn: &Connection, library: &str, change: &Change, hlc: &s
 /// Table and column names come from the domain schema, never from the change
 /// itself: `validate` has already rejected any field the schema does not know.
 fn apply(tx: &Transaction<'_>, library: &str, change: &Change) -> Result<()> {
+    // Same rule as when a change arrives from another device (CON-007): a reference to nothing writes nothing.
+    if matches!(change.action, Action::Create | Action::Update)
+        && !crate::sync::references_exist(tx, library, change.entity, &change.fields)?
+    {
+        return Err(Error::MissingRow {
+            entity: change.entity.table(),
+            id: change.id.clone(),
+        });
+    }
     let affected = match change.action {
         Action::Create => insert_row(tx, change.entity, library, &change.id, change.fields.iter())?,
         Action::Update => update_row(tx, change.entity, library, &change.id, change.fields.iter())?,

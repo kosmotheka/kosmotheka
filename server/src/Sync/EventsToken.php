@@ -19,7 +19,11 @@ use Symfony\Component\Mercure\ProtocolVersion;
  */
 final readonly class EventsToken
 {
-    public const int LIFETIME_SECONDS = 3600;
+    /**
+     * Ten minutes (SEG-037): whoever loses access keeps hearing, until it runs out, the token already held. The app
+     * renews it a minute before, and every renewal reads the access table again.
+     */
+    public const int LIFETIME_SECONDS = 600;
 
     public function __construct(
         private HubSettings $settings,

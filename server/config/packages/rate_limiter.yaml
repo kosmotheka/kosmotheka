@@ -87,10 +87,11 @@ framework:
             policy: sliding_window
             limit: 30
             interval: '1 hour'
-        # The token of the live notices.
+        # The token of the live notices. It lives ten minutes (SEG-037), so each device asks about seven times an hour,
+        # and a hub that is down makes it ask again at every retry: room for several devices of one account.
         cloud_events:
             policy: sliding_window
-            limit: 60
+            limit: 120
             interval: '1 hour'
         email_code:
             policy: sliding_window

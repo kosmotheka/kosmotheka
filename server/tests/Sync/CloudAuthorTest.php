@@ -214,6 +214,29 @@ final class CloudAuthorTest extends WebTestCase
         $this->authorWith($otherSecret, $cloud, self::ACCOUNT);
     }
 
+    /**
+     * SEG-074: the sealed private key of one library, copied by whoever can write in the database into the row of
+     * another, must not open there. Without the library as associated data the copy opens, signs with the wrong key and
+     * the log refuses it; with it the cloud knows at once that it has no identity here.
+     */
+    public function testAKeySealedForAnotherLibraryIsNoIdentityHere(): void
+    {
+        [$cloudA] = $this->uploadedFamily(namesTheCloud: true);
+        $cloudB = $this->createCloud();
+        $identityB = $this->identityOf($cloudB);
+        self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $this->push($cloudB, $this->family($cloudB, $identityB['id'], 'EBESExQVFhcYGRobHB0eHw')));
+        $connection = self::getContainer()->get(Connection::class);
+        $connection->executeStatement('UPDATE cloud_library SET cloud_secret_key = (SELECT cloud_secret_key FROM cloud_library WHERE id = ?) WHERE id = ?', [$cloudA, $cloudB]);
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        try {
+            $this->authorAccount($cloudB);
+            self::fail('The key of the other library opened.');
+        } catch (CloudAuthorException $e) {
+            self::assertSame(CloudAuthorException::noIdentity()->getMessage(), $e->getMessage());
+        }
+    }
+
     public function testItNeedsATransactionAndALinkedLibrary(): void
     {
         $cloud = $this->createCloud();
@@ -250,14 +273,16 @@ final class CloudAuthorTest extends WebTestCase
      *
      * @return list<array<string, mixed>> founding, link, roles
      */
-    private function family(string $cloud, ?string $cloudDevice): array
+    private function family(string $cloud, ?string $cloudDevice, string $nonce = SigningDevice::FOUNDING_NONCE): array
     {
+        $device = $this->laptop;
+        $local = $device->libraryId($nonce);
         $fields = ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER] + (null === $cloudDevice ? [] : ['cloud_device_id' => $cloudDevice]);
 
         return [
-            $this->laptop->founding(self::T, self::ADMIN, personName: 'Admin'),
-            $this->laptop->sign($this->local, self::T + 1, 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => $fields]]),
-            $this->laptop->sign($this->local, self::T + 2, 'family.roles', [
+            $device->founding(self::T, self::ADMIN, personName: 'Admin', nonce: $nonce),
+            $device->sign($local, self::T + 1, 'library.link', [['entity' => 'library', 'id' => $local, 'action' => 'update', 'fields' => $fields]]),
+            $device->sign($local, self::T + 2, 'family.roles', [
                 ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'editor']],
             ]),
         ];

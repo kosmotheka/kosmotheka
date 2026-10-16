@@ -471,6 +471,11 @@ pub fn apply_change(
                         newer.insert(field.clone(), value.clone());
                     }
                 }
+                // A reference to a row nobody created skips the whole change, whatever the database says: not every
+                // reference has a foreign key (`devices.member_id` has none), and the server skips them all (CON-007).
+                if !references_exist(tx, library, entity, &newer)? {
+                    return Ok(false);
+                }
                 if !exists {
                     ops::insert_row(tx, entity, library, &change.id, newer.iter())?;
                 } else if newer.is_empty() {
@@ -502,6 +507,27 @@ pub fn apply_change(
             Err(other)
         }
     }
+}
+
+/// Whether every reference among `fields` points to a row that exists. A null one points to nothing, which is fine.
+pub(crate) fn references_exist(
+    conn: &Connection,
+    library: &str,
+    entity: Entity,
+    fields: &Map<String, Value>,
+) -> Result<bool> {
+    for (name, value) in fields {
+        if let Some(FieldSpec {
+            field_type: FieldType::Ref(target),
+            ..
+        }) = entity.field(name)
+            && let Some(id) = value.as_str()
+            && !row_exists(conn, library, *target, id)?
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 /// The change's fields, with every optional reference to a row that was deleted set
@@ -1924,6 +1950,219 @@ mod tests {
         }
     }
 
+    /// A signed operation by `device` with any changes, HLC and previous: what a modified app can send.
+    fn forged_with(
+        device: &Device,
+        changes: Vec<Change>,
+        millis: u64,
+        previous: Option<&str>,
+    ) -> SyncOperation {
+        let mut operation = Operation {
+            id: ops::new_id(),
+            library: device.1.clone(),
+            hlc: kosmotheka_domain::Hlc {
+                millis,
+                counter: 0,
+                device: device_id_of(device),
+            },
+            intent: "book.edit".into(),
+            changes,
+            previous: previous.map(str::to_owned),
+            signature: None,
+        };
+        operation.signature = Some(ops::signing_key(&device.0).unwrap().sign(&operation));
+        SyncOperation {
+            schema_version: ops::schema_version(&device.0).unwrap(),
+            operation,
+        }
+    }
+
+    #[test]
+    fn a_reference_to_a_row_that_arrives_later_does_not_depend_on_the_order() {
+        let mut laptop = Device::new();
+        laptop.add("Dune", None, "Ana");
+        let work = work_titled(&laptop, "Dune");
+        let mut phone = Device::sharing(&laptop);
+        laptop.sync_with(&mut phone);
+        let mut early = Device::sharing(&laptop);
+        let mut late = Device::sharing(&laptop);
+        early.pull_from(&laptop);
+        late.pull_from(&laptop);
+
+        // The laptop creates a tag; the phone, knowing it, tags the book with it.
+        let millis = now_millis();
+        let laptop_last = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop)).unwrap();
+        let phone_last = ops::latest_of(&phone.0, &phone.1, &device_id_of(&phone)).unwrap();
+        let tag = ops::new_id();
+        let parent = forged_with(
+            &laptop,
+            vec![Change::create(Entity::Tag, &tag, json!({ "name": "gift" }))],
+            millis,
+            laptop_last.as_deref(),
+        );
+        let child = forged_with(
+            &phone,
+            vec![Change::create(
+                Entity::WorkTag,
+                ops::new_id(),
+                json!({ "work_id": work, "tag_id": tag }),
+            )],
+            millis + 1,
+            phone_last.as_deref(),
+        );
+
+        merge(&mut early.0, vec![parent.clone(), child.clone()]).unwrap();
+        merge(&mut late.0, vec![child]).unwrap();
+        merge(&mut late.0, vec![parent]).unwrap();
+
+        assert_converged(&[&early, &late]);
+    }
+
+    #[test]
+    fn a_reference_to_a_row_created_later_than_the_reference_does_not_depend_on_the_order() {
+        let mut laptop = Device::new();
+        laptop.add("Dune", None, "Ana");
+        let work = work_titled(&laptop, "Dune");
+        let mut phone = Device::sharing(&laptop);
+        laptop.sync_with(&mut phone);
+        let mut early = Device::sharing(&laptop);
+        let mut late = Device::sharing(&laptop);
+        early.pull_from(&laptop);
+        late.pull_from(&laptop);
+
+        // The laptop creates a tag; the phone, knowing it, tags the book with it.
+        let millis = now_millis();
+        let laptop_last = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop)).unwrap();
+        let phone_last = ops::latest_of(&phone.0, &phone.1, &device_id_of(&phone)).unwrap();
+        let tag = ops::new_id();
+        let parent = forged_with(
+            &laptop,
+            vec![Change::create(Entity::Tag, &tag, json!({ "name": "gift" }))],
+            millis + 10,
+            laptop_last.as_deref(),
+        );
+        let child = forged_with(
+            &phone,
+            vec![Change::create(
+                Entity::WorkTag,
+                ops::new_id(),
+                json!({ "work_id": work, "tag_id": tag }),
+            )],
+            millis,
+            phone_last.as_deref(),
+        );
+
+        // Same batch: sorted by HLC, the reference comes first. Separate batches: the parent first, then the child.
+        merge(&mut early.0, vec![parent.clone()]).unwrap();
+        merge(&mut early.0, vec![child.clone()]).unwrap();
+        merge(&mut late.0, vec![child]).unwrap();
+        merge(&mut late.0, vec![parent]).unwrap();
+
+        assert_converged(&[&early, &late]);
+    }
+
+    #[test]
+    fn a_device_assigned_to_a_person_that_never_existed_stays_as_it_was() {
+        // CON-007. The server skips a change that points to a row nobody created; `devices.member_id` has no foreign
+        // key in SQLite, so the app used to write the id anyway.
+        let laptop = Device::new();
+        let mut receiver = Device::sharing(&laptop);
+        receiver.pull_from(&laptop);
+        let me = device_id_of(&laptop);
+        let person = |device: &Device| -> Option<String> {
+            device
+                .0
+                .query_row(
+                    "SELECT member_id FROM devices WHERE id = ?1",
+                    [&me],
+                    |row| row.get(0),
+                )
+                .unwrap()
+        };
+        let before = person(&receiver);
+        let last = ops::latest_of(&laptop.0, &laptop.1, &device_id_of(&laptop)).unwrap();
+        let assignment = forged_with(
+            &laptop,
+            vec![Change::update(
+                Entity::Device,
+                &me,
+                json!({ "member_id": ops::new_id() }),
+            )],
+            now_millis(),
+            last.as_deref(),
+        );
+
+        let report = merge(&mut receiver.0, vec![assignment]).unwrap();
+
+        assert_eq!(person(&receiver), before, "the device was given to nobody");
+        assert_eq!(report.skipped_changes, 1);
+    }
+
+    #[test]
+    fn an_authentic_withdrawal_is_obeyed_even_if_it_was_undone_later_and_a_hostile_peer_hides_that()
+    {
+        // SEG-040, accepted in D101: this documents what is accepted, it is not a bug to fix. The administrator withdrew the phone's access and then gave it back. A hostile peer (the cloud, or a
+        // device of the household) shows the phone the withdrawal, which is real and signed, and keeps back the
+        // operation that undid it. The phone cannot tell it from a withdrawal that still stands.
+        let mut laptop = Device::new();
+        laptop.add("Dune", None, "Ana");
+        let mut phone = Device::sharing(&laptop);
+        phone.pull_from(&laptop);
+        let phone_id = device_id_of(&phone);
+
+        crate::libraries::revoke_access(&mut laptop.0, &laptop.1, &phone_id).unwrap();
+        let withdrawal = crate::lan::notices_for(&laptop.0, &phone_id)
+            .unwrap()
+            .proofs;
+        assert!(
+            !withdrawal.is_empty(),
+            "the withdrawal exists and is signed"
+        );
+        crate::libraries::grant_access(&mut laptop.0, &laptop.1, &phone_id).unwrap();
+        // The grant exists on the laptop, but the hostile peer never hands it to the phone.
+
+        let removed =
+            crate::lan::remove_if_proved(&mut phone.0, &phone.1, &withdrawal, "a hostile peer")
+                .unwrap();
+
+        // Nothing in the chain of D87 tells the phone that a later operation exists: `previous` points backwards.
+        assert!(removed, "an authentic withdrawal is obeyed (D101)");
+        assert!(phone.titles().is_empty(), "the phone removed the library");
+    }
+
+    #[test]
+    fn this_device_cannot_assign_a_device_to_a_person_that_does_not_exist_either() {
+        // CON-007, the other way in: what the device writes itself follows the rule it applies to what it receives.
+        let mut laptop = Device::new();
+        let me = device_id_of(&laptop);
+        let person = |device: &Device| -> Option<String> {
+            device
+                .0
+                .query_row(
+                    "SELECT member_id FROM devices WHERE id = ?1",
+                    [&me],
+                    |row| row.get(0),
+                )
+                .unwrap()
+        };
+        let before = person(&laptop);
+        let logged: i64 = laptop
+            .0
+            .query_row("SELECT count(*) FROM operations", [], |r| r.get(0))
+            .unwrap();
+
+        let result =
+            crate::people::assign_device(&mut laptop.0, &laptop.1.clone(), &me, Some("nobody"));
+
+        assert!(result.is_err());
+        assert_eq!(person(&laptop), before);
+        let after: i64 = laptop
+            .0
+            .query_row("SELECT count(*) FROM operations", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(after, logged, "nothing was logged");
+    }
+
     fn vector_of(device: &Device, author: &Device) -> Option<String> {
         version_vectors(&device.0, std::slice::from_ref(&device.1)).unwrap()[&device.1]
             .get(&device_id_of(author))
@@ -2831,13 +3070,13 @@ mod tests {
                 for (library, table, entity_rows) in state(&device.0) {
                     let entity = ORDER.iter().find(|e| e.table() == table).unwrap();
                     for mut row in entity_rows {
+                        // A row the runner itself had put there (an author's registration) only counts if the
+                        // case changed it.
+                        let unchanged = before
+                            .iter()
+                            .any(|(l, t, r)| *l == library && *t == table && r.contains(&row));
                         let id = row.remove("id").unwrap().as_str().unwrap().to_owned();
-                        let untouched = before.iter().any(|(l, t, r)| {
-                            *l == library && *t == table && r.iter().any(|old| old["id"] == id)
-                        });
-                        let registration = entity == &Entity::Device
-                            && authors.contains(&(library.clone(), id.clone()));
-                        if untouched || registration {
+                        if unchanged {
                             continue;
                         }
                         rows.push(ExpectedRow {

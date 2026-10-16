@@ -59,7 +59,7 @@ final readonly class CloudIdentityIssuer
         $publicKey = sodium_bin2base64(sodium_crypto_sign_publickey($pair), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
         // The id comes from the key (D95): nobody can register that id with another key and be believed as the cloud.
         $deviceId = Uuid::fromString(CloudDeviceId::fromPublicKey($publicKey) ?? throw new \LogicException('A freshly generated key is always a key.'));
-        $library->giveCloudIdentity($deviceId, $publicKey, $this->vault->seal(sodium_crypto_sign_secretkey($pair)));
+        $library->giveCloudIdentity($deviceId, $publicKey, $this->vault->seal($library->getId()->toRfc4122(), sodium_crypto_sign_secretkey($pair)));
         $this->entityManager->persist(new CloudDeviceKey($library, $deviceId->toRfc4122(), $publicKey));
         sodium_memzero($pair);
     }

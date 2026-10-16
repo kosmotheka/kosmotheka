@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\DataFixtures\SigningDevice;
+use App\Entity\Membership;
 use App\Tests\Support\DeviceAuthTestTrait;
 use App\Tests\Support\RecordingHub;
 use App\Tests\Support\Spec;
 use Doctrine\DBAL\Connection;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -79,7 +81,7 @@ final class CloudEventsControllerTest extends WebTestCase
         }
     }
 
-    public function testTheTokenCoversTheAccountAndItsLibrariesAndExpiresInAnHour(): void
+    public function testTheTokenCoversTheAccountAndItsLibrariesAndExpiresInTenMinutes(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $other = $this->createCloudLibrary($this->familySession);
@@ -94,10 +96,34 @@ final class CloudEventsControllerTest extends WebTestCase
         self::assertSame($topics, $this->subscribedTopics($this->tokenOf($response['body'])));
         $expires = $claims['exp'];
         \assert(\is_int($expires));
-        self::assertEqualsWithDelta($before + 3600, $expires, 5);
+        self::assertEqualsWithDelta($before + 600, $expires, 5);
         self::assertSame(gmdate('Y-m-d\TH:i:s\Z', $expires), $response['body']['expiresAt']);
         self::assertSame('urn:kosmotheka:server', $claims['iss']);
         self::assertSame('http://mercure.test/.well-known/mercure', $claims['aud']);
+    }
+
+    /** SEG-037: whoever loses the access keeps hearing only until the token they hold runs out, and cannot get another. */
+    public function testAfterTheCutARenewalGivesNoTopicOfThatLibraryAndTheOldTokenRunsOutInTenMinutes(): void
+    {
+        $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
+        $topic = self::TOPIC_PREFIX.'cloud-library:'.$cloud;
+        $held = $this->call('GET', '/v1/cloud/events', $this->familySession)['body'];
+        self::assertIsArray($held['topics']);
+        self::assertContains($topic, $held['topics']);
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $membership = $em->getRepository(Membership::class)->findOneBy(['cloudLibrary' => Uuid::fromString($cloud)]);
+        self::assertInstanceOf(Membership::class, $membership);
+        $membership->withdraw(new \DateTimeImmutable());
+        $em->flush();
+        $renewed = $this->call('GET', '/v1/cloud/events', $this->familySession)['body'];
+
+        self::assertIsArray($renewed['topics']);
+        self::assertNotContains($topic, $renewed['topics']);
+        self::assertNotContains($topic, $this->subscribedTopics($this->tokenOf($renewed)));
+        // What the device already holds is good for ten minutes at most, not an hour.
+        $claims = $this->claimsOf($this->tokenOf($held));
+        self::assertEqualsWithDelta(time() + 600, $claims['exp'], 5);
     }
 
     public function testTheTokenIsSignedWithTheSubscriberKeyAndCannotPublish(): void

@@ -1956,5 +1956,69 @@
       ],
       "rejected": []
     }
+  },
+  {
+    "name": "a device assigned to a person nobody created is skipped, and the device stays as it was",
+    "operations": [
+      {
+        "id": "01997c7e-0000-7000-8000-000000000440",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222001-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.register",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "create",
+            "fields": {
+              "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+              "name": "laptop"
+            }
+          }
+        ],
+        "previous": null
+      },
+      {
+        "id": "01997c7e-0000-7000-8000-000000000441",
+        "library": "01997c7e-0000-7000-8000-00000000aaaa",
+        "hlc": "0001727222222002-00000000-01997c7e-0000-7000-8000-0000000000fa",
+        "intent": "device.assign",
+        "changes": [
+          {
+            "entity": "device",
+            "id": "01997c7e-0000-7000-8000-0000000000fa",
+            "action": "update",
+            "fields": {
+              "member_id": "01997c7e-0000-7000-8000-0000000000bb"
+            }
+          }
+        ],
+        "previous": null
+      }
+    ],
+    "deliveries": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "expect": {
+      "rows": [
+        {
+          "library": "01997c7e-0000-7000-8000-00000000aaaa",
+          "entity": "device",
+          "id": "01997c7e-0000-7000-8000-0000000000fa",
+          "fields": {
+            "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+            "name": "laptop"
+          }
+        }
+      ],
+      "rejected": []
+    }
   }
 ]

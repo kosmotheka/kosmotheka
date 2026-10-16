@@ -17,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The cloud's routes have limits per account (decided on 2026-10-15): uploading and downloading 600 an hour each,
- * claiming and linking 30 an hour together, the token of the live notices 60 an hour. They are spent before anything
+ * claiming and linking 30 an hour together, the token of the live notices 120 an hour. They are spent before anything
  * is looked up, and one account's limit is not another's.
  */
 final class CloudLimitsTest extends WebTestCase
@@ -67,7 +67,7 @@ final class CloudLimitsTest extends WebTestCase
         $client = $this->createTestClient();
         $ada = $this->signInNewDevice($client, 'ada@example.com');
         $grace = $this->signInNewDevice($client, 'grace@example.com');
-        $this->limiter('cloud_events')->create($this->userId('ada@example.com'))->consume(60);
+        $this->limiter('cloud_events')->create($this->userId('ada@example.com'))->consume(120);
 
         $client->request('GET', '/v1/cloud/events', server: $ada['headers']);
         self::assertResponseStatusCodeSame(Response::HTTP_TOO_MANY_REQUESTS);

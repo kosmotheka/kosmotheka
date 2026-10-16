@@ -1520,8 +1520,9 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertIsString($stored);
         self::assertIsString($public);
         self::assertNotSame('', $stored);
-        // Not a private key at all: no 64 bytes of libsodium that belong to the public key.
-        $bytes = sodium_base642bin($stored, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+        // Sealed in the current format (SEG-074), and not a private key at all: no 64 bytes of libsodium that belong to the public key.
+        self::assertStringStartsWith('v1.', $stored);
+        $bytes = sodium_base642bin(substr($stored, 3), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
         self::assertTrue(\SODIUM_CRYPTO_SIGN_SECRETKEYBYTES !== \strlen($bytes) || sodium_crypto_sign_publickey_from_secretkey($bytes) !== sodium_base642bin($public, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING));
         foreach ([$created, $listed] as $response) {
             $json = json_encode($response['body'], \JSON_THROW_ON_ERROR);

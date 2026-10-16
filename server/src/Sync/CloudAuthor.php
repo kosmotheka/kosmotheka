@@ -80,7 +80,7 @@ final readonly class CloudAuthor
             'previous' => $previous['id'] ?? null,
         ];
         try {
-            $secretKey = $this->vault->open($sealed);
+            $secretKey = $this->vault->open($library->getId()->toRfc4122(), $sealed);
         } catch (CloudKeyVaultException) {
             // Another secret than the one the key was sealed with: the cloud cannot sign here, and says so as such.
             throw CloudAuthorException::noIdentity();
