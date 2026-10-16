@@ -106,6 +106,7 @@
 | D98 | Echar a una persona le retira el acceso (dispositivos y cuenta); la persona sigue en el catálogo | aceptada |
 | D99 | Al borrar la cuenta dueña de una biblioteca de la nube, la biblioteca pasa a otra cuenta con acceso | aceptada (revisada el 15/10/2026) |
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
+| D101 | Una retirada firmada se obedece, aunque después haya podido deshacerse | aceptada |
 
 ---
 
@@ -1881,3 +1882,20 @@ Aceptada por el maintainer el 15/10/2026, tras la auditoría de cuentas (SEG-062
 
 **Consecuencias.** Cambios en el servidor y en la app (campos y pantallas nuevas para pedir el segundo factor o un código). Encargo propio.
 
+## D101 · Una retirada firmada se obedece, aunque después haya podido deshacerse — `aceptada`
+
+Aceptada por el maintainer el 16/10/2026, al cerrar SEG-040 antes de abrir el repositorio.
+
+**Contexto.** Un administrador retira el acceso a un dispositivo y después lo deshace. Un servidor hostil, o un dispositivo emparejado hostil, puede entregar al dispositivo solo la retirada y callar lo que la deshizo. La retirada es auténtica: está firmada y encadenada (D87). Pero la cadena de cada autor apunta hacia atrás (`previous`): dice qué había antes de una operación, nunca qué vino después. Quien calla lo último es indistinguible de quien no tiene nada más que contar. Lo reproduce el test `a_withdrawal_that_was_already_undone_does_not_remove_the_library_when_a_hostile_peer_replays_it` (`sync.rs`), sin una sola operación falsa.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **Aceptarlo** | Nada nuevo que construir; la biblioteca solo se pierde en ese dispositivo y se recupera compartiéndola otra vez | Un servidor o un dispositivo hostil puede hacer que alguien con acceso lo pierda en ese dispositivo |
+| Ocultar y esperar a una segunda fuente | El dispositivo no borra por una sola fuente | Un estado y una pantalla nuevos por un riesgo bajo; quien fue expulsado de verdad tarda más en dejar de tener los datos |
+| Cambiar el protocolo (que el dispositivo pueda preguntar «¿es esto lo último tuyo?») | Lo resuelve | Es un hito entero |
+
+**Decisión.** Quien recibe una retirada firmada y auténtica la obedece: borra la biblioteca de ese dispositivo, como hoy. Hace falta un servidor o un dispositivo hostil, y no se pierde nada que no se pueda recuperar: el resto del grupo conserva la biblioteca, y un administrador puede volver a compartirla.
+
+**Consecuencias.** SEG-040 pasa a `aceptado (D101)`. El test que lo reproducía pasa a documentar lo aceptado. Si algún día se cambia el protocolo para la frescura de lo firmado, se revisa esta decisión. Precisa D71 y D87.
