@@ -899,7 +899,7 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 
 **Decisión:**
 - **Android:** APK durante las pruebas, distribuida a familia y amigos con la cuenta de público reducido de Google (hasta 20 dispositivos, sin pago ni documento de identidad); después, Google Play (25 $ una vez, prueba cerrada con 12 personas durante 14 días y verificación de identidad).
-- **F-Droid:** por estudiar, según cómo quede tras la verificación de desarrolladores de Google (desde el 30/09/2026, global en 2027).
+- **F-Droid:** descartado (16/10/2026). Con la verificación de desarrolladores de Google (desde el 30/09/2026, global en 2027) y la app ya en Google Play, no compensa.
 - **iOS, fuera:** exige un Mac y 99 $ al año.
 - Una **landing** pública explica el proyecto y enlaza a la tienda y al código.
 
@@ -1153,7 +1153,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 **Por estudiar cuando llegue:**
 - **Actualizaciones automáticas en escritorio** con el plugin `updater` de Tauri: lee un `latest.json` del mismo *release*. Los ficheros van firmados con otra clave propia, también fuera del repositorio.
 - **Firma de código en Windows:** sin ella, SmartScreen avisa al instalar («Windows protegió su PC»). Los certificados cuestan dinero; hay opciones gratuitas para open source (SignPath Foundation).
-- F-Droid para Android (ya en la Fase 8).
+- ~~F-Droid para Android~~: descartado (16/10/2026, ver D63).
 
 **Consecuencias:**
 - Concreta la página de descargas de D22, que sigue abierta en si la landing va en Symfony o estática; esta propuesta sirve para las dos.
