@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Sync;
 
 use App\Sync\LibraryId;
+use App\Sync\NoLibraryIdException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /** The derivation of D97, the same as `library_id` in crates/domain/src/founding.rs and the vector of spec/README.md. */
@@ -20,12 +22,22 @@ final class LibraryIdTest extends TestCase
         self::assertNotSame(LibraryId::derive(self::KEY, self::NONCE), LibraryId::derive('jojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w', self::NONCE));
     }
 
-    public function testWhatIsNotAKeyAndANonceGivesNoId(): void
+    /** @param array{string, string} $arguments */
+    #[DataProvider('notAKeyAndANonce')]
+    public function testWhatIsNotAKeyAndANonceGivesNoId(array $arguments): void
     {
-        self::assertNull(LibraryId::derive('short', self::NONCE));
-        self::assertNull(LibraryId::derive(self::KEY, 'short'));
-        self::assertNull(LibraryId::derive(self::KEY, ''));
-        self::assertNull(LibraryId::derive('not base64 !', self::NONCE));
-        self::assertNull(LibraryId::derive(self::KEY, 'AAECAwQFBgcICQoLDA0ODxA'), '17 bytes');
+        $this->expectException(NoLibraryIdException::class);
+
+        LibraryId::derive(...$arguments);
+    }
+
+    /** @return iterable<string, array{array{string, string}}> */
+    public static function notAKeyAndANonce(): iterable
+    {
+        yield 'a short key' => [['short', self::NONCE]];
+        yield 'a short nonce' => [[self::KEY, 'short']];
+        yield 'no nonce' => [[self::KEY, '']];
+        yield 'not base64' => [['not base64 !', self::NONCE]];
+        yield 'a nonce of 17 bytes' => [[self::KEY, 'AAECAwQFBgcICQoLDA0ODxA']];
     }
 }

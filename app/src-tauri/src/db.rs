@@ -205,12 +205,21 @@ fn migrate(conn: &mut Connection) -> Result<()> {
 /// Also used by `Database::reset` for an in-memory database (tests only reach
 /// that path, but the function itself is not test-only).
 pub fn open_in_memory() -> Result<Connection> {
+    let mut conn = open_in_memory_blank()?;
+    // The tests start after the welcome: the person already gave a name.
+    #[cfg(test)]
+    crate::settings::set_person_name(&conn, "Tester")?;
+    libraries::ensure_first_library(&mut conn)?;
+    Ok(conn)
+}
+
+/// A new device before the welcome: no name and so no library (D97).
+pub fn open_in_memory_blank() -> Result<Connection> {
     let mut conn = Connection::open_in_memory()?;
     migrate(&mut conn)?;
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
-    libraries::ensure_first_library(&mut conn)?;
     Ok(conn)
 }
 
@@ -233,6 +242,7 @@ pub fn open_in_memory_as(like: &Connection) -> Result<Connection> {
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
+    crate::settings::set_person_name(&conn, "Tester")?;
     libraries::ensure_first_library(&mut conn)?;
     Ok(conn)
 }
@@ -240,6 +250,31 @@ pub fn open_in_memory_as(like: &Connection) -> Result<Connection> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A device before the welcome has no library (D97): what the app does by itself at start, and what the
+    /// welcome screen reads, waits quietly instead of failing.
+    #[test]
+    fn what_starts_by_itself_is_quiet_before_there_is_a_library() {
+        let db = Database::from_connection(open_in_memory_blank().unwrap());
+
+        crate::lan::refresh_device_name(&mut db.lock().unwrap()).unwrap();
+        assert!(
+            libraries::list_libraries(&db.lock().unwrap())
+                .unwrap()
+                .is_empty()
+        );
+        assert!(crate::cloud::status(&db).unwrap().is_empty());
+        assert!(crate::account::account_status(&db).is_ok());
+        assert!(sync::libraries(&db.lock().unwrap()).unwrap().is_empty());
+        assert_eq!(
+            crate::settings::person_name(&db.lock().unwrap()).unwrap(),
+            None
+        );
+        assert_eq!(
+            crate::settings::welcome_seen(&db.lock().unwrap()).unwrap(),
+            0
+        );
+    }
 
     #[test]
     fn the_spec_has_the_same_schema_version_as_the_migrations() {
@@ -597,7 +632,9 @@ mod tests {
 
         let db = Database::open(path.clone()).unwrap();
 
-        let conn = db.lock().unwrap();
+        let mut conn = db.lock().unwrap();
+        // A device before the welcome has no library; the welcome gives the name and founds the first one.
+        libraries::begin(&mut conn, "Tester").unwrap();
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE name = 'wishes'",

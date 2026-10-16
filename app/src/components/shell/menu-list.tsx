@@ -20,13 +20,11 @@ export function MenuList({
 }) {
   const { t } = useTranslation();
   const requests = useRequests();
-  // Requests exist only once the library has roles; administrators see everyone's.
-  const shown = items.filter((item) => item.id !== "requests" || requests.hasRoles);
   const label = (item: NavItem) =>
     item.id === "requests" && requests.myRole === "admin" ? "nav.requestsAdmin" : item.label;
   return (
     <nav className="flex flex-col gap-0.5">
-      {shown.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         const active = item.id === activeId;
         return (

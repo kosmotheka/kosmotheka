@@ -256,11 +256,9 @@ pub struct LibraryCloudStatus {
     /// «Duplicate as new»).
     pub unsigned_history: bool,
     pub can_upload: bool,
-    /// This device administers the library (or it has no roles): only then it can upload it or change who
+    /// This device administers the library: only then it can upload it or change who
     /// the cloud may link (D76).
     pub administers: bool,
-    /// The library has roles. Without them there are no people to link accounts to.
-    pub has_roles: bool,
     /// The library names a cloud device: the cloud may say that a new device of a linked account is its
     /// person's (D76, D95).
     pub cloud_power: bool,
@@ -332,7 +330,6 @@ pub fn status(database: &Database) -> Result<Vec<LibraryCloudStatus>> {
         statuses.push(LibraryCloudStatus {
             can_upload: signed_in && administers && !unsigned_history && !is_linked,
             administers,
-            has_roles: crate::permissions::has_roles(&conn, &library)?,
             cloud_power: people::cloud_device_of(&conn, &library)?.is_some(),
             cloud_library: link.as_ref().and_then(|l| l.cloud_library.clone()),
             cloud_server: link.and_then(|l| l.cloud_server),

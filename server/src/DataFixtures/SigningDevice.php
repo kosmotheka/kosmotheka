@@ -75,7 +75,7 @@ final readonly class SigningDevice
     /** The id of the library this device founds with `$nonce`: it derives from the device's key (D97, rule 1). */
     public function libraryId(string $nonce = self::FOUNDING_NONCE): string
     {
-        return LibraryId::derive($this->publicKey, $nonce) ?? throw new \LogicException('The key and the nonce give no library id.');
+        return LibraryId::derive($this->publicKey, $nonce);
     }
 
     /**

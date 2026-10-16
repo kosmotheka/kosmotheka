@@ -211,6 +211,8 @@ Apuntado para esa revisión:
   - el límite de las cuatro rutas de Google es por IP (30 cada 15 minutos) y lo comparte una casa;
   - la cuenta se crea o se enlaza cuando Google devuelve al navegador, antes de que la app termine: quien abra un enlace de inicio ajeno y entre con su Google deja su cuenta enlazada, aunque nadie llegue a entrar.
 - D97, roles obligatorios. **Decidido por el maintainer el 15/10/2026:** aceptada, se hace antes de publicar.
+  - **Entrega 1 hecha y revisada (16/10/2026):** fundación, id derivado de la clave, sello retirado, reglas de `spec/`.
+  - **Entrega 2 hecha el 16/10/2026 (app, sin probar en pantalla):** la bienvenida pide el nombre y funda «Mi biblioteca» con esa persona de administradora (sin nombre no hay biblioteca); el nombre, uno por dispositivo, se cambia en Ajustes y vale para las bibliotecas que se creen después; al emparejar se elige persona y rol antes de seguir, «editor» por defecto y «administrador» con un aviso, y ya no se puede dejar para luego; fuera `has_roles`, el diálogo de activar, `claim_person`, `NoRoles` y los textos de «sin roles»; al restaurar, el resumen dice si la biblioteca volvió con su id; `LibraryId::derive` lanza `NoLibraryIdException` y el juez lo trata como «no deriva». Queda borrar los datos de prueba (ver novedades).
 - Visto al construir D97 (16/10/2026): por la red local, una retirada que entrega un tercer dispositivo viaja sola, sin las operaciones anteriores de quien retira. Si al dispositivo retirado le falta alguna, no encadena y no la aplica. Por la nube sí van. Sin cambiar todavía.
 
 ### 7.8 Proveedores con clave

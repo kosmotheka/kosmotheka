@@ -12,6 +12,15 @@
 - Al crear la cuenta, la contraseña se elige con el código del correo.
 - En un servidor que solo admite algunas direcciones, la app lo avisa antes de registrarse.
 
+**Lo que cambia para quien usa la app** (roles obligatorios, D97):
+
+- **La primera vez, la app pide tu nombre.** Tu biblioteca se crea a tu nombre, como administrador o administradora; sin nombre no hay biblioteca. Se cambia luego en Ajustes (vale para las bibliotecas que crees después).
+- **Al emparejar un dispositivo hay que decir de quién es y con qué rol** («editor» por defecto; dar «administrador» lleva un aviso).
+- Ya no existe una biblioteca «sin roles»: desaparecen la pantalla para activarlos y las preguntas de «quién eres».
+- **Restaurar una copia en un móvil nuevo no une la biblioteca con la original**: queda como una biblioteca nueva con los mismos libros. Para tener la original, empareja con un dispositivo que la tenga o bájala de la nube.
+
+**Hay que borrar los datos de prueba antes de usar esta versión** (las bibliotecas de antes no se convierten): en cada dispositivo, «Dejar este dispositivo a otra persona» en Ajustes; y en la nube, borrar la cuenta y volver a registrarse. El servidor también cambia (migraciones nuevas, el sello desaparece), así que va a la vez que la app.
+
 **Antes de publicar:** comprobar que `DEFAULT_URI` del servidor de producción es exactamente `https://api.kosmotheka.app` (es parte de lo que se firma; ver [development/server.md](../development/server.md)), y que la app de la prueba interna ya está actualizada.
 
 ## 0.2.0 (11/10/2026, subida a la prueba interna)

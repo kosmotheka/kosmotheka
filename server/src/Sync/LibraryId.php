@@ -18,18 +18,18 @@ final class LibraryId
      * @param string $publicKey Ed25519, base64url without padding
      * @param string $nonce     16 bytes, base64url without padding
      *
-     * @return ?string null when the key is not 32 bytes or the nonce is not 16
+     * @throws NoLibraryIdException when the key is not 32 bytes or the nonce is not 16: nothing derives from them
      */
-    public static function derive(string $publicKey, string $nonce): ?string
+    public static function derive(string $publicKey, string $nonce): string
     {
         try {
             $key = sodium_base642bin($publicKey, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
             $salt = sodium_base642bin($nonce, \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
         } catch (\SodiumException) {
-            return null;
+            throw NoLibraryIdException::notAKeyAndANonce();
         }
         if (\SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== \strlen($key) || self::NONCE_BYTES !== \strlen($salt)) {
-            return null;
+            throw NoLibraryIdException::notAKeyAndANonce();
         }
         $bytes = substr(hash('sha256', $key.$salt, true), 0, 16);
         $bytes[6] = \chr(\ord($bytes[6]) & 0x0F | 0x80);

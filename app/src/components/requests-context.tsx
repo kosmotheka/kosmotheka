@@ -4,14 +4,12 @@ import { type Role, listPeople, listRequests } from "@/lib/api";
 
 /** What the menus need to know about requests in the active library (D73). */
 export interface RequestsState {
-  /** The library has roles; without them there are no requests. */
-  hasRoles: boolean;
   myRole: Role | null;
   /** Administrators: pending requests from others. Everyone else: their own pending ones. */
   pending: number;
 }
 
-const empty: RequestsState = { hasRoles: false, myRole: null, pending: 0 };
+const empty: RequestsState = { myRole: null, pending: 0 };
 
 export const RequestsContext = createContext<RequestsState>(empty);
 
@@ -31,7 +29,7 @@ export function useRequestsState(version: number): RequestsState {
         const pending = requests.filter(
           (r) => r.status === "pending" && (admin ? !r.mine : r.mine),
         ).length;
-        setState({ hasRoles: people.hasRoles, myRole: people.myRole, pending });
+        setState({ myRole: people.myRole, pending });
       })
       .catch(() => !cancelled && setState(empty));
     return () => {

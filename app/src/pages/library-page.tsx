@@ -41,9 +41,9 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   const [saved, setSaved] = useState(false);
   const [devices, setDevices] = useState<KnownDevice[]>([]);
   const [devicesVersion, setDevicesVersion] = useState(0);
-  // Only where it is the way out: a library with roles this device cannot administer.
-  const { hasRoles, myRole } = useRequests();
-  const mayDuplicate = hasRoles && myRole !== "admin";
+  // Only where it is the way out: a library this device cannot administer.
+  const { myRole } = useRequests();
+  const mayDuplicate = myRole !== "admin";
   const cloudRow = useCloudRows().find((row) => row.library.id === library?.id);
 
   // Another library became active: start from its name.
@@ -237,7 +237,7 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
           </section>
         )}
 
-        {cloudRow?.status.linkedHere && cloudRow.status.hasRoles && (
+        {cloudRow?.status.linkedHere && (
           <AutolinkSwitch status={cloudRow.status} library={nameOf(library)} desktop={desktop} />
         )}
 

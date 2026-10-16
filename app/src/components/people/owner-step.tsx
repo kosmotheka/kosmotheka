@@ -19,7 +19,9 @@ import { cn } from "@/lib/utils";
 /**
  * The step after pairing (Design, phase 5 §6, D73): whose the new device is, and
  * the role that person gets where they have none yet. A role is never inherited:
- * it is chosen here. On mobile the roles go on a step of their own.
+ * it is chosen here, «editor» unless said otherwise, and giving «administrator» is said out loud (D97). The
+ * step cannot be skipped: a device that received a library is nobody's until someone says whose it is. On
+ * mobile the roles go on a step of their own.
  */
 export function OwnerStep({
   deviceId,
@@ -32,8 +34,7 @@ export function OwnerStep({
   deviceName: string;
   owners: PairingOwners;
   desktop: boolean;
-  /** With a message; `null` when skipped, so the device stays nobody's. */
-  onDone: (message: string | null) => void;
+  onDone: (message: string) => void;
 }) {
   const { t } = useTranslation();
   const libraries = useLibraries();
@@ -50,20 +51,17 @@ export function OwnerStep({
   const person = owners.people.find((p) => p.id === pick) ?? null;
   const isNew = pick === "new";
   const name = isNew ? newName.trim() : (person?.name ?? "");
-  // Where the person has no role yet, one has to be chosen.
+  // Where the person has no role yet, one is given: «editor» unless another is chosen.
   const missing = owners.libraries.filter((id) => !person?.roles[id]);
-  const ready = pick !== null && name !== "" && missing.every((id) => chosen[id] !== undefined);
+  const roleIn = (id: string): Role => chosen[id] ?? "editor";
+  const ready = pick !== null && name !== "";
+  const givesAdmin = missing.some((id) => roleIn(id) === "admin");
 
   const give = async () => {
     setBusy(true);
     setError(null);
     try {
-      const roles = Object.fromEntries(
-        missing.flatMap((id) => {
-          const role = chosen[id];
-          return role ? [[id, role] as const] : [];
-        }),
-      );
+      const roles = Object.fromEntries(missing.map((id) => [id, roleIn(id)] as const));
       await giveAccess(deviceId, { id: isNew ? null : pick, name }, roles, canShare);
       onDone(t("pair.owner.done", { device: deviceName, person: name }));
     } catch (e) {
@@ -162,11 +160,11 @@ export function OwnerStep({
                       key={role}
                       type="button"
                       role="radio"
-                      aria-checked={chosen[id] === role}
+                      aria-checked={roleIn(id) === role}
                       onClick={() => setChosen({ ...chosen, [id]: role })}
                       className={cn(
                         "h-8 rounded-md px-2.5 text-[13px] text-muted-foreground",
-                        chosen[id] === role &&
+                        roleIn(id) === role &&
                           "bg-background font-medium text-foreground shadow-sm",
                       )}
                     >
@@ -188,10 +186,13 @@ export function OwnerStep({
           <Switch checked={canShare} label={t("people.canShare")} onChange={setCanShare} />
         </div>
       )}
-      {!ready && pick !== null && (
-        <p className="text-[13px] text-muted-foreground">
-          {name === "" ? t("pair.owner.needName") : t("pair.owner.needRoles")}
+      {givesAdmin && (
+        <p role="note" className="rounded-xl bg-warning-soft px-3.5 py-3 text-[13px] leading-snug">
+          {t("pair.owner.adminWarning")}
         </p>
+      )}
+      {!ready && pick !== null && (
+        <p className="text-[13px] text-muted-foreground">{t("pair.owner.needName")}</p>
       )}
     </section>
   );
@@ -203,11 +204,6 @@ export function OwnerStep({
       onClick={() => void give()}
     >
       {name ? t("pair.owner.give", { person: name }) : t("pair.owner.giveNobody")}
-    </Button>
-  );
-  const later = (
-    <Button variant="outline" className={cn(!desktop && "h-12")} onClick={() => onDone(null)}>
-      {t("pair.owner.later")}
     </Button>
   );
 
@@ -235,10 +231,7 @@ export function OwnerStep({
           {pick !== null ? rolesSection : <div />}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex justify-end gap-2 border-t pt-4">
-          {later}
-          {giveButton}
-        </div>
+        <div className="flex justify-end gap-2 border-t pt-4">{giveButton}</div>
       </div>
     );
   }
@@ -262,7 +255,6 @@ export function OwnerStep({
         ) : (
           giveButton
         )}
-        {page === "who" && later}
       </div>
     </div>
   );

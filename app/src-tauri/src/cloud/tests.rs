@@ -2721,9 +2721,9 @@ async fn a_library_removed_by_the_cloud_keeps_its_name_in_the_report() {
     assert_eq!(removed.library_name.as_deref(), Some("Casa"));
 }
 
-/// The upload screen asks Rust who administers and whether there are roles; it decides nothing itself.
+/// The upload screen asks Rust who administers; it decides nothing itself.
 #[tokio::test]
-async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
+async fn the_status_says_who_administers_the_library() {
     let (laptop, phone, lib) = laptop_admin_phone_reader();
     let of = |device: &Database, library: &str| {
         let status = status(device)
@@ -2731,11 +2731,11 @@ async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
             .into_iter()
             .find(|s| s.library == library)
             .unwrap();
-        (status.administers, status.has_roles, status.cloud_power)
+        (status.administers, status.cloud_power)
     };
 
-    assert_eq!(of(&laptop, &lib), (true, true, false));
-    assert_eq!(of(&phone, &lib), (false, true, false), "a reader");
+    assert_eq!(of(&laptop, &lib), (true, false));
+    assert_eq!(of(&phone, &lib), (false, false), "a reader");
 }
 
 fn sign_in_as(device: &Database, user: &str) {

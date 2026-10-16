@@ -133,6 +133,26 @@ pub fn person_name(conn: &Connection) -> Result<Option<String>> {
     Ok(read_state(conn, PERSON_NAME_KEY)?.filter(|name| !name.trim().is_empty()))
 }
 
+/// The longest name a person can give.
+const PERSON_NAME_MAX: usize = 100;
+
+/// Saves the name this device's person founds libraries with. Blank or too long is refused.
+pub fn set_person_name(conn: &Connection, raw: &str) -> Result<String> {
+    let name = raw.trim();
+    let code = if name.is_empty() {
+        Some(ErrorCode::Required)
+    } else if name.chars().count() > PERSON_NAME_MAX {
+        Some(ErrorCode::OutOfRange)
+    } else {
+        None
+    };
+    if let Some(code) = code {
+        return Err(Error::Validation(vec![FieldError::new("name", code)]));
+    }
+    write_state(conn, PERSON_NAME_KEY, Some(name))?;
+    Ok(name.to_owned())
+}
+
 const APP_LOCK_KEY: &str = "app_lock";
 
 /// Whether the fingerprint/face lock is on (D78). Off by default, like the key being absent.

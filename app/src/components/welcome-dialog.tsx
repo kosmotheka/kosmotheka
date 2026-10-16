@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LibraryBig, ScanBarcode, Search, Users } from "lucide-react";
+import { LibraryBig, ScanBarcode, Search, UserRound, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { type Settings, type Source, getSettings, isMobile, saveSettings } from "@/lib/api";
+import {
+  type Settings,
+  type Source,
+  beginWithName,
+  getSettings,
+  isMobile,
+  personName,
+  saveSettings,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /** Raise it when the welcome adds a search service, so everyone sees it again (D91). */
@@ -20,17 +29,31 @@ const KEYLESS_SOURCES: Source[] = [
   "music_brainz",
 ];
 
-type Step = "local" | "scan" | "search" | "share";
+type Step = "name" | "local" | "scan" | "search" | "share";
 
 /**
- * First-run welcome (D91): what stays on the device, scanning, and which public
- * catalogs the app asks, each one with its switch, so nothing happens unannounced.
+ * First-run welcome (D91): the person's name first (D97), then what stays on the device, scanning, and which
+ * public catalogs the app asks, each one with its switch, so nothing happens unannounced. Until the name is
+ * given there is no library, so it cannot be skipped. `onlyName`: the rest was seen before.
  */
-export function WelcomeDialog({ open, onDone }: { open: boolean; onDone: () => void }) {
+export function WelcomeDialog({
+  open,
+  onlyName = false,
+  onDone,
+}: {
+  open: boolean;
+  onlyName?: boolean;
+  onDone: () => void;
+}) {
   const { t } = useTranslation();
   const [mobile, setMobile] = useState(false);
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings | null>(null);
+  // `null`: still asking; empty or a name: what the person typed or already had.
+  const [named, setNamed] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [seeded, setSeeded] = useState(false);
 
@@ -40,14 +63,24 @@ export function WelcomeDialog({ open, onDone }: { open: boolean; onDone: () => v
     setIndex(0);
     void isMobile().then(setMobile);
     void getSettings().then(setSettings);
+    setError(null);
+    void personName().then((name) => {
+      setNamed(name ?? "");
+      setDraft(name ?? "");
+    });
   }
   if (!open && seeded) setSeeded(false);
 
   if (!open) return null;
 
-  const steps: Step[] = mobile
-    ? ["local", "scan", "search", "share"]
-    : ["local", "search", "share"];
+  const rest: Step[] = onlyName
+    ? []
+    : mobile
+      ? ["local", "scan", "search", "share"]
+      : ["local", "search", "share"];
+  // Asked while there is no name yet; a name that is already there is not asked again.
+  const steps: Step[] = named === "" ? ["name", ...rest] : rest;
+  if (steps.length === 0) return null;
   const step = steps[Math.min(index, steps.length - 1)] ?? "local";
   const last = index >= steps.length - 1;
 
@@ -61,7 +94,35 @@ export function WelcomeDialog({ open, onDone }: { open: boolean; onDone: () => v
     void saveSettings(next);
   };
 
-  const Icon = { local: LibraryBig, scan: ScanBarcode, search: Search, share: Users }[step];
+  const Icon = {
+    name: UserRound,
+    local: LibraryBig,
+    scan: ScanBarcode,
+    search: Search,
+    share: Users,
+  }[step];
+
+  const next = async () => {
+    if (step === "name") {
+      setBusy(true);
+      setError(null);
+      try {
+        await beginWithName(draft.trim());
+        setNamed(draft.trim());
+        // The name step is gone from the list now: the next one is at the same place.
+        if (rest.length === 0) onDone();
+        else setIndex(0);
+      } catch (e) {
+        setError(t("welcome.name.invalid"));
+        console.error(e);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (last) onDone();
+    else setIndex(index + 1);
+  };
 
   return (
     <div
@@ -81,6 +142,24 @@ export function WelcomeDialog({ open, onDone }: { open: boolean; onDone: () => v
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             {t(`welcome.${step}.body`)}
           </p>
+          {step === "name" && (
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              {t("welcome.name.label")}
+              <Input
+                autoFocus
+                value={draft}
+                maxLength={100}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && draft.trim() && !busy) void next();
+                }}
+              />
+            </label>
+          )}
+          {step === "name" && (
+            <p className="text-xs text-muted-foreground">{t("welcome.name.hint")}</p>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           {step === "search" && (
             <ul className="flex flex-col divide-y rounded-[14px] border">
               {KEYLESS_SOURCES.map((source) => (
@@ -116,12 +195,12 @@ export function WelcomeDialog({ open, onDone }: { open: boolean; onDone: () => v
           ))}
         </div>
         <div className="flex gap-2">
-          {!last && (
+          {!last && step !== "name" && (
             <Button variant="ghost" onClick={onDone}>
               {t("welcome.skip")}
             </Button>
           )}
-          <Button onClick={() => (last ? onDone() : setIndex(index + 1))}>
+          <Button disabled={busy || (step === "name" && !draft.trim())} onClick={() => void next()}>
             {t(last ? "welcome.start" : "welcome.next")}
           </Button>
         </div>

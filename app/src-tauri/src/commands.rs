@@ -691,16 +691,6 @@ pub fn list_people(database: State<'_, Database>) -> Result<People> {
 
 /// People known in other libraries of this device, to reuse in the active one.
 #[tauri::command]
-pub fn known_people(database: State<'_, Database>) -> Result<Vec<people::KnownPerson>> {
-    let conn = database.lock()?;
-    people::known_elsewhere(&conn, &ops::active_library(&conn)?)
-}
-
-/// Whose a newly paired device is, with the role its person gets in each library
-/// where they have none yet (a role is chosen, never inherited).
-// --- Marks (D68) -----------------------------------------------------------------
-
-#[tauri::command]
 pub fn work_marks(database: State<'_, Database>, work_id: String) -> Result<marks::WorkMarks> {
     let conn = database.lock()?;
     marks::work_marks(&conn, &ops::active_library(&conn)?, &work_id)
@@ -711,19 +701,6 @@ pub fn set_mark(database: State<'_, Database>, work_id: String, mark: marks::Mar
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     marks::set_mark(&mut conn, &library, &work_id, &mark)
-}
-
-#[tauri::command]
-pub fn claim_candidates(database: State<'_, Database>) -> Result<Vec<marks::Candidate>> {
-    let conn = database.lock()?;
-    marks::claim_candidates(&conn, &ops::active_library(&conn)?)
-}
-
-#[tauri::command]
-pub fn claim_person(database: State<'_, Database>, person: people::PersonPick) -> Result<()> {
-    let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    marks::claim_person(&mut conn, &library, &person)
 }
 
 #[tauri::command]
@@ -903,6 +880,28 @@ pub fn app_lock_enabled(database: State<'_, Database>) -> Result<bool> {
 pub fn set_app_lock(database: State<'_, Database>, enabled: bool) -> Result<()> {
     let conn = database.lock()?;
     settings::set_app_lock(&conn, enabled)
+}
+
+/// The name this device's person goes by (D97); `None` until the welcome has it.
+#[tauri::command]
+pub fn person_name(database: State<'_, Database>) -> Result<Option<String>> {
+    let conn = database.lock()?;
+    settings::person_name(&conn)
+}
+
+/// The welcome's first question: the name, and with it «Mi biblioteca» founded with that person as its
+/// administrator.
+#[tauri::command]
+pub fn begin_with_name(database: State<'_, Database>, name: String) -> Result<()> {
+    let mut conn = database.lock()?;
+    libraries::begin(&mut conn, &name)
+}
+
+/// Changes the name the libraries created from now on are founded with. The ones that exist keep theirs.
+#[tauri::command]
+pub fn set_person_name(database: State<'_, Database>, name: String) -> Result<String> {
+    let conn = database.lock()?;
+    settings::set_person_name(&conn, &name)
 }
 
 #[tauri::command]

@@ -61,13 +61,14 @@ import {
   catalogOptions,
   cloudEventsWake,
   getBook,
-  setWelcomeSeen,
-  welcomeSeen,
   lanStatus,
   listBooks,
   listLibraries,
   pendingInvitation,
+  personName,
   setActiveLibrary,
+  setWelcomeSeen,
+  welcomeSeen,
 } from "@/lib/api";
 import { refreshAccount, useAccount } from "@/lib/account";
 import { cloudNotices, refreshCloudStatus, runCloudSync, watchCloudConnection } from "@/lib/cloud";
@@ -96,7 +97,40 @@ function useDebounced<T>(value: T, delay: number): T {
 /** How often the LAN is asked while the app is in the foreground. */
 const LAN_POLL_MS = 5 * 60_000;
 
+/**
+ * Before the welcome has the person's name there is no library (D97): nothing but the welcome is mounted, so no
+ * screen or hook asks for data that is not there. Once the name is in, the app starts as usual.
+ */
 export default function App() {
+  const [gate, setGate] = useState<"loading" | "naming" | "ready">("loading");
+  const [restSeen, setRestSeen] = useState(false);
+  useEffect(() => {
+    Promise.all([personName(), welcomeSeen()])
+      .then(([name, seen]) => {
+        setRestSeen(seen >= WELCOME_VERSION);
+        setGate(name === null ? "naming" : "ready");
+      })
+      // If it cannot be asked, start as usual: at worst the first screen shows its own error.
+      .catch(() => setGate("ready"));
+  }, []);
+
+  if (gate === "loading") return <div className="min-h-screen bg-background" />;
+  if (gate === "naming") {
+    return (
+      <WelcomeDialog
+        open
+        onlyName={restSeen}
+        onDone={() => {
+          if (!restSeen) void setWelcomeSeen(WELCOME_VERSION);
+          setGate("ready");
+        }}
+      />
+    );
+  }
+  return <AppShell />;
+}
+
+function AppShell() {
   const { t } = useTranslation();
   const { section, overlay } = useLocation();
   const desktop = useDesktop();

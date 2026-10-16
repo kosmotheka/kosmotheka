@@ -10,6 +10,7 @@ use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\Role;
 use App\Sync\LibraryId;
+use App\Sync\NoLibraryIdException;
 
 /**
  * Who may do what in a library (D55, D73): port of crates/domain/src/permission.rs. Pure rules, no database.
@@ -63,7 +64,15 @@ final class Permissions
             }
         }
 
-        return null !== $nonce && null !== $key && LibraryId::derive($key, $nonce) === strtolower($operation->library);
+        if (null === $nonce || null === $key) {
+            return false;
+        }
+        try {
+            return LibraryId::derive($key, $nonce) === strtolower($operation->library);
+        } catch (NoLibraryIdException) {
+            // A key or a nonce that are not one: nothing derives from them, so this founds nothing.
+            return false;
+        }
     }
 
     /** Whether the change writes `member.account_id` or `device.member_id` / `device.vouched_key`, the fields the cloud device has a say in (D76, D96). */

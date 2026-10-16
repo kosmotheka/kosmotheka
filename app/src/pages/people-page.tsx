@@ -5,21 +5,17 @@ import {
   ChevronRight,
   Cloud,
   Ellipsis,
-  Inbox,
   Lock,
   MailPlus,
   QrCode,
-  ShieldCheck,
   Smartphone,
   Tablet,
   TriangleAlert,
   UserRoundPlus,
-  Users,
 } from "lucide-react";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { AccessDialog } from "@/components/people/access-dialog";
-import { ActivateDialog } from "@/components/people/activate-dialog";
 import { InvitationNote } from "@/components/people/invitation-note";
 import { InviteDialog } from "@/components/people/invite-dialog";
 import { PersonSheet } from "@/components/people/person-sheet";
@@ -77,7 +73,6 @@ export function PeoplePage({
   const library = useLibraryName()(libraries.active);
   const [people, setPeople] = useState<People | null>(null);
   const [reloads, setReloads] = useState(0);
-  const [activating, setActivating] = useState(false);
   const [sheet, setSheet] = useState<Person | null>(null);
   const [access, setAccess] = useState<{ person: Person; mode: "withdraw" | "restore" } | null>(
     null,
@@ -118,7 +113,7 @@ export function PeoplePage({
 
   const isAdmin = people?.myRole === "admin";
   const activeId = libraries.active?.id;
-  const listsInvitations = isAdmin && people.hasRoles && inCloud;
+  const listsInvitations = isAdmin && inCloud;
 
   // Somebody accepting changes the list; so does the cloud telling us something changed (it reloads `version`).
   useEffect(() => {
@@ -159,11 +154,9 @@ export function PeoplePage({
     <div className="flex items-end gap-4">
       <div className="flex flex-1 flex-col gap-1">
         <h1 className="text-[22px] font-semibold tracking-tight">{t("people.title")}</h1>
-        <p className="text-[13px] text-muted-foreground">
-          {people?.hasRoles ? t("people.subtitle", { library }) : library}
-        </p>
+        <p className="text-[13px] text-muted-foreground">{t("people.subtitle", { library })}</p>
       </div>
-      {isAdmin && people.hasRoles && (
+      {isAdmin && (
         <>
           <Button variant="outline" onClick={() => setInviting({ person: null })}>
             <MailPlus /> {t("invitations.invite.button")}
@@ -190,28 +183,6 @@ export function PeoplePage({
   );
 
   if (people === null) return <div className="flex min-h-full flex-col gap-5">{header}</div>;
-
-  if (!people.hasRoles) {
-    return (
-      <div className="flex min-h-full flex-col gap-5">
-        {header}
-        <Empty desktop={desktop} library={library} onContinue={() => setActivating(true)} />
-        {activating && (
-          <ActivateDialog
-            open
-            people={people}
-            library={library}
-            onClose={() => setActivating(false)}
-            onDone={(message) => {
-              setActivating(false);
-              onNotice(message);
-              reload();
-            }}
-          />
-        )}
-      </div>
-    );
-  }
 
   const others = withAccess.filter((p) => p.role !== "admin");
   const adminName = admins[0]?.name ?? "";
@@ -583,20 +554,6 @@ export function PeoplePage({
             setInvitationReloads((n) => n + 1);
             reload();
           }}
-          onActivate={() => setActivating(true)}
-        />
-      )}
-      {activating && (
-        <ActivateDialog
-          open
-          people={people}
-          library={library}
-          onClose={() => setActivating(false)}
-          onDone={(message) => {
-            setActivating(false);
-            onNotice(message);
-            reload();
-          }}
         />
       )}
       <RevokeDialog
@@ -610,61 +567,6 @@ export function PeoplePage({
           reload();
         }}
       />
-    </div>
-  );
-}
-
-/** A library without roles yet (Design 04): what changes, and how to start. */
-function Empty({
-  desktop,
-  library,
-  onContinue,
-}: {
-  desktop: boolean;
-  library: string;
-  onContinue: () => void;
-}) {
-  const { t } = useTranslation();
-  const points = [
-    { icon: Smartphone, text: t("people.empty.devices") },
-    { icon: Users, text: t("people.empty.roles") },
-    { icon: Inbox, text: t("people.empty.requests") },
-  ];
-  const action = (
-    <div className="flex flex-col gap-3.5 rounded-2xl bg-muted p-5 sm:max-w-[340px]">
-      <p className="flex gap-2.5 text-sm leading-relaxed text-pretty">
-        <ShieldCheck className="mt-0.5 size-[18px] shrink-0 text-muted-foreground" />
-        {t("people.empty.you", { library })}
-      </p>
-      <Button className={desktop ? undefined : "h-[52px]"} onClick={onContinue}>
-        <Users /> {t("people.empty.continue")}
-      </Button>
-    </div>
-  );
-  return (
-    <div className="flex max-w-[980px] flex-col gap-8 sm:flex-row sm:rounded-2xl sm:border sm:p-8">
-      <div className="flex flex-1 flex-col gap-3.5">
-        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Users className="size-[22px]" />
-        </span>
-        <h2 className="text-[22px] leading-tight font-semibold tracking-tight">
-          {t("people.empty.title", { library })}
-        </h2>
-        <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
-          {t("people.empty.today", { library })}
-        </p>
-        <ul className="flex flex-col gap-3 text-sm leading-snug">
-          {points.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-start gap-3">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                <Icon className="size-4" />
-              </span>
-              <span className="pt-1.5 text-pretty">{text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      {action}
     </div>
   );
 }

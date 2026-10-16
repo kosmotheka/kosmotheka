@@ -523,7 +523,7 @@ export interface BackupSummary {
 
 /** What a restore did, library by library. */
 export interface RestoreSummary {
-  restored: { id: string; name: string; books: number; copies: number }[];
+  restored: { id: string; name: string; books: number; copies: number; sameId: boolean }[];
   /** Libraries this device already had with content; left as they were. */
   skipped: string[];
   covers: number;
@@ -686,6 +686,21 @@ export function welcomeSeen(): Promise<number> {
   return invoke<number>("welcome_seen");
 }
 
+/** The name this device's person goes by (D97); `null` until the welcome has it. */
+export function personName(): Promise<string | null> {
+  return invoke<string | null>("person_name");
+}
+
+/** The welcome's first question: with the name, «Mi biblioteca» is founded with this person as its administrator. */
+export function beginWithName(name: string): Promise<void> {
+  return invoke("begin_with_name", { name });
+}
+
+/** Changes the name for the libraries created from now on; the ones that exist keep theirs. */
+export function setPersonName(name: string): Promise<string> {
+  return invoke<string>("set_person_name", { name });
+}
+
 export function setWelcomeSeen(version: number): Promise<void> {
   return invoke("set_welcome_seen", { version });
 }
@@ -798,7 +813,6 @@ export interface Person {
 }
 
 export interface People {
-  hasRoles: boolean;
   myRole: Role | null;
   people: Person[];
   /** Devices that belong to nobody: they count as readers. */
@@ -807,36 +821,14 @@ export interface People {
   loneAdmin: boolean;
 }
 
-/** Someone in other libraries of this device but not in the active one. */
-export interface KnownPerson {
-  id: string;
-  name: string;
-  libraries: string[];
-}
-
 /** A person picked on screen: an existing one (`id`) or somebody new (`name`). */
 export interface PersonPick {
   id: string | null;
   name: string;
 }
 
-export interface DeviceOwner {
-  deviceId: string;
-  /** `null`: nobody's, so it counts as a reader. */
-  person: PersonPick | null;
-  role: Role | null;
-}
-
 export function listPeople(): Promise<People> {
   return invoke<People>("list_people");
-}
-
-export function knownPeople(): Promise<KnownPerson[]> {
-  return invoke<KnownPerson[]>("known_people");
-}
-
-export function startRoles(name: string, owners: DeviceOwner[]): Promise<string> {
-  return invoke<string>("start_roles", { name, owners });
 }
 
 export function setRole(member: string, role: Role | null, canShare: boolean): Promise<void> {
@@ -1000,14 +992,6 @@ export interface WorkMarks {
   others: PersonMark[];
   /** This device belongs to a person, so it can mark. */
   canMark: boolean;
-  /** It belongs to nobody and the library has no roles: it may say who it is. */
-  mayClaim: boolean;
-}
-
-export interface ClaimCandidate {
-  id: string;
-  name: string;
-  copies: number;
 }
 
 export function workMarks(workId: string): Promise<WorkMarks> {
@@ -1016,14 +1000,6 @@ export function workMarks(workId: string): Promise<WorkMarks> {
 
 export function setMark(workId: string, mark: Mark): Promise<void> {
   return invoke("set_mark", { workId, mark });
-}
-
-export function claimCandidates(): Promise<ClaimCandidate[]> {
-  return invoke<ClaimCandidate[]>("claim_candidates");
-}
-
-export function claimPerson(person: PersonPick): Promise<void> {
-  return invoke("claim_person", { person });
 }
 
 export interface SeriesSummary {
@@ -1386,10 +1362,8 @@ export interface LibraryCloudStatus {
   /** Its log has operations without a signature: «Duplicate as new» instead (D58). */
   unsignedHistory: boolean;
   canUpload: boolean;
-  /** This device administers it, or it has no roles: only then it uploads it or changes the cloud's power. */
+  /** This device administers it: only then it uploads it or changes the cloud's power. */
   administers: boolean;
-  /** It has roles; without them there are no people to link accounts to. */
-  hasRoles: boolean;
   /** The cloud may link new devices of linked accounts to their person (D76). */
   cloudPower: boolean;
 }
@@ -1474,7 +1448,6 @@ export function cloudErrorKey(error: unknown): string {
 /** The app's own reasons for the invitation commands, before or instead of asking the server. */
 type InvitationAppReason =
   | "not_in_cloud"
-  | "no_roles"
   | "no_cloud_power"
   | "server_without_invitations"
   | "invalid_email"
@@ -1495,12 +1468,7 @@ type InvitationState = "pending" | "accepted" | "revoked" | "expired" | "unknown
  * Why a library cannot invite now.
  */
 type InviteBlocker =
-  | "not_signed_in"
-  | "not_in_cloud"
-  | "no_roles"
-  | "not_admin"
-  | "no_cloud_power"
-  | "server_without_invitations";
+  "not_signed_in" | "not_in_cloud" | "not_admin" | "no_cloud_power" | "server_without_invitations";
 
 export interface InviteStatus {
   canInvite: boolean;
@@ -1651,7 +1619,6 @@ const INVITATION_REASONS = [
   "too_many_requests",
   "not_signed_in",
   "not_in_cloud",
-  "no_roles",
   "no_cloud_power",
   "server_without_invitations",
   "invalid_email",

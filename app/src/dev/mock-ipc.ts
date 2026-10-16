@@ -38,6 +38,9 @@ let mockSettings: Settings = { apiKeys: {}, disabledSources: [], googleBooksViaS
 // shows as unavailable here; `?lock` renders the lock screen directly instead.
 let mockAppLock = false;
 let mockWelcomeSeen = 0;
+let mockPersonName: string | null = new URLSearchParams(window.location.search).has("noname")
+  ? null
+  : "Ana";
 let mockAppLockAfter = 60;
 
 const HOME = "01997c7e-0000-7000-8000-00000000a0e1";
@@ -527,7 +530,7 @@ const lan: LanStatus = {
   clients: [],
 };
 
-// `?noroles` shows a library without roles yet; `?reader` sees it as Hugo.
+// `?reader` sees the library as Hugo; `?noname` is a device before the welcome has the person's name.
 const params = new URLSearchParams(window.location.search);
 
 // `?welcome`: every library reports no works, so the first-run screen shows (D77).
@@ -622,7 +625,6 @@ const dev = (id: string, name: string, thisDevice = false) => ({
   linkedBy: null,
 });
 const people: People = {
-  hasRoles: !params.has("noroles"),
   myRole: params.has("reader") ? "reader" : "admin",
   loneAdmin: true,
   people: [
@@ -671,14 +673,6 @@ const people: People = {
 // `?withdrawn` sends Hugo away (D98): no access, no devices, still in the catalog.
 if (params.has("withdrawn"))
   people.people = people.people.map((p) => (p.id === "hugo" ? { ...p, devices: [] } : p));
-if (params.has("noroles")) {
-  people.people = people.people.map((p) => ({ ...p, role: null, devices: [] }));
-  people.unassigned = [
-    dev("dev", "Portátil", true),
-    dev("phone", "Móvil de Laura"),
-    dev("tablet", "Tablet Lenovo"),
-  ];
-}
 
 // `?stale` makes Hugo's request no longer applicable; `?elsewhere` has Laura
 // has already accepted it when Ana tries to.
@@ -787,9 +781,7 @@ const requests: ChangeRequest[] = [
   ),
 ];
 
-// Marks (D68): `?who` asks «Who are you?» first; `?locked` is a device of nobody
-// in a library with roles.
-let claimed = !params.has("who") && !params.has("locked");
+// Marks (D68): `?locked` is a device of nobody.
 const myMarks = new Map<string, Mark>();
 // One missing work already wished by "me", so the wish colour and «Lo desea…»
 // wording both show without having to click anything first (D61).
@@ -1043,6 +1035,12 @@ mockIPC((cmd, args) => {
       return new URLSearchParams(window.location.search).has("mobile");
     case "plugin:app|version":
       return "0.0.0-dev";
+    case "person_name":
+      return mockPersonName;
+    case "begin_with_name":
+    case "set_person_name":
+      mockPersonName = (args as { name: string }).name.trim();
+      return mockPersonName;
     case "welcome_seen":
       return mockWelcomeSeen;
     case "set_welcome_seen":
@@ -1103,8 +1101,7 @@ mockIPC((cmd, args) => {
       return {
         mine: myMarks.get(workId) ?? null,
         others: workId.endsWith("1") ? othersMarks : othersMarks.slice(0, 1),
-        canMark: claimed,
-        mayClaim: !claimed && !params.has("locked"),
+        canMark: !params.has("locked"),
       };
     }
     case "set_mark": {
@@ -1112,14 +1109,6 @@ mockIPC((cmd, args) => {
       myMarks.set(workId, mark);
       return null;
     }
-    case "claim_candidates":
-      return [
-        { id: "laura", name: "Laura", copies: 12 },
-        { id: "hugo", name: "Hugo", copies: 5 },
-      ];
-    case "claim_person":
-      claimed = true;
-      return null;
     case "get_book": {
       const id = (args as { editionId: string }).editionId;
       const found = books.find((b) => b.editionId === id) ?? bookAt(0);
@@ -1357,8 +1346,6 @@ mockIPC((cmd, args) => {
           acquiredOn: null,
         },
       };
-    case "known_people":
-      return [{ id: "marcos", name: "Marcos", libraries: ["Club de rol"] }];
     case "get_settings":
       return mockSettings;
     case "cloud_metadata_offers":

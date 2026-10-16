@@ -68,8 +68,6 @@ impl Invitable {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct People {
-    /// Whether the library has roles yet. Without them everyone may do everything.
-    pub has_roles: bool,
     /// The role of the person this device belongs to, if any.
     pub my_role: Option<String>,
     pub people: Vec<Person>,
@@ -178,44 +176,11 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
         .find(|p| p.devices.iter().any(|d| d.this_device))
         .and_then(|p| p.role.clone());
     Ok(People {
-        has_roles: permissions::has_roles(conn, library)?,
         my_role,
         people,
         unassigned,
         lone_admin,
     })
-}
-
-/// Someone known in other libraries of this device but not in this one: the same
-/// person can join it with the same member id (D73).
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct KnownPerson {
-    pub id: String,
-    pub name: String,
-    pub libraries: Vec<String>,
-}
-
-pub fn known_elsewhere(conn: &Connection, library: &str) -> Result<Vec<KnownPerson>> {
-    let found: Vec<(String, String)> = conn
-        .prepare(
-            "SELECT id, min(name) FROM members
-              WHERE library_id != ?1
-                AND id NOT IN (SELECT id FROM members WHERE library_id = ?1)
-              GROUP BY id ORDER BY min(name) COLLATE NOCASE",
-        )?
-        .query_map([library], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .collect::<rusqlite::Result<_>>()?;
-    found
-        .into_iter()
-        .map(|(id, name)| {
-            Ok(KnownPerson {
-                libraries: libraries_of(conn, &id, library)?,
-                id,
-                name,
-            })
-        })
-        .collect()
 }
 
 /// The names of the libraries, other than `except`, where `member` is.
@@ -417,15 +382,11 @@ pub fn assign_device(
     Ok(())
 }
 
-/// Whether this device may take `library` to another device (D73): anyone while
-/// the library has no roles; then administrators and people with «Can share». It
-/// is checked here, where the library is handed over; a modified app could still
-/// hand over what it has, but the device it reaches belongs to nobody and only reads.
+/// Whether this device may take `library` to another device (D73): administrators and people with «Can
+/// share». It is checked here, where the library is handed over; a modified app could still hand over what it
+/// has, but the device it reaches belongs to nobody and only reads.
 pub fn may_share(conn: &Connection, library: &str) -> Result<bool> {
     let people = list_people(conn, library)?;
-    if !people.has_roles {
-        return Ok(true);
-    }
     Ok(people
         .people
         .iter()
@@ -433,12 +394,11 @@ pub fn may_share(conn: &Connection, library: &str) -> Result<bool> {
         .is_some_and(|me| me.role.as_deref() == Some("admin") || me.can_share))
 }
 
-/// Whether this device's person administers `library`, or the library has no roles. Only
-/// they take it to the cloud (D76, CON-009): going up names a device the library trusts
+/// Whether this device's person administers `library`. Only they take it to the cloud (D76, CON-009): going up names a device the library trusts
 /// with power, a decision for whoever administers it, not for whoever is merely in it.
 pub fn administers(conn: &Connection, library: &str) -> Result<bool> {
     let people = list_people(conn, library)?;
-    Ok(!people.has_roles || people.my_role.as_deref() == Some("admin"))
+    Ok(people.my_role.as_deref() == Some("admin"))
 }
 
 pub fn ensure_may_share(conn: &Connection, libraries: &[String]) -> Result<()> {
@@ -451,7 +411,7 @@ pub fn ensure_may_share(conn: &Connection, libraries: &[String]) -> Result<()> {
 }
 
 /// Who a newly paired device may belong to: the people of the libraries it
-/// receives where this device may say whose it is (roles on, and administrator).
+/// receives where this device may say whose it is (administrator).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PairingOwners {
@@ -484,7 +444,7 @@ pub fn pairing_owners(conn: &Connection, device: &str) -> Result<PairingOwners> 
     let mut people: Vec<Candidate> = Vec::new();
     for library in shared {
         let listed = list_people(conn, &library)?;
-        if !listed.has_roles || listed.my_role.as_deref() != Some("admin") {
+        if listed.my_role.as_deref() != Some("admin") {
             continue;
         }
         // Somebody sent away is not offered a new device: they come back by being given the access first.
@@ -534,9 +494,9 @@ pub fn give_access(
     let mut member_id = person.id.clone();
     let tx = conn.transaction()?;
     for library in &libraries {
-        // Only where roles are on and this device may say whose a device is.
+        // Only where this device may say whose a device is.
         let listed = list_people(&tx, library)?;
-        if !listed.has_roles || listed.my_role.as_deref() != Some("admin") {
+        if listed.my_role.as_deref() != Some("admin") {
             continue;
         }
         let pick = PersonPick {
@@ -843,7 +803,6 @@ mod tests {
 
         let people = list_people(&conn, &lib).unwrap();
 
-        assert!(people.has_roles);
         assert_eq!(people.my_role.as_deref(), Some("admin"));
         let me = people.people.iter().find(|p| p.can_share).unwrap();
         assert_eq!(me.role.as_deref(), Some("admin"));
@@ -1162,9 +1121,6 @@ mod tests {
         ops::record(&tx, &lib, "member.add", changes).unwrap();
         tx.commit().unwrap();
         let games = crate::libraries::create_library(&mut conn, "Juegos").unwrap();
-
-        let known = known_elsewhere(&conn, &games).unwrap();
-        assert!(known.iter().any(|p| p.id == id));
 
         let again = PersonPick {
             id: Some(id.clone()),

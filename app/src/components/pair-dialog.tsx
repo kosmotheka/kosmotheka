@@ -306,7 +306,7 @@ export function PairDialog({
           owners={owning.owners}
           desktop={desktop}
           onDone={(message) => {
-            onPaired(message ? `${owning.message} ${message}` : owning.message);
+            onPaired(`${owning.message} ${message}`);
             closeOverlay();
           }}
         />

@@ -275,7 +275,7 @@ export function BackupsDialog({
           )}
           {restored.restored.map((item) => (
             <p key={item.id}>
-              {t("data.restoredLibrary", {
+              {t(item.sameId ? "data.restoredLibrary" : "data.restoredNewId", {
                 name: nameOf(item),
                 books: item.books,
                 copies: item.copies,

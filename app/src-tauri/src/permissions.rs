@@ -94,7 +94,7 @@ pub fn person_of_device(conn: &Connection, library: &str, device: &str) -> Resul
 // that cannot be checked gets the least rights, never more.
 impl LibraryView for SqlView<'_> {
     fn founded(&self) -> bool {
-        has_roles(self.conn, self.library).unwrap_or(false)
+        founded(self.conn, self.library).unwrap_or(false)
     }
 
     fn role_of_device(&self, device: &str) -> Option<Role> {
@@ -273,7 +273,7 @@ impl SqlView<'_> {
 
 /// Whether the library is founded: some person has a role (D97). Until then nobody may write in it but
 /// the founding, and the devices only register themselves.
-pub fn has_roles(conn: &Connection, library: &str) -> Result<bool> {
+pub fn founded(conn: &Connection, library: &str) -> Result<bool> {
     Ok(conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM members WHERE library_id = ?1 AND role IS NOT NULL)",
         [library],
@@ -429,7 +429,7 @@ pub fn vouch_if_missing(conn: &mut Connection, libraries: &[String]) -> Result<(
     let me = ops::device_id(conn)?;
     for library in libraries {
         let admin = SqlView::new(conn, library).role_of_device(&me) == Some(Role::Admin);
-        if !admin || !has_roles(conn, library)? {
+        if !admin {
             continue;
         }
         let changes: Vec<Change> = conn
@@ -511,7 +511,7 @@ pub fn complete_withdrawals(conn: &mut Connection, libraries: &[String]) -> Resu
     let me = ops::device_id(conn)?;
     for library in libraries {
         let admin = SqlView::new(conn, library).role_of_device(&me) == Some(Role::Admin);
-        if !admin || !has_roles(conn, library)? {
+        if !admin {
             continue;
         }
         let devices = devices_of_withdrawn(conn, library, None)?;

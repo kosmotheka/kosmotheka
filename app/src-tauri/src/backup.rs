@@ -140,6 +140,9 @@ pub struct RestoredLibrary {
     pub name: String,
     pub books: usize,
     pub copies: usize,
+    /// It came back with the id it had in the backup, so it merges with the original; false when this device
+    /// could not found that id (D97) and the catalogue went into a new library.
+    pub same_id: bool,
 }
 
 /// Every library on this device, for a whole-device backup.
@@ -380,7 +383,9 @@ pub fn restore(
             let name = tx.query_row("SELECT name FROM libraries WHERE id = ?1", [&id], |r| {
                 r.get(0)
             })?;
-            summary.restored.push(restored(&tx, &id, name)?);
+            let mut item = restored(&tx, &id, name)?;
+            item.same_id = id == library.id.to_ascii_lowercase();
+            summary.restored.push(item);
         }
     }
     tx.commit()?;
@@ -489,6 +494,7 @@ fn restored(conn: &Connection, id: &str, name: String) -> Result<RestoredLibrary
         name,
         books: count(conn, id, Entity::Edition)?,
         copies: count(conn, id, Entity::Copy)?,
+        same_id: false,
     })
 }
 
@@ -723,6 +729,10 @@ mod tests {
         );
         assert_eq!(restored.restored.len(), 1);
         let new = restored.restored[0].id.clone();
+        assert!(
+            !restored.restored[0].same_id,
+            "said so, for the screen to tell"
+        );
         assert_ne!(
             new, lib,
             "another device cannot found the id the library had (D97)"
@@ -793,6 +803,10 @@ mod tests {
 
         assert_eq!((exported.libraries, exported.books), (2, 2));
         assert_eq!(restored.restored.len(), 2);
+        assert!(
+            restored.restored.iter().all(|library| library.same_id),
+            "the same device founds the ids again, so they merge with the originals"
+        );
         assert!(restored.skipped.is_empty());
         assert_eq!(name_of(&target, &lib), "Casa");
         assert_eq!(name_of(&target, &club), "Club");

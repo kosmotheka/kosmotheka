@@ -356,6 +356,10 @@
         "1440": "1 day"
       },
       "unavailable": "Set up a fingerprint or face in your phone's settings to use this."
+    },
+    "person": {
+      "title": "Your name",
+      "hint": "The administrator name of the libraries you create from now on."
     }
   },
   "appLock": {
@@ -445,7 +449,7 @@
     "backupDevice_one": "Back up the whole device ({{count}} library)",
     "backupDevice_other": "Back up the whole device ({{count}} libraries)",
     "deviceBackupDone": "Backup saved: {{libraries}} libraries, {{books}} books, {{copies}} copies, {{covers}} covers.",
-    "restoreHint": "Each library in the backup comes back with its name. The ones already here with books are left alone.",
+    "restoreHint": "Each library in the backup comes back with its name. The ones already here with books are left alone. A library comes back as the same one only on the device that made the backup; on another it is a new library with the same books, and it does not join the original: to get that one, pair with a device that has it or download it from the cloud.",
     "restoredLibrary": "{{name}}: restored {{books}} books and {{copies}} copies.",
     "skippedLibrary": "{{name}}: already on this device, left as it was.",
     "restoredCovers_one": "{{count}} cover restored.",
@@ -461,7 +465,8 @@
     "unprotectedWarning": "Without a password, the backup can be read by anyone who finds it: names, what you own, who borrowed what.",
     "encryptedFile": "This backup is protected. Enter its password to restore it.",
     "unlockRestore": "Unlock and restore",
-    "csvReadable": "A CSV file is not protected: anyone can read it."
+    "csvReadable": "A CSV file is not protected: anyone can read it.",
+    "restoredNewId": "{{name}}: restored {{books}} books and {{copies}} copies, as a new library: it does not join the original."
   },
   "devices": {
     "title": "Sharing and devices",
@@ -732,7 +737,7 @@
     "duplicateTitle": "Duplicate {{name}}?",
     "duplicateWhen": "This is the last resort when nobody can administer {{name}}: for example, when its only administrator lost their only device.",
     "duplicateWhat": "A new library is created with the whole catalogue, its people and their marks, and you administer it. Roles, the devices it is shared with and its history are not copied.",
-    "duplicateAfter": "The others join the new one by pairing again. The original does not change: you can leave it whenever you like.",
+    "duplicateAfter": "The others join the new one by pairing again. The original does not change: you can leave it whenever you like. The copy has its own id, so it never merges with the original.",
     "duplicateNewName": "Name of the new library",
     "duplicateName": "{{name}} (copy)",
     "duplicateAction": "Duplicate",
@@ -803,22 +808,21 @@
       "roles": "What {{person}} will receive, and with which role",
       "thisPerson": "this person",
       "rolesNew": "Role in each library",
-      "rolesHint": "Where they already have a role, it stays. Where not, choose one.",
+      "rolesHint": "Where they already have a role, it stays. Where not, they get editor unless you choose another.",
       "kept": "{{role}} · already had it",
-      "pickOne": "No role yet · choose one",
       "canShareHint": "Take these libraries to other devices",
       "needName": "Type their name to continue.",
-      "needRoles": "Choose the role in each library to continue.",
       "give": "Give {{person}} access",
       "giveNobody": "Give access",
-      "later": "Not now",
       "next": "Next",
       "connected": "Connected with {{device}}.",
       "step": "Step 2 of 2: tell us whose it is.",
       "stepMobile2": "Step 2 of 3",
       "stepMobile3": "Step 3 of 3",
       "done": "{{device}} belongs to {{person}}.",
-      "stepLast": "Step 2 of 2"
+      "stepLast": "Step 2 of 2",
+      "adminWarning": "Administrators can change everything, including who else belongs and what they may do. Giving that role is your responsibility.",
+      "pickOne": "No role yet · editor"
     }
   },
   "people": {
@@ -886,29 +890,6 @@
     "alreadyIn": "already in {{libraries}}",
     "theirDevices": "Their devices",
     "sheetDescription": "Role, sharing permission and devices of {{person}}",
-    "activated": "Permissions turned on in {{library}}.",
-    "empty": {
-      "title": "In {{library}}, everyone can do everything",
-      "today": "Today any device with {{library}} adds, edits and deletes. If you turn permissions on:",
-      "devices": "Each device belongs to a person: “Hugo's phone” is Hugo's.",
-      "roles": "Each person has a role: administrator, editor or reader.",
-      "requests": "What someone cannot do becomes a request. Nothing is lost.",
-      "you": "You become the administrator of {{library}}. Then you choose whose each device is; a device without a person counts as a reader.",
-      "continue": "Continue"
-    },
-    "activate": {
-      "title": "Whose is each device?",
-      "description": "These devices already share the library. Choose which person each one belongs to and with which role. Editor comes selected so nobody loses what they could do.",
-      "step": "Turn permissions on in {{library}} · step 2 of 2",
-      "yourName": "Your name",
-      "owner": "Whose {{device}} is",
-      "role": "Role of {{device}}",
-      "nobody": "No person",
-      "newPerson": "New person…",
-      "samePeople": "People are the same in all your libraries; the role is only for {{library}}.",
-      "nobodyIsReader": "A device without a person counts as a reader: it can see and ask, but change nothing.",
-      "confirm": "Turn permissions on"
-    },
     "revoke": {
       "menu": "Remove a device",
       "title": "Remove a device of {{person}}",
@@ -1168,19 +1149,6 @@
     },
     "lockedDevice": "To note your own, an administrator of {{library}} has to say whose this device is first.",
     "lockedPhone": "To note your own, an administrator of {{library}} has to say whose this phone is first.",
-    "who": {
-      "title": "Who are you?",
-      "intro": "What you mark in {{library}} (status, stars and favorites) will be this person's. It is asked only once on this device.",
-      "introPhone": "What you mark in {{library}} will be this person's. It is asked only once on this phone.",
-      "copies_one": "Owns {{count}} copy in {{library}}",
-      "copies_other": "Owns {{count}} copies in {{library}}",
-      "someoneElse": "Someone else: type your name",
-      "noRoles": "{{library}} still has no permissions: this only says whose the marks are.",
-      "notNow": "Not now",
-      "iAm": "I'm {{person}}",
-      "continueAs": "Continue as {{person}}",
-      "continue": "Continue"
-    },
     "filter": {
       "title": "My status",
       "hint": "Only what you mark counts",
@@ -1844,10 +1812,6 @@
         "body": "“{{library}}” is not in the cloud yet. Upload it first and then you can invite.",
         "action": "Upload the library"
       },
-      "no_roles": {
-        "body": "“{{library}}” has no people with roles yet. Turn them on first, so each invitation has someone to be for.",
-        "action": "Turn on people and roles"
-      },
       "not_admin": {
         "body": "Only whoever administers “{{library}}” can invite."
       },
@@ -1911,7 +1875,6 @@
       "too_many_requests": "Too many attempts. Wait a little and try again.",
       "not_signed_in": "Sign in to your account first.",
       "not_in_cloud": "This library is not in your cloud account.",
-      "no_roles": "This library has no people with roles yet, so there is nobody to link an account to.",
       "no_cloud_power": "The cloud is not allowed to link new devices in this library. Turn it on in the library’s settings.",
       "server_without_invitations": "This server does not make invitations.",
       "invalid_email": "That email address does not look right.",
@@ -1984,7 +1947,6 @@
       "title": "Which libraries do you want in the cloud?",
       "signedInAs": "Signed in as {{name}}",
       "lead": "The ones you do not upload keep working as before, over your home network.",
-      "noRoles": "No people or roles",
       "signedOut": "Sign in to your account to take libraries to the cloud.",
       "inCloud": "already in the cloud",
       "otherServer": "In a cloud on another server",
@@ -2040,6 +2002,13 @@
     "qrHint": "Point at the code on the other device"
   },
   "welcome": {
+    "name": {
+      "title": "What is your name?",
+      "body": "Your library is created in your name, as its administrator. It is the name the people you share it with will see.",
+      "label": "Your name",
+      "hint": "You can change it later in Settings. Libraries you create from then on use the new one; the ones that exist keep theirs.",
+      "invalid": "Type a name of up to 100 characters."
+    },
     "next": "Next",
     "skip": "Skip",
     "start": "Get started",

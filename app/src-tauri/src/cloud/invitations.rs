@@ -130,7 +130,6 @@ pub enum Blocker {
     NotSignedIn,
     /// Not in the cloud of this account's server.
     NotInCloud,
-    NoRoles,
     /// This device's person does not administer the library.
     NotAdmin,
     /// The library does not name the cloud as a device that may link new ones (D76).
@@ -143,7 +142,6 @@ impl Blocker {
         match self {
             Blocker::NotSignedIn => Error::Cloud("not_signed_in"),
             Blocker::NotInCloud => Error::Cloud("not_in_cloud"),
-            Blocker::NoRoles => Error::Cloud("no_roles"),
             Blocker::NotAdmin => Error::NotAllowed,
             Blocker::NoCloudPower => Error::Cloud("no_cloud_power"),
             Blocker::ServerWithoutInvitations => Error::Cloud("server_without_invitations"),
@@ -370,9 +368,6 @@ fn readiness(
         return Ok(Readiness::Blocked(Blocker::NotInCloud));
     };
     let listed = people::list_people(conn, library)?;
-    if !listed.has_roles {
-        return Ok(Readiness::Blocked(Blocker::NoRoles));
-    }
     if listed.my_role.as_deref() != Some("admin") {
         return Ok(Readiness::Blocked(Blocker::NotAdmin));
     }

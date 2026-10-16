@@ -78,8 +78,6 @@ export function CloudPickDialog({
     rows.some((r) => r.status.library === id && r.status.canUpload),
   );
 
-  const chosenWithRoles = rows.some((r) => chosen.includes(r.status.library) && r.status.hasRoles);
-
   const toggle = (id: string) =>
     setTicked((current) =>
       current.includes(id) ? current.filter((c) => c !== id) : [...current, id],
@@ -94,9 +92,7 @@ export function CloudPickDialog({
       state[id] = "uploading";
       setProgress({ ...state });
       try {
-        // Without people nobody is there to link: the cloud is not named (D76).
-        const roles = rows.find((r) => r.status.library === id)?.status.hasRoles ?? false;
-        recordSynced(await uploadToCloud(id, autolink && roles));
+        recordSynced(await uploadToCloud(id, autolink));
         state[id] = "done";
         uploaded += 1;
       } catch (e) {
@@ -130,7 +126,6 @@ export function CloudPickDialog({
     const works = t("nav.works", { count: library.works });
     if (status.linkedHere) return `${works} · ${t("cloud.pick.inCloud")}`;
     if (status.cloudLibrary) return t("cloud.pick.otherServer");
-    if (status.canUpload && !status.hasRoles) return `${works} · ${t("cloud.pick.noRoles")}`;
     return works;
   };
 
@@ -260,7 +255,7 @@ export function CloudPickDialog({
           </div>
           {error && <p className="text-[13px] text-destructive">{error}</p>}
 
-          {chosenWithRoles && progress === null && (
+          {chosen.length > 0 && progress === null && (
             <div className="flex items-center gap-3.5 rounded-2xl border px-3.5 py-3">
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-[15px] font-medium">{t("cloud.autolink.pickLabel")}</span>

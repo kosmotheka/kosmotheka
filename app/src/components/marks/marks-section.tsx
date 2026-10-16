@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
-import { WhoDialog } from "@/components/marks/who-dialog";
 import { Avatar } from "@/components/people/role-parts";
 import {
   type Kind,
@@ -66,8 +65,6 @@ export function MarksSection({
   const libraries = useLibraries();
   const library = useLibraryName()(libraries.active);
   const [marks, setMarks] = useState<WorkMarks | null>(null);
-  // A change waiting for «Who are you?» to be answered.
-  const [pending, setPending] = useState<Mark | null>(null);
   const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(() => {
@@ -81,10 +78,7 @@ export function MarksSection({
   const mine = marks.mine ?? emptyMark;
 
   const save = async (next: Mark) => {
-    if (!marks.canMark) {
-      if (marks.mayClaim) setPending(next);
-      return;
-    }
+    if (!marks.canMark) return;
     setMarks({ ...marks, mine: next });
     try {
       await setMark(workId, next);
@@ -107,146 +101,141 @@ export function MarksSection({
     void save({ ...mine, rating: mine.rating === rating ? null : rating });
   const marked = mine.status !== null;
 
-  const block =
-    !marks.canMark && !marks.mayClaim ? (
-      <section
-        aria-label={t("marks.mine")}
-        aria-disabled
-        className={cn(
-          "flex flex-col gap-2.5 border border-dashed p-3",
-          desktop ? "rounded-xl" : "rounded-2xl",
+  const block = !marks.canMark ? (
+    <section
+      aria-label={t("marks.mine")}
+      aria-disabled
+      className={cn(
+        "flex flex-col gap-2.5 border border-dashed p-3",
+        desktop ? "rounded-xl" : "rounded-2xl",
+      )}
+    >
+      <div className="pointer-events-none flex flex-col gap-2.5 opacity-45">
+        <span className={cn("font-semibold", desktop ? "text-[13px]" : "text-[15px]")}>
+          {t("marks.mine")}
+        </span>
+        <StatusPicker status={null} kind={kind} desktop={desktop} onChoose={() => {}} />
+      </div>
+      <p className="flex items-start gap-2 text-[12.5px] leading-snug text-pretty">
+        <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        {t(desktop ? "marks.lockedDevice" : "marks.lockedPhone", { library })}
+      </p>
+    </section>
+  ) : (
+    <section
+      aria-label={t("marks.mine")}
+      className={cn("flex flex-col", desktop ? "gap-2.5 rounded-xl border p-3" : "gap-2")}
+    >
+      <div className="flex min-h-7 items-center gap-2">
+        <span className={cn("font-semibold", desktop ? "text-[13px]" : "text-[15px]")}>
+          {t("marks.mine")}
+        </span>
+        <span className="flex-1" />
+        {marked ? (
+          <>
+            <label
+              className={cn(
+                "relative flex cursor-pointer items-center gap-1.5 rounded-md bg-muted px-2 font-medium",
+                desktop ? "h-[26px] text-xs" : "h-8 rounded-lg px-2.5 text-[13px]",
+              )}
+            >
+              <Calendar className={desktop ? "size-[13px]" : "size-3.5"} />
+              {dateLabel(t, mine)}
+              <input
+                type="date"
+                aria-label={t("marks.changeDate")}
+                value={mine.statusOn ?? ""}
+                max={today()}
+                onChange={(e) => e.target.value && void save({ ...mine, statusOn: e.target.value })}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </label>
+            <button
+              type="button"
+              className={cn(
+                "px-1 font-medium text-primary",
+                desktop ? "text-xs" : "h-8 text-[13px]",
+              )}
+              onClick={() => void save(emptyMark)}
+            >
+              {t("marks.clear")}
+            </button>
+          </>
+        ) : (
+          <span className="text-xs whitespace-nowrap text-muted-foreground">{t("marks.hint")}</span>
         )}
-      >
-        <div className="pointer-events-none flex flex-col gap-2.5 opacity-45">
-          <span className={cn("font-semibold", desktop ? "text-[13px]" : "text-[15px]")}>
-            {t("marks.mine")}
-          </span>
-          <StatusPicker status={null} kind={kind} desktop={desktop} onChoose={() => {}} />
+      </div>
+      <StatusPicker status={mine.status} kind={kind} desktop={desktop} onChoose={chooseStatus} />
+      <div className="flex items-center gap-2.5">
+        <div
+          role="radiogroup"
+          aria-label={t("marks.rating")}
+          className={cn("flex", desktop ? "gap-1" : "-ml-2")}
+        >
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={mine.rating === n}
+              aria-label={t("marks.stars", { count: n })}
+              onClick={() => rate(n)}
+              className={cn(
+                "flex items-center justify-center",
+                !desktop && "h-11 w-10",
+                (mine.rating ?? 0) >= n ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <Star
+                className={desktop ? "size-5" : "size-[26px]"}
+                fill={(mine.rating ?? 0) >= n ? "currentColor" : "none"}
+              />
+            </button>
+          ))}
         </div>
-        <p className="flex items-start gap-2 text-[12.5px] leading-snug text-pretty">
-          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          {t(desktop ? "marks.lockedDevice" : "marks.lockedPhone", { library })}
-        </p>
-      </section>
-    ) : (
-      <section
-        aria-label={t("marks.mine")}
-        className={cn("flex flex-col", desktop ? "gap-2.5 rounded-xl border p-3" : "gap-2")}
-      >
-        <div className="flex min-h-7 items-center gap-2">
-          <span className={cn("font-semibold", desktop ? "text-[13px]" : "text-[15px]")}>
-            {t("marks.mine")}
-          </span>
-          <span className="flex-1" />
-          {marked ? (
-            <>
-              <label
-                className={cn(
-                  "relative flex cursor-pointer items-center gap-1.5 rounded-md bg-muted px-2 font-medium",
-                  desktop ? "h-[26px] text-xs" : "h-8 rounded-lg px-2.5 text-[13px]",
-                )}
-              >
-                <Calendar className={desktop ? "size-[13px]" : "size-3.5"} />
-                {dateLabel(t, mine)}
-                <input
-                  type="date"
-                  aria-label={t("marks.changeDate")}
-                  value={mine.statusOn ?? ""}
-                  max={today()}
-                  onChange={(e) =>
-                    e.target.value && void save({ ...mine, statusOn: e.target.value })
-                  }
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                />
-              </label>
-              <button
-                type="button"
-                className={cn(
-                  "px-1 font-medium text-primary",
-                  desktop ? "text-xs" : "h-8 text-[13px]",
-                )}
-                onClick={() => void save(emptyMark)}
-              >
-                {t("marks.clear")}
-              </button>
-            </>
-          ) : (
-            <span className="text-xs whitespace-nowrap text-muted-foreground">
-              {t("marks.hint")}
-            </span>
+        <span className="flex-1" />
+        <button
+          type="button"
+          aria-pressed={mine.wished}
+          aria-label={t("wish.toggle")}
+          onClick={() => void save({ ...mine, wished: !mine.wished })}
+          className={cn(
+            "flex shrink-0 items-center justify-center gap-1.5 border whitespace-nowrap",
+            desktop ? "h-8 rounded-lg px-2.5 text-[13px]" : "h-11 rounded-xl px-3 text-sm",
+            mine.wished
+              ? "border-wish bg-wish-soft font-semibold text-wish"
+              : "border-border font-medium",
           )}
-        </div>
-        <StatusPicker status={mine.status} kind={kind} desktop={desktop} onChoose={chooseStatus} />
-        <div className="flex items-center gap-2.5">
-          <div
-            role="radiogroup"
-            aria-label={t("marks.rating")}
-            className={cn("flex", desktop ? "gap-1" : "-ml-2")}
-          >
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                role="radio"
-                aria-checked={mine.rating === n}
-                aria-label={t("marks.stars", { count: n })}
-                onClick={() => rate(n)}
-                className={cn(
-                  "flex items-center justify-center",
-                  !desktop && "h-11 w-10",
-                  (mine.rating ?? 0) >= n ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <Star
-                  className={desktop ? "size-5" : "size-[26px]"}
-                  fill={(mine.rating ?? 0) >= n ? "currentColor" : "none"}
-                />
-              </button>
-            ))}
-          </div>
-          <span className="flex-1" />
-          <button
-            type="button"
-            aria-pressed={mine.wished}
-            aria-label={t("wish.toggle")}
-            onClick={() => void save({ ...mine, wished: !mine.wished })}
-            className={cn(
-              "flex shrink-0 items-center justify-center gap-1.5 border whitespace-nowrap",
-              desktop ? "h-8 rounded-lg px-2.5 text-[13px]" : "h-11 rounded-xl px-3 text-sm",
-              mine.wished
-                ? "border-wish bg-wish-soft font-semibold text-wish"
-                : "border-border font-medium",
-            )}
-          >
-            <Gift className={desktop ? "size-[15px]" : "size-[18px]"} />
-            {t("wish.toggle")}
-          </button>
-          <button
-            type="button"
-            aria-pressed={mine.favorite}
-            aria-label={t("marks.favorite")}
-            onClick={() => void save({ ...mine, favorite: !mine.favorite })}
-            className={cn(
-              "flex items-center justify-center gap-1.5 border",
-              desktop ? "h-8 rounded-lg px-2.5 text-[13px]" : "h-11 w-12 rounded-xl",
-              mine.favorite ? "border-foreground font-semibold" : "border-border font-medium",
-            )}
-          >
-            <Heart
-              className={desktop ? "size-[15px]" : "size-[22px]"}
-              fill={mine.favorite ? "currentColor" : "none"}
-            />
-            {desktop && t("marks.favorite")}
-          </button>
-        </div>
-        {wishedBy.length > 0 && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Gift className="size-3.5 shrink-0" />
-            {wishSummary(t, wishedBy)}
-          </p>
-        )}
-      </section>
-    );
+        >
+          <Gift className={desktop ? "size-[15px]" : "size-[18px]"} />
+          {t("wish.toggle")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={mine.favorite}
+          aria-label={t("marks.favorite")}
+          onClick={() => void save({ ...mine, favorite: !mine.favorite })}
+          className={cn(
+            "flex items-center justify-center gap-1.5 border",
+            desktop ? "h-8 rounded-lg px-2.5 text-[13px]" : "h-11 w-12 rounded-xl",
+            mine.favorite ? "border-foreground font-semibold" : "border-border font-medium",
+          )}
+        >
+          <Heart
+            className={desktop ? "size-[15px]" : "size-[22px]"}
+            fill={mine.favorite ? "currentColor" : "none"}
+          />
+          {desktop && t("marks.favorite")}
+        </button>
+      </div>
+      {wishedBy.length > 0 && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Gift className="size-3.5 shrink-0" />
+          {wishSummary(t, wishedBy)}
+        </p>
+      )}
+    </section>
+  );
 
   return (
     <>
@@ -258,19 +247,6 @@ export function MarksSection({
           desktop={desktop}
           expanded={expanded}
           onToggle={() => setExpanded(!expanded)}
-        />
-      )}
-      {pending && (
-        <WhoDialog
-          desktop={desktop}
-          onClose={() => setPending(null)}
-          onClaimed={async () => {
-            const next = pending;
-            setPending(null);
-            await setMark(workId, next).catch((e: unknown) => onNotice(String(e)));
-            load();
-            onChanged();
-          }}
         />
       )}
     </>

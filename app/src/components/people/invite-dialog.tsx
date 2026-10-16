@@ -35,7 +35,6 @@ export function InviteDialog({
   desktop,
   onClose,
   onInvited,
-  onActivate,
 }: {
   libraryId: string;
   library: string;
@@ -46,7 +45,6 @@ export function InviteDialog({
   /** The invitation list is out of date. */
   onInvited: () => void;
   /** «Turn on people and roles» was chosen. */
-  onActivate: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<InviteStatus | { failed: string } | null>(null);
@@ -163,7 +161,6 @@ export function InviteDialog({
       const action: Record<string, (() => void) | undefined> = {
         not_signed_in: () => openOverlay({ name: "auth" }),
         not_in_cloud: () => openOverlay({ name: "cloudPick" }),
-        no_roles: onActivate,
         no_cloud_power: () => navigate("library"),
       };
       const go = action[blocked];

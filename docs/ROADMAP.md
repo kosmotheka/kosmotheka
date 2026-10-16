@@ -139,6 +139,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
 - **Hecho: 7.2 Sincronizar con la nube** (04/10/2026): bibliotecas de la nube con id propio y tabla de acceso (D84), `pull` y `push`, subir una biblioteca con su historial, cadena de operaciones (D87) y copias cifradas sin `age` (D86).
 - **Hecho: 7.4 El servidor aplica y juzga** (10/10/2026): catálogo de cada biblioteca en PostgreSQL (D92), fusión y permisos en PHP con los mismos casos de `spec/` que la app, `push` que juzga lo que guarda, enlazar como paso propio (D93) y el sello, que impide antedatar operaciones a antes de la activación de los roles (D94).
+- **Hecho: roles obligatorios desde que se crea la biblioteca (D97, 16/10/2026):** cada biblioteca nace fundada por una clave, con su administrador; el sello de D94 desaparece; la bienvenida pide el nombre. Detalle en [fase-7.md](plans/fase-7.md).
 - **Registro con email** y código en la app, o con Google (D77); recuperación con código. Segundo factor opcional y desbloqueo con biometría (D78). La app entra en el servidor oficial o en otro.
 - **La cuenta en la biblioteca** (D76): se sube biblioteca a biblioteca; la cuenta se enlaza sola con su persona, y un móvil nuevo recibe sus bibliotecas con su rol.
 - Subir una biblioteca a la nube sin perder nada, historial incluido.

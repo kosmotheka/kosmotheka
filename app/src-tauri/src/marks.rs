@@ -3,14 +3,12 @@
 //! everyone keep their own.
 
 use kosmotheka_domain::{Change, Entity, mark_id};
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
 use crate::error::{Error, Result};
-use crate::ops::{self, new_id};
-use crate::people::PersonPick;
-use crate::permissions;
+use crate::ops;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -57,8 +55,6 @@ pub struct WorkMarks {
     pub others: Vec<PersonMark>,
     /// This device belongs to a person, so it can mark.
     pub can_mark: bool,
-    /// It belongs to nobody, and the library has no roles: it may say who it is.
-    pub may_claim: bool,
 }
 
 /// The person this device belongs to in `library`.
@@ -104,7 +100,6 @@ pub fn work_marks(conn: &Connection, library: &str, work: &str) -> Result<WorkMa
         mine,
         others,
         can_mark: me.is_some(),
-        may_claim: me.is_none() && !permissions::has_roles(conn, library)?,
     })
 }
 
@@ -144,74 +139,6 @@ pub fn set_mark(conn: &mut Connection, library: &str, work: &str, mark: &Mark) -
     };
     let tx = conn.transaction()?;
     ops::record(&tx, library, "mark.set", vec![change])?;
-    tx.commit()?;
-    Ok(())
-}
-
-/// Someone this device may say it is, with how many copies they own here, so the
-/// person is easy to recognise.
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Candidate {
-    pub id: String,
-    pub name: String,
-    pub copies: i64,
-}
-
-/// The people of `library`, the ones with more copies first.
-pub fn claim_candidates(conn: &Connection, library: &str) -> Result<Vec<Candidate>> {
-    let mut statement = conn.prepare(
-        "SELECT m.id, m.name,
-                (SELECT count(*) FROM copies c WHERE c.library_id = m.library_id AND c.owner_id = m.id)
-           FROM members m WHERE m.library_id = ?1
-          ORDER BY 3 DESC, m.name COLLATE NOCASE",
-    )?;
-    let rows = statement.query_map([library], |row| {
-        Ok(Candidate {
-            id: row.get(0)?,
-            name: row.get(1)?,
-            copies: row.get(2)?,
-        })
-    })?;
-    Ok(rows.collect::<rusqlite::Result<_>>()?)
-}
-
-/// «Who are you?»: in a library without roles, this device says which person it
-/// belongs to, an existing one or a new one without a role, so it can mark.
-pub fn claim_person(conn: &mut Connection, library: &str, pick: &PersonPick) -> Result<()> {
-    if permissions::has_roles(conn, library)? {
-        return Err(Error::NotAllowed);
-    }
-    let name = pick.name.trim();
-    let existing: Option<String> = match &pick.id {
-        Some(id) => Some(id.clone()),
-        None => conn
-            .query_row(
-                "SELECT id FROM members WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE",
-                [library, name],
-                |row| row.get(0),
-            )
-            .optional()?,
-    };
-    let mut changes = Vec::new();
-    let member = match existing {
-        Some(id) => id,
-        None => {
-            let id = new_id();
-            changes.push(Change::create(Entity::Member, &id, json!({ "name": name })));
-            id
-        }
-    };
-    let tx = conn.transaction()?;
-    // The device row has to exist before it can say whose it is.
-    ops::ensure_registered(&tx, library)?;
-    let me = ops::device_id(&tx)?;
-    changes.push(Change::update(
-        Entity::Device,
-        &me,
-        crate::permissions::assignment_fields(&tx, library, &me, Some(&member))?,
-    ));
-    ops::record(&tx, library, "person.claim", changes)?;
     tx.commit()?;
     Ok(())
 }

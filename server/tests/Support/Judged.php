@@ -52,7 +52,7 @@ final readonly class Judged
     public static function founding(int $time, string $device, string $member, ?string $id = null): OperationPayload
     {
         $key = SigningDevice::generate($device)->publicKey;
-        $library = LibraryId::derive($key, SigningDevice::FOUNDING_NONCE) ?? throw new \LogicException('No library id.');
+        $library = LibraryId::derive($key, SigningDevice::FOUNDING_NONCE);
 
         return new OperationPayload($id ?? Uuid::v7()->toRfc4122(), $library, Ops::hlc($time, 0, $device), 'library.found', [
             Ops::create(CatalogEntity::Library, $library, ['name' => 'Family', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]),

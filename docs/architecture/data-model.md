@@ -91,6 +91,8 @@ La biblioteca activa es la guardada si aún existe y, si no, la primera por nomb
 
 Una copia es un zip con `backup.json` (catálogo de cada biblioteca e historial de operaciones) y `covers/`. **Nunca lleva secretos**: ni la semilla de la clave de firma, ni el token y la sesión de la cuenta, ni los secretos de emparejamiento (`known_servers`, `known_clients`), ni la identidad TLS; esos viven en `local_state`, en esas tablas y en la carpeta de datos, y la exportación no los lee. Lo garantiza el test `no_backup_carries_a_secret`, que exporta una copia sin cifrar y otra cifrada y busca cada secreto en sus bytes y en cada fichero de dentro.
 
+**Restaurar y la identidad de la biblioteca (D97).** El id de una biblioteca sale de la clave de quien la fundó, y la semilla de esa clave no va en la copia. Por eso una biblioteca vuelve con su id (y se une a la original al sincronizar) solo en el dispositivo que la fundó, con su misma clave; en cualquier otro, por ejemplo un móvil nuevo, la restauración funda una biblioteca nueva con el mismo catálogo y **no se une a la original**. La pantalla de restaurar lo dice por cada biblioteca (`sameId` en el resumen). Para tener la original en un móvil nuevo hay que emparejarlo con un dispositivo que la tenga, o bajarla de la nube. Duplicar una biblioteca crea siempre una nueva con su propio id.
+
 Por defecto la copia va **cifrada con contraseña** (D86): un fichero `.kosmotheka` con un sobre propio, sencillo y documentado aquí, cuyo contenido es el zip de siempre. Se construye con `scrypt` y ChaCha20-Poly1305 de RustCrypto (crates `scrypt` y `chacha20poly1305`). Una copia sin cifrar (zip) se sigue restaurando igual.
 
 **El sobre, byte a byte:**

@@ -38,7 +38,7 @@ pub struct Creation {
 }
 
 pub fn list_libraries(conn: &Connection) -> Result<Vec<LibrarySummary>> {
-    let active = ops::active_library(conn)?;
+    let active = ops::current_library(conn)?;
     let mut statement = conn.prepare(
         "SELECT l.id, l.name, (SELECT count(*) FROM editions e WHERE e.library_id = l.id)
            FROM libraries l ORDER BY l.name COLLATE NOCASE, l.id",
@@ -53,7 +53,7 @@ pub fn list_libraries(conn: &Connection) -> Result<Vec<LibrarySummary>> {
             Ok(LibrarySummary {
                 created: creation(conn, &id)?,
                 can_share: crate::people::may_share(conn, &id)?,
-                active: id == active,
+                active: active.as_deref() == Some(id.as_str()),
                 id,
                 name,
                 works,
@@ -120,16 +120,25 @@ pub fn first_library(conn: &Connection) -> Result<Option<String>> {
         .optional()?)
 }
 
-/// Every device has a library to work in from the first start (D85): a random id,
-/// created like any other, so it travels like any other.
+/// Every device that has told its person's name has a library to work in (D85, D97): a random id, founded like
+/// any other, so it travels like any other. Until the welcome has the name there is none, and the app shows
+/// nothing but the welcome.
 pub fn ensure_first_library(conn: &mut Connection) -> Result<()> {
-    if first_library(conn)?.is_none() {
+    if first_library(conn)?.is_none() && crate::settings::person_name(conn)?.is_some() {
         let tx = conn.transaction()?;
         let id = create_in(&tx, "")?;
         ops::set_active_library(&tx, &id)?;
         tx.commit()?;
     }
     Ok(())
+}
+
+/// The end of the welcome's first question (D97): the name this device's person goes by, and with it «Mi
+/// biblioteca», founded with that person as its administrator. Asking again with a library already there only
+/// changes the name.
+pub fn begin(conn: &mut Connection, raw_name: &str) -> Result<()> {
+    crate::settings::set_person_name(conn, raw_name)?;
+    ensure_first_library(conn)
 }
 
 /// Creates a library and makes it the active one. Returns its id.
@@ -145,9 +154,6 @@ pub fn create_library(conn: &mut Connection, raw_name: &str) -> Result<String> {
 fn create_in(tx: &Transaction<'_>, name: &str) -> Result<String> {
     found(tx, name)
 }
-
-/// Until the welcome asks for the person's name (D97, delivery 2), a library is founded with this one.
-const PLACEHOLDER_PERSON_NAME: &str = "Me";
 
 /// Founds a library (D97): one operation in which this device registers itself, its person is created as an
 /// administrator and the library row is created with the nonce its id derives from, together with this device's
@@ -175,8 +181,10 @@ pub fn found_as(tx: &Transaction<'_>, id: &str, nonce: &str, name: &str) -> Resu
     let key = ops::signing_key(tx)?.public_key();
     let id = id.to_ascii_lowercase();
     let id = id.as_str();
-    let person =
-        crate::settings::person_name(tx)?.unwrap_or_else(|| PLACEHOLDER_PERSON_NAME.to_owned());
+    // The creator is the administrator under the name the welcome asked for; without it nothing is founded.
+    let person = crate::settings::person_name(tx)?.ok_or_else(|| {
+        Error::Validation(vec![FieldError::new("person_name", ErrorCode::Required)])
+    })?;
     let member = new_id();
     let device = ops::device_id(tx)?;
     ops::record(
@@ -635,6 +643,62 @@ mod tests {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap()
+    }
+
+    #[test]
+    fn nothing_is_founded_until_the_welcome_has_the_persons_name() {
+        let mut conn = db::open_in_memory_blank().unwrap();
+        assert_eq!(first_library(&conn).unwrap(), None);
+        ensure_first_library(&mut conn).unwrap();
+        assert_eq!(first_library(&conn).unwrap(), None, "no name, no library");
+        // Not even by creating one: the creator is the administrator under a name.
+        assert!(matches!(
+            create_library(&mut conn, "Club"),
+            Err(Error::Validation(_))
+        ));
+        assert_eq!(first_library(&conn).unwrap(), None);
+
+        begin(&mut conn, "  Ana ").unwrap();
+
+        let id = first_library(&conn).unwrap().expect("founded");
+        assert_eq!(
+            ops::current_library(&conn).unwrap().as_deref(),
+            Some(id.as_str())
+        );
+        let admin: (String, String) = conn
+            .query_row(
+                "SELECT name, role FROM members WHERE library_id = ?1",
+                [&id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(admin, ("Ana".to_owned(), "admin".to_owned()));
+        // The libraries created afterwards carry the same name, and asking again changes nothing else.
+        let club = create_library(&mut conn, "Club").unwrap();
+        let in_club: String = conn
+            .query_row(
+                "SELECT name FROM members WHERE library_id = ?1",
+                [&club],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(in_club, "Ana");
+        begin(&mut conn, "Ana B").unwrap();
+        assert_eq!(all_ids(&conn), 2);
+    }
+
+    fn all_ids(conn: &Connection) -> i64 {
+        conn.query_row("SELECT count(*) FROM libraries", [], |row| row.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn a_blank_name_does_not_begin_anything() {
+        let mut conn = db::open_in_memory_blank().unwrap();
+        for name in ["", "   ", &"x".repeat(101)] {
+            assert!(matches!(begin(&mut conn, name), Err(Error::Validation(_))));
+        }
+        assert_eq!(first_library(&conn).unwrap(), None);
     }
 
     #[test]

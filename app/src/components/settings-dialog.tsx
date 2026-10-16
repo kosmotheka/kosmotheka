@@ -8,6 +8,7 @@ import {
   LogIn,
   MailOpen,
   MonitorSmartphone,
+  UserRound,
 } from "lucide-react";
 
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
@@ -27,7 +28,9 @@ import {
   listLibraries,
   setAppLock,
   setAppLockAfter,
+  personName,
   setDeviceName,
+  setPersonName,
 } from "@/lib/api";
 import { lockAvailable, unlock } from "@/lib/app-lock";
 import { openOverlay } from "@/lib/navigation";
@@ -57,6 +60,8 @@ export function SettingsDialog({
 
   const [deviceName, setDeviceNameState] = useState("");
   const [editingName, setEditingName] = useState(false);
+  const [person, setPerson] = useState<string | null>(null);
+  const [editingPerson, setEditingPerson] = useState(false);
   const [handingOver, setHandingOver] = useState(false);
 
   const [mobile, setMobile] = useState(false);
@@ -71,6 +76,7 @@ export function SettingsDialog({
     lanStatus()
       .then((status) => setDeviceNameState(status.deviceName))
       .catch(() => {});
+    void personName().then(setPerson);
     void isMobile().then(setMobile);
     void lockAvailable().then(setLockOk);
     void appLockEnabled().then(setLockOn);
@@ -250,6 +256,18 @@ export function SettingsDialog({
               <button
                 type="button"
                 className="flex min-h-[52px] items-center gap-3 border-b px-3 text-left hover:bg-accent"
+                onClick={() => setEditingPerson(true)}
+              >
+                <UserRound className="size-[18px] shrink-0 text-muted-foreground" />
+                <span className="flex flex-1 flex-col gap-0.5">
+                  <span className="text-sm">{t("settings.person.title")}</span>
+                  <span className="text-xs text-muted-foreground">{t("settings.person.hint")}</span>
+                </span>
+                <span className="text-sm text-muted-foreground">{person}</span>
+              </button>
+              <button
+                type="button"
+                className="flex min-h-[52px] items-center gap-3 border-b px-3 text-left hover:bg-accent"
                 onClick={() => setEditingName(true)}
               >
                 <MonitorSmartphone className="size-[18px] shrink-0 text-muted-foreground" />
@@ -281,12 +299,27 @@ export function SettingsDialog({
         </div>
       </ResponsiveDialog>
 
-      <EditDeviceNameDialog
+      <EditNameDialog
         open={editingName}
         desktop={desktop}
+        title={t("account.thisDevice.name")}
         name={deviceName}
+        save={async (name) => {
+          await setDeviceName(name);
+          return name;
+        }}
         onClose={() => setEditingName(false)}
         onSaved={setDeviceNameState}
+      />
+      <EditNameDialog
+        open={editingPerson}
+        desktop={desktop}
+        title={t("settings.person.title")}
+        description={t("settings.person.hint")}
+        name={person ?? ""}
+        save={setPersonName}
+        onClose={() => setEditingPerson(false)}
+        onSaved={setPerson}
       />
 
       <HandOverConfirm open={handingOver} desktop={desktop} onClose={() => setHandingOver(false)} />
@@ -294,16 +327,23 @@ export function SettingsDialog({
   );
 }
 
-function EditDeviceNameDialog({
+/** One name to edit: the device's, or the person's. `save` returns the name as kept. */
+function EditNameDialog({
   open,
   desktop,
+  title,
+  description,
   name,
+  save: persist,
   onClose,
   onSaved,
 }: {
   open: boolean;
   desktop: boolean;
+  title: string;
+  description?: string;
   name: string;
+  save: (name: string) => Promise<string>;
   onClose: () => void;
   onSaved: (name: string) => void;
 }) {
@@ -322,8 +362,7 @@ function EditDeviceNameDialog({
   const save = async () => {
     setBusy(true);
     try {
-      await setDeviceName(draft.trim());
-      onSaved(draft.trim());
+      onSaved(await persist(draft.trim()));
       onClose();
     } finally {
       setBusy(false);
@@ -335,8 +374,8 @@ function EditDeviceNameDialog({
       open={open}
       desktop={desktop}
       onClose={onClose}
-      title={t("account.thisDevice.name")}
-      description={t("account.thisDevice.name")}
+      title={title}
+      description={description ?? title}
     >
       <div className="flex flex-col gap-4">
         <Input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />

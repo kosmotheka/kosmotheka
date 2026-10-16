@@ -147,8 +147,8 @@ export function DevicesPage({
 
   const libraryName = (id: string) => nameOf(libraries.all.find((l) => l.id === id));
 
-  // Whose each device is, in the active library, once it has roles (D73).
-  const owners = people?.hasRoles ? people : null;
+  // Whose each device is, in the active library (D73).
+  const owners = people;
   const owner = (device: Device) =>
     owners && (
       <OwnerCell
