@@ -1,6 +1,7 @@
 # Biblioteca familiar — visión del proyecto
 
 > Nombre provisional. Documento de traspaso: resume la conversación de ideación del 24 de septiembre de 2026 para seguir en Claude Code con todo el contexto.
+> **Reescrito el 16/10/2026 para publicarlo, sin datos personales;** lo demás es el texto de entonces.
 > **Documento histórico.** Varias decisiones de la sección 4 se han revisado después: el estado actual está en [DECISIONS.md](DECISIONS.md) y el plan, en [ROADMAP.md](ROADMAP.md).
 > **Qué pido a Claude Code:** leer este documento entero, hacerme las preguntas que necesite sobre las decisiones abiertas y proponer un plan de ejecución por fases **antes de escribir código**.
 
