@@ -88,4 +88,5 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 
 - **Diario de desarrollo público** (D90, enmendada): se publican las decisiones, los planes, el histórico de encargos, la arquitectura y las pruebas. Lo privado de verdad (hallazgos abiertos, firma, notas de producción) va a `library-privado/`. Sin segundo repositorio.
 - **Los ids de hallazgos se quedan en el código** y se publica el registro de los cerrados.
+- **Esqueleto de docs.kosmotheka.com hecho** (paso 2, 16/10/2026): Starlight en `site/`, `/es/` y `/en/` con el español por defecto (lo no traducido sale en español con aviso), mismas carpetas en inglés en los dos idiomas, sin nada de terceros, compilado en la CI y sin publicar. No se publica antes de abrir el repositorio: enlaza a `github.com/kosmotheka/kosmotheka`.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
