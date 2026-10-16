@@ -9,6 +9,7 @@ use App\Dto\OperationPayload;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
 use App\Enum\Role;
+use App\Sync\LibraryId;
 
 /**
  * Who may do what in a library (D55, D73): port of crates/domain/src/permission.rs. Pure rules, no database.
@@ -26,14 +27,15 @@ final class Permissions
             return false;
         }
         $author = self::author($operation);
-        // A fenced author is judged as nobody's, with or without roles: its date cannot
-        // be trusted, or its access was withdrawn (D71, D84).
+        // A fenced author is judged as nobody's: its date cannot be trusted, or its access was withdrawn (D71, D84).
         $fenced = $view->fenced($operation);
-        if (!$view->hasRoles() && !$fenced) {
+        // The operation that founds the library (D97): the only one allowed while nobody has a role. Whoever holds
+        // the key the id derives from founds it, whatever date the operation carries.
+        if (!$fenced && !$view->founded() && self::isFounding($operation)) {
             return true;
         }
         $role = $fenced ? null : $view->roleOfDevice($author);
-        // The cloud's power (D76, D95) is the named device's, unless a fence or a seal makes it nobody's.
+        // The cloud's power (D76, D95) is the named device's, unless a fence makes it nobody's.
         // Asked only when a change could use it.
         $cloud = !$fenced
             && array_any($operation->changes, self::touchesCloudField(...))
@@ -41,6 +43,27 @@ final class Permissions
             && $named === $author;
 
         return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
+    }
+
+    /**
+     * Whether `$operation` is the founding of its library (D97, rule 1): it creates the `library` row with a
+     * `founding_nonce`, and the public key its author gives in its own `device` row of the same operation, with that
+     * nonce, derives the id of the library. Whether the library is still unfounded is the caller's to ask.
+     */
+    private static function isFounding(OperationPayload $operation): bool
+    {
+        $author = self::author($operation);
+        $nonce = $key = null;
+        foreach ($operation->changes as $change) {
+            if (CatalogEntity::Library === $change->entity && ChangeAction::Create === $change->action && 0 === strcasecmp($change->id, $operation->library)) {
+                $nonce ??= \is_string($change->fields['founding_nonce'] ?? null) ? $change->fields['founding_nonce'] : null;
+            }
+            if (CatalogEntity::Device === $change->entity && ChangeAction::Delete !== $change->action && $change->id === $author) {
+                $key ??= \is_string($change->fields['public_key'] ?? null) ? $change->fields['public_key'] : null;
+            }
+        }
+
+        return null !== $nonce && null !== $key && LibraryId::derive($key, $nonce) === strtolower($operation->library);
     }
 
     /** Whether the change writes `member.account_id` or `device.member_id` / `device.vouched_key`, the fields the cloud device has a say in (D76, D96). */
@@ -86,6 +109,11 @@ final class Permissions
 
     private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, bool $cloud, LibraryView $view): bool
     {
+        // `founding_nonce` is written once, by the founding (judged before this is asked): nobody writes it
+        // afterwards, an administrator included (D97).
+        if (CatalogEntity::Library === $change->entity && \array_key_exists('founding_nonce', $change->fields)) {
+            return false;
+        }
         // `account_id` is written by the cloud device alone: not by an administrator, not when the member is created.
         if (CatalogEntity::Member === $change->entity && \array_key_exists('account_id', $change->fields)) {
             return $cloud && self::cloudAllowed($change, $author, $view);

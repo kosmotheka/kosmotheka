@@ -1714,7 +1714,7 @@ mod tests {
             conn,
             "SELECT intent FROM operations
               WHERE library_id = ?1 AND ?2 = ?2
-                AND intent NOT IN ('device.register', 'library.create') ORDER BY hlc",
+                AND intent NOT IN ('device.register', 'library.found') ORDER BY hlc",
             &lib,
             "",
         )
@@ -2483,7 +2483,7 @@ mod tests {
             assert_eq!(count(table), 0, "{table} should be empty");
         }
         assert_eq!(count("people"), 1);
-        assert_eq!(count("members"), 2);
+        assert_eq!(count("members"), 3, "the founder and the two owners");
         // The same ISBN can be catalogued again.
         create_book(
             &mut conn,
@@ -2747,7 +2747,6 @@ mod tests {
     #[test]
     fn wished_by_lists_who_wishes_a_work_with_me_first() {
         use crate::marks::{self, Mark};
-        use crate::people::PersonPick;
 
         let mut conn = db::open_in_memory().unwrap();
         let lib = ops::active_library(&conn).unwrap();
@@ -2766,15 +2765,7 @@ mod tests {
             .edition_id;
         let work_id = get_book(&conn, &lib, &edition_id).unwrap().work_id;
 
-        marks::claim_person(
-            &mut conn,
-            &lib,
-            &PersonPick {
-                id: None,
-                name: "Tersoal".into(),
-            },
-        )
-        .unwrap();
+        crate::people::name_founder(&mut conn, &lib, "Tersoal").unwrap();
         marks::set_mark(
             &mut conn,
             &lib,
@@ -2825,7 +2816,6 @@ mod tests {
     #[test]
     fn wished_marks_are_filtered_by_who_wishes() {
         use crate::marks::{self, Mark};
-        use crate::people::PersonPick;
 
         let mut conn = db::open_in_memory().unwrap();
         let lib = ops::active_library(&conn).unwrap();
@@ -2855,15 +2845,7 @@ mod tests {
         }
         let dune = work(&conn, "Dune");
 
-        marks::claim_person(
-            &mut conn,
-            &lib,
-            &PersonPick {
-                id: None,
-                name: "Tersoal".into(),
-            },
-        )
-        .unwrap();
+        crate::people::name_founder(&mut conn, &lib, "Tersoal").unwrap();
         marks::set_mark(
             &mut conn,
             &lib,

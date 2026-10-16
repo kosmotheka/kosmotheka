@@ -125,6 +125,14 @@ pub fn set_welcome_seen(conn: &Connection, version: u32) -> Result<()> {
     write_state(conn, WELCOME_SEEN_KEY, Some(&version.to_string()))
 }
 
+const PERSON_NAME_KEY: &str = "person_name";
+
+/// The name this device's person founds libraries with (D97): one per device, asked at the welcome. `None`
+/// until it is given.
+pub fn person_name(conn: &Connection) -> Result<Option<String>> {
+    Ok(read_state(conn, PERSON_NAME_KEY)?.filter(|name| !name.trim().is_empty()))
+}
+
 const APP_LOCK_KEY: &str = "app_lock";
 
 /// Whether the fingerprint/face lock is on (D78). Off by default, like the key being absent.

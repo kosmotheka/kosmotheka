@@ -42,15 +42,70 @@ final class PermissionsTest extends TestCase
         self::assertTrue(Permissions::isAllowed($mark(strtoupper(self::MY_MEMBER)), $reader));
     }
 
-    public function testRolesDecideOnlyOnceTheLibraryHasThem(): void
+    public function testRolesDecideWhatEachDeviceMayDo(): void
     {
         $delete = $this->op([Ops::delete(CatalogEntity::Tag, self::TAG)]);
-        $none = new FakeView(roles: false);
 
-        self::assertTrue(Permissions::isAllowed($delete, $none));
         self::assertFalse(Permissions::isAllowed($delete, $this->view(Role::Reader)));
         self::assertFalse(Permissions::isAllowed($delete, $this->view(Role::Editor)));
         self::assertTrue(Permissions::isAllowed($delete, $this->view(Role::Admin)));
+    }
+
+    private const string FOUNDER_KEY = 'iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w';
+    private const string OTHER_KEY = 'jojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w';
+    private const string NONCE = 'AAECAwQFBgcICQoLDA0ODw';
+    private const string FOUNDED_ID = '2c33de53-4834-8a05-b014-c42dc60bd4e1';
+
+    /** The operation that founds a library (D97): the device creates its own row with its key, a person who is an administrator and the library row with the nonce. */
+    private function founding(string $key, string $nonce, string $library): OperationPayload
+    {
+        $operation = Ops::operation(Ops::hlc(1727222222222, 0, self::ME), []);
+        $changes = [
+            Ops::create(CatalogEntity::Device, self::ME, ['public_key' => $key, 'name' => 'laptop', 'member_id' => self::MY_MEMBER, 'vouched_key' => $key]),
+            Ops::create(CatalogEntity::Member, self::MY_MEMBER, ['name' => 'Ana', 'role' => 'admin', 'can_share' => true]),
+            Ops::create(CatalogEntity::Library, $library, ['name' => 'Casa', 'founding_nonce' => $nonce]),
+        ];
+
+        return new OperationPayload($operation->id, $library, $operation->hlc, 'library.found', $changes, null, 'signed');
+    }
+
+    public function testTheKeyTheIdDerivesFromFoundsTheLibraryAndNobodyElseDoes(): void
+    {
+        $unfounded = new FakeView(founded: false);
+
+        self::assertFalse(Permissions::isAllowed($this->founding(self::OTHER_KEY, self::NONCE, self::FOUNDED_ID), $unfounded), 'another key');
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, 'AAECAwQFBgcICQoLDA0ODg', self::FOUNDED_ID), $unfounded), 'another nonce');
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, self::NONCE, '01997c7e-0000-7000-8000-00000000aaaa'), $unfounded), 'an id that is not derived');
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, 'short', self::FOUNDED_ID), $unfounded), 'a nonce that is not 16 bytes');
+        self::assertTrue(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, self::NONCE, self::FOUNDED_ID), $unfounded));
+    }
+
+    public function testALibraryIsFoundedOnce(): void
+    {
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, self::NONCE, self::FOUNDED_ID), $this->view(null)));
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, self::NONCE, self::FOUNDED_ID), $this->view(Role::Editor)));
+    }
+
+    public function testTheNonceIsWrittenByTheFoundingAloneEvenForAnAdministrator(): void
+    {
+        $rewrite = $this->op([Ops::update(CatalogEntity::Library, '01997c7e-0000-7000-8000-00000000aaaa', ['founding_nonce' => 'AAECAwQFBgcICQoLDA0ODg'])]);
+        $rename = $this->op([Ops::update(CatalogEntity::Library, '01997c7e-0000-7000-8000-00000000aaaa', ['name' => 'Otra'])]);
+
+        self::assertFalse(Permissions::isAllowed($rewrite, $this->view(Role::Admin)));
+        self::assertTrue(Permissions::isAllowed($rename, $this->view(Role::Admin)));
+    }
+
+    public function testAFencedFounderFoundsNothing(): void
+    {
+        self::assertFalse(Permissions::isAllowed($this->founding(self::FOUNDER_KEY, self::NONCE, self::FOUNDED_ID), new FakeView(founded: false, fenced: true)));
+    }
+
+    public function testInAnUnfoundedLibraryNobodyWritesButRegistersItsOwnDevice(): void
+    {
+        $unfounded = new FakeView(founded: false);
+
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Tehanu'])]), $unfounded));
+        self::assertTrue(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Device, self::ME, ['public_key' => self::FOUNDER_KEY, 'name' => 'laptop'])]), $unfounded));
     }
 
     public function testAnEditorDeletesWhatHerPersonCreated(): void
@@ -78,7 +133,7 @@ final class PermissionsTest extends TestCase
         self::assertFalse(Permissions::isAllowed($vouch($other), $this->view(Role::Editor)));
         self::assertFalse(Permissions::isAllowed($vouch(self::ME), $this->view(null)), 'a device of nobody');
         self::assertTrue(Permissions::isAllowed($vouch($other), $this->view(Role::Admin)));
-        $cloud = new FakeView(roles: true, cloud: true);
+        $cloud = new FakeView(founded: true, cloud: true);
         $linkAndVouch = $this->op([Ops::update(CatalogEntity::Device, $other, ['member_id' => '01997c7e-0000-7000-8000-000000000013', 'vouched_key' => 'AAAA'])]);
         self::assertFalse(Permissions::isAllowed($vouch($other), $cloud), 'alone');
         self::assertTrue(Permissions::isAllowed($linkAndVouch, $cloud), 'with the link it makes');
@@ -96,7 +151,7 @@ final class PermissionsTest extends TestCase
             self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Reader, samePerson: true)), 'a reader, the person themself');
             self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(null)), 'a device of nobody');
             self::assertTrue(Permissions::isAllowed($withdraw($value), $this->view(Role::Admin)));
-            self::assertFalse(Permissions::isAllowed($withdraw($value), new FakeView(roles: true, cloud: true)), 'the cloud');
+            self::assertFalse(Permissions::isAllowed($withdraw($value), new FakeView(founded: true, cloud: true)), 'the cloud');
         }
         $born = $this->op([Ops::create(CatalogEntity::Member, $member, ['name' => 'Hugo', 'access_withdrawn' => true])]);
         self::assertFalse(Permissions::isAllowed($born, $this->view(Role::Editor)), 'not at creation');
@@ -109,7 +164,7 @@ final class PermissionsTest extends TestCase
 
         $unsigned = $this->op([Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Tehanu'])], signed: false);
         self::assertFalse(Permissions::isAllowed($unsigned, $this->view(Role::Admin)));
-        self::assertFalse(Permissions::isAllowed($unsigned, $this->view(null)), 'not even without roles');
+        self::assertFalse(Permissions::isAllowed($unsigned, $this->view(null)), 'nor a device of nobody');
     }
 
     public function testWhoeverAskedWithdrawsAndNothingMore(): void
@@ -177,8 +232,8 @@ final class PermissionsTest extends TestCase
         self::assertFalse(Permissions::isAllowed($account, $reader));
         self::assertFalse(Permissions::isAllowed($account, $this->view(Role::Admin)), 'not even an administrator');
         self::assertFalse(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Member, self::OTHER_MEMBER, ['name' => 'Laura', 'account_id' => '01997c7e-0000-7000-8000-0000000000a1'])]), $this->view(Role::Admin)), 'nor at creation');
-        // Without roles everyone may.
-        self::assertTrue(Permissions::isAllowed($account, new FakeView(roles: false)));
+        // Nor in a library nobody founded.
+        self::assertFalse(Permissions::isAllowed($account, new FakeView(founded: false)));
     }
 
     public function testAFencedCloudDeviceHasNoPower(): void
@@ -186,7 +241,7 @@ final class PermissionsTest extends TestCase
         $account = $this->op([Ops::update(CatalogEntity::Member, self::OTHER_MEMBER, ['account_id' => '01997c7e-0000-7000-8000-0000000000a1'])]);
 
         self::assertTrue(Permissions::isAllowed($account, $this->cloud(null)));
-        self::assertFalse(Permissions::isAllowed($account, new FakeView(roles: true, fenced: true, cloud: true)));
+        self::assertFalse(Permissions::isAllowed($account, new FakeView(founded: true, fenced: true, cloud: true)));
     }
 
     /**
@@ -201,7 +256,7 @@ final class PermissionsTest extends TestCase
 
     private function view(?Role $role, bool $samePerson = false, bool $fenced = false): FakeView
     {
-        return new FakeView(roles: true, role: $role, samePerson: $samePerson, fenced: $fenced);
+        return new FakeView(founded: true, role: $role, samePerson: $samePerson, fenced: $fenced);
     }
 
     /**
@@ -215,6 +270,6 @@ final class PermissionsTest extends TestCase
     /** The cloud device is a device of nobody, or of the person given. */
     private function cloud(?Role $role): FakeView
     {
-        return new FakeView(roles: true, role: $role, cloud: true);
+        return new FakeView(founded: true, role: $role, cloud: true);
     }
 }

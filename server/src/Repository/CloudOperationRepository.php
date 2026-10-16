@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
 use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
@@ -412,22 +411,6 @@ final class CloudOperationRepository extends ServiceEntityRepository
             FenceChain::class,
         ))->setParameter('library', $library->getId(), 'uuid')->setParameter('device', $deviceId)->setParameter('until', $until)
             ->setParameter('through', $through ?? new NilUuid(), 'uuid')->setParameter('fence', $fenceOperation, 'uuid')->setMaxResults(1)->getResult();
-
-        return [] !== $found;
-    }
-
-    /**
-     * Whether the log already holds an operation, stored before the seal `sealOperation` (D94), of a device
-     * the seal does not name: judged before the seal was known, it has to be judged again.
-     */
-    public function hasOperationUnderSeal(CloudLibrary $library, string $until, Uuid $sealOperation): bool
-    {
-        $found = $this->getEntityManager()->createQuery(\sprintf(
-            'SELECT 1 FROM %s o WHERE o.cloudLibrary = :library AND o.hlc < :until AND o.operationId <> :seal
-               AND NOT EXISTS (SELECT 1 FROM %s f WHERE f.cloudLibrary = :library AND f.operationId = :seal AND f.deviceId = o.authorDeviceId)',
-            CloudOperation::class,
-            Fence::class,
-        ))->setParameter('library', $library->getId(), 'uuid')->setParameter('until', $until)->setParameter('seal', $sealOperation, 'uuid')->setMaxResults(1)->getResult();
 
         return [] !== $found;
     }

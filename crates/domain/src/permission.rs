@@ -25,8 +25,9 @@ impl Role {
 
 /// What the rules need to know about the library at the moment of an operation.
 pub trait LibraryView {
-    /// Whether any member has a role. Until then, everyone may do everything.
-    fn has_roles(&self) -> bool;
+    /// Whether the library is founded: some member has a role. Until then nobody may do anything but register
+    /// their own device, and the only operation that counts is the one that founds it (D97, rule 1).
+    fn founded(&self) -> bool;
     /// The role of the person `device` belongs to. `None` when the device belongs
     /// to nobody or its person has no role.
     fn role_of_device(&self, device: &str) -> Option<Role>;
@@ -48,9 +49,6 @@ pub trait LibraryView {
     /// dated before the operation that took the author's power away, and neither
     /// the last one the administrator had nor one of its ancestors through
     /// `previous`. Such an operation cannot be honest.
-    /// Also when it is dated before an applied seal (D94) that does not name its author:
-    /// a seal fences the device of its own author, so it fences every device, and the
-    /// ones it does not name have no operation it believes before it.
     /// Also after a revocation of the author still in force at its HLC (D71): a
     /// revoked device writes nothing, even through a device that has not heard of it yet.
     fn fenced(&self, operation: &Operation) -> bool;
@@ -72,10 +70,11 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         return false;
     }
     let author = operation.hlc.device.as_str();
-    // A fenced author is judged as nobody's, with or without roles: its date cannot
-    // be trusted, or its access was withdrawn (D71, D84).
+    // A fenced author is judged as nobody's: its date cannot be trusted, or its access was withdrawn (D71, D84).
     let fenced = view.fenced(operation);
-    if !view.has_roles() && !fenced {
+    // The operation that founds the library (D97): the only one allowed while nobody has a role. Whoever
+    // holds the key the id derives from founds it, whatever date the operation carries.
+    if !fenced && !view.founded() && is_founding(operation) {
         return true;
     }
     let role = if fenced {
@@ -83,8 +82,8 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     } else {
         view.role_of_device(author)
     };
-    // The cloud's power (D76, D95) is the named device's, unless a fence or a seal
-    // makes it nobody's. Asked only when a change could use it.
+    // The cloud's power (D76, D95) is the named device's, unless a fence makes it
+    // nobody's. Asked only when a change could use it.
     let cloud = !fenced
         && operation.changes.iter().any(touches_cloud_field)
         && view.cloud_device().is_some_and(|cloud| cloud == author);
@@ -92,6 +91,39 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         .changes
         .iter()
         .all(|change| change_allowed(change, author, role, cloud, view))
+}
+
+/// Whether `operation` is the founding of its library (D97, rule 1): it creates the `library` row with a
+/// `founding_nonce`, and the public key its author gives in its own `device` row of the same operation, with that
+/// nonce, derives the id of the library. Nothing else is asked here; whether the library is still unfounded is
+/// the caller's.
+fn is_founding(operation: &Operation) -> bool {
+    let text = |change: &Change, field: &str| {
+        change
+            .fields
+            .get(field)
+            .and_then(|value| value.as_str())
+            .map(str::to_owned)
+    };
+    let nonce = operation.changes.iter().find_map(|change| {
+        (change.entity == Entity::Library
+            && change.action == Action::Create
+            && change.id.eq_ignore_ascii_case(&operation.library))
+        .then(|| text(change, "founding_nonce"))
+        .flatten()
+    });
+    let key = operation.changes.iter().find_map(|change| {
+        (change.entity == Entity::Device
+            && change.action != Action::Delete
+            && change.id == operation.hlc.device)
+            .then(|| text(change, "public_key"))
+            .flatten()
+    });
+    match (key, nonce) {
+        (Some(key), Some(nonce)) => crate::library_id(&key, &nonce)
+            .is_some_and(|id| id == operation.library.to_ascii_lowercase()),
+        _ => false,
+    }
 }
 
 /// Whether the change writes something only the cloud device may write, or the one
@@ -149,6 +181,11 @@ fn change_allowed(
     cloud: bool,
     view: &impl LibraryView,
 ) -> bool {
+    // `founding_nonce` is written once, by the founding (judged before this is asked): nobody writes it
+    // afterwards, an administrator included (D97).
+    if change.entity == Entity::Library && change.fields.contains_key("founding_nonce") {
+        return false;
+    }
     // `account_id` is written by the cloud device alone: not by an administrator, not
     // when the member is created.
     if change.entity == Entity::Member && change.fields.contains_key("account_id") {
@@ -221,7 +258,7 @@ mod tests {
     use super::*;
 
     struct View {
-        roles: bool,
+        founded: bool,
         role: Option<Role>,
         same_person: bool,
         fenced: bool,
@@ -229,8 +266,8 @@ mod tests {
     }
 
     impl LibraryView for View {
-        fn has_roles(&self) -> bool {
-            self.roles
+        fn founded(&self) -> bool {
+            self.founded
         }
         fn role_of_device(&self, _: &str) -> Option<Role> {
             self.role
@@ -324,7 +361,7 @@ mod tests {
 
     fn view(role: Option<Role>) -> View {
         View {
-            roles: true,
+            founded: true,
             role,
             same_person: false,
             fenced: false,
@@ -335,19 +372,127 @@ mod tests {
     const TAG: &str = "01997c7e-0000-7000-8000-000000000061";
 
     #[test]
-    fn roles_decide_only_once_the_library_has_them() {
+    fn roles_decide_what_each_device_may_do() {
         let delete = op(vec![Change::delete(Entity::Tag, TAG)]);
-        let none = View {
-            roles: false,
-            role: None,
-            same_person: false,
-            fenced: false,
-            cloud: false,
-        };
-        assert!(is_allowed(&delete, &none));
         assert!(!is_allowed(&delete, &view(Some(Role::Reader))));
         assert!(!is_allowed(&delete, &view(Some(Role::Editor))));
         assert!(is_allowed(&delete, &view(Some(Role::Admin))));
+    }
+
+    const FOUNDER_KEY: &str = "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w";
+    const NONCE: &str = "AAECAwQFBgcICQoLDA0ODw";
+    const OTHER_KEY: &str = "jojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w";
+    const FOUNDED_ID: &str = "2c33de53-4834-8a05-b014-c42dc60bd4e1";
+
+    /// The operation that founds a library (D97): the device creates its own row with its key, a person with the role
+    /// of administrator and the library row with the nonce, all in the one operation.
+    fn founding(key: &str, nonce: &str, library: &str) -> Operation {
+        let mut founding = op(vec![
+            Change::create(
+                Entity::Device,
+                ME,
+                json!({ "public_key": key, "name": "laptop", "member_id": MY_MEMBER, "vouched_key": key }),
+            ),
+            Change::create(
+                Entity::Member,
+                MY_MEMBER,
+                json!({ "name": "Ana", "role": "admin", "can_share": true }),
+            ),
+            Change::create(
+                Entity::Library,
+                library,
+                json!({ "name": "Casa", "founding_nonce": nonce }),
+            ),
+        ]);
+        founding.library = library.to_owned();
+        founding
+    }
+
+    fn unfounded() -> View {
+        View {
+            founded: false,
+            ..view(None)
+        }
+    }
+
+    #[test]
+    fn the_key_the_id_derives_from_founds_the_library_and_nobody_else_does() {
+        // Hostile first (D97): a device whose key is not the one the id derives from, or a nonce that is not
+        // the one, founds nothing: its operation is a request, whatever date it carries.
+        assert!(!is_allowed(
+            &founding(OTHER_KEY, NONCE, FOUNDED_ID),
+            &unfounded()
+        ));
+        assert!(!is_allowed(
+            &founding(FOUNDER_KEY, "AAECAwQFBgcICQoLDA0ODg", FOUNDED_ID),
+            &unfounded()
+        ));
+        assert!(!is_allowed(
+            &founding(FOUNDER_KEY, NONCE, "01997c7e-0000-7000-8000-00000000aaaa"),
+            &unfounded()
+        ));
+        assert!(is_allowed(
+            &founding(FOUNDER_KEY, NONCE, FOUNDED_ID),
+            &unfounded()
+        ));
+    }
+
+    #[test]
+    fn a_library_is_founded_once() {
+        // The very same founding, when somebody already has a role, is judged like any operation: its author
+        // is a device of nobody's then (or whatever it is), and cannot give itself a role or touch the library.
+        assert!(!is_allowed(
+            &founding(FOUNDER_KEY, NONCE, FOUNDED_ID),
+            &view(None)
+        ));
+        assert!(!is_allowed(
+            &founding(FOUNDER_KEY, NONCE, FOUNDED_ID),
+            &view(Some(Role::Editor))
+        ));
+    }
+
+    #[test]
+    fn the_nonce_is_written_by_the_founding_alone_even_for_an_administrator() {
+        let rewrite = op(vec![Change::update(
+            Entity::Library,
+            "01997c7e-0000-7000-8000-00000000aaaa",
+            json!({ "founding_nonce": "AAECAwQFBgcICQoLDA0ODg" }),
+        )]);
+        assert!(!is_allowed(&rewrite, &view(Some(Role::Admin))));
+        let rename = op(vec![Change::update(
+            Entity::Library,
+            "01997c7e-0000-7000-8000-00000000aaaa",
+            json!({ "name": "Otra" }),
+        )]);
+        assert!(is_allowed(&rename, &view(Some(Role::Admin))));
+    }
+
+    #[test]
+    fn a_fenced_founder_founds_nothing() {
+        let fenced = View {
+            fenced: true,
+            ..unfounded()
+        };
+        assert!(!is_allowed(
+            &founding(FOUNDER_KEY, NONCE, FOUNDED_ID),
+            &fenced
+        ));
+    }
+
+    #[test]
+    fn in_an_unfounded_library_nobody_writes_but_registers_its_own_device() {
+        let tag = op(vec![Change::create(
+            Entity::Tag,
+            TAG,
+            json!({ "name": "Tehanu" }),
+        )]);
+        assert!(!is_allowed(&tag, &unfounded()));
+        let register = op(vec![Change::create(
+            Entity::Device,
+            ME,
+            json!({ "public_key": FOUNDER_KEY, "name": "laptop" }),
+        )]);
+        assert!(is_allowed(&register, &unfounded()));
     }
 
     #[test]
@@ -419,7 +564,7 @@ mod tests {
         assert!(is_allowed(&add, &view(Some(Role::Editor))));
         add.signature = None;
         assert!(!is_allowed(&add, &view(Some(Role::Admin))));
-        assert!(!is_allowed(&add, &view(None)), "not even without roles");
+        assert!(!is_allowed(&add, &view(None)), "nor a device of nobody");
     }
 
     #[test]
@@ -575,12 +720,8 @@ mod tests {
             !is_allowed(&born, &view(Some(Role::Admin))),
             "nor at creation"
         );
-        // Without roles everyone may.
-        let none = View {
-            roles: false,
-            ..view(None)
-        };
-        assert!(is_allowed(&set, &none));
+        // Nor in a library nobody founded.
+        assert!(!is_allowed(&set, &unfounded()));
     }
 
     #[test]

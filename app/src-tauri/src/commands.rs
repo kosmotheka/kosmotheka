@@ -689,19 +689,6 @@ pub fn list_people(database: State<'_, Database>) -> Result<People> {
     people::list_people(&conn, &ops::active_library(&conn)?)
 }
 
-/// Turns roles on, saying in the same step whose each device already sharing the
-/// library is (D73).
-#[tauri::command]
-pub fn start_roles(
-    database: State<'_, Database>,
-    name: String,
-    owners: Vec<people::DeviceOwner>,
-) -> Result<String> {
-    let mut conn = database.lock()?;
-    let library = ops::active_library(&conn)?;
-    people::start_roles(&mut conn, &library, &name, &owners)
-}
-
 /// People known in other libraries of this device, to reuse in the active one.
 #[tauri::command]
 pub fn known_people(database: State<'_, Database>) -> Result<Vec<people::KnownPerson>> {

@@ -70,13 +70,13 @@ final class ScenarioFixturesTest extends WebTestCase
 
     public function testAnaUploadsBibliotecaGarciaWithItsHistory(): void
     {
-        $garcia = $this->cloudLibrariesOf(Cast::GARCIA_LOCAL);
+        $garcia = $this->cloudLibrariesOf(Cast::garciaLocal());
 
         self::assertCount(2, $garcia, 'The Garcías\' own copy and the one Jhonny made of its ids.');
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
         self::assertContains($ana, $garcia);
-        // 13 of the upload, 1 of the phone, the laptop's older one, the cloud's own registration (D95) and its note of Hugo's account (7.5.2b-2).
-        self::assertSame(17, $this->operationsIn($ana));
+        // 12 of the upload, 1 of the phone, the laptop's older one, the cloud's own registration (D95) and its note of Hugo's account (7.5.2b-2).
+        self::assertSame(16, $this->operationsIn($ana));
         // Three authors registered their keys: the laptop, the phone and Hugo's phone; and the cloud's device, since the library was created (D95).
         self::assertSame(4, $this->rowsIn('cloud_device_key WHERE cloud_library_id = '.$this->quote($ana)));
         // Hugo's mark and request, and Ana's roles, are in the history as operations.
@@ -107,36 +107,36 @@ final class ScenarioFixturesTest extends WebTestCase
         $listed = $this->libraryList($this->listLibraries(Cast::hugoPhone())['body']);
         self::assertCount(1, $listed);
         \assert(\is_array($listed[0]));
-        self::assertSame(Cast::GARCIA_LOCAL, $listed[0]['localLibraryId'] ?? null);
+        self::assertSame(Cast::garciaLocal(), $listed[0]['localLibraryId'] ?? null);
         // The cloud wrote that Hugo has an account: his public id, not his email.
         self::assertSame(1, $this->rowsIn('catalog_members WHERE id = '.$this->quote(Cast::id('member:hugo')).' AND account_id IS NOT NULL'));
     }
 
     public function testKenjiUploadsTheDefaultLibraryAndJhonnyUsesTheSameLocalId(): void
     {
-        $withDefaultId = $this->cloudLibrariesOf(Cast::DEFAULT_LOCAL);
+        $withDefaultId = $this->cloudLibrariesOf(Cast::defaultLocal());
 
         self::assertCount(2, $withDefaultId);
-        self::assertSame(2, $this->rowsIn('(SELECT DISTINCT owner_id FROM cloud_library WHERE local_library_id = '.$this->quote(Cast::DEFAULT_LOCAL).') owners'));
+        self::assertSame(2, $this->rowsIn('(SELECT DISTINCT owner_id FROM cloud_library WHERE local_library_id = '.$this->quote(Cast::defaultLocal()).') owners'));
         self::assertContains($this->idOfLibraryOwnedBy(Cast::KENJI), $withDefaultId);
         // Neither one holds the other's history.
-        self::assertSame(5, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
-        self::assertSame(2, $this->operationsIn(array_first(array_diff($withDefaultId, [$this->idOfLibraryOwnedBy(Cast::KENJI)])) ?? self::fail('Jhonny has no library with the default id.')));
+        self::assertSame(4, $this->operationsIn($this->idOfLibraryOwnedBy(Cast::KENJI)));
+        self::assertSame(1, $this->operationsIn(array_first(array_diff($withDefaultId, [$this->idOfLibraryOwnedBy(Cast::KENJI)])) ?? self::fail('Jhonny has no library with the default id.')));
     }
 
     public function testTheStolenOperationIdsAreInTwoLibraries(): void
     {
         $ana = $this->idOfLibraryOwnedBy(Cast::ANA);
-        [$jhonnys] = array_values(array_diff($this->cloudLibrariesOf(Cast::GARCIA_LOCAL), [$ana]));
+        [$jhonnys] = array_values(array_diff($this->cloudLibrariesOf(Cast::garciaLocal()), [$ana]));
 
         $shared = $this->connection->fetchFirstColumn('SELECT operation_id FROM cloud_operation GROUP BY operation_id HAVING COUNT(DISTINCT cloud_library_id) > 1');
 
-        self::assertCount(13, $shared);
-        self::assertSame(13, $this->scalar(
+        self::assertCount(12, $shared);
+        self::assertSame(12, $this->scalar(
             'SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = :library AND operation_id IN (SELECT operation_id FROM cloud_operation WHERE cloud_library_id = :ana)',
             ['library' => $jhonnys, 'ana' => $ana],
         ));
-        self::assertSame(17, $this->operationsIn($ana));
+        self::assertSame(16, $this->operationsIn($ana));
     }
 
     public function testTwoDeviceRowsShareAnId(): void
@@ -204,11 +204,11 @@ final class ScenarioFixturesTest extends WebTestCase
 
         self::assertCount(1, $unlinked, 'Jhonny\'s library with no link: created, never filled.');
         self::assertSame(0, $this->operationsIn($unlinked[0]));
-        self::assertSame(17, $this->operationsIn($ana));
+        self::assertSame(16, $this->operationsIn($ana));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Unsigned']));
         self::assertSame(0, $this->operationsWithChange($ana, 'publisher', ['name' => 'Changed after signing']));
-        // 17 (the Garcías, with the cloud's registration and its note of Hugo's account) + 5 (Kenji, same) + 13 (their ids in Jhonny's, his link goes by the route) + 2 (Jhonny's default id): nothing of another local id, unsigned or forged got in.
-        self::assertSame(37, $this->rowsIn('cloud_operation'));
+        // 16 (the Garcías, with the cloud's registration and its note of Hugo's account) + 4 (Kenji, same) + 12 (their ids in Jhonny's, his link goes by the route) + 1 (Jhonny's default id, linked by the route too): nothing of another local id, unsigned or forged got in.
+        self::assertSame(33, $this->rowsIn('cloud_operation'));
     }
 
     public function testLoadingAgainGivesTheSameOperations(): void

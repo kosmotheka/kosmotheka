@@ -28,7 +28,6 @@ final class AccountLinkerTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
     private const int T = 1_727_000_000_000;
     private const string LAURA = '01997c7e-0000-7000-8000-000000000011';
     private const string HUGO = '01997c7e-0000-7000-8000-000000000012';
@@ -46,6 +45,9 @@ final class AccountLinkerTest extends WebTestCase
 
     private SigningDevice $laptop;
 
+    /** The library the laptop founds: its id derives from the laptop's key (D97). */
+    private string $local;
+
     protected function setUp(): void
     {
         $this->client = self::createClient();
@@ -54,6 +56,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->family = $this->signInNewDevice($this->client, 'family@example.com');
         $this->jhonny = $this->signInNewDevice($this->client, 'jhonny@example.com');
         $this->laptop = SigningDevice::fromSession($this->family);
+        $this->local = $this->laptop->libraryId();
     }
 
     // ------------------------------------------------------ hostile ---
@@ -66,7 +69,7 @@ final class AccountLinkerTest extends WebTestCase
         $tablet = SigningDevice::generate();
         $jhonnysTablet = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, $tablet->id, 'Tablet');
         $impostor = SigningDevice::fromSession($jhonnysTablet);
-        self::assertSame(1, $this->push($this->jhonny, $cloud, [$impostor->registration(self::LOCAL, self::T + $this->tick())])['received']);
+        self::assertSame(1, $this->push($this->jhonny, $cloud, [$impostor->registration($this->local, self::T + $this->tick())])['received']);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($tablet->id, self::LAURA, $tablet->publicKey)]);
 
         $answer = $this->claim($jhonnysTablet);
@@ -113,8 +116,8 @@ final class AccountLinkerTest extends WebTestCase
         $this->shareWithJhonny($cloud);
         $mine = SigningDevice::fromSession($this->jhonny);
         $this->push($this->jhonny, $cloud, [
-            $mine->registration(self::LOCAL, self::T + $this->tick()),
-            $mine->sign(self::LOCAL, self::T + $this->tick(), 'device.claim', [$this->assign($mine->id, self::LAURA, $mine->publicKey)]),
+            $mine->registration($this->local, self::T + $this->tick()),
+            $mine->sign($this->local, self::T + $this->tick(), 'device.claim', [$this->assign($mine->id, self::LAURA, $mine->publicKey)]),
         ]);
 
         // His account is the reader's, so the cloud says his device is the reader's: never Laura's, whatever he signed.
@@ -144,7 +147,7 @@ final class AccountLinkerTest extends WebTestCase
         self::assertSame([$cloud], $this->claim($session)['linked']);
         // Jhonny's device, also assigned to Hugo's person with its true key.
         $other = SigningDevice::fromSession($this->jhonny);
-        $this->push($this->family, $cloud, [$other->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$other->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($other->id, self::HUGO, $other->publicKey)]);
 
         self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($this->jhonny));
@@ -174,10 +177,9 @@ final class AccountLinkerTest extends WebTestCase
         \assert(\is_string($cloud));
         // Nothing but the link enters an unlinked library, whatever it says.
         $response = $this->push($this->family, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T + $this->tick()),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'family.roles', [
-                ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'admin', 'can_share' => true]],
-                $this->assign($this->laptop->id, self::LAURA, $this->laptop->publicKey),
+            $this->laptop->founding(self::T + $this->tick(), self::LAURA, personName: 'Laura'),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'family.roles', [
+                ['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor']],
             ]),
         ]);
         self::assertSame(0, $response['received']);
@@ -190,7 +192,7 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->world();
         $readerSession = $this->signInNewDevice($this->client, 'reader2@example.com', self::PASSWORD, 'Reader');
         $device = SigningDevice::fromSession($readerSession);
-        $this->push($this->family, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$device->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($device->id, self::READER, $device->publicKey)]);
 
         self::assertSame([$cloud], $this->claim($readerSession)['linked']);
@@ -198,7 +200,7 @@ final class AccountLinkerTest extends WebTestCase
         self::assertSame(200, $pulled['status']);
         self::assertNotSame([], $pulled['body']['operations']);
         $before = $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]);
-        $this->push($readerSession, $cloud, [$device->publisher(self::LOCAL, self::T + $this->tick())]);
+        $this->push($readerSession, $cloud, [$device->publisher($this->local, self::T + $this->tick())]);
         self::assertSame($before + 1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]), 'access gives no role');
     }
 
@@ -270,7 +272,7 @@ final class AccountLinkerTest extends WebTestCase
         // Hugo's second device is assigned to the other person.
         $secondSession = $this->loginDevice($this->client, 'hugo@example.com', self::PASSWORD, Uuid::v4()->toRfc4122(), 'Second');
         $second = SigningDevice::fromSession($secondSession);
-        $this->push($this->family, $cloud, [$second->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$second->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($second->id, self::HUGO, $second->publicKey)]);
         $operations = $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
 
@@ -360,7 +362,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->shareWithJhonny($cloud);
         $newId = Uuid::v4()->toRfc4122();
         $jhonnysCopy = $this->loginDevice($this->client, 'jhonny@example.com', self::PASSWORD, $newId, 'Phone');
-        self::assertSame(1, $this->push($this->jhonny, $cloud, [SigningDevice::fromSession($jhonnysCopy)->registration(self::LOCAL, self::T + $this->tick())])['received']);
+        self::assertSame(1, $this->push($this->jhonny, $cloud, [SigningDevice::fromSession($jhonnysCopy)->registration($this->local, self::T + $this->tick())])['received']);
         $hugosNew = $this->loginDevice($this->client, 'hugo@example.com', self::PASSWORD, $newId, 'New phone');
 
         $answer = $this->claim($hugosNew);
@@ -376,7 +378,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->shareWithJhonny($cloud, asTheReader: false);
         $mine = SigningDevice::fromSession($this->jhonny);
         // The family sends his registration: a row without a person gets nothing through the door (SEG-030).
-        $this->push($this->family, $cloud, [$mine->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$mine->registration($this->local, self::T + $this->tick())]);
 
         self::assertSame([], $this->claim($this->jhonny)['devices']);
         self::assertNull($this->personOfDevice($mine->id));
@@ -387,7 +389,7 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->world();
         $oldSession = $this->signInNewDevice($this->client, 'reader2@example.com', self::PASSWORD, 'Reader');
         $old = SigningDevice::fromSession($oldSession);
-        $this->push($this->family, $cloud, [$old->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$old->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($old->id, self::READER, $old->publicKey)]);
         self::assertSame([$cloud], $this->claim($oldSession)['linked']);
         [$new, $newSession] = $this->newPhone($cloud, 'reader2@example.com', $oldSession);
@@ -397,7 +399,7 @@ final class AccountLinkerTest extends WebTestCase
         self::assertSame([$cloud], $answer['devices']);
         self::assertSame(self::READER, $this->personOfDevice($new->id));
         $before = $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]);
-        $this->push($newSession, $cloud, [$new->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000)]);
+        $this->push($newSession, $cloud, [$new->publisher($this->local, (int) (microtime(true) * 1000) + 60_000)]);
         self::assertSame($before + 1, $this->scalar("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]), 'never more role than the person has');
     }
 
@@ -420,7 +422,7 @@ final class AccountLinkerTest extends WebTestCase
     {
         [$cloud, , $oldSession] = $this->hugoWithAnAccount();
         // Dated after what the cloud has written (it uses the server's clock), as an administrator's phone would be.
-        $this->laptopSigns($cloud, 'library.cloud', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_device_id' => '']]], (int) (microtime(true) * 1000) + 60_000);
+        $this->laptopSigns($cloud, 'library.cloud', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['cloud_device_id' => '']]], (int) (microtime(true) * 1000) + 60_000);
         [$new, $newSession] = $this->newPhone($cloud, 'hugo@example.com', $oldSession);
         $operations = $this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
 
@@ -460,7 +462,7 @@ final class AccountLinkerTest extends WebTestCase
         // It is an editor's device now: what it adds is applied.
         $before = $this->publishers($cloud);
         // Dated after the cloud's link, as the clock of a phone that has pulled it would be (the server writes with its own clock).
-        $this->push($newSession, $cloud, [$new->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000, 'By the new phone')]);
+        $this->push($newSession, $cloud, [$new->publisher($this->local, (int) (microtime(true) * 1000) + 60_000, 'By the new phone')]);
         self::assertSame($before + 1, $this->publishers($cloud));
         // Twice: nothing more.
         self::assertSame(['linked' => [], 'conflicts' => [], 'devices' => []], $this->claim($newSession));
@@ -493,7 +495,7 @@ final class AccountLinkerTest extends WebTestCase
     {
         $session = $this->loginDevice($this->client, $email, self::PASSWORD, Uuid::v4()->toRfc4122(), 'New phone');
         $device = SigningDevice::fromSession($session);
-        self::assertSame(1, $this->push($withAccess, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())])['received']);
+        self::assertSame(1, $this->push($withAccess, $cloud, [$device->registration($this->local, self::T + $this->tick())])['received']);
 
         return [$device, $session];
     }
@@ -527,7 +529,7 @@ final class AccountLinkerTest extends WebTestCase
         $this->laptopSigns($cloud, 'library.revoke', [['entity' => 'revocation', 'id' => $revocation, 'action' => 'create', 'fields' => ['device_id' => $one->id, 'device_name' => 'Jhonny']]]);
 
         $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()]);
-        $push = $this->push($oneSession, $cloud, [$one->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 60_000)]);
+        $push = $this->push($oneSession, $cloud, [$one->publisher($this->local, (int) (microtime(true) * 1000) + 60_000)]);
 
         self::assertSame(403, $pull['status']);
         self::assertSame(['error', 'proofs'], array_keys($pull['body']), 'no operation of the library goes with it');
@@ -590,10 +592,10 @@ final class AccountLinkerTest extends WebTestCase
     public function testACutDeviceBehindTheAdministratorGetsHerEarlierOperationsUpToTheWithdrawalAndNothingElse(): void
     {
         [$cloud, $one, $oneSession, $two] = $this->jhonnyWithTwoDevices();
-        $earlier = $this->laptop->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 10_000, 'Before');
+        $earlier = $this->laptop->publisher($this->local, (int) (microtime(true) * 1000) + 10_000, 'Before');
         $this->push($this->family, $cloud, [$earlier]);
         $this->withdrawJhonny($cloud, $one, $two);
-        $this->push($this->family, $cloud, [$this->laptop->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 90_000, 'After')]);
+        $this->push($this->family, $cloud, [$this->laptop->publisher($this->local, (int) (microtime(true) * 1000) + 90_000, 'After')]);
         $connection = self::getContainer()->get(Connection::class);
         $withdrawal = $connection->fetchAssociative("SELECT operation_id, hlc FROM cloud_operation WHERE cloud_library_id = ? AND body::text LIKE '%member.withdraw%'", [$cloud]);
         \assert(\is_array($withdrawal) && \is_string($withdrawal['operation_id']) && \is_string($withdrawal['hlc']));
@@ -674,8 +676,8 @@ final class AccountLinkerTest extends WebTestCase
         $before = [$this->scalar('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), $this->accessWithdrawnOf(self::READER), $this->scalar('SELECT COUNT(*) FROM catalog_revocations WHERE cloud_library_id = ?', [$cloud])];
         $at = (int) (microtime(true) * 1000) + 120_000;
 
-        $mark = $this->push($oneSession, $cloud, [$one->sign(self::LOCAL, $at, 'member.restore', [['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => false]]])]);
-        $revocation = $this->push($oneSession, $cloud, [$one->sign(self::LOCAL, $at + 1, 'library.grant', [['entity' => 'revocation', 'id' => $this->revocationOf($one->id), 'action' => 'delete', 'fields' => new \stdClass()]])]);
+        $mark = $this->push($oneSession, $cloud, [$one->sign($this->local, $at, 'member.restore', [['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => false]]])]);
+        $revocation = $this->push($oneSession, $cloud, [$one->sign($this->local, $at + 1, 'library.grant', [['entity' => 'revocation', 'id' => $this->revocationOf($one->id), 'action' => 'delete', 'fields' => new \stdClass()]])]);
 
         self::assertSame('access_withdrawn', $mark['error']);
         self::assertSame('access_withdrawn', $revocation['error']);
@@ -737,15 +739,14 @@ final class AccountLinkerTest extends WebTestCase
         $cloud = $this->call('POST', '/v1/cloud/libraries', $this->family)['body']['id'] ?? null;
         \assert(\is_string($cloud));
         $other = SigningDevice::fromSession($this->signInNewDevice($this->client, 'other@example.com'));
-        self::assertSame(5, $this->push($this->family, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T + $this->tick()),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER]]]),
-            $other->registration(self::LOCAL, self::T + $this->tick()),
-            // Somebody else turns the roles on and is the only person: the uploader's laptop is nobody's.
-            $other->sign(self::LOCAL, self::T + $this->tick(), 'family.roles', [
-                ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'admin']],
+        self::assertSame(4, $this->push($this->family, $cloud, [
+            $this->laptop->founding(self::T + $this->tick(), self::LAURA, personName: 'Laura'),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER]]]),
+            $other->registration($this->local, self::T + $this->tick()),
+            // Somebody else is the administrator now and the uploader's laptop is nobody's.
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'device.assign', [
                 $this->assign($other->id, self::LAURA, $other->publicKey),
+                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null]],
             ]),
         ])['received']);
 
@@ -755,9 +756,9 @@ final class AccountLinkerTest extends WebTestCase
         self::assertSame(0, $this->scalar('SELECT COUNT(*) FROM membership WHERE cloud_library_id = ? AND withdrawn_at IS NOT NULL', [$cloud]), 'not a cut: she was never somebody');
 
         // She may still send, as a device of nobody; and once an administrator says whose her laptop is, she is in.
-        self::assertSame(1, $this->push($this->family, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + $this->tick())])['received']);
-        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign(self::LOCAL, self::T + $this->tick(), 'member.add', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor']]])])['received']);
-        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign(self::LOCAL, self::T + $this->tick(), 'device.assign', [$this->assign($this->laptop->id, self::HUGO, $this->laptop->publicKey)])])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$this->laptop->publisher($this->local, self::T + $this->tick())])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign($this->local, self::T + $this->tick(), 'member.add', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor']]])])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$other->sign($this->local, self::T + $this->tick(), 'device.assign', [$this->assign($this->laptop->id, self::HUGO, $this->laptop->publicKey)])])['received']);
         self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $this->family, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
         self::assertSame(self::HUGO, $this->memberOf($cloud, 'family@example.com'));
     }
@@ -815,12 +816,12 @@ final class AccountLinkerTest extends WebTestCase
         $this->laptopSigns($cloud, 'device.assign', [$this->assign($hugo->id, self::HUGO, $hugo->publicKey)], (int) (microtime(true) * 1000) + 10_000);
         // Another author's later operation is stored first; the withdrawal, dated before it, arrives after.
         $late = (int) (microtime(true) * 1000) + 90_000;
-        $withdrawal = $this->laptop->sign(self::LOCAL, $late - 10_000, 'member.withdraw', [
+        $withdrawal = $this->laptop->sign($this->local, $late - 10_000, 'member.withdraw', [
             ['entity' => 'member', 'id' => self::READER, 'action' => 'update', 'fields' => ['access_withdrawn' => true]],
             ['entity' => 'device', 'id' => $one->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']],
             ['entity' => 'device', 'id' => $two->id, 'action' => 'update', 'fields' => ['member_id' => null, 'vouched_key' => null, 'trusted_through' => '']],
         ]);
-        self::assertSame(1, $this->push($this->family, $cloud, [$hugo->publisher(self::LOCAL, $late, 'Stored first')])['received']);
+        self::assertSame(1, $this->push($this->family, $cloud, [$hugo->publisher($this->local, $late, 'Stored first')])['received']);
         self::assertSame(200, $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $oneSession, ['schemaVersion' => $this->schema(), 'vector' => new \stdClass()])['status']);
 
         self::assertSame(1, $this->push($this->family, $cloud, [$withdrawal])['received']);
@@ -856,7 +857,7 @@ final class AccountLinkerTest extends WebTestCase
     private function jhonnyDevice(string $cloud, array $session): array
     {
         $device = SigningDevice::fromSession($session);
-        $this->push($this->family, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$device->registration($this->local, self::T + $this->tick())]);
 
         return [$device, $session];
     }
@@ -901,17 +902,14 @@ final class AccountLinkerTest extends WebTestCase
         $identity = $this->identityOf($cloud);
         $fields = ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER] + ($namesTheCloud ? ['cloud_device_id' => $identity] : []);
         $response = $this->push($this->family, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T + $this->tick()),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => $fields]]),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'family.roles', [
-                ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'admin', 'can_share' => true]],
+            $this->laptop->founding(self::T + $this->tick(), self::LAURA, personName: 'Laura'),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => $fields]]),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'family.roles', [
                 ['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor']],
                 ['entity' => 'member', 'id' => self::READER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-                $this->assign($this->laptop->id, self::LAURA, $this->laptop->publicKey),
             ]),
         ]);
-        self::assertSame(4, $response['received']);
+        self::assertSame(3, $response['received']);
 
         return $cloud;
     }
@@ -928,7 +926,7 @@ final class AccountLinkerTest extends WebTestCase
             ? $this->signInNewDevice($this->client, $email)
             : $this->loginDevice($this->client, $email, self::PASSWORD, Uuid::v4()->toRfc4122(), 'Hugo');
         $device = SigningDevice::fromSession($session);
-        $this->push($this->family, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$device->registration($this->local, self::T + $this->tick())]);
 
         return [$device, $session];
     }
@@ -938,7 +936,7 @@ final class AccountLinkerTest extends WebTestCase
      */
     private function laptopSigns(string $cloud, string $intent, array $changes, ?int $at = null): void
     {
-        $response = $this->push($this->family, $cloud, [$this->laptop->sign(self::LOCAL, $at ?? self::T + $this->tick(), $intent, $changes)]);
+        $response = $this->push($this->family, $cloud, [$this->laptop->sign($this->local, $at ?? self::T + $this->tick(), $intent, $changes)]);
         self::assertSame(1, $response['received']);
     }
 

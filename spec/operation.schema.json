@@ -307,6 +307,11 @@
                       "null"
                     ]
                   },
+                  "founding_nonce": {
+                    "description": "The 16 random bytes, base64url without padding, that the library's id derives from together with the founder's public key (D97, rule 1). Written only by the founding operation; never changes.",
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{22}$"
+                  },
                   "cloud_device_id": {
                     "description": "The device that is the cloud in this library (D76, D95), the only one with the cloud's power. Written by whoever may change the library row. Null or absent: no cloud device. Not a reference: the device may register after the field names it.",
                     "anyOf": [

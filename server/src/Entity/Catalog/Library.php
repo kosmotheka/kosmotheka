@@ -24,6 +24,10 @@ final class Library extends CatalogRow
     #[ORM\Column(name: 'cloud_device_id', type: Types::TEXT, nullable: true)]
     private ?string $cloudDeviceId = null;
 
+    /** The nonce the id of the library derives from, with the founder's key (D97). Written by the founding, never changed. */
+    #[ORM\Column(name: 'founding_nonce', type: Types::TEXT, nullable: true)]
+    private ?string $foundingNonce = null;
+
     public function getName(): string
     {
         return $this->name;
@@ -32,6 +36,16 @@ final class Library extends CatalogRow
     public function setName(string $name): void
     {
         $this->name = $name;
+    }
+
+    public function getFoundingNonce(): ?string
+    {
+        return $this->foundingNonce;
+    }
+
+    public function setFoundingNonce(?string $foundingNonce): void
+    {
+        $this->foundingNonce = $foundingNonce;
     }
 
     public function getCloudDeviceId(): ?string

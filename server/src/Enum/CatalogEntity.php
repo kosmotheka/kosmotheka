@@ -196,7 +196,7 @@ enum CatalogEntity: string
 
         return match ($this) {
             self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
-            self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text(), 'cloud_device_id' => new FieldSpec(FieldType::DeviceIdOrEmpty, false)],
+            self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text(), 'cloud_device_id' => new FieldSpec(FieldType::DeviceIdOrEmpty, false), 'founding_nonce' => $text()],
             self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
             self::Member => [
                 'name' => $text(true),

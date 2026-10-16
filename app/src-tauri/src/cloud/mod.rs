@@ -578,8 +578,7 @@ async fn pull_and_merge<A: CloudApi>(
     let merged: MergeReport = {
         let mut conn = database.lock()?;
         let merged = sync::merge(&mut conn, kept)?;
-        // With what the cloud had already merged; push_missing then sends the seal (D94).
-        crate::permissions::seal_if_missing(&mut conn, &[library.to_owned()])?;
+        // With what the cloud had already merged; push_missing then sends what it wrote (D96).
         crate::permissions::vouch_if_missing(&mut conn, &[library.to_owned()])?;
         crate::permissions::complete_withdrawals(&mut conn, &[library.to_owned()])?;
         merged

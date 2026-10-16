@@ -139,6 +139,8 @@ const LIBRARY_FIELDS: &[FieldSpec] = &[
     field("cloud_library_id", FieldType::Text, false),
     field("cloud_server", FieldType::Text, false),
     field("cloud_device_id", FieldType::DeviceIdOrEmpty, false),
+    // Written only by the operation that founds the library, and never changes (D97, rule 1).
+    field("founding_nonce", FieldType::Text, false),
 ];
 const PERSON_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
 const WORK_CONTRIBUTOR_FIELDS: &[FieldSpec] = &[

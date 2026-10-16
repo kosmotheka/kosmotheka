@@ -54,13 +54,12 @@ Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spe
 | `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
 | `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
-| `library.create` / `library.rename` / `library.delete` | Crear, renombrar o borrar una biblioteca (D65) |
+| `library.found` / `library.rename` / `library.delete` | Fundar (D97), renombrar o borrar una biblioteca (D65) |
 | `library.revoke` / `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
 | `device.register` | La primera escritura de un dispositivo en una biblioteca: su fila `device` con la clave pública (D56) |
-| `member.roles` | Activar los roles: la persona de este dispositivo pasa a ser administradora y el dispositivo queda vinculado a ella, en una sola operación (D73) |
 | `member.role` / `device.assign` | Cambiar el rol o el permiso de compartir de alguien; decir de quién es un dispositivo |
 | `device.remove` | Dispositivo perdido: deja de ser de su persona y se le retira el acceso, en cada biblioteca donde escribe (D58) |
-| `library.duplicate` | Copiar el catálogo de una biblioteca en otra nueva, sin roles: el último recurso de D58 |
+| `library.duplicate` | Copiar el catálogo de una biblioteca en otra nueva, fundada por quien copia: el último recurso de D58 |
 | `request.accept` / `request.reject` | Resolver una petición: crea su fila `change_request` y, al aceptar, repite los cambios pedidos (D73) |
 
 
@@ -92,13 +91,13 @@ Cada dispositivo encadena sus operaciones por biblioteca: `previous` apunta a la
 ## Permisos (D73, hitos 5.2 a 5.4)
 
 Las reglas están en `spec/README.md` («Roles and permissions») y en D73. Resumen:
-- **Sin roles, como siempre:** hasta que algún miembro tiene rol, todos pueden todo.
-- Con roles, cada operación se juzga con el rol de su autor en ese momento: el autor es el dispositivo del `hlc`, su persona es el `member_id` de su fila `device`, y un dispositivo que no es de nadie cuenta como lector (una operación sin firma ni siquiera llega aquí: se rechaza antes).
+- **Toda biblioteca nace con administrador (D97):** su primera operación es la fundación, y solo vale si su id sale de la clave de quien la firma. Hasta entonces solo se admite que cada dispositivo se registre.
+- Cada operación se juzga con el rol de su autor en ese momento: el autor es el dispositivo del `hlc`, su persona es el `member_id` de su fila `device`, y un dispositivo que no es de nadie cuenta como lector (una operación sin firma ni siquiera llega aquí: se rechaza antes).
 - **Todo o nada:** si un cambio no está permitido, la operación entera queda como **petición** (`operations.status = 'request'`): se guarda en el registro y viaja, pero no se aplica.
 
 Dónde está:
 - **Las reglas**, como función pura, en `crates/domain/src/permission.rs` (`is_allowed`), para que el servidor pueda usar las mismas.
-- **Las preguntas** que necesitan («¿tiene roles la biblioteca?», «¿qué rol tiene este dispositivo?», «¿creó esta fila su misma persona?»), en `app/src-tauri/src/permissions.rs`, leyendo la base de datos.
+- **Las preguntas** que necesitan («¿está fundada la biblioteca?», «¿qué rol tiene este dispositivo?», «¿creó esta fila su misma persona?»), en `app/src-tauri/src/permissions.rs`, leyendo la base de datos.
 - **Escrituras propias:** `ops::record` juzga la operación igual que si llegara de fuera. Si no está permitida, devuelve `NotAllowed` y no escribe nada, salvo en **modo petición** (`ops::as_request`): entonces la guarda como petición, sin aplicarla. Es lo que usará el botón «Pedir que se añada».
 - **Peticiones** (`app/src-tauri/src/requests.rs`, hito 5.5): `list_requests` las lista con su autor, persona, fecha, cambios y estado (pendiente, aceptada o rechazada). `accept` graba una operación del administrador que crea la fila `change_request` y repite los cambios pedidos; si ya no se pueden aplicar (una fila que editaban se borró), falla sin cambiar nada. `reject` solo crea la fila. Resolver una ya resuelta da `RequestResolved`.
 - **El registro del dispositivo** (su fila `device` con la clave) va en una operación propia, `device.register`, antes de la primera escritura en cada biblioteca. Así «todo o nada» nunca se lo lleva por delante.

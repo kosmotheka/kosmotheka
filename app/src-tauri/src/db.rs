@@ -44,6 +44,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0032_cloud_power.sql")),
     M::up(include_str!("../migrations/0033_vouched_key.sql")),
     M::up(include_str!("../migrations/0034_access_withdrawn.sql")),
+    M::up(include_str!("../migrations/0035_founding.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 
@@ -168,15 +169,8 @@ fn open_file(path: &Path, identity: Option<(&str, [u8; 32])>) -> Result<Connecti
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
-    first_libraries(&mut conn)?;
+    libraries::ensure_first_library(&mut conn)?;
     Ok(conn)
-}
-
-/// After the baseline, so a database from before it logs its old library first and
-/// the retire step takes that log away with the library (D85).
-fn first_libraries(conn: &mut Connection) -> Result<()> {
-    libraries::retire_fixed_library(conn)?;
-    libraries::ensure_first_library(conn)
 }
 
 /// Before migrations touch an existing database, a copy of it is left next to it
@@ -216,7 +210,30 @@ pub fn open_in_memory() -> Result<Connection> {
     ops::ensure_device_id(&conn)?;
     search::ensure_current(&conn)?;
     sync::ensure_baseline(&mut conn)?;
-    first_libraries(&mut conn)?;
+    libraries::ensure_first_library(&mut conn)?;
+    Ok(conn)
+}
+
+/// For tests: a database of the same device as `like` (its id and its key), the way a device restores its own
+/// backup. The first library is founded after that, with that key.
+#[cfg(test)]
+pub fn open_in_memory_as(like: &Connection) -> Result<Connection> {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
+    let device_id = ops::device_id(like)?;
+    let seed: [u8; 32] = URL_SAFE_NO_PAD
+        .decode(ops::read_state(like, "signing_seed")?.expect("a signing key"))
+        .expect("a seed")
+        .try_into()
+        .expect("32 bytes");
+    let mut conn = Connection::open_in_memory()?;
+    migrate(&mut conn)?;
+    ops::set_identity(&conn, &device_id, seed)?;
+    ops::ensure_device_id(&conn)?;
+    search::ensure_current(&conn)?;
+    sync::ensure_baseline(&mut conn)?;
+    libraries::ensure_first_library(&mut conn)?;
     Ok(conn)
 }
 

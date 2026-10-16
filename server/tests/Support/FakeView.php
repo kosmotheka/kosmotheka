@@ -16,7 +16,7 @@ final readonly class FakeView implements LibraryView
     private const string OTHER_MEMBER = '01997c7e-0000-7000-8000-000000000012';
 
     public function __construct(
-        private bool $roles = true,
+        private bool $founded = true,
         private ?Role $role = null,
         private bool $samePerson = false,
         private bool $fenced = false,
@@ -24,9 +24,9 @@ final readonly class FakeView implements LibraryView
     ) {
     }
 
-    public function hasRoles(): bool
+    public function founded(): bool
     {
-        return $this->roles;
+        return $this->founded;
     }
 
     public function roleOfDevice(string $device): ?Role

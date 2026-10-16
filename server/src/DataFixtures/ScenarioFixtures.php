@@ -97,19 +97,16 @@ final class ScenarioFixtures extends Fixture
         $scenario = 'Familia García: Ana uploads «Biblioteca García»';
         $library = $this->creator->create($ana);
         $cloud = $library->getId()->toRfc4122();
-        $local = Cast::GARCIA_LOCAL;
+        $local = Cast::garciaLocal();
         [$laptop, $phone, $hugosPhone] = [Cast::anaLaptop(), Cast::anaPhone(), Cast::hugoPhone()];
         $member = static fn (string $name): string => Cast::id("member:$name");
 
         $operations = [
-            // The member comes before the device that names it, in the same operation: a row cannot point at one that is not there yet.
-            // The step that gives the first role is the seal (D94): the laptop fences its own device, here with no previous operation.
-            $this->operation($laptop, $local, 0, 'device.register', [
+            // The founding (D97): the library, its first person as an administrator and the author's device, in one operation.
+            $this->operation($laptop, $local, 0, 'library.found', [
+                ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca García', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]],
                 $this->create('member', 'ana', ['name' => 'Ana', 'role' => 'admin', 'can_share' => true]),
-                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana'), 'vouched_key' => $laptop->publicKey, 'trusted_through' => ''], $laptop->id),
-            ]),
-            $this->operation($laptop, $local, 1, 'library.create', [
-                ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca García']],
+                $this->create('device', 'ana-laptop', ['public_key' => $laptop->publicKey, 'name' => "Ana's laptop", 'member_id' => $member('ana'), 'vouched_key' => $laptop->publicKey], $laptop->id),
             ]),
             $this->operation($laptop, $local, 3, 'member.add', [$this->create('member', 'hugo', ['name' => 'Hugo', 'role' => 'reader'])]),
             // Lucía is a child with no account and no device: she is only a row here.
@@ -169,7 +166,7 @@ final class ScenarioFixtures extends Fixture
         $phone = Cast::anaPhone();
         // The phone's only operation in the upload is its registration; this one chains to it (D87).
         $registration = Cast::id(\sprintf('operation:device.register:5:%s', $phone->id));
-        $operation = $phone->sign(Cast::GARCIA_LOCAL, Cast::at(3000), 'book.add', $this->book('rayuela', 'Rayuela', 'Julio Cortázar', '9788437604572', Cast::id('member:ana'), 'Estudio'), Cast::id('operation:rayuela'), $registration);
+        $operation = $phone->sign(Cast::garciaLocal(), Cast::at(3000), 'book.add', $this->book('rayuela', 'Rayuela', 'Julio Cortázar', '9788437604572', Cast::id('member:ana'), 'Estudio'), Cast::id('operation:rayuela'), $registration);
 
         $this->expectStored($this->push($garcia, [$operation]), 1, $scenario);
         $this->report->add($scenario, 'loaded: 1 operation, signed by the key the phone registered in the upload');
@@ -198,14 +195,12 @@ final class ScenarioFixtures extends Fixture
         $scenario = 'Familia Tanaka: Kenji uploads his library with the default id';
         $library = $this->creator->create($kenji);
         $laptop = Cast::kenjiLaptop();
-        $local = Cast::DEFAULT_LOCAL;
+        $local = Cast::defaultLocal();
         $operations = [
-            $this->operation($laptop, $local, 0, 'device.register', [
-                $this->create('member', 'kenji', ['name' => 'Kenji', 'role' => 'admin']),
-                $this->create('device', 'kenji-laptop', ['public_key' => $laptop->publicKey, 'name' => "Kenji's laptop", 'member_id' => Cast::id('member:kenji'), 'trusted_through' => ''], $laptop->id),
-            ]),
-            $this->operation($laptop, $local, 1, 'library.create', [
-                ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca Tanaka']],
+            $this->operation($laptop, $local, 0, 'library.found', [
+                ['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Biblioteca Tanaka', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]],
+                $this->create('member', 'kenji', ['name' => 'Kenji', 'role' => 'admin', 'can_share' => true]),
+                $this->create('device', 'kenji-laptop', ['public_key' => $laptop->publicKey, 'name' => "Kenji's laptop", 'member_id' => Cast::id('member:kenji'), 'vouched_key' => $laptop->publicKey], $laptop->id),
             ]),
             $this->operation($laptop, $local, 3, 'book.add', $this->book('kokoro', 'Kokoro', 'Natsume Sōseki', '9780804818957', Cast::id('member:kenji'), 'Estantería')),
             $this->operation($laptop, $local, 4, 'library.link', $this->linkChanges($local, $library)),
@@ -222,7 +217,7 @@ final class ScenarioFixtures extends Fixture
     {
         $scenario = 'Seam 1: Jhonny pushes the Garcías\' operation ids into his own library';
         $library = $this->creator->create($jhonny);
-        $link = Cast::jhonnyPhone()->link(Cast::GARCIA_LOCAL, $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-garcia-id'));
+        $link = Cast::jhonnyPhone()->link(Cast::garciaLocal(), $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-garcia-id'));
         // By the link route and not stored: pushed with the Garcías' history his link would fall under the seal (D94)
         // and be a request, and the push would be undone (D93). The history is what this seam is about.
         $this->cloudLink->linkFrom($library, $this->pushed($link));
@@ -238,9 +233,11 @@ final class ScenarioFixtures extends Fixture
         $scenario = 'Seams 2 and 4: Jhonny uses the default local id too, and registers Ana\'s laptop id with his key';
         $library = $this->creator->create($jhonny);
         $impostor = Cast::jhonnyAsAnaLaptop();
+        // By the link route and not stored, like in seam 1: the id is Kenji's (it derives from his key, D97), so Jhonny's
+        // link in the log would be a request and the push would be undone (D93).
+        $this->cloudLink->linkFrom($library, $this->pushed(Cast::jhonnyPhone()->link(Cast::defaultLocal(), $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-default-id'))));
         $operations = [
-            Cast::jhonnyPhone()->link(Cast::DEFAULT_LOCAL, $library->getId()->toRfc4122(), Cast::at(0), Cast::id('operation:jhonny-links-the-default-id')),
-            $impostor->registration(Cast::DEFAULT_LOCAL, Cast::at(1), "Ana's laptop", operationId: Cast::id('operation:jhonny-registers-anas-laptop-id')),
+            $impostor->registration(Cast::defaultLocal(), Cast::at(1), "Ana's laptop", operationId: Cast::id('operation:jhonny-registers-anas-laptop-id')),
         ];
 
         $this->expectStored($this->push($library, $operations), \count($operations), $scenario);
@@ -268,7 +265,7 @@ final class ScenarioFixtures extends Fixture
         $laptop = Cast::anaLaptop();
         // The laptop's last operation in the upload is the link, at +60 minutes.
         $link = Cast::id(\sprintf('operation:library.link:60:%s', $laptop->id));
-        $older = $laptop->sign(Cast::GARCIA_LOCAL, Cast::at(2900), 'copy.move', [[
+        $older = $laptop->sign(Cast::garciaLocal(), Cast::at(2900), 'copy.move', [[
             'entity' => 'copy',
             'id' => Cast::id('copy:cien-anos'),
             'action' => 'update',
@@ -302,8 +299,8 @@ final class ScenarioFixtures extends Fixture
     {
         $library = $this->creator->create($jhonny);
         $this->expectRefused('Refused: a push without a link', 'no operation enters a library nobody linked', $library, [
-            Cast::jhonnyPhone()->registration(Cast::GARCIA_LOCAL, Cast::at(1)),
-            Cast::jhonnyPhone()->publisher(Cast::GARCIA_LOCAL, Cast::at(2)),
+            Cast::jhonnyPhone()->registration(Cast::garciaLocal(), Cast::at(1)),
+            Cast::jhonnyPhone()->publisher(Cast::garciaLocal(), Cast::at(2)),
         ]);
         $this->report->add('Refused: a push without a link', \sprintf('the library itself exists: %s, local_library_id NULL, no operations', $library->getId()->toRfc4122()));
     }
@@ -311,9 +308,9 @@ final class ScenarioFixtures extends Fixture
     private function nothingForeignGetsIntoTheGarcias(CloudLibrary $garcia): void
     {
         $laptop = Cast::anaLaptop();
-        $unsigned = $laptop->publisher(Cast::GARCIA_LOCAL, Cast::at(4000), 'Unsigned');
+        $unsigned = $laptop->publisher(Cast::garciaLocal(), Cast::at(4000), 'Unsigned');
         unset($unsigned['signature']);
-        $tampered = $laptop->publisher(Cast::GARCIA_LOCAL, Cast::at(4001), 'Signed as this');
+        $tampered = $laptop->publisher(Cast::garciaLocal(), Cast::at(4001), 'Signed as this');
         $tampered['changes'] = [$this->create('publisher', 'tampered', ['name' => 'Changed after signing'])];
 
         $this->expectRefused('Refused: an operation of another local id', 'Ana\'s laptop, validly signed, for a library that is not this one', $garcia, [
@@ -322,7 +319,7 @@ final class ScenarioFixtures extends Fixture
         $this->expectRefused('Refused: an unsigned operation', 'no signature, no entry (the cloud has no operations from before D56)', $garcia, [$unsigned]);
         $this->expectRefused('Refused: a forged signature', 'the body was changed after signing', $garcia, [$tampered]);
         $this->expectRefused('Refused: a forged signature', 'signed with Jhonny\'s key under Ana\'s laptop id, which this library registered with Ana\'s key', $garcia, [
-            Cast::jhonnyAsAnaLaptop()->publisher(Cast::GARCIA_LOCAL, Cast::at(4003)),
+            Cast::jhonnyAsAnaLaptop()->publisher(Cast::garciaLocal(), Cast::at(4003)),
         ]);
     }
 

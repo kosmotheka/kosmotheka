@@ -442,17 +442,6 @@ async fn the_status_says_why_a_library_cannot_invite() {
     );
     set_cloud_power(&laptop, &api, &lib, true).await.unwrap();
     assert_eq!(blocker(&laptop, &api, &lib).await, (true, None));
-
-    // A library with no people has no roles, and so nobody to link an account to.
-    let plain = Database::in_memory();
-    let own = first_library(&plain);
-    sign_in_as(&plain, "ana");
-    let plain_api = cloud.api("ana").on(&plain);
-    upload(&plain, &plain_api, &own).await.unwrap();
-    assert_eq!(
-        blocker(&plain, &plain_api, &own).await,
-        (false, Some(Blocker::NoRoles))
-    );
 }
 
 #[tokio::test]

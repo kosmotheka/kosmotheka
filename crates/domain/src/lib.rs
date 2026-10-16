@@ -3,6 +3,7 @@
 
 pub mod book;
 pub mod cloud;
+pub mod founding;
 pub mod genre;
 pub mod hlc;
 pub mod isbn;
@@ -19,6 +20,7 @@ pub use book::{
     ValidEdition, parse_cover_url,
 };
 pub use cloud::cloud_device_id;
+pub use founding::{NONCE_BYTES, library_id};
 pub use genre::{GENRES, genres_of};
 pub use hlc::{Hlc, HlcClock, is_device_id};
 pub use isbn::{Isbn, IsbnError};

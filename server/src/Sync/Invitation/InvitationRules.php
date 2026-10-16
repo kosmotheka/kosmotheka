@@ -64,14 +64,13 @@ final readonly class InvitationRules
     }
 
     /**
-     * Whether the library can be invited to: linked, with persons and roles (without them anybody does anything, and
-     * so would whoever comes in by a link), and with the cloud able to link devices (the power of D76), so the
+     * Whether the library can be invited to: linked, founded (it has persons and roles, D97), and with the cloud able to link devices (the power of D76), so the
      * person keeps their role from the first device.
      */
     public function isReady(CloudLibrary $library): bool
     {
         return $library->isLinked()
-            && new CatalogLibraryView($this->entityManager, $library)->hasRoles()
+            && new CatalogLibraryView($this->entityManager, $library)->founded()
             && $this->author->power($library) instanceof Uuid;
     }
 

@@ -31,8 +31,7 @@ final class CloudSyncControllerTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    /** The fixed id of «Mi biblioteca» (D46), the same on every install. */
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
+    private const string FOUNDER = '01997c7e-0000-7000-8000-0000000000f1';
     private const int T = 1_727_000_000_000;
 
     private KernelBrowser $client;
@@ -46,6 +45,9 @@ final class CloudSyncControllerTest extends WebTestCase
     private SigningDevice $laptop;
     private SigningDevice $jhonny;
 
+    /** The library the laptop founds: its id derives from the laptop's key (D97). */
+    private string $local;
+
     protected function setUp(): void
     {
         // The rate limiter cache is not rolled back with the database.
@@ -57,6 +59,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $this->jhonnySession = $this->signInNewDevice($this->client, 'jhonny@example.com');
         $this->laptop = SigningDevice::fromSession($this->familySession);
         $this->jhonny = SigningDevice::fromSession($this->jhonnySession);
+        $this->local = $this->laptop->libraryId();
     }
 
     // ------------------------------------------------------------ normal ---
@@ -81,7 +84,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $response = $this->call('GET', '/v1/cloud/libraries', $this->familySession);
 
         self::assertSame(Response::HTTP_OK, $response['status']);
-        self::assertSame([['id' => $familyCloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
+        self::assertSame([['id' => $familyCloud, 'localLibraryId' => $this->local]], $this->listing($this->familySession));
     }
 
     public function testAFreshLibraryIsListedWithoutALocalId(): void
@@ -132,34 +135,34 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testTheLinkRouteLinksTheLibraryWithoutStoringTheOperationAndRepeatingItChangesNothing(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 1);
 
         $first = $this->link($this->familySession, $cloud, $link);
         $second = $this->link($this->familySession, $cloud, $link);
 
         self::assertSame(Response::HTTP_OK, $first['status']);
-        self::assertSame(['localLibraryId' => self::LOCAL], $first['body']);
+        self::assertSame(['localLibraryId' => $this->local], $first['body']);
         self::assertSame($first, $second);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => $this->local]], $this->listing($this->familySession));
     }
 
     public function testALinkedLibraryRefusesALinkToAnotherLocalId(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 1));
+        $this->link($this->familySession, $cloud, $this->laptop->link($this->local, $cloud, self::T + 1));
 
         $other = $this->link($this->familySession, $cloud, $this->laptop->link('00000000-0000-7000-8000-000000000002', $cloud, self::T + 2));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $other);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => $this->local]], $this->listing($this->familySession));
     }
 
     public function testSomeoneWithoutAccessCannotLinkTheFamilysLibrary(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
 
-        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
+        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link($this->local, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_NOT_FOUND, 'body' => ['error' => 'not_found']], $response);
         self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
@@ -170,7 +173,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $this->shareWithJhonny($cloud);
 
-        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link(self::LOCAL, $cloud, self::T + 1));
+        $response = $this->link($this->jhonnySession, $cloud, $this->jhonny->link($this->local, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
         self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
@@ -219,19 +222,19 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testAfterTheOwnerChangedTheLinksIdStillBelongsToTheLinkAlone(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $registration = $this->laptop->registration(self::LOCAL, self::T);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 2);
+        $registration = $this->laptop->registration($this->local, self::T);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 2);
         $linkId = $link['id'];
         \assert(\is_string($linkId));
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
         $this->shareWithJhonny($cloud);
         $this->changeOwner($cloud, 'jhonny@example.com');
         // Signed by the very device that signed the link, with the link's id, but it is not a link.
-        $disguised = $this->laptop->sign(self::LOCAL, self::T + 1, 'device.register', [
+        $disguised = $this->laptop->sign($this->local, self::T + 1, 'device.register', [
             ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop']],
         ], $linkId, null);
         // A link-shaped operation with the link's id, signed by Jhonny's own key.
-        $forged = $this->jhonny->link(self::LOCAL, $cloud, self::T + 3);
+        $forged = $this->jhonny->link($this->local, $cloud, self::T + 3);
         $forged['id'] = $linkId;
 
         $response = $this->push($this->jhonnySession, $cloud, [$registration, $disguised, $forged]);
@@ -247,7 +250,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $this->shareWithJhonny($cloud);
         $this->changeOwner($cloud, 'jhonny@example.com');
 
-        $response = $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 1));
+        $response = $this->link($this->familySession, $cloud, $this->laptop->link($this->local, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
         self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_library WHERE id = ? AND local_library_id IS NOT NULL', [$cloud]));
@@ -257,7 +260,7 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $connection = self::getContainer()->get(Connection::class);
         $cloud = $this->createCloudLibrary($this->familySession);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 1);
         $signer = static fn (): mixed => $connection->fetchOne('SELECT link_signer_key FROM cloud_library WHERE id = ?', [$cloud]);
 
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
@@ -277,7 +280,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $this->call('DELETE', '/v1/account/devices/'.$phoneSession['device_id'], $this->familySession);
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
 
-        $response = $this->link($this->familySession, $cloud, $phone->link(self::LOCAL, $cloud, self::T + 1));
+        $response = $this->link($this->familySession, $cloud, $phone->link($this->local, $cloud, self::T + 1));
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $response);
         self::assertSame([['id' => $cloud, 'localLibraryId' => null]], $this->listing($this->familySession));
@@ -287,12 +290,12 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->createCloudLibrary($this->familySession);
         $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
-        $forgery = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $forgery = $this->laptop->link($this->local, $cloud, self::T + 1);
         $forgery['signature'] = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
         $refused = [
-            'another cloud library' => $this->laptop->link(self::LOCAL, $jhonnyCloud, self::T + 2),
-            'not a link' => $this->laptop->publisher(self::LOCAL, self::T + 3),
-            'a registration' => $this->laptop->registration(self::LOCAL, self::T + 4),
+            'another cloud library' => $this->laptop->link($this->local, $jhonnyCloud, self::T + 2),
+            'not a link' => $this->laptop->publisher($this->local, self::T + 3),
+            'a registration' => $this->laptop->registration($this->local, self::T + 4),
             'a bad signature' => $forgery,
         ];
 
@@ -323,7 +326,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $firstPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
         self::assertSame([['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 1_000], ['received' => 0, 'known' => 0, 'rejected' => 500]], $firstPass);
         self::assertSame(0, $this->rows('cloud_operation'));
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => $this->local]], $this->listing($this->familySession));
 
         $secondPass = array_map(fn (array $batch): array => $this->push($this->familySession, $cloud, $batch)['body'], array_chunk($operations, 1_000));
         self::assertSame([['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 1_000, 'known' => 0, 'rejected' => 0], ['received' => 500, 'known' => 0, 'rejected' => 0]], $secondPass);
@@ -336,16 +339,17 @@ final class CloudSyncControllerTest extends WebTestCase
     private const string READER_MEMBER = '00000000-0000-7000-8000-0000000000a2';
 
     /**
-     * The history of a family with roles: an administrator, a reader, and the administrator's device.
+     * The founding of a family by an administrator (D97): the administrator, her device and a reader. The library is
+     * the administrator's, so the test goes on in it.
      *
      * @return array<string, mixed>
      */
     private function rolesOf(SigningDevice $admin, int $time = 0): array
     {
-        return $admin->sign(self::LOCAL, self::T + $time, 'family.roles', [
-            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+        $this->local = $admin->libraryId();
+
+        return $admin->founding(self::T + $time, self::ADMIN_MEMBER, personName: 'Admin', more: [
             ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-            ['entity' => 'device', 'id' => $admin->id, 'action' => 'create', 'fields' => ['public_key' => $admin->publicKey, 'name' => 'Admin device', 'member_id' => self::ADMIN_MEMBER]],
         ]);
     }
 
@@ -356,7 +360,7 @@ final class CloudSyncControllerTest extends WebTestCase
      */
     private function assignmentOf(SigningDevice $admin, SigningDevice $reader, int $time): array
     {
-        return $admin->sign(self::LOCAL, self::T + $time, 'device.assign', [
+        return $admin->sign($admin->libraryId(), self::T + $time, 'device.assign', [
             ['entity' => 'device', 'id' => $reader->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]],
         ]);
     }
@@ -373,9 +377,9 @@ final class CloudSyncControllerTest extends WebTestCase
         $admin = SigningDevice::generate();
         $operations = [
             $this->rolesOf($admin),
-            $this->laptop->registration(self::LOCAL, self::T + 1),
+            $this->laptop->registration($admin->libraryId(), self::T + 1),
             $this->assignmentOf($admin, $this->laptop, 2),
-            $this->laptop->link(self::LOCAL, $cloud, self::T + 3),
+            $this->laptop->link($this->local, $cloud, self::T + 3),
         ];
 
         $response = $this->push($this->familySession, $cloud, $operations);
@@ -389,9 +393,9 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->createCloudLibrary($this->familySession);
         $admin = SigningDevice::generate();
-        $withoutLink = [$this->rolesOf($admin), $this->laptop->registration(self::LOCAL, self::T + 1), $this->assignmentOf($admin, $this->laptop, 2)];
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 3);
-        $later = $this->laptop->publisher(self::LOCAL, self::T + 4);
+        $withoutLink = [$this->rolesOf($admin), $this->laptop->registration($admin->libraryId(), self::T + 1), $this->assignmentOf($admin, $this->laptop, 2)];
+        $link = $this->laptop->link($this->local, $cloud, self::T + 3);
+        $later = $this->laptop->publisher($this->local, self::T + 4);
 
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
         $first = $this->push($this->familySession, $cloud, $withoutLink);
@@ -403,34 +407,16 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(['applied' => 3], $this->statuses());
     }
 
-    public function testAReaderWhoUploadsTheCopyWithoutRolesFirstIsTurnedDownWhenTheRolesArrive(): void
-    {
-        $cloud = $this->createCloudLibrary($this->familySession);
-        $admin = SigningDevice::generate();
-        $copy = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T + 1), $this->laptop->link(self::LOCAL, $cloud, self::T + 3)]);
-        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $copy['body']);
-        self::assertSame(['applied' => 2], $this->statuses());
-
-        $roles = $this->push($this->familySession, $cloud, [$this->rolesOf($admin), $this->assignmentOf($admin, $this->laptop, 2)]);
-
-        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $roles);
-        self::assertSame(2, $this->rows('cloud_operation'));
-        self::assertSame(['applied' => 2], $this->statuses());
-    }
-
     public function testAnAdministratorUploadingHerLibraryWithRolesLinksItAndHerLinkIsApplied(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $roles = $this->laptop->sign(self::LOCAL, self::T, 'family.roles', [
-            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
-            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop', 'member_id' => self::ADMIN_MEMBER]],
-        ]);
+        $roles = $this->laptop->founding(self::T, self::ADMIN_MEMBER, personName: 'Admin');
 
-        $response = $this->push($this->familySession, $cloud, [$roles, $this->laptop->link(self::LOCAL, $cloud, self::T + 1)]);
+        $response = $this->push($this->familySession, $cloud, [$roles, $this->laptop->link($this->local, $cloud, self::T + 1)]);
 
         self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 2, 'known' => 0, 'rejected' => 0]], $response);
         self::assertSame(['applied' => 2], $this->statuses());
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL]], $this->listing($this->familySession));
+        self::assertSame([['id' => $cloud, 'localLibraryId' => $this->local]], $this->listing($this->familySession));
     }
 
     /**
@@ -443,32 +429,28 @@ final class CloudSyncControllerTest extends WebTestCase
         $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
         $phone = SigningDevice::fromSession($phoneSession);
         $this->shareWithJhonny($cloud);
-        $registration = $phone->registration(self::LOCAL, self::T);
-        $ownersLink = $phone->link(self::LOCAL, $cloud, self::T + 1);
-        $roles = $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
-            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
-            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-            ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
-        ]);
-        $assignment = $phone->sign(self::LOCAL, self::T + 6, 'device.assign', [['entity' => 'device', 'id' => $this->jhonny->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]]]);
+        $this->local = $phone->libraryId();
+        $founding = $this->rolesOf($phone);
+        $ownersLink = $phone->link($this->local, $cloud, self::T + 1);
+        $assignment = $phone->sign($this->local, self::T + 6, 'device.assign', [['entity' => 'device', 'id' => $this->jhonny->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]]]);
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $ownersLink)['status']);
 
         // The reader stores, first, an operation of his own that has the shape of a link.
-        $readersRegistration = $this->jhonny->registration(self::LOCAL, self::T + 5);
-        $readersLink = $this->jhonny->link(self::LOCAL, $cloud, self::T + 10);
+        $readersRegistration = $this->jhonny->registration($this->local, self::T + 5);
+        $readersLink = $this->jhonny->link($this->local, $cloud, self::T + 10);
         $first = $this->push($this->jhonnySession, $cloud, [$readersRegistration, $readersLink]);
         self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $first['body']);
 
-        $owners = $this->push($this->familySession, $cloud, [$registration, $ownersLink, $roles, $assignment]);
+        $owners = $this->push($this->familySession, $cloud, [$founding, $ownersLink, $assignment]);
 
-        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 4, 'known' => 0, 'rejected' => 0]], $owners);
+        self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 3, 'known' => 0, 'rejected' => 0]], $owners);
         $statuses = self::getContainer()->get(Connection::class)->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
         self::assertIsString($ownersLink['id']);
         self::assertIsString($readersLink['id']);
         self::assertSame('applied', $statuses[$ownersLink['id']]);
         self::assertSame('request', $statuses[$readersLink['id']]);
         // And the library still takes pushes.
-        self::assertSame(Response::HTTP_OK, $this->push($this->familySession, $cloud, [$phone->publisher(self::LOCAL, self::T + 20)])['status']);
+        self::assertSame(Response::HTTP_OK, $this->push($this->familySession, $cloud, [$phone->publisher($this->local, self::T + 20)])['status']);
     }
 
     /** SEG-022: the push that links skipped the signature of whatever carried the link's id. */
@@ -477,12 +459,12 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $admin = SigningDevice::generate();
         $roles = $this->rolesOf($admin);
-        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
+        $registration = $this->laptop->registration($this->local, self::T + 1);
         $assignment = $this->assignmentOf($admin, $this->laptop, 2);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 4);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 4);
         self::assertIsString($link['id']);
         // In the administrator's name and without her key: "the reader's device is an administrator's", dated before the link.
-        $forged = SigningDevice::generate($admin->id)->sign(self::LOCAL, self::T + 3, 'device.assign', [
+        $forged = SigningDevice::generate($admin->id)->sign($this->local, self::T + 3, 'device.assign', [
             ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
         ], $link['id'], null);
 
@@ -499,11 +481,11 @@ final class CloudSyncControllerTest extends WebTestCase
         $admin = SigningDevice::generate();
         $roles = $this->rolesOf($admin);
         $assignment = $this->assignmentOf($admin, $this->laptop, 2);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 3);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 3);
         self::assertIsString($link['id']);
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
         // Signed by the reader himself and dated before the roles, so the rules would apply it.
-        $disguised = $this->laptop->sign(self::LOCAL, self::T - 1, 'device.register', [
+        $disguised = $this->laptop->sign($this->local, self::T - 1, 'device.register', [
             ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'create', 'fields' => ['public_key' => $this->laptop->publicKey, 'name' => 'Laptop']],
         ], $link['id'], null);
 
@@ -518,8 +500,8 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $connection = self::getContainer()->get(Connection::class);
         $cloud = $this->createCloudLibrary($this->familySession);
-        $registration = $this->laptop->registration(self::LOCAL, self::T);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 1);
+        $registration = $this->laptop->founding(self::T, self::FOUNDER);
+        $link = $this->laptop->link($this->local, $cloud, self::T + 1);
         self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $link)['status']);
         $forget = static fn (): int|string => $connection->executeStatement('UPDATE cloud_library SET link_operation_id = NULL WHERE id = ?', [$cloud]);
         $remembered = static fn (): mixed => $connection->fetchOne('SELECT link_operation_id FROM cloud_library WHERE id = ?', [$cloud]);
@@ -531,7 +513,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $forget();
         // Another device's operation with the shape of a link is not remembered; the owner's is.
         $this->shareWithJhonny($cloud);
-        $strangers = $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration(self::LOCAL, self::T + 2), $this->jhonny->link(self::LOCAL, $cloud, self::T + 3)]);
+        $strangers = $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration($this->local, self::T + 2), $this->jhonny->link($this->local, $cloud, self::T + 3)]);
         self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $strangers['body']);
         self::assertNull($remembered());
         self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$registration, $link])['body']);
@@ -560,21 +542,18 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
         $phone = SigningDevice::fromSession($phoneSession);
+        // The phone founded the library: it is hers from here on.
+        $founding = $this->rolesOf($phone);
         $response = $this->push($this->familySession, $cloud, [
-            $phone->registration(self::LOCAL, self::T),
-            $phone->link(self::LOCAL, $cloud, self::T + 1),
-            $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
-                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
-                ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
-            ]),
-            $this->laptop->registration(self::LOCAL, self::T + 3),
-            $phone->sign(self::LOCAL, self::T + 4, 'device.assign', [
+            $founding,
+            $phone->link($this->local, $cloud, self::T + 1),
+            $this->laptop->registration($this->local, self::T + 3),
+            $phone->sign($this->local, self::T + 4, 'device.assign', [
                 ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER]],
             ]),
         ]);
-        self::assertSame(['received' => 5, 'known' => 0, 'rejected' => 0], $response['body']);
-        self::assertSame(['applied' => 5], $this->statuses());
+        self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
+        self::assertSame(['applied' => 4], $this->statuses());
 
         return [$cloud, $phone];
     }
@@ -602,26 +581,26 @@ final class CloudSyncControllerTest extends WebTestCase
         $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
 
         // Everything he knows of the family's: ids of devices and members, the administrator's role among them.
+        $mine = $this->jhonny->libraryId();
         $response = $this->push($this->jhonnySession, $jhonnyCloud, [
-            $this->jhonny->registration(self::LOCAL, self::T + 50),
-            $this->jhonny->link(self::LOCAL, $jhonnyCloud, self::T + 51),
-            $this->jhonny->sign(self::LOCAL, self::T + 52, 'forged.fence', [
+            $this->jhonny->founding(self::T + 50, self::FOUNDER),
+            $this->jhonny->link($mine, $jhonnyCloud, self::T + 51),
+            $this->jhonny->sign($mine, self::T + 52, 'forged.fence', [
                 ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'trusted_through' => Uuid::v7()->toRfc4122()]],
             ]),
-            $this->jhonny->sign(self::LOCAL, self::T + 53, 'forged.member', [
+            $this->jhonny->sign($mine, self::T + 53, 'forged.member', [
                 ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Jhonny is admin', 'role' => 'admin', 'can_share' => true]],
             ]),
-            $this->jhonny->sign(self::LOCAL, self::T + 54, 'forged.device', [
+            $this->jhonny->sign($mine, self::T + 54, 'forged.device', [
                 ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['name' => 'stolen id', 'member_id' => self::ADMIN_MEMBER]],
             ]),
-            $this->jhonny->publisher(self::LOCAL, self::T + 55, 'Jhonny publisher'),
+            $this->jhonny->publisher($mine, self::T + 55, 'Jhonny publisher'),
         ]);
 
         self::assertSame(['received' => 6, 'known' => 0, 'rejected' => 0], $response['body']);
         self::assertSame($before, $this->snapshotOf($familyCloud));
-        // His own library is judged by its own log: his forged member makes roles there, and his device is nobody's in them.
+        // His own library is judged by its own log: he founded it, and what he signs there is his and goes nowhere else.
         self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status IS NULL', [$jhonnyCloud]));
-        self::assertGreaterThan(0, $this->requestsIn($jhonnyCloud));
     }
 
     public function testAReaderOfTheFamilyUploadsAChangeSignedByHimItIsStoredAsARequestAndTheCatalogDoesNotChange(): void
@@ -629,11 +608,11 @@ final class CloudSyncControllerTest extends WebTestCase
         [$cloud] = $this->familyWithRoles();
         $before = $this->snapshotOf($cloud);
 
-        $response = $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 10, 'By a reader')]);
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->publisher($this->local, self::T + 10, 'By a reader')]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $response['body']);
         $after = $this->snapshotOf($cloud);
-        self::assertSame(['applied' => 5, 'request' => 1], $this->statuses());
+        self::assertSame(['applied' => 4, 'request' => 1], $this->statuses());
         self::assertSame($before['catalog_publishers'], $after['catalog_publishers']);
         self::assertSame($before['catalog_members'], $after['catalog_members']);
         self::assertSame($before['catalog_devices'], $after['catalog_devices']);
@@ -651,21 +630,21 @@ final class CloudSyncControllerTest extends WebTestCase
         $this->shareWithJhonny($cloud);
         $tablet = SigningDevice::generate();
         $impostor = SigningDevice::generate($tablet->id);
-        $registered = $this->push($this->jhonnySession, $cloud, [$impostor->registration(self::LOCAL, self::T + 10)]);
+        $registered = $this->push($this->jhonnySession, $cloud, [$impostor->registration($this->local, self::T + 10)]);
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $registered['body']);
-        $assigned = $this->push($this->familySession, $cloud, [$phone->sign(self::LOCAL, self::T + 11, 'device.assign', [
+        $assigned = $this->push($this->familySession, $cloud, [$phone->sign($this->local, self::T + 11, 'device.assign', [
             ['entity' => 'device', 'id' => $tablet->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $tablet->publicKey]],
         ])]);
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $assigned['body']);
-        self::assertSame(['applied' => 7], $this->statuses());
+        self::assertSame(['applied' => 6], $this->statuses());
         $before = $this->snapshotOf($cloud);
 
-        $takeover = $this->push($this->jhonnySession, $cloud, [$impostor->sign(self::LOCAL, self::T + 12, 'forged.role', [
+        $takeover = $this->push($this->jhonnySession, $cloud, [$impostor->sign($this->local, self::T + 12, 'forged.role', [
             ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'update', 'fields' => ['role' => 'admin']],
         ])]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $takeover['body']);
-        self::assertSame(['applied' => 7, 'request' => 1], $this->statuses());
+        self::assertSame(['applied' => 6, 'request' => 1], $this->statuses());
         self::assertSame($before['catalog_members'], $this->snapshotOf($cloud)['catalog_members']);
     }
 
@@ -684,18 +663,18 @@ final class CloudSyncControllerTest extends WebTestCase
         $phone = SigningDevice::fromSession($this->jhonnySession);
         $secondSession = $this->loginDevice($this->client, 'jhonny@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Second');
         $mine = SigningDevice::fromSession($secondSession);
-        $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 10), $mine->registration(self::LOCAL, self::T + 11)]);
-        $this->push($this->familySession, $cloud, [$this->laptop->sign(self::LOCAL, self::T + 12, 'device.assign', [
+        $this->push($this->familySession, $cloud, [$phone->registration($this->local, self::T + 10), $mine->registration($this->local, self::T + 11)]);
+        $this->push($this->familySession, $cloud, [$this->laptop->sign($this->local, self::T + 12, 'device.assign', [
             ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'vouched_key' => $phone->publicKey]],
         ])]);
         $before = $this->snapshotOf($cloud);
         $steps = [];
 
-        $steps['registers the id in capitals and his own device'] = $this->push($this->jhonnySession, $cloud, [$shout->registration(self::LOCAL, self::T + 100)])['body'];
-        $steps['signs an account note as the cloud'] = $this->push($this->jhonnySession, $cloud, [$shout->sign(self::LOCAL, self::T + 102, 'forged.account', [
+        $steps['registers the id in capitals and his own device'] = $this->push($this->jhonnySession, $cloud, [$shout->registration($this->local, self::T + 100)])['body'];
+        $steps['signs an account note as the cloud'] = $this->push($this->jhonnySession, $cloud, [$shout->sign($this->local, self::T + 102, 'forged.account', [
             ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'update', 'fields' => ['account_id' => Uuid::v4()->toRfc4122()]],
         ])])['body'];
-        $steps['signs the link of his device to her'] = $this->push($this->jhonnySession, $cloud, [$shout->sign(self::LOCAL, self::T + 103, 'forged.link', [
+        $steps['signs the link of his device to her'] = $this->push($this->jhonnySession, $cloud, [$shout->sign($this->local, self::T + 103, 'forged.link', [
             ['entity' => 'device', 'id' => $mine->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $mine->publicKey]],
         ])])['body'];
 
@@ -730,16 +709,16 @@ final class CloudSyncControllerTest extends WebTestCase
         [$cloud] = $this->libraryNamingTheCloud();
         $this->shareWithJhonny($cloud);
         $phone = SigningDevice::fromSession($this->jhonnySession);
-        $registration = $phone->registration(self::LOCAL, self::T + 10);
+        $registration = $phone->registration($this->local, self::T + 10);
         $this->push($this->familySession, $cloud, [$registration]);
-        $this->push($this->familySession, $cloud, [$this->laptop->sign(self::LOCAL, self::T + 11, 'device.assign', [
+        $this->push($this->familySession, $cloud, [$this->laptop->sign($this->local, self::T + 11, 'device.assign', [
             ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::READER_MEMBER, 'vouched_key' => $phone->publicKey]],
         ])]);
         $stored = $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
-        $far = $phone->publisher(self::LOCAL, self::T + 20, 'At the end of time');
+        $far = $phone->publisher($this->local, self::T + 20, 'At the end of time');
         $far['hlc'] = '9999999999999999-ffffffff-'.$phone->id;
         $far = $phone->resign($far);
-        $next = $phone->publisher(self::LOCAL, self::T + 21, 'Right after');
+        $next = $phone->publisher($this->local, self::T + 21, 'Right after');
 
         $answer = $this->push($this->jhonnySession, $cloud, [$far]);
         $following = $this->push($this->jhonnySession, $cloud, [$next]);
@@ -749,7 +728,7 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame($stored, $this->scalarCount('SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]), 'nothing was stored');
         // Just inside the drift is fine.
         \assert(\is_string($registration['id']));
-        $near = $phone->publisher(self::LOCAL, (int) (microtime(true) * 1000) + 1_800_000, 'Half an hour ahead', $registration['id']);
+        $near = $phone->publisher($this->local, (int) (microtime(true) * 1000) + 1_800_000, 'Half an hour ahead', $registration['id']);
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->jhonnySession, $cloud, [$near])['body']);
     }
 
@@ -763,16 +742,10 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $identity = $this->identityOf($cloud);
         $response = $this->push($this->familySession, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T),
-            $this->laptop->sign(self::LOCAL, self::T + 1, 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
-            $this->laptop->sign(self::LOCAL, self::T + 2, 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]]]),
-            $this->laptop->sign(self::LOCAL, self::T + 3, 'family.roles', [
-                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
-                ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'vouched_key' => $this->laptop->publicKey]],
-            ]),
+            $this->rolesOf($this->laptop),
+            $this->laptop->sign($this->local, self::T + 2, 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]]]),
         ]);
-        self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $response['body']);
 
         return [$cloud, $identity];
     }
@@ -784,109 +757,76 @@ final class CloudSyncControllerTest extends WebTestCase
         $phoneSession = $this->loginDevice($this->client, 'family@example.com', 'correct horse battery', Uuid::v4()->toRfc4122(), 'Phone');
         $phone = SigningDevice::fromSession($phoneSession);
         $editor = '00000000-0000-7000-8000-0000000000a3';
-        $known = $this->laptop->registration(self::LOCAL, self::T + 3);
+        $this->local = $phone->libraryId();
+        $known = $this->laptop->registration($this->local, self::T + 3);
         $beforeTheDemotion = [
-            $phone->registration(self::LOCAL, self::T),
-            $phone->link(self::LOCAL, $cloud, self::T + 1),
-            $phone->sign(self::LOCAL, self::T + 2, 'family.roles', [
-                ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            $phone->founding(self::T, self::ADMIN_MEMBER, personName: 'Admin', more: [
                 ['entity' => 'member', 'id' => $editor, 'action' => 'create', 'fields' => ['name' => 'Editor', 'role' => 'editor']],
-                ['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER]],
             ]),
+            $phone->link($this->local, $cloud, self::T + 1),
             $known,
-            $phone->sign(self::LOCAL, self::T + 4, 'device.assign', [['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $editor]]]),
+            $phone->sign($this->local, self::T + 4, 'device.assign', [['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $editor]]]),
         ];
-        $lastKnown = $this->laptop->publisher(self::LOCAL, self::T + 10, 'Known to the administrator');
+        $lastKnown = $this->laptop->publisher($this->local, self::T + 10, 'Known to the administrator');
         \assert(\is_string($lastKnown['id']));
-        $demotion = $phone->sign(self::LOCAL, self::T + 20, 'member.role', [
+        $demotion = $phone->sign($this->local, self::T + 20, 'member.role', [
             ['entity' => 'member', 'id' => $editor, 'action' => 'update', 'fields' => ['role' => 'reader']],
             ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['trusted_through' => $lastKnown['id']]],
         ]);
-        $backdated = $this->laptop->publisher(self::LOCAL, self::T + 15, 'Backdated');
-        self::assertSame(['received' => 7, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [...$beforeTheDemotion, $lastKnown, $demotion])['body']);
-        self::assertSame(['applied' => 7], $this->statuses());
+        $backdated = $this->laptop->publisher($this->local, self::T + 15, 'Backdated');
+        self::assertSame(['received' => 6, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [...$beforeTheDemotion, $lastKnown, $demotion])['body']);
+        self::assertSame(['applied' => 6], $this->statuses());
 
         $response = $this->push($this->familySession, $cloud, [$backdated]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $response['body']);
-        self::assertSame(['applied' => 7, 'request' => 1], $this->statuses());
+        self::assertSame(['applied' => 6, 'request' => 1], $this->statuses());
         self::assertSame(1, $this->publishersIn($cloud));
     }
 
     /**
-     * SEG-025 through the route: a device the administrator has not heard of signs, dated before the activation, an
-     * operation that makes it an administrator. The activation seals the library and the takeover falls (D94).
+     * SEG-025 through the route, as D97 closes it: a device the administrator has not heard of signs, dated before the
+     * founding, a takeover and a founding of its own for the same id. Nothing of it applies: nobody can found an id
+     * that does not derive from their key, whatever date they put on it.
      */
-    public function testADeviceThatDatesATakeoverBeforeTheSealedActivationDoesNotGetIt(): void
+    public function testADeviceThatBackdatesATakeoverAndItsOwnFoundingBeforeTheRealOneGetsNeither(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
         $admin = SigningDevice::generate();
+        $this->local = $admin->libraryId();
         $mallory = '00000000-0000-7000-8000-0000000000a9';
-        $adminRegistration = $admin->registration(self::LOCAL, self::T);
-        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
-        $takeover = $this->laptop->sign(self::LOCAL, self::T + 5, 'family.roles', [
+        $founding = $admin->founding(self::T + 10, self::ADMIN_MEMBER, personName: 'Admin');
+        $registration = $this->laptop->registration($this->local, self::T + 1);
+        // The laptop founds the administrator's id with its own key and a date before hers: the id does not derive from it.
+        $falseFounding = $this->laptop->sign($this->local, self::T + 2, 'library.found', [
+            ['entity' => 'library', 'id' => $this->local, 'action' => 'create', 'fields' => ['name' => 'Mine', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]],
+            ['entity' => 'member', 'id' => $mallory, 'action' => 'create', 'fields' => ['name' => 'Mallory', 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $mallory, 'vouched_key' => $this->laptop->publicKey]],
+        ]);
+        $takeover = $this->laptop->sign($this->local, self::T + 5, 'family.roles', [
             ['entity' => 'member', 'id' => $mallory, 'action' => 'create', 'fields' => ['name' => 'Mallory', 'role' => 'admin', 'can_share' => true]],
             ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => $mallory]],
         ]);
-        $activation = $this->sealedActivationOf($admin, self::T + 10, $adminRegistration);
-        $demotion = $this->laptop->sign(self::LOCAL, self::T + 20, 'member.role', [
+        $demotion = $this->laptop->sign($this->local, self::T + 20, 'member.role', [
             ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'update', 'fields' => ['role' => 'reader']],
         ]);
-        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $this->laptop->link(self::LOCAL, $cloud, self::T + 30))['status']);
+        self::assertSame(Response::HTTP_OK, $this->link($this->familySession, $cloud, $this->laptop->link($this->local, $cloud, self::T + 30))['status']);
 
-        $response = $this->push($this->familySession, $cloud, [$adminRegistration, $registration, $takeover, $activation, $demotion]);
+        $response = $this->push($this->familySession, $cloud, [$registration, $falseFounding, $takeover, $founding, $demotion]);
 
         self::assertSame(['status' => Response::HTTP_OK, 'body' => ['received' => 5, 'known' => 0, 'rejected' => 0]], $response);
-        self::assertSame(['applied' => 3, 'request' => 2], $this->statuses());
+        self::assertSame(['applied' => 2, 'request' => 3], $this->statuses());
         $statuses = self::getContainer()->get(Connection::class)->fetchAllKeyValue('SELECT operation_id, status FROM cloud_operation WHERE cloud_library_id = ?', [$cloud]);
+        self::assertIsString($falseFounding['id']);
         self::assertIsString($takeover['id']);
-        self::assertIsString($activation['id']);
+        self::assertIsString($founding['id']);
         self::assertIsString($demotion['id']);
+        self::assertSame('request', $statuses[$falseFounding['id']] ?? null);
         self::assertSame('request', $statuses[$takeover['id']] ?? null);
-        self::assertSame('applied', $statuses[$activation['id']] ?? null);
+        self::assertSame('applied', $statuses[$founding['id']] ?? null);
         self::assertSame('request', $statuses[$demotion['id']] ?? null);
         self::assertSame(0, $this->scalarCount('SELECT COUNT(*) FROM catalog_members WHERE cloud_library_id = ? AND name = ?', [$cloud, 'Mallory']));
         self::assertSame(1, $this->scalarCount('SELECT COUNT(*) FROM catalog_members WHERE cloud_library_id = ? AND role = ?', [$cloud, 'admin']));
-    }
-
-    /**
-     * D93 with D94: a reader uploads the whole register, roles and seal included, and his own link dated before the seal.
-     * No roles stood at that date, but the seal does not name his device: his link is a request and the push is undone.
-     */
-    public function testAReaderUploadingTheSealedRegisterWithHisLinkDatedBeforeTheSealIsTurnedDown(): void
-    {
-        $cloud = $this->createCloudLibrary($this->familySession);
-        $admin = SigningDevice::generate();
-        $adminRegistration = $admin->registration(self::LOCAL, self::T);
-        $registration = $this->laptop->registration(self::LOCAL, self::T + 1);
-        $link = $this->laptop->link(self::LOCAL, $cloud, self::T + 5);
-        $activation = $this->sealedActivationOf($admin, self::T + 10, $adminRegistration);
-        $assignment = $this->assignmentOf($admin, $this->laptop, 11);
-
-        $response = $this->push($this->familySession, $cloud, [$adminRegistration, $registration, $link, $activation, $assignment]);
-
-        self::assertSame(['status' => Response::HTTP_FORBIDDEN, 'body' => ['error' => 'link_not_allowed']], $response);
-        $this->assertNotLinkedAndNothingStored($cloud);
-        self::assertSame([], $this->statuses());
-    }
-
-    /**
-     * The activation of a family as the app writes it since D94: the administrator, a reader, and the seal. The seal fences
-     * the administrator's own device with its previous operation and names nobody else.
-     *
-     * @param array<string, mixed> $registration the administrator's previous operation
-     *
-     * @return array<string, mixed>
-     */
-    private function sealedActivationOf(SigningDevice $admin, int $time, array $registration): array
-    {
-        \assert(\is_string($registration['id']));
-
-        return $admin->sign(self::LOCAL, $time, 'family.roles', [
-            ['entity' => 'member', 'id' => self::ADMIN_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
-            ['entity' => 'member', 'id' => self::READER_MEMBER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
-            ['entity' => 'device', 'id' => $admin->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN_MEMBER, 'trusted_through' => $registration['id']]],
-        ]);
     }
 
     /** 7.4.6: the log keeps who uploaded each operation, apart from who signed it. */
@@ -895,9 +835,9 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $this->shareWithJhonny($cloud);
         $third = SigningDevice::generate();
-        $registration = $third->registration(self::LOCAL, self::T + 10);
+        $registration = $third->registration($this->local, self::T + 10);
         $byFamily = $this->push($this->familySession, $cloud, [$registration]);
-        $byJhonny = $this->push($this->jhonnySession, $cloud, [$third->publisher(self::LOCAL, self::T + 11, 'by Jhonny')]);
+        $byJhonny = $this->push($this->jhonnySession, $cloud, [$third->publisher($this->local, self::T + 11, 'by Jhonny')]);
         self::assertSame(1, $byFamily['body']['received']);
         self::assertSame(1, $byJhonny['body']['received']);
 
@@ -918,7 +858,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $this->shareWithJhonny($cloud);
         $third = SigningDevice::generate();
-        $this->push($this->jhonnySession, $cloud, [$third->registration(self::LOCAL, self::T + 10)]);
+        $this->push($this->jhonnySession, $cloud, [$third->registration($this->local, self::T + 10)]);
 
         $this->call('DELETE', '/v1/account', $this->jhonnySession, ['password' => 'correct horse battery']);
         self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
@@ -935,7 +875,7 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(2, $this->rows('catalog_publishers'));
         self::assertSame(1, $this->rows('catalog_devices'));
 
-        $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 10)]);
+        $this->push($this->familySession, $cloud, [$this->laptop->publisher($this->local, self::T + 10)]);
         self::assertSame(['applied' => 5], $this->statuses());
         self::assertSame(3, $this->rows('catalog_publishers'));
     }
@@ -986,7 +926,7 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $phone = SigningDevice::generate();
-        $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 10), $phone->publisher(self::LOCAL, self::T + 11)]);
+        $this->push($this->familySession, $cloud, [$phone->registration($this->local, self::T + 10), $phone->publisher($this->local, self::T + 11)]);
 
         $response = $this->pull($this->familySession, $cloud, [$this->laptop->id => $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body'])[3]]);
 
@@ -1009,7 +949,7 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testTheSameOperationTwiceInOneBatchIsStoredOnce(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $publisher = $this->laptop->publisher(self::LOCAL, self::T + 20);
+        $publisher = $this->laptop->publisher($this->local, self::T + 20);
 
         $response = $this->push($this->familySession, $cloud, [$publisher, $publisher]);
 
@@ -1024,7 +964,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $pull = $this->call('POST', "/v1/cloud/libraries/$cloud/pull", $this->familySession, ['schemaVersion' => $other, 'vector' => []]);
         $push = $this->call('POST', "/v1/cloud/libraries/$cloud/push", $this->familySession, [
             'schemaVersion' => $other,
-            'operations' => [['schemaVersion' => $other, 'operation' => $this->laptop->registration(self::LOCAL, self::T)]],
+            'operations' => [['schemaVersion' => $other, 'operation' => $this->laptop->registration($this->local, self::T)]],
         ]);
 
         self::assertSame(Response::HTTP_CONFLICT, $pull['status']);
@@ -1060,7 +1000,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
 
         $response = $this->call('POST', "/v1/cloud/libraries/$cloud/push", $this->familySession, [
-            'operations' => [['schemaVersion' => $this->schemaVersion(), 'operation' => $this->laptop->registration(self::LOCAL, self::T)]],
+            'operations' => [['schemaVersion' => $this->schemaVersion(), 'operation' => $this->laptop->registration($this->local, self::T)]],
         ]);
 
         self::assertSame(Response::HTTP_BAD_REQUEST, $response['status']);
@@ -1091,16 +1031,16 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $stored = $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']);
         // Both follow the last stored operation, so only the rejection holds the later one back, not the chain.
-        $lastStored = $this->laptop->latest(self::LOCAL);
-        $invalid = $this->laptop->sign(self::LOCAL, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
-        $later = $this->laptop->publisher(self::LOCAL, self::T + 11, previous: $lastStored);
+        $lastStored = $this->laptop->latest($this->local);
+        $invalid = $this->laptop->sign($this->local, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
+        $later = $this->laptop->publisher($this->local, self::T + 11, previous: $lastStored);
 
         $response = $this->push($this->familySession, $cloud, [$later, $invalid]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame($stored, $this->vectorOf($this->pull($this->familySession, $cloud, [])['body']));
 
-        $fixed = $this->laptop->publisher(self::LOCAL, self::T + 10, previous: $lastStored);
+        $fixed = $this->laptop->publisher($this->local, self::T + 10, previous: $lastStored);
         $response = $this->push($this->familySession, $cloud, [$fixed, $later]);
 
         self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 0], $response['body']);
@@ -1110,9 +1050,9 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $phone = SigningDevice::generate();
-        $invalid = $this->laptop->sign(self::LOCAL, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
+        $invalid = $this->laptop->sign($this->local, self::T + 10, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x', 'no_such_field' => 1]]]);
 
-        $response = $this->push($this->familySession, $cloud, [$invalid, $phone->registration(self::LOCAL, self::T + 11)]);
+        $response = $this->push($this->familySession, $cloud, [$invalid, $phone->registration($this->local, self::T + 11)]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 1], $response['body']);
     }
@@ -1120,9 +1060,9 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testATextWithNulIsRejectedAndTheSixCharactersTypedAreNot(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $stored = $this->laptop->latest(self::LOCAL);
-        $nul = $this->laptop->publisher(self::LOCAL, self::T + 10, "Minotauro\0");
-        $typed = $this->laptop->publisher(self::LOCAL, self::T + 11, 'Minotauro\\u0000', $stored);
+        $stored = $this->laptop->latest($this->local);
+        $nul = $this->laptop->publisher($this->local, self::T + 10, "Minotauro\0");
+        $typed = $this->laptop->publisher($this->local, self::T + 11, 'Minotauro\\u0000', $stored);
 
         $response = $this->push($this->familySession, $cloud, [$nul, $typed]);
 
@@ -1135,14 +1075,14 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testOperationsWithABrokenStructureOrNoSignatureAreRejectedOneByOne(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $stored = $this->laptop->latest(self::LOCAL);
-        $unsigned = $this->laptop->publisher(self::LOCAL, self::T + 30);
+        $stored = $this->laptop->latest($this->local);
+        $unsigned = $this->laptop->publisher($this->local, self::T + 30);
         unset($unsigned['signature']);
-        $badIntent = $this->laptop->sign(self::LOCAL, self::T + 31, 'NOT AN INTENT', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]]);
-        $tampered = $this->laptop->publisher(self::LOCAL, self::T + 32);
+        $badIntent = $this->laptop->sign($this->local, self::T + 31, 'NOT AN INTENT', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]]);
+        $tampered = $this->laptop->publisher($this->local, self::T + 32);
         $tampered['changes'] = [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'Somebody else']]];
         // Before the others: a rejection holds back the author's later operations (DAT-001).
-        $good = $this->laptop->publisher(self::LOCAL, self::T + 29, previous: $stored);
+        $good = $this->laptop->publisher($this->local, self::T + 29, previous: $stored);
 
         $response = $this->push($this->familySession, $cloud, [$unsigned, $badIntent, $tampered, $good]);
 
@@ -1153,8 +1093,8 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $change = static fn (mixed $fields): array => [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'delete', 'fields' => $fields]];
-        $withObject = $this->laptop->sign(self::LOCAL, self::T + 40, 'publisher.remove', $change(new \stdClass()));
-        $withList = $this->laptop->sign(self::LOCAL, self::T + 41, 'publisher.remove', $change([]));
+        $withObject = $this->laptop->sign($this->local, self::T + 40, 'publisher.remove', $change(new \stdClass()));
+        $withList = $this->laptop->sign($this->local, self::T + 41, 'publisher.remove', $change([]));
 
         $response = $this->push($this->familySession, $cloud, [$withObject, $withList]);
 
@@ -1229,7 +1169,7 @@ final class CloudSyncControllerTest extends WebTestCase
         $missing = Uuid::v7()->toRfc4122();
 
         $pull = $this->pull($this->jhonnySession, $familyCloud, []);
-        $push = $this->push($this->jhonnySession, $familyCloud, [$this->jhonny->registration(self::LOCAL, self::T + 50), $this->jhonny->link(self::LOCAL, $familyCloud, self::T + 51)]);
+        $push = $this->push($this->jhonnySession, $familyCloud, [$this->jhonny->registration($this->local, self::T + 50), $this->jhonny->link($this->local, $familyCloud, self::T + 51)]);
         $nothing = $this->pull($this->jhonnySession, $missing, []);
         $malformed = $this->pull($this->jhonnySession, 'not-a-uuid', []);
 
@@ -1248,17 +1188,18 @@ final class CloudSyncControllerTest extends WebTestCase
         $familyCloud = $this->createCloudLibrary($this->familySession);
         $familyOperations = $this->upload($this->laptop, $familyCloud);
         $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
+        // The operations of the family's library are of another library to him: they are not stored in his.
         $stolen = $this->push($this->jhonnySession, $jhonnyCloud, [
-            $this->jhonny->registration(self::LOCAL, self::T),
-            $this->jhonny->link(self::LOCAL, $jhonnyCloud, self::T + 1),
+            $this->jhonny->founding(self::T, self::FOUNDER),
+            $this->jhonny->link($this->jhonny->libraryId(), $jhonnyCloud, self::T + 1),
             ...$familyOperations,
         ]);
-        self::assertSame(['received' => 6, 'known' => 0, 'rejected' => 0], $stolen['body']);
+        self::assertSame(['received' => 2, 'known' => 0, 'rejected' => 4], $stolen['body']);
 
         $response = $this->push($this->familySession, $familyCloud, $familyOperations);
 
         self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response['body']);
-        self::assertSame(10, $this->rows('cloud_operation'));
+        self::assertSame(6, $this->rows('cloud_operation'));
     }
 
     /** Battery 4. */
@@ -1283,12 +1224,12 @@ final class CloudSyncControllerTest extends WebTestCase
         $jhonnyCloud = $this->createCloudLibrary($this->jhonnySession);
 
         $withoutLink = $this->push($this->familySession, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T),
-            $this->laptop->publisher(self::LOCAL, self::T + 1),
+            $this->laptop->registration($this->local, self::T),
+            $this->laptop->publisher($this->local, self::T + 1),
         ]);
         // A link for another cloud library, and a link signed by a device of another account.
-        $forOther = $this->push($this->familySession, $cloud, [$this->laptop->link(self::LOCAL, $jhonnyCloud, self::T + 2)]);
-        $foreign = $this->push($this->familySession, $cloud, [$this->jhonny->link(self::LOCAL, $cloud, self::T + 3)]);
+        $forOther = $this->push($this->familySession, $cloud, [$this->laptop->link($this->local, $jhonnyCloud, self::T + 2)]);
+        $foreign = $this->push($this->familySession, $cloud, [$this->jhonny->link($this->local, $cloud, self::T + 3)]);
 
         foreach ([$withoutLink['body'], $forOther['body'], $foreign['body']] as $body) {
             self::assertSame(0, $body['received']);
@@ -1309,15 +1250,15 @@ final class CloudSyncControllerTest extends WebTestCase
         $jhonnyCloud = $this->uploadedLibrary($this->jhonnySession, $this->jhonny);
 
         // In his own cloud library Jhonny may register any id he likes.
-        $registered = $this->push($this->jhonnySession, $jhonnyCloud, [$impostor->registration(self::LOCAL, self::T + 70)]);
+        $registered = $this->push($this->jhonnySession, $jhonnyCloud, [$impostor->registration($this->jhonny->libraryId(), self::T + 70)]);
         self::assertSame(1, $registered['body']['received']);
 
-        $this->push($this->familySession, $familyCloud, [$phone->registration(self::LOCAL, self::T + 71)]);
+        $this->push($this->familySession, $familyCloud, [$phone->registration($this->local, self::T + 71)]);
         $forged = $this->push($this->familySession, $familyCloud, [
-            $impostor->publisher(self::LOCAL, self::T + 72),
-            $impostor->registration(self::LOCAL, self::T + 73),
+            $impostor->publisher($this->local, self::T + 72),
+            $impostor->registration($this->local, self::T + 73),
         ]);
-        $genuine = $this->push($this->familySession, $familyCloud, [$phone->publisher(self::LOCAL, self::T + 74)]);
+        $genuine = $this->push($this->familySession, $familyCloud, [$phone->publisher($this->local, self::T + 74)]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $forged['body']);
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $genuine['body']);
@@ -1343,9 +1284,9 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testAnOperationWhoseCloudLacksThePreviousWaitsForIt(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $first = $this->laptop->publisher(self::LOCAL, self::T + 10, 'first');
-        $second = $this->laptop->publisher(self::LOCAL, self::T + 11, 'second');
-        $third = $this->laptop->publisher(self::LOCAL, self::T + 12, 'third');
+        $first = $this->laptop->publisher($this->local, self::T + 10, 'first');
+        $second = $this->laptop->publisher($this->local, self::T + 11, 'second');
+        $third = $this->laptop->publisher($this->local, self::T + 12, 'third');
         self::assertSame($first['id'], $second['previous']);
 
         $response = $this->push($this->familySession, $cloud, [$second, $third]);
@@ -1367,22 +1308,22 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $phone = SigningDevice::generate();
-        $registration = $phone->registration(self::LOCAL, self::T + 20);
+        $registration = $phone->registration($this->local, self::T + 20);
         \assert(\is_string($registration['id']));
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$registration])['body']);
-        $own = $this->laptop->publisher(self::LOCAL, self::T + 30, 'own');
+        $own = $this->laptop->publisher($this->local, self::T + 30, 'own');
         \assert(\is_string($own['id']));
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$own])['body']);
 
-        $ofAnotherAuthor = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]], previous: $registration['id']);
-        $notOlder = $this->laptop->sign(self::LOCAL, self::T + 30, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'y']]], previous: $own['id']);
+        $ofAnotherAuthor = $this->laptop->sign($this->local, self::T + 31, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'x']]], previous: $registration['id']);
+        $notOlder = $this->laptop->sign($this->local, self::T + 30, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'y']]], previous: $own['id']);
         $before = $this->rows('cloud_operation');
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$ofAnotherAuthor])['body']);
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $this->push($this->familySession, $cloud, [$notOlder])['body']);
         self::assertSame($before, $this->rows('cloud_operation'));
         // A previous the push itself brings earlier is fine, as are two operations on the same previous (a fork).
-        $honest = $this->laptop->sign(self::LOCAL, self::T + 32, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'z']]], previous: $own['id']);
+        $honest = $this->laptop->sign($this->local, self::T + 32, 'publisher.add', [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => 'z']]], previous: $own['id']);
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$honest])['body']);
     }
 
@@ -1390,12 +1331,12 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testASecondOperationWithAnHlcAlreadyStoredIsRefused(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $own = $this->laptop->publisher(self::LOCAL, self::T + 30, 'own');
+        $own = $this->laptop->publisher($this->local, self::T + 30, 'own');
         \assert(\is_string($own['id']));
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $this->push($this->familySession, $cloud, [$own])['body']);
         $add = static fn (string $name): array => [['entity' => 'publisher', 'id' => Uuid::v7()->toRfc4122(), 'action' => 'create', 'fields' => ['name' => $name]]];
-        $first = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', $add('first'), previous: $own['id']);
-        $twin = $this->laptop->sign(self::LOCAL, self::T + 31, 'publisher.add', $add('twin'), previous: $own['id']);
+        $first = $this->laptop->sign($this->local, self::T + 31, 'publisher.add', $add('first'), previous: $own['id']);
+        $twin = $this->laptop->sign($this->local, self::T + 31, 'publisher.add', $add('twin'), previous: $own['id']);
         self::assertSame($first['hlc'], $twin['hlc']);
         $before = $this->rows('cloud_operation');
 
@@ -1408,7 +1349,7 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testAnOperationWithoutThePreviousKeyIsRejected(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $operation = $this->laptop->publisher(self::LOCAL, self::T + 10);
+        $operation = $this->laptop->publisher($this->local, self::T + 10);
         unset($operation['previous'], $operation['signature']);
         $operation = $this->laptop->resign($operation);
 
@@ -1423,14 +1364,14 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $phone = SigningDevice::generate();
         $this->push($this->familySession, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T),
-            $this->laptop->link(self::LOCAL, $cloud, self::T + 1),
-            $phone->registration(self::LOCAL, self::T + 2),
-            $phone->publisher(self::LOCAL, self::T + 5, 'fifth'),
+            $this->laptop->founding(self::T, self::FOUNDER),
+            $this->laptop->link($this->local, $cloud, self::T + 1),
+            $phone->registration($this->local, self::T + 2),
+            $phone->publisher($this->local, self::T + 5, 'fifth'),
         ]);
         $fifth = $this->hlcsOf($this->pull($this->familySession, $cloud, [])['body'])[3];
 
-        $late = $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 3, 'third')]);
+        $late = $this->push($this->familySession, $cloud, [$this->laptop->publisher($this->local, self::T + 3, 'third')]);
 
         self::assertSame(['received' => 1, 'known' => 0, 'rejected' => 0], $late['body']);
         $partial = $this->pull($this->familySession, $cloud, [$phone->id => $fifth, $this->laptop->id => \sprintf('%016d-00000000-%s', self::T + 3, $this->laptop->id)]);
@@ -1448,14 +1389,14 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testAnotherActionOnTheLibraryRowDoesNotLinkTheCloudLibrary(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $creation = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [[
+        $creation = $this->laptop->sign($this->local, self::T + 1, 'library.link', [[
             'entity' => 'library',
-            'id' => self::LOCAL,
+            'id' => $this->local,
             'action' => 'create',
             'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER],
         ]]);
 
-        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $creation]);
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration($this->local, self::T), $creation]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame(0, $this->rows('cloud_operation'));
@@ -1466,14 +1407,14 @@ final class CloudSyncControllerTest extends WebTestCase
     public function testALinkOnAnotherLibraryRowDoesNotLinkTheCloudLibrary(): void
     {
         $cloud = $this->createCloudLibrary($this->familySession);
-        $misdirected = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [[
+        $misdirected = $this->laptop->sign($this->local, self::T + 1, 'library.link', [[
             'entity' => 'library',
             'id' => '00000000-0000-7000-8000-000000000002',
             'action' => 'update',
             'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER],
         ]]);
 
-        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $misdirected]);
+        $response = $this->push($this->familySession, $cloud, [$this->laptop->registration($this->local, self::T), $misdirected]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $response['body']);
         self::assertSame(0, $this->rows('cloud_operation'));
@@ -1497,7 +1438,7 @@ final class CloudSyncControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $phone = SigningDevice::generate();
-        $this->push($this->familySession, $cloud, [$phone->registration(self::LOCAL, self::T + 81)]);
+        $this->push($this->familySession, $cloud, [$phone->registration($this->local, self::T + 81)]);
         $other = SigningDevice::generate();
 
         $response = $this->push($this->familySession, $cloud, [$this->deviceKeyChange($this->laptop, $phone->id, $other->publicKey, self::T + 82)]);
@@ -1514,9 +1455,9 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         $this->shareWithJhonny($cloud);
         $identity = $this->identityOf($cloud);
-        $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration(self::LOCAL, self::T + 10)]);
+        $this->push($this->jhonnySession, $cloud, [$this->jhonny->registration($this->local, self::T + 10)]);
 
-        $response = $this->push($this->jhonnySession, $cloud, [$this->jhonny->sign(self::LOCAL, self::T + 11, 'device.register', [[
+        $response = $this->push($this->jhonnySession, $cloud, [$this->jhonny->sign($this->local, self::T + 11, 'device.register', [[
             'entity' => 'device',
             'id' => $identity['id'],
             'action' => 'create',
@@ -1534,8 +1475,8 @@ final class CloudSyncControllerTest extends WebTestCase
         $identity = $this->identityOf($cloud);
         $impostor = SigningDevice::generate($identity['id']);
 
-        $unregistered = $this->push($this->jhonnySession, $cloud, [$impostor->publisher(self::LOCAL, self::T + 10)]);
-        $registering = $this->push($this->jhonnySession, $cloud, [$impostor->registration(self::LOCAL, self::T + 11)]);
+        $unregistered = $this->push($this->jhonnySession, $cloud, [$impostor->publisher($this->local, self::T + 10)]);
+        $registering = $this->push($this->jhonnySession, $cloud, [$impostor->registration($this->local, self::T + 11)]);
 
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $unregistered['body']);
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 1], $registering['body']);
@@ -1548,13 +1489,13 @@ final class CloudSyncControllerTest extends WebTestCase
         $cloud = $this->createCloudLibrary($this->familySession);
         $identity = $this->identityOf($cloud);
         $other = SigningDevice::generate();
-        $forged = $this->laptop->sign(self::LOCAL, self::T + 1, 'library.link', [
-            ['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]],
+        $forged = $this->laptop->sign($this->local, self::T + 1, 'library.link', [
+            ['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $identity['id']]],
             ['entity' => 'device', 'id' => $identity['id'], 'action' => 'create', 'fields' => ['public_key' => $other->publicKey, 'name' => 'kosmotheka.test']],
         ]);
 
         $byRoute = $this->link($this->familySession, $cloud, $forged);
-        $byPush = $this->push($this->familySession, $cloud, [$this->laptop->registration(self::LOCAL, self::T), $forged]);
+        $byPush = $this->push($this->familySession, $cloud, [$this->laptop->registration($this->local, self::T), $forged]);
 
         self::assertSame(['status' => Response::HTTP_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'link_rejected']], $byRoute);
         self::assertSame(['received' => 0, 'known' => 0, 'rejected' => 2], $byPush['body']);
@@ -1631,7 +1572,7 @@ final class CloudSyncControllerTest extends WebTestCase
      */
     private function deviceKeyChange(SigningDevice $author, string $target, string $key, int $time): array
     {
-        return $author->sign(self::LOCAL, $time, 'device.rekey', [[
+        return $author->sign($this->local, $time, 'device.rekey', [[
             'entity' => 'device',
             'id' => $target,
             'action' => 'update',
@@ -1656,11 +1597,11 @@ final class CloudSyncControllerTest extends WebTestCase
      */
     private function largeLibrary(string $cloud): array
     {
-        $operations = [$this->laptop->registration(self::LOCAL, self::T)];
+        $operations = [$this->laptop->founding(self::T, self::FOUNDER)];
         for ($n = 1; $n < 2_499; ++$n) {
-            $operations[] = $this->laptop->publisher(self::LOCAL, self::T + $n, "Editorial $n");
+            $operations[] = $this->laptop->publisher($this->local, self::T + $n, "Editorial $n");
         }
-        $operations[] = $this->laptop->link(self::LOCAL, $cloud, self::T + 2_499);
+        $operations[] = $this->laptop->link($this->local, $cloud, self::T + 2_499);
 
         return $operations;
     }
@@ -1712,11 +1653,6 @@ final class CloudSyncControllerTest extends WebTestCase
         \assert(\is_int($count));
 
         return $count;
-    }
-
-    private function requestsIn(string $cloud): int
-    {
-        return $this->scalarCount("SELECT COUNT(*) FROM cloud_operation WHERE cloud_library_id = ? AND status = 'request'", [$cloud]);
     }
 
     private function publishersIn(string $cloud): int
@@ -1808,10 +1744,10 @@ final class CloudSyncControllerTest extends WebTestCase
     private function upload(SigningDevice $device, string $cloud): array
     {
         return [
-            $device->registration(self::LOCAL, self::T),
-            $device->link(self::LOCAL, $cloud, self::T + 1),
-            $device->publisher(self::LOCAL, self::T + 2),
-            $device->publisher(self::LOCAL, self::T + 3),
+            $device->founding(self::T, self::FOUNDER),
+            $device->link($device->libraryId(), $cloud, self::T + 1),
+            $device->publisher($device->libraryId(), self::T + 2),
+            $device->publisher($device->libraryId(), self::T + 3),
         ];
     }
 

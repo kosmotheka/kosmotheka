@@ -1074,14 +1074,16 @@ fn first_library(device: &Database) -> String {
     ops::active_library(&device.lock().unwrap()).unwrap()
 }
 
-/// Creates a library with a known id on this device. Two devices that never synced
-/// having the same id stands for a copied or hostile one: libraries are otherwise
-/// created with a random id on one device and travel to the others.
-fn create_with_id(device: &Database, id: &str) {
-    let mut conn = device.lock().unwrap();
-    let tx = conn.transaction().unwrap();
-    libraries::create_with_id(&tx, id, "").unwrap();
-    tx.commit().unwrap();
+/// `admin` says that `device`, which has the library, is the device of a new administrator (D97): a device that
+/// received a library is nobody's until someone says whose it is.
+fn give_place(admin: &Database, device: &Database, library: &str) {
+    crate::sync::assign_as(
+        &admin.lock().unwrap(),
+        library,
+        &mut device.lock().unwrap(),
+        "Another",
+        "admin",
+    );
 }
 
 /// A device with a new library of its own (random id) holding one book.
@@ -1325,11 +1327,13 @@ fn laptop_admin_phone_reader() -> (Database, Database, String) {
     let lib = first_library(&laptop);
     add(&laptop, &lib, "Dune");
     lan_sync(&laptop, &phone, &lib);
+    crate::sync::share_as_administrator(&laptop.lock().unwrap(), &lib, &mut phone.lock().unwrap());
     add(&phone, &lib, "Tehanu");
     lan_sync(&laptop, &phone, &lib);
-    let laptop_id = ops::device_id(&laptop.lock().unwrap()).unwrap();
-    let phone_id = ops::device_id(&phone.lock().unwrap()).unwrap();
-    let (admin, reader) = (ops::new_id(), ops::new_id());
+    let (admin, reader) = (
+        crate::sync::own_person(&laptop.lock().unwrap(), &lib),
+        crate::sync::own_person(&phone.lock().unwrap(), &lib),
+    );
     {
         let mut conn = laptop.lock().unwrap();
         let tx = conn.transaction().unwrap();
@@ -1338,18 +1342,12 @@ fn laptop_admin_phone_reader() -> (Database, Database, String) {
             &lib,
             "member.roles",
             vec![
-                Change::create(
-                    Entity::Member,
-                    &admin,
-                    json!({ "name": "Tersoal", "role": "admin" }),
-                ),
-                Change::create(
+                Change::update(Entity::Member, &admin, json!({ "name": "Tersoal" })),
+                Change::update(
                     Entity::Member,
                     &reader,
-                    json!({ "name": "Hugo", "role": "reader" }),
+                    json!({ "name": "Hugo", "role": "reader", "can_share": false }),
                 ),
-                Change::update(Entity::Device, &laptop_id, json!({ "member_id": admin })),
-                Change::update(Entity::Device, &phone_id, json!({ "member_id": reader })),
             ],
         )
         .unwrap();
@@ -1357,40 +1355,6 @@ fn laptop_admin_phone_reader() -> (Database, Database, String) {
     }
     lan_sync(&laptop, &phone, &lib);
     (laptop, phone, lib)
-}
-
-#[tokio::test]
-async fn a_session_with_the_cloud_seals_a_library_that_had_roles_and_no_seal_and_sends_the_seal() {
-    let cloud = FakeCloud::default();
-    let api = cloud.api("tersoal");
-    let (laptop, phone, lib) = laptop_admin_phone_reader();
-    let seals = |device: &Database| -> Vec<String> {
-        device
-            .lock()
-            .unwrap()
-            .prepare("SELECT id FROM operations WHERE library_id = ?1 AND intent = 'library.seal'")
-            .unwrap()
-            .query_map([&lib], |row| row.get(0))
-            .unwrap()
-            .collect::<rusqlite::Result<_>>()
-            .unwrap()
-    };
-    upload(&laptop, &api, &lib).await.unwrap();
-
-    sync_library(&laptop, &api, &lib).await.unwrap();
-    sync_library(&laptop, &api, &lib).await.unwrap();
-
-    let sealed = seals(&laptop);
-    assert_eq!(sealed.len(), 1, "once, and not again in the next session");
-    assert!(
-        cloud
-            .operation_ids(&cloud.only_library())
-            .contains(&sealed[0])
-    );
-    // The reader's device has sessions too, and seals nothing.
-    lan_sync(&laptop, &phone, &lib);
-    assert_eq!(seals(&phone), sealed);
-    assert_converged(&[&laptop, &phone], &lib);
 }
 
 #[tokio::test]
@@ -2073,7 +2037,8 @@ async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
     assert_converged(&[&ana, &phone], &library);
     assert_eq!(link(&phone, &library), link(&ana, &library));
 
-    // And what the second device adds goes back the same way.
+    // And what the second device adds goes back the same way, once it has a place in the library.
+    give_place(&ana, &phone, &library);
     add(&phone, &library, "The Dispossessed");
     sync_library(&phone, &cloud.api("ana"), &library)
         .await
@@ -2082,36 +2047,6 @@ async fn a_second_device_of_the_account_downloads_the_library_and_converges() {
     assert_eq!(reports[0].outcome, Outcome::Synced);
     assert_eq!(reports[0].received, 1); // the book: the phone's key came with its first session
     assert_converged(&[&ana, &phone], &library);
-}
-
-#[tokio::test]
-async fn a_library_with_the_same_local_id_that_was_never_linked_is_not_merged() {
-    // Two installs have a library under the same id (made on purpose: it stands for
-    // a copied or hostile id, since a random one never repeats). One uploads it; the
-    // other, in the same account, never linked its own.
-    let repeated = ops::new_id();
-    let cloud = FakeCloud::default();
-    let tanakas = Database::in_memory();
-    create_with_id(&tanakas, &repeated);
-    add(&tanakas, &repeated, "Dune");
-    upload(&tanakas, &cloud.api("ana"), &repeated)
-        .await
-        .unwrap();
-    let jhonny = Database::in_memory();
-    create_with_id(&jhonny, &repeated);
-    add(&jhonny, &repeated, "The Hobbit");
-    let (state_before, log_before) = (state(&jhonny, &repeated), log_ids(&jhonny, &repeated));
-    let (_, pushes_before) = cloud.calls();
-
-    let reports = sync_all(&jhonny, &cloud.api("ana")).await.unwrap();
-
-    assert_eq!(reports.len(), 1);
-    assert_eq!(reports[0].outcome, Outcome::LibraryConflict);
-    assert_eq!((reports[0].received, reports[0].sent), (0, 0));
-    assert_eq!(state(&jhonny, &repeated), state_before);
-    assert_eq!(log_ids(&jhonny, &repeated), log_before);
-    assert_eq!(link(&jhonny, &repeated), (None, None));
-    assert_eq!(cloud.calls().1, pushes_before);
 }
 
 #[tokio::test]
@@ -2151,6 +2086,7 @@ async fn a_family_device_that_got_the_library_over_the_lan_before_the_upload_joi
     let (laptop, library) = device_with_family();
     let phone = Database::in_memory();
     lan_sync(&phone, &laptop, &library);
+    give_place(&laptop, &phone, &library);
     add(&phone, &library, "The Dispossessed");
     lan_sync(&phone, &laptop, &library);
     upload(&laptop, &cloud.api("ana"), &library).await.unwrap();
@@ -2355,6 +2291,15 @@ async fn a_week_offline_then_both_paths(cloud_first: bool) {
     sync_all(&tablet, &cloud.api("ana")).await.unwrap();
     // The tablet registered itself in the library; the others hear of it.
     sync_library(&laptop, &cloud.api("ana"), &library)
+        .await
+        .unwrap();
+    lan_sync(&laptop, &phone, &library);
+    give_place(&laptop, &phone, &library);
+    give_place(&laptop, &tablet, &library);
+    sync_library(&laptop, &cloud.api("ana"), &library)
+        .await
+        .unwrap();
+    sync_library(&tablet, &cloud.api("ana"), &library)
         .await
         .unwrap();
     lan_sync(&laptop, &phone, &library);
@@ -2780,8 +2725,6 @@ async fn a_library_removed_by_the_cloud_keeps_its_name_in_the_report() {
 #[tokio::test]
 async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
     let (laptop, phone, lib) = laptop_admin_phone_reader();
-    let plain = Database::in_memory();
-    let own = first_library(&plain);
     let of = |device: &Database, library: &str| {
         let status = status(device)
             .unwrap()
@@ -2793,11 +2736,6 @@ async fn the_status_says_who_administers_and_whether_the_library_has_roles() {
 
     assert_eq!(of(&laptop, &lib), (true, true, false));
     assert_eq!(of(&phone, &lib), (false, true, false), "a reader");
-    assert_eq!(
-        of(&plain, &own),
-        (true, false, false),
-        "no people, no roles"
-    );
 }
 
 fn sign_in_as(device: &Database, user: &str) {

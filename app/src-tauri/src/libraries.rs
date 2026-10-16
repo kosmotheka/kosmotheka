@@ -2,12 +2,13 @@
 //! switch between them, delete one everywhere or leave it on this device only, and
 //! withdraw or give back a device's access to one (D71).
 
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use kosmotheka_domain::{Change, Entity, ErrorCode, FieldError, Hlc, validate_library_name};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::Serialize;
 use serde_json::json;
 
-use crate::backup;
 use crate::error::{Error, Result};
 use crate::lan;
 use crate::ops::{self, new_id};
@@ -65,7 +66,7 @@ fn creation(conn: &Connection, library: &str) -> Result<Option<Creation>> {
     let found: Option<(String, String)> = conn
         .query_row(
             "SELECT hlc, device_id FROM operations
-              WHERE library_id = ?1 AND intent = 'library.create' ORDER BY hlc LIMIT 1",
+              WHERE library_id = ?1 AND intent = 'library.found' ORDER BY hlc LIMIT 1",
             [library],
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
@@ -108,10 +109,6 @@ fn check_name(conn: &Connection, raw: &str, except: Option<&str>) -> Result<Stri
     Ok(name)
 }
 
-/// The id every installation gave its first library before D85. It survives only to
-/// find that library on update and replace it.
-const LEGACY_FIXED_LIBRARY_ID: &str = "00000000-0000-7000-8000-000000000001";
-
 /// The library the app opens in when none is chosen: the first by name, then id.
 pub fn first_library(conn: &Connection) -> Result<Option<String>> {
     Ok(conn
@@ -121,79 +118,6 @@ pub fn first_library(conn: &Connection) -> Result<Option<String>> {
             |row| row.get(0),
         )
         .optional()?)
-}
-
-/// Once, on update (D85): the library with the old fixed id goes. Empty, it is just
-/// deleted; with data, its catalogue is copied into a new library with a random id
-/// (D58) and the old one is removed from this device, as if leaving it: nothing
-/// changes for anyone else, so no operation. Does nothing when it is not there.
-pub fn retire_fixed_library(conn: &mut Connection) -> Result<()> {
-    let legacy = LEGACY_FIXED_LIBRARY_ID;
-    let name: Option<String> = conn
-        .query_row(
-            "SELECT name FROM libraries WHERE id = ?1",
-            [legacy],
-            |row| row.get(0),
-        )
-        .optional()?;
-    let Some(name) = name else {
-        return Ok(());
-    };
-    let tx = conn.transaction()?;
-    if is_untouched(&tx, legacy)? {
-        for table in ["libraries", "field_versions", "tombstones"] {
-            let column = if table == "libraries" {
-                "id"
-            } else {
-                "library_id"
-            };
-            tx.execute(
-                &format!("DELETE FROM {table} WHERE {column} = ?1"),
-                [legacy],
-            )?;
-        }
-        if ops::read_state(&tx, "active_library")?.as_deref() == Some(legacy) {
-            ops::forget_active_library(&tx)?;
-        }
-    } else {
-        // An unnamed library stays unnamed: the app shows its default name, in the
-        // user's language.
-        let rows = backup::read_library(&tx, legacy)?;
-        forget_here(&tx, legacy, None)?;
-        backup::copy_as_new(&tx, &rows, &name)?;
-    }
-    tx.commit()?;
-    Ok(())
-}
-
-/// Nothing in it, and nothing about it anywhere on this device.
-fn is_untouched(conn: &Connection, library: &str) -> Result<bool> {
-    let exists = |sql: &str| -> Result<bool> { Ok(conn.query_row(sql, [library], |r| r.get(0))?) };
-    for entity in ops::LIBRARY_CONTENTS_CHILDREN_FIRST {
-        let sql = format!(
-            "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = ?1)",
-            entity.table(),
-            entity.library_column()
-        );
-        if exists(&sql)? {
-            return Ok(false);
-        }
-    }
-    for table in [
-        "operations",
-        "library_peers",
-        "leave_notices",
-        "revocations",
-        "pending_owners",
-        "request_notices",
-    ] {
-        if exists(&format!(
-            "SELECT EXISTS (SELECT 1 FROM {table} WHERE library_id = ?1)"
-        ))? {
-            return Ok(false);
-        }
-    }
-    Ok(true)
 }
 
 /// Every device has a library to work in from the first start (D85): a random id,
@@ -219,16 +143,69 @@ pub fn create_library(conn: &mut Connection, raw_name: &str) -> Result<String> {
 }
 
 fn create_in(tx: &Transaction<'_>, name: &str) -> Result<String> {
-    create_with_id(tx, &new_id(), name)
+    found(tx, name)
 }
 
-/// Creates a library with a known id: a restored one keeps the id it had (D46).
-pub fn create_with_id(tx: &Transaction<'_>, id: &str, name: &str) -> Result<String> {
+/// Until the welcome asks for the person's name (D97, delivery 2), a library is founded with this one.
+const PLACEHOLDER_PERSON_NAME: &str = "Me";
+
+/// Founds a library (D97): one operation in which this device registers itself, its person is created as an
+/// administrator and the library row is created with the nonce its id derives from, together with this device's
+/// key. Whoever holds the key is the only one who can found that id, whatever date they put on the operation.
+/// Returns the library's id.
+pub fn found(tx: &Transaction<'_>, name: &str) -> Result<String> {
+    let key = ops::signing_key(tx)?.public_key();
+    let nonce_bytes: [u8; kosmotheka_domain::NONCE_BYTES] = rand::random();
+    let nonce = URL_SAFE_NO_PAD.encode(nonce_bytes);
+    let id =
+        kosmotheka_domain::library_id(&key, &nonce).ok_or(Error::CorruptState("signing_seed"))?;
+    found_as(tx, &id, &nonce, name)
+}
+
+/// Whether the id `library` derives from this device's key and `nonce`: this device could have founded it.
+pub fn derives_here(conn: &Connection, library: &str, nonce: &str) -> Result<bool> {
+    let key = ops::signing_key(conn)?.public_key();
+    Ok(kosmotheka_domain::library_id(&key, nonce)
+        .is_some_and(|id| id == library.to_ascii_lowercase()))
+}
+
+/// Founds the library `id`, which derives from this device's key and `nonce` (`found` makes a new one; a restore
+/// founds again one this device had founded).
+pub fn found_as(tx: &Transaction<'_>, id: &str, nonce: &str, name: &str) -> Result<String> {
+    let key = ops::signing_key(tx)?.public_key();
+    let id = id.to_ascii_lowercase();
+    let id = id.as_str();
+    let person =
+        crate::settings::person_name(tx)?.unwrap_or_else(|| PLACEHOLDER_PERSON_NAME.to_owned());
+    let member = new_id();
+    let device = ops::device_id(tx)?;
     ops::record(
         tx,
         id,
-        "library.create",
-        vec![Change::create(Entity::Library, id, json!({ "name": name }))],
+        "library.found",
+        vec![
+            Change::create(
+                Entity::Library,
+                id,
+                json!({ "name": name, "founding_nonce": nonce }),
+            ),
+            // The person comes before the device that names it: a row cannot point at one that is not there yet.
+            Change::create(
+                Entity::Member,
+                &member,
+                json!({ "name": person, "role": "admin", "can_share": true }),
+            ),
+            Change::create(
+                Entity::Device,
+                &device,
+                json!({
+                    "public_key": key,
+                    "name": lan::device_name(tx)?,
+                    "member_id": member,
+                    "vouched_key": key,
+                }),
+            ),
+        ],
     )?;
     Ok(id.to_owned())
 }
@@ -651,22 +628,6 @@ mod tests {
 
     // --- The first library (D85) ---------------------------------------------
 
-    /// What an installation looked like after migration 0009 and before D85: one
-    /// library with the fixed id, no log, and no random one.
-    fn upgraded_database() -> Connection {
-        let conn = db::open_in_memory().unwrap();
-        let random = ops::active_library(&conn).unwrap();
-        ops::delete_library(&conn, &random).unwrap();
-        conn.execute("DELETE FROM operations", []).unwrap();
-        ops::forget_active_library(&conn).unwrap();
-        conn.execute(
-            "INSERT INTO libraries (id, name) VALUES (?1, '')",
-            [LEGACY_FIXED_LIBRARY_ID],
-        )
-        .unwrap();
-        conn
-    }
-
     fn library_ids(conn: &Connection) -> Vec<String> {
         conn.prepare("SELECT id FROM libraries ORDER BY id")
             .unwrap()
@@ -676,148 +637,21 @@ mod tests {
             .unwrap()
     }
 
-    fn operations_of(conn: &Connection, library: &str) -> i64 {
-        conn.query_row(
-            "SELECT count(*) FROM operations WHERE library_id = ?1",
-            [library],
-            |r| r.get(0),
-        )
-        .unwrap()
-    }
-
     #[test]
-    fn a_fresh_database_has_one_library_with_a_random_id_and_a_signed_create() {
+    fn a_fresh_database_has_one_library_founded_by_this_device_with_a_signed_operation() {
         let conn = db::open_in_memory().unwrap();
 
         let ids = library_ids(&conn);
         assert_eq!(ids.len(), 1);
-        assert_ne!(ids[0], LEGACY_FIXED_LIBRARY_ID);
         assert_eq!(ops::active_library(&conn).unwrap(), ids[0]);
         let signed: i64 = conn
             .query_row(
                 "SELECT count(*) FROM operations
-                  WHERE library_id = ?1 AND intent = 'library.create' AND signature IS NOT NULL",
+                  WHERE library_id = ?1 AND intent = 'library.found' AND signature IS NOT NULL",
                 [&ids[0]],
                 |r| r.get(0),
             )
             .unwrap();
         assert_eq!(signed, 1);
-        assert_eq!(operations_of(&conn, LEGACY_FIXED_LIBRARY_ID), 0);
-    }
-
-    #[test]
-    fn an_empty_legacy_library_is_replaced_by_a_fresh_random_one() {
-        let mut conn = upgraded_database();
-        ops::set_active_library(&conn, LEGACY_FIXED_LIBRARY_ID).unwrap();
-
-        retire_fixed_library(&mut conn).unwrap();
-        ensure_first_library(&mut conn).unwrap();
-
-        let ids = library_ids(&conn);
-        assert_eq!(ids.len(), 1);
-        assert_ne!(ids[0], LEGACY_FIXED_LIBRARY_ID);
-        assert_eq!(ops::active_library(&conn).unwrap(), ids[0]);
-        assert!(operations_of(&conn, &ids[0]) > 0);
-    }
-
-    #[test]
-    fn a_legacy_library_with_data_moves_to_a_random_one_with_the_same_books_and_mark() {
-        let mut conn = upgraded_database();
-        let legacy = LEGACY_FIXED_LIBRARY_ID;
-        catalog::create_book(&mut conn, legacy, &book("Tehanu"), None).unwrap();
-        catalog::create_book(&mut conn, legacy, &book("Dune"), None).unwrap();
-        crate::marks::claim_person(
-            &mut conn,
-            legacy,
-            &crate::people::PersonPick {
-                id: None,
-                name: "Ana".into(),
-            },
-        )
-        .unwrap();
-        let edition = catalog::list_books(&conn, legacy, &BookFilter::default()).unwrap()[0]
-            .edition_id
-            .clone();
-        let work = catalog::get_book(&conn, legacy, &edition).unwrap().work_id;
-        crate::marks::set_mark(
-            &mut conn,
-            legacy,
-            &work,
-            &crate::marks::Mark {
-                status: Some("finished".into()),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        lan::share_library(&conn, legacy, "phone").unwrap();
-
-        retire_fixed_library(&mut conn).unwrap();
-        ensure_first_library(&mut conn).unwrap();
-
-        let ids = library_ids(&conn);
-        assert_eq!(ids.len(), 1, "no legacy row");
-        let new = &ids[0];
-        assert_ne!(new, legacy);
-        assert_eq!(ops::active_library(&conn).unwrap(), *new);
-        assert_eq!(titles(&conn, new), vec!["Dune", "Tehanu"]);
-        let finished: i64 = conn
-            .query_row(
-                "SELECT count(*) FROM marks WHERE library_id = ?1 AND status = 'finished'",
-                [new],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(finished, 1);
-        let unsigned: i64 = conn
-            .query_row(
-                "SELECT count(*) FROM operations WHERE library_id = ?1 AND signature IS NULL",
-                [new],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(unsigned, 0);
-        assert!(operations_of(&conn, new) > 0);
-        assert_eq!(operations_of(&conn, legacy), 0, "no legacy operations");
-        assert!(titles(&conn, legacy).is_empty());
-        assert!(lan::devices_sharing(&conn, legacy).unwrap().is_empty());
-    }
-
-    #[test]
-    fn a_named_legacy_library_keeps_its_name_in_the_copy() {
-        let mut conn = upgraded_database();
-        conn.execute(
-            "UPDATE libraries SET name = 'Casa' WHERE id = ?1",
-            [LEGACY_FIXED_LIBRARY_ID],
-        )
-        .unwrap();
-        catalog::create_book(&mut conn, LEGACY_FIXED_LIBRARY_ID, &book("Tehanu"), None).unwrap();
-
-        retire_fixed_library(&mut conn).unwrap();
-
-        let listed = list_libraries(&conn).unwrap();
-        assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].name, "Casa");
-    }
-
-    #[test]
-    fn running_the_startup_step_again_changes_nothing() {
-        let mut conn = upgraded_database();
-        catalog::create_book(&mut conn, LEGACY_FIXED_LIBRARY_ID, &book("Tehanu"), None).unwrap();
-        retire_fixed_library(&mut conn).unwrap();
-        ensure_first_library(&mut conn).unwrap();
-        let snapshot = |conn: &Connection| -> (Vec<String>, i64, String) {
-            (
-                library_ids(conn),
-                conn.query_row("SELECT count(*) FROM operations", [], |r| r.get(0))
-                    .unwrap(),
-                ops::active_library(conn).unwrap(),
-            )
-        };
-        let before = snapshot(&conn);
-
-        retire_fixed_library(&mut conn).unwrap();
-        ensure_first_library(&mut conn).unwrap();
-
-        assert_eq!(snapshot(&conn), before);
     }
 }

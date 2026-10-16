@@ -142,6 +142,10 @@ pub fn ensure_baseline(conn: &mut Connection) -> Result<()> {
     for library in libraries(&tx)? {
         let mut changes = Vec::new();
         for entity in ORDER {
+            // The founding already carries the library, its first person and device (D97).
+            if matches!(entity, Entity::Library | Entity::Member | Entity::Device) {
+                continue;
+            }
             for mut row in entity_rows(&tx, &library, entity)? {
                 let id = row
                     .remove("id")
@@ -150,11 +154,7 @@ pub fn ensure_baseline(conn: &mut Connection) -> Result<()> {
                 changes.push(Change::create(entity, id, Value::Object(row)));
             }
         }
-        // A library row alone is not worth a baseline.
-        if changes
-            .iter()
-            .any(|change| change.entity != Entity::Library)
-        {
+        if !changes.is_empty() {
             ops::record_existing(&tx, &library, "sync.baseline", changes)?;
         }
     }
@@ -318,20 +318,13 @@ fn merge_in(tx: &Transaction<'_>, mut incoming: Vec<SyncOperation>) -> Result<Me
         if status == ops::Status::Applied && permissions::note_fences(tx, &operation)? {
             arrived_late.insert(library.to_owned());
         }
-        // A seal that is a request here may be the one that puts the operations before it
-        // under a fence, and with them out of the way the seal stands (D94): judge again.
-        if status == ops::Status::Request && permissions::is_seal(&operation) {
-            arrived_late.insert(library.to_owned());
-        }
         received.push(operation.id.clone());
         report.received += 1;
     }
 
     // Something older arrived where the order decides: judge the whole library again.
     for library in &arrived_late {
-        if permissions::judged_by_order(tx, library)? {
-            permissions::rebuild(tx, library)?;
-        }
+        permissions::rebuild(tx, library)?;
     }
     for id in &received {
         let status: String =
@@ -618,6 +611,85 @@ fn now_millis() -> u64 {
         })
 }
 
+/// For tests: `device` receives `library` from `origin`, registers itself, and `origin`, an administrator, says it
+/// is the device of a new person with `role` (D97). A device that receives a library is nobody's until someone says
+/// whose it is, and most tests are about everything else. Returns the person's id.
+#[cfg(test)]
+pub(crate) fn share_as(
+    origin: &Connection,
+    library: &str,
+    device: &mut Connection,
+    name: &str,
+    role: &str,
+) -> String {
+    let libraries = [library.to_owned()];
+    let mine = version_vectors(device, &libraries).unwrap();
+    merge(device, operations_since(origin, &mine).unwrap()).unwrap();
+    assign_as(origin, library, device, name, role)
+}
+
+/// For tests: `device`, which has the library, registers itself in it if it had not, and `origin`, an
+/// administrator, says it is the device of a new person with `role`. `origin` is only read and written through its
+/// transaction.
+#[cfg(test)]
+pub(crate) fn assign_as(
+    origin: &Connection,
+    library: &str,
+    device: &mut Connection,
+    name: &str,
+    role: &str,
+) -> String {
+    let libraries = [library.to_owned()];
+    let tx = device.transaction().unwrap();
+    ops::ensure_registered(&tx, library).unwrap();
+    tx.commit().unwrap();
+    // `origin` hears of it and assigns it, without needing to be mutable.
+    let tx = origin.unchecked_transaction().unwrap();
+    let theirs = version_vectors(&tx, &libraries).unwrap();
+    merge_in(&tx, operations_since(device, &theirs).unwrap()).unwrap();
+    let id = ops::device_id(device).unwrap();
+    let person = ops::new_id();
+    ops::record(
+        &tx,
+        library,
+        "device.assign",
+        vec![
+            Change::create(
+                Entity::Member,
+                &person,
+                json!({ "name": name, "role": role, "can_share": role == "admin" }),
+            ),
+            Change::update(
+                Entity::Device,
+                &id,
+                permissions::assignment_fields(&tx, library, &id, Some(&person)).unwrap(),
+            ),
+        ],
+    )
+    .unwrap();
+    tx.commit().unwrap();
+    let mine = version_vectors(device, &libraries).unwrap();
+    merge(device, operations_since(origin, &mine).unwrap()).unwrap();
+    person
+}
+
+/// For tests: `share_as` an administrator.
+#[cfg(test)]
+pub(crate) fn share_as_administrator(origin: &Connection, library: &str, device: &mut Connection) {
+    share_as(origin, library, device, "Another", "admin");
+}
+
+/// For tests: the person this device founded `library` as, or was given.
+#[cfg(test)]
+pub(crate) fn own_person(conn: &Connection, library: &str) -> String {
+    conn.query_row(
+        "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+        [library, &ops::device_id(conn).unwrap()],
+        |row| row.get(0),
+    )
+    .unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook, ValidEdition};
@@ -661,12 +733,21 @@ mod tests {
             device
         }
 
-        /// `empty_for`, with the library already received: `origin` as it is now.
+        /// `empty_for`, with the library already received: `origin` as it is now. The new device registers
+        /// itself and `origin`, an administrator, says it is another administrator's (D97): a device that
+        /// receives a library is nobody's until someone says whose it is, and these tests are about
+        /// everything else.
         fn sharing(origin: &Device) -> Self {
             let mut device = Device::empty_for(origin);
-            let mine = version_vectors(&device.0, std::slice::from_ref(&origin.1)).unwrap();
-            let missing = operations_since(&origin.0, &mine).unwrap();
-            merge(&mut device.0, missing).unwrap();
+            share_as_administrator(&origin.0, &origin.1, &mut device.0);
+            device
+        }
+
+        /// `empty_for`, with the library received and nothing else: the device has the log and no place in the
+        /// library, nobody's until someone says whose it is (D97).
+        fn receiving(origin: &Device) -> Self {
+            let mut device = Device::empty_for(origin);
+            device.pull_from(origin);
             device
         }
 
@@ -837,7 +918,7 @@ mod tests {
     #[test]
     fn signed_operations_are_checked_even_through_a_third_device() {
         let mut laptop = Device::new();
-        let mut phone = Device::sharing(&laptop);
+        let mut phone = Device::empty_for(&laptop);
         let mut tablet = Device::empty_for(&laptop);
         laptop.add("A Wizard of Earthsea", None, "Ana");
 
@@ -846,8 +927,8 @@ mod tests {
         // the key that came inside the library.
         let report = tablet.pull_from(&phone);
 
-        // The laptop's key registration, the library it created and its book.
-        assert_eq!((report.received, report.rejected), (3, 0));
+        // The laptop's founding (its key, its person and the library) and its book.
+        assert_eq!((report.received, report.rejected), (2, 0));
         assert_converged(&[&laptop, &phone, &tablet]);
         let laptop_key = ops::signing_key(&laptop.0).unwrap().public_key();
         assert_eq!(
@@ -876,8 +957,8 @@ mod tests {
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        // The laptop's registration and its library arrive; its book, changed, does not.
-        assert_eq!((report.received, report.rejected), (2, 1));
+        // The laptop's founding arrives; its book, changed, does not.
+        assert_eq!((report.received, report.rejected), (1, 1));
         assert!(phone.titles().is_empty());
     }
 
@@ -957,16 +1038,16 @@ mod tests {
         laptop.add("A Wizard of Earthsea", None, "Ana");
         let mut operations = everything_from(&laptop);
         for op in &mut operations {
-            if op.operation.intent != "device.register" {
+            if op.operation.intent != "library.found" {
                 op.operation.signature = None;
             }
         }
 
         let report = merge(&mut phone.0, operations).unwrap();
 
-        // The registration is accepted (it is how a key becomes known); the library and
-        // the book, unsigned, are not.
-        assert_eq!((report.received, report.rejected), (1, 2));
+        // The founding is accepted (it registers the key, which is how a key becomes known); the book,
+        // unsigned, is not.
+        assert_eq!((report.received, report.rejected), (1, 1));
         assert!(phone.titles().is_empty());
     }
 
@@ -1147,7 +1228,7 @@ mod tests {
     #[test]
     fn rows_from_before_the_operation_log_travel_in_the_baseline() {
         let mut a = Device::new();
-        let mut b = Device::sharing(&a);
+        let mut b = Device::empty_for(&a);
         a.0.execute_batch(&format!(
             "INSERT INTO works (library_id, id, kind, title)
              VALUES ('{lib}', '01997c7e-0000-7000-8000-000000000001', 'book', 'Old');
@@ -1181,7 +1262,7 @@ mod tests {
         a.add("A", None, "Ana");
         a.0.execute("UPDATE operations SET replicable = 0", [])
             .unwrap();
-        let b = Device::sharing(&a);
+        let b = Device::empty_for(&a);
 
         assert!(
             operations_since(
@@ -1299,9 +1380,13 @@ mod tests {
     #[test]
     fn receiving_moves_the_local_clock_past_remote_timestamps() {
         let mut a = Device::new();
-        let mut b = Device::empty_for(&a);
+        let mut b = Device::sharing(&a);
         a.add("A", None, "Ana");
-        let incoming = operations_since(&a.0, &everything(&a.1)).unwrap();
+        let incoming = operations_since(
+            &a.0,
+            &version_vectors(&b.0, std::slice::from_ref(&a.1)).unwrap(),
+        )
+        .unwrap();
         let remote = incoming[0].operation.hlc.clone();
 
         merge(&mut b.0, incoming).unwrap();
@@ -1508,6 +1593,8 @@ mod tests {
         let rol = crate::libraries::create_library(&mut a.0, "Rol").unwrap();
         catalog::create_book(&mut a.0, &rol, &book("Earthsea", None, "Ana"), None).unwrap();
         a.sync_with(&mut b);
+        // The new library is a's; b needs a place in it to rename it.
+        assign_as(&a.0, &rol, &mut b.0, "Another", "admin");
 
         crate::libraries::rename_library(&mut b.0, &rol, "Rol de los jueves").unwrap();
         std::thread::sleep(std::time::Duration::from_millis(5));
@@ -1608,26 +1695,20 @@ mod tests {
         laptop.add("Dune", None, "Tersoal");
         phone.add("Tehanu", None, "Hugo");
         laptop.sync_with(&mut phone);
-        let (laptop_id, phone_id) = (device_id_of(&laptop), device_id_of(&phone));
-        let (admin, reader) = (ops::new_id(), ops::new_id());
+        // The laptop's founder is Tersoal; the person the phone was given is Hugo, now a reader.
+        let (admin, reader) = (own_person(&laptop.0, &lib), own_person(&phone.0, &lib));
         let tx = laptop.0.transaction().unwrap();
         ops::record(
             &tx,
             &lib,
             "member.roles",
             vec![
-                Change::create(
-                    Entity::Member,
-                    &admin,
-                    json!({ "name": "Tersoal", "role": "admin" }),
-                ),
-                Change::create(
+                Change::update(Entity::Member, &admin, json!({ "name": "Tersoal" })),
+                Change::update(
                     Entity::Member,
                     &reader,
-                    json!({ "name": "Hugo", "role": "reader" }),
+                    json!({ "name": "Hugo", "role": "reader", "can_share": false }),
                 ),
-                Change::update(Entity::Device, &laptop_id, json!({ "member_id": admin })),
-                Change::update(Entity::Device, &phone_id, json!({ "member_id": reader })),
             ],
         )
         .unwrap();
@@ -2312,18 +2393,23 @@ mod tests {
         let lib = laptop.1.clone();
         let mut phone = Device::sharing(&laptop);
         laptop.add("Dune", None, "Tersoal");
-        let hugo = crate::people::PersonPick {
-            id: None,
-            name: "Hugo".into(),
-        };
-        marks::claim_person(&mut laptop.0, &lib, &hugo).unwrap();
+        // One person on two devices: the laptop says the phone is its own person's.
+        let person = own_person(&laptop.0, &lib);
+        let phone_id = device_id_of(&phone);
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(
+            &tx,
+            &lib,
+            "device.assign",
+            vec![Change::update(
+                Entity::Device,
+                &phone_id,
+                permissions::assignment_fields(&tx, &lib, &phone_id, Some(&person)).unwrap(),
+            )],
+        )
+        .unwrap();
+        tx.commit().unwrap();
         laptop.sync_with(&mut phone);
-        let member = marks::my_member(&laptop.0, &lib).unwrap();
-        let same = crate::people::PersonPick {
-            id: member,
-            name: "Hugo".into(),
-        };
-        marks::claim_person(&mut phone.0, &lib, &same).unwrap();
         let work = |device: &Device| {
             let edition = catalog::list_books(&device.0, &lib, &BookFilter::default()).unwrap()[0]
                 .edition_id
@@ -2506,7 +2592,7 @@ mod tests {
             catalog::delete_book(&mut phone.0, &lib, &edition)
         });
         assert!(tersoal_s.is_ok(), "the phone asks to delete it");
-        let mut tablet = Device::sharing(&laptop);
+        let mut tablet = Device::receiving(&laptop);
         tablet.pull_from(&laptop);
         tablet.pull_from(&phone);
         let id = crate::requests::list_requests(&tablet.0, &lib).unwrap()[0]
@@ -2578,6 +2664,7 @@ mod tests {
         assert!(!cases.is_empty());
         // The test key every device in the cases registers (spec/conformance/signatures.json).
         let key = kosmotheka_domain::DeviceKey::from_seed([1; 32]);
+        let mut failures: Vec<String> = Vec::new();
 
         for case in &cases {
             for order in &case.deliveries {
@@ -2633,21 +2720,30 @@ mod tests {
                         .unwrap()
                 };
                 let expected = |ids: &[String]| ids.iter().cloned().collect::<BTreeSet<_>>();
-                assert_eq!(
-                    status_of("applied"),
-                    expected(&case.expect.applied),
-                    "case '{}', delivery {order:?}: applied",
-                    case.name
-                );
-                assert_eq!(
-                    status_of("request"),
-                    expected(&case.expect.requests),
-                    "case '{}', delivery {order:?}: requests",
-                    case.name
-                );
+                // Every case that differs is reported, not just the first.
+                for (status, wanted) in [
+                    ("applied", &case.expect.applied),
+                    ("request", &case.expect.requests),
+                ] {
+                    let (got, wanted) = (status_of(status), expected(wanted));
+                    if got != wanted {
+                        let short = |ids: &BTreeSet<String>| {
+                            ids.iter()
+                                .map(|id| id[id.len() - 3..].to_owned())
+                                .collect::<Vec<_>>()
+                        };
+                        failures.push(format!(
+                            "case '{}', delivery {order:?}: {status}: got {:?}, expected {:?}",
+                            case.name,
+                            short(&got),
+                            short(&wanted)
+                        ));
+                    }
+                }
                 assert_rebuild_changes_nothing(&device);
             }
         }
+        assert!(failures.is_empty(), "\n{}", failures.join("\n"));
     }
 
     #[test]
@@ -2662,6 +2758,9 @@ mod tests {
         // spec/conformance/signatures.json first, and the runner signs the case's
         // operations with it, as for the permission cases.
         let key = kosmotheka_domain::DeviceKey::from_seed([1; 32]);
+        // The cases are about merging, not about who may write: their libraries have no founding (D97), so the
+        // judge is off while they run. The permission cases are the ones that have it on.
+        let _unjudged = permissions::JudgeOff::new();
         for case in cases {
             let authors: BTreeSet<(String, String)> = case
                 .operations
@@ -3087,6 +3186,7 @@ mod tests {
         // What a new library has is its own row and its device's registration.
         device.0.execute("DELETE FROM operations", []).unwrap();
         device.0.execute("DELETE FROM devices", []).unwrap();
+        device.0.execute("DELETE FROM members", []).unwrap();
         device
             .0
             .execute("DELETE FROM local_state WHERE key = ?1", [BASELINE_KEY])
@@ -3145,22 +3245,6 @@ mod tests {
     }
 
     #[test]
-    fn a_late_operation_in_a_library_without_roles_does_not_rebuild_it() {
-        let mut a = Device::new();
-        let mut b = Device::sharing(&a);
-        b.add("Older, on b", None, "Bea");
-        std::thread::sleep(std::time::Duration::from_millis(5));
-        a.add("Newer, on a", None, "Ana");
-        plant_untracked_row(&a);
-
-        let report = a.pull_from(&b);
-
-        assert!(report.received >= 1, "b's older operation arrived");
-        assert!(!permissions::judged_by_order(&a.0, &a.1).unwrap());
-        assert!(untracked_row_survives(&a), "order does not matter here");
-    }
-
-    #[test]
     fn a_fence_set_by_a_request_is_not_noted() {
         // The phone is a reader: asking to fence the laptop is a request, and a
         // request must not take effect, fence included (D84).
@@ -3215,6 +3299,29 @@ mod tests {
         }
     }
 
+    /// The assignments as they were before D96: devices with a person and no vouched key.
+    fn unvouch(laptop: &mut Device, phone: &mut Device) {
+        let lib = laptop.1.clone();
+        let changes = [device_id_of(laptop), device_id_of(phone)]
+            .into_iter()
+            .map(|id| Change::update(Entity::Device, id, json!({ "vouched_key": "" })))
+            .collect();
+        let tx = laptop.0.transaction().unwrap();
+        ops::record(&tx, &lib, "device.assign", changes).unwrap();
+        tx.commit().unwrap();
+        phone.pull_from(laptop);
+    }
+
+    /// The laptop and the phone are both administrators.
+    fn two_administrators() -> (Device, Device) {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("admin"), true).unwrap();
+        phone.pull_from(&laptop);
+        (laptop, phone)
+    }
+
     fn operations_with_intent(device: &Device, intent: &str) -> Vec<String> {
         device
             .0
@@ -3226,42 +3333,19 @@ mod tests {
             .unwrap()
     }
 
-    fn seals_in(device: &Device) -> i64 {
-        device
-            .0
-            .query_row(
-                "SELECT count(*) FROM device_seals WHERE library_id = ?1",
-                [&device.1],
-                |row| row.get(0),
-            )
-            .unwrap()
-    }
-
-    /// The laptop and the phone are administrators and nobody ever sealed the library:
-    /// a library that got its roles before D94.
-    fn two_administrators_without_a_seal() -> (Device, Device) {
-        let (mut laptop, mut phone) = laptop_admin_phone_reader();
-        let lib = laptop.1.clone();
-        let hugo = phone_person(&laptop, &phone);
-        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("admin"), true).unwrap();
-        phone.pull_from(&laptop);
-        assert_eq!(seals_in(&laptop), 0, "set_role seals nothing");
-        (laptop, phone)
-    }
-
     #[test]
     fn the_cloud_s_power_reaching_a_device_after_what_it_did_changes_nothing_in_the_end() {
         let (mut laptop, _phone) = laptop_admin_phone_reader();
         let lib = laptop.1.clone();
         // The cloud: a device whose id is the one its key gives (D95).
-        let mut phone = Device::sharing(&laptop);
+        let mut phone = Device::receiving(&laptop);
         permissions::become_a_cloud_device(&phone.0, 7);
         let tx = phone.0.transaction().unwrap();
         ops::ensure_registered(&tx, &lib).unwrap();
         tx.commit().unwrap();
         laptop.pull_from(&phone);
         let phone_id = device_id_of(&phone);
-        let mut tablet = Device::sharing(&laptop);
+        let mut tablet = Device::receiving(&laptop);
         let tx = tablet.0.transaction().unwrap();
         ops::ensure_registered(&tx, &lib).unwrap();
         tx.commit().unwrap();
@@ -3414,223 +3498,26 @@ mod tests {
         );
     }
 
-    #[test]
-    fn turning_roles_on_seals_the_library_naming_every_device_it_knows() {
-        let mut laptop = Device::new();
-        let lib = laptop.1.clone();
-        let mut phone = Device::sharing(&laptop);
-        laptop.add("Dune", None, "Tersoal");
-        phone.add("Tehanu", None, "Hugo");
-        laptop.pull_from(&phone);
-        let (laptop_id, phone_id) = (device_id_of(&laptop), device_id_of(&phone));
-        let laptop_last = ops::latest_of(&laptop.0, &lib, &laptop_id).unwrap();
-        let phone_last = ops::latest_of(&laptop.0, &lib, &phone_id).unwrap();
-
-        crate::people::start_roles(&mut laptop.0, &lib, "Tersoal", &[]).unwrap();
-
-        let roles = operations_with_intent(&laptop, "member.roles");
-        assert_eq!(roles.len(), 1);
-        assert_eq!(seals_in(&laptop), 1);
-        let marks: Vec<(String, String)> = laptop
-            .0
-            .prepare(
-                "SELECT device_id, through FROM device_fences WHERE operation_id = ?1
-                  ORDER BY device_id",
-            )
-            .unwrap()
-            .query_map([&roles[0]], |row| Ok((row.get(0)?, row.get(1)?)))
-            .unwrap()
-            .collect::<rusqlite::Result<_>>()
-            .unwrap();
-        let mut expected = vec![
-            (laptop_id, laptop_last.unwrap()),
-            (phone_id, phone_last.unwrap()),
-        ];
-        expected.sort();
-        assert_eq!(
-            marks, expected,
-            "every device, the author's with its previous"
-        );
-        phone.pull_from(&laptop);
-        assert_eq!(status_of_id(&phone, &roles[0]), "applied");
-        assert_converged(&[&laptop, &phone]);
-    }
-
-    #[test]
-    fn a_stranger_cannot_date_a_takeover_before_the_activation() {
-        // SEG-025: a device the administrator has not heard of signs, dated before the
-        // activation, an operation that makes it an administrator. Without the seal it
-        // is believed (nobody has a role yet) and the true activation becomes a request.
-        let mut laptop = Device::new();
-        let lib = laptop.1.clone();
-        laptop.add("Dune", None, "Tersoal");
-        let mut stranger = Device::sharing(&laptop);
-        stranger.add("Hello", None, "Mallory");
-        let mallory = ops::new_id();
-        let grab = forged_at(
-            &stranger,
-            "member.roles",
-            vec![
-                Change::create(
-                    Entity::Member,
-                    &mallory,
-                    json!({ "name": "Mallory", "role": "admin", "can_share": true }),
-                ),
-                Change::update(
-                    Entity::Device,
-                    device_id_of(&stranger),
-                    json!({ "member_id": mallory }),
-                ),
-            ],
-            now_millis(),
-            ops::latest_of(&stranger.0, &lib, &device_id_of(&stranger))
-                .unwrap()
-                .as_deref(),
-        );
-        std::thread::sleep(std::time::Duration::from_millis(5));
-
-        crate::people::start_roles(&mut laptop.0, &lib, "Tersoal", &[]).unwrap();
-        let activation = operations_with_intent(&laptop, "member.roles").remove(0);
-        let mut batch = everything_from(&stranger);
-        batch.push(grab.clone());
-        merge(&mut laptop.0, batch).unwrap();
-
-        assert_eq!(status_of_id(&laptop, &grab.operation.id), "request");
-        assert_eq!(status_of_id(&laptop, &activation), "applied");
-        assert_eq!(
-            crate::people::list_people(&laptop.0, &lib).unwrap().my_role,
-            Some("admin".to_owned())
-        );
-        let stranger_role: Option<String> = laptop
-            .0
-            .query_row(
-                "SELECT m.role FROM devices d JOIN members m
-                   ON m.library_id = d.library_id AND m.id = d.member_id
-                  WHERE d.library_id = ?1 AND d.id = ?2",
-                [&lib, &device_id_of(&stranger)],
-                |row| row.get(0),
-            )
-            .optional()
-            .unwrap();
-        assert_eq!(stranger_role, None, "the stranger stays a device of nobody");
-        assert_converged(&[&laptop]);
-    }
-
-    #[test]
-    fn a_library_with_roles_and_no_seal_is_sealed_once() {
-        let (mut laptop, mut phone) = laptop_admin_phone_reader();
-
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-
-        let seals = operations_with_intent(&laptop, "library.seal");
-        assert_eq!(
-            seals.len(),
-            1,
-            "a second session finds the seal and does nothing"
-        );
-        assert_eq!(seals_in(&laptop), 1);
-        phone.pull_from(&laptop);
-        assert_eq!(status_of_id(&phone, &seals[0]), "applied");
-        assert_converged(&[&laptop, &phone]);
-    }
-
-    /// Why the seal waits for a sync session (D94): it believes of each device only what
-    /// the sealer holds. An administrator's device that has been away and sealed on start
-    /// would turn what the others did meanwhile into requests.
-    #[test]
-    fn a_device_that_was_away_seals_after_merging_and_keeps_what_the_others_did() {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
-        let meanwhile = phone.add("The Farthest Shore", None, "Hugo");
-        let added = operations_with_intent(&phone, "book.add").pop().unwrap();
-
-        laptop.pull_from(&phone);
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-        laptop.sync_with(&mut phone);
-
-        assert_eq!(operations_with_intent(&laptop, "library.seal").len(), 1);
-        for device in [&laptop, &phone] {
-            assert_eq!(status_of_id(device, &added), "applied");
-        }
-        assert!(!meanwhile.is_empty());
-        assert_converged(&[&laptop, &phone]);
-    }
-
-    #[test]
-    fn a_seal_written_before_merging_leaves_what_the_others_did_as_requests() {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
-        phone.add("The Farthest Shore", None, "Hugo");
-        let added = operations_with_intent(&phone, "book.add").pop().unwrap();
-
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-        laptop.sync_with(&mut phone);
-
-        for device in [&laptop, &phone] {
-            assert_eq!(status_of_id(device, &added), "request");
-        }
-        assert_converged(&[&laptop, &phone]);
-    }
-
-    #[test]
-    fn a_device_that_is_not_an_administrators_does_not_seal() {
-        let (laptop, mut phone) = laptop_admin_phone_reader();
-        let before = operations_with_intent(&phone, "library.seal");
-
-        permissions::seal_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
-
-        assert_eq!(operations_with_intent(&phone, "library.seal"), before);
-        assert_eq!(seals_in(&phone), 0);
-        assert!(operations_with_intent(&laptop, "library.seal").is_empty());
-    }
-
-    #[test]
-    fn a_library_without_roles_is_not_sealed() {
-        let mut device = Device::new();
-        device.add("Dune", None, "Tersoal");
-
-        permissions::seal_if_missing(&mut device.0, std::slice::from_ref(&device.1)).unwrap();
-
-        assert!(operations_with_intent(&device, "library.seal").is_empty());
-    }
-
-    #[test]
-    fn two_administrators_who_seal_at_once_without_having_seen_each_other_converge_on_the_later_seal()
-     {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
-
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-        permissions::seal_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
-        laptop.sync_with(&mut phone);
-
-        // The later seal does not know the earlier one, so it fences it like anything else
-        // its administrator had not received: the earlier is a request, the later stands.
-        let seals = operations_with_intent(&laptop, "library.seal");
-        assert_eq!(seals.len(), 2);
-        for device in [&laptop, &phone] {
-            assert_eq!(status_of_id(device, &seals[0]), "request");
-            assert_eq!(status_of_id(device, &seals[1]), "applied");
-            assert_eq!(seals_in(device), 1);
-        }
-        assert_converged(&[&laptop, &phone]);
-        // A later session finds an applied seal and writes none.
-        permissions::seal_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
-        assert_eq!(operations_with_intent(&laptop, "library.seal").len(), 2);
-    }
-
     fn vouched_keys(device: &Device) -> Vec<(String, Option<String>)> {
         device
             .0
             .prepare("SELECT id, vouched_key FROM devices WHERE library_id = ?1 ORDER BY id")
             .unwrap()
-            .query_map([&device.1], |row| Ok((row.get(0)?, row.get(1)?)))
+            .query_map([&device.1], |row| {
+                Ok((row.get(0)?, row.get::<_, Option<String>>(1)?))
+            })
             .unwrap()
-            .collect::<rusqlite::Result<_>>()
-            .unwrap()
+            .map(|row| {
+                let (id, key) = row.unwrap();
+                (id, key.filter(|key| !key.is_empty()))
+            })
+            .collect()
     }
 
     #[test]
     fn an_administrator_vouches_once_for_the_assignments_made_before_d96() {
         let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        unvouch(&mut laptop, &mut phone);
         assert!(vouched_keys(&laptop).iter().all(|(_, key)| key.is_none()));
 
         permissions::vouch_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
@@ -3662,18 +3549,9 @@ mod tests {
     }
 
     #[test]
-    fn a_library_without_roles_vouches_for_nothing() {
-        let mut device = Device::new();
-        device.add("Dune", None, "Tersoal");
-
-        permissions::vouch_if_missing(&mut device.0, std::slice::from_ref(&device.1)).unwrap();
-
-        assert!(operations_with_intent(&device, "library.vouch").is_empty());
-    }
-
-    #[test]
     fn two_administrators_who_vouch_at_once_converge() {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let (mut laptop, mut phone) = two_administrators();
+        unvouch(&mut laptop, &mut phone);
 
         permissions::vouch_if_missing(&mut laptop.0, std::slice::from_ref(&laptop.1)).unwrap();
         permissions::vouch_if_missing(&mut phone.0, std::slice::from_ref(&phone.1)).unwrap();
@@ -3827,7 +3705,7 @@ mod tests {
 
     #[test]
     fn the_last_administrator_and_oneself_are_not_withdrawn_and_the_withdrawn_do_not_count() {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let (mut laptop, mut phone) = two_administrators();
         let lib = laptop.1.clone();
         let hugo = phone_person(&laptop, &phone);
         let tersoal = crate::marks::my_member(&laptop.0, &lib).unwrap().unwrap();
@@ -3878,7 +3756,7 @@ mod tests {
     /// heard of it, echa a Laura. Once they sync the tablet still points at her (SEG-033).
     /// Returns (laptop, phone, tablet, laura).
     fn tablet_assigned_to_a_person_withdrawn_meanwhile() -> (Device, Device, Device, String) {
-        let (mut laptop, mut phone) = two_administrators_without_a_seal();
+        let (mut laptop, mut phone) = two_administrators();
         let lib = laptop.1.clone();
         let laura = ops::new_id();
         let tx = laptop.0.transaction().unwrap();
@@ -4093,14 +3971,14 @@ mod tests {
     fn an_author_written_in_capitals_is_not_the_cloud_and_is_not_even_read() {
         let (mut laptop, hugo_phone) = laptop_admin_phone_reader();
         let lib = laptop.1.clone();
-        let mut cloud = Device::sharing(&laptop);
+        let mut cloud = Device::receiving(&laptop);
         permissions::become_a_cloud_device(&cloud.0, 7);
         let tx = cloud.0.transaction().unwrap();
         ops::ensure_registered(&tx, &lib).unwrap();
         tx.commit().unwrap();
         laptop.pull_from(&cloud);
         let cloud_id = device_id_of(&cloud);
-        let mut tablet = Device::sharing(&laptop);
+        let mut tablet = Device::receiving(&laptop);
         let tx = tablet.0.transaction().unwrap();
         ops::ensure_registered(&tx, &lib).unwrap();
         tx.commit().unwrap();

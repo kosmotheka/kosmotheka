@@ -260,8 +260,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
             only_shared_operations(pulled.operations, &shared),
         )?;
         register_in_shared(&mut conn, device_id)?;
-        // With what the peer had already merged, and before working out what to send it (D94).
-        crate::permissions::seal_if_missing(&mut conn, &shared)?;
+        // With what the peer had already merged, and before working out what to send it (D96).
         crate::permissions::vouch_if_missing(&mut conn, &shared)?;
         crate::permissions::complete_withdrawals(&mut conn, &shared)?;
         let theirs = only_shared(pulled.vectors, &shared);
@@ -395,14 +394,28 @@ mod tests {
             .unwrap()
     }
 
-    /// The same library id on two devices that never synced: what a copied backup
-    /// or a hostile peer would bring (D84, D85). It is not how libraries normally
-    /// meet, since each is created with a random id on one device only.
-    fn create_with_id(database: &Database, id: &str) {
-        let mut conn = database.lock().unwrap();
+    /// A library both devices have, without having synced it: what a hostile peer that knows the id, or a
+    /// copy, would be (D84, D85). The desk founds it; the phone gets the log as of now and an administrator's
+    /// place (D97), and from here they diverge. It is not how libraries normally meet.
+    fn library_on_both(desk: &Database, phone: &Database) -> String {
+        let mut conn = desk.lock().unwrap();
         let tx = conn.transaction().unwrap();
-        libraries::create_with_id(&tx, id, "").unwrap();
+        let id = libraries::found(&tx, "").unwrap();
         tx.commit().unwrap();
+        crate::sync::share_as_administrator(&conn, &id, &mut phone.lock().unwrap());
+        id
+    }
+
+    /// The desk says the phone, which has the library, is the device of a new administrator (D97): a device that
+    /// received a library is nobody's until someone says whose it is.
+    fn give_place(desk: &Serving, phone: &Database, library: &str) {
+        crate::sync::assign_as(
+            &desk.database.lock().unwrap(),
+            library,
+            &mut phone.lock().unwrap(),
+            "Another",
+            "admin",
+        );
     }
 
     fn add(database: &Database, title: &str) {
@@ -488,13 +501,13 @@ mod tests {
         // The desk's library reaches the phone, which then adds to it.
         let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
         let first = sync(&phone, &server.device_id).await.unwrap();
+        give_place(&desk, &phone, &library);
         add_to(&phone, &library, "On the phone");
         let report = sync(&phone, &server.device_id).await.unwrap();
 
-        // The phone gets the desk's library, its book and its key registration (3),
-        // and answers with its own key registration (1); then the desk gets the
-        // phone's book (1).
-        assert_eq!((first.received.received, first.sent), (3, 1));
+        // The phone gets the desk's founding (library, person and the desk's key) and its book (2), and
+        // answers with its own key registration (1); then the desk gets the phone's book (1).
+        assert_eq!((first.received.received, first.sent), (2, 1));
         assert_eq!((report.received.received, report.sent), (0, 1));
         assert_eq!(
             titles_in(&phone, &library),
@@ -530,6 +543,7 @@ mod tests {
         // Nothing new: nothing to tell.
         sync(&phone, &server.device_id).await.unwrap();
         assert_eq!(heard.load(Ordering::SeqCst), 1);
+        give_place(&desk, &phone, &library);
         add_to(&phone, &library, "On the phone");
         sync(&phone, &server.device_id).await.unwrap();
         assert_eq!(heard.load(Ordering::SeqCst), 2);
@@ -628,6 +642,7 @@ mod tests {
         assert_eq!(titles(&desk.database), vec!["Desk's own"]);
 
         // Changes to the shared library go both ways from then on.
+        give_place(&desk, &phone, &club);
         add_to(&phone, &club, "Added on the phone");
         sync(&phone, &server.device_id).await.unwrap();
         assert_eq!(
@@ -638,13 +653,11 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_library_both_have_travels_only_if_both_share_it() {
-        // The same id on both devices, made on purpose (see `create_with_id`).
-        let repeated = ops::new_id();
+        // The same id on both devices, made on purpose (see `library_on_both`).
         let desk = serve().await;
-        create_with_id(&desk.database, &repeated);
-        add_to(&desk.database, &repeated, "On the desk");
         let phone = Database::in_memory();
-        create_with_id(&phone, &repeated);
+        let repeated = library_on_both(&desk.database, &phone);
+        add_to(&desk.database, &repeated, "On the desk");
         add_to(&phone, &repeated, "On the phone");
 
         // The desk offers it; the phone has one with the same id but did not choose
@@ -692,13 +705,13 @@ mod tests {
         let server = pair(&phone, &code, &[]).await.unwrap();
         sync(&phone, &server.device_id).await.unwrap();
         // The phone registers itself in the club by writing in it, and the desk hears of it.
+        give_place(&desk, &phone, &club);
         add_to(&phone, &club, "Phone's book");
         sync(&phone, &server.device_id).await.unwrap();
         let phone_id = id_of(&phone);
         let hugo = ops::new_id();
         {
             let mut conn = desk.database.lock().unwrap();
-            crate::people::start_roles(&mut conn, &club, "Ana", &[]).unwrap();
             let tx = conn.transaction().unwrap();
             ops::record(
                 &tx,
@@ -740,7 +753,6 @@ mod tests {
         let hugo = ops::new_id();
         {
             let mut conn = desk.database.lock().unwrap();
-            crate::people::start_roles(&mut conn, &club, "Ana", &[]).unwrap();
             // Paired but never synced: the desk has no row for the phone.
             crate::people::give_access(
                 &mut conn,
@@ -787,6 +799,7 @@ mod tests {
         let code = open_pairing_for(&desk, vec![club.clone()]);
         let server = pair(&phone, &code, &[]).await.unwrap();
         sync(&phone, &server.device_id).await.unwrap();
+        give_place(&desk, &phone, &club);
 
         libraries::revoke_access(&mut desk.database.lock().unwrap(), &club, &id_of(&phone))
             .unwrap();
@@ -839,9 +852,12 @@ mod tests {
         .await
         .unwrap();
         sync(&desk.database, &to_tablet.device_id).await.unwrap();
+        // Every operation of the desk before the revocation is already known to the phone, so that it chains.
+        give_place(&desk, &tablet.database, &club);
         let code = open_pairing_for(&desk, vec![club.clone()]);
         let phone_to_desk = pair(&phone, &code, &[]).await.unwrap();
         sync(&phone, &phone_to_desk.device_id).await.unwrap();
+        give_place(&desk, &phone, &club);
         let code = open_pairing_for(&tablet, vec![club.clone()]);
         let phone_to_tablet = pair(&phone, &code, std::slice::from_ref(&club))
             .await
@@ -866,13 +882,11 @@ mod tests {
         // phone shares a library with the same id (made on purpose, standing for a
         // copied or hostile id), and the desk shares nothing. Nothing may move, and
         // above all the desk's delete must never reach the phone.
-        let repeated = ops::new_id();
         let (desk, club) = desk_with_club().await;
-        create_with_id(&desk.database, &repeated);
+        let phone = Database::in_memory();
+        let repeated = library_on_both(&desk.database, &phone);
         libraries::set_active_library(&desk.database.lock().unwrap(), &club).unwrap();
         libraries::delete_library(&mut desk.database.lock().unwrap(), &repeated).unwrap();
-        let phone = Database::in_memory();
-        create_with_id(&phone, &repeated);
         add_to(&phone, &repeated, "Phone's own");
 
         let code = open_pairing_for(&desk, vec![]);
@@ -901,7 +915,6 @@ mod tests {
         let code = open_pairing_for(&desk, vec![club.clone()]);
         let server = pair(&phone, &code, &[]).await.unwrap();
         sync(&phone, &server.device_id).await.unwrap();
-        crate::people::start_roles(&mut desk.database.lock().unwrap(), &club, "Ana", &[]).unwrap();
         sync(&phone, &server.device_id).await.unwrap();
 
         // First a bare notice, then one with a revocation the phone signed itself,

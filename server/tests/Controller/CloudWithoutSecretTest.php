@@ -26,7 +26,7 @@ final class CloudWithoutSecretTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
+    private const string FOUNDER = '01997c7e-0000-7000-8000-000000000011';
     private const int T = 1_727_000_000_000;
 
     private KernelBrowser $client;
@@ -62,9 +62,10 @@ final class CloudWithoutSecretTest extends WebTestCase
         self::assertIsString($cloud);
         self::assertSame(['id' => $cloud, 'cloudDeviceId' => null, 'cloudPublicKey' => null], $created);
         $laptop = SigningDevice::fromSession($this->session);
+        $local = $laptop->libraryId();
         $version = self::getContainer()->get(SchemaVersion::class)->current();
 
-        $operations = [$laptop->registration(self::LOCAL, self::T), $laptop->link(self::LOCAL, $cloud, self::T + 1), $laptop->publisher(self::LOCAL, self::T + 2)];
+        $operations = [$laptop->founding(self::T, self::FOUNDER), $laptop->link($local, $cloud, self::T + 1), $laptop->publisher($local, self::T + 2)];
         $linked = $this->call('POST', "/v1/cloud/libraries/$cloud/link", ['schemaVersion' => $version, 'operation' => $operations[1]]);
         $pushed = $this->call('POST', "/v1/cloud/libraries/$cloud/push", ['schemaVersion' => $version, 'operations' => array_map(
             static fn (array $operation): array => ['schemaVersion' => $version, 'operation' => $operation],
@@ -72,9 +73,9 @@ final class CloudWithoutSecretTest extends WebTestCase
         )]);
         $listed = $this->call('GET', '/v1/cloud/libraries');
 
-        self::assertSame(['localLibraryId' => self::LOCAL], $linked);
+        self::assertSame(['localLibraryId' => $local], $linked);
         self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $pushed);
-        self::assertSame([['id' => $cloud, 'localLibraryId' => self::LOCAL, 'cloudDeviceId' => null, 'cloudPublicKey' => null]], $listed['libraries']);
+        self::assertSame([['id' => $cloud, 'localLibraryId' => $local, 'cloudDeviceId' => null, 'cloudPublicKey' => null]], $listed['libraries']);
         $connection = self::getContainer()->get(Connection::class);
         self::assertSame(1, $connection->fetchOne('SELECT COUNT(*) FROM cloud_device_key'), 'only the laptop');
         self::assertSame(3, $connection->fetchOne('SELECT COUNT(*) FROM cloud_operation'), 'the cloud wrote nothing');

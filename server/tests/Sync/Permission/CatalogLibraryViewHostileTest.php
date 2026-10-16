@@ -67,7 +67,7 @@ final class CatalogLibraryViewHostileTest extends KernelTestCase
     {
         $x = '01997c7e-0000-7000-8000-0000000000f1';
         $jhonny = $this->library();
-        $this->register($jhonny, self::DEVICE, self::MEMBER, null);
+        $this->register($jhonny, self::DEVICE, self::MEMBER, 'admin');
         $jhonny->deliver($this->op(self::DEVICE, [Ops::create(CatalogEntity::Tag, self::TAG, ['name' => 'Jhonny wrote X'])], $x));
 
         $family = $this->library();
@@ -109,15 +109,20 @@ final class CatalogLibraryViewHostileTest extends KernelTestCase
     }
 
     /**
-     * Registers a device (it registers itself) and its member with that role, written by `$by`: the device
-     * itself for the first one, since a library without roles lets everybody do everything, and an
-     * administrator after that.
+     * Registers a device (it registers itself) and its member with that role: the first one, an administrator,
+     * founds the library (D97); the others are written by `$by`, an administrator.
      */
     private function register(Judged $judged, string $device, string $member, ?string $role, ?string $by = null): void
     {
+        if (null === $by) {
+            self::assertSame('admin', $role, 'the first person of a library is its administrator');
+            self::assertSame(OperationStatus::Applied, $judged->deliver(Judged::founding(++$this->clock, $device, $member)));
+
+            return;
+        }
         $judged->deliver($this->op($device, [Ops::create(CatalogEntity::Device, $device, ['public_key' => 'k', 'name' => 'Device'])]));
         $fields = ['name' => 'Someone'] + (null === $role ? [] : ['role' => $role]);
-        $judged->deliver($this->op($by ?? $device, [
+        $judged->deliver($this->op($by, [
             Ops::create(CatalogEntity::Member, $member, $fields),
             Ops::update(CatalogEntity::Device, $device, ['member_id' => $member]),
         ]));

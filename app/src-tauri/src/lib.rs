@@ -192,7 +192,6 @@ pub fn run() {
             commands::request_notices,
             commands::dismiss_request_notices,
             commands::list_people,
-            commands::start_roles,
             commands::known_people,
             commands::pairing_owners,
             commands::give_access,

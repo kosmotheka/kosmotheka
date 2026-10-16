@@ -212,8 +212,7 @@ async fn push(
         let operations = only_shared_operations(request.operations, &shared);
         let report = sync::merge(&mut conn, operations)?;
         register_in_shared(&mut conn, &client)?;
-        // The device that only serves never pulls: this is when it has what the peer had (D94).
-        crate::permissions::seal_if_missing(&mut conn, &shared)?;
+        // The device that only serves never pulls: this is when it has what the peer had (D96).
         crate::permissions::vouch_if_missing(&mut conn, &shared)?;
         crate::permissions::complete_withdrawals(&mut conn, &shared)?;
         drop(conn);

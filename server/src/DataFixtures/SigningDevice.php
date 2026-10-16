@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
+use App\Sync\LibraryId;
 use App\Sync\OperationSignature;
 use App\Sync\OperationSigner;
 use Symfony\Component\Uid\Uuid;
@@ -20,6 +21,9 @@ final readonly class SigningDevice
 {
     /** The server the link operations name: the one the app of the fixture devices talks to, or it would not trust the link (D84). */
     public const string SERVER = CastFile::SERVER_URL;
+
+    /** The nonce the fixtures and tests found their libraries with: a founding needs one, and the id derives from it (D97). */
+    public const string FOUNDING_NONCE = 'AAECAwQFBgcICQoLDA0ODw';
 
     private function __construct(
         public string $id,
@@ -66,6 +70,32 @@ final readonly class SigningDevice
     public function latest(string $library): ?string
     {
         return $this->latest[$library] ?? null;
+    }
+
+    /** The id of the library this device founds with `$nonce`: it derives from the device's key (D97, rule 1). */
+    public function libraryId(string $nonce = self::FOUNDING_NONCE): string
+    {
+        return LibraryId::derive($this->publicKey, $nonce) ?? throw new \LogicException('The key and the nonce give no library id.');
+    }
+
+    /**
+     * The operation that founds the library `libraryId($nonce)` (D97): the library row, its first person as an
+     * administrator and this device assigned to that person, with its key vouched. The first operation of a library.
+     *
+     * @param list<array<string, mixed>> $more other changes of the same operation, after the founding's own
+     *
+     * @return array<string, mixed>
+     */
+    public function founding(int $time, string $personId, string $name = 'Family', string $personName = 'Founder', string $deviceName = 'Test device', ?string $operationId = null, string $nonce = self::FOUNDING_NONCE, array $more = []): array
+    {
+        $library = $this->libraryId($nonce);
+
+        return $this->sign($library, $time, 'library.found', [
+            ['entity' => 'library', 'id' => $library, 'action' => 'create', 'fields' => ['name' => $name, 'founding_nonce' => $nonce]],
+            ['entity' => 'member', 'id' => $personId, 'action' => 'create', 'fields' => ['name' => $personName, 'role' => 'admin', 'can_share' => true]],
+            ['entity' => 'device', 'id' => $this->id, 'action' => 'create', 'fields' => ['public_key' => $this->publicKey, 'name' => $deviceName, 'member_id' => $personId, 'vouched_key' => $this->publicKey]],
+            ...$more,
+        ], $operationId);
     }
 
     /**

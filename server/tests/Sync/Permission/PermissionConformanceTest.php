@@ -30,6 +30,7 @@ final class PermissionConformanceTest extends KernelTestCase
     /** The cases that list operations as rejected: a new one must not pass without somebody looking at it. */
     private const array CASES_WITH_REJECTED = [
         'An unsigned operation is refused, with or without roles',
+        'FOUNDING: an unsigned founding is refused',
         'the key of a device counts only through its own create, and a registered one never changes',
         'an author written in capitals is not read, so the cloud\'s id in capitals gets none of its power (SEG-029)',
     ];

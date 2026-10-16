@@ -40,7 +40,6 @@ final class InvitationControllerTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
     private const int T = 1_727_000_000_000;
     private const string PASSWORD = 'correct horse battery';
 
@@ -64,6 +63,9 @@ final class InvitationControllerTest extends WebTestCase
 
     private SigningDevice $laptop;
 
+    /** The library the laptop founds: its id derives from the laptop's key (D97). */
+    private string $local;
+
     protected function setUp(): void
     {
         $this->client = self::createClient();
@@ -73,6 +75,7 @@ final class InvitationControllerTest extends WebTestCase
         $this->family = $this->signInNewDevice($this->client, 'family@example.com');
         $this->jhonny = $this->signInNewDevice($this->client, 'jhonny@example.com');
         $this->laptop = SigningDevice::fromSession($this->family);
+        $this->local = $this->laptop->libraryId();
     }
 
     // ------------------------------------------------------ normal ---
@@ -416,7 +419,7 @@ final class InvitationControllerTest extends WebTestCase
         $mallory = $this->account('mallory@example.com');
         $token = $this->tokenOf($this->invite($this->family, $cloud, self::NORA, 'link'));
         $phone = SigningDevice::generate();
-        $this->push($this->family, $cloud, [$phone->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$phone->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns('device.assign', [['entity' => 'device', 'id' => $phone->id, 'action' => 'update', 'fields' => ['member_id' => self::NORA]]]);
 
         $answer = $this->accept($mallory, $token);
@@ -529,7 +532,7 @@ final class InvitationControllerTest extends WebTestCase
         $cloud = $this->world();
         $nora = $this->account('nora@example.com');
         $token = $this->tokenOf($this->invite($this->family, $cloud, self::NORA, 'link'));
-        $this->laptopSigns('library.cloud', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['cloud_device_id' => '']]]);
+        $this->laptopSigns('library.cloud', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['cloud_device_id' => '']]]);
 
         self::assertSame(['error' => 'invitation_revoked'], $this->accept($nora, $token)['body']);
         self::assertNull($this->memberOf($cloud, 'nora@example.com'));
@@ -782,7 +785,7 @@ final class InvitationControllerTest extends WebTestCase
     {
         $cloud = $this->world();
         $name = "Tu cuenta caduca: entra en ejemplo-acceso.com/login\x07\u{202E}\r\nBcc: spam@example.com\nVisit https://evil.example/pay now www.evil.example";
-        $this->laptopSigns('library.rename', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => ['name' => $name]]]);
+        $this->laptopSigns('library.rename', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => ['name' => $name]]]);
 
         $this->invite($this->family, $cloud, self::EVA, 'email', 'eva@example.com');
 
@@ -843,12 +846,10 @@ final class InvitationControllerTest extends WebTestCase
         $reader = SigningDevice::generate();
         $fields = ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $this->identityOf($cloud)];
         $response = $this->push($this->family, $cloud, [
-            $this->laptop->registration(self::LOCAL, self::T + $this->tick()),
-            $reader->registration(self::LOCAL, self::T + $this->tick()),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => $fields]]),
-            $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'family.roles', [
-                ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'admin', 'can_share' => true]],
+            $this->laptop->founding(self::T + $this->tick(), self::LAURA, personName: 'Laura'),
+            $reader->registration($this->local, self::T + $this->tick()),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => $fields]]),
+            $this->laptop->sign($this->local, self::T + $this->tick(), 'family.roles', [
                 ['entity' => 'member', 'id' => self::HUGO, 'action' => 'create', 'fields' => ['name' => 'Hugo', 'role' => 'editor', 'can_share' => true]],
                 ['entity' => 'member', 'id' => self::EVA, 'action' => 'create', 'fields' => ['name' => 'Eva', 'role' => 'editor']],
                 ['entity' => 'member', 'id' => self::READER, 'action' => 'create', 'fields' => ['name' => 'Reader', 'role' => 'reader']],
@@ -856,11 +857,10 @@ final class InvitationControllerTest extends WebTestCase
                 ['entity' => 'member', 'id' => self::TOMAS, 'action' => 'create', 'fields' => ['name' => 'Tomás', 'role' => 'admin']],
                 ['entity' => 'member', 'id' => self::MARTA, 'action' => 'create', 'fields' => ['name' => 'Marta', 'role' => 'admin']],
                 ['entity' => 'member', 'id' => self::OLGA, 'action' => 'create', 'fields' => ['name' => 'Olga', 'role' => 'reader']],
-                $this->assign($this->laptop->id, self::LAURA, $this->laptop->publicKey),
                 $this->assign($reader->id, self::READER),
             ]),
         ]);
-        self::assertSame(5, $response['received']);
+        self::assertSame(4, $response['received']);
         $this->laptopSigns('member.withdraw', [['entity' => 'member', 'id' => self::OLGA, 'action' => 'update', 'fields' => ['access_withdrawn' => true]]]);
         // The uploader's row is filled by the server itself (SEG-030); `claim` finds it linked already.
         self::assertSame(200, $this->call('POST', '/v1/cloud/libraries/claim', $this->family)['status']);
@@ -875,22 +875,17 @@ final class InvitationControllerTest extends WebTestCase
         $cloud = $this->call('POST', '/v1/cloud/libraries', $this->jhonny)['body']['id'] ?? null;
         \assert(\is_string($cloud));
         $device = SigningDevice::fromSession($this->jhonny);
-        $local = '00000000-0000-7000-8000-0000000000b1';
+        $local = $device->libraryId();
         $fields = ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER, 'cloud_device_id' => $this->identityOf($cloud, $this->jhonny)];
         $jhonny = '01997c7e-0000-7000-8000-0000000000b2';
-        $changes = [
-            ['entity' => 'member', 'id' => $jhonny, 'action' => 'create', 'fields' => ['name' => 'Jhonny', 'role' => 'admin']],
-            $this->assign($device->id, $jhonny, $device->publicKey),
+        $operations = [
+            $device->founding(self::T + $this->tick(), $jhonny, name: 'Jhonny', personName: 'Jhonny'),
+            $device->sign($local, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => $local, 'action' => 'update', 'fields' => $fields]]),
         ];
         if ($withNora) {
-            $changes[] = ['entity' => 'member', 'id' => self::NORA, 'action' => 'create', 'fields' => ['name' => 'Nora of Jhonny', 'role' => 'reader']];
+            $operations[] = $device->sign($local, self::T + $this->tick(), 'family.roles', [['entity' => 'member', 'id' => self::NORA, 'action' => 'create', 'fields' => ['name' => 'Nora of Jhonny', 'role' => 'reader']]]);
         }
-        $this->push($this->jhonny, $cloud, [
-            $device->registration($local, self::T + $this->tick()),
-            $device->sign($local, self::T + $this->tick(), 'library.create', [['entity' => 'library', 'id' => $local, 'action' => 'create', 'fields' => ['name' => 'Jhonny']]]),
-            $device->sign($local, self::T + $this->tick(), 'library.link', [['entity' => 'library', 'id' => $local, 'action' => 'update', 'fields' => $fields]]),
-            $device->sign($local, self::T + $this->tick(), 'family.roles', $changes),
-        ]);
+        $this->push($this->jhonny, $cloud, $operations);
         $this->call('POST', '/v1/cloud/libraries/claim', $this->jhonny);
         self::assertSame($jhonny, $this->memberOf($cloud, 'jhonny@example.com'));
 
@@ -920,7 +915,7 @@ final class InvitationControllerTest extends WebTestCase
         $session = null === $this->userId($email) ? $this->account($email) : $this->login($email);
         $device = SigningDevice::fromSession($session);
         $cloud = $this->scalarString('SELECT id::text FROM cloud_library LIMIT 1', []);
-        $this->push($this->family, $cloud, [$device->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$device->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns('device.assign', [$this->assign($device->id, $member, $device->publicKey)]);
         self::assertSame([$cloud], $this->call('POST', '/v1/cloud/libraries/claim', $session)['body']['linked'] ?? null, $email);
 
@@ -989,7 +984,7 @@ final class InvitationControllerTest extends WebTestCase
     private function laptopSigns(string $intent, array $changes): void
     {
         $cloud = $this->scalarString('SELECT id::text FROM cloud_library ORDER BY created_at LIMIT 1', []);
-        $response = $this->push($this->family, $cloud, [$this->laptop->sign(self::LOCAL, self::T + $this->tick(), $intent, $changes)]);
+        $response = $this->push($this->family, $cloud, [$this->laptop->sign($this->local, self::T + $this->tick(), $intent, $changes)]);
         self::assertSame(1, $response['received']);
     }
 
@@ -1048,9 +1043,9 @@ final class InvitationControllerTest extends WebTestCase
     {
         $cloud = $this->world();
         $stranger = SigningDevice::generate();
-        $registration = $stranger->registration(self::LOCAL, self::T + $this->tick());
-        $forged = $stranger->sign(self::LOCAL, self::T + $this->tick(), 'role.forged', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'admin', 'can_share' => true]]]);
-        $tampered = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'role.tampered', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        $registration = $stranger->registration($this->local, self::T + $this->tick());
+        $forged = $stranger->sign($this->local, self::T + $this->tick(), 'role.forged', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'admin', 'can_share' => true]]]);
+        $tampered = $this->laptop->sign($this->local, self::T + $this->tick(), 'role.tampered', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
         $signature = $tampered['signature'];
         \assert(\is_string($signature));
         $tampered['signature'] = strrev($signature);
@@ -1071,7 +1066,7 @@ final class InvitationControllerTest extends WebTestCase
         $cloud = $this->world();
         $started = new \DateTimeImmutable('-2 seconds', new \DateTimeZone('UTC'));
         $this->client->setServerParameter('HTTP_USER_AGENT', 'Kosmotheka/1.2 (Linux)');
-        $operation = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader', 'can_share' => false]]]);
+        $operation = $this->laptop->sign($this->local, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::HUGO, 'action' => 'update', 'fields' => ['role' => 'reader', 'can_share' => false]]]);
 
         $this->push($this->family, $cloud, [$operation]);
 
@@ -1142,7 +1137,7 @@ final class InvitationControllerTest extends WebTestCase
         $hugo = $this->joinAs('hugo@example.com', self::HUGO);
         $this->client->setServerParameter('REMOTE_ADDR', '203.0.113.77');
         $this->client->setServerParameter('HTTP_USER_AGENT', 'Hugo-tablet/1');
-        $operation = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        $operation = $this->laptop->sign($this->local, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
 
         $this->push($hugo, $cloud, [$operation]);
 
@@ -1161,9 +1156,9 @@ final class InvitationControllerTest extends WebTestCase
         $cloud = $this->world();
         $hugo = $this->joinAs('hugo@example.com', self::HUGO);
         $tomas = SigningDevice::generate();
-        $this->push($this->family, $cloud, [$tomas->registration(self::LOCAL, self::T + $this->tick())]);
+        $this->push($this->family, $cloud, [$tomas->registration($this->local, self::T + $this->tick())]);
         $this->laptopSigns('device.assign', [$this->assign($tomas->id, self::TOMAS, $tomas->publicKey)]);
-        $operation = $tomas->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        $operation = $tomas->sign($this->local, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
 
         $this->push($hugo, $cloud, [$operation]);
 
@@ -1179,7 +1174,7 @@ final class InvitationControllerTest extends WebTestCase
         $cloud = $this->world();
         $hugo = $this->joinAs('hugo@example.com', self::HUGO);
         $before = $this->scalar('SELECT COUNT(*) FROM activity_log');
-        $forged = $this->laptop->sign(self::LOCAL, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
+        $forged = $this->laptop->sign($this->local, self::T + $this->tick(), 'member.role', [['entity' => 'member', 'id' => self::EVA, 'action' => 'update', 'fields' => ['role' => 'reader']]]);
         // The laptop\'s signature, but the operation says it is Hugo\'s device that dated it.
         $hlc = \is_string($forged['hlc']) ? $forged['hlc'] : '';
         $forged['hlc'] = substr($hlc, 0, 26).$hugo['device_id'];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Sync\Permission;
 
+use App\DataFixtures\SigningDevice;
 use App\Dto\PushedOperation;
 use App\Dto\PushRequest;
 use App\Dto\PushResult;
@@ -31,7 +32,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class PermissionConformancePushTest extends KernelTestCase
 {
     /** The library id every case's operations carry. */
-    private const string LOCAL = '01997c7e-0000-7000-8000-00000000aaaa';
+    private const string LOCAL = '2c33de53-4834-8a05-b014-c42dc60bd4e1';
 
     private EntityManagerInterface $em;
 
@@ -107,13 +108,20 @@ final class PermissionConformancePushTest extends KernelTestCase
 
         foreach ($case['deliveries'] as $order => $delivery) {
             [$library, $uploader] = $this->linkedLibrary();
-            $registration = ['id' => '01997c7e-0000-7000-8000-0000000004ff', 'library' => self::LOCAL, 'hlc' => '0001727222222000-00000000-'.$device, 'intent' => 'device.register',
-                'changes' => [['entity' => 'device', 'id' => $device, 'action' => 'create', 'fields' => ['public_key' => self::publicKey(), 'name' => 'laptop']]], 'previous' => null];
-            self::assertSame(1, $this->push($library, $uploader, $this->signed($registration))->received);
+            // The device founds the library the cases' operations are in (D97): the key signs them all, and the library's id derives from it.
+            $founding = ['id' => '01997c7e-0000-7000-8000-0000000004ff', 'library' => self::LOCAL, 'hlc' => '0001727222222000-00000000-'.$device, 'intent' => 'library.found',
+                'changes' => [
+                    ['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]],
+                    ['entity' => 'member', 'id' => '01997c7e-0000-7000-8000-0000000004fe', 'action' => 'create', 'fields' => ['name' => 'Founder', 'role' => 'admin', 'can_share' => true]],
+                    ['entity' => 'device', 'id' => $device, 'action' => 'create', 'fields' => ['public_key' => self::publicKey(), 'name' => 'laptop', 'member_id' => '01997c7e-0000-7000-8000-0000000004fe', 'vouched_key' => self::publicKey()]],
+                ], 'previous' => null];
+            self::assertSame(1, $this->push($library, $uploader, $this->signed($founding))->received);
 
             $results = [];
             foreach ($delivery as $index) {
-                $results[self::idOf($case['operations'][$index])] = $this->push($library, $uploader, $this->signed($case['operations'][$index]));
+                $operation = ['library' => self::LOCAL] + $case['operations'][$index];
+                $operation['library'] = self::LOCAL;
+                $results[self::idOf($operation)] = $this->push($library, $uploader, $this->signed($operation));
             }
 
             foreach ($case['expect']['rejected'] as $id) {
@@ -141,6 +149,7 @@ final class PermissionConformancePushTest extends KernelTestCase
 
         self::assertSame([
             'An unsigned operation is refused, with or without roles',
+            'FOUNDING: an unsigned founding is refused',
             'an author written in capitals is not read, so the cloud\'s id in capitals gets none of its power (SEG-029)',
             'the key of a device counts only through its own create, and a registered one never changes',
         ], $listing);

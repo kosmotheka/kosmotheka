@@ -35,7 +35,6 @@ final class CloudAuthorTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
     private const int T = 1_727_000_000_000;
     private const string ADMIN = '01997c7e-0000-7000-8000-000000000011';
     private const string LAURA = '01997c7e-0000-7000-8000-000000000013';
@@ -48,6 +47,9 @@ final class CloudAuthorTest extends WebTestCase
 
     private SigningDevice $laptop;
 
+    /** The library the laptop founds: its id derives from the laptop's key (D97). */
+    private string $local;
+
     protected function setUp(): void
     {
         $this->client = self::createClient();
@@ -55,6 +57,7 @@ final class CloudAuthorTest extends WebTestCase
         self::getContainer()->get('cache.auth_challenge')->clear();
         $this->session = $this->signInNewDevice($this->client, 'family@example.com');
         $this->laptop = SigningDevice::fromSession($this->session);
+        $this->local = $this->laptop->libraryId();
     }
 
     public function testTheCloudRegistersItselfAfterTheBatchThatNamesItAndOnlyOnce(): void
@@ -75,7 +78,7 @@ final class CloudAuthorTest extends WebTestCase
         self::assertSame($identity['key'], $row['public_key'] ?? null);
 
         // Another push does not write another one.
-        $this->push($cloud, [$this->laptop->publisher(self::LOCAL, self::T + 20)]);
+        $this->push($cloud, [$this->laptop->publisher($this->local, self::T + 20)]);
         self::assertCount(1, $this->cloudOperations($cloud));
     }
 
@@ -84,13 +87,13 @@ final class CloudAuthorTest extends WebTestCase
         $cloud = $this->createCloud();
         $identity = $this->identityOf($cloud);
         $operations = $this->family($cloud, $identity['id']);
-        $this->call('POST', "/v1/cloud/libraries/$cloud/link", ['schemaVersion' => $this->schema(), 'operation' => $operations[2]]);
+        $this->call('POST', "/v1/cloud/libraries/$cloud/link", ['schemaVersion' => $this->schema(), 'operation' => $operations[1]]);
 
         // The batches arrive in HLC order: the link, which names the cloud, comes in the second.
-        $first = $this->push($cloud, [$operations[0], $operations[1]]);
-        self::assertSame(2, $first['received']);
+        $first = $this->push($cloud, [$operations[0]]);
+        self::assertSame(1, $first['received']);
         self::assertCount(0, $this->cloudOperations($cloud), 'not named yet');
-        $this->push($cloud, [$operations[2], $operations[3]]);
+        $this->push($cloud, [$operations[1], $operations[2]]);
 
         self::assertSame(['device.register'], array_column($this->cloudOperations($cloud), 'intent'));
     }
@@ -236,29 +239,26 @@ final class CloudAuthorTest extends WebTestCase
         $cloud = $this->createCloud();
         $identity = $this->identityOf($cloud);
         $response = $this->push($cloud, $this->family($cloud, $namesTheCloud ? $identity['id'] : null));
-        self::assertSame(['received' => 4, 'known' => 0, 'rejected' => 0], $response);
+        self::assertSame(['received' => 3, 'known' => 0, 'rejected' => 0], $response);
 
         return [$cloud, $identity];
     }
 
     /**
-     * The laptop's registration, the link (which names the cloud's device if asked) and the first roles: an
-     * administrator, and Laura, an editor, who is only a row.
+     * The laptop's founding (it is the administrator), the link (which names the cloud's device if asked) and Laura,
+     * an editor, who is only a row.
      *
-     * @return list<array<string, mixed>> registration, library, link, roles
+     * @return list<array<string, mixed>> founding, link, roles
      */
     private function family(string $cloud, ?string $cloudDevice): array
     {
         $fields = ['cloud_library_id' => $cloud, 'cloud_server' => SigningDevice::SERVER] + (null === $cloudDevice ? [] : ['cloud_device_id' => $cloudDevice]);
 
         return [
-            $this->laptop->registration(self::LOCAL, self::T),
-            $this->laptop->sign(self::LOCAL, self::T + 1, 'library.create', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'create', 'fields' => ['name' => 'Family']]]),
-            $this->laptop->sign(self::LOCAL, self::T + 2, 'library.link', [['entity' => 'library', 'id' => self::LOCAL, 'action' => 'update', 'fields' => $fields]]),
-            $this->laptop->sign(self::LOCAL, self::T + 3, 'family.roles', [
-                ['entity' => 'member', 'id' => self::ADMIN, 'action' => 'create', 'fields' => ['name' => 'Admin', 'role' => 'admin', 'can_share' => true]],
+            $this->laptop->founding(self::T, self::ADMIN, personName: 'Admin'),
+            $this->laptop->sign($this->local, self::T + 1, 'library.link', [['entity' => 'library', 'id' => $this->local, 'action' => 'update', 'fields' => $fields]]),
+            $this->laptop->sign($this->local, self::T + 2, 'family.roles', [
                 ['entity' => 'member', 'id' => self::LAURA, 'action' => 'create', 'fields' => ['name' => 'Laura', 'role' => 'editor']],
-                ['entity' => 'device', 'id' => $this->laptop->id, 'action' => 'update', 'fields' => ['member_id' => self::ADMIN]],
             ]),
         ];
     }

@@ -25,7 +25,7 @@ final class CloudEventsControllerTest extends WebTestCase
     use DeviceAuthTestTrait;
     use MailerAssertionsTrait;
 
-    private const string LOCAL = '00000000-0000-7000-8000-000000000001';
+    private const string FOUNDER = '01997c7e-0000-7000-8000-000000000011';
     private const int T = 1_727_000_000_000;
     private const string TOPIC_PREFIX = 'urn:kosmotheka:';
 
@@ -186,7 +186,7 @@ final class CloudEventsControllerTest extends WebTestCase
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
         RecordingHub::reset();
-        $unsigned = $this->laptop->publisher(self::LOCAL, self::T + 30);
+        $unsigned = $this->laptop->publisher($this->laptop->libraryId(), self::T + 30);
         unset($unsigned['signature']);
 
         $response = $this->push($this->familySession, $cloud, [$unsigned]);
@@ -254,7 +254,7 @@ final class CloudEventsControllerTest extends WebTestCase
     public function testNoNoticeCarriesAnythingButTheEmptyObject(): void
     {
         $cloud = $this->uploadedLibrary($this->familySession, $this->laptop);
-        $this->push($this->familySession, $cloud, [$this->laptop->publisher(self::LOCAL, self::T + 40, previous: $this->laptop->latest(self::LOCAL))]);
+        $this->push($this->familySession, $cloud, [$this->laptop->publisher($this->laptop->libraryId(), self::T + 40, previous: $this->laptop->latest($this->laptop->libraryId()))]);
 
         self::assertNotSame([], RecordingHub::$updates);
         foreach (RecordingHub::$updates as $update) {
@@ -434,10 +434,10 @@ final class CloudEventsControllerTest extends WebTestCase
     private function upload(SigningDevice $device, string $cloud): array
     {
         return [
-            $device->registration(self::LOCAL, self::T),
-            $device->link(self::LOCAL, $cloud, self::T + 1),
-            $device->publisher(self::LOCAL, self::T + 2),
-            $device->publisher(self::LOCAL, self::T + 3),
+            $device->founding(self::T, self::FOUNDER),
+            $device->link($device->libraryId(), $cloud, self::T + 1),
+            $device->publisher($device->libraryId(), self::T + 2),
+            $device->publisher($device->libraryId(), self::T + 3),
         ];
     }
 

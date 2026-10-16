@@ -15,8 +15,8 @@ use App\Enum\Role;
  */
 interface LibraryView
 {
-    /** Whether any member has a role. Until then, everyone may do everything. */
-    public function hasRoles(): bool;
+    /** Whether the library is founded: some member has a role. Until then nobody writes but the founding (D97). */
+    public function founded(): bool;
 
     /** The role of the person `$device` belongs to. Null when the device belongs to nobody or its person has no role. */
     public function roleOfDevice(string $device): ?Role;

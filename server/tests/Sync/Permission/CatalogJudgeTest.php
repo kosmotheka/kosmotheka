@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Sync\Permission;
 
-use App\Dto\OperationPayload;
 use App\Entity\Catalog\Tag;
 use App\Enum\CatalogEntity;
 use App\Enum\OperationStatus;
@@ -35,27 +34,10 @@ final class CatalogJudgeTest extends KernelTestCase
         $this->em = self::getContainer()->get(EntityManagerInterface::class);
     }
 
-    public function testALateOperationInALibraryWithoutRolesFencesOrRevocationsDoesNotRebuild(): void
+    public function testALateOperationRebuildsTheLibrary(): void
     {
         $judged = $this->library();
-        $judged->deliver(Judged::op(40, self::ADMIN_DEVICE, [Ops::create(CatalogEntity::Tag, '01997c7e-0000-7000-8000-0000000000d1', ['name' => 'Newer'])]));
-        $this->ghost($judged);
-
-        $late = $judged->deliver(Judged::op(30, self::ADMIN_DEVICE, [Ops::create(CatalogEntity::Tag, '01997c7e-0000-7000-8000-0000000000d2', ['name' => 'Older'])]));
-
-        self::assertSame(OperationStatus::Applied, $late);
-        // A rebuild empties the catalog and applies the log again, and the ghost is not in the log.
-        self::assertSame(['Ghost', 'Newer', 'Older'], $this->tags($judged));
-    }
-
-    public function testALateOperationWhereTheOrderDecidesRebuildsTheLibrary(): void
-    {
-        $judged = $this->library();
-        $judged->deliver(Judged::op(10, self::ADMIN_DEVICE, [Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => 'k', 'name' => 'Laptop'])]));
-        $judged->deliver(Judged::op(20, self::ADMIN_DEVICE, [
-            Ops::create(CatalogEntity::Member, self::ADMIN, ['name' => 'Tersoal', 'role' => 'admin', 'can_share' => true]),
-            Ops::update(CatalogEntity::Device, self::ADMIN_DEVICE, ['member_id' => self::ADMIN]),
-        ]));
+        $judged->deliver(Judged::founding(10, self::ADMIN_DEVICE, self::ADMIN));
         $judged->deliver(Judged::op(40, self::ADMIN_DEVICE, [Ops::create(CatalogEntity::Tag, '01997c7e-0000-7000-8000-0000000000d1', ['name' => 'Newer'])]));
         $this->ghost($judged);
 
@@ -74,15 +56,12 @@ final class CatalogJudgeTest extends KernelTestCase
     public function testAFenceThatArrivesBeforeItsOperationIsJudgedAgainWhenItArrives(): void
     {
         $judged = $this->library();
-        $register = static fn (int $time, string $device): OperationPayload => Judged::op($time, $device, [Ops::create(CatalogEntity::Device, $device, ['public_key' => 'k', 'name' => 'Device'])]);
-        $judged->deliver($registerAdmin = $register(1, self::ADMIN_DEVICE));
-        $judged->deliver($registerHugo = $register(2, self::HUGO_DEVICE));
+        $judged->deliver($founding = Judged::founding(1, self::ADMIN_DEVICE, self::ADMIN));
+        $judged->deliver($registerHugo = Judged::op(2, self::HUGO_DEVICE, [Ops::create(CatalogEntity::Device, self::HUGO_DEVICE, ['public_key' => 'k', 'name' => 'Device'])]));
         $roles = Judged::op(3, self::ADMIN_DEVICE, [
-            Ops::create(CatalogEntity::Member, self::ADMIN, ['name' => 'Tersoal', 'role' => 'admin', 'can_share' => true]),
             Ops::create(CatalogEntity::Member, self::HUGO, ['name' => 'Hugo', 'role' => 'editor', 'can_share' => false]),
-            Ops::update(CatalogEntity::Device, self::ADMIN_DEVICE, ['member_id' => self::ADMIN]),
             Ops::update(CatalogEntity::Device, self::HUGO_DEVICE, ['member_id' => self::HUGO]),
-        ], $registerAdmin->id);
+        ], $founding->id);
         $older = Judged::op(4, self::HUGO_DEVICE, [Ops::create(CatalogEntity::Tag, '01997c7e-0000-7000-8000-0000000000d1', ['name' => 'Older edit'])], $registerHugo->id);
         $known = Judged::op(5, self::HUGO_DEVICE, [Ops::create(CatalogEntity::Tag, '01997c7e-0000-7000-8000-0000000000d2', ['name' => 'Known edit'])], $older->id);
         $demotion = Judged::op(6, self::ADMIN_DEVICE, [

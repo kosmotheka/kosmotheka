@@ -49,7 +49,7 @@ Dos defensas:
 - **Cada dispositivo numera lo suyo.** Cada cambio dice cuál fue el anterior de ese mismo dispositivo, así que no se puede intercalar uno nuevo en medio de los antiguos sin que se note. *(`previous`, la cadena de cada autor.)*
 - **Al quitar poder se anota hasta dónde se le cree.** Quien quita el rol a un dispositivo apunta, en ese mismo cambio, cuál es el último cambio de ese dispositivo que ha visto. Lo que aparezca después con fecha anterior no se cree: queda como petición. *(Valla, `fence`, `trusted_through`.)*
 
-Lo mismo se hace una vez para todos al activar los roles en una biblioteca: desde ese momento, nada fechado antes y aparecido después se da por bueno sin más. *(Sello, `seal`.)*
+Y no hay un momento en que una biblioteca pase de no tener roles a tenerlos, que sería fechable hacia atrás: nace con su administrador, y solo vale la fundación de quien puede derivar el id de su clave (D97). *(Fundación, `founding`.)*
 
 *Construidas.*
 

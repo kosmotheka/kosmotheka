@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\DataFixtures\SigningDevice;
 use App\Dto\ChangePayload;
 use App\Dto\OperationPayload;
 use App\Entity\CloudLibrary;
+use App\Enum\CatalogEntity;
 use App\Enum\OperationStatus;
 use App\Repository\CloudOperationRepository;
+use App\Sync\LibraryId;
 use App\Sync\Permission\CatalogJudge;
 use App\Sync\SchemaVersion;
 use Symfony\Component\Uid\Uuid;
@@ -39,6 +42,23 @@ final readonly class Judged
     public static function op(int $time, string $device, array $changes, ?string $previous = null, ?string $id = null): OperationPayload
     {
         return new OperationPayload($id ?? Uuid::v7()->toRfc4122(), '01997c7e-0000-7000-8000-00000000aaaa', Ops::hlc($time, 0, $device), 'test.op', $changes, $previous, self::SIGNATURE);
+    }
+
+    /**
+     * The founding of a library (D97), by `$device`: the library row, its first person as an administrator and the
+     * device assigned to her. The library id derives from a key made for the occasion, so it is not the one of the
+     * other operations here: the judge does not compare the two.
+     */
+    public static function founding(int $time, string $device, string $member, ?string $id = null): OperationPayload
+    {
+        $key = SigningDevice::generate($device)->publicKey;
+        $library = LibraryId::derive($key, SigningDevice::FOUNDING_NONCE) ?? throw new \LogicException('No library id.');
+
+        return new OperationPayload($id ?? Uuid::v7()->toRfc4122(), $library, Ops::hlc($time, 0, $device), 'library.found', [
+            Ops::create(CatalogEntity::Library, $library, ['name' => 'Family', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]),
+            Ops::create(CatalogEntity::Member, $member, ['name' => 'Founder', 'role' => 'admin', 'can_share' => true]),
+            Ops::create(CatalogEntity::Device, $device, ['public_key' => $key, 'name' => 'Device', 'member_id' => $member, 'vouched_key' => $key]),
+        ], null, self::SIGNATURE);
     }
 
     /** Stores the operation, takes it and settles the library; returns what became of it in the end. */

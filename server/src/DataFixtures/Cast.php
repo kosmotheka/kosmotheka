@@ -20,12 +20,6 @@ final class Cast
     public const string KENJI = 'kenji@tanaka.test';
     public const string JHONNY = 'jhonny@example.test';
 
-    /** A local library id that looks random: the Garcías' own. */
-    public const string GARCIA_LOCAL = '0199a3b2-7c4e-7d10-9a52-6f3e81c0b4d7';
-
-    /** The fixed id of «Mi biblioteca» (D46): every old install has it. */
-    public const string DEFAULT_LOCAL = '00000000-0000-7000-8000-000000000001';
-
     /** Another local id, for operations that do not belong to the library they are pushed to. */
     public const string OTHER_LOCAL = '00000000-0000-7000-8000-000000000002';
 
@@ -51,6 +45,18 @@ final class Cast
     public static function token(SigningDevice $device): string
     {
         return sodium_bin2base64(hash('sha256', 'kosmotheka fixtures token: '.$device->id.$device->publicKey, true), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    }
+
+    /** The Garcías' library: Ana's laptop founds it, so its id derives from the laptop's key (D97). */
+    public static function garciaLocal(): string
+    {
+        return self::anaLaptop()->libraryId();
+    }
+
+    /** Kenji's library, founded by his laptop. Jhonny can link a cloud library to this id, never found it. */
+    public static function defaultLocal(): string
+    {
+        return self::kenjiLaptop()->libraryId();
     }
 
     public static function anaLaptop(): SigningDevice

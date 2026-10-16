@@ -118,7 +118,7 @@ final readonly class AccessCutter
      */
     public function needsAPerson(CloudLibrary $library): bool
     {
-        return new CatalogLibraryView($this->entityManager, $library)->hasRoles();
+        return new CatalogLibraryView($this->entityManager, $library)->founded();
     }
 
     /**

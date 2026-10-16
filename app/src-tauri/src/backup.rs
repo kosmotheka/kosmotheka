@@ -108,6 +108,10 @@ struct LibraryBackup {
     entities: Rows,
     /// The operation log, kept as history. It is not replayed on restore.
     operations: Vec<Value>,
+    /// The nonce the library was founded with (D97). Restoring keeps the id only on the device whose key,
+    /// with this nonce, gives it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    founding_nonce: Option<String>,
 }
 
 #[derive(Debug, Default, PartialEq, Serialize)]
@@ -171,11 +175,17 @@ pub fn export(
         }
         summary.books += entities[Entity::Edition.table()].len();
         summary.copies += entities[Entity::Copy.table()].len();
+        let founding_nonce: Option<String> = conn.query_row(
+            "SELECT founding_nonce FROM libraries WHERE id = ?1",
+            [id],
+            |row| row.get(0),
+        )?;
         backed_up.push(LibraryBackup {
             id: id.clone(),
             name,
             operations: operations(conn, id)?,
             entities,
+            founding_nonce,
         });
     }
     summary.libraries = backed_up.len();
@@ -360,7 +370,12 @@ pub fn restore(
                 summary.skipped.push(library.name);
                 continue;
             };
-            let id = place_library(&tx, target.as_deref(), &library.name)?;
+            let id = place_library(
+                &tx,
+                target.as_deref(),
+                &library.name,
+                library.founding_nonce.as_deref(),
+            )?;
             record_rows(&tx, &id, &library.entities)?;
             let name = tx.query_row("SELECT name FROM libraries WHERE id = ?1", [&id], |r| {
                 r.get(0)
@@ -382,15 +397,28 @@ pub fn restore(
 
 /// Makes sure the library a backup goes into exists, named as in the backup unless
 /// another library here already has that name. Returns its id.
-fn place_library(tx: &Transaction<'_>, id: Option<&str>, name: &str) -> Result<String> {
+fn place_library(
+    tx: &Transaction<'_>,
+    id: Option<&str>,
+    name: &str,
+    founding_nonce: Option<&str>,
+) -> Result<String> {
     let name = libraries::unused_name(tx, name, id)?;
     match id {
         Some(id) if libraries::library_exists(tx, id)? => {
             libraries::rename_in(tx, id, &name)?;
             Ok(id.to_owned())
         }
-        Some(id) => libraries::create_with_id(tx, id, &name),
-        None => libraries::create_with_id(tx, &ops::new_id(), &name),
+        // A library keeps the id it had only when this device founded it with its own key (D97): the id derives
+        // from the key and the nonce, and nobody else can found that id. Anywhere else, a restore founds a new
+        // library with the catalogue of the old one.
+        Some(id) => match founding_nonce {
+            Some(nonce) if libraries::derives_here(tx, id, nonce)? => {
+                libraries::found_as(tx, id, nonce, &name)
+            }
+            _ => libraries::found(tx, &name),
+        },
+        None => libraries::found(tx, &name),
     }
 }
 
@@ -449,7 +477,7 @@ pub(crate) fn read_library(conn: &Connection, library: &str) -> Result<Rows> {
 
 /// Records `rows` as a new library with a random id and makes it the active one.
 pub(crate) fn copy_as_new(tx: &Transaction<'_>, rows: &Rows, name: &str) -> Result<String> {
-    let to = place_library(tx, None, name)?;
+    let to = place_library(tx, None, name, None)?;
     record_rows_as(tx, &to, rows, "library.duplicate")?;
     ops::set_active_library(tx, &to)?;
     Ok(to)
@@ -536,9 +564,19 @@ fn count(conn: &Connection, library: &str, entity: Entity) -> Result<usize> {
     Ok(usize::try_from(n).unwrap_or_default())
 }
 
+/// Nothing in it but the person who founded it: the people a library has with a role are not its catalogue.
 fn library_is_empty(conn: &Connection, library: &str) -> Result<bool> {
     for entity in CONTENTS {
-        if count(conn, library, entity)? > 0 {
+        let rows = if entity == Entity::Member {
+            conn.query_row(
+                "SELECT count(*) FROM members WHERE library_id = ?1 AND role IS NULL",
+                [library],
+                |row| row.get::<_, i64>(0),
+            )?
+        } else {
+            i64::try_from(count(conn, library, entity)?).unwrap_or(i64::MAX)
+        };
+        if rows > 0 {
             return Ok(false);
         }
     }
@@ -557,7 +595,6 @@ mod tests {
     use crate::db;
     use crate::libraries;
     use crate::marks::{self, Mark};
-    use crate::people::PersonPick;
 
     fn temp(name: &str) -> std::path::PathBuf {
         let dir =
@@ -633,15 +670,7 @@ mod tests {
         )
         .unwrap();
         catalog::create_book(&mut source, &lib, &book("The Dispossessed", None), None).unwrap();
-        marks::claim_person(
-            &mut source,
-            &lib,
-            &PersonPick {
-                id: None,
-                name: "Tersoal".into(),
-            },
-        )
-        .unwrap();
+        crate::people::name_founder(&mut source, &lib, "Tersoal").unwrap();
         let earthsea_edition = catalog::list_books(&source, &lib, &BookFilter::default()).unwrap()
             [0]
         .edition_id
@@ -671,6 +700,7 @@ mod tests {
         .unwrap();
 
         let target_covers = Covers::new(dir.join("target-covers")).unwrap();
+        // Another device: it cannot found the id the library had (D97), so the catalogue goes into a new library.
         let mut target = db::open_in_memory().unwrap();
         let to = ops::active_library(&target).unwrap();
         let restored = restore(
@@ -692,16 +722,17 @@ mod tests {
             }
         );
         assert_eq!(restored.restored.len(), 1);
-        assert_eq!(
-            restored.restored[0].id, lib,
-            "same id, so it merges on sync"
+        let new = restored.restored[0].id.clone();
+        assert_ne!(
+            new, lib,
+            "another device cannot found the id the library had (D97)"
         );
         assert_eq!(
             (restored.restored[0].books, restored.restored[0].copies),
             (2, 2)
         );
         assert_eq!(restored.covers, 1);
-        let books = catalog::list_books(&target, &lib, &BookFilter::default()).unwrap();
+        let books = catalog::list_books(&target, &new, &BookFilter::default()).unwrap();
         assert_eq!(books.len(), 2);
         assert_eq!(books[0].title, "A Wizard of Earthsea");
         assert_eq!(books[0].authors, vec!["Ursula K. Le Guin"]);
@@ -714,20 +745,20 @@ mod tests {
             ..BookFilter::default()
         };
         assert_eq!(
-            catalog::list_books(&target, &lib, &filter).unwrap().len(),
+            catalog::list_books(&target, &new, &filter).unwrap().len(),
             1
         );
         let intent: String = target
             .query_row(
                 "SELECT intent FROM operations
-                  WHERE library_id = ?1 AND intent NOT IN ('device.register', 'library.create')",
-                [&lib],
+                  WHERE library_id = ?1 AND intent NOT IN ('device.register', 'library.found')",
+                [&new],
                 |r| r.get(0),
             )
             .unwrap();
         assert_eq!(intent, "backup.restore");
         assert_eq!(
-            mark_status(&target, &lib, &earthsea_work),
+            mark_status(&target, &new, &earthsea_work),
             Some("finished".into()),
             "a mark survives the backup and the restore"
         );
@@ -753,7 +784,9 @@ mod tests {
             None,
         )
         .unwrap();
-        let mut target = db::open_in_memory().unwrap();
+        // The same device restoring its own backup keeps the ids (D97); the seed is not in the backup (D58), so
+        // `open_in_memory_as` stands for a device whose key survived.
+        let mut target = db::open_in_memory_as(&source).unwrap();
         let to = ops::active_library(&target).unwrap();
         let restored =
             restore(&mut target, &to, &covers, File::open(&file).unwrap(), None).unwrap();
@@ -788,10 +821,10 @@ mod tests {
     }
 
     #[test]
-    fn a_restored_device_writes_a_new_chain_and_syncs_with_peers_that_hold_the_old_one() {
-        // A backup carries neither the device id nor the key (D58): the device that
-        // restores keeps its own identity, so its chain starts from its own log and
-        // never collides with the one the backed-up device left on its peers.
+    fn a_restored_device_founds_a_new_library_and_syncs_it_with_peers() {
+        // A backup carries neither the device id nor the key (D58), so a device that restores is another one for
+        // its peers: it cannot found the id the library had (D97), and the catalogue goes into a new library
+        // with its own chain.
         let dir = temp("chain");
         let covers = Covers::new(dir.join("covers")).unwrap();
         let mut old = db::open_in_memory().unwrap();
@@ -823,22 +856,22 @@ mod tests {
         )
         .unwrap();
         assert_eq!(summary.restored.len(), 1);
-        catalog::create_book(&mut restored, &lib, &book("After the restore", None), None).unwrap();
-        catalog::create_book(&mut restored, &lib, &book("And again", None), None).unwrap();
+        let new = summary.restored[0].id.clone();
+        assert_ne!(new, lib);
+        catalog::create_book(&mut restored, &new, &book("After the restore", None), None).unwrap();
 
-        assert_eq!(sync_pair(&mut restored, &mut peer, &lib), (0, 0));
-        assert_eq!(sync_pair(&mut restored, &mut old, &lib), (0, 0));
-        assert_eq!(sync_pair(&mut peer, &mut old, &lib), (0, 0));
-        let sorted = |conn: &Connection| {
-            let mut titles = titles(conn, &lib);
+        // The restored library reaches the peer whole, and the old one is untouched.
+        assert_eq!(sync_pair(&mut peer, &mut restored, &new), (0, 0));
+        let sorted = |conn: &Connection, library: &str| {
+            let mut titles = titles(conn, library);
             titles.sort();
-            titles.dedup();
             titles
         };
-        assert_eq!(sorted(&restored), sorted(&peer));
-        assert_eq!(sorted(&peer), sorted(&old));
-        assert!(sorted(&peer).contains(&"After the restore".to_owned()));
-        assert!(sorted(&peer).contains(&"After the backup".to_owned()));
+        assert_eq!(sorted(&peer, &new), sorted(&restored, &new));
+        assert!(sorted(&peer, &new).contains(&"Before the backup".to_owned()));
+        assert!(sorted(&peer, &new).contains(&"After the restore".to_owned()));
+        assert_eq!(sorted(&peer, &lib), sorted(&old, &lib));
+        assert!(!sorted(&peer, &lib).contains(&"After the restore".to_owned()));
     }
 
     #[test]

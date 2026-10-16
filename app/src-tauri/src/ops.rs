@@ -555,7 +555,6 @@ pub fn clear_library(conn: &Connection, library: &str) -> Result<()> {
     conn.execute("DELETE FROM search_index WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM row_authors WHERE library_id = ?1", [library])?;
     conn.execute("DELETE FROM device_fences WHERE library_id = ?1", [library])?;
-    conn.execute("DELETE FROM device_seals WHERE library_id = ?1", [library])?;
     conn.execute(
         "DELETE FROM device_fence_chains WHERE library_id = ?1",
         [library],
@@ -794,10 +793,11 @@ mod tests {
         .unwrap();
 
         assert_eq!(renamed, "B");
-        assert_eq!(count(&tx, "members"), 0);
-        // Three, plus the two of the first start: the library's creation and the
-        // registration of this device's key that came with it.
-        assert_eq!(count(&tx, "operations"), 5);
+        // Only the person who founded the library is left.
+        assert_eq!(count(&tx, "members"), 1);
+        // Three, plus the one of the first start: the founding of the library, which
+        // registers this device's key too.
+        assert_eq!(count(&tx, "operations"), 4);
     }
 
     #[test]
@@ -822,7 +822,7 @@ mod tests {
         assert!(
             matches!(error, Error::InvalidOperation(e) if e.code == OperationErrorCode::UnknownField)
         );
-        assert_eq!(count(&tx, "members"), 0);
+        assert_eq!(count(&tx, "members"), 1, "only the founder");
         assert_eq!(count(&tx, "operations"), logged);
     }
 
