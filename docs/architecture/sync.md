@@ -95,6 +95,7 @@ Para cada cambio de cada operación, en orden de HLC:
 | Modificar una fila que no existe | Se ignora (fue borrada en cascada) |
 | Borrar | Se borra y se deja una **lápida** con la marca |
 | Referencia **obligatoria** a una fila que ya no existe (un ejemplar de un libro borrado en otro dispositivo) | Se ignora el cambio: la fila habría desaparecido en cascada de todos modos |
+| Referencia a una fila que **nunca existió** (obligatoria u opcional, en cualquier campo, `devices.member_id` incluido) | Se ignora el cambio entero, igual que en el servidor (CON-007). La app lo comprueba ella misma (`sync::references_exist`, también para lo que escribe el propio dispositivo) en vez de fiarse de las claves foráneas de SQLite, que `devices.member_id` no tiene |
 | Referencia **opcional** a una fila con lápida (la editorial de una edición, el dueño de un ejemplar) | El cambio se aplica con ese campo a `null` (D89) |
 
 Para aplicar «campo a campo» cada dispositivo guarda, por cada campo de cada fila, la marca HLC que lo escribió por última vez (tabla `field_versions`). Los borrados quedan en `tombstones`.

@@ -111,6 +111,16 @@ Cada biblioteca de la nube tiene un dispositivo propio con su clave (D95). La cl
 - Se genera con `openssl rand -base64 32`. En producción la define el entorno (7.9) y entra en las copias de seguridad **aparte de la base de datos**: una copia de la base sin el secreto no permite firmar.
 - **Perderla deja a la nube sin poder firmar** en las bibliotecas ya creadas (la clave cifrada no se puede abrir; el servidor lo dice con una excepción, no con datos basura). Cambiarla tiene el mismo efecto. Las bibliotecas creadas con el secreto vacío reciben su identidad la primera vez que se listan o se enlazan, si el secreto ya está definido.
 
+### Sellar de nuevo las claves de la nube al desplegar (SEG-074, 16/10/2026)
+
+Desde esta versión la clave privada de cada biblioteca de la nube se guarda como `v1.` más XChaCha20-Poly1305 con **el id de su biblioteca** como dato asociado: copiar el valor de una biblioteca a la fila de otra ya no lo abre. Las claves guardadas antes (`secretbox`, sin versión) se siguen leyendo, y la migración `Version20261016120000` las sella otra vez, una por una, con el mismo `CLOUD_KEY_SECRET`. **Hay que desplegar código y migración a la vez.** Pasos, en el servidor (los hace el maintainer; ningún agente entra en él):
+
+1. **Copia antes**, fuera del VPS: un volcado de la base (`pg_dump`) y una copia del `.env.local`. Sin el secreto la copia de la base no sirve para firmar, y sin la copia no hay vuelta atrás: la migración **no se deshace** (`down` lanza una excepción).
+2. Comprobar que `CLOUD_KEY_SECRET` está en `.env.local` y es el mismo de siempre (la migración lo lee del entorno solo si hay claves que sellar).
+3. Desplegar el código nuevo y `php bin/console doctrine:migrations:migrate`. La migración es una sola transacción: abre y sella todas las claves antes de escribir ninguna, y **se aborta sin cambiar nada** si falta el secreto o si alguna clave no abre con él. Si no hay nada que sellar no pide el secreto.
+4. Comprobarlo: `SELECT count(*) FROM cloud_library WHERE cloud_secret_key IS NOT NULL AND cloud_secret_key NOT LIKE 'v1.%'` debe dar 0, y un `push` a una biblioteca con la nube nombrada tiene que seguir firmando.
+5. **Si el despliegue se queda a medias:** código nuevo con claves viejas funciona (lee las dos); la migración que falla no cambia nada. Código **viejo** con claves ya selladas de nuevo no las abre: la nube dice «no puede firmar aquí» (`noIdentity`) y no hay datos en riesgo; se arregla poniendo el código nuevo, o, si hay que volver al viejo, restaurando la copia del paso 1.
+
 ### Qué no debe llegar al registro de accesos (7.1, D77)
 
 Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador por Google: `GET /v1/auth/google/connect?attempt=…` y `GET /v1/auth/google/callback?code=…&state=…`. **No pueden escribirse en el registro de accesos** de nginx ni de ningún proxy o CDN delante. En desarrollo lo hace `map $request_uri $loggable` en `docker/nginx/nginx.conf` con `access_log … if=$loggable` en el sitio; en producción, lo mismo (y sin guardar la cabecera `Referer` de esas rutas; el servidor ya responde `Referrer-Policy: no-referrer` y `Cache-Control: no-store`).

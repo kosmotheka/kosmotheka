@@ -183,7 +183,7 @@ Pedida por el maintainer el 10/10/2026. Con 7.1 a 7.7 construidos (desde 7.8 no 
 **Hecha la primera pasada el 15/10/2026** ([auditoría](../audits/2026-10-15.md)): 11 hallazgos, ninguno crítico ni alto; 7 arreglados el mismo día. Queda pendiente la parte de cuentas (entrar con Google, segundo factor, límites) y `library-access` completo. Decisiones abiertas de esa pasada: los topes por cuenta de los proveedores (SEG-052), guardar como ausente un detalle que falla (SEG-053) y los límites de las rutas de la nube (abajo).
 
 Apuntado para esa revisión:
-- Las rutas de la nube (`pull`, `push`, `claim`) no tienen límite de peticiones; solo las de la cuenta. **Decidido por el maintainer el 15/10/2026:** por cuenta, subir y bajar 600 por hora; reclamar y enlazar, 30 por hora; el token de avisos, 60 por hora. Hecho el 15/10/2026 (`1325d51`).
+- Las rutas de la nube (`pull`, `push`, `claim`) no tienen límite de peticiones; solo las de la cuenta. **Decidido por el maintainer el 15/10/2026:** por cuenta, subir y bajar 600 por hora; reclamar y enlazar, 30 por hora; el token de avisos, 60 por hora. Hecho el 15/10/2026 (`1325d51`). **Cambiado el 16/10/2026 (SEG-037):** el token de avisos vive 10 minutos y su límite pasa a 120 por hora.
 - Un móvil desbloqueado de alguien **sin cuenta**, en manos de otro, permite registrar una cuenta desde él y quedar enlazado como esa persona de forma duradera (el enlace sobrevive a devolver el móvil). **Decidido por el maintainer el 15/10/2026:** se acepta como riesgo; quien administra ve quién tiene cuenta y puede retirarle el acceso (D98).
 - La nube solo vincula sola un dispositivo que nadie ha vallado nunca. Los que ya existían cuando se selló la biblioteca (D94) llevan su marca, así que, si son de nadie, los vincula quien administra. Comprobar que no deja fuera ningún caso legítimo.
 - `CloudEventsControllerTest::testTheTokenCoversTheAccountAndItsLibrariesAndExpiresInAnHour` falló una vez en una pasada completa y pasa sola: depende del reloj.
@@ -261,6 +261,8 @@ Apuntado para esa revisión:
 - Las condiciones de cada proveedor (uso no comercial, atribución) se revisan en [research/proveedores.md](../research/proveedores.md) antes de integrarlo; uno a uno.
 
 ### 7.9 Producción
+
+**Al desplegar la versión con SEG-074 (16/10/2026), sin olvidarlo:** copia de la base de datos y del `.env.local` **antes**, y desplegar a la vez el código y la migración `Version20261016120000`, que sella otra vez las claves de la nube y no se deshace. Los pasos, en [server.md](../development/server.md) («Sellar de nuevo las claves de la nube al desplegar»).
 
 **Antes de publicar la nube:** comprobar en un móvil real que un enlace de invitación abre la app sola y subir el `assetlinks.json` con las huellas (código hecho en 7.6.4; la lista está en «7.6 Invitar con un enlace»).
 
