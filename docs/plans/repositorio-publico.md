@@ -84,6 +84,8 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 
 ## Decidido (16/10/2026)
 
+- **Lo que sale de la clasificación** ([clasificacion-docs.md](../historico/clasificacion-docs.md)), aceptado entero por el maintainer: los hallazgos abiertos se cierran o se aceptan antes de abrir; SEG-023 y SEG-032 se publican; el buzón de Gmail y los datos del VPS, en genérico; `assetlinks.json` se queda; TMview, los titulares de marcas y el código de Claude Design salen del historial; la firma y las notas de producción pasan, lo genérico, a la guía y el resto a `library-privado/`; `server/.env.dev`, al escaneo de secretos; `VISION.md`, reescrito si lo que queda explica el proyecto o a privado si no. Encargo: [encargo-limpiar-docs.md](../historico/encargo-limpiar-docs.md).
+
 - **Diario de desarrollo público** (D90, enmendada): se publican las decisiones, los planes, el histórico de encargos, la arquitectura y las pruebas. Lo privado de verdad (hallazgos abiertos, firma, notas de producción) va a `library-privado/`. Sin segundo repositorio.
 - **Los ids de hallazgos se quedan en el código** y se publica el registro de los cerrados.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
