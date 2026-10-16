@@ -1,0 +1,50 @@
+---
+// The site has no root language: `/` sends each visitor to /es/ or /en/ from the language of their
+// browser, as web/index.html does for kosmotheka.com. No script from anyone else.
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kosmotheka</title>
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang="es" href="/es/" />
+    <link rel="alternate" hreflang="en" href="/en/" />
+    <script is:inline>
+      (function () {
+        var n = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+        location.replace((/^es\b/i.test(n) ? "/es/" : "/en/") + location.search);
+      })();
+    </script>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font: 500 18px/1.5 Figtree, system-ui, sans-serif;
+        background: #fff;
+        color: #0a0a0a;
+      }
+      a {
+        color: #4b53c2;
+        margin: 0 0.5em;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0a0a0a;
+          color: #f2f2f5;
+        }
+        a {
+          color: #8d9df5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <p><a href="/es/" lang="es">Español</a> · <a href="/en/" lang="en">English</a></p>
+  </body>
+</html>

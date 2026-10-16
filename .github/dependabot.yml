@@ -36,6 +36,13 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /site
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
   - package-ecosystem: composer
     directory: /server
     schedule:

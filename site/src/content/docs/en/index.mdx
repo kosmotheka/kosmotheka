@@ -1,0 +1,33 @@
+---
+title: Kosmotheka
+description: Documentation for Kosmotheka, the shared catalogue of everything your household owns.
+template: splash
+hero:
+  tagline: Everything your household owns, catalogued and shared.
+  actions:
+    - text: Using the app
+      link: /en/using-the-app/
+      icon: right-arrow
+    - text: Run your server
+      link: /en/run-your-server/
+      variant: minimal
+    - text: Contribute
+      link: /en/contribute/
+      variant: minimal
+---
+
+import { CardGrid, Card } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <Card title="Using the app" icon="open-book">
+    For anyone with the app in hand: adding books, sharing the library with the family and not losing
+    anything. [See what will be here](/en/using-the-app/).
+  </Card>
+  <Card title="Run your server" icon="laptop">
+    For anyone who wants their own server, with the few limits stated up front. [See what will be
+    here](/en/run-your-server/).
+  </Card>
+  <Card title="Contribute" icon="pencil">
+    For anyone who wants to help or to understand how it is built. [Start here](/en/contribute/).
+  </Card>
+</CardGrid>

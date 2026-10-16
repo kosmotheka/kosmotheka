@@ -1,0 +1,19 @@
+---
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+
+const text = "kosmotheka.com";
+---
+
+<a class="site-link" href="https://kosmotheka.com/" rel="noopener">{text}</a>
+<Default><slot /></Default>
+
+<style>
+  .site-link {
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+    text-decoration: none;
+  }
+  .site-link:hover {
+    color: var(--sl-color-white);
+  }
+</style>

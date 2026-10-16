@@ -1,0 +1,52 @@
+---
+import Default from "@astrojs/starlight/components/Footer.astro";
+
+const texts = {
+  es: {
+    license:
+      "Kosmotheka es software libre: la aplicación y el servidor, bajo la AGPL-3.0-or-later; la especificación de operaciones, bajo la MIT.",
+    trademark: "El nombre y el logotipo no entran en la licencia.",
+    trademarkLabel: "Política de marca",
+    privacy: "Política de privacidad",
+    privacyUrl: "https://kosmotheka.com/es/privacidad.html",
+  },
+  en: {
+    license:
+      "Kosmotheka is free software: the app and the server are under the AGPL-3.0-or-later, and the operation spec is under the MIT licence.",
+    trademark: "The name and the logo are not covered by the licence.",
+    trademarkLabel: "Trademark policy",
+    privacy: "Privacy policy",
+    privacyUrl: "https://kosmotheka.com/en/privacy.html",
+  },
+} as const;
+const t = texts[Astro.currentLocale === "en" ? "en" : "es"];
+---
+
+<Default><slot /></Default>
+<div class="legal">
+  <p>© 2026 Kosmotheka</p>
+  <p>{t.license} {t.trademark}</p>
+  <p>
+    <a href="https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md" rel="noopener"
+      >{t.trademarkLabel}</a
+    >
+    · <a href={t.privacyUrl} rel="noopener">{t.privacy}</a> ·
+    <a href="mailto:info@kosmotheka.com">info@kosmotheka.com</a>
+  </p>
+</div>
+
+<style>
+  .legal {
+    border-top: 1px solid var(--sl-color-hairline);
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+  .legal p {
+    margin: 0.25rem 0;
+  }
+  .legal a {
+    color: var(--sl-color-gray-2);
+  }
+</style>

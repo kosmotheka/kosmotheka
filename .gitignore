@@ -4,6 +4,8 @@ target/
 # Node
 node_modules/
 dist/
+# Astro (docs site): generated types and cache
+site/.astro/
 
 # Environment and secrets
 .env

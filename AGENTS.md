@@ -39,6 +39,7 @@ crates/domain/  Domain types, validation, HLC and operations; no storage or UI c
 spec/           Operation spec: JSON Schema and conformance cases (MIT licence)
 server/         Symfony sync server (PHP), with its own Docker setup in server/docker/
 docs/           Working documentation (Spanish); see docs/architecture/
+site/           Public documentation site (docs.kosmotheka.com): Starlight, built from Markdown
 ```
 
 Each part keeps its own tooling: the app and crates build in the `library-dev` Distrobox container, the server runs in its own Docker Compose project (`server/docker/`). The only thing they share is `spec/`, mounted read-only into the server's PHP container. See `server/AGENTS.md` for server-specific instructions.
@@ -146,6 +147,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | What's-new file has the app version's entry | `cd app && npm run check:whats-new` |
 | «Licences» list still covers what ships (needs cargo) | `cd app && npm run check:licenses` |
 | Regenerate the «Licences» list after changing a dependency (needs **Docker and the network**; builds the `cargo-about` image on first use, version fixed in `app/scripts/licenses.mjs`) | `cd app && npm run licenses` |
+| Documentation site (Starlight, `site/`): dev server / build (what the CI job `docs-site` runs) | `cd site && npm run dev` · `cd site && npm run build` |
 | Rust dependencies (CI job `rust-deps`) | `cargo deny check` (rules in `deny.toml`) · `cargo machete` |
 | Live tests against real services (network, not in CI) | `cargo test -p kosmotheka -- --ignored live_` |
 | Second instance with its own data (debug builds), to test LAN sync | `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b target/debug/kosmotheka` (with `npm run tauri dev` running) |
