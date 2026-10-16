@@ -69,7 +69,7 @@
 | D61 | Series y estados: lo tengo, me falta, lo deseo | aceptada |
 | D62 | Proveedores: todos los posibles, con las claves en el servidor | aceptada (precisada el 12/10/2026: Comic Vine, solo con clave propia; el 14/10/2026: BoardGameGeek, solo por el servidor y con cuenta; y el 15/10/2026: GameUPC, igual) |
 | D63 | Distribución: Google Play, sin iOS | aceptada |
-| D64 | La documentación de trabajo, fuera de la versión pública | abierta |
+| D64 | La documentación de trabajo, fuera de la versión pública | reemplazada por D90 (16/10/2026) |
 | D65 | Borrar una biblioteca y salir de ella | aceptada |
 | D66 | Registro de actividad para poder responder de lo que pasó | aceptada |
 | D67 | Enlaces para compartir y etiquetas QR: son de la biblioteca | aceptada |
@@ -907,7 +907,9 @@ Las organizaciones (un colegio o una ludoteca con muchas bibliotecas y personas)
 - **iOS, fuera:** exige un Mac y 99 $ al año.
 - Una **landing** pública explica el proyecto y enlaza a la tienda y al código.
 
-## D64 · La documentación de trabajo, fuera de la versión pública — `abierta`
+## D64 · La documentación de trabajo, fuera de la versión pública — `reemplazada por D90`
+
+**Cerrada por el maintainer el 16/10/2026:** la resuelve D90 (un solo repositorio, el historial limpiado una vez antes de abrirlo y la documentación interna en una carpeta ignorada). «Tendremos que tener cuidado para montarlo bien y ya está. No podemos tener muchos repos porque luego es inmantenible; prefiero que esté todo junto.»
 
 **Planteamiento del mantenedor (25/09/2026):** la documentación de trabajo (decisiones, planes, debates, investigación) no debería estar en la versión pública del repositorio: nadie tiene que ver sus notas mentales.
 

@@ -45,7 +45,8 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 - **Sin UnifiedPush:** solo FCM. D75 queda revisada y UnifiedPush pasa a «Ideas para el futuro».
 - **La guía de instalación, con dos caminos** (D48 precisada): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción. Es parte de 7.9, pero se escribe junto a la documentación pública (8.4).
 - **Dejar todo ordenado para abrir el repositorio, y la documentación publicada, en paralelo a la prueba cerrada.** El maintainer dedica ese tiempo a la ficha de Google Play, que lleva muchos datos; la sesión coordinadora y la de hitos, a ordenar el repositorio y la documentación.
-- **D64:** pendiente de que el maintainer confirme cerrarla como reemplazada por D90.
+- **D64 cerrada** como reemplazada por D90: un solo repositorio, todo junto.
+- **Inventario y orden de trabajo para abrir el repositorio:** [repositorio-publico.md](repositorio-publico.md). Primer encargo: los ficheros de la raíz ([encargo](../historico/encargo-ficheros-raiz.md)).
 
 ## Lo que se puede hacer ya, sin ti
 
