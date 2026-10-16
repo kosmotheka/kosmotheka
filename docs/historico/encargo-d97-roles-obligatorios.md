@@ -42,3 +42,32 @@ Firmas (D56), juzgar cada operación en cada dispositivo, las vallas (D84, D87),
 Servidor: `make check` después del último cambio. App: `npm run build`, `typecheck`, `lint`, `format:check`, `knip`, `check:spec`, `check:codes`; `cargo fmt --all --check`, `cargo clippy --all-targets -- -D warnings` y `cargo test`. La salida real de cada uno.
 
 Documentación: `spec/README.md`, `docs/architecture/` (operaciones, sincronización, permisos), `docs/plans/fase-7.md`, `docs/ROADMAP.md` y las notas de la versión en `docs/publicacion/novedades.md` (hay que borrar los datos de prueba).
+
+## Estado al cortar la primera sesión (16/10/2026) y cómo retomar
+
+La sesión que empezó la entrega 1 se quedó sin límite a medias, sin informe ni commit. Su trabajo está en el árbol de trabajo (unos 41 ficheros). **Quien retome no necesita su conversación:** empieza por `git status` y `git diff`, y por esta lista. Las decisiones de la fase 0 están en D97, D94 (reemplazada) y D46 (precisada) de `docs/DECISIONS.md`.
+
+**Hecho (sin commit):**
+- Dominio: `crates/domain/src/founding.rs` (fundación, `library_id` derivado de la clave y `founding_nonce`). El juez de Rust ya no tiene modo «sin roles». Las 81 pruebas del dominio pasan.
+- `spec/conformance/permissions.json`: de 75 a 69 casos (13 quitados, 7 de fundación nuevos, el resto reescritos). Los 69 pasan en Rust y en PHP. `spec/sync.json` está en 35.
+- Sello retirado en Rust (funciones, tabla `device_seals`, pruebas) y en PHP (`Seal`, el juez, migración `Version20261015214624`).
+- Juez de PHP: `Permissions.php` y `Sync/LibraryId.php`.
+- App: migración `0035_founding.sql`, `libraries::found`, `found_as` y `derives_here`; quitados `start_roles` y `retire_fixed_library`.
+- Copias: guardan `founding_nonce` y, al restaurar, conservan el id solo si este dispositivo lo deriva. La semilla de firma no va en las copias (D58), así que en un dispositivo nuevo ni la copia completa conserva los ids.
+- Ayudantes de pruebas en Rust: `share_as`, `assign_as` y `open_in_memory_as`.
+
+**Medido por la sesión coordinadora al retomar (16/10/2026):**
+- `cargo test -p kosmotheka-domain`: 81 pasan.
+- `cargo test -p kosmotheka`: 563 pasan y 14 fallan (backup ×2, cloud ×4, LAN ×3, people ×4, sync ×1), y hay un aviso de import sin uso (`crate::people::PersonPick`).
+- Servidor, `tests/Sync/Permission`, `tests/Sync/LibraryIdTest.php` y `tests/Entity`: 721 pruebas y 7 fallos (`CatalogJudgeTest` ×3, `CatalogLibraryViewHostileTest`, `PermissionConformancePushTest` ×2 y `CatalogSchemaTest`). La suite completa daba, según la sesión anterior, 20 errores y 171 fallos, sobre todo porque `SigningDevice`, `ScenarioFixtures` y `CloudSyncControllerTest` siguen subiendo bibliotecas sin fundación.
+- Base de pruebas del servidor migrada; la de desarrollo, no.
+
+**Falta, para cerrar la entrega 1 en verde** (las pruebas tienen que pasar enteras, así que entra parte de lo que el plan ponía en la 3):
+1. Rust: adaptar las 14 pruebas que fallan. Las que solo comprobaban el modo viejo se quitan; las que cubren algo que sigue valiendo se rehacen sobre una biblioteca fundada. Después, `cargo fmt --all --check`, `cargo clippy --all-targets -- -D warnings` y `cargo test`.
+2. Servidor: `SigningDevice` con su fundación, `ScenarioFixtures` y las pruebas de la nube que suben bibliotecas (`registration(`, unos 72 usos), con un ayudante común. Después, `make check` completo.
+3. `spec/operation.schema.json`: el campo `founding_nonce` en `library`. Todavía no está, y `npm run check:spec` lo debe notar. También `CatalogEntity.php` y `schema.rs`, si no lo tienen.
+4. `spec/README.md`: reglas 1, 3, 6, 11 (fuera), 13 y 14, la fundación y un vector de ejemplo de la derivación del id, como el de la regla 12.
+5. App TS: `npm run build`, `typecheck`, `lint`, `format:check`, `knip`, `check:spec` y `check:codes`. `claim_person`, el diálogo de activación y el nombre en la bienvenida son de la entrega 2: hasta entonces la persona se llama «Me», como dejó la primera sesión.
+6. Documentación de la entrega 1: `spec/README.md` y `docs/architecture/` (operaciones, sincronización, permisos).
+
+Al terminar la entrega 1, informe corto con las salidas reales y **para**: la sesión coordinadora la revisa antes de la 2.
