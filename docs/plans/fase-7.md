@@ -211,6 +211,7 @@ Apuntado para esa revisión:
   - el límite de las cuatro rutas de Google es por IP (30 cada 15 minutos) y lo comparte una casa;
   - la cuenta se crea o se enlaza cuando Google devuelve al navegador, antes de que la app termine: quien abra un enlace de inicio ajeno y entre con su Google deja su cuenta enlazada, aunque nadie llegue a entrar.
 - D97, roles obligatorios. **Decidido por el maintainer el 15/10/2026:** aceptada, se hace antes de publicar.
+- Visto al construir D97 (16/10/2026): por la red local, una retirada que entrega un tercer dispositivo viaja sola, sin las operaciones anteriores de quien retira. Si al dispositivo retirado le falta alguna, no encadena y no la aplica. Por la nube sí van. Sin cambiar todavía.
 
 ### 7.8 Proveedores con clave
 
