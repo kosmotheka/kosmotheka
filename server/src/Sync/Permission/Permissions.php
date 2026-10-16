@@ -27,7 +27,7 @@ final class Permissions
         if (null === $operation->signature) {
             return false;
         }
-        $author = self::author($operation);
+        $author = $operation->author();
         // A fenced author is judged as nobody's: its date cannot be trusted, or its access was withdrawn (D71, D84).
         $fenced = $view->fenced($operation);
         // The operation that founds the library (D97): the only one allowed while nobody has a role. Whoever holds
@@ -53,7 +53,7 @@ final class Permissions
      */
     private static function isFounding(OperationPayload $operation): bool
     {
-        $author = self::author($operation);
+        $author = $operation->author();
         $nonce = $key = null;
         foreach ($operation->changes as $change) {
             if (CatalogEntity::Library === $change->entity && ChangeAction::Create === $change->action && 0 === strcasecmp($change->id, $operation->library)) {
@@ -108,12 +108,6 @@ final class Permissions
                 && !$view->memberAccessWithdrawn($change->fields['member_id']),
             default => false,
         };
-    }
-
-    /** The device in the HLC: `<time>-<counter>-<device>`. */
-    public static function author(OperationPayload $operation): string
-    {
-        return explode('-', $operation->hlc, 3)[2] ?? '';
     }
 
     private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, bool $cloud, LibraryView $view): bool

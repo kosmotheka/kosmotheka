@@ -118,7 +118,7 @@ final readonly class CatalogLibraryView implements LibraryView
 
     public function fenced(OperationPayload $operation): bool
     {
-        $device = Permissions::author($operation);
+        $device = $operation->author();
 
         // Under the fence of an operation that took the power away: dated before it, and neither the last
         // operation the administrator knew nor one of its ancestors.

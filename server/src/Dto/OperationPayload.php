@@ -52,6 +52,6 @@ final readonly class OperationPayload
     /** The device that dated the operation: what follows the time and the counter in the HLC (the signature proves it). */
     public function author(): string
     {
-        return explode('-', $this->hlc, 3)[2];
+        return Hlc::author($this->hlc);
     }
 }

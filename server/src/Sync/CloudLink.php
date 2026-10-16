@@ -219,7 +219,7 @@ final readonly class CloudLink
         }
 
         // The owner's own account devices, found by the account and the id from the HLC, never by the id alone.
-        $device = $this->devices->findOneOfUser($library->getOwner(), explode('-', $payload->hlc, 3)[2]);
+        $device = $this->devices->findOneOfUser($library->getOwner(), $payload->author());
         if (!$device instanceof Device) {
             throw new OperationRejectedException(OperationRejection::UnknownKey);
         }

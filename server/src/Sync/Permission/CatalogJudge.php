@@ -174,7 +174,7 @@ final class CatalogJudge
         foreach ($operation->changes as $change) {
             $through = $change->fields['trusted_through'] ?? null;
             if (CatalogEntity::Device === $change->entity && ChangeAction::Delete !== $change->action && \is_string($through)) {
-                $fences[] = ['operation' => $operation->id, 'author' => Permissions::author($operation), 'device' => $change->id, 'through' => $through, 'until' => $operation->hlc];
+                $fences[] = ['operation' => $operation->id, 'author' => $operation->author(), 'device' => $change->id, 'through' => $through, 'until' => $operation->hlc];
             }
         }
 

@@ -6,6 +6,7 @@ namespace App\Sync\Merge;
 
 use App\Dto\ChangePayload;
 use App\Dto\FieldSpec;
+use App\Dto\Hlc;
 use App\Dto\OperationPayload;
 use App\Entity\Catalog\RowAuthor;
 use App\Entity\Catalog\Tombstone;
@@ -339,7 +340,7 @@ final class DbalCatalogMerge implements CatalogMerge
                 'cloudLibrary' => $library,
                 'entity' => $change->entity->value,
                 'entityId' => $change->id,
-                'deviceId' => explode('-', $hlc, 3)[2] ?? '',
+                'deviceId' => Hlc::author($hlc),
             ]);
         }
     }

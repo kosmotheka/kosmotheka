@@ -6,6 +6,7 @@ namespace App\Validator;
 
 use App\Dto\ChangePayload;
 use App\Dto\FieldSpec;
+use App\Dto\Hlc;
 use App\Dto\OperationPayload;
 use App\Enum\CatalogEntity;
 use App\Enum\ChangeAction;
@@ -64,7 +65,7 @@ final class ValidOperationValidator extends ConstraintValidator
             return;
         }
         foreach ($value->changes as $index => $change) {
-            if ($this->validateChange($change, $value->library, $this->author($value->hlc), "changes[$index]")) {
+            if ($this->validateChange($change, $value->library, Hlc::author($value->hlc), "changes[$index]")) {
                 return;
             }
         }
@@ -165,14 +166,6 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::DeviceId => \is_string($value) && $this->isDeviceId($value),
             FieldType::DeviceIdOrEmpty => \is_string($value) && ('' === $value || $this->isDeviceId($value)),
         };
-    }
-
-    /**
-     * The device in a hybrid logical clock timestamp: what follows the time and the counter.
-     */
-    private function author(string $hlc): string
-    {
-        return explode('-', $hlc, 3)[2] ?? '';
     }
 
     private function isDeviceId(string $value): bool

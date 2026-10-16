@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sync;
 
+use App\Dto\Hlc;
 use App\Dto\OperationPayload;
 use App\Dto\PushedOperation;
 use App\Dto\PushRequest;
@@ -205,8 +206,7 @@ final readonly class CloudPush
     {
         $claimed = $pushed->operation->hlc ?? null;
         $hlc = \is_string($claimed) ? $claimed : '';
-        $parts = explode('-', $hlc, 3);
-        $author = 3 === \count($parts) && '' !== $parts[2] ? $parts[2] : null;
+        $author = '' === Hlc::author($hlc) ? null : Hlc::author($hlc);
 
         try {
             // Older history is fine; a version this server does not know cannot be judged.
@@ -215,7 +215,7 @@ final readonly class CloudPush
             }
             $payload = $this->reader->read($pushed->operation);
 
-            return ['pushed' => $pushed, 'payload' => $payload, 'hlc' => $payload->hlc, 'author' => $this->author($payload)];
+            return ['pushed' => $pushed, 'payload' => $payload, 'hlc' => $payload->hlc, 'author' => $payload->author()];
         } catch (OperationRejectedException) {
             return ['pushed' => $pushed, 'payload' => null, 'hlc' => $hlc, 'author' => $author];
         }
@@ -305,7 +305,7 @@ final readonly class CloudPush
         $stored = $this->operations->insertIfNew(
             $library,
             $payload->id,
-            $this->author($payload),
+            $payload->author(),
             $payload->hlc,
             $pushed->schemaVersion,
             json_encode($pushed->operation, \JSON_THROW_ON_ERROR),
@@ -334,7 +334,7 @@ final readonly class CloudPush
             return;
         }
         $previous = $this->operations->findAuthorAndHlc($library, $payload->previous);
-        if (null === $previous || $previous['author'] !== $this->author($payload) || $previous['hlc'] >= $payload->hlc) {
+        if (null === $previous || $previous['author'] !== $payload->author() || $previous['hlc'] >= $payload->hlc) {
             throw new OperationRejectedException(OperationRejection::BrokenChain);
         }
     }
@@ -348,7 +348,7 @@ final readonly class CloudPush
      */
     private function verifyAuthor(CloudLibrary $library, \stdClass $operation, OperationPayload $payload): void
     {
-        $author = $this->author($payload);
+        $author = $payload->author();
         $registered = $this->deviceKeys->findOneInLibrary($library, $author)?->getPublicKey();
         $declared = $this->declaredKey($payload, $author);
 
@@ -393,11 +393,5 @@ final readonly class CloudPush
         }
 
         return null;
-    }
-
-    /** The device in the HLC: what follows the time and the counter. */
-    private function author(OperationPayload $payload): string
-    {
-        return $payload->author();
     }
 }

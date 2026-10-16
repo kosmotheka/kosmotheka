@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Dto\Hlc;
 use App\Entity\Catalog\FenceChain;
 use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
@@ -265,7 +266,7 @@ final class CloudOperationRepository extends ServiceEntityRepository
                 continue;
             }
             $byId[$id] = [$hlc, $proof];
-            $author = explode('-', $hlc, 3)[2] ?? '';
+            $author = Hlc::author($hlc);
             $rows = $connection->fetchAllAssociative(
                 'SELECT operation_id, hlc, schema_version, CAST(body AS TEXT) AS body FROM cloud_operation
                   WHERE cloud_library_id = :library AND author_device_id = :author AND hlc > :since AND hlc < :until
