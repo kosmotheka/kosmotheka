@@ -77,6 +77,13 @@ db-test: ## Migrates the test database (idempotent)
 stress: ## Load test (not in make check). make stress BOOKS=5000 LIMIT=600 [NO_TRIGGERS=1] [ROLES=1] [ANALYZE=1] [FILTER=testWhatOnePushAsks]
 	$(PHP) STRESS_BOOKS=$(BOOKS) STRESS_NO_TRIGGERS=$(NO_TRIGGERS) STRESS_ROLES=$(ROLES) STRESS_ANALYZE=$(ANALYZE) timeout -k 10 $(LIMIT) php -d memory_limit=-1 bin/phpunit --group stress $(if $(FILTER),--filter $(FILTER)) $(END)
 
+.PHONY: stress-full
+stress-full: ## Load test with the catalog tables already full (its own database, kept between runs). make stress-full BOOKS=2000 [FILL=1000000] [ROLES=1] LIMIT=7200
+	@docker exec db_kosmotheka psql -U kosmotheka -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'kosmotheka_test_stress'" | grep -q 1 \
+		|| docker exec db_kosmotheka psql -U kosmotheka -d postgres -c "CREATE DATABASE kosmotheka_test_stress OWNER test"
+	docker exec -e TEST_TOKEN=_stress php_kosmotheka sh -c 'cd /var/www/kosmotheka.local && bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration'
+	docker exec -e TEST_TOKEN=_stress -e STRESS_BOOKS=$(BOOKS) -e STRESS_FILL=$(FILL) -e STRESS_ROLES=$(ROLES) php_kosmotheka sh -c 'cd /var/www/kosmotheka.local && timeout -k 10 $(LIMIT) php -d memory_limit=-1 bin/phpunit --group stress --filter testALibraryAmongFullTables'
+
 .PHONY: test
 test: ## Runs the suite (usage: make test ARGS="--filter testAppliesAnOperation")
 	$(PHP) php bin/phpunit $(ARGS) $(END)

@@ -26,6 +26,7 @@ use App\Tests\Support\JudgedTestTrait;
 use App\Tests\Support\LibraryHistory;
 use App\Tests\Support\Ops;
 use App\Tests\Support\QueryLogStatement;
+use DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -146,6 +147,69 @@ final class CatalogLoadTest extends KernelTestCase
         fwrite(\STDERR, \sprintf(
             "\nREBUILD books=%d roles=%s: judged as pushes %.1f s · rebuilt over its own catalog %s s\n",
             $books, $roles ? 'yes' : 'no', $first, implode(', ', array_map(static fn (float $s): string => \sprintf('%.1f', $s), $rebuilds)),
+        ));
+    }
+
+    /**
+     * `make stress-full`. The same library as testALargeLibrary, but with the catalog tables already holding about a
+     * million rows of other libraries, committed and analysed: whether the cost of a library depends on the size of
+     * the tables. The filling is committed, so it runs only against its own database (`TEST_TOKEN=_stress`) and is
+     * kept there for the next run; the measured library is rolled back as always.
+     */
+    #[Group('stress')]
+    public function testALibraryAmongFullTables(): void
+    {
+        $connection = $this->em->getConnection();
+        $database = $connection->fetchOne('SELECT current_database()');
+        self::assertIsString($database);
+        if (!str_ends_with($database, '_stress')) {
+            self::markTestSkipped(\sprintf('Fills %s for good: run it with make stress-full, against its own database.', $database));
+        }
+
+        $target = (int) (getenv('STRESS_FILL') ?: 1_000_000);
+        $perLibrary = (int) (getenv('STRESS_FILL_BOOKS') ?: 5_000);
+        $filled = $this->catalogRows();
+        $start = hrtime(true);
+        while ($filled < $target) {
+            $this->ingestJudged($this->library(), $perLibrary, false);
+            $this->em->clear();
+            StaticDriver::commit();
+            StaticDriver::beginTransaction();
+            $filled = $this->catalogRows();
+            fwrite(\STDERR, \sprintf("\nFILL %d rows (%.0f s)", $filled, (hrtime(true) - $start) / 1e9));
+        }
+        StaticDriver::commit();
+        // Statistics as autovacuum would have them on a server that has been running.
+        foreach (['cloud_operation', ...array_map(static fn (CatalogEntity $entity): string => $entity->table(), CatalogEntity::cases()), 'catalog_tombstones', 'catalog_row_authors'] as $table) {
+            $connection->executeStatement("VACUUM ANALYZE $table");
+        }
+        StaticDriver::beginTransaction();
+
+        $books = $this->stressBooks();
+        $roles = $this->flag('STRESS_ROLES');
+        $library = $this->library();
+        $start = hrtime(true);
+        [$operations, $blocks] = $this->ingestJudged($library, $books, $roles);
+        $judged = (hrtime(true) - $start) / 1e9;
+        $this->assertCounts(CatalogState::of($this->em, $library), $books, $roles);
+
+        $start = hrtime(true);
+        self::getContainer()->get(CatalogJudge::class)->rebuild($library);
+        $rebuilt = (hrtime(true) - $start) / 1e9;
+
+        $library = $this->em->find(CloudLibrary::class, $library->getId()) ?? self::fail('The cloud library is gone.');
+        $uploader = $this->uploader($library);
+        $pushes = [];
+        for ($n = 0; $n < 30; ++$n) {
+            $started = hrtime(true);
+            self::assertSame(2, $this->push($library, $uploader, LibraryHistory::push($n, $roles))->received);
+            $pushes[] = (hrtime(true) - $started) / 1e6;
+        }
+        sort($pushes);
+
+        fwrite(\STDERR, \sprintf(
+            "\nFULL tables=%d rows · books=%d roles=%s: %d operations · judged %.1f s (first 1000 %.1f s, last 1000 %.1f s) · rebuilt over its own catalog %.1f s · push of 2 operations: median %.1f ms, worst %.1f ms · peak %d MB\n",
+            $filled, $books, $roles ? 'yes' : 'no', $operations, $judged, $blocks[0] ?? 0, [] === $blocks ? 0 : end($blocks), $rebuilt, $pushes[14], $pushes[29], memory_get_peak_usage(true) / 1_048_576,
         ));
     }
 
@@ -295,6 +359,19 @@ final class CatalogLoadTest extends KernelTestCase
         }
     }
 
+    /** Rows in the catalog tables, all libraries together. */
+    private function catalogRows(): int
+    {
+        $count = 0;
+        foreach (CatalogEntity::cases() as $entity) {
+            $rows = $this->em->getConnection()->fetchOne(\sprintf('SELECT COUNT(*) FROM %s', $entity->table()));
+            \assert(\is_int($rows));
+            $count += $rows;
+        }
+
+        return $count;
+    }
+
     private function stressBooks(): int
     {
         return (int) (getenv('STRESS_BOOKS') ?: 20_000);
@@ -331,8 +408,9 @@ final class CatalogLoadTest extends KernelTestCase
         self::assertSame([
             'book_details' => $kept,
             'copy' => $kept,
-            ...($roles ? ['device' => 2] : []),
+            'device' => $roles ? 2 : 1,
             'edition' => $kept,
+            'library' => 1,
             'member' => LibraryHistory::MEMBERS,
             'person' => LibraryHistory::PEOPLE,
             'publisher' => LibraryHistory::PUBLISHERS,

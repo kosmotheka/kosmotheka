@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\DataFixtures\SigningDevice;
 use App\Dto\ChangePayload;
 use App\Dto\OperationPayload;
 use App\Enum\CatalogEntity;
@@ -19,8 +20,12 @@ final class LibraryHistory
     public const string ADMIN_DEVICE = '01997c7e-0000-7000-8000-0000000000fa';
     public const string EDITOR_DEVICE = '01997c7e-0000-7000-8000-0000000000fb';
 
-    /** The library id the operations carry: a real one, like the intent, so the log can be read back and rebuilt. */
-    public const string LIBRARY = '01997c7e-0000-7000-8000-00000000aaaa';
+    /**
+     * The key of the administrator's device, from the seed every load test signs with (32 bytes of 0x01), and the library
+     * it founds with SigningDevice::FOUNDING_NONCE (D97): the vector of rule 1 in spec/README.md.
+     */
+    public const string ADMIN_KEY = 'iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w';
+    public const string LIBRARY = '2c33de53-4834-8a05-b014-c42dc60bd4e1';
 
     public const int MEMBERS = 5;
     public const int PUBLISHERS = 50;
@@ -30,21 +35,29 @@ final class LibraryHistory
     public const int PUSHES_FROM = 100_000_000;
 
     /**
-     * @param bool $roles whether the library has roles: an administrator and an editor, two devices each of a person; the first
-     *                    operation that gives them is a seal (D94), the administrator's device fencing itself
+     * @param bool $roles whether an editor, on a device of its own, writes half of it; without, the administrator who
+     *                    founded the library writes it all
      *
      * @return \Generator<int, OperationPayload>
      */
     public static function operations(int $books, bool $roles = false): \Generator
     {
         $clock = 0;
-        $roleOf = static fn (int $i): array => $roles ? ['role' => match ($i) {
+        $roleOf = static fn (int $i): array => ['role' => match ($i) {
             0 => 'admin', 1 => 'editor', default => 'reader',
-        }, 'can_share' => false] : [];
-        $members = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Member, self::id('m', $i), ['name' => "Persona $i"] + $roleOf($i)), range(0, self::MEMBERS - 1));
+        }, 'can_share' => 0 === $i];
+        yield self::operation(++$clock, self::ADMIN_DEVICE, [
+            Ops::create(CatalogEntity::Library, self::LIBRARY, ['name' => 'Carga', 'founding_nonce' => SigningDevice::FOUNDING_NONCE]),
+            Ops::create(CatalogEntity::Member, self::id('m', 0), ['name' => 'Persona 0'] + $roleOf(0)),
+            Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => self::ADMIN_KEY, 'name' => 'Admin', 'member_id' => self::id('m', 0), 'vouched_key' => self::ADMIN_KEY]),
+        ]);
+        $members = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Member, self::id('m', $i), ['name' => "Persona $i"] + $roleOf($i)), range(1, self::MEMBERS - 1));
+        // The editor's device registers itself (only a device creates its own row); the administrator then says whose it is.
+        if ($roles) {
+            yield self::operation(++$clock, self::EDITOR_DEVICE, [Ops::create(CatalogEntity::Device, self::EDITOR_DEVICE, ['public_key' => self::ADMIN_KEY, 'name' => 'Editor'])]);
+        }
         $devices = $roles ? [
-            Ops::create(CatalogEntity::Device, self::ADMIN_DEVICE, ['public_key' => 'k', 'name' => 'Admin', 'member_id' => self::id('m', 0), 'trusted_through' => '']),
-            Ops::create(CatalogEntity::Device, self::EDITOR_DEVICE, ['public_key' => 'k', 'name' => 'Editor', 'member_id' => self::id('m', 1)]),
+            Ops::update(CatalogEntity::Device, self::EDITOR_DEVICE, ['member_id' => self::id('m', 1), 'vouched_key' => self::ADMIN_KEY]),
         ] : [];
         $publishers = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Publisher, self::id('p', $i), ['name' => "Editorial $i"]), range(0, self::PUBLISHERS - 1));
         $people = array_map(static fn (int $i): ChangePayload => Ops::create(CatalogEntity::Person, self::id('pe', $i), ['name' => "Autora $i"]), range(0, self::PEOPLE - 1));
