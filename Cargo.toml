@@ -6,7 +6,7 @@ members = ["app/src-tauri", "crates/domain"]
 version = "0.2.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
-authors = ["Tersoal <6338830+Tersoal@users.noreply.github.com>"]
+authors = ["Kosmotheka contributors"]
 
 [profile.release]
 codegen-units = 1
