@@ -171,10 +171,26 @@ Con 2.000 y 5.000 libros el coste por operación es plano (unos 6 a 7 ms por ope
 Queda como tarea **dos veces al año** (la primera, antes de abrir la nube a más gente en 7.9; después, en abril y en octubre), y siempre que cambie el motor, el esquema del catálogo o la versión mayor de PostgreSQL:
 
 1. `make stress` con 2.000, 5.000 y 20.000 libros, tres pasadas de cada, y comparar con la tabla de arriba.
-2. **Con las tablas llenas**, que es lo que hoy no se mide: reconstruir una biblioteca de 2.000 libros cuando las tablas `catalog_*` ya tienen del orden de un millón de filas de otras bibliotecas, confirmadas y con estadísticas. Es el caso que importa si la nube crece: que el coste de una biblioteca normal no dependa del tamaño total de las tablas. Hace falta un modo nuevo de `make stress` que llene antes las tablas; no existe todavía.
+2. **Con las tablas llenas:** `make stress-full BOOKS=2000 LIMIT=10800` (`testALibraryAmongFullTables`). Llena las tablas `catalog_*` hasta un millón de filas (`FILL=…`) con bibliotecas de 5.000 libros juzgadas como los `push`, las confirma y hace `VACUUM ANALYZE`; después juzga, reconstruye y mide el `push` de una biblioteca de 2.000 libros, que se deshace como siempre. Usa su propia base de datos, `kosmotheka_test_stress`, que crea y migra el propio `make`, y el relleno se queda ahí para la siguiente vez (llenar desde cero lleva unas dos horas). Para empezar de cero: `docker exec db_kosmotheka psql -U kosmotheka -d postgres -c "DROP DATABASE kosmotheka_test_stress"`. Hay un volcado del relleno (73 MB, 16/10/2026) en `server/var/stress/kosmotheka_test_stress.dump`, fuera de git; si se pierde el volumen de Docker, se restaura en unos minutos en vez de dos horas: crear la base vacía con el `CREATE DATABASE` de `make stress-full` y `docker exec -i db_kosmotheka pg_restore -U kosmotheka -d kosmotheka_test_stress --no-owner --role=test < server/var/stress/kosmotheka_test_stress.dump`.
 3. En producción, apuntar lo que tarda `app:catalog:rebuild` (lo imprime al acabar) cada vez que se use, junto con el número de filas de `catalog_works`.
 4. Comparar una pasada tras `VACUUM` con una sin él (la pista del 09/10/2026: tras `VACUUM` sale siempre la tanda rápida), y repetir la medida de reconstruir una biblioteca que ya tiene catálogo (`FILTER=testRebuildingALibraryThatHasACatalog`), que es la que deja filas muertas delante. La primera medida está en «Permisos en el servidor».
 5. Si aparece la tanda lenta, activar `auto_explain` con `log_nested_statements` en esa sesión para ver el plan de la sentencia que crece; es el dato que falta.
+
+### Primera revisión, con las tablas llenas (16/10/2026)
+
+Antes de 7.9. Misma máquina de desarrollo, sin roles, con el juez y `CloudPush` de hoy (las tablas de arriba son del 09/10, algunas de antes del juez).
+
+| Tablas `catalog_*` | Juzgar 2.000 libros (2.242 operaciones) | Primeras / últimas 1.000 | Reconstruir sobre su catálogo | `push` de 2 operaciones (mediana · peor) |
+|---|---|---|---|---|
+| vacías, pasada 1 | 28,8 s | 13,1 / 13,6 s | 68,5 s (82,4 y 93,5 s las dos siguientes) | 36,2 · 48,2 ms |
+| vacías, pasada 2 | 48,2 s | 19,4 / 26,3 s | 70,6 s (82,9 y 93,4 s) | 59,3 · 70,6 ms |
+| 1.010.937 filas de otras 41 bibliotecas, confirmadas y con `VACUUM ANALYZE` | 56,9 s | 22,7 / 31,3 s | 83,6 s | 65,4 · 72,8 ms |
+
+- **El tamaño de las tablas apenas cuenta.** Con un millón de filas, una biblioteca de 2.000 libros cuesta lo mismo que en la tanda lenta con las tablas vacías (unos 18 % más al juzgar y lo mismo en reconstruir y en el `push`). Las consultas van por la biblioteca, como se diseñó (D84): no crecen con las filas de las demás.
+- **Lo que domina sigue siendo la tanda lenta**, que tampoco esta vez tiene causa. Una pista nueva: al llenar, en un mismo proceso, la primera biblioteca de 5.000 libros tardó 61 s y las 40 siguientes, 185 a 190 s cada una, sin crecer con las filas. Es decir, el proceso pasa a la tanda lenta tras la primera confirmación y ya no sale de ella, aunque las tablas crecen 40 veces. Apunta a algo del proceso o de la conexión (planes preparados, cachés), no al tamaño de los datos.
+- **Para la nube de una familia, sobra:** subir una biblioteca de 2.000 libros de una vez lleva un minuto, y un cambio normal llega en menos de 0,1 s.
+- **Memoria:** la pasada normal llega a 120 MB. La pasada con relleno llegó a 2,2 GB, pero en ese proceso se juzgaron 41 bibliotecas de 5.000 libros seguidas; no es lo que gasta una petición. Aun así, el VPS es pequeño: en 7.9, `memory_limit` de PHP-FPM y de la consola, y medir `app:catalog:rebuild` con una biblioteca grande antes de usarlo allí.
+- `make stress ROLES=1` volvía a fallar desde D97, porque la historia inventada no fundaba su biblioteca (nada se escribía) y el editor no registraba su propio dispositivo. Ya está arreglado: la historia funda la biblioteca con la clave de las pruebas (el vector de la regla 1 de `spec/README.md`), y el dispositivo del editor se registra a sí mismo antes de que el administrador lo asigne. Con eso, la variante con roles también se reconstruye (antes no se podía; ver «Reconstruir una biblioteca que ya tiene catálogo»).
 
 Un `push` sencillo (cambiar el título de una obra) hace 4 sentencias, de 0,4 a 0,8 ms cada una: la lápida de la biblioteca, la lápida de la fila, la fila con sus versiones y un `UPDATE` de los campos y `versions`.
 
@@ -247,7 +263,7 @@ Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió
 - Reconstruir sobre un catálogo ya escrito cuesta entre 1,5 y 2,5 veces lo que costó escribirlo, y cada reconstrucción en la misma transacción cuesta más que la anterior. Con la base de datos recién limpiada la subida es pequeña (unos 3 s por vuelta); sin limpiar es grande.
 - Esto apoya la pista de las filas muertas: lo que frena es el trabajo delante de filas borradas que nadie ha limpiado todavía. Sigue sin estar separado cuánto de la primera reconstrucción es eso y cuánto es lo que la reconstrucción hace de más (lee el registro por tramos, valida cada operación al leerla y recorre el registro una vez más para buscar las vallas).
 - En producción cada reconstrucción va en su propia transacción y el autovacuum limpia entre una y otra, así que el caso real es la primera columna: de 46 a 73 s para 2.000 libros. Es una orden de mantenimiento, no algo que espere una persona, pero en 7.4.6 hay que reconstruir cada biblioteca una vez al enchufar el juez: se hace de una en una.
-- La variante con roles (`ROLES=1`) no se puede reconstruir todavía: el lector de operaciones rechaza la biblioteca inventada (comprobado). La causa más probable, sin comprobar, es que crea los dos dispositivos en una sola operación y solo el propio dispositivo puede crearse. Hay que rehacerla antes de medirla.
+- La variante con roles (`ROLES=1`) no se podía reconstruir: la historia inventada creaba los dos dispositivos en una sola operación, y solo el propio dispositivo puede crearse. Arreglado el 16/10/2026 (ver «Primera revisión, con las tablas llenas»).
 
 ### Lo que midió el `push` de verdad (09/10/2026, 7.4.6)
 
