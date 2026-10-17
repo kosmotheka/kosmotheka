@@ -42,6 +42,48 @@ TUS DATOS SON TUYOS
 • Copias de seguridad cuando quieras, y puedes borrar tu cuenta desde la app.
 ```
 
+## En inglés (en-US), por si Google lo pide
+
+### Descripción corta (máximo 80 caracteres; esta tiene 78)
+
+```
+Catalog books, games, films and music at home. Account and cloud are optional.
+```
+
+### Descripción larga (máximo 4.000 caracteres; esta tiene 1.755)
+
+```
+Do we have that book? Where is Catan? What are we missing from that series?
+
+Kosmotheka is the catalog of everything you have at home: books, comics, board games, films, TV series, video games, music and any other collection. You know what you have, where it is and whose each thing is.
+
+MADE FOR SHARING
+• Several libraries: the family's, the book club's, your own.
+• Pair the phones and computers at home with a QR code and they catch up over your home network, with no servers.
+• Permissions per person: who runs the library, who edits, and who only looks and asks for something to be added.
+
+ADDING IS QUICK
+• Scan the ISBN or search by title, and the details fill themselves in.
+• Each kind has its own fields: players and length of a board game, director of a film, seasons of a series, platform of a video game.
+• Do I have it? Scan it at the bookshop or the store before you buy it twice.
+• Import your list from a spreadsheet (CSV).
+
+EVERYONE'S OWN
+• Each person keeps track of their own: to read, reading, read or dropped (or the same for each kind), their stars and their favorites.
+• Filter by kind, by format, by owner or by what you still have to read.
+
+THE CLOUD, IF YOU WANT IT
+• An optional account (with email or with Google) to have your libraries on all your devices without sharing a wifi.
+• Invite someone in another city with a link.
+• For now, the cloud is by invitation. Without an account, everything works just the same.
+• What you upload is stored on a server, and whoever runs it can read it. You choose which libraries to upload.
+
+YOUR DATA IS YOURS
+• Works without an account and offline.
+• Everything is stored on your devices. No ads, no tracking.
+• Backups whenever you want, and you can delete your account from the app.
+```
+
 ## Formularios de Play Console
 
 Todos, respondidos pregunta a pregunta (incluida «Seguridad de los datos», con ML Kit): [play-console-formularios.md](play-console-formularios.md) (17/10/2026). Texto de apoyo: [politica-privacidad-con-servidor.md](politica-privacidad-con-servidor.md), ya en la web.

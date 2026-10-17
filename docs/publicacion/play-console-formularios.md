@@ -23,17 +23,14 @@ Todo está en **Play Console › la app › Contenido de la aplicación** (en el
 
 - **URL:** `https://kosmotheka.com/es/privacidad.html`.
 - Play pide una sola. Pon la española: es la que dice «Responsable» con tu nombre. La inglesa está enlazada desde ella.
-- **Antes de enviar los formularios, añade a la política una frase sobre ML Kit.** Hoy dice «ni analítica» y que el escáner «se rige por sus términos», pero no dice que ML Kit manda a Google datos técnicos. Propuesta, detrás de «Se rige por sus términos»:
-  > «Para medir y mejorar su funcionamiento, ML Kit envía a Google datos técnicos de uso (el modelo del dispositivo, la versión del sistema y de la app, los tiempos y los errores del escáner), sin las imágenes. Nosotros no recibimos nada de esto.»
-
-  Y la misma frase en inglés. **Decides tú:** dime que sí y la pongo en las dos.
+- **ML Kit en la política** (decidido el 17/10/2026): las dos políticas dicen ya que ML Kit manda a Google datos técnicos de uso, sin las imágenes. «Ni analítica» pasa a «ni analítica nuestra». Lo mismo en la página de la guía «Qué sale de tu dispositivo» y en el inicio de la web. **Sube `web/` antes de enviar el formulario de la sección 8.**
 
 ## 2. Acceso a la aplicación
 
 > «¿Hay partes de la app que solo están disponibles con acceso restringido?»
 
 - **Respuesta:** **«Algunas funciones o todas están restringidas».** El catálogo funciona sin cuenta, pero la cuenta y la nube piden iniciar sesión, y el servidor es por invitación. Si los revisores no pueden entrar, Google suele rechazar la versión o pedir acceso.
-- **Hay que darles una cuenta de prueba. Decides tú;** mi recomendación:
+- **Hay que darles una cuenta de prueba** (decidido el 17/10/2026):
   1. Crea un buzón o alias tuyo, por ejemplo `review@kosmotheka.com`, que reenvíe a tu correo.
   2. Añádelo a `REGISTRATION_ALLOWED_EMAILS` en producción y regístrate con él desde la app. Confirma el código.
   3. Sin segundo factor: el revisor no tiene tu móvil.
@@ -89,11 +86,27 @@ Hasta que se envía este cuestionario, la app sale «sin clasificar» y el contr
 
 ## 5. Público objetivo y contenido
 
-1. **Grupos de edad:** **13-15, 16-17 y 18 o más.** Los de menos de 13, no: obligarían a cumplir la política de familias (SDK certificados, revisión aparte) y la app no está pensada para ellos. La cuenta empieza a los 14 años (política, «Menores»). Sin cuenta, la puede usar cualquiera en casa.
-2. **«¿Podría tu app atraer a niños sin querer?»** **No.** Ni personajes, ni animaciones, ni lenguaje infantil.
+**Dos cosas distintas que no se contradicen:**
+
+| | Qué dice | Quién lo ve | Qué hace |
+|---|---|---|---|
+| **Clasificación (PEGI 3, sección 4)** | Si el **contenido** es apto para una edad: no hay nada que un niño no deba ver | Se enseña en la ficha | Es lo que mira el control parental: un filtro «PEGI 12» deja instalar una app PEGI 3. Sin clasificar, la bloquea |
+| **Público objetivo (aquí)** | Para quién está **pensada** la app | Solo Google; no sale en la ficha | Si incluye menores de 13, la app entra en la política de familias. **No impide instalarla a nadie** |
+
+La cuenta desde los 14 es una tercera cosa: la edad para dar el consentimiento propio en España (política, «Menores»). Sin cuenta, la app la usa cualquiera en casa.
+
+1. **Grupos de edad:** **13-15, 16-17 y 18 o más.** Sin los de menos de 13, que obligarían a la política de familias (SDK certificados y revisión aparte). Y la app no está pensada para ellos, aunque puedan usarla en casa.
+2. **«¿Podría tu app atraer a niños sin querer?»** **No.** No tiene personajes, ni animaciones, ni lenguaje infantil.
 3. **Presencia en la tienda:** nada más que marcar.
 
-**Decides tú:** si prefieres no meter el grupo 13-15 (aunque la cuenta sea desde los 14), pon solo «16-17 y 18 o más». Mi recomendación es dejar los tres: lo que dice la política y lo que muestra la tienda casan mejor así.
+**A probar (17/10/2026):** tu hijo, de 14 años, no pudo instalarla con el filtro PEGI 12 porque aún estaba sin clasificar. Después de enviar la sección 4:
+1. Comprueba en la ficha que sale PEGI 3.
+2. Vuelve a intentarlo en su móvil.
+3. Si sigue sin dejar, mira dos cosas:
+   - que su cuenta esté en la lista de testers;
+   - si Family Link pide aprobar la app a mano.
+
+   Apúntame lo que pase.
 
 ## 6. Noticias, salud, finanzas, gobierno y otras declaraciones
 
@@ -147,7 +160,7 @@ Por qué es así:
 - **La IP no es un tipo de dato del formulario.** Solo habría que declararla como «Ubicación aproximada» si se usara para saber dónde estás, y no se usa para eso. La guarda el registro de actividad, por seguridad, y ya lo dice la política.
 - **Sin cuenta, la app no nos envía nada.** Las búsquedas van directas a los catálogos, sin nada que diga quién eres.
 
-**Decides tú:** ML Kit con «Analíticas» es lo que Google indica para su biblioteca. Choca con «Sin publicidad ni seguimiento» de la ficha, aunque esos datos los recibe Google y no nosotros. Mi recomendación es declararlo así, con la frase de la sección 1 en la política, y dejar la ficha como está: no hay seguimiento nuestro. La otra opción sería cambiar de escáner, pero es una funcionalidad: para más adelante.
+ML Kit con «Analíticas» es lo que Google indica para su biblioteca. La ficha sigue diciendo «Sin publicidad ni seguimiento»: esos datos los recibe Google, no nosotros, y la política ya lo cuenta (sección 1).
 
 ## 9. Ficha de Play Store (Hacer crecer › Presencia en Google Play › Ficha principal)
 
@@ -160,14 +173,14 @@ Por qué es así:
 | Gráfico destacado | 1024 × 500, de `brand/` |
 | Capturas de móvil | Al menos 2, mejor 4 a 8: el catálogo, una ficha, añadir con el escáner y la nube |
 | Capturas de tablet | Opcionales; sin ellas no sale destacada en tablets |
-| Idiomas | Español (España) como principal y una traducción en inglés (en-US o en-GB). **Decides tú** si la quieres ya: hay que traducir las dos descripciones, y lo hago yo |
+| Idiomas | Español (España) como principal. El inglés (en-US), con las descripciones de [ficha-google-play.md](ficha-google-play.md), está listo por si Google lo pide o quieres añadirlo |
 
 ## 10. Configuración de la tienda (Presencia en Google Play › Configuración de la tienda)
 
 | Campo | Valor | Por qué |
 |---|---|---|
 | App o juego | **App** | |
-| Categoría | **Libros y obras de consulta** | Empezó por los libros y es lo que más se busca. La alternativa es «Productividad». **Decides tú;** recomiendo libros |
+| Categoría | **Libros y obras de consulta** | Empezó por los libros y es lo que más se busca (decidido el 17/10/2026) |
 | Etiquetas (hasta 5, de la lista de Google) | Elige de la lista las que más se acerquen a: libros, lectura, colecciones, organización, juegos de mesa | Solo vale lo que ofrece la lista; las elegimos juntos al rellenarlo |
 | Correo de contacto | `info@kosmotheka.com` | Obligatorio y público |
 | Teléfono | Vacío | Opcional y público |
@@ -178,8 +191,7 @@ Por qué es así:
 
 - **Precio:** **Gratis.** Una app gratuita no puede pasar a ser de pago después; para nosotros no importa.
 - **Países:**
-  - **Decides tú.** Mi recomendación: **todos los disponibles.** La política vale en cualquier sitio (RGPD, el más exigente) y la app no depende del país.
-  - Si prefieres empezar con poco: España y los países de habla hispana e inglesa.
+  - **Todos los disponibles** (decidido el 17/10/2026). La política vale en cualquier sitio (RGPD, el más exigente) y la app no depende del país.
   - Las pistas de prueba (interna y cerrada) tienen su propia lista de países: revísala también.
 - **Prueba cerrada:**
   - si la cuenta de desarrollador es personal y nueva, 12 personas durante 14 días antes de producción ([ficha-google-play.md](ficha-google-play.md));
@@ -188,7 +200,7 @@ Por qué es así:
 
 ## Orden recomendado para rellenarlo juntos
 
-1. Sube `web/` con la política al día (la frase de ML Kit) y la página de borrar la cuenta.
+1. Sube `web/`: la política con ML Kit, el inicio y la página de borrar la cuenta.
 2. Clasificación de contenido (sección 4): desbloquea el control parental ya.
 3. Público objetivo, anuncios, ID de publicidad y las declaraciones de «no» (secciones 3, 5, 6 y 7).
 4. Crea la cuenta de revisión y rellena «Acceso a la aplicación» (sección 2).

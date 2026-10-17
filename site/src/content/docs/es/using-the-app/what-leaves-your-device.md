@@ -38,6 +38,8 @@ La imagen de la portada se baja de internet desde el servicio que la tiene y se 
 
 La cámara solo se enciende cuando tú pulsas el botón de escanear. Las imágenes se leen en tu propio dispositivo: no se guardan ni se envían a ningún sitio.
 
+El escáner es de Google (se llama ML Kit y viene con los servicios de Google Play del móvil). Para saber si funciona bien, le manda a Google datos técnicos: el modelo del móvil, las versiones del sistema y de la app, y cuánto tarda o si falla. Nunca las imágenes. A nosotros no nos llega nada de eso.
+
 En Android, para leer el código de barras la app usa una pieza de software de Google, que viene con la tienda Google Play. Puedes leer sus condiciones en el menú, en «Acerca de» y «Licencias».
 
 ## Compartir en casa

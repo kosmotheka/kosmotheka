@@ -38,6 +38,8 @@ The cover image is downloaded from the service that has it and saved on your pho
 
 The camera only turns on when you tap the scan button. Images are read on your own device: they are not saved or sent anywhere.
 
+The scanner is Google's (it is called ML Kit and comes with the phone's Google Play services). To know whether it works well, it sends Google technical data: the phone model, the system and app versions, and how long it takes or whether it fails. Never the images. None of that reaches us.
+
 On Android, to read the barcode the app uses a piece of Google software that comes with the Google Play store. You can read its terms in the menu, under "About" and "Licences".
 
 ## Share at home
