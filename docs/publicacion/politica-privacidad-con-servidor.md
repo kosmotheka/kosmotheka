@@ -1,6 +1,6 @@
 # Política de privacidad, ampliada para la cuenta y la nube (BORRADOR)
 
-> Borrador del 11/10/2026, escrito por la sesión coordinadora a partir de lo que el servidor guarda **hoy** (hitos 7.1 a 7.7). **No está publicado ni revisado.** Sustituirá a [politica-privacidad.md](politica-privacidad.md) y a las dos páginas de la web cuando el maintainer lo dé por bueno, **antes de publicar una versión de la app que enseñe la cuenta**. Lo marcado **[POR CONFIRMAR]** son datos que solo sabe el maintainer. No es asesoramiento legal.
+> Borrador del 11/10/2026, puesto al día el 17/10/2026 (entrar con Google, ML Kit, lo que ve cada servicio, borrar la cuenta según D99, claves propias de TMDB y RAWG, BoardGameGeek), escrito por la sesión coordinadora a partir de lo que el servidor guarda **hoy** (hitos 7.1 a 7.7). **No está publicado ni revisado.** Sustituirá a [politica-privacidad.md](politica-privacidad.md) y a las dos páginas de la web cuando el maintainer lo dé por bueno, **antes de publicar una versión de la app que enseñe la cuenta**. Lo marcado **[POR CONFIRMAR]** son datos que solo sabe el maintainer. No es asesoramiento legal.
 
 ---
 
@@ -18,7 +18,8 @@ Kosmotheka es una aplicación para catalogar lo que tiene una familia o un grupo
 
 - Tu catálogo, las personas de cada biblioteca y los nombres de tus dispositivos se guardan **solo en tu dispositivo**.
 - Si emparejas dos dispositivos con un código QR, se sincronizan directamente entre ellos por tu red local, cifrados. No pasa nada por un servidor nuestro.
-- Para rellenar los datos de una obra, la app puede consultar catálogos públicos (Biblioteca Nacional de España, Library of Congress (Estados Unidos), Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave). Solo se envía lo que buscas: un ISBN, un código de barras o un título.
+- Para rellenar los datos de una obra, la app puede consultar catálogos públicos (Biblioteca Nacional de España, Library of Congress (Estados Unidos), Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave). Solo se envía lo que buscas: un ISBN, un código de barras o un título. Como en cualquier conexión a internet, cada servicio ve además desde qué dirección IP le preguntas y el nombre y la versión de la app; lo mismo al descargar las portadas, que vienen de esos servicios.
+- El escáner de códigos de barras usa **ML Kit**, de Google, a través de los servicios de Google Play del móvil. Se rige por sus términos ([ML Kit](https://developers.google.com/ml-kit/terms)).
 - La cámara se usa solo para leer códigos de barras, cuando tú lo pides. Las imágenes no se guardan ni se envían.
 
 ## Si creas una cuenta
@@ -27,6 +28,7 @@ La cuenta sirve para tener una biblioteca en varios dispositivos sin que estén 
 
 - **Tu correo y tu nombre**, y tu contraseña de forma que no se puede leer (solo una huella calculada con un algoritmo pensado para contraseñas).
 - **Tus dispositivos:** el nombre que le hayas puesto a cada uno, un identificador y su clave pública, y cuándo se usó por última vez.
+- **Si entras con Google:** Google nos dice tu correo, si está verificado, tu nombre y un identificador tuyo. Del identificador nos quedamos para reconocerte la próxima vez; nada más de Google. Google sabe que usas Kosmotheka, como con cualquier inicio de sesión con Google.
 - **Si activas la verificación en dos pasos:** el secreto que comparte tu app autenticadora, y tus códigos de reserva de forma que no se pueden leer.
 
 ## Si subes una biblioteca a la nube
@@ -43,11 +45,11 @@ Si no has puesto una clave tuya de Google Books, y tu servidor la ofrece, la app
 
 ## Si buscas una película o una serie con la cuenta
 
-Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar una película o una serie por su título la app **envía a tu servidor lo que escribes, si es película o serie y el idioma de la app**, junto con tu sesión. El servidor lo busca en TMDB con su propia clave, así que **TMDB ve la búsqueda como del servidor, no tuya**. Lo que el servidor guarda es la respuesta, unos días (como mucho 30; la búsqueda, un día), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros). Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo.
+Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar una película o una serie por su título la app **envía a tu servidor lo que escribes, si es película o serie y el idioma de la app**, junto con tu sesión. El servidor lo busca en TMDB con su propia clave, así que **TMDB ve la búsqueda como del servidor, no tuya**. Lo que el servidor guarda es la respuesta, unos días (como mucho 30; la búsqueda, un día), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros). Si pones tu propia clave de TMDB en Ajustes, la app le pregunta directamente y el servidor ni se entera. Esta aplicación usa TMDB y las API de TMDB, pero TMDB no la respalda, certifica ni aprueba de ningún otro modo.
 
 ## Si buscas un videojuego con la cuenta
 
-Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar un videojuego por su título la app **envía a tu servidor lo que escribes**, junto con tu sesión. El servidor lo busca en RAWG con su propia clave, así que **RAWG ve la búsqueda como del servidor, no tuya**. El servidor guarda la respuesta unos días (hasta 30; la búsqueda, 7), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros y películas). Los datos de videojuegos vienen de [RAWG](https://rawg.io).
+Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar un videojuego por su título la app **envía a tu servidor lo que escribes**, junto con tu sesión. El servidor lo busca en RAWG con su propia clave, así que **RAWG ve la búsqueda como del servidor, no tuya**. El servidor guarda la respuesta unos días (hasta 30; la búsqueda, 7), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros y películas). Si pones tu propia clave de RAWG, la app le pregunta directamente. Los datos de videojuegos vienen de [RAWG](https://rawg.io).
 
 ## Si buscas un cómic con la cuenta
 
@@ -84,8 +86,8 @@ De cada cosa se guarda **qué fue, cuándo, la cuenta y el dispositivo, la direc
 ## Borrar tus datos
 
 - **Sin cuenta:** borrar una biblioteca o desinstalar la app elimina sus datos de ese dispositivo.
-- **Borrar la cuenta:** desde la app, en la pantalla de tu cuenta. Se borran la cuenta, sus dispositivos y **las bibliotecas que subiste tú a la nube** [POR CONFIRMAR con el código antes de publicar: qué pasa con una biblioteca que subiste y que usan otras personas]. Lo que tengas en tus dispositivos no se toca. Las entradas del registro de actividad se conservan hasta cumplir su año, sin tu correo.
-- **Si no puedes entrar en la app,** escríbenos a privacy@kosmotheka.com desde el correo de la cuenta.
+- **Borrar la cuenta:** desde la app, en la pantalla de tu cuenta. Se borran la cuenta, sus dispositivos y **las bibliotecas que subiste tú a la nube** que solo usabas tú. **Las que compartes con otras personas siguen en la nube para ellas**: pasan a otra cuenta que tiene acceso, y lo que apuntaste en ellas sigue ahí, porque es parte de esa biblioteca. Lo que tengas en tus dispositivos no se toca. Las entradas del registro de actividad se conservan hasta cumplir su año, sin tu correo.
+- **Si no puedes entrar en la app,** escríbenos a privacy@kosmotheka.com desde el correo de la cuenta; la borramos en 30 días como mucho. Los pasos, en [kosmotheka.com/es/borrar-cuenta.html](https://kosmotheka.com/es/borrar-cuenta.html).
 
 ## Tus derechos
 
@@ -111,5 +113,4 @@ Con esta versión la app **recoge datos** (solo si se crea una cuenta) y **no lo
 
 ## Lo que queda fuera de este borrador
 
-- «Continuar con Google»: cuando exista, se añade qué se recibe de Google (identificador, correo y nombre).
 - Las notificaciones con la app cerrada (Firebase): cuando existan.
