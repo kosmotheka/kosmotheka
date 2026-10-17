@@ -1,18 +1,25 @@
 // Checks that src/licenses.json (the «Licenses» screen) still covers what ships: the crates `cargo tree` says end in
 // the binaries for the three targets, and the npm packages the UI build reads. It compares them with the lists the
 // generator stored in the file, which it took with the same code (scripts/licenses-lib.mjs). Needs cargo.
-// A dependency that is only for development does not matter here; one that ships and changed does: run
-// `npm run licenses`.
+// A dependency that is only for development does not matter here; one that ships and is new does: run
+// `npm run licenses`. By default packages are compared by name, so a version bump (a Dependabot pull request) passes:
+// a new version almost never changes the licence. Before a release, `--exact` compares name and version, so the
+// screen lists the versions that ship.
 import { readFileSync } from "node:fs";
 
 import { aboutTargets, bundledPackages, rustCrates, rustTargets } from "./licenses-lib.mjs";
 
 const file = JSON.parse(readFileSync(new URL("../src/licenses.json", import.meta.url), "utf8"));
 const problems = [];
+const exact = process.argv.includes("--exact");
+
+// `name@version` to `name`; scoped npm names start with an `@` of their own.
+const withoutVersion = (key) => key.slice(0, key.lastIndexOf("@"));
 
 function compare(name, now, stored) {
-  const had = new Set(stored);
-  const has = new Set(now);
+  const key = exact ? (k) => k : withoutVersion;
+  const had = new Set([...stored].map(key));
+  const has = new Set([...now].map(key));
   for (const key of has)
     if (!had.has(key)) problems.push(`${name}: ${key} ships and is not in licenses.json`);
   for (const key of had)
@@ -47,5 +54,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `licenses: ${file.compared.rust.length} crates and ${file.compared.npm.length} npm packages are covered by ${file.packages.length} entries`,
+  `licenses (${exact ? "name and version" : "by name"}): ${file.compared.rust.length} crates and ${file.compared.npm.length} npm packages are covered by ${file.packages.length} entries`,
 );

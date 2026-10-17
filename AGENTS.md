@@ -146,7 +146,8 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
 | Second-factor code rule (6 digits or a backup code) | `cd app && npm run check:codes` |
 | What's-new file has the app version's entry | `cd app && npm run check:whats-new` |
-| «Licences» list still covers what ships (needs cargo) | `cd app && npm run check:licenses` |
+| «Licences» list still covers what ships, by package name (needs cargo; what the CI runs, so Dependabot version bumps pass) | `cd app && npm run check:licenses` |
+| Same, with exact versions: **before every release**, after `npm run licenses` | `cd app && npm run check:licenses:exact` |
 | Regenerate the «Licences» list after changing a dependency (needs **Docker and the network**; builds the `cargo-about` image on first use, version fixed in `app/scripts/licenses.mjs`) | `cd app && npm run licenses` |
 | Documentation site (Starlight, `site/`): dev server / build and link check (what the CI job `docs-site` runs). Links between guide pages are `../page/`, images `./image.webp` | `cd site && npm run dev` · `cd site && npm run build && npm run check:links` |
 | Rust dependencies (CI job `rust-deps`) | `cargo deny check` (rules in `deny.toml`) · `cargo machete` |

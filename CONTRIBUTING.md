@@ -61,7 +61,7 @@ npm run lint
 npm run format:check
 npm run knip                 # dead code
 npm run check:whats-new
-npm run check:licenses       # needs cargo
+npm run check:licenses       # needs cargo; by package name (exact versions: check:licenses:exact, before a release)
 ```
 
 **The operation spec**, from `app/`:
