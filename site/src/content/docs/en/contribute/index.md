@@ -17,6 +17,14 @@ It is written for people who program and do not know the project yet. Some techn
 4. [How to contribute: style, tests and commits](./how-to-contribute/): the rules that matter and how to add a field or an entity.
 5. [Glossary](./glossary/): what each thing is called in Spanish and in the code.
 
+## How it works inside
+
+6. [The sync engine, explained](./sync-engine/): how several devices reach the same result without anyone in charge.
+7. [The operations: the specification and the conformance cases](./operations-spec/): the format, the rules, and how to write a compatible client or server.
+8. [Security: the threat model](./security/): who it protects against, with which pieces, and what it does not protect.
+9. [How we audit, so you can repeat it yourself](./audit-method/): the method, not the reports.
+10. [Report a security problem](./report-a-vulnerability/): how to do it in private.
+
 ## Repository documents
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), the procedure and the rules that matter (in English).
@@ -24,6 +32,4 @@ It is written for people who program and do not know the project yet. Some techn
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [The decision log](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) and [the architecture](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), in Spanish.
 
-## What comes next
-
-The sync engine, the operations and the specification with its conformance cases, the security model and the audit method are still being put in order for this documentation. Until then, they are in the [`docs/architecture`](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture) folder of the repository.
+The data model, the accounts and the cloud API are not in this documentation yet. Until they are, see the architecture folder linked above.
