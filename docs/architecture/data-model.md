@@ -1,6 +1,6 @@
 # Modelo de datos
 
-> Esquema de la base de datos local (SQLite) de la app. Se amplía en cada hito; aquí se documenta el estado actual. Decisiones de fondo: D07, D08 y D24.
+> Esquema de la base de datos local (SQLite) de la app. Puesto al día con el código el 17/10/2026; las columnas salen de `crates/domain/src/schema.rs`. Decisiones de fondo: D07, D08 y D24.
 
 ## Principios
 
@@ -24,7 +24,7 @@ works ──< work_contributors >── people
 
 | Tabla | Qué es | Columnas principales |
 |---|---|---|
-| `libraries` | Bibliotecas: lo que se comparte, se sincroniza y tiene permisos. Un nombre vacío es «sin nombre» y la app muestra el suyo, en el idioma del usuario | `id`, `name` |
+| `libraries` | Bibliotecas: lo que se comparte, se sincroniza y tiene permisos. Un nombre vacío es «sin nombre» y la app muestra el suyo, en el idioma del usuario. Su id sale de la clave de quien la fundó y de un `founding_nonce` (D97) | `id`, `name`, `cloud_library_id` y `cloud_server` (el vínculo con su copia en un servidor, D93), `cloud_device_id` (qué dispositivo es «la nube» en ella, D76, D95), `founding_nonce` |
 | `works` | Obra: el libro en abstracto | `id`, `kind` (`book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music`, `other`; D60), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`, `studio`), `position` |
@@ -41,13 +41,13 @@ works ──< work_contributors >── people
 | `boardgame_details` | Datos propios de un juego de mesa | `edition_id`, `players_min`, `players_max`, `duration_minutes`, `min_age` |
 | `film_details` | Datos propios de una película | `edition_id`, `duration_minutes` |
 | `tv_series_details` | Datos propios de una serie | `edition_id`, `seasons` |
-| `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73) |
+| `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73), `account_id` (la cuenta enlazada, D76: solo la escribe la nube), `access_withdrawn` (la persona ya no llega a la biblioteca, D98) |
 | `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location` (en lo digital, la plataforma: «Kindle», «Steam»), `acquired_on`, `platform` (videojuegos: «Switch»), `seasons` (series: qué temporadas tiene, texto libre) |
 | `marks` | Lo que cada persona apunta de cada obra (D68): estado, valoración, favorito y «lo deseo» (D61) | `id` (derivado de persona y obra), `member_id`, `work_id`, `status`, `status_on`, `rating`, `favorite`, `wished` |
 | `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |
-| `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name`, `member_id` (de quién es, D73) |
+| `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name`, `member_id` (de quién es, D73), `vouched_key` (la clave que quien lo asignó tenía de él: solo cuenta como de esa persona si coincide con `public_key`, D96), `trusted_through` (la valla: hasta qué operación del dispositivo se cree lo anterior a una bajada de poder, D84, D87) |
 | `row_authors` | Qué dispositivo creó cada fila, para que un editor borre lo que creó su persona (D45); local, se recalcula desde el registro | `library_id`, `entity`, `entity_id`, `device_id` |
-| `change_requests` | Cómo se resolvió cada petición, sincronizada (D73); su id es el de la operación pedida | `status` (`accepted` o `rejected`) |
+| `change_requests` | Cómo se resolvió cada petición, sincronizada (D73); su id es el de la operación pedida | `status` (`accepted`, `rejected` o `withdrawn`, la que retira quien pidió), `note` (la nota de quien pidió) |
 | `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable`, `signature`, `status` (`applied` o `request`, D73) |
 | `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `library_id`, `entity`, `entity_id`, `field`, `hlc` |
 | `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)). Borrar una biblioteca deja una lápida de la biblioteca entera | `library_id`, `entity`, `entity_id`, `hlc` |
@@ -56,7 +56,10 @@ works ──< work_contributors >── people
 | `library_peers` | Qué bibliotecas van a cada dispositivo emparejado; local (D46) | `library_id`, `device_id` |
 | `leave_notices` | Bibliotecas de las que este dispositivo salió, pendientes de decírselo a cada dispositivo que se las ofrecía; local (D71) | `library_id`, `device_id` |
 | `forgotten_libraries` | Bibliotecas que este dispositivo dejó o de las que lo retiraron, para que la nube no se las devuelva; local, no es una entidad | `library_id` |
-| `local_state` | Valores propios de este dispositivo: su identificador, la última marca HLC emitida, la biblioteca activa y los ajustes (clave de Google Books) | `key`, `value` |
+| `device_fences`, `device_fence_chains` | Las vallas que se están respetando y las operaciones que cada una aún cuenta ([sync.md](sync.md)); **derivadas del registro**: se borran y se rehacen con la biblioteca | `library_id`, `device_id`, `through`, `until_hlc`, `operation_id` |
+| `pending_owners` | A quién asignar un dispositivo recién emparejado cuando llegue su registro (D73); local | `library_id`, `device_id`, `member_id` |
+| `request_notices` | Las peticiones propias que resultaron ser peticiones, a enseñar una vez; local | `library_id`, `operation_id` |
+| `local_state` | Valores propios de este dispositivo: su identificador, la semilla de su clave de firma, la última marca HLC emitida, la biblioteca activa y los ajustes (claves de los proveedores, cuenta y servidor elegido, bloqueo de la app) | `key`, `value` |
 
 **Formatos** (`copies.format`): `hardcover` (tapa dura), `paperback` (tapa blanda), `pocket` (bolsillo), `ebook`, `pdf`, `audiobook`, `single_issue` (grapa), `box` (caja), `dvd`, `bluray`, `uhd` (4K), `physical` (videojuego en cartucho o disco), `digital`, `vinyl`, `cd`, `cassette`, `other`. Es una sola lista para todos los tipos, y la interfaz ofrece solo los de cada uno (así un ejemplar se valida sin mirar su obra). Estas listas no llevan `CHECK` en SQLite: solo las fija la spec. El formato va en el ejemplar, como pide VISION.md: lo que interesa saber es en qué formato lo tienes.
 
@@ -67,10 +70,11 @@ works ──< work_contributors >── people
 - Si no hay ISBN o es nuevo, se crean a la vez la obra, la edición y el ejemplar.
 - Autores, editoriales y propietarios se buscan por nombre (sin distinguir mayúsculas) y se crean si no existen.
 
-## Pendiente en hitos posteriores
+## Pendiente
 
-- Ubicaciones como jerarquía (salón → estantería → balda) en lugar de texto libre (1.5).
-- Campos de rol (sin hito asignado todavía).
+- Ubicaciones como jerarquía (salón → estantería → balda) en lugar de texto libre.
+- Limpiar las portadas que ya no usa ningún libro: se quedan en disco.
+- Fusionar duplicados a mano (D33; ver [operations.md](operations.md)).
 
 ## Actualizar la app: copia automática
 
@@ -78,10 +82,10 @@ Antes de aplicar una migración a una base de datos que ya tiene datos, la app d
 
 **Migración 9 (bibliotecas):** todo lo que había pasa a una biblioteca con un id fijo igual en todos los dispositivos (`00000000-0000-7000-8000-000000000001`), para que dos dispositivos que ya se sincronizaban se fundieran sin duplicados (D46). Las operaciones anteriores quedan como historial y cada dispositivo registra una nueva operación inicial con lo que tiene. La migración es historia y no se toca; el id fijo se retira después (D85).
 
-**Ninguna biblioteca tiene id fijo (D85).** Tras migrar, en cada arranque y de forma idempotente, la app ejecuta `libraries::retire_fixed_library` y `libraries::ensure_first_library`:
+**Ninguna biblioteca nueva tiene id fijo (D85, D97).** Una biblioteca nace en un dispositivo con un id que sale de la clave de quien la funda y de un `founding_nonce` aleatorio, y llega a los demás sincronizando. En cada arranque, la app ejecuta `libraries::ensure_first_library`. El código ya no contiene `retire_fixed_library` (la función que D85 describía para retirar la biblioteca de id fijo de la migración 9, con los tres casos de abajo): una base anterior a D85 con datos en esa biblioteca se queda como está. Lo que describía D85 (los dos primeros puntos ya no están en el código; el tercero sí):
 - si la biblioteca con el id fijo está **vacía** (sin filas de catálogo, sin operaciones y sin emparejamientos, avisos, retiradas, dueños pendientes ni avisos de petición), se borra, y se activa otra;
 - si tiene **datos**, se duplica como biblioteca nueva con id aleatorio (D58: los datos se conservan con operaciones firmadas, el historial no), se quita la vieja de este dispositivo como al salir de ella (contenido, registro y emparejamientos, sin operación) y la copia pasa a ser la activa. Todo en una transacción;
-- si después no hay ninguna biblioteca (instalación nueva), se crea la primera con id aleatorio y su operación `library.create` firmada, y es la activa.
+- si después no hay ninguna biblioteca (instalación nueva), la primera se funda (`library.found`) cuando la persona dice su nombre en la bienvenida, con su id derivado de la clave del dispositivo, y es la activa.
 
 La biblioteca activa es la guardada si aún existe y, si no, la primera por nombre e id (`ops::active_library`). Una biblioteca nace en un dispositivo y llega a los demás sincronizando; los dispositivos que ya compartían la antigua por la red local vuelven a compartir la nueva.
 

@@ -1,6 +1,6 @@
 # La nube: bibliotecas, acceso y sincronización
 
-> El lado del servidor del hito 7.2: las bibliotecas que una cuenta sube al servidor y las rutas para sincronizarlas. Decisión de fondo: D84 (la puerta), con D56 (firmas), D57, D73 y D76. Pensado como mapa para revisar el código: dice qué clase hace qué y qué test lo prueba. Documento vivo.
+> El lado del servidor de la nube: las bibliotecas que una cuenta sube al servidor, las rutas para sincronizarlas y quién llega a cada una. Decisión de fondo: D84 (la puerta), con D56 (firmas), D57, D73 y D76. Pensado como mapa para revisar el código: dice qué clase hace qué y qué test lo prueba. Documento vivo.
 
 ## La regla de oro (D84)
 
@@ -15,7 +15,7 @@ Una migración (`Version20261003165457`). Todo cuelga de `cloud_library`; al bor
 | Tabla (entidad) | Contenido | Clave |
 |---|---|---|
 | `cloud_library` (`CloudLibrary`) | `C` (UUID v7 que genera el servidor), dueña (`owner_id`), `local_library_id` (nulo hasta el enlace, se fija una vez), `cloud_device_id`, `cloud_public_key` y `cloud_secret_key` (la identidad de la nube, 7.5.2a: nulas si el servidor no tiene secreto; la privada va cifrada y no sale nunca), `link_operation_id` (la operación que enlaza: la que `CloudLink` comprobó —firma de un dispositivo de la cuenta dueña— al enlazar, esté ya guardada o no; la primera se queda; D93), `link_signer_key` (la clave pública del dispositivo que firmó ese enlace, escrita con el id, D99; nula en las bibliotecas enlazadas antes), fecha | `id` |
-| `membership` (`Membership`) | cuenta, `C`, `member_id` (nulo hasta 7.5), fecha. Hasta 7.5 la única fila es la de la dueña, creada con la biblioteca | `id`; único `(user_id, cloud_library_id)` |
+| `membership` (`Membership`) | cuenta, `C`, `member_id` (la persona de la biblioteca a la que está enlazada; nulo mientras no se sabe), fecha, y si el acceso está retirado (D98). Al crear la biblioteca solo hay la fila de la dueña; después entran más cuentas al aceptar una invitación | `id`; único `(user_id, cloud_library_id)` |
 | `cloud_operation` (`CloudOperation`) | autor (el dispositivo del HLC), `hlc`, versión de esquema, `body` JSONB (la operación tal como llegó, firma incluida), fecha de recepción, `previous`, `status` (7.4.5; `applied`, `request` o nulo si aún no se juzgó) y quién la subió (7.4.6: `pushed_by_user_id`, foránea a la cuenta con `ON DELETE SET NULL`, y `pushed_by_device_id`, el id del dispositivo de esa cuenta, sin foránea). Quién la firmó y quién la subió no son lo mismo: una operación puede haber llegado antes por la red local. Una operación ya guardada no cambia este dato; las guardadas antes de 7.4.6 lo tienen vacío | **`(cloud_library_id, operation_id)`** |
 | `cloud_device_key` (`CloudDeviceKey`) | clave pública de un dispositivo **dentro del registro de esa `C`** | `(cloud_library_id, device_id)` |
 | `invitation` (`Invitation`) | 7.6.1: invitaciones a la biblioteca (ver [Invitaciones](#invitaciones-761-d43)) | `id`; único `token_hash` |
@@ -32,8 +32,9 @@ Todas bajo `/v1/cloud/libraries` (menos `events`, abajo), cortafuegos `api` (cab
 
 | Ruta | Cuerpo | Respuesta |
 |---|---|---|
-| `POST /v1/cloud/libraries` | — | `201 {"id": C}`. Crea `C` de la cuenta y su membresía |
-| `GET /v1/cloud/libraries` | — | `200 [{"id": C, "localLibraryId": …\|null}]`, las de la cuenta |
+| `POST /v1/cloud/libraries` | — | `201 {"id": C, "cloudDeviceId": …\|null, "cloudPublicKey": …\|null}`. Crea `C` de la cuenta y su membresía, y su identidad (ver [La identidad de la nube](#la-identidad-de-la-nube-752a-d76-d95)) |
+| `GET /v1/cloud/libraries` | — | `200 {"libraries": [{"id": C, "localLibraryId": …\|null, "cloudDeviceId": …\|null, "cloudPublicKey": …\|null}], "withdrawn": [C, …]}`: las que **alcanza este dispositivo** y, aparte, los ids de las que la cuenta tenía y de las que la han cortado (D98). A una biblioteca anterior a la identidad de la nube se le da la suya al listarla |
+| `POST /v1/cloud/libraries/claim` | — (se ignora cualquier cuerpo) | `200`: enlaza la cuenta con su persona y vincula el dispositivo (ver [El enlace de la cuenta](#el-enlace-de-la-cuenta-con-su-persona-752b-2-d76-d96) y [El móvil nuevo](#el-móvil-nuevo-el-segundo-paso-de-claim-753-d76-d96)). Limitada por `cloud_link` |
 | `POST /v1/cloud/libraries/{C}/pull` | `{"schemaVersion": n, "vector": {dispositivo: hlc}}` | `200 {"operations": [{"schemaVersion": n, "operation": {…}}], "vector": {…}}` |
 | `GET /v1/cloud/events` | — | `200 {"token": …, "topics": […], "expiresAt": …}`; ver [Avisos al momento](#avisos-al-momento-73). Sin Mercure: `409 {"error":"events_unavailable"}` |
 | `POST /v1/cloud/libraries/{C}/link` | `{"schemaVersion": n, "operation": {…}}` (un elemento de `operations` de `push`; el `schemaVersion` es el de la operación) | `200 {"localLibraryId": …}`. `422 {"error":"link_rejected"}` si no vale (ver «Enlazar») |
@@ -61,7 +62,7 @@ Las aplica `App\Sync\CloudPush` (el controlador solo mapea). Todo el `push` va e
    - una operación sin firma se rechaza (en la nube no hay operaciones de antes de la Fase 5).
 5. **Cadena de cada autor (D87):** una operación cuya `previous` no está guardada en esta `C` (ni la aceptó antes el mismo `push`) **espera**: se rechaza y tapa a las siguientes de su autor en el `push`, igual que en la app; el vector de `C` para ese autor se queda por debajo y la app la reenvía completa. Si `previous` es de otro autor o tiene un HLC no menor, está mal formada y se rechaza igual (`CloudPush::requirePrevious`). Una `previous` nula o repetida se acepta. Una operación con un HLC que ya tiene otra de esta `C` se rechaza (`hlc_taken`) y retiene igual; un índice único `(cloud_library_id, hlc)` lo asegura en la base de datos. No es un juicio por el orden de llegada: no dice que la operación sea mala, solo la aplaza hasta que esté lo que firmó su autor antes (la costura 7 sigue igual para autores distintos).
 6. **Nunca se rechaza por el orden de llegada** entre autores distintos: una operación más antigua que otras de otro autor se guarda como cualquier otra. Dentro de un lote, el servidor ordena por HLC (la operación de enlace enlaza `C` al empezar, pero se guarda en su sitio, detrás de las que encadena) para que el registro de un dispositivo se procese antes que lo que firma, sea cual sea el orden en que el cliente lo envíe. **Una rechazada tapa a las siguientes de su autor en el lote** (DAT-001, como `held_back` en `merge_in` de la app): una vez rechazada una operación de un autor, las posteriores de ese autor en el mismo `push` también se rechazan, para que el vector de `C` no salte un hueco que nadie volvería a enviar (la app las reenvía en el siguiente `push`, ya completas). Las que no se pueden leer cuentan por el autor y el HLC que declaran, si declaran alguno. Entre `push` distintos no reordena: el cliente envía las operaciones de un autor en orden y completas, y una operación de un autor cuya clave aún no consta en `C` se rechaza.
-7. **Lo guardado se juzga (7.4.6).** Cada operación que `accept()` guarda pasa a `CatalogJudge::take()`, en el orden de HLC del lote, y al final del lote se llama a `settle()`; todo en la transacción del `push`, con el bloqueo de `C`. Las `known` y las rechazadas no llegan al juez. Una operación que el juez deja en `request` está guardada y cuenta como `received`; `pull` sigue repartiendo todo el registro, aplicado o en petición, porque cada dispositivo juzga por su cuenta (D73). Las retiradas (D71) se leen en 7.5.
+7. **Lo guardado se juzga (7.4.6).** Cada operación que `accept()` guarda pasa a `CatalogJudge::take()`, en el orden de HLC del lote, y al final del lote se llama a `settle()`; todo en la transacción del `push`, con el bloqueo de `C`. Las `known` y las rechazadas no llegan al juez. Una operación que el juez deja en `request` está guardada y cuenta como `received`; `pull` sigue repartiendo todo el registro, aplicado o en petición, porque cada dispositivo juzga por su cuenta (D73). Las retiradas (D71) las lee `AccessCutter` para cortar el acceso (ver «La nube corta el acceso», más abajo).
 8. **El enlace no puede contradecir al registro (D93, SEG-013).** Después de `settle`, y en **cada** `push` (uno posterior con los roles puede convertir en petición un enlace que estaba aplicado), si la operación que enlaza `C` (`cloud_library.link_operation_id`, anotada por `CloudLink` al enlazar, y no la primera guardada que se le parezca: un lector con acceso podría guardar antes una operación con la forma de un enlace y bloquear la biblioteca; mientras la operación no esté guardada no tiene estado y no bloquea) está en `request`, el `push` se deshace entero con `403 link_not_allowed`: no se guarda nada de él. No se borra nada de lo que entró antes. No es un motivo de rechazo de una operación (`OperationRejection`), porque esos dependen solo de lo que dice la operación (DAT-001) y este depende del registro. Quien sube con la app modificada solo la parte sin roles obtiene una copia privada suya, sin la operación de enlace, y se acepta (D93).
 9a. **Nada del futuro (SEG-028).** Una operación con un HLC más de una hora por delante del reloj del servidor (la deriva máxima de la app, `CloudPush::MAX_CLOCK_DRIFT_MILLIS`) se rechaza (`too_far_ahead`, no se guarda) y retiene a las siguientes de su autor como los demás rechazos. Sin esto, una sola operación fechada en `9999999999999999-ffffffff-…` subía el suelo de todos los HLC que la biblioteca escribiera después, la nube incluida: el contador de `CloudAuthor::hlc` pasa de ocho cifras y la nube no vuelve a firmar nada. (El tratamiento del desbordamiento en `CloudAuthor` es de la sesión principal.)
 
@@ -77,7 +78,7 @@ Las aplica `App\Sync\CloudPush` (el controlador solo mapea). Todo el `push` va e
 | 3 · `C` atada al id local de su enlace | `CloudPush::link()` (la fija una vez, `CloudLibrary::link()`) y `CloudPush::accept()` (la compara) | `testAnOperationOfAnotherLocalLibraryIsRejectedInBothAccounts`, `testWithoutALinkNothingEnters` |
 | Enlace firmado por un dispositivo de la cuenta dueña | `CloudPush::link()` → `DeviceRepository::findOneOfUser()` | `testWithoutALinkNothingEnters` |
 | 4 · Claves de firma dentro de cada `C` | `CloudDeviceKeyRepository::findOneInLibrary()`, `CloudPush::verifyAuthor()` | `testSomebodyElsesKeyForADeviceIdIsRefused` |
-| 5 · Avisos, invitaciones y actividad cuelgan de `C` | avisos (7.3) e invitaciones (7.6.1: `invitation.cloud_library_id`) sí; la actividad aún no existe (7.7) | `CloudEventsControllerTest`, `InvitationControllerTest` |
+| 5 · Avisos, invitaciones y actividad cuelgan de `C` | avisos (7.3) e invitaciones (`invitation.cloud_library_id`) sí; el registro de actividad (7.7) guarda el id de `C` como valor, sin clave foránea a propósito, para que sus líneas sobrevivan a la biblioteca | `CloudEventsControllerTest`, `InvitationControllerTest` |
 | 6 · Un dispositivo es su id junto con su clave | `Device` (restricción única `(device_id, public_key)`), `DeviceTokenAuthenticator`; arreglado en 7.1 | `AccountControllerTest`, y `testARemovedDeviceNoLongerPulls` para las rutas de la nube |
 | 7 · Rechazar solo por lo que dice la operación | `CloudPush::accept()` y `inOrder()`: ninguna comprobación mira lo ya guardado de su autor | `testAnOldOperationArrivingLateIsStoredNotRejected` |
 | 8 · Dos subidas a la vez (`C1` y `C2`) | cliente y 7.5: el servidor ya soporta dos `C` con el mismo id local (costura 1 y 2); la fusión y el borrado de la sobrante no están hechos | — |
@@ -104,7 +105,7 @@ Cadenas, nunca el id local de la biblioteca (D84):
 | `urn:kosmotheka:cloud-library:<C>` | Las cuentas con membresía en `C` | Tras un `push` cuya transacción se confirmó con `received > 0` |
 | `urn:kosmotheka:account:<id de usuario>` | Esa cuenta («tu lista de bibliotecas cambió») | Al crear una biblioteca de la nube para esa cuenta |
 
-Un `push` que solo trae operaciones conocidas o rechazadas no publica nada. Hoy no hay ruta para borrar una biblioteca de la nube (solo desaparece con la cuenta de su dueña, y entonces no queda a quién avisar), así que borrar no publica. Cuando 7.5 añada miembros, entrar o salir de una biblioteca avisará en el tema de la cuenta afectada.
+Un `push` que solo trae operaciones conocidas o rechazadas no publica nada. Hoy no hay ruta para borrar una biblioteca de la nube (solo desaparece con la cuenta de su dueña, y entonces no queda a quién avisar), así que borrar no publica. Entrar en una biblioteca (aceptar una invitación) sí avisa, en el tema de la cuenta que entra («tu lista de bibliotecas cambió») y en el de la que invitó.
 
 ### `GET /v1/cloud/events`
 
@@ -130,7 +131,7 @@ Siempre **actualizaciones privadas** con datos `{}`, **después del commit** y n
 
 ### Caducidad del token y retirar el acceso
 
-El token dura **1 hora** y la app pide uno nuevo antes de que caduque. Si una cuenta pierde el acceso a una biblioteca (o un dispositivo se quita), hasta que el token caduque ese dispositivo todavía puede enterarse de **que** la biblioteca cambió, nunca de **qué** cambió: el aviso es `{}`, y el acceso a los datos lo sigue decidiendo `pull`, que ya no responde (`404`/`401`). El siguiente token ya no lleva el tema. (Un dispositivo quitado ni siquiera puede pedir otro: `401`.)
+El token dura **10 minutos** (`EventsToken::LIFETIME_SECONDS`, SEG-037) y la app pide uno nuevo antes de que caduque. Si una cuenta pierde el acceso a una biblioteca (o un dispositivo se quita), hasta que el token caduque ese dispositivo todavía puede enterarse de **que** la biblioteca cambió, nunca de **qué** cambió: el aviso es `{}`, y el acceso a los datos lo sigue decidiendo `pull`, que ya no responde (`404`/`401`). El siguiente token ya no lleva el tema. (Un dispositivo quitado ni siquiera puede pedir otro: `401`.)
 
 ### Motor de fusión (7.4.4)
 
@@ -281,7 +282,7 @@ Las pasadas iguales siguen saliendo en dos tandas, como en las medidas anteriore
 
 ## La identidad de la nube (7.5.2a, D76, D95)
 
-Cada biblioteca de la nube tiene un dispositivo propio, «la nube»: un id, un par de claves Ed25519 y la capacidad de firmar operaciones en esa biblioteca. En 7.5.2a el servidor aprende a tenerlo y a firmar; **todavía nadie le pide que firme** (eso es 7.5.2b y 7.5.3: escribir `member.account_id` y vincular dispositivos).
+Cada biblioteca de la nube tiene un dispositivo propio, «la nube»: un id, un par de claves Ed25519 y la capacidad de firmar operaciones en esa biblioteca. En 7.5.2a el servidor aprende a tenerlo y a firmar; en 7.5.2b y 7.5.3 se le pide que firme: escribir `member.account_id` (`member.link_account`) y vincular dispositivos (`device.link_account`), más abajo.
 
 - **El id sale de la clave.** `cloud_device_id` no es un UUID al azar: es `SHA-256(clave pública de 32 bytes)`, los 16 primeros bytes con el nibble de versión a 8 y los bits de variante a `10`, en minúsculas (UUID versión 8; `App\Sync\CloudDeviceId`, `kosmotheka_domain::cloud_device_id`; la fórmula exacta y un vector están en la regla 12 de `spec/README.md`). Por qué: la fila `device` de la nube llega a los dispositivos por el registro, y una fila `device` solo la puede crear ese mismo dispositivo (`other_device`). Si el id fuera libre, un miembro con la app modificada registraría por la red local el id de la nube con una clave suya, y los dispositivos que lo recibieran antes que el registro de verdad le darían el poder de la nube. Con el id derivado, ese registro falso no cumple «el id sale de la clave» y no tiene poder en ningún dispositivo. Lo comprueban los dos jueces (`cloud_device()` solo devuelve el id nombrado si la clave registrada lo da).
 - **Secreto del servidor:** `CLOUD_KEY_SECRET` (32 bytes en base64, ver `docs/development/server.md`). `App\Security\CloudKeyVault` cifra con **XChaCha20-Poly1305** (SEG-074): el valor es `v1.` y base64url de `nonce(24) ‖ cifrado`, con la clave derivada del secreto (HMAC-SHA256 con el propósito `kosmotheka cloud library key`) y **el id de la biblioteca de la nube como dato asociado**, así que la clave sellada de una biblioteca copiada en la fila de otra no abre. Abrir con otro secreto, con otra biblioteca o con un valor dañado lanza `CloudKeyVaultException`, nunca bytes que parezcan una clave. Los valores anteriores (`secretbox` sin versión ni dato asociado) se siguen leyendo, y la migración `Version20261016120000` los sella otra vez (pasos de despliegue en [server.md](../development/server.md)). Vacío, la nube es opcional (D18): las bibliotecas no tienen identidad, los campos de la API salen nulos y nada falla.
@@ -293,7 +294,7 @@ Cada biblioteca de la nube tiene un dispositivo propio, «la nube»: un id, un p
 
 ## El enlace de la cuenta con su persona (7.5.2b-2, D76, D96)
 
-`POST /v1/cloud/libraries/claim`, autenticada con el dispositivo actual, **sin cuerpo** (si llega alguno se ignora: ningún id del cliente decide nada, D84). Sin límite de peticiones propio, como el resto de las rutas de la nube (no tienen ninguno; el `RequestLimiter` es de las cuentas). La hace `App\Sync\AccountLinker`. La app la llama al principio de cada `sync_all` (que es también lo que corre al iniciar sesión), antes de listar; si falla, la sesión sigue con lo que haya.
+`POST /v1/cloud/libraries/claim`, autenticada con el dispositivo actual, **sin cuerpo** (si llega alguno se ignora: ningún id del cliente decide nada, D84). Limitada por `cloud_link` (30 por hora y cuenta, el mismo cubo que `link`); ver [Límites de peticiones](#límites-de-peticiones). La hace `App\Sync\AccountLinker`. La app la llama al principio de cada `sync_all` (que es también lo que corre al iniciar sesión), antes de listar; si falla, la sesión sigue con lo que haya.
 
 **Candidatas**, en una consulta DQL: las bibliotecas **enlazadas** con una fila `device` de id `D` (sin distinguir mayúsculas), `public_key` y `vouched_key` iguales a la clave `K` del dispositivo autenticado, y persona (índice `idx_catalog_devices_vouched_key`). Una asignación sin clave avalada **no** enlaza, aunque el juez la siga creyendo para el rol (D96).
 
@@ -391,7 +392,7 @@ La biblioteca queda igual: no se toca el registro ni el catálogo, así que `app
 
 ## Invitaciones (7.6.1, D43)
 
-> El lado del servidor de «invitar con un enlace». Especificación: D43 con su enmienda del 10/10/2026. La app (7.6.2 y 7.6.3) aún no llama a estas rutas. Código en `src/Sync/Invitation/`; tests en `tests/Controller/InvitationControllerTest.php`.
+> El lado del servidor de «invitar con un enlace». Especificación: D43 con su enmienda del 10/10/2026. La app llama a estas rutas (7.6.2 y 7.6.3, [más abajo](#invitaciones-en-la-app-762-d43)). Código en `src/Sync/Invitation/`; tests en `tests/Controller/InvitationControllerTest.php`.
 
 ### Qué es una invitación
 
@@ -489,7 +490,7 @@ Con los limitadores de siempre (atributos `#[RateLimit]` en las acciones, `confi
 | `invitation_accept` | 10 cada 15 min | cuenta |
 | `cloud_sync` | 600 por hora para subir y otros 600 para bajar | cuenta (`push` y `pull`, aparte) |
 | `cloud_link` | 30 por hora | cuenta (reclamar la persona y enlazar una biblioteca, juntos) |
-| `cloud_events` | 60 por hora | cuenta (el token de los avisos) |
+| `cloud_events` | 120 por hora | cuenta (el token de los avisos) |
 
 Las cifras de las rutas de la nube las decidió el maintainer el 15/10/2026: son anchas para que no frenen la primera subida de una biblioteca grande (lotes de 1.000 operaciones), y se gastan antes de mirar la biblioteca (después de leer el cuerpo: uno mal formado no gasta). Crear y listar bibliotecas no tienen límite propio. Las cifras de correo las decidió el maintainer el 11/10/2026 (SEG-044). Los tres límites de correo (cuenta, pareja y dirección) se **miran todos antes de gastar ninguno** (`RequestLimiter::requireInvitationEmailOpen`) y se **gastan solo cuando el correo ya se ha enviado** (`spendInvitationEmail`): una validación, una regla o un envío que falla no cuestan cuota, y un límite agotado no gasta los otros. **Límite conocido:** la huella es la del correo tal como se escribe, normalizado solo a minúsculas y sin espacios. `laura+1@…` y `laura@…` cuentan como direcciones distintas, a propósito: cada proveedor trata los alias a su manera y no se adivina cuál es el mismo buzón. El tope por cuenta (10 al día) sigue acotando lo que una cuenta puede mandar.
 
@@ -673,7 +674,7 @@ Un fallo de TMDB (cuota, error, tiempo agotado, basura) **no se guarda**; un det
 
 **Proveedores y atribución.** TMDB aparece primero en la lista de fuentes de películas y series, con la etiqueta «Pide una cuenta»; solo se puede encender con sesión en un servidor que lo ofrezca (si no, un texto explica que llega con la cuenta, D62) y se apaga como las demás. Un texto corto dice qué se envía. Una sección **«Fuentes de datos»** dentro de Proveedores lleva el logo de TMDB (el oficial, de su página de marca: `app/src/assets/tmdb-logo.svg`, empaquetado con la app, nada se carga de fuera) y el aviso, en inglés y su traducción en español. En los resultados, la etiqueta de texto «TMDB» como las demás fuentes; **ningún logo en las fichas** (decisión del maintainer, opción A).
 
-**Pendiente:** la clave propia de TMDB en Ajustes (D62 la prevé para todo proveedor con clave) queda fuera de esta pieza.
+**La clave propia de TMDB en Ajustes** (D62 la prevé para todo proveedor con clave) quedó fuera de esta pieza y se hizo después: ver «Clave propia para TMDB y RAWG», más abajo.
 
 **Qué test cubre cada caso hostil** (`tests/Controller/TmdbSearchTest.php` y, en la app, `cloud/tests/tmdb_tests.rs` y `cloud/client.rs`):
 
@@ -843,10 +844,10 @@ Los juegos de mesa solo se buscaban en Wikidata (y por código de barras en Game
 
 ## Dónde está en el código
 
-- `src/Controller/CloudController.php`: las cuatro rutas, sin lógica.
-- `src/Sync/`: `CloudLibraryAccess` (la puerta), `CloudLibraryCreator`, `CloudPull`, `CloudPush` (las reglas), `OperationReader` (estructura), `SchemaVersion` (lee `spec/sync.json`), `OperationRejectedException`.
+- `src/Controller/CloudController.php`: las seis rutas de `/v1/cloud/libraries` (crear, listar, `claim`, `pull`, `link`, `push`), sin lógica.
+- `src/Sync/`: `CloudLibraryAccess` (la puerta), `CloudLibraryCreator`, `CloudPull`, `CloudPush` (las reglas), `CloudLink` (el enlace), `OperationReader` (estructura), `SchemaVersion` (lee `spec/sync.json`), `OperationRejectedException`; y las de las secciones siguientes: `CloudAuthor` y `CloudIdentityIssuer` (la identidad de la nube), `AccountLinker` (`claim`), `AccessCutter` (cortar el acceso), `CloudOwnership` (la dueña) y `Invitation/`.
 - `src/Dto/`: `PullRequest` (con `#[MapRequestPayload]`), `PushRequest` (no: ver su comentario), `PushedOperation`, `PushResult`.
-- `src/Entity/` y `src/Repository/`: las cuatro tablas. Los códigos de error nuevos (`not_found`, `schema_version`, `invalid_request`) están en `AccountErrorCode` y `AccountException`.
+- `src/Entity/` y `src/Repository/`: las tablas de arriba (`CloudLibrary`, `Membership`, `CloudOperation`, `CloudDeviceKey`, `Invitation`). Los códigos de error nuevos (`not_found`, `schema_version`, `invalid_request`) están en `AccountErrorCode` y `AccountException`.
 
 ## En la app
 

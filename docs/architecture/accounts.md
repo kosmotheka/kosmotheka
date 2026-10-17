@@ -1,16 +1,16 @@
 # Cuentas
 
-> La cuenta (`user`) en el servidor: alta, confirmación de correo, errores y límites de peticiones. Decisiones de fondo: D38–D40, D49, D50, D51. Documento vivo: se completa hito a hito (hito 7.1).
+> La cuenta (`user`) en el servidor: alta, confirmación de correo, inicio de sesión con el dispositivo, entrar con Google, segundo factor, errores, límites de peticiones y borrado. Decisiones de fondo: D38–D40, D49, D50, D51, D77, D78 y D100. Puesto al día con el código el 17/10/2026.
 
 ## Qué es una cuenta
 
 Una **cuenta** (`App\Entity\User`) es el acceso de una persona al servidor: correo, contraseña (hash `auto`, argon2id si está disponible), nombre, idioma (`en` o `es`) y roles. No es lo mismo que un **miembro** (`member`) de una biblioteca local: una cuenta puede más adelante enlazarse a un miembro de cada biblioteca que comparte (D46), pero esta parte del trabajo todavía no toca esa relación.
 
-Una cuenta se crea **sin confirmar**: hasta que se confirma el correo con un código de 6 cifras (D49), no se puede usar para nada más (iniciar sesión es el hito 7.1, parte 2). Las cuentas sin confirmar se borran a las 24 h (pendiente, ver abajo).
+Una cuenta se crea **sin confirmar**: hasta que se confirma el correo con un código de 6 cifras (D49), no se puede usar para nada más (iniciar sesión se explica más abajo). Las cuentas sin confirmar se borran a las 24 h (ver «Purga de cuentas e invitaciones caducadas»).
 
 ## Códigos por correo (D49, D50)
 
-Tres usos comparten el mismo mecanismo (`App\Entity\EmailCode`, `App\Security\EmailCodeIssuer`): confirmar el correo al registrarse (`confirm_email`), recuperar la contraseña olvidada (`reset_password`, parte 3) y confirmar una acción delicada de una cuenta sin contraseña (`confirm_action`, D100). Un código de un propósito no sirve para otro: el código vivo se busca por cuenta y propósito.
+Tres usos comparten el mismo mecanismo (`App\Entity\EmailCode`, `App\Security\EmailCodeIssuer`): confirmar el correo al registrarse (`confirm_email`), recuperar la contraseña olvidada (`reset_password`) y confirmar una acción delicada de una cuenta sin contraseña (`confirm_action`, D100). Un código de un propósito no sirve para otro: el código vivo se busca por cuenta y propósito.
 
 - El código son **6 cifras** (`random_int`, con ceros a la izquierda).
 - Caduca a los **15 minutos**.
@@ -25,7 +25,7 @@ Los errores de negocio de la API de cuentas responden con un cuerpo JSON `{"erro
 
 Los errores de validación de los DTOs (`#[MapRequestPayload]`) no pasan por aquí: Symfony responde **422** con su formato habitual. Un límite de peticiones alcanzado responde **429** con `{"error":"too_many_requests"}` y una cabecera `Retry-After`.
 
-## Endpoints (parte 1)
+## Alta y códigos del correo
 
 Todos bajo `/v1/account`, JSON, `snake_case`.
 
@@ -53,7 +53,7 @@ Cuerpo: `{email, code, password}` (contraseña 8–4096 caracteres: **la que que
 
 ### `POST /v1/account/code`
 
-Cuerpo: `{email, purpose}`. Por ahora solo acepta `purpose: "confirm_email"` (**422** para cualquier otro valor; `reset_password` llega en la parte 3 con su propio endpoint). Limitado por `email_code` (por IP). Responde siempre **202** con `{}`, también cuando la dirección ha gastado sus correos (D100); solo reenvía el código si la cuenta existe, no está confirmada y le quedan correos.
+Cuerpo: `{email, purpose}`. Solo acepta `purpose: "confirm_email"` (**422** para cualquier otro valor): la recuperación de la contraseña tiene su propio endpoint, `POST /v1/account/password/forgot`, y el código `confirm_action` su propia ruta, `POST /v1/account/code/action`. Limitado por `email_code` (por IP). Responde siempre **202** con `{}`, también cuando la dirección ha gastado sus correos (D100); solo reenvía el código si la cuenta existe, no está confirmada y le quedan correos.
 
 ### `POST /v1/account/code/action` (autenticada)
 
@@ -79,7 +79,7 @@ Sin cuerpo. Limitada por `email_code` (por IP) y por `email_per_address`. Manda 
 
 `symfony/mailer`, texto plano (sin Twig), asunto y cuerpo desde `translations/emails.{en,es}.yaml` en el idioma de la cuenta. En desarrollo lo captura Mailpit; en producción, Brevo (ver `docs/development/server.md`).
 
-## Dispositivos y su token (parte 2)
+## Dispositivos y su token
 
 Cada instalación de la app es un **dispositivo** (`App\Entity\Device`): su id (`device_id`) es el mismo UUID que ya usa en sus HLCs (la clave primaria de la fila la genera el servidor), y tiene una clave pública Ed25519 (32 bytes, base64url sin relleno — el mismo formato que decodifica `App\Sync\OperationSignature`). El servidor guarda solo el **hash SHA-256** del token de sesión (`tokenHash`); `tokenHash = null` significa que el dispositivo está desconectado. **Un dispositivo es una instalación de la app, no un móvil**: restaurar el móvil o reinstalar la app crea un dispositivo nuevo. **El servidor identifica un dispositivo por su id y su clave pública juntos**, no por el id solo: el id es público (viaja en cada operación), y quien lo supiera podría quedárselo iniciando sesión el primero con una clave propia (D84, costura 6; SEG-016). Una misma instalación (id y clave) no puede «mudarse» a otra cuenta, y una cuenta no puede cambiar la clave de un id que ya tiene en silencio. Para dar el móvil a otra persona, la app cambia de identidad (D81, abajo).
 
@@ -135,7 +135,7 @@ Todos bajo `/v1`, requieren las cabeceras de arriba.
 | `POST /v1/account/devices/{id}/restore` | **204**; deshace la retirada mientras la instalación no se haya enterado: sigue con su sesión como si nada. Si ya recibió `device_removed` (y por tanto ya borró sus bibliotecas) → **409** `device_already_reset`. Uno no quitado → **204** sin cambios; de otra cuenta o desconocido → **404** `device_not_found` |
 | `DELETE /v1/account/devices/{id}` | **204**; **quita** ese dispositivo (D81): marca `removedAt` y conserva la fila, para que esa instalación (id y clave) siga ligada a la cuenta, y el hash del token, para poder deshacerlo. Sirve también para el propio dispositivo: es lo que hace la app en «Dejar este dispositivo a otra persona», y entonces no se puede deshacer. Quitarlo otra vez no cambia nada. Un dispositivo de otra cuenta o desconocido → **404** `{"error":"device_not_found"}` |
 
-## Contraseña olvidada y cambio de contraseña (parte 3, D50)
+## Contraseña olvidada y cambio de contraseña (D50)
 
 ### `POST /v1/account/password/forgot`
 
@@ -246,7 +246,7 @@ Correo desconocido en cualquiera de los dos → mensaje de error y salida distin
 
 ## Qué ofrece el servidor (D77)
 
-`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "sign_in_with_google": false, "two_factor": true}`. «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` es `true` si el servidor tiene un cliente de Google configurado (`GoogleSignIn::isConfigured`); `two_factor` lee `TWO_FACTOR_ENABLED` (D78, más abajo).
+`GET /v1/server` (pública): `{"name": "Kosmotheka", "api_version": 1, "registration": true, "registration_restricted": false, "sign_in_with_google": false, "two_factor": true, "events": false, "invitations": false, "invitation_base": null, "metadata": []}`. `registration_restricted` dice que solo algunas direcciones pueden crear cuenta (nunca cuáles); `events`, `invitations` e `invitation_base` cuentan los avisos en directo y los enlaces de invitación ([cloud.md](cloud.md)); `metadata` lista los servicios de datos que el servidor busca para sus cuentas (`google_books`, `tmdb`, `rawg`, `bgg`, `comic_vine`). «El servidor dice lo que ofrece»: la app usa esta respuesta para decidir qué mostrar, en vez de dar por supuesto qué funciones existen. `sign_in_with_google` es `true` si el servidor tiene un cliente de Google configurado (`GoogleSignIn::isConfigured`); `two_factor` lee `TWO_FACTOR_ENABLED` (D78, más abajo).
 
 ## Continuar con Google (7.1, D77)
 
@@ -287,9 +287,9 @@ Los de `finish`, con el cuerpo de siempre (`{"error": "<código>"}`): `google_un
 - **Purga:** los intentos caducados se borran con la purga horaria (`AccountPurger`, `app:accounts:purge`).
 - **Rutas con un secreto en la dirección** (no se pueden evitar del todo): `GET /v1/auth/google/connect?attempt=…` (el id del intento) y `GET /v1/auth/google/callback?code=…&state=…` (el código de Google y el `state`). Hay que **excluirlas del registro de accesos** de cualquier proxy (en desarrollo, el `map $loggable` de `server/docker/nginx/nginx.conf`; ver [development/server.md](../development/server.md)). El código de la app (`kosmotheka://auth/google?attempt=…&code=…`) va en la página que se enseña y en el enlace al sistema, nunca en una petición al servidor.
 
-### La duda de este encargo (para el maintainer)
+### El segundo factor al entrar con Google
 
-Esta sección decía que el segundo factor de Google sustituiría al de D78. Se ha construido **al revés**: con Google también se pide el segundo factor de la cuenta, porque quien lo activó lo hizo para que una sola llave (aquí, entrar en Google) no baste. Si la decisión es otra, es quitar una línea en `GoogleController::finish`. Pendiente de decidir.
+Con Google **también se pide el segundo factor de la cuenta**, si lo tiene activado: `GoogleController::finish` comprueba el límite de fallos de la cuenta y llama a `requireTwoFactor` después de comprobar el estado de la cuenta y antes de tocar el dispositivo. La razón: quien activó el segundo factor lo hizo para que una sola llave (aquí, entrar en Google) no baste. D78 proponía lo contrario («al entrar con Google lo protege el segundo factor de Google», a revisar al construirlo); lo que hace el código es lo de arriba, y si D78 cambia, es quitar esa llamada.
 
 ### En la app
 
@@ -303,13 +303,13 @@ La identidad de un dispositivo (su id y su clave) firma sus operaciones, y cada 
 - **«Dejar este dispositivo a otra persona»**: la app llama a `DELETE /v1/account/devices/{su propio id}`, borra todas sus bibliotecas y genera un id y una clave nuevos.
 - **Quitado desde otro dispositivo:** la próxima llamada de esa instalación recibe `device_removed`, y la app hace lo mismo que en el punto anterior. El servidor apunta cuándo se lo dijo (`removalNoticedAt`); hasta entonces, la retirada se puede deshacer con `restore`, por si fue un error. Solo cuenta si se lo dice a la instalación de verdad: con su token, o al iniciar sesión con su clave. El id de un dispositivo lo ven todos los que comparten una biblioteca, y alguien que solo conoce el id no puede acabar con la posibilidad de deshacer.
 - La app, al quitar un dispositivo, avisa de lo que pasará, y de que se perderán las bibliotecas que ese dispositivo no tenga en la nube.
-- Retirarle el acceso en cada biblioteca compartida (D71) llega con el hito 7.5.
+- Quitar un dispositivo de la cuenta **no le retira el acceso a las bibliotecas compartidas**: eso lo hace quien administra cada una («Retirar el acceso de este dispositivo», intención `device.remove`, D71), y la nube corta el acceso al momento (ver [cloud.md](cloud.md#la-nube-corta-el-acceso-754b-d98-d71)).
 
-## En la app (hito 7.1)
+## En la app
 
 El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la interfaz solo llama a comandos de Tauri.
 
-- **Qué guarda el dispositivo**, en `local_state` (nunca se sincroniza ni va en las copias): el servidor elegido (si no hay ninguno, el oficial, `https://api.kosmotheka.app`), el token, una copia del usuario, el último email usado (para rellenar el formulario) y un aviso pendiente (`device_removed` o `signed_out_password_changed`) que la interfaz muestra una vez.
+- **Qué guarda el dispositivo**, en `local_state` (nunca se sincroniza ni va en las copias): el servidor elegido (si no hay ninguno, el oficial, cuya dirección está fija en el código de la app), el token, una copia del usuario, el último email usado (para rellenar el formulario) y un aviso pendiente (`device_removed` o `signed_out_password_changed`) que la interfaz muestra una vez.
 - **Otro servidor:** HTTPS siempre; HTTP solo en `localhost`, una IP privada, `10.0.2.2` (el emulador de Android) o en compilaciones de depuración. Para cambiar de servidor hay que cerrar sesión antes.
 - **Iniciar sesión** pide un reto nuevo en cada intento (también al reintentar con el código del segundo factor) y lo firma con la clave del dispositivo, junto con el origen del servidor y el propósito (`login` o `google`; `account/origin.rs`, D100). El origen sale de la dirección del servidor que la app tiene guardada (`Url::origin()`: minúsculas, sin barra, sin el puerto del esquema).
 - **Acciones delicadas** (D100): cambiar la contraseña, restablecerla, borrar la cuenta y activar o quitar el segundo factor piden lo que dice «Acciones delicadas» arriba. La app lo sabe por `has_password` y `two_factor_enabled` de `GET /v1/account`, y al restablecer la contraseña (sin sesión) por la respuesta `two_factor_required`, que la lleva a una pantalla para el código de la app y repite la petición con el mismo código del correo. A una cuenta sin contraseña se le ofrece «Enviarme un código» (`request_action_code`) en lugar del campo de contraseña (`proof-fields.tsx`).
@@ -323,6 +323,5 @@ El núcleo en Rust habla con el servidor (`app/src-tauri/src/account/`); la inte
 
 ## Pendiente
 
-- La retirada en las bibliotecas al quitar un dispositivo (D81, hito 7.5).
-- Qué pasa con los `member` de una cuenta borrada, cuando existan bibliotecas en el servidor (hito 7.2).
-- Registro de actividad de la cuenta (hito 7.7).
+- Guardar los códigos de respaldo en un archivo: hoy la app solo permite copiarlos.
+- El correo de una cuenta no se cambia nunca (D77): para pasar a otro hay que invitar a ese correo a las bibliotecas como administrador y que la cuenta nueva quite a la vieja.
