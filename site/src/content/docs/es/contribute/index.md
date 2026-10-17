@@ -25,11 +25,15 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 9. [Cómo auditamos, para repetirlo por tu cuenta](./audit-method/): el método, no los informes.
 10. [Avisar de un fallo de seguridad](./report-a-vulnerability/): cómo hacerlo en privado.
 
+## Los datos, las cuentas y la nube
+
+11. [El modelo de datos](./data-model/): las entidades del catálogo y de compartir, y por qué la obra y la edición van separadas.
+12. [Cuentas e inicio de sesión](./accounts/): registro, Google, segundo factor y el dispositivo como sesión.
+13. [La nube: la API y las reglas de acceso](./cloud-api/): un mapa de las rutas y de quién llega a qué biblioteca.
+
 ## Documentos del repositorio
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), el procedimiento y las reglas que importan (en inglés).
 - [SECURITY.md](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md), cómo avisar de un fallo de seguridad en privado.
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [El registro de decisiones](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) y [la arquitectura](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), en español.
-
-Todavía no están en esta documentación el modelo de datos, las cuentas y la API de la nube. Hasta que lo estén, mira la carpeta de arquitectura, enlazada arriba.
