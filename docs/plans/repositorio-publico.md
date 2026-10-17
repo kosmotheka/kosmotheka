@@ -95,6 +95,13 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
   - **El registro cerrado del servidor oficial** solo se descubre al crear la cuenta.
   - **Perder el móvil con el segundo factor y sin los códigos de reserva:** solo existe el comando de consola `app:user:two-factor-disable`. La guía dice que se escriba a privacy@kosmotheka.com desde el correo de la cuenta; el maintainer confirma si ese es el procedimiento.
   - **«Invitar»** tiene tres bloqueos; la guía explica dos.
+- **Primera tanda en inglés** (17/10/2026). Textos de la app en inglés que convendría pulir, apuntados al traducir:
+  - «Copies» es a la vez el campo de unidades y cada ejemplar («3 copies» frente a «3 units»);
+  - la bienvenida dice «Public catalogs» y «sync»;
+  - la ortografía mezcla inglés de EE. UU. y británico (catalog/catalogue, Licences);
+  - «Wi-Fi», «wifi» y «Wifi» conviven;
+  - en la Ayuda, «"Whose is"» lleva comillas que no encajan;
+  - «Add one» no dice qué se añade.
 - **Esqueleto de docs.kosmotheka.com hecho** (paso 2, 16/10/2026): Starlight en `site/`, `/es/` y `/en/` con el español por defecto (lo no traducido sale en español con aviso), mismas carpetas en inglés en los dos idiomas, sin nada de terceros, compilado en la CI y sin publicar. No se publica antes de abrir el repositorio: enlaza a `github.com/kosmotheka/kosmotheka`.
 - **Guía de usuario, primera tanda** (paso 4, 16/10/2026): siete páginas en español de lo que funciona sin cuenta. Falta la revisión de jerga por otra sesión, sobre todo «Compartir en casa» y «Copias de seguridad». Diferencias con la app que salieron al escribirla, por arreglar:
   - **La Ayuda de la app está desfasada:** nombra «Mostrar código» y «Guardar copia», que ya no se llaman así, y no cuenta el «¿De quién es?» con el rol al emparejar (D97).
