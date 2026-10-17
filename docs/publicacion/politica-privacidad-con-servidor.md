@@ -71,7 +71,7 @@ De cada cosa se guarda **qué fue, cuándo, la cuenta y el dispositivo, la direc
 
 ## Quién más trata tus datos
 
-- **Alojamiento:** el servidor está en DigitalOcean, en su centro de datos de Ámsterdam (Países Bajos, Unión Europea) [A COMPROBAR por el maintainer: Ámsterdam o Fráncfort].
+- **Alojamiento:** el servidor está en DigitalOcean, en su centro de datos de Ámsterdam (Países Bajos, Unión Europea).
 - **Correo:** los mensajes (códigos de confirmación, recuperación de contraseña, invitaciones) se envían a través de Brevo (Sendinblue SAS, Francia), que recibe la dirección de destino y el contenido del mensaje.
 - No hay nadie más: ni publicidad, ni analítica nuestra, ni seguimiento, ni venta de datos. Lo único que va a Google son los datos técnicos de ML Kit al escanear (arriba).
 

@@ -50,7 +50,8 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 
 ## Recordatorios para el maintainer (17/10/2026)
 
-- **El centro de datos del VPS:** la política dice Ámsterdam; puede ser Fráncfort. Mirarlo en el panel del proveedor y corregirlo si hace falta.
+- ~~**El centro de datos del VPS**~~: confirmado por el maintainer el 17/10/2026, es Ámsterdam, como dice la política.
+- **Cuenta de revisión de Google Play:** hecha el 17/10/2026, con su biblioteca en la nube.
 - **El registro de accesos de nginx en producción:** comprobar que no apunta `/v1/metadata/`. Hacer una búsqueda desde la app y después `grep -c "metadata"` sobre el registro de la API: tiene que dar 0. La política lo promete.
 - **Las copias automáticas cifradas** (sesión 9.1 de las notas privadas de producción) y una restauración de prueba.
 

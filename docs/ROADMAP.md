@@ -247,6 +247,7 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **«¿Qué leo ahora?».**
 - **Estantería visual** con lomos.
 - **Base de datos colaborativa** (futuro lejano).
+- **Cambiar de cuenta en un dispositivo sin dejarlo como nuevo** (17/10/2026): para crear la cuenta de revisión de Google Play, el maintainer tuvo que dejar su móvil como nuevo, entrar con la otra cuenta, subir la biblioteca y volver a la suya. Hoy un dispositivo es de una cuenta; pensar si tiene sentido salir de una cuenta y entrar en otra conservando lo local, sin mezclar bibliotecas.
 - **Reconocer mejor los dispositivos «sin persona»** (27/09/2026): con muchos dispositivos y sin servidor pueden juntarse varios sin persona difíciles de distinguir. Ideas: en Android, usar como nombre por defecto el de los ajustes del móvil (el mismo que ve el Bluetooth del coche) o el modelo, en vez de «Kosmotheka»; enseñar el nombre al emparejar («Te verán como…», con «Cambiar»); y mostrar en la fila cuándo apareció y cuándo se sincronizó por última vez. Se dejó para más adelante para no añadir código nativo de Android por un detalle.
 - **Precio de compra** de cada ejemplar: fuera de la Fase 6 (28/09/2026); obligaría a elegir divisa, entre otras cosas.
 - **Llaves de acceso (passkeys)** para entrar sin contraseña (01/10/2026): Tauri no tiene plugin oficial; si se construye la integración, publicarla como plugin libre de Tauri. La biometría y el segundo factor entran ya en la Fase 7 (D78).
