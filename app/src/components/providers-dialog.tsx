@@ -501,6 +501,9 @@ export function ProvidersDialog({
         </div>
         {body}
         {credits}
+        <Button className="self-end" onClick={() => onOpenChange(false)}>
+          {t("whatsNew.close")}
+        </Button>
       </div>
     </ResponsiveDialog>
   );

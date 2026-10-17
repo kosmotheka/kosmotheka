@@ -1108,6 +1108,20 @@ mockIPC((cmd, args) => {
     case "lookup_code": {
       const { code } = args as { code: string };
       const digits = code.replace(/\D/g, "");
+      // Rust decides what a number is: a wrong check digit on an ISBN-13 is no ISBN, and nothing is asked.
+      const isbn13Ok = (d: string) =>
+        d.length === 13 &&
+        d.split("").reduce((sum, c, i) => sum + Number(c) * (i % 2 === 0 ? 1 : 3), 0) % 10 === 0;
+      if (digits.length === 13 && /^97[89]/.test(digits) && !isbn13Ok(digits)) {
+        return {
+          kind: null,
+          candidates: [],
+          warnings: [],
+          existingEditionId: null,
+          invalidIsbn: true,
+          isbn: null,
+        };
+      }
       // A 978/979 EAN-13 is an ISBN: always a book. One sample EAN is a known
       // album; any other code has no clear kind, showing the "¿Qué es?" step.
       if (digits.length === 13 && /^97[89]/.test(digits)) {
@@ -1119,6 +1133,8 @@ mockIPC((cmd, args) => {
           candidates,
           warnings: [],
           existingEditionId: candidates[0]?.existingEditionId ?? null,
+          invalidIsbn: false,
+          isbn: digits,
         };
       }
       if (digits === "5099902988371") {
@@ -1127,9 +1143,18 @@ mockIPC((cmd, args) => {
           candidates: mockCandidates("music", "The Dark Side of the Moon"),
           warnings: [],
           existingEditionId: null,
+          invalidIsbn: false,
+          isbn: null,
         };
       }
-      return { kind: null, candidates: [], warnings: [], existingEditionId: null };
+      return {
+        kind: null,
+        candidates: [],
+        warnings: [],
+        existingEditionId: null,
+        invalidIsbn: false,
+        isbn: null,
+      };
     }
     case "work_marks": {
       const { workId } = args as { workId: string };

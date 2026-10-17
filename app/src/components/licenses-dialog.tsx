@@ -199,6 +199,9 @@ export function LicensesDialog({
             </p>
           )}
         </section>
+        <Button className="self-end" onClick={() => onOpenChange(false)}>
+          {t("whatsNew.close")}
+        </Button>
       </div>
     </ResponsiveDialog>
   );

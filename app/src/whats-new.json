@@ -13,8 +13,8 @@
       "en": "Changing or resetting the password and deleting the account ask for the code from the authenticator app, if the account has one."
     },
     {
-      "es": "Al añadir, un ISBN con guiones o de 10 cifras se busca como ISBN.",
-      "en": "When adding, an ISBN with hyphens or ten digits is looked up as an ISBN."
+      "es": "Al añadir, un ISBN con guiones o de 10 cifras se busca como ISBN; si su dígito de control no cuadra, la app lo dice en vez de preguntar qué es, y si ningún servicio lo conoce te deja añadir el libro a mano con el número ya puesto.",
+      "en": "When adding, an ISBN with hyphens or ten digits is looked up as an ISBN; if its check digit is wrong the app says so instead of asking what it is, and if no service knows it you can add the book by hand with the number already filled in."
     },
     {
       "es": "Con cuenta, los juegos de mesa se buscan por título en BoardGameGeek, y al buscar libros salen también los de rol de RPGGeek. Lo que escribes va al servidor de tu cuenta, que lo consulta; puedes apagarlo en Proveedores de datos.",

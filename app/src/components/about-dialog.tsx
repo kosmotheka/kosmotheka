@@ -5,9 +5,9 @@ import { ExternalLink } from "@/components/external-link";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { LicensesDialog } from "@/components/licenses-dialog";
+import { ProvidersDialog } from "@/components/providers-dialog";
 import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { type WhatsNew, appVersion, whatsNewRecent } from "@/lib/api";
-import { openOverlay } from "@/lib/navigation";
 
 const WEBSITE = "https://kosmotheka.com/";
 const PRIVACY = {
@@ -28,6 +28,8 @@ export function AboutDialog({
   const [seeded, setSeeded] = useState(false);
   const [news, setNews] = useState<WhatsNew | null>(null);
   const [licenses, setLicenses] = useState(false);
+  // Opened from here, not as an overlay of its own (an overlay would take the place of this one): closing it comes back.
+  const [providers, setProviders] = useState(false);
 
   // Asked each time it opens, like ProvidersDialog.
   if (open && !seeded) {
@@ -75,7 +77,7 @@ export function AboutDialog({
           >
             {t("about.whatsNew")}
           </Button>
-          <Button variant="outline" onClick={() => openOverlay({ name: "providers" })}>
+          <Button variant="outline" onClick={() => setProviders(true)}>
             {t("about.sources")}
           </Button>
           <Button variant="outline" onClick={() => setLicenses(true)}>
@@ -84,6 +86,7 @@ export function AboutDialog({
         </div>
       </div>
       <LicensesDialog open={licenses} onOpenChange={setLicenses} />
+      <ProvidersDialog open={providers} onOpenChange={setProviders} />
       {news && <WhatsNewDialog open news={news} onClose={() => setNews(null)} />}
     </ResponsiveDialog>
   );

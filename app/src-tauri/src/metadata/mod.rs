@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 use std::future::Future;
 use std::time::Duration;
 
-use kosmotheka_domain::{Isbn, Kind};
+use kosmotheka_domain::{Isbn, IsbnError, Kind};
 
 use crate::cloud::CloudApi;
 use bgg::{BggScope, search_bgg};
@@ -199,6 +199,49 @@ pub struct CodeResult {
     pub warnings: Vec<ProviderWarning>,
     /// Set when this code is already in the catalog.
     pub existing_edition_id: Option<String>,
+    /// A number shaped like an ISBN whose check digit does not match: nothing was asked anywhere, and the UI says
+    /// so instead of asking what it is.
+    pub invalid_isbn: bool,
+    /// The ISBN-13 of a valid ISBN, found or not, so the form can start with it.
+    pub isbn: Option<String>,
+}
+
+/// What a typed or scanned code is, by its shape and check digit (decided here, never in the UI).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CodeShape {
+    Isbn(Isbn),
+    /// 978 or 979 and thirteen digits, or ten with a final X: written like an ISBN, but the check digit is wrong.
+    BadIsbn,
+    /// Anything else: an EAN of a game or a disc, a UPC…
+    Other,
+}
+
+fn classify_code(code: &str) -> CodeShape {
+    match Isbn::parse(code) {
+        Ok(isbn) => CodeShape::Isbn(isbn),
+        Err(IsbnError::InvalidChecksum) => {
+            let cleaned: String = code
+                .chars()
+                .filter(|c| !matches!(c, '-' | ' '))
+                .map(|c| c.to_ascii_uppercase())
+                .collect();
+            let thirteen =
+                cleaned.len() == 13 && (cleaned.starts_with("978") || cleaned.starts_with("979"));
+            // A wrong check digit on any other thirteen digits is just a code the providers do not know.
+            if thirteen || cleaned.len() == 10 {
+                CodeShape::BadIsbn
+            } else {
+                CodeShape::Other
+            }
+        }
+        Err(_) => CodeShape::Other,
+    }
+}
+
+/// A valid ISBN is a book whether or not any service knows it: no «what is it?», and its ISBN goes to the form.
+fn finish_isbn_result(isbn: &Isbn, result: &mut CodeResult) {
+    result.kind = Some(Kind::Book);
+    result.isbn = Some(isbn.as_str().to_owned());
 }
 
 /// Turns a merged ISBN lookup into the one candidate it represents.
@@ -522,9 +565,14 @@ impl Lookup {
         gameupc_api_key: Option<&str>,
         disabled: &BTreeSet<String>,
     ) -> CodeResult {
-        match Isbn::parse(code) {
-            Ok(isbn) => self.lookup_isbn_code(&isbn, google, disabled).await,
-            Err(_) => {
+        match classify_code(code) {
+            CodeShape::Isbn(isbn) => self.lookup_isbn_code(&isbn, google, disabled).await,
+            // Nothing is asked of anybody: there is no such book to look for.
+            CodeShape::BadIsbn => CodeResult {
+                invalid_isbn: true,
+                ..CodeResult::default()
+            },
+            CodeShape::Other => {
                 self.lookup_non_isbn_code(code, gameupc_api_key, disabled)
                     .await
             }
@@ -560,7 +608,7 @@ impl Lookup {
                 kind: warning_kind(&error),
             }),
         }
-        result.kind = (!result.candidates.is_empty()).then_some(Kind::Book);
+        finish_isbn_result(isbn, &mut result);
         result
     }
 
@@ -922,6 +970,76 @@ mod tests {
         assert!(!result.found);
         assert!(result.warnings.is_empty());
         assert_eq!(result.isbn13, "9780140328721");
+    }
+
+    #[test]
+    fn a_number_shaped_like_an_isbn_with_a_wrong_check_digit_is_not_asked_about_anywhere() {
+        // The number the coordinating session gave the maintainer: the right one ends in 6.
+        assert_eq!(
+            classify_code("978-84-450-7389-3"),
+            CodeShape::BadIsbn,
+            "13 digits from 978"
+        );
+        assert_eq!(classify_code("9798888888888"), CodeShape::BadIsbn, "979");
+        assert_eq!(
+            classify_code("0-306-40615-3"),
+            CodeShape::BadIsbn,
+            "ten digits"
+        );
+        assert_eq!(
+            classify_code("0306406151"),
+            CodeShape::BadIsbn,
+            "ten digits, no hyphens"
+        );
+        assert_eq!(
+            classify_code("080442957Y"),
+            CodeShape::Other,
+            "only an X may end it"
+        );
+    }
+
+    #[test]
+    fn a_valid_isbn_is_an_isbn_whatever_it_is_written_like() {
+        for code in [
+            "9788445073896",
+            "978-84-450-7389-6",
+            "0306406152",
+            "080442957X",
+            "080442957x",
+        ] {
+            assert!(matches!(classify_code(code), CodeShape::Isbn(_)), "{code}");
+        }
+    }
+
+    #[test]
+    fn a_code_that_is_not_shaped_like_an_isbn_stays_as_it_was() {
+        for code in [
+            "5099902988371", // an EAN-13 from another range
+            "5099902988372", // a wrong check digit, but no ISBN prefix: nothing to say about an ISBN
+            "019962194719",  // UPC-A
+            "12345670",      // EAN-8
+            "123456789012",  // twelve digits
+            "12345",
+            "",
+            "97884450738X6",
+        ] {
+            assert_eq!(classify_code(code), CodeShape::Other, "{code:?}");
+        }
+    }
+
+    #[test]
+    fn a_valid_isbn_nobody_knows_is_still_a_book_with_its_isbn() {
+        let mut result = CodeResult::default();
+        finish_isbn_result(&Isbn::parse("978-84-450-7389-6").unwrap(), &mut result);
+
+        assert!(result.candidates.is_empty());
+        assert_eq!(
+            result.kind,
+            Some(Kind::Book),
+            "no «what is it?» for a number that is surely a book"
+        );
+        assert_eq!(result.isbn.as_deref(), Some("9788445073896"));
+        assert!(!result.invalid_isbn);
     }
 
     #[test]

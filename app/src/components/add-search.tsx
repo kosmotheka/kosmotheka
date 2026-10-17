@@ -164,6 +164,9 @@ export function AddSearch({
   const [existingByCode, setExistingByCode] = useState<string | null>(null);
   // Set when a scanned/typed code has no clear kind: the "¿Qué es?" step.
   const [askCode, setAskCode] = useState<string | null>(null);
+  // What Rust says of a typed number: written like an ISBN with a wrong check digit, or a valid ISBN (found or not).
+  const [invalidIsbn, setInvalidIsbn] = useState(false);
+  const [isbnByCode, setIsbnByCode] = useState<string | null>(null);
   const [formBook, setFormBook] = useState<NewBook | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -174,9 +177,15 @@ export function AddSearch({
     setFoundByCode(true);
     setExistingByCode(result.existingEditionId);
     setWarnings(result.warnings);
+    setInvalidIsbn(result.invalidIsbn);
+    setIsbnByCode(result.isbn);
     if (result.kind) {
       setKind(result.kind);
       setCandidates(result.candidates);
+      setAskCode(null);
+    } else if (result.invalidIsbn) {
+      // Not an ISBN after all: say so, and do not ask what it is.
+      setCandidates([]);
       setAskCode(null);
     } else {
       setCandidates([]);
@@ -197,6 +206,8 @@ export function AddSearch({
         setFoundByCode(false);
         setExistingByCode(null);
         setAskCode(null);
+        setInvalidIsbn(false);
+        setIsbnByCode(null);
         if (trimmed.length < 2) {
           setCandidates([]);
           setWarnings([]);
@@ -244,7 +255,12 @@ export function AddSearch({
     queryRef.current?.focus();
   };
 
-  const handleManualAdd = () => setFormBook(emptyNewBook(kind, askCode));
+  // A valid ISBN that nobody knows is surely a book: the form starts with its number.
+  const handleManualAdd = () => {
+    const book = emptyNewBook(kind, askCode);
+    if (foundByCode && isbnByCode && kind === "book") book.isbn = isbnByCode;
+    setFormBook(book);
+  };
 
   const pickManualKindForCode = (picked: Kind) => setFormBook(emptyNewBook(picked, askCode));
 
@@ -382,6 +398,23 @@ export function AddSearch({
     </div>
   );
 
+  // What Rust made of the number typed: not an ISBN after all, or an ISBN no service has (add it by hand).
+  const codeNote =
+    askCode === null &&
+    !loading &&
+    foundByCode &&
+    (invalidIsbn || (isbnByCode && candidates.length === 0)) ? (
+      <p
+        role="status"
+        className={cn(
+          "px-3 pt-1 text-sm",
+          invalidIsbn ? "text-destructive" : "text-muted-foreground",
+        )}
+      >
+        {t(invalidIsbn ? "addSearch.invalidIsbn" : "addSearch.isbnNotFound")}
+      </p>
+    ) : null;
+
   const resultsList = askCode === null && (
     <div className="flex flex-col gap-1">
       {desktop && candidates.length > 0 && (
@@ -515,6 +548,7 @@ export function AddSearch({
             <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
               {askStep}
               {resultsList}
+              {codeNote}
               {sourceCredits}
               {warningsList}
             </div>
@@ -547,6 +581,7 @@ export function AddSearch({
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3.5 pb-2">
           {askStep}
           {resultsList}
+          {codeNote}
           {sourceCredits}
           {warningsList}
         </div>

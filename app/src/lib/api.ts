@@ -481,6 +481,10 @@ export interface CodeResult {
   candidates: Candidate[];
   warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
   existingEditionId: string | null;
+  /** A number written like an ISBN whose check digit is wrong: nothing was asked anywhere (decided in Rust). */
+  invalidIsbn: boolean;
+  /** The ISBN-13 of a valid ISBN, found or not. */
+  isbn: string | null;
 }
 
 export function lookupCode(code: string): Promise<CodeResult> {

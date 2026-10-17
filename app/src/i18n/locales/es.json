@@ -1106,6 +1106,8 @@
     "cameraDenied": "Sin permiso de cámara: escríbelo o pégalo.",
     "limitedNotice": "Sin nube ni clave, {{kindPlural}} solo se buscan en {{source}}: puede que falten portadas o ediciones.",
     "footerHint": "¿No está? Añádelo tú; puedes completarlo después.",
+    "invalidIsbn": "Este número no es un ISBN válido: revisa que esté bien escrito.",
+    "isbnNotFound": "Ningún servicio conoce este ISBN. Puedes añadir el libro a mano: el número ya está puesto.",
     "askHint": "Este código no dice de qué tipo es. Elige uno y lo buscamos ahí.",
     "askFooter": "O guárdalo sin buscar: el código queda en la obra.",
     "foundByCode": "Encontrado por el código",

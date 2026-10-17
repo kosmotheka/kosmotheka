@@ -1092,6 +1092,8 @@
     "cameraDenied": "No camera permission: type or paste it instead.",
     "limitedNotice": "Without the cloud or a key, {{kindPlural}} are only searched on {{source}}: covers or editions may be missing.",
     "footerHint": "Not there? Add it yourself; you can fill it in later.",
+    "invalidIsbn": "This number is not a valid ISBN: check that it is written correctly.",
+    "isbnNotFound": "No service knows this ISBN. You can add the book by hand: the number is already filled in.",
     "askHint": "This code doesn't say what it is. Pick a type and we'll search there.",
     "askFooter": "Or save it without searching: the code stays on the work.",
     "foundByCode": "Found by the code",

@@ -392,3 +392,34 @@ fn a_year_that_cannot_be_one_is_dropped() {
         assert_eq!(metadata.published_year, None, "kept {year}");
     }
 }
+
+// --- A number written like an ISBN with a wrong check digit ------------------------------------------------------------
+
+#[tokio::test]
+async fn an_isbn_with_a_wrong_check_digit_says_so_and_asks_nobody() {
+    let lookup = crate::metadata::Lookup::new().unwrap();
+    // Nothing is turned off: if any provider were asked, this would go to the network.
+    let nothing_off = std::collections::BTreeSet::new();
+
+    for code in ["978-84-450-7389-3", "9788445073893", "0306406151"] {
+        let result = lookup
+            .lookup_code(
+                code,
+                GoogleAccess::<FakeApi>::Anonymous,
+                Some("a-key"),
+                &nothing_off,
+            )
+            .await;
+
+        assert!(result.invalid_isbn, "{code}");
+        assert!(
+            result.candidates.is_empty() && result.warnings.is_empty(),
+            "{code}"
+        );
+        assert_eq!(
+            result.kind, None,
+            "{code}: it does not ask what it is either"
+        );
+        assert_eq!(result.isbn, None, "{code}");
+    }
+}

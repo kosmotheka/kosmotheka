@@ -15,6 +15,7 @@
         "title": "Kosmotheka",
         "width": 1024,
         "height": 720,
+        "maximized": true,
         "minWidth": 360,
         "minHeight": 480
       }
