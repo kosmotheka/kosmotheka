@@ -61,7 +61,7 @@ Sin cuerpo. Limitada por `email_code` (por IP) y por `email_per_address`. Manda 
 
 ## Límites de peticiones
 
-`symfony/rate-limiter`, ventana deslizante, consumidos siempre a través de `App\Security\RequestLimiter` (los controladores nunca llaman a las factories directamente):
+`symfony/rate-limiter`, ventana deslizante. Los límites que gasta una petición por el hecho de llegar son atributos `#[RateLimit]` en la acción del controlador, con su clave en `App\Security\RateLimitKey` (la IP o la cuenta); se gastan **después** de leer el cuerpo, así que una petición con el cuerpo mal formado (`400`/`422`) no los gasta, y una bien formada con la contraseña o el código equivocados sí. Los que dependen del flujo (fallos de una cuenta, correos, segundo factor, llamadas reales a los proveedores) los consume a mano `App\Security\RequestLimiter`. Los dos acaban en el mismo `429` `{"error":"too_many_requests"}` con `Retry-After` (`AccountExceptionListener`). Los controladores nunca llaman a las factories directamente:
 
 | Limitador | Límite | Clave |
 |---|---|---|

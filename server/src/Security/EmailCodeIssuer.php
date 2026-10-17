@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\EmailCodePurpose;
 use App\Repository\EmailCodeRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 /**
  * Issues, sends and verifies the 6-digit codes (D49, D50): one live code per
@@ -26,6 +27,7 @@ final readonly class EmailCodeIssuer
         private RequestLimiter $requestLimiter,
         #[\SensitiveParameter]
         private string $secret,
+        private ClockInterface $clock,
     ) {
         if ('' === $secret) {
             throw new \LogicException('APP_SECRET is empty: set it in .env.local (docs/development/server.md).');
@@ -48,7 +50,7 @@ final readonly class EmailCodeIssuer
         }
 
         $code = $this->generateCode();
-        $expiresAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'))
+        $expiresAt = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))
             ->modify(\sprintf('+%d minutes', self::EXPIRY_MINUTES));
 
         $emailCode = new EmailCode($user, $purpose, $this->hash($code), $expiresAt);
@@ -100,7 +102,7 @@ final readonly class EmailCodeIssuer
             throw AccountException::invalidCode();
         }
 
-        if ($emailCode->isExpired(new \DateTimeImmutable('now', new \DateTimeZone('UTC')))) {
+        if ($emailCode->isExpired($this->clock->now()->setTimezone(new \DateTimeZone('UTC')))) {
             $this->emailCodeRepository->delete($emailCode);
 
             throw AccountException::codeExpired();

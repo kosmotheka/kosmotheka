@@ -10,23 +10,16 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 
 /**
- * The single caller of the rate limiter factories (config/packages/
- * rate_limiter.yaml): controllers consume a limit through here, never a
- * factory directly, so every 429 looks the same (docs/architecture/accounts.md).
+ * The limits that depend on the flow and cannot be an attribute (config/packages/rate_limiter.yaml): the failures of
+ * an account, the mails of an address or an invitation, the second factor, the real calls to the providers. The ones
+ * a request spends just by arriving go in a `#[RateLimit]` on the action (`RateLimitKey` gives the key). Both end in
+ * the same 429 body (`AccountExceptionListener`, docs/architecture/accounts.md).
  */
 final readonly class RequestLimiter
 {
     public function __construct(
-        #[Target('registration')]
-        private RateLimiterFactoryInterface $registrationLimiter,
-        #[Target('login')]
-        private RateLimiterFactoryInterface $loginLimiter,
         #[Target('login_failed_account')]
         private RateLimiterFactoryInterface $loginFailedAccountLimiter,
-        #[Target('google')]
-        private RateLimiterFactoryInterface $googleLimiter,
-        #[Target('metadata_account')]
-        private RateLimiterFactoryInterface $metadataAccountLimiter,
         #[Target('google_books_calls')]
         private RateLimiterFactoryInterface $googleBooksCallsLimiter,
         #[Target('tmdb_calls')]
@@ -51,14 +44,6 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $bggAccountLimiter,
         #[Target('comic_vine_account')]
         private RateLimiterFactoryInterface $comicVineAccountLimiter,
-        #[Target('cloud_sync')]
-        private RateLimiterFactoryInterface $cloudSyncLimiter,
-        #[Target('cloud_link')]
-        private RateLimiterFactoryInterface $cloudLinkLimiter,
-        #[Target('cloud_events')]
-        private RateLimiterFactoryInterface $cloudEventsLimiter,
-        #[Target('email_code')]
-        private RateLimiterFactoryInterface $emailCodeLimiter,
         #[Target('email_per_address')]
         private RateLimiterFactoryInterface $emailPerAddressLimiter,
         #[Target('two_factor')]
@@ -71,36 +56,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $invitationRecipientLibraryLimiter,
         #[Target('invitation_recipient')]
         private RateLimiterFactoryInterface $invitationRecipientLimiter,
-        #[Target('invitation_lookup')]
-        private RateLimiterFactoryInterface $invitationLookupLimiter,
-        #[Target('invitation_accept')]
-        private RateLimiterFactoryInterface $invitationAcceptLimiter,
         private EmailFingerprint $fingerprints,
     ) {
-    }
-
-    /** @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeRegistration(string $ip): void
-    {
-        $this->consume($this->registrationLimiter, $ip);
-    }
-
-    /** @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeLogin(string $ip): void
-    {
-        $this->consume($this->loginLimiter, $ip);
-    }
-
-    /** Any step of «Continuar con Google», per address. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeGoogle(string $ip): void
-    {
-        $this->consume($this->googleLimiter, $ip);
-    }
-
-    /** Any lookup of a book through the server, per account, cache hits included (7.8). @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeMetadata(string $userId): void
-    {
-        $this->consume($this->metadataAccountLimiter, $userId);
     }
 
     /**
@@ -212,30 +169,6 @@ final readonly class RequestLimiter
         $this->consumeComicVineCall($resource);
     }
 
-    /** One upload to a cloud library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeCloudPush(string $userId): void
-    {
-        $this->consume($this->cloudSyncLimiter, $userId.'|push');
-    }
-
-    /** One download from a cloud library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeCloudPull(string $userId): void
-    {
-        $this->consume($this->cloudSyncLimiter, $userId.'|pull');
-    }
-
-    /** Claiming a person or linking a library, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeCloudLink(string $userId): void
-    {
-        $this->consume($this->cloudLinkLimiter, $userId);
-    }
-
-    /** The token of the live notices, per account. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeCloudEvents(string $userId): void
-    {
-        $this->consume($this->cloudEventsLimiter, $userId);
-    }
-
     /**
      * Whether the account typed at a login has already failed too many times, without spending anything: a sign-in with
      * the right password is refused too, until the window passes (SEG-051). The key is the fingerprint of the address,
@@ -250,12 +183,6 @@ final readonly class RequestLimiter
     public function noteLoginFailure(string $addressFingerprint): void
     {
         $this->loginFailedAccountLimiter->create($addressFingerprint)->consume();
-    }
-
-    /** @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeEmailCode(string $ip): void
-    {
-        $this->consume($this->emailCodeLimiter, $ip);
     }
 
     /**
@@ -302,18 +229,6 @@ final readonly class RequestLimiter
         $this->invitationEmailLimiter->create($userId)->consume();
         $this->invitationRecipientLibraryLimiter->create($libraryId.'|'.$recipientFingerprint)->consume();
         $this->invitationRecipientLimiter->create($recipientFingerprint)->consume();
-    }
-
-    /** Looking at or accepting an invitation, per address: the token is long, but nobody should be able to try. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeInvitationLookup(string $ip): void
-    {
-        $this->consume($this->invitationLookupLimiter, $ip);
-    }
-
-    /** Accepting, per account, on top of the address. @throws AccountException with AccountErrorCode::TooManyRequests */
-    public function consumeInvitationAccept(string $userId): void
-    {
-        $this->consume($this->invitationAcceptLimiter, $userId);
     }
 
     /** Looks at a limit without spending from it. */

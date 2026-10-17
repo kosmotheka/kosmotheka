@@ -13,17 +13,17 @@ use App\Security\AccountException;
 use App\Security\AccountMailer;
 use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
-use App\Security\RequestLimiter;
+use App\Security\RateLimitKey;
 use App\Security\SensitiveAction;
 use App\Security\TwoFactor;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Second factor (D78, milestone 7.1 part 4, docs/architecture/accounts.md):
@@ -31,14 +31,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * App\Security\TwoFactor, returns JSON.
  */
 #[Route('/v1/account/two-factor')]
-#[IsGranted('ROLE_USER')]
 final class TwoFactorController extends AbstractController
 {
     public function __construct(
         private readonly TwoFactor $twoFactor,
         private readonly SensitiveAction $sensitiveAction,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestLimiter $requestLimiter,
         private readonly AccountMailer $accountMailer,
         private readonly ActivityLog $activityLog,
         private readonly CurrentDevice $currentDevice,
@@ -47,17 +45,15 @@ final class TwoFactorController extends AbstractController
 
     /** @throws AccountException with two_factor_already_enabled or two_factor_unavailable */
     #[Route('/setup', methods: ['POST'])]
-    public function setup(): JsonResponse
+    public function setup(#[CurrentUser] User $user): JsonResponse
     {
-        return new JsonResponse($this->twoFactor->startSetup($this->currentUser()));
+        return new JsonResponse($this->twoFactor->startSetup($user));
     }
 
     #[Route('/enable', methods: ['POST'])]
-    public function enable(#[MapRequestPayload] TwoFactorEnableRequest $payload, Request $request): JsonResponse
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function enable(#[MapRequestPayload] TwoFactorEnableRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
-        $user = $this->currentUser();
         // A session alone does not turn it on (D100): the password, or for an account with none a code from its email.
         $this->sensitiveAction->proveWhoAsks($user, $payload->password, $payload->emailCode);
         $backupCodes = $this->twoFactor->enable($user, $payload->code);
@@ -71,11 +67,9 @@ final class TwoFactorController extends AbstractController
     }
 
     #[Route('', methods: ['DELETE'])]
-    public function disable(#[MapRequestPayload] TwoFactorDisableRequest $payload, Request $request): Response
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function disable(#[MapRequestPayload] TwoFactorDisableRequest $payload, #[CurrentUser] User $user): Response
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
-        $user = $this->currentUser();
         $this->sensitiveAction->requirePasswordIfAny($user, $payload->password);
         $this->checkEnabled($user);
         $this->twoFactor->verify($user, $payload->code);
@@ -89,11 +83,9 @@ final class TwoFactorController extends AbstractController
     }
 
     #[Route('/backup-codes', methods: ['POST'])]
-    public function regenerateBackupCodes(#[MapRequestPayload] TwoFactorRegenerateBackupCodesRequest $payload, Request $request): JsonResponse
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function regenerateBackupCodes(#[MapRequestPayload] TwoFactorRegenerateBackupCodesRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
-        $user = $this->currentUser();
         $this->sensitiveAction->requirePasswordIfAny($user, $payload->password);
         $this->checkEnabled($user);
         $this->twoFactor->verify($user, $payload->code);
@@ -110,13 +102,5 @@ final class TwoFactorController extends AbstractController
         if (!$user->isTwoFactorEnabled()) {
             throw AccountException::twoFactorNotEnabled();
         }
-    }
-
-    private function currentUser(): User
-    {
-        $user = $this->getUser();
-        \assert($user instanceof User);
-
-        return $user;
     }
 }

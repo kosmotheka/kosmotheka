@@ -908,11 +908,8 @@ final class BggSearchTest extends WebTestCase
         $client = $this->world();
         $ada = $this->account($client, 'ada@example.com');
         $grace = $this->account($client, 'grace@example.com');
-        $limiter = self::getContainer()->get(RequestLimiter::class);
         // The limit is the same as the other providers': what an account spends there is spent here.
-        for ($i = 0; $i < 599; ++$i) {
-            $limiter->consumeMetadata($this->user('ada@example.com')->getId()->toRfc4122());
-        }
+        self::getContainer()->get('limiter.metadata_account')->create($this->user('ada@example.com')->getId()->toRfc4122())->consume(599);
         FakeBggApi::searchFinds([]);
         FakeBggApi::searchFinds([]);
 

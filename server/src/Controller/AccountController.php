@@ -26,20 +26,21 @@ use App\Security\AccountMailer;
 use App\Security\ActivityLog;
 use App\Security\CurrentDevice;
 use App\Security\EmailCodeIssuer;
+use App\Security\RateLimitKey;
 use App\Security\RegistrationGate;
-use App\Security\RequestLimiter;
 use App\Security\SensitiveAction;
 use App\Sync\CloudOwnership;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Account creation, email confirmation (D49) and the account resource itself
@@ -54,7 +55,6 @@ final class AccountController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EmailCodeIssuer $emailCodeIssuer,
         private readonly AccountMailer $accountMailer,
-        private readonly RequestLimiter $requestLimiter,
         private readonly CurrentDevice $currentDevice,
         private readonly DeviceRepository $deviceRepository,
         private readonly BackupCodeRepository $backupCodeRepository,
@@ -63,6 +63,7 @@ final class AccountController extends AbstractController
         private readonly SensitiveAction $sensitiveAction,
         private readonly CloudOwnership $cloudOwnership,
         private readonly PasswordHasherFactoryInterface $hasherFactory,
+        private readonly ClockInterface $clock,
     ) {
     }
 
@@ -74,9 +75,9 @@ final class AccountController extends AbstractController
      * every path so that none is quicker than the others.
      */
     #[Route('/register', methods: ['POST'])]
-    public function register(#[MapRequestPayload] RegisterAccountRequest $payload, Request $request): JsonResponse
+    #[RateLimit('registration', key: RateLimitKey::ip(...))]
+    public function register(#[MapRequestPayload] RegisterAccountRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeRegistration((string) $request->getClientIp());
         $passwordHash = $this->hasherFactory->getPasswordHasher(User::class)->hash($payload->password);
 
         $email = $this->normaliseEmail($payload->email);
@@ -111,10 +112,9 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/confirm', methods: ['POST'])]
-    public function confirm(#[MapRequestPayload] ConfirmAccountRequest $payload, Request $request): Response
+    #[RateLimit('email_code', key: RateLimitKey::ip(...))]
+    public function confirm(#[MapRequestPayload] ConfirmAccountRequest $payload): Response
     {
-        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
-
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if (!$user instanceof User || $user->isConfirmed()) {
             throw AccountException::invalidCode();
@@ -123,7 +123,7 @@ final class AccountController extends AbstractController
         $this->emailCodeIssuer->verify($user, EmailCodePurpose::ConfirmEmail, $payload->code);
 
         $user->setPassword($this->passwordHasher->hashPassword($user, $payload->password));
-        $user->confirm(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+        $user->confirm($this->clock->now()->setTimezone(new \DateTimeZone('UTC')));
         $this->activityLog->record(ActivityKind::AccountRegistered, $user);
         $this->entityManager->flush();
 
@@ -131,10 +131,9 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/code', methods: ['POST'])]
-    public function requestCode(#[MapRequestPayload] RequestEmailCodeRequest $payload, Request $request): JsonResponse
+    #[RateLimit('email_code', key: RateLimitKey::ip(...))]
+    public function requestCode(#[MapRequestPayload] RequestEmailCodeRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
-
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if ($user instanceof User && !$user->isConfirmed()) {
             $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, $payload->getPurpose()));
@@ -148,21 +147,18 @@ final class AccountController extends AbstractController
      * goes to its own address, so a limit on the address says nothing that is not already its own.
      */
     #[Route('/code/action', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    public function requestActionCode(Request $request): JsonResponse
+    #[RateLimit('email_code', key: RateLimitKey::ip(...))]
+    public function requestActionCode(#[CurrentUser] User $user): JsonResponse
     {
-        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
-
-        $this->emailCodeIssuer->issueAndSend($this->currentUser(), EmailCodePurpose::ConfirmAction);
+        $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ConfirmAction);
 
         return $this->accepted();
     }
 
     #[Route('/password/forgot', methods: ['POST'])]
-    public function forgotPassword(#[MapRequestPayload] ForgotPasswordRequest $payload, Request $request): JsonResponse
+    #[RateLimit('email_code', key: RateLimitKey::ip(...))]
+    public function forgotPassword(#[MapRequestPayload] ForgotPasswordRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
-
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if ($user instanceof User && $user->isConfirmed() && null !== $user->getPassword()) {
             $this->quietly(fn () => $this->emailCodeIssuer->issueAndSend($user, EmailCodePurpose::ResetPassword));
@@ -172,10 +168,9 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/password/reset', methods: ['POST'])]
-    public function resetPassword(#[MapRequestPayload] ResetPasswordRequest $payload, Request $request): Response
+    #[RateLimit('email_code', key: RateLimitKey::ip(...))]
+    public function resetPassword(#[MapRequestPayload] ResetPasswordRequest $payload): Response
     {
-        $this->requestLimiter->consumeEmailCode((string) $request->getClientIp());
-
         $user = $this->userRepository->findOneByEmail($this->normaliseEmail($payload->email));
         if (!$user instanceof User) {
             throw AccountException::invalidCode();
@@ -197,12 +192,9 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/password', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    public function changePassword(#[MapRequestPayload] ChangePasswordRequest $payload, Request $request): Response
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function changePassword(#[MapRequestPayload] ChangePasswordRequest $payload, #[CurrentUser] User $user): Response
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
-        $user = $this->currentUser();
         if (null === $user->getPassword()) {
             throw AccountException::noPassword();
         }
@@ -220,12 +212,9 @@ final class AccountController extends AbstractController
     }
 
     #[Route('', methods: ['DELETE'])]
-    #[IsGranted('ROLE_USER')]
-    public function delete(#[MapRequestPayload] DeleteAccountRequest $payload, Request $request): Response
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function delete(#[MapRequestPayload] DeleteAccountRequest $payload, #[CurrentUser] User $user): Response
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
-        $user = $this->currentUser();
         $this->sensitiveAction->proveWhoAsks($user, $payload->password, $payload->emailCode);
         $this->sensitiveAction->requireSecondFactor($user, $payload->totpCode);
         $this->sensitiveAction->spendProof($user);
@@ -244,18 +233,14 @@ final class AccountController extends AbstractController
     }
 
     #[Route('', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function show(): JsonResponse
+    public function show(#[CurrentUser] User $user): JsonResponse
     {
-        return new JsonResponse($this->accountPayload($this->currentUser()));
+        return new JsonResponse($this->accountPayload($user));
     }
 
     #[Route('', methods: ['PATCH'])]
-    #[IsGranted('ROLE_USER')]
-    public function update(#[MapRequestPayload] UpdateAccountRequest $payload): JsonResponse
+    public function update(#[MapRequestPayload] UpdateAccountRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
-        $user = $this->currentUser();
-
         if (null !== $payload->name) {
             $user->setName($payload->name);
         }
@@ -268,11 +253,10 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/devices', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function devices(): JsonResponse
+    public function devices(#[CurrentUser] User $user): JsonResponse
     {
         $currentDeviceId = $this->currentDevice->get()->getDeviceId();
-        $devices = $this->deviceRepository->findBy(['user' => $this->currentUser()], ['createdAt' => 'ASC']);
+        $devices = $this->deviceRepository->findBy(['user' => $user], ['createdAt' => 'ASC']);
 
         return new JsonResponse(array_map(
             static fn (Device $device): array => [
@@ -289,20 +273,19 @@ final class AccountController extends AbstractController
         ));
     }
 
-    #[Route('/devices/{id}', methods: ['DELETE'])]
-    #[IsGranted('ROLE_USER')]
     /**
      * Removes a device for good (D81), the calling one included: that is how
      * the app leaves an install to someone else. Removing it again is a no-op.
      */
-    public function removeDevice(string $id): Response
+    #[Route('/devices/{id}', methods: ['DELETE'])]
+    public function removeDevice(string $id, #[CurrentUser] User $user): Response
     {
-        $device = $this->deviceRepository->findOneOfUser($this->currentUser(), $id);
+        $device = $this->deviceRepository->findOneOfUser($user, $id);
         if (!$device instanceof Device) {
             throw AccountException::deviceNotFound();
         }
 
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'));
         $device->remove($now);
         // The calling install removing itself already knows: nothing to undo.
         if ($device->getDeviceId() === $this->currentDevice->get()->getDeviceId()) {
@@ -318,10 +301,9 @@ final class AccountController extends AbstractController
      * been told: once it has, it has wiped its libraries and started again.
      */
     #[Route('/devices/{id}/restore', methods: ['POST'])]
-    #[IsGranted('ROLE_USER')]
-    public function restoreDevice(string $id): Response
+    public function restoreDevice(string $id, #[CurrentUser] User $user): Response
     {
-        $device = $this->deviceRepository->findOneOfUser($this->currentUser(), $id);
+        $device = $this->deviceRepository->findOneOfUser($user, $id);
         if (!$device instanceof Device) {
             throw AccountException::deviceNotFound();
         }
@@ -353,14 +335,6 @@ final class AccountController extends AbstractController
             'two_factor_enabled' => $user->isTwoFactorEnabled(),
             'backup_codes_left' => $this->backupCodeRepository->countUnusedByUser($user),
         ];
-    }
-
-    private function currentUser(): User
-    {
-        $user = $this->getUser();
-        \assert($user instanceof User);
-
-        return $user;
     }
 
     private function normaliseEmail(string $email): string

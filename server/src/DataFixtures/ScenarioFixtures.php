@@ -22,6 +22,7 @@ use App\Validator\ValidOperationValidator;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\DBAL\Connection;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -52,6 +53,7 @@ final class ScenarioFixtures extends Fixture
         private readonly Connection $connection,
         private readonly ScenarioReport $report,
         private readonly CastFile $castFile,
+        private readonly ClockInterface $clock,
     ) {
     }
 
@@ -329,7 +331,7 @@ final class ScenarioFixtures extends Fixture
     {
         $user = new User($email, $name, 'es');
         $user->setPassword($this->passwordHasher->hashPassword($user, Cast::PASSWORD));
-        $user->confirm(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+        $user->confirm($this->clock->now()->setTimezone(new \DateTimeZone('UTC')));
         $manager->persist($user);
 
         return $user;

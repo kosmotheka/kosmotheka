@@ -29,7 +29,7 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 | `Enum/` | Enums, even when a single class uses them |
 | `Dto/` | Transport objects and value objects: request payloads, responses, values passed between layers |
 | `Validator/` | Custom constraints and their validators (`ValidOperation`) |
-| `Security/` | Account services (`EmailCodeIssuer`, `AccountMailer`, `RequestLimiter`, `ActivityLog`, the only writer of the append-only activity log, D66), authenticators and voters (Phase 7) |
+| `Security/` | Account services (`EmailCodeIssuer`, `AccountMailer`, `RequestLimiter`, `RateLimitKey`, `ActivityLog`, the only writer of the append-only activity log, D66), authenticators and voters (Phase 7) |
 | `EventListener/` | Kernel event listeners, e.g. `AccountExceptionListener` turning a business exception into its JSON response |
 | `Command/` | Console commands |
 | `Scheduler/` | Scheduled tasks (`symfony/scheduler`): an `#[AsSchedule]` provider, and the message + `#[AsMessageHandler]` it dispatches, when the job is small enough not to need its own `Message/`/`MessageHandler/` split. Today: `PurgeSchedule` runs `App\Security\AccountPurger` hourly (D49) |
@@ -93,6 +93,9 @@ These come from the official `AGENTS.md` of `symfony/ai` and EasyAdminBundle.
 
 - Attributes for framework metadata: `#[Route]`, `#[MapRequestPayload]`, `#[IsGranted]`, `#[Assert\…]`, `#[AsCommand]`, `#[AsEventListener]`, `#[Autowire]`, `#[Target]`. No YAML or XML routing. A YAML service definition is the last resort.
 - Autowiring and autoconfiguration; controllers extend `AbstractController`.
+- The signed-in account is an argument, `#[CurrentUser] User $user`, never `getUser()` plus an `assert`. A session is asked for once, by `access_control` in `security.yaml`: no `#[IsGranted('ROLE_USER')]` on `/v1` routes (`V1RoutesNeedASessionTest` walks the router).
+- A limit a request spends just by arriving is `#[RateLimit('<limiter>', key: RateLimitKey::ip(...))]` on the action, always with a key (without one the bucket is per route). Limits that depend on the flow stay in `RequestLimiter`.
+- The time comes from the injected `Symfony\Component\Clock\ClockInterface`, not from `new \DateTimeImmutable('now')` (entities excepted); `->setTimezone(UTC)` where UTC is meant.
 - New capabilities come from `composer require` and the Flex recipe. Do not hand-edit `config/bundles.php` or hand-write a bundle's base config.
 - Before hand-writing infrastructure (locks, rate limiting, HTTP clients, password hashing, tokens), check whether a Symfony component covers it. It usually does.
 - **Persistence:** Doctrine ORM for everything, the catalog included (D92): one entity per catalog table in `src/Entity/Catalog/`, each with a key of the server's own; the app's id is only unique inside its library. The one exception is the merge engine (`Sync/Merge/`, D92 as revised on 2026-10-09): it writes with DBAL, and its SQL is built from the entities' Doctrine metadata by a single class, never written per table. Anything else reads and writes the catalog through the ORM. Plain SQL only where the ORM cannot do the job, kept inside one class and said in a comment (`CloudOperationRepository`, whose JSON must stay byte-faithful). Do not copy the Rust client's shape: same rules, PHP's own patterns.

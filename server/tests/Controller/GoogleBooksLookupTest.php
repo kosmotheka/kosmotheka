@@ -502,10 +502,7 @@ final class GoogleBooksLookupTest extends WebTestCase
         $ada = $this->account($client, 'ada@example.com');
         $grace = $this->account($client, 'grace@example.com');
         FakeGoogleBooksApi::found(FakeGoogleBooksApi::volume());
-        $limiter = self::getContainer()->get(RequestLimiter::class);
-        for ($i = 0; $i < 599; ++$i) {
-            $limiter->consumeMetadata($this->user('ada@example.com')->getId()->toRfc4122());
-        }
+        self::getContainer()->get('limiter.metadata_account')->create($this->user('ada@example.com')->getId()->toRfc4122())->consume(599);
 
         $this->lookup($client, $ada, self::INFERNO);
         self::assertResponseStatusCodeSame(200);

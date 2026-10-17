@@ -15,6 +15,7 @@ use App\Repository\CloudOperationRepository;
 use App\Sync\Permission\CatalogLibraryView;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -32,6 +33,7 @@ final readonly class AccessCutter
         private EntityManagerInterface $entityManager,
         private CloudOperationRepository $operations,
         private CloudAuthor $author,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -95,7 +97,7 @@ final readonly class AccessCutter
                 $this->fill($library, $row);
                 $person = $row->getMemberId();
                 if (!$row->isWithdrawn() && $person instanceof Uuid && $this->personCut($library, $person)) {
-                    $row->withdraw(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+                    $row->withdraw($this->clock->now()->setTimezone(new \DateTimeZone('UTC')));
                     $cut[] = [$row->getUser(), $person];
                 }
             }

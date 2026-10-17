@@ -1,5 +1,6 @@
-# Limits proposed in docs/architecture/accounts.md. App\Security\RequestLimiter
-# is the only consumer; controllers never touch the factories directly.
+# Limits proposed in docs/architecture/accounts.md. The ones a request spends by arriving are `#[RateLimit]` attributes
+# on the controller actions (App\Security\RateLimitKey gives their keys); the ones that depend on the flow (failures,
+# mails, second factor, real calls to the providers) are consumed by App\Security\RequestLimiter.
 framework:
     rate_limiter:
         registration:

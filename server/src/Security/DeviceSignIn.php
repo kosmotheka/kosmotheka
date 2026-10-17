@@ -11,6 +11,7 @@ use App\Enum\ActivityKind;
 use App\Repository\DeviceRepository;
 use App\Sync\Invitation\EmailFingerprint;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 /**
  * The last step of every sign-in, whichever way the account was proved (password, or Google): the device, as its id
@@ -25,6 +26,7 @@ final readonly class DeviceSignIn
         private RequestLimiter $requestLimiter,
         private ActivityLog $activityLog,
         private EmailFingerprint $fingerprints,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -90,7 +92,7 @@ final readonly class DeviceSignIn
         // Before device_taken: a removed install must start again (D81),
         // whichever account tries it.
         if ($device->isRemoved()) {
-            $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+            $device->noticeRemoval($this->clock->now()->setTimezone(new \DateTimeZone('UTC')));
             $this->entityManager->flush();
 
             throw AccountException::deviceRemoved();

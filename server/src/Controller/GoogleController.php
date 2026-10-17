@@ -15,17 +15,20 @@ use App\Security\DeviceProof;
 use App\Security\DeviceSignIn;
 use App\Security\Google\GoogleAttempts;
 use App\Security\LoginChallengeIssuer;
+use App\Security\RateLimitKey;
 use App\Security\RequestLimiter;
 use App\Security\UserChecker;
 use App\Sync\Invitation\EmailFingerprint;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -49,14 +52,14 @@ final class GoogleController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ActivityLog $activityLog,
         private readonly EmailFingerprint $fingerprints,
+        private readonly ClockInterface $clock,
     ) {
     }
 
     #[Route('/start', name: 'google_start', methods: ['POST'])]
-    public function start(#[MapRequestPayload] GoogleStartRequest $payload, Request $request): JsonResponse
+    #[RateLimit('google', key: RateLimitKey::ip(...))]
+    public function start(#[MapRequestPayload] GoogleStartRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeGoogle((string) $request->getClientIp());
-
         $started = $this->attempts->start($payload->verifierHash, $payload->locale);
 
         return new JsonResponse([
@@ -67,9 +70,9 @@ final class GoogleController extends AbstractController
     }
 
     #[Route('/connect', name: 'google_connect', methods: ['GET'])]
+    #[RateLimit('google', key: RateLimitKey::ip(...))]
     public function connect(Request $request): Response
     {
-        $this->requestLimiter->consumeGoogle((string) $request->getClientIp());
         if (!$this->attempts->isConfigured()) {
             return $this->page('unavailable', Response::HTTP_NOT_FOUND);
         }
@@ -80,16 +83,16 @@ final class GoogleController extends AbstractController
         }
 
         $response = new RedirectResponse($connected['url']);
-        $response->headers->setCookie(Cookie::create(self::COOKIE, $connected['binder'], new \DateTimeImmutable('+10 minutes'), '/v1/auth/google', null, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
+        $response->headers->setCookie(Cookie::create(self::COOKIE, $connected['binder'], $this->clock->now()->modify('+10 minutes'), '/v1/auth/google', null, $request->isSecure(), true, false, Cookie::SAMESITE_LAX));
         $this->noReferrer($response);
 
         return $response;
     }
 
     #[Route('/callback', name: 'google_callback', methods: ['GET'])]
+    #[RateLimit('google', key: RateLimitKey::ip(...))]
     public function callback(Request $request): Response
     {
-        $this->requestLimiter->consumeGoogle((string) $request->getClientIp());
         if (!$this->attempts->isConfigured()) {
             return $this->page('unavailable', Response::HTTP_NOT_FOUND);
         }
@@ -114,9 +117,9 @@ final class GoogleController extends AbstractController
     }
 
     #[Route('/finish', name: 'google_finish', methods: ['POST'])]
-    public function finish(#[MapRequestPayload] GoogleFinishRequest $payload, Request $request): JsonResponse
+    #[RateLimit('google', key: RateLimitKey::ip(...))]
+    public function finish(#[MapRequestPayload] GoogleFinishRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeGoogle((string) $request->getClientIp());
         if (!$this->attempts->isConfigured()) {
             throw AccountException::googleUnavailable();
         }

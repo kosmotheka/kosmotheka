@@ -477,7 +477,7 @@ Después: la fila `membership` queda enlazada con la persona (da acceso), la inv
 
 ### Límites de peticiones
 
-Con los limitadores de siempre (`RequestLimiter`, `config/packages/rate_limiter.yaml`):
+Con los limitadores de siempre (atributos `#[RateLimit]` en las acciones, `config/packages/rate_limiter.yaml`):
 
 | Limitador | Límite | Clave |
 |---|---|---|
@@ -491,7 +491,7 @@ Con los limitadores de siempre (`RequestLimiter`, `config/packages/rate_limiter.
 | `cloud_link` | 30 por hora | cuenta (reclamar la persona y enlazar una biblioteca, juntos) |
 | `cloud_events` | 60 por hora | cuenta (el token de los avisos) |
 
-Las cifras de las rutas de la nube las decidió el maintainer el 15/10/2026: son anchas para que no frenen la primera subida de una biblioteca grande (lotes de 1.000 operaciones), y se gastan antes de mirar nada. Crear y listar bibliotecas no tienen límite propio. Las cifras de correo las decidió el maintainer el 11/10/2026 (SEG-044). Los tres límites de correo (cuenta, pareja y dirección) se **miran todos antes de gastar ninguno** (`RequestLimiter::requireInvitationEmailOpen`) y se **gastan solo cuando el correo ya se ha enviado** (`spendInvitationEmail`): una validación, una regla o un envío que falla no cuestan cuota, y un límite agotado no gasta los otros. **Límite conocido:** la huella es la del correo tal como se escribe, normalizado solo a minúsculas y sin espacios. `laura+1@…` y `laura@…` cuentan como direcciones distintas, a propósito: cada proveedor trata los alias a su manera y no se adivina cuál es el mismo buzón. El tope por cuenta (10 al día) sigue acotando lo que una cuenta puede mandar.
+Las cifras de las rutas de la nube las decidió el maintainer el 15/10/2026: son anchas para que no frenen la primera subida de una biblioteca grande (lotes de 1.000 operaciones), y se gastan antes de mirar la biblioteca (después de leer el cuerpo: uno mal formado no gasta). Crear y listar bibliotecas no tienen límite propio. Las cifras de correo las decidió el maintainer el 11/10/2026 (SEG-044). Los tres límites de correo (cuenta, pareja y dirección) se **miran todos antes de gastar ninguno** (`RequestLimiter::requireInvitationEmailOpen`) y se **gastan solo cuando el correo ya se ha enviado** (`spendInvitationEmail`): una validación, una regla o un envío que falla no cuestan cuota, y un límite agotado no gasta los otros. **Límite conocido:** la huella es la del correo tal como se escribe, normalizado solo a minúsculas y sin espacios. `laura+1@…` y `laura@…` cuentan como direcciones distintas, a propósito: cada proveedor trata los alias a su manera y no se adivina cuál es el mismo buzón. El tope por cuenta (10 al día) sigue acotando lo que una cuenta puede mandar.
 
 ### El correo
 
@@ -611,7 +611,7 @@ Si no se encuentra: `found: false` y el resto a `null` (y `authors: []`). Un «n
 
 **La caché.** Tabla `metadata_cache`: proveedor, ISBN-13, si se encontró, la respuesta ya normalizada y cuándo se pidió. **Ninguna columna dice quién preguntó** (un test lo comprueba por el esquema). Se guarda también el «no encontrado». Los plazos están en `MetadataCacheEntry` y en ningún otro sitio: **30 días** lo encontrado, **1 día** lo no encontrado. Un fallo de Google (cuota, error, tiempo agotado, basura) **no se guarda**. La purga horaria que ya existe (`AccountPurger`, `app:accounts:purge`) borra lo caducado.
 
-**Los límites** (`RequestLimiter`, `rate_limiter.yaml`):
+**Los límites** (`#[RateLimit]` en la ruta y `RequestLimiter` para las llamadas reales; `rate_limiter.yaml`):
 - **Por cuenta:** 600 búsquedas por hora, contando todas, también las que salen de la caché. Se corta a la cuenta que pasa, no a las demás.
 - **Del servidor entero:** 900 llamadas **reales** a Google al día (su cuota gratuita es de 1.000). Agotado, la ruta sigue sirviendo lo que haya en caché y responde `metadata_quota_exhausted` para lo demás.
 - **De cada cuenta, en llamadas reales** (SEG-052, decidido el 15/10/2026): más o menos la décima parte del tope del servidor, para que ninguna cuenta gaste el de todas. Google Books 90 al día, TMDB 500 al día, RAWG 60 al día y Comic Vine 15 por hora y recurso. Lo que sale de la caché no lo gasta. Agotado, la cuenta recibe `too_many_requests` con `Retry-After`, y sigue recibiendo lo que haya en caché.

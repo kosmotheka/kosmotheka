@@ -15,15 +15,16 @@ use App\Security\CurrentDevice;
 use App\Security\DeviceProof;
 use App\Security\DeviceSignIn;
 use App\Security\LoginChallengeIssuer;
+use App\Security\RateLimitKey;
 use App\Security\RequestLimiter;
 use App\Security\UserChecker;
 use App\Sync\Invitation\EmailFingerprint;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -53,10 +54,9 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/challenge', methods: ['POST'])]
-    public function challenge(Request $request): JsonResponse
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function challenge(): JsonResponse
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
         $issued = $this->challengeIssuer->issue();
 
         return new JsonResponse([
@@ -66,10 +66,9 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/login', methods: ['POST'])]
-    public function login(#[MapRequestPayload] LoginRequest $payload, Request $request): JsonResponse
+    #[RateLimit('login', key: RateLimitKey::ip(...))]
+    public function login(#[MapRequestPayload] LoginRequest $payload): JsonResponse
     {
-        $this->requestLimiter->consumeLogin((string) $request->getClientIp());
-
         // Order matters (docs/architecture/accounts.md): challenge, then proof,
         // then credentials, then account status, then the device itself.
         $this->challengeIssuer->consume($payload->challenge);

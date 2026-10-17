@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Lock\LockFactory;
 
@@ -21,6 +22,7 @@ final readonly class LoginChallengeIssuer
         #[Autowire(service: 'cache.auth_challenge')]
         private CacheItemPoolInterface $cache,
         private LockFactory $locks,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -34,11 +36,12 @@ final readonly class LoginChallengeIssuer
     public function issue(): array
     {
         $challenge = sodium_bin2base64(random_bytes(32), \SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
-        $expiresAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'))->modify(\sprintf('+%d seconds', self::EXPIRY_SECONDS));
+        $expiresAt = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->modify(\sprintf('+%d seconds', self::EXPIRY_SECONDS));
 
         $item = $this->cache->getItem($this->key($challenge));
         $item->set(true);
-        $item->expiresAt($expiresAt);
+        // Relative to the cache's own time, not the application clock's: the pool expires by the wall clock.
+        $item->expiresAfter(self::EXPIRY_SECONDS);
         $this->cache->save($item);
 
         return ['challenge' => $challenge, 'expiresAt' => $expiresAt];

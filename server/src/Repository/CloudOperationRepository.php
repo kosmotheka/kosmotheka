@@ -12,6 +12,7 @@ use App\Enum\OperationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\NilUuid;
 use Symfony\Component\Uid\Uuid;
 
@@ -23,8 +24,10 @@ use Symfony\Component\Uid\Uuid;
  */
 final class CloudOperationRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly ClockInterface $clock,
+    ) {
         parent::__construct($registry, CloudOperation::class);
     }
 
@@ -84,7 +87,7 @@ final class CloudOperationRepository extends ServiceEntityRepository
                 'hlc' => $hlc,
                 'schema' => $schemaVersion,
                 'body' => $bodyJson,
-                'received' => new \DateTimeImmutable('now', new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                'received' => $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
                 'previous' => $previous,
                 'pushedByUser' => $pushedByUserId,
                 'pushedByDevice' => $pushedByDeviceId,

@@ -10,6 +10,7 @@ use App\Enum\AccountErrorCode;
 use App\Enum\SignOutReason;
 use App\Repository\DeviceRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,6 +49,7 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
     public function __construct(
         private readonly DeviceRepository $deviceRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly ClockInterface $clock,
     ) {
     }
 
@@ -75,7 +77,7 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
         // Only after the token matched: device ids are visible to everyone
         // sharing a library, and telling a stranger would end the undo (D81).
         if ($device->isRemoved()) {
-            $device->noticeRemoval(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+            $device->noticeRemoval($this->clock->now()->setTimezone(new \DateTimeZone('UTC')));
             $this->entityManager->flush();
 
             throw new DeviceRemovedException();
@@ -124,7 +126,7 @@ final class DeviceTokenAuthenticator extends AbstractAuthenticator implements Au
 
     private function touchLastSeen(Device $device): void
     {
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = $this->clock->now()->setTimezone(new \DateTimeZone('UTC'));
         $lastSeenAt = $device->getLastSeenAt();
         if ($lastSeenAt instanceof \DateTimeImmutable && $now->getTimestamp() - $lastSeenAt->getTimestamp() < self::LAST_SEEN_THROTTLE_SECONDS) {
             return;

@@ -10,7 +10,7 @@ use App\Dto\PushRequest;
 use App\Entity\CloudLibrary;
 use App\Entity\User;
 use App\Security\CurrentDevice;
-use App\Security\RequestLimiter;
+use App\Security\RateLimitKey;
 use App\Sync\AccountLinker;
 use App\Sync\CloudIdentityIssuer;
 use App\Sync\CloudLibraryAccess;
@@ -23,8 +23,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * The cloud libraries of the signed-in account and their sync (milestone 7.2,
@@ -32,7 +33,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * first, and the rules live in App\Sync.
  */
 #[Route('/v1/cloud/libraries')]
-#[IsGranted('ROLE_USER')]
 final class CloudController extends AbstractController
 {
     public function __construct(
@@ -44,14 +44,13 @@ final class CloudController extends AbstractController
         private readonly CloudPush $cloudPush,
         private readonly CurrentDevice $currentDevice,
         private readonly AccountLinker $linker,
-        private readonly RequestLimiter $limiter,
     ) {
     }
 
     #[Route('', methods: ['POST'])]
-    public function create(): JsonResponse
+    public function create(#[CurrentUser] User $user): JsonResponse
     {
-        $library = $this->creator->create($this->currentUser());
+        $library = $this->creator->create($user);
 
         return new JsonResponse(['id' => $library->getId()->toRfc4122()] + $this->identityOf($library), Response::HTTP_CREATED);
     }
@@ -61,9 +60,9 @@ final class CloudController extends AbstractController
      * ids of libraries it had, so nothing is revealed that it did not know.
      */
     #[Route('', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(#[CurrentUser] User $user): JsonResponse
     {
-        $reachable = $this->access->reachable($this->currentUser(), $this->currentDevice->get());
+        $reachable = $this->access->reachable($user, $this->currentDevice->get());
 
         return new JsonResponse([
             'libraries' => array_map(
@@ -87,38 +86,37 @@ final class CloudController extends AbstractController
      * person's, with a vouched key (D76, D96). It takes no input: a body, if any, is ignored (D84).
      */
     #[Route('/claim', methods: ['POST'])]
-    public function claim(): JsonResponse
+    #[RateLimit('cloud_link', key: RateLimitKey::account(...))]
+    public function claim(#[CurrentUser] User $user): JsonResponse
     {
-        $this->limiter->consumeCloudLink($this->currentUser()->getId()->toRfc4122());
-
         return new JsonResponse($this->linker->claim($this->currentDevice->get()));
     }
 
     #[Route('/{id}/pull', methods: ['POST'])]
-    public function pull(string $id, #[MapRequestPayload] PullRequest $payload): JsonResponse
+    #[RateLimit('cloud_sync', key: RateLimitKey::accountPull(...))]
+    public function pull(string $id, #[MapRequestPayload] PullRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
-        $this->limiter->consumeCloudPull($this->currentUser()->getId()->toRfc4122());
-        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), $payload->vector);
+        $library = $this->access->require($id, $user, $this->currentDevice->get(), $payload->vector);
 
         return new JsonResponse($this->cloudPull->pull($library, $payload));
     }
 
     /** Links the library to its local id before the history is uploaded (D93); the operation itself comes with the log. */
     #[Route('/{id}/link', methods: ['POST'])]
-    public function link(string $id, Request $request): JsonResponse
+    #[RateLimit('cloud_link', key: RateLimitKey::account(...))]
+    public function link(string $id, Request $request, #[CurrentUser] User $user): JsonResponse
     {
-        $this->limiter->consumeCloudLink($this->currentUser()->getId()->toRfc4122());
-        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
+        $library = $this->access->require($id, $user, $this->currentDevice->get(), toWrite: true);
         $this->cloudLink->linkFrom($library, PushedOperation::fromJson($request->getContent()));
 
         return new JsonResponse(['localLibraryId' => $library->getLocalLibraryId()]);
     }
 
     #[Route('/{id}/push', methods: ['POST'])]
-    public function push(string $id, Request $request): JsonResponse
+    #[RateLimit('cloud_sync', key: RateLimitKey::accountPush(...))]
+    public function push(string $id, Request $request, #[CurrentUser] User $user): JsonResponse
     {
-        $this->limiter->consumeCloudPush($this->currentUser()->getId()->toRfc4122());
-        $library = $this->access->require($id, $this->currentUser(), $this->currentDevice->get(), toWrite: true);
+        $library = $this->access->require($id, $user, $this->currentDevice->get(), toWrite: true);
 
         return new JsonResponse($this->cloudPush->push($library, PushRequest::fromJson($request->getContent()), $this->currentDevice->get())->toArray());
     }
@@ -132,13 +130,5 @@ final class CloudController extends AbstractController
     private function identityOf(CloudLibrary $library): array
     {
         return ['cloudDeviceId' => $library->getCloudDeviceId()?->toRfc4122(), 'cloudPublicKey' => $library->getCloudPublicKey()];
-    }
-
-    private function currentUser(): User
-    {
-        $user = $this->getUser();
-        \assert($user instanceof User);
-
-        return $user;
     }
 }

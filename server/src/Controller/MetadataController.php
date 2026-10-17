@@ -22,12 +22,14 @@ use App\Metadata\RawgSource;
 use App\Metadata\TmdbSearch;
 use App\Metadata\TmdbSource;
 use App\Security\AccountException;
-use App\Security\RequestLimiter;
+use App\Security\RateLimitKey;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**
@@ -48,14 +50,14 @@ final class MetadataController extends AbstractController
         private readonly BggSearch $bggSearch,
         private readonly ComicVineSource $comicVineSource,
         private readonly ComicVineSearch $comicVineSearch,
-        private readonly RequestLimiter $limiter,
     ) {
     }
 
     // `.+`: whatever hangs from this address reaches here and is refused as an ISBN. An address the router does not
     // know is written whole to the application log, and this one holds what an account looks up.
     #[Route('/google-books/isbn/{isbn}', requirements: ['isbn' => Requirement::CATCH_ALL], methods: ['GET'])]
-    public function googleBooksIsbn(string $isbn): JsonResponse
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function googleBooksIsbn(string $isbn, #[CurrentUser] User $user): JsonResponse
     {
         if (!$this->googleBooks->isConfigured()) {
             throw AccountException::metadataUnavailable();
@@ -67,10 +69,6 @@ final class MetadataController extends AbstractController
             throw AccountException::invalidIsbn();
         }
 
-        $user = $this->getUser();
-        \assert($user instanceof User);
-        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
-
         $book = $this->lookup->lookup($this->googleBooks, $code, $user->getId()->toRfc4122());
 
         $response = new JsonResponse($book instanceof BookMetadata ? $book->toArray() : BookMetadata::notFoundPayload());
@@ -81,15 +79,12 @@ final class MetadataController extends AbstractController
 
     /** A POST on purpose: the title a person looks for is never in an address (an address is written to logs). */
     #[Route('/tmdb/search', methods: ['POST'])]
-    public function tmdbSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] TmdbSearchRequest $payload): JsonResponse
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function tmdbSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] TmdbSearchRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
         if (!$this->tmdbSource->isConfigured()) {
             throw AccountException::metadataUnavailable();
         }
-
-        $user = $this->getUser();
-        \assert($user instanceof User);
-        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $candidates = $this->tmdbSearch->search($payload->mediaKind(), $payload->askedLanguage(), TmdbSearch::normalise($payload->query), $user->getId()->toRfc4122());
 
@@ -101,15 +96,12 @@ final class MetadataController extends AbstractController
 
     /** A POST on purpose, as TMDB's: the title a person looks for is never in an address. */
     #[Route('/rawg/search', methods: ['POST'])]
-    public function rawgSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] RawgSearchRequest $payload): JsonResponse
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function rawgSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] RawgSearchRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
         if (!$this->rawgSource->isConfigured()) {
             throw AccountException::metadataUnavailable();
         }
-
-        $user = $this->getUser();
-        \assert($user instanceof User);
-        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $this->rawgSearch->search($payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
@@ -119,15 +111,12 @@ final class MetadataController extends AbstractController
 
     /** A POST on purpose, as the others': the title a person looks for is never in an address. */
     #[Route('/comic-vine/search', methods: ['POST'])]
-    public function comicVineSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] ComicVineSearchRequest $payload): JsonResponse
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function comicVineSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] ComicVineSearchRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
         if (!$this->comicVineSource->isConfigured()) {
             throw AccountException::metadataUnavailable();
         }
-
-        $user = $this->getUser();
-        \assert($user instanceof User);
-        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $this->comicVineSearch->search($payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
@@ -137,15 +126,12 @@ final class MetadataController extends AbstractController
 
     /** A POST on purpose, as the others': the title a person looks for is never in an address. */
     #[Route('/bgg/search', methods: ['POST'])]
-    public function bggSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] BggSearchRequest $payload): JsonResponse
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function bggSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] BggSearchRequest $payload, #[CurrentUser] User $user): JsonResponse
     {
         if (!$this->bggSource->isConfigured()) {
             throw AccountException::metadataUnavailable();
         }
-
-        $user = $this->getUser();
-        \assert($user instanceof User);
-        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $this->bggSearch->search($payload->searchScope(), $payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
