@@ -54,10 +54,9 @@ Cambiar de Claude a OpenAI o a un modelo local es cambiar la configuración. Adm
 - Pide PHP 8.2 o más y Symfony 7.3 u 8: con lo nuestro (PHP 8.5, Symfony 8.1) encaja.
 - Se usa mucho: más de dos millones de descargas de `ai-platform`.
 
-**Recomendación:**
-- Usarlo, pero con la versión fijada (`0.14.*`, no `^0.14`).
-- Todo detrás de una interfaz nuestra pequeña, por ejemplo `ShelfReader::read(imagen): lista de lomos`, como los proveedores de metadatos detrás de sus `*Source`. Si una versión rompe algo, se arregla en una sola clase.
-- **Al empezar, comprobar si ya ha salido la 1.0**: entonces este punto desaparece.
+**Decidido por el maintainer (17/10/2026): se usa Symfony AI, aunque sea experimental.** Ya lo usa en otro proyecto suyo (para un servidor MCP) y le funciona bien. Con dos cuidados que no cuestan nada:
+- la versión fijada (`0.14.*`, no `^0.14`), y subirla a propósito, leyendo sus cambios;
+- todo detrás de una interfaz nuestra pequeña, por ejemplo `ShelfReader::read(imagen): lista de lomos`, como los proveedores de metadatos detrás de sus `*Source`. Si una versión rompe algo, se arregla en una sola clase.
 
 ## Dónde iría la IA: servidor o app
 
@@ -109,7 +108,7 @@ La foto sale del dispositivo, y eso toca todo lo que dice qué sale:
 2. **La foto de balda sin salir del dispositivo** (D19, vía 3).
 
 Se escribe una vez y se publica como **plugin libre de Tauri**, como se pensó para las llaves de acceso: cualquier otra app tiene que poder usarlo.
-- **Dónde:** el ROADMAP decía «en su propio repositorio», y el maintainer prefiere no tener muchos (16/10/2026). Un plugin se puede publicar (crates.io y npm) desde una carpeta del repositorio de siempre, `plugins/tauri-plugin-…/`. Mi recomendación es esa, y sacarlo a su propio repositorio solo si llega gente de fuera a trabajar en él. **Decides tú.**
+- **En su propio repositorio** (decidido por el maintainer el 17/10/2026): es un aporte a la comunidad que cualquiera puede usar, y la app lo usa como una dependencia más. Es la excepción a «todo junto» (D90).
 - **Licencia:** MIT o Apache 2.0, como `spec/`, no AGPL. Con AGPL, casi ninguna app lo usaría (D11).
 - ML Kit lee el texto en el propio móvil, sin red, como hoy los códigos de barras.
 - En el escritorio no hay ML Kit. Si hace falta allí: `ocrs` (Rust) o Tesseract. **Por decidir al empezar:** de primeras, puede ser solo para Android.

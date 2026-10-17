@@ -309,7 +309,7 @@ La vía 4 de D19 es interesante: tú la usarías, y quien quiera puede poner su 
   1. **Anthropic**, con su API nativa.
   2. **Compatible con OpenAI**: el formato de API de OpenAI es el estándar de facto. Con configurar una URL base y una clave, el mismo adaptador sirve para OpenAI, OpenRouter y **modelos locales** (Ollama, LM Studio, llama.cpp server), que exponen ese mismo formato.
 - Se decidirá cuando se llegue a la Fase 5, después de la prueba de concepto con OCR local.
-- **17/10/2026:** el maintainer decide hacer primero la vía 3 de D19 (sin salir del dispositivo) y dejar la IA para cuando la app esté en producción. Para entonces, [Symfony AI](research/ia-reconocer-imagenes.md) da en el servidor una sola interfaz para Anthropic, OpenAI y cualquier servicio compatible con OpenAI (también modelos locales), configurada en `ai.yaml`. Sigue siendo experimental (0.14 a esa fecha): versión fijada y detrás de una interfaz nuestra. Recomendación: empezar solo por el servidor.
+- **17/10/2026:** el maintainer decide hacer primero la vía 3 de D19 (sin salir del dispositivo) y dejar la IA para cuando la app esté en producción. Para entonces, [Symfony AI](research/ia-reconocer-imagenes.md) da en el servidor una sola interfaz para Anthropic, OpenAI y cualquier servicio compatible con OpenAI (también modelos locales), configurada en `ai.yaml`. Es experimental (0.14 a esa fecha), y el maintainer decide usarlo igual: ya lo usa en otro proyecto. Versión fijada y detrás de una interfaz nuestra. Recomendación: empezar solo por el servidor.
 
 ## D21 · Proveedores de metadatos por tipo de catálogo — `reemplazada por D62`
 
