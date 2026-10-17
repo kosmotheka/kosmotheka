@@ -20,7 +20,7 @@ Estas son las limitaciones de montar tu propio servidor. Están aquí, al princi
 
 ## Qué hace falta
 
-- **Un dominio con HTTPS.** La app de Android de las tiendas no se conecta a un servidor sin HTTPS, y de todos modos las contraseñas y las bibliotecas no deben viajar sin cifrar. Necesitas un nombre (por ejemplo `kosmotheka.tu-dominio.example`) apuntando a la máquina, y un certificado (la guía usa Let's Encrypt).
+- **Un dominio con HTTPS.** La app solo acepta un servidor sin HTTPS en la red de casa (una dirección privada, como `192.168.…`); desde fuera necesita HTTPS, y de todos modos las contraseñas y las bibliotecas no deben viajar sin cifrar. Necesitas un nombre (por ejemplo `kosmotheka.tu-dominio.example`) apuntando a la máquina, y un certificado (la guía usa Let's Encrypt).
 - **Un servidor Linux con recursos modestos.** Para una familia basta una máquina pequeña: 1 CPU, 2 GB de memoria y unos pocos GB de disco. Para hacerte una idea: en las pruebas de carga, subir una biblioteca de 2.000 libros de una vez lleva alrededor de un minuto, un cambio normal llega en menos de una décima de segundo, y una petición normal gasta unos 120 MB de memoria de PHP. Si la máquina comparte sitio con otros servicios, deja a PHP un `memory_limit` acotado (la guía lo hace).
 - **Saber administrar un servidor Linux:** instalar paquetes, editar la configuración de nginx, usar systemd y leer un registro de errores. No hace falta conocer Symfony ni PHP.
 
@@ -34,6 +34,9 @@ El servidor se puede montar de dos maneras con las mismas piezas (PHP, PostgreSQ
 Después de montarlo:
 
 - [La configuración, variable a variable](/es/run-your-server/configuration/).
+- [Conectar la app a tu servidor](/es/run-your-server/connect-the-app/).
+- [Administrar el servidor](/es/run-your-server/administration/): quién puede registrarse y las órdenes de consola.
+- [Qué guarda tu servidor y qué ves tú](/es/run-your-server/what-the-server-keeps/), y tus obligaciones si alojas a otras personas.
 - [Copias de seguridad y cómo restaurar](/es/run-your-server/backups/).
 - [Actualizar a una versión nueva](/es/run-your-server/updating/).
 - [Problemas comunes](/es/run-your-server/troubleshooting/).

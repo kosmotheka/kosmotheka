@@ -2,7 +2,7 @@
 title: Problemas comunes
 description: Lo que ya ha pasado al montar el servidor de Kosmotheka y cómo se resuelve.
 sidebar:
-  order: 7
+  order: 10
 ---
 
 ## `php` es otra versión

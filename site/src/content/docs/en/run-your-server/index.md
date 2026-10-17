@@ -20,7 +20,7 @@ These are the limits of hosting your own server. They are here, at the start, so
 
 ## What you need
 
-- **A domain with HTTPS.** The Android app from the stores does not connect to a server without HTTPS, and in any case passwords and libraries must not travel unencrypted. You need a name (for example `kosmotheka.your-domain.example`) pointing to the machine, and a certificate (the guide uses Let's Encrypt).
+- **A domain with HTTPS.** The app only accepts a server without HTTPS on the home network (a private address, such as `192.168.…`); from outside it needs HTTPS, and in any case passwords and libraries must not travel unencrypted. You need a name (for example `kosmotheka.your-domain.example`) pointing to the machine, and a certificate (the guide uses Let's Encrypt).
 - **A Linux server with modest resources.** For a family a small machine is enough: 1 CPU, 2 GB of memory and a few GB of disk. To give you an idea: in load tests, uploading a library of 2,000 books at once takes about a minute, a normal change arrives in less than a tenth of a second, and a normal request uses about 120 MB of PHP memory. If the machine shares space with other services, give PHP a limited `memory_limit` (the guide does it).
 - **Knowing how to administer a Linux server:** installing packages, editing the nginx configuration, using systemd and reading an error log. You do not need to know Symfony or PHP.
 

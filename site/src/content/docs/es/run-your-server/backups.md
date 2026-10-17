@@ -2,7 +2,7 @@
 title: Copias de seguridad y restaurar
 description: Un script de copia diaria de la base de datos de Kosmotheka y de su configuración, cómo llevarla fuera de la máquina y cómo restaurarla.
 sidebar:
-  order: 5
+  order: 8
 ---
 
 Las bibliotecas de la nube viven en la base de datos del servidor. Si la máquina se pierde y no tienes copia, se pierde lo que solo estaba allí (las apps conservan su propia copia local, pero reconstruir desde ellas es mucho trabajo). Una copia útil cumple cuatro cosas: **está fuera de la máquina**, **está cifrada**, **contiene todo lo que no se puede regenerar** y **se ha restaurado una vez de verdad**.
