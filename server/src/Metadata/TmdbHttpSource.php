@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Metadata;
 
+use App\Enum\Locale;
 use App\Enum\MediaKind;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -249,7 +250,7 @@ final readonly class TmdbHttpSource implements TmdbSource
 
     private function tag(string $language): string
     {
-        return 'es' === $language ? 'es-ES' : 'en-US';
+        return Locale::fromAny($language)->tmdbTag();
     }
 
     /** A poster address as this source makes them, and nothing else: what is read back from the cache passes it (SEG-057). */

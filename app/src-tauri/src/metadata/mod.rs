@@ -341,9 +341,18 @@ pub(crate) async fn get_text(request: reqwest::RequestBuilder) -> Result<String,
     String::from_utf8(body).map_err(|_| ProviderError::Unexpected("not text".to_owned()))
 }
 
+/// The app's languages as TMDB writes them: add a line here with each new interface language.
+const TMDB_TAGS: &[(&str, &str)] = &[("es", "es-ES"), ("en", "en-US")];
+
+/// What TMDB is asked for when the app's language is not in the table.
+const TMDB_FALLBACK_TAG: &str = "en-US";
+
 /// The language of the app as TMDB writes it.
 fn tmdb_tag(language: &str) -> &'static str {
-    if language == "es" { "es-ES" } else { "en-US" }
+    TMDB_TAGS
+        .iter()
+        .find(|(code, _)| *code == language)
+        .map_or(TMDB_FALLBACK_TAG, |(_, tag)| tag)
 }
 
 type ProviderResult = Result<Option<Metadata>, ProviderError>;

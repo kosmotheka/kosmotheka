@@ -1,10 +1,15 @@
-// Checks the news file (src/whats-new.json): the app's version must have its own entry, every entry has both
-// languages and from one to five lines, and the three places that carry the version agree. It ensures there is an
+// Checks the news file (src/whats-new.json): the app's version must have its own entry, every entry has text in every language the app has a file for,
+// and from one to five lines, and the three places that carry the version agree. It ensures there is an
 // entry, not that it is complete. The lines for the version that has no number yet live under "next".
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const problems = [];
+
+// The languages every line must have text in: those the app has a file for in src/i18n/locales/.
+const languages = readdirSync(new URL("../src/i18n/locales/", import.meta.url))
+  .filter((name) => name.endsWith(".json"))
+  .map((name) => name.replace(/\.json$/, ""));
 
 const file = JSON.parse(read("../src/whats-new.json"));
 const appVersion = JSON.parse(read("../package.json")).version;
@@ -35,7 +40,7 @@ for (const [version, lines] of Object.entries(file)) {
     continue;
   }
   lines.forEach((line, index) => {
-    for (const language of ["es", "en"]) {
+    for (const language of languages) {
       if (typeof line[language] !== "string" || line[language].trim() === "") {
         problems.push(`${version}, line ${index + 1}: missing "${language}"`);
       }

@@ -27,7 +27,7 @@ import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
-import { supportedLanguages } from "@/i18n";
+import { languageNames, languageOf, supportedLanguages } from "@/i18n";
 import { refreshAccount, useAccount } from "@/lib/account";
 import { type AccountActionError, accountErrorOf } from "@/lib/account-errors";
 import {
@@ -200,7 +200,7 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
           <section className="flex flex-col rounded-2xl border">
             {fieldRow(t("account.screen.name"), name, () => setEditingName(true))}
             {fieldRow(t("account.screen.email"), email)}
-            {fieldRow(t("account.screen.language"), locale === "es" ? "Español" : "English", () =>
+            {fieldRow(t("account.screen.language"), languageNames[languageOf(locale)], () =>
               setEditingLanguage(true),
             )}
             <div className="flex min-h-[50px] items-center gap-3 px-4">
@@ -362,7 +362,7 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
               className="h-11 flex-1"
               onClick={() => void saveLanguage(lang)}
             >
-              {lang === "en" ? "English" : "Español"}
+              {languageNames[lang]}
             </Button>
           ))}
         </div>

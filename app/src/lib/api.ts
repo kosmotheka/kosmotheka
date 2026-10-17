@@ -1,6 +1,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { join } from "@tauri-apps/api/path";
+import type { Language } from "@/i18n";
 
 // These types mirror the Rust structs in crates/domain and src-tauri/src/catalog.rs.
 
@@ -704,12 +705,12 @@ export function welcomeSeen(): Promise<number> {
   return invoke<number>("welcome_seen");
 }
 
-export interface WhatsNewLine {
-  es: string;
+/** The text of a line in each interface language that has one (English always does), and its switch, if any. */
+export type WhatsNewLine = Partial<Record<Language, string>> & {
   en: string;
   /** The setting this change is tied to, with how it is now. */
   switch: { key: string; on: boolean } | null;
-}
+};
 
 export interface WhatsNew {
   /** What changes what leaves the device: shown first, each with its switch. */

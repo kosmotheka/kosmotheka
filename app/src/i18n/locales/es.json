@@ -9,6 +9,7 @@
   },
   "licenses": {
     "title": "Licencias",
+    "fileName": "kosmotheka-licencias.txt",
     "summary_one": "Kosmotheka está hecha con {{count}} componente de código abierto.",
     "summary_other": "Kosmotheka está hecha con {{count}} componentes de código abierto.",
     "own": "Kosmotheka es software libre bajo la licencia AGPL-3.0-or-later.",

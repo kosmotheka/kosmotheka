@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { LicensesDialog } from "@/components/licenses-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
 import { WhatsNewDialog } from "@/components/whats-new-dialog";
+import { type Language, languageOf } from "@/i18n";
 import { type WhatsNew, appVersion, whatsNewRecent } from "@/lib/api";
 
 const WEBSITE = "https://kosmotheka.com/";
-const PRIVACY = {
+/** The privacy policy in each language that has one; the others get the fallback language's. */
+const PRIVACY: Partial<Record<Language, string>> & { en: string } = {
   es: "https://kosmotheka.com/es/privacidad.html",
   en: "https://kosmotheka.com/en/privacy.html",
 };
@@ -40,7 +42,7 @@ export function AboutDialog({
   }
   if (!open && seeded) setSeeded(false);
 
-  const privacy = i18n.language.startsWith("es") ? PRIVACY.es : PRIVACY.en;
+  const privacy = PRIVACY[languageOf(i18n.language)] ?? PRIVACY.en;
 
   return (
     <ResponsiveDialog

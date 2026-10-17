@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Enum\Locale;
 use Symfony\Component\Serializer\Attribute\SerializedName;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -17,7 +18,7 @@ final readonly class GoogleStartRequest
         #[SerializedName('verifier_hash')]
         public string $verifierHash,
         /** The language a new account is made in. */
-        #[Assert\Choice(choices: ['en', 'es'])]
+        #[Assert\Choice(callback: [Locale::class, 'values'])]
         public string $locale = 'en',
     ) {
     }

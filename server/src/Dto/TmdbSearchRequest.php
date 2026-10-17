@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Enum\Locale;
 use App\Enum\MediaKind;
 use App\Metadata\TmdbSearch;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -22,7 +23,7 @@ final readonly class TmdbSearchRequest
         #[Assert\Length(max: 400)]
         #[Assert\Regex('/^[^\p{Cc}]*$/u', message: 'The text must not hold control characters.')]
         public string $query,
-        /** `es` or `en`; anything else means `en`. */
+        /** A code of {@see Locale}; anything else means its fallback. */
         public string $language = 'en',
     ) {
     }
@@ -47,6 +48,6 @@ final readonly class TmdbSearchRequest
 
     public function askedLanguage(): string
     {
-        return 'es' === $this->language ? 'es' : 'en';
+        return Locale::fromAny($this->language)->value;
     }
 }

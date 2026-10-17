@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { languageOf } from "@/i18n";
 import { Globe, Info, Loader2, PencilLine, ScanBarcode, Search, X } from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
@@ -212,11 +213,7 @@ export function AddSearch({
           setCandidates([]);
           setWarnings([]);
         } else {
-          const result = await searchWorks(
-            forKind,
-            trimmed,
-            i18n.language.startsWith("es") ? "es" : "en",
-          );
+          const result = await searchWorks(forKind, trimmed, languageOf(i18n.language));
           if (id === requestId.current) {
             setCandidates(result.candidates);
             setWarnings(result.warnings);

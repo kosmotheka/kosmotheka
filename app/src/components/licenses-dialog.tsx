@@ -63,7 +63,7 @@ export function LicensesDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [file, setFile] = useState<LicensesFile | null>(null);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,9 +92,8 @@ export function LicensesDialog({
 
   const saveList = async () => {
     setResult(null);
-    const english = i18n.language.startsWith("en");
     const path = await save({
-      defaultPath: english ? "kosmotheka-licenses.txt" : "kosmotheka-licencias.txt",
+      defaultPath: t("licenses.fileName"),
       filters: [{ name: t("licenses.fileType"), extensions: ["txt"] }],
     });
     if (!path) return;

@@ -27,7 +27,7 @@ import {
 import { GOOGLE_RESULT } from "@/lib/arrived-link";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { isSecondFactorCode } from "@/lib/second-factor-code";
-import { supportedLanguages } from "@/i18n";
+import { type Language, languageNames, languageOf, supportedLanguages } from "@/i18n";
 
 type Step =
   | "signin"
@@ -91,9 +91,7 @@ export function AuthDialog({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [language, setLanguage] = useState<(typeof supportedLanguages)[number]>(
-    (i18n.resolvedLanguage ?? "en") as (typeof supportedLanguages)[number],
-  );
+  const [language, setLanguage] = useState<Language>(languageOf(i18n.resolvedLanguage));
   const [serverUrl, setServerUrl] = useState("");
   const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const [code, setCode] = useState("");
@@ -525,7 +523,7 @@ export function AuthDialog({
                 variant={language === lang ? "secondary" : "outline"}
                 onClick={() => setLanguage(lang)}
               >
-                {lang === "en" ? "English" : "Español"}
+                {languageNames[lang]}
               </Button>
             ))}
           </div>,

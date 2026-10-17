@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Enum\Locale;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /** Body of `POST /v1/account/register` (docs/architecture/accounts.md). */
@@ -19,7 +20,7 @@ final readonly class RegisterAccountRequest
         #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 100, normalizer: 'trim')]
         public string $name,
-        #[Assert\Choice(choices: ['en', 'es'])]
+        #[Assert\Choice(callback: [Locale::class, 'values'])]
         public string $locale,
     ) {
     }

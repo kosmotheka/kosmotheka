@@ -17,7 +17,7 @@ import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { supportedLanguages } from "@/i18n";
+import { languageNames, supportedLanguages } from "@/i18n";
 import { useAccount } from "@/lib/account";
 import {
   type LibrarySummary,
@@ -39,12 +39,6 @@ import { setThemeChoice, themeChoice, themeChoices } from "@/lib/theme";
 
 /** Mirrors `settings::APP_LOCK_AFTER_CHOICES`, in minutes. */
 const LOCK_AFTER_CHOICES = [0, 5, 60, 720, 1440] as const;
-
-/** Each language in its own name, so it can be found whatever the current one. */
-const LANGUAGE_NAMES: Record<(typeof supportedLanguages)[number], string> = {
-  en: "English",
-  es: "Español",
-};
 
 export function SettingsDialog({
   open,
@@ -171,7 +165,7 @@ export function SettingsDialog({
                   aria-pressed={i18n.resolvedLanguage === language}
                   onClick={() => void i18n.changeLanguage(language)}
                 >
-                  {LANGUAGE_NAMES[language]}
+                  {languageNames[language]}
                 </Button>
               ))}
             </div>

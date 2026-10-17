@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Enum\Locale;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -16,7 +17,7 @@ final readonly class UpdateAccountRequest
         #[Assert\NotBlank(allowNull: true, normalizer: 'trim')]
         #[Assert\Length(max: 100, normalizer: 'trim')]
         public ?string $name = null,
-        #[Assert\Choice(choices: ['en', 'es'])]
+        #[Assert\Choice(callback: [Locale::class, 'values'])]
         public ?string $locale = null,
     ) {
     }

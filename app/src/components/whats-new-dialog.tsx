@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Switch } from "@/components/people/role-parts";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
+import { languageOf } from "@/i18n";
 import { type WhatsNew, type WhatsNewLine, setWhatsNewSwitch } from "@/lib/api";
 
 /** What changed since the last version this person saw. What changes what leaves the device comes first, with its switch. */
@@ -17,8 +18,8 @@ export function WhatsNewDialog({
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const language = i18n.language.startsWith("es") ? "es" : "en";
-  const text = (line: WhatsNewLine) => line[language];
+  const language = languageOf(i18n.language);
+  const text = (line: WhatsNewLine) => line[language] ?? line.en;
   // What each switch shows now, since the setting changes right here.
   const [on, setOn] = useState<Record<string, boolean>>({});
   const [failed, setFailed] = useState(false);

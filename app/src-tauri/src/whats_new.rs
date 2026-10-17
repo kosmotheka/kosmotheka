@@ -14,6 +14,9 @@ use kosmotheka_domain::{ErrorCode, FieldError};
 
 const FILE: &str = include_str!("../../src/whats-new.json");
 
+/// The language every line has text in, shown when a line has none in the person's.
+const FALLBACK_LANGUAGE: &str = "en";
+
 /// Lines of the version that has no number yet.
 const NEXT: &str = "next";
 
@@ -26,8 +29,10 @@ const RECENT: usize = 3;
 
 #[derive(Deserialize)]
 struct Entry {
-    es: String,
-    en: String,
+    /// The text in each language, by language code. English is always there (`notes` checks), the fallback of the
+    /// screen for a language a line has no text in.
+    #[serde(flatten)]
+    text: BTreeMap<String, String>,
     /// A setting this change is tied to, shown with its switch.
     switch: Option<String>,
 }
@@ -82,8 +87,9 @@ pub struct SwitchState {
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Line {
-    pub es: String,
-    pub en: String,
+    /// The text in each language, by language code, flattened next to `switch` in what the screen gets.
+    #[serde(flatten)]
+    pub text: BTreeMap<String, String>,
     pub switch: Option<SwitchState>,
 }
 
@@ -117,7 +123,20 @@ fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
 }
 
 fn notes() -> Result<Notes> {
-    Ok(serde_json::from_str(FILE)?)
+    let notes: Notes = serde_json::from_str(FILE)?;
+    let without_english = notes.values().flatten().any(|entry| {
+        entry
+            .text
+            .get(FALLBACK_LANGUAGE)
+            .is_none_or(String::is_empty)
+    });
+    if without_english {
+        return Err(Error::Validation(vec![FieldError::new(
+            FALLBACK_LANGUAGE,
+            ErrorCode::Required,
+        )]));
+    }
+    Ok(notes)
 }
 
 /// The versions after `after` (all when `None`) up to the installed one, newest first. `next` comes first, only
@@ -157,8 +176,7 @@ fn build(conn: &Connection, chosen: &[(&str, &[Entry])]) -> Result<WhatsNew> {
         let mut lines = Vec::new();
         for entry in *entries {
             let line = |switch| Line {
-                es: entry.es.clone(),
-                en: entry.en.clone(),
+                text: entry.text.clone(),
                 switch,
             };
             match &entry.switch {
@@ -262,7 +280,14 @@ mod tests {
             assert!(version == NEXT || parse_version(version).is_some());
             assert!((1..=5).contains(&entries.len()), "{version}");
             for entry in entries {
-                assert!(!entry.es.is_empty() && !entry.en.is_empty());
+                for language in ["es", "en"] {
+                    assert!(
+                        entry
+                            .text
+                            .get(language)
+                            .is_some_and(|text| !text.is_empty())
+                    );
+                }
                 if let Some(key) = &entry.switch {
                     assert!(Switch::parse(key).is_some(), "{key}");
                 }
