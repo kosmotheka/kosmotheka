@@ -141,6 +141,8 @@ jobs:
       # Only builds: where the site is published is decided apart (D90).
       - run: npm run build
         working-directory: site
+      - run: npm run check:links
+        working-directory: site
 
   build:
     name: Build desktop (${{ matrix.os }})

@@ -147,7 +147,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | What's-new file has the app version's entry | `cd app && npm run check:whats-new` |
 | «Licences» list still covers what ships (needs cargo) | `cd app && npm run check:licenses` |
 | Regenerate the «Licences» list after changing a dependency (needs **Docker and the network**; builds the `cargo-about` image on first use, version fixed in `app/scripts/licenses.mjs`) | `cd app && npm run licenses` |
-| Documentation site (Starlight, `site/`): dev server / build (what the CI job `docs-site` runs) | `cd site && npm run dev` · `cd site && npm run build` |
+| Documentation site (Starlight, `site/`): dev server / build and link check (what the CI job `docs-site` runs). Links between guide pages are `../page/`, images `./image.webp` | `cd site && npm run dev` · `cd site && npm run build && npm run check:links` |
 | Rust dependencies (CI job `rust-deps`) | `cargo deny check` (rules in `deny.toml`) · `cargo machete` |
 | Live tests against real services (network, not in CI) | `cargo test -p kosmotheka -- --ignored live_` |
 | Second instance with its own data (debug builds), to test LAN sync | `KOSMOTHEKA_DATA_DIR=/tmp/kosmotheka-b target/debug/kosmotheka` (with `npm run tauri dev` running) |
