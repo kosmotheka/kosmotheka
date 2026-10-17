@@ -12,7 +12,7 @@ Kosmotheka es una aplicación para catalogar lo que tiene una familia o un grupo
 
 ## Quién es el responsable
 
-[POR CONFIRMAR: nombre del responsable y, si procede, dirección o país]. Contacto: privacy@kosmotheka.com
+Responsable: Kosmotheka, proyecto personal con sede en España. Contacto: privacy@kosmotheka.com
 
 ## Si usas la app sin cuenta
 
@@ -41,7 +41,7 @@ Las bibliotecas que no subes no salen de tus dispositivos, tengas cuenta o no.
 
 ## Si buscas un libro con la cuenta
 
-Si no has puesto una clave tuya de Google Books, y tu servidor la ofrece, la app puede preguntar al servidor por un ISBN en lugar de preguntar directamente a Google Books (que falla a menudo para quien no tiene clave). **Se envía el ISBN y nada más**, junto con tu sesión, que el servidor necesita para comprobar que tienes cuenta. El servidor lo busca en Google Books con su propia clave, así que **Google ve las búsquedas como del servidor, no tuyas**. El servidor guarda la respuesta unos días (30 si encontró el libro, 1 si no) para no repetir la pregunta, **sin guardar quién la hizo** ni apuntarlo en ningún registro; solo cuenta cuántas búsquedas haces para ponerte un límite (600 por hora) y no lo guarda más allá de esa hora. Puedes apagarlo en Ajustes › Proveedores de datos (viene encendido) o poner tu propia clave de Google Books, que tiene preferencia: entonces el servidor ni se entera. *Pendiente para el texto final:* que el servidor de la prueba cerrada tenga su registro de accesos apagado para estas rutas.
+Si no has puesto una clave tuya de Google Books, y tu servidor la ofrece, la app puede preguntar al servidor por un ISBN en lugar de preguntar directamente a Google Books (que falla a menudo para quien no tiene clave). **Se envía el ISBN y nada más**, junto con tu sesión, que el servidor necesita para comprobar que tienes cuenta. El servidor lo busca en Google Books con su propia clave, así que **Google ve las búsquedas como del servidor, no tuyas**. El servidor guarda la respuesta unos días (30 si encontró el libro, 1 si no) para no repetir la pregunta, **sin guardar quién la hizo** ni apuntarlo en ningún registro; solo cuenta cuántas búsquedas haces para ponerte un límite (600 por hora) y no lo guarda más allá de esa hora. Puedes apagarlo en Ajustes › Proveedores de datos (viene encendido) o poner tu propia clave de Google Books, que tiene preferencia: entonces el servidor ni se entera. *Pendiente para el texto final:* el maintainer comprueba en producción que el registro de accesos de nginx no apunta las rutas `/v1/metadata/` (la regla se puso el 11/10/2026; cree que sí funciona, pero hay que verlo).
 
 ## Si buscas una película o una serie con la cuenta
 
@@ -71,7 +71,7 @@ De cada cosa se guarda **qué fue, cuándo, la cuenta y el dispositivo, la direc
 
 ## Quién más trata tus datos
 
-- **Alojamiento:** el servidor está en [POR CONFIRMAR: proveedor y país o región del centro de datos].
+- **Alojamiento:** el servidor está en DigitalOcean, en su centro de datos de Ámsterdam (Países Bajos, Unión Europea) [A COMPROBAR por el maintainer: Ámsterdam o Fráncfort].
 - **Correo:** los mensajes (códigos de confirmación, recuperación de contraseña, invitaciones) se envían a través de Brevo (Sendinblue SAS, Francia), que recibe la dirección de destino y el contenido del mensaje.
 - No hay nadie más: ni publicidad, ni analítica, ni seguimiento, ni venta de datos.
 
@@ -95,7 +95,7 @@ Puedes pedirnos acceder a tus datos, corregirlos, borrarlos, limitar su uso u op
 
 ## Menores
 
-La app puede usarla cualquier miembro de la familia sin cuenta. **Crear una cuenta** está pensado para personas adultas [POR CONFIRMAR: edad mínima; en España el consentimiento propio es a partir de los 14 años]. Un menor puede estar en una biblioteca familiar sin tener cuenta: lo suyo llega a la nube a través de quien administra la biblioteca.
+La app puede usarla cualquier miembro de la familia sin cuenta. **Crear una cuenta** está pensado para personas adultas, a partir de **14 años** (la edad a la que en España se puede dar el consentimiento propio). Un menor puede estar en una biblioteca familiar sin tener cuenta: lo suyo llega a la nube a través de quien administra la biblioteca.
 
 ## Cambios
 

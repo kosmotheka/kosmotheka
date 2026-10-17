@@ -48,6 +48,12 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 - **D64 cerrada** como reemplazada por D90: un solo repositorio, todo junto.
 - **Inventario y orden de trabajo para abrir el repositorio:** [repositorio-publico.md](repositorio-publico.md). Primer encargo: los ficheros de la raíz ([encargo](../historico/encargo-ficheros-raiz.md)).
 
+## Recordatorios para el maintainer (17/10/2026)
+
+- **El centro de datos del VPS:** la política dice Ámsterdam; puede ser Fráncfort. Mirarlo en el panel del proveedor y corregirlo si hace falta.
+- **El registro de accesos de nginx en producción:** comprobar que no apunta `/v1/metadata/`. Hacer una búsqueda desde la app y después `grep -c "metadata"` sobre el registro de la API: tiene que dar 0. La política lo promete.
+- **Las copias automáticas cifradas** (sesión 9.1 de las notas privadas de producción) y una restauración de prueba.
+
 ## Lo que se puede hacer ya, sin ti
 
 - ✅ La primera nota de investigación de 8.3: [notificaciones.md](../research/notificaciones.md) (16/10/2026). Trae dos cosas nuevas: un servidor propio no puede mandar avisos a la app de Google Play, y Play pide además una página web para pedir que se borre la cuenta.
