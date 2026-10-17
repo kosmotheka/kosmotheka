@@ -864,6 +864,7 @@ function mockCandidates(kind: Kind, query: string): Candidate[] {
     seasons: null,
     platform: null,
     format: null,
+    expands: null,
     existingEditionId: null,
     ...over,
   });
@@ -1383,7 +1384,7 @@ mockIPC((cmd, args) => {
     case "get_settings":
       return mockSettings;
     case "cloud_metadata_offers":
-      return mockAccount.signedIn ? ["google_books", "tmdb", "rawg", "comic_vine"] : [];
+      return mockAccount.signedIn ? ["google_books", "tmdb", "rawg", "comic_vine", "bgg"] : [];
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;

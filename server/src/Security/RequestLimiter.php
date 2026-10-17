@@ -33,6 +33,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $tmdbCallsLimiter,
         #[Target('rawg_calls')]
         private RateLimiterFactoryInterface $rawgCallsLimiter,
+        #[Target('bgg_calls')]
+        private RateLimiterFactoryInterface $bggCallsLimiter,
         #[Target('comic_vine_search')]
         private RateLimiterFactoryInterface $comicVineSearchLimiter,
         #[Target('comic_vine_volume')]
@@ -45,6 +47,8 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $tmdbAccountLimiter,
         #[Target('rawg_account')]
         private RateLimiterFactoryInterface $rawgAccountLimiter,
+        #[Target('bgg_account')]
+        private RateLimiterFactoryInterface $bggAccountLimiter,
         #[Target('comic_vine_account')]
         private RateLimiterFactoryInterface $comicVineAccountLimiter,
         #[Target('cloud_sync')]
@@ -136,6 +140,20 @@ final readonly class RequestLimiter
     }
 
     /**
+     * One real call to BoardGameGeek or RPGGeek (they share one token), from the whole server: BoardGameGeek gives no
+     * figure, so the day's cap is the server's own (`BGG_DAILY_CALL_CAP`). One key for all; nothing says whose call it was.
+     *
+     * @throws AccountException with AccountErrorCode::MetadataQuotaExhausted
+     */
+    public function consumeBggCall(): void
+    {
+        $limit = $this->bggCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /**
      * One real call to Comic Vine, from the whole server, against the hour of the resource it is made to: it supports
      * 200 an hour per resource and the server keeps below that. One key for all; nothing says whose call it was.
      *
@@ -171,6 +189,13 @@ final readonly class RequestLimiter
     {
         $this->consume($this->tmdbAccountLimiter, $accountId);
         $this->consumeTmdbCall();
+    }
+
+    /** As `consumeGoogleBooksCallOf`, for BoardGameGeek and RPGGeek. @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted */
+    public function consumeBggCallOf(string $accountId): void
+    {
+        $this->consume($this->bggAccountLimiter, $accountId);
+        $this->consumeBggCall();
     }
 
     /** As `consumeGoogleBooksCallOf`, for RAWG. @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted */

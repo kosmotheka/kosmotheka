@@ -371,11 +371,14 @@
       "game_upc": "GameUPC",
       "tmdb": "TMDB",
       "rawg": "RAWG",
-      "comic_vine": "Comic Vine"
+      "comic_vine": "Comic Vine",
+      "board_game_geek": "BoardGameGeek",
+      "rpg_geek": "RPGGeek"
     },
     "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers.",
     "rawgData": "Data from <link>RAWG</link>",
-    "comicVineData": "Data from <link>Comic Vine</link>"
+    "comicVineData": "Data from <link>Comic Vine</link>",
+    "bggData": "Data from <link>BoardGameGeek</link>"
   },
   "settings": {
     "title": "Settings",
@@ -1246,13 +1249,15 @@
         "open_library": "Title, authors and ISBN",
         "inventaire": "Spanish editions and covers",
         "wikidata": "Works and authorship",
-        "google_books": "The most complete source for ISBN lookups"
+        "google_books": "The most complete source for ISBN lookups",
+        "rpg_geek": "Role-playing books, by title only, from RPGGeek"
       },
       "comic": {
         "comic_vine": "Series and issues, with publisher, writers, artists and cover",
         "wikidata": "Series and authorship"
       },
       "boardgame": {
+        "board_game_geek": "Title, designers, artists, publisher, players, length, age and cover",
         "wikidata": "Title, designer and year",
         "game_upc": "By the box's barcode"
       },
@@ -1295,11 +1300,19 @@
       "music_brainz": "Albums by title or barcode",
       "tmdb": "Title, director or creators, length and poster",
       "rawg": "Title, studio, publisher, platforms and cover",
-      "comic_vine": "Comic series and issues: title, publisher, writers, artists and cover"
+      "comic_vine": "Comic series and issues: title, publisher, writers, artists and cover",
+      "board_game_geek": "Board games: title, designers, artists, publisher, players, length, age and cover",
+      "rpg_geek": "Role-playing books, searched by title among the books"
     },
     "comic_vineWithAccount": "Needs your own key, or an account on a server that offers it. Without either, Wikidata is used.",
     "comic_vineSends": "Sends what you type to your account's server, which asks Comic Vine. Nothing else.",
-    "comicVineNotice": "Comic data from <link>Comic Vine</link>."
+    "comicVineNotice": "Comic data from <link>Comic Vine</link>.",
+    "needsAccountBadge": "Needs an account",
+    "board_game_geekWithAccount": "Needs an account on a server that offers it: BoardGameGeek wants its data asked from a server, so there is no key of your own. Without one, Wikidata is used.",
+    "board_game_geekSends": "Sends what you type to your account's server, which asks BoardGameGeek. Nothing else.",
+    "rpg_geekWithAccount": "Needs an account on a server that offers it. It is only asked when you search for books by title; without one, nothing changes.",
+    "rpg_geekSends": "When you search for books by title, sends what you type to your account's server, which asks RPGGeek. Nothing else.",
+    "bggNotice": "Board game and role-playing data from <link>BoardGameGeek</link>. This application is not affiliated with BoardGameGeek."
   },
   "series": {
     "new": "New series",

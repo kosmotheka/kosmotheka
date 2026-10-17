@@ -399,7 +399,9 @@ export type Source =
   | "game_upc"
   | "tmdb"
   | "rawg"
-  | "comic_vine";
+  | "comic_vine"
+  | "board_game_geek"
+  | "rpg_geek";
 
 export interface LookupResult {
   isbn13: string;
@@ -420,6 +422,12 @@ export interface LookupResult {
 
 export function lookupIsbn(isbn: string): Promise<LookupResult> {
   return invoke<LookupResult>("lookup_isbn", { isbn });
+}
+
+/** The game an expansion needs: kept on the candidate, though nothing creates the relation yet (D61). */
+interface CandidateExpands {
+  externalId: string;
+  title: string;
 }
 
 interface CandidateContributor {
@@ -453,6 +461,8 @@ export interface Candidate {
   platform: string | null;
   /** A suggested copy format, when the provider knows it. */
   format: Format | null;
+  /** The base game, when this one is an expansion of it (BoardGameGeek). */
+  expands: CandidateExpands | null;
   /** Set when this candidate's ISBN or barcode already exists in the active library. */
   existingEditionId: string | null;
 }

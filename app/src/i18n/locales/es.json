@@ -385,11 +385,14 @@
       "game_upc": "GameUPC",
       "tmdb": "TMDB",
       "rawg": "RAWG",
-      "comic_vine": "Comic Vine"
+      "comic_vine": "Comic Vine",
+      "board_game_geek": "BoardGameGeek",
+      "rpg_geek": "RPGGeek"
     },
     "badKey": "{{source}} ha rechazado la clave guardada. Revísala en Ajustes → Proveedores de datos.",
     "rawgData": "Datos de <link>RAWG</link>",
-    "comicVineData": "Datos de <link>Comic Vine</link>"
+    "comicVineData": "Datos de <link>Comic Vine</link>",
+    "bggData": "Datos de <link>BoardGameGeek</link>"
   },
   "settings": {
     "title": "Ajustes",
@@ -1260,13 +1263,15 @@
         "open_library": "Título, autoría e ISBN",
         "inventaire": "Ediciones en español y portadas",
         "wikidata": "Obras y autorías",
-        "google_books": "La más completa por ISBN"
+        "google_books": "La más completa por ISBN",
+        "rpg_geek": "Libros de rol, solo por título, de RPGGeek"
       },
       "comic": {
         "comic_vine": "Series y números, con editorial, guion, dibujo y portada",
         "wikidata": "Series y autorías"
       },
       "boardgame": {
+        "board_game_geek": "Título, diseño, ilustración, editorial, jugadores, duración, edad y portada",
         "wikidata": "Título, diseño y año",
         "game_upc": "Por el código de barras de la caja"
       },
@@ -1309,11 +1314,19 @@
       "music_brainz": "Discos por título o código de barras",
       "tmdb": "Título, director o creadores, duración y cartel",
       "rawg": "Título, estudio, editor, plataformas y carátula",
-      "comic_vine": "Series y números de cómic: título, editorial, guion, dibujo y portada"
+      "comic_vine": "Series y números de cómic: título, editorial, guion, dibujo y portada",
+      "board_game_geek": "Juegos de mesa: título, diseño, ilustración, editorial, jugadores, duración, edad y portada",
+      "rpg_geek": "Libros de rol, buscados por título entre los libros"
     },
     "comic_vineWithAccount": "Pide tu propia clave, o una cuenta en un servidor que lo ofrezca. Sin ninguna de las dos se usa Wikidata.",
     "comic_vineSends": "Envía lo que escribes al servidor de tu cuenta, que pregunta a Comic Vine. Nada más.",
-    "comicVineNotice": "Datos de cómics de <link>Comic Vine</link>."
+    "comicVineNotice": "Datos de cómics de <link>Comic Vine</link>.",
+    "needsAccountBadge": "Pide cuenta",
+    "board_game_geekWithAccount": "Pide una cuenta en un servidor que lo ofrezca: BoardGameGeek quiere que sus datos se pidan desde un servidor, así que no hay clave propia. Sin cuenta se usa Wikidata.",
+    "board_game_geekSends": "Envía lo que escribes al servidor de tu cuenta, que pregunta a BoardGameGeek. Nada más.",
+    "rpg_geekWithAccount": "Pide una cuenta en un servidor que lo ofrezca. Solo se consulta al buscar libros por título; sin cuenta, todo sigue igual.",
+    "rpg_geekSends": "Al buscar libros por título, envía lo que escribes al servidor de tu cuenta, que pregunta a RPGGeek. Nada más.",
+    "bggNotice": "Datos de juegos de mesa y de rol de <link>BoardGameGeek</link>. Esta aplicación no tiene relación con BoardGameGeek."
   },
   "series": {
     "new": "Nueva serie",

@@ -1,6 +1,7 @@
 //! Book data from external catalogues, looked up by ISBN (D26). Every provider is
 //! optional: failures become warnings and never block the user (D18).
 
+pub mod bgg;
 pub mod bne;
 pub mod candidate;
 pub mod comic_vine;
@@ -23,6 +24,7 @@ use std::time::Duration;
 use kosmotheka_domain::{Isbn, Kind};
 
 use crate::cloud::CloudApi;
+use bgg::{BggScope, search_bgg};
 use reqwest::StatusCode;
 use serde::Serialize;
 use serde_json::Value;
@@ -30,7 +32,7 @@ use via_server::{
     GoogleAccess, choose_search_access, lookup_google, search_comic_vine, search_rawg, search_tmdb,
 };
 
-pub use candidate::{Candidate, CandidateContributor};
+pub use candidate::{Candidate, CandidateContributor, CandidateExpands};
 
 /// What one provider knows about an edition.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -60,10 +62,12 @@ pub enum Source {
     Tmdb,
     Rawg,
     ComicVine,
+    BoardGameGeek,
+    RpgGeek,
 }
 
 impl Source {
-    pub const ALL: [Source; 11] = [
+    pub const ALL: [Source; 13] = [
         Source::Bne,
         Source::LibraryOfCongress,
         Source::GoogleBooks,
@@ -75,6 +79,8 @@ impl Source {
         Source::Tmdb,
         Source::Rawg,
         Source::ComicVine,
+        Source::BoardGameGeek,
+        Source::RpgGeek,
     ];
 
     /// Stable id used for `Settings::disabled_sources`, matching the snake_case
@@ -92,6 +98,8 @@ impl Source {
             Source::Tmdb => "tmdb",
             Source::Rawg => "rawg",
             Source::ComicVine => "comic_vine",
+            Source::BoardGameGeek => "board_game_geek",
+            Source::RpgGeek => "rpg_geek",
         }
     }
 }
@@ -220,7 +228,9 @@ fn candidate_from_lookup(result: &LookupResult) -> Candidate {
         | Source::GameUpc
         | Source::Tmdb
         | Source::Rawg
-        | Source::ComicVine => None,
+        | Source::ComicVine
+        | Source::BoardGameGeek
+        | Source::RpgGeek => None,
     };
     candidate
 }
@@ -358,7 +368,7 @@ impl Lookup {
         }
         match kind {
             Kind::Book => {
-                let (bne, loc, open_library, inventaire, wikidata) = tokio::join!(
+                let (bne, loc, open_library, inventaire, wikidata, rpg) = tokio::join!(
                     maybe_vec(
                         disabled.contains(Source::Bne.id()),
                         bne::search(&self.client, query),
@@ -379,6 +389,11 @@ impl Lookup {
                         disabled.contains(Source::Wikidata.id()),
                         wikidata::search(&self.client, kind, query),
                     ),
+                    // Role-playing books, by title only and only through the server of the account.
+                    maybe_vec(
+                        disabled.contains(Source::RpgGeek.id()),
+                        search_bgg(cloud, BggScope::Rpg, query),
+                    ),
                 );
                 collect_candidates(vec![
                     (Source::Bne, bne),
@@ -388,6 +403,8 @@ impl Lookup {
                     // Last: the other two providers are book-specific and
                     // usually better for Spanish editions.
                     (Source::Wikidata, wikidata),
+                    // After everything else: a «Dune» must not fill the list with role-playing supplements.
+                    (Source::RpgGeek, rpg),
                 ])
             }
             Kind::Music => {
@@ -476,11 +493,21 @@ impl Lookup {
                 ])
             }
             Kind::Boardgame => {
-                if disabled.contains(Source::Wikidata.id()) {
-                    return SearchResult::default();
-                }
-                let wikidata = wikidata::search(&self.client, kind, query).await;
-                collect_candidates(vec![(Source::Wikidata, wikidata)])
+                // BoardGameGeek first, only through the account's server, at the same time as Wikidata.
+                let (bgg, wikidata) = tokio::join!(
+                    maybe_vec(
+                        disabled.contains(Source::BoardGameGeek.id()),
+                        search_bgg(cloud, BggScope::Boardgame, query),
+                    ),
+                    maybe_vec(
+                        disabled.contains(Source::Wikidata.id()),
+                        wikidata::search(&self.client, kind, query),
+                    ),
+                );
+                collect_candidates(vec![
+                    (Source::BoardGameGeek, bgg),
+                    (Source::Wikidata, wikidata),
+                ])
             }
             Kind::Other => SearchResult::default(),
         }

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\BggSearchRequest;
 use App\Dto\ComicVineSearchRequest;
 use App\Dto\RawgSearchRequest;
 use App\Dto\TmdbSearchRequest;
 use App\Entity\User;
+use App\Metadata\BggSearch;
+use App\Metadata\BggSource;
 use App\Metadata\BookLookup;
 use App\Metadata\BookMetadata;
 use App\Metadata\BookProvider;
@@ -41,6 +44,8 @@ final class MetadataController extends AbstractController
         private readonly TmdbSearch $tmdbSearch,
         private readonly RawgSource $rawgSource,
         private readonly RawgSearch $rawgSearch,
+        private readonly BggSource $bggSource,
+        private readonly BggSearch $bggSearch,
         private readonly ComicVineSource $comicVineSource,
         private readonly ComicVineSearch $comicVineSearch,
         private readonly RequestLimiter $limiter,
@@ -125,6 +130,24 @@ final class MetadataController extends AbstractController
         $this->limiter->consumeMetadata($user->getId()->toRfc4122());
 
         $response = new JsonResponse(['candidates' => $this->comicVineSearch->search($payload->query, $user->getId()->toRfc4122())]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /** A POST on purpose, as the others': the title a person looks for is never in an address. */
+    #[Route('/bgg/search', methods: ['POST'])]
+    public function bggSearch(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] BggSearchRequest $payload): JsonResponse
+    {
+        if (!$this->bggSource->isConfigured()) {
+            throw AccountException::metadataUnavailable();
+        }
+
+        $user = $this->getUser();
+        \assert($user instanceof User);
+        $this->limiter->consumeMetadata($user->getId()->toRfc4122());
+
+        $response = new JsonResponse(['candidates' => $this->bggSearch->search($payload->searchScope(), $payload->query, $user->getId()->toRfc4122())]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

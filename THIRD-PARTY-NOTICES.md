@@ -56,6 +56,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## BoardGameGeek (logo «Powered by BGG»)
+
+`app/src/assets/powered-by-bgg.svg` and `powered-by-bgg-reversed.svg` are the colour logos that BoardGameGeek supplies, unmodified (the reversed one is for the dark theme). «BoardGameGeek», «BGG» and the logo are trademarks of BoardGameGeek, LLC. They are used as its XML API terms ask, wherever the app shows its data, linked to https://boardgamegeek.com. Kosmotheka is not affiliated with BoardGameGeek.
+
 ## SQLite
 
 The app stores its data with SQLite, compiled into the program through the `libsqlite3-sys` crate. SQLite is in the public domain (https://www.sqlite.org/copyright.html).

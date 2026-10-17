@@ -5,12 +5,8 @@
       "en": "The first time, the app asks for your name: your library is created in your name, as its administrator, and you can change it later in Settings. When you pair a device you must say whose it is and what role it has (\"editor\" by default)."
     },
     {
-      "es": "Restaurar una copia en un móvil nuevo no une la biblioteca con la original: queda como una biblioteca nueva con los mismos libros.",
-      "en": "Restoring a backup on a new phone does not join the original library: it becomes a new library with the same books."
-    },
-    {
-      "es": "Hay que borrar los datos de prueba antes de usar esta versión: en cada dispositivo, «Dejar este dispositivo a otra persona» en Ajustes; y en la nube, borrar la cuenta y registrarse otra vez.",
-      "en": "Test data must be deleted before using this version: on each device, \"Hand this device to someone else\" in Settings; and in the cloud, delete the account and sign up again."
+      "es": "Antes de usar esta versión hay que borrar los datos de prueba: en cada dispositivo, «Dejar este dispositivo a otra persona» en Ajustes; y en la nube, borrar la cuenta y registrarse otra vez. Además, restaurar una copia en un móvil nuevo no une la biblioteca con la original: queda como una biblioteca nueva con los mismos libros.",
+      "en": "Test data must be deleted before using this version: on each device, \"Hand this device to someone else\" in Settings; and in the cloud, delete the account and sign up again. Also, restoring a backup on a new phone does not join the original library: it becomes a new library with the same books."
     },
     {
       "es": "Cambiar o restablecer la contraseña y borrar la cuenta piden el código de la app de autenticación, si la cuenta lo tiene.",
@@ -19,6 +15,11 @@
     {
       "es": "Al añadir, un ISBN con guiones o de 10 cifras se busca como ISBN.",
       "en": "When adding, an ISBN with hyphens or ten digits is looked up as an ISBN."
+    },
+    {
+      "es": "Con cuenta, los juegos de mesa se buscan por título en BoardGameGeek, y al buscar libros salen también los de rol de RPGGeek. Lo que escribes va al servidor de tu cuenta, que lo consulta; puedes apagarlo en Proveedores de datos.",
+      "en": "With an account, board games are searched by title on BoardGameGeek, and searching for books also finds role-playing books from RPGGeek. What you type goes to your account's server, which asks them; you can turn it off in Data providers.",
+      "switch": "source:board_game_geek"
     }
   ],
   "0.2.0": [

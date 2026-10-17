@@ -88,6 +88,14 @@ pub trait CloudApi {
     /// A video game searched by title in RAWG through the server (7.8, D62). The text goes in the body of a `POST`,
     /// never in an address. The answer is already cut to the fixed shape and to at most eight candidates.
     async fn rawg_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>>;
+    /// A board game (BoardGameGeek) or a role-playing book (RPGGeek) searched by title through the server (7.8, D62).
+    /// The text goes in the body of a `POST`, never in an address; the answer is already of the fixed shape, and none of
+    /// its values is cut (BoardGameGeek's terms forbid changing its data).
+    async fn bgg_search(
+        &self,
+        scope: crate::metadata::bgg::BggScope,
+        query: &str,
+    ) -> Result<Vec<crate::metadata::Candidate>>;
     /// A comic searched by title in Comic Vine through the server (7.8, D62): series and issues, the series first.
     /// The text goes in the body of a `POST`, never in an address; the answer is already cut to the fixed shape.
     async fn comic_vine_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>>;

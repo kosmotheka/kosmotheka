@@ -21,13 +21,21 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "@/components/external-link";
-import { SOURCES_WITH_A_LINK } from "@/components/source-credits";
+import { BGG_URL, BggLogo, SOURCES_WITH_A_LINK } from "@/components/source-credits";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
 const SOURCES_BY_KIND: Record<Kind, Source[]> = {
-  book: ["bne", "library_of_congress", "open_library", "inventaire", "wikidata", "google_books"],
+  book: [
+    "bne",
+    "library_of_congress",
+    "open_library",
+    "inventaire",
+    "wikidata",
+    "google_books",
+    "rpg_geek",
+  ],
   comic: ["comic_vine", "wikidata"],
-  boardgame: ["wikidata", "game_upc"],
+  boardgame: ["board_game_geek", "wikidata", "game_upc"],
   film: ["tmdb", "wikidata"],
   tv_series: ["tmdb", "wikidata"],
   videogame: ["rawg", "wikidata"],
@@ -49,6 +57,9 @@ const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc", "tmdb", "rawg
 
 /** Sources the account's server can also ask when there is no key of their own (D62, D83). */
 const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg", "comic_vine"]);
+
+/** Sources that only the account's server asks, never with a key of their own (D62: BoardGameGeek wants it so). */
+const ACCOUNT_ONLY_SOURCES = new Set<Source>(["board_game_geek", "rpg_geek"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
@@ -86,9 +97,16 @@ interface Offers {
   tmdb: boolean;
   rawg: boolean;
   comicVine: boolean;
+  bgg: boolean;
 }
 
-const NO_OFFERS: Offers = { googleBooks: false, tmdb: false, rawg: false, comicVine: false };
+const NO_OFFERS: Offers = {
+  googleBooks: false,
+  tmdb: false,
+  rawg: false,
+  comicVine: false,
+  bgg: false,
+};
 
 function usableCount(sources: Source[], settings: Settings, offers: Offers): number {
   return sources.filter((source) => isUsable(source, settings, offers)).length;
@@ -100,11 +118,13 @@ function viaAccount(source: Source, settings: Settings, offers: Offers): boolean
   if (source === "tmdb") return offers.tmdb;
   if (source === "rawg") return offers.rawg;
   if (source === "comic_vine") return offers.comicVine;
+  if (ACCOUNT_ONLY_SOURCES.has(source)) return offers.bgg;
   return false;
 }
 
 /** A keyed source works with a key of their own or, where the account's server asks it, without one. */
 function isAvailable(source: Source, settings: Settings, offers: Offers): boolean {
+  if (ACCOUNT_ONLY_SOURCES.has(source)) return viaAccount(source, settings, offers);
   if (!KEYED_SOURCES.has(source)) return true;
   return Boolean(settings.apiKeys[source]?.trim()) || viaAccount(source, settings, offers);
 }
@@ -147,6 +167,7 @@ export function ProvidersDialog({
           tmdb: offered.includes("tmdb"),
           rawg: offered.includes("rawg"),
           comicVine: offered.includes("comic_vine"),
+          bgg: offered.includes("bgg"),
         }),
       )
       .catch(() => setOffers(NO_OFFERS));
@@ -251,6 +272,7 @@ export function ProvidersDialog({
           const keyed = KEYED_SOURCES.has(source);
           const hasKey = Boolean(settings?.apiKeys[source]?.trim());
           const accountToo = ACCOUNT_SOURCES.has(source);
+          const accountOnly = ACCOUNT_ONLY_SOURCES.has(source);
           // The switch is what the person chose, never whether the source can work now: taking a key away must not
           // look like switching the source off. A source that is on and cannot work says so below.
           const on = settings ? !settings.disabledSources.includes(source) : false;
@@ -265,11 +287,13 @@ export function ProvidersDialog({
                     {t(`lookup.sources.${source}`)}
                     <span className="rounded-full border px-2 py-px text-xs font-medium text-muted-foreground">
                       {t(
-                        accountToo
-                          ? "providers.needsKeyOrAccountBadge"
-                          : keyed
-                            ? "providers.needsKeyBadge"
-                            : "providers.noKeyBadge",
+                        accountOnly
+                          ? "providers.needsAccountBadge"
+                          : accountToo
+                            ? "providers.needsKeyOrAccountBadge"
+                            : keyed
+                              ? "providers.needsKeyBadge"
+                              : "providers.noKeyBadge",
                       )}
                     </span>
                   </span>
@@ -291,12 +315,12 @@ export function ProvidersDialog({
                   onChange={() => toggleSource(source)}
                 />
               </div>
-              {stuck && !accountToo && (
+              {stuck && !accountToo && !accountOnly && (
                 <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400">
                   {t("providers.missingKey")}
                 </p>
               )}
-              {accountToo && settings && (
+              {(accountToo || accountOnly) && settings && (
                 <p
                   className={cn(
                     "text-[13px]",
@@ -306,7 +330,7 @@ export function ProvidersDialog({
                   )}
                 >
                   {t(
-                    hasKey
+                    accountToo && hasKey
                       ? "providers.ownKeyUsed"
                       : viaAccount(source, settings, offers)
                         ? `providers.${source}Sends`
@@ -439,6 +463,15 @@ export function ProvidersDialog({
         <img src={tmdbLogo} alt="TMDB" className="h-3 w-auto" />
         <p className="min-w-0 flex-1">{t("providers.tmdbNotice")}</p>
       </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <BggLogo />
+        <p className="min-w-0 flex-1">
+          <Trans
+            i18nKey="providers.bggNotice"
+            components={{ link: <ExternalLink url={BGG_URL} /> }}
+          />
+        </p>
+      </div>
       {Object.values(SOURCES_WITH_A_LINK).map((credit) => (
         <p key={credit.url}>
           <Trans i18nKey={credit.notice} components={{ link: <ExternalLink url={credit.url} /> }} />
@@ -460,7 +493,7 @@ export function ProvidersDialog({
         <div className="flex items-center gap-2.5 rounded-lg border p-3 text-sm">
           <span className="flex-1">
             {t(
-              offers.googleBooks || offers.tmdb || offers.rawg || offers.comicVine
+              offers.googleBooks || offers.tmdb || offers.rawg || offers.comicVine || offers.bgg
                 ? "providers.withCloud"
                 : "providers.noCloud",
             )}

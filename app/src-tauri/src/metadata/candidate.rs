@@ -11,6 +11,14 @@ pub struct CandidateContributor {
     pub role: ContributorRole,
 }
 
+/// The game an expansion needs (D61, «necesita»): kept on the candidate, though nothing creates the relation yet.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateExpands {
+    pub external_id: String,
+    pub title: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Candidate {
@@ -38,6 +46,8 @@ pub struct Candidate {
     pub platform: Option<String>,
     /// A suggested copy format, when the provider knows it (e.g. `SingleIssue` for a comic).
     pub format: Option<Format>,
+    /// The base game, when this one is an expansion of it (BoardGameGeek).
+    pub expands: Option<CandidateExpands>,
     /// Set when this candidate's ISBN or barcode already exists in the active library.
     pub existing_edition_id: Option<String>,
 }
@@ -68,6 +78,7 @@ impl Candidate {
             seasons: None,
             platform: None,
             format: None,
+            expands: None,
             existing_edition_id: None,
         }
     }

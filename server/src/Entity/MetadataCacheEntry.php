@@ -24,13 +24,14 @@ class MetadataCacheEntry
     public const string MISSING_TTL = '1 day';
     /** A detail a title search wanted and its provider answered it has none of: kept briefly, so that repeating the search does not ask for it every time (SEG-053). */
     public const string MISSING_DETAIL_TTL = '1 hour';
-    public const array DETAIL_PREFIXES = ['tmdb_', 'rawg_', 'comic_vine_'];
+    public const array DETAIL_PREFIXES = ['tmdb_', 'rawg_', 'comic_vine_', 'bgg_'];
     /** A title search is kept as long as its provider says, found or not: the provider of those rows is one of these. */
     public const string TMDB_SEARCH = 'tmdb_search';
     public const string RAWG_SEARCH = 'rawg_search';
     public const string COMIC_VINE_SEARCH = 'comic_vine_search';
+    public const string BGG_SEARCH = 'bgg_search';
     /** @var array<string, string> how long each kind of search is kept */
-    public const array SEARCH_TTLS = [self::TMDB_SEARCH => '1 day', self::RAWG_SEARCH => '7 days', self::COMIC_VINE_SEARCH => '7 days'];
+    public const array SEARCH_TTLS = [self::TMDB_SEARCH => '1 day', self::RAWG_SEARCH => '7 days', self::COMIC_VINE_SEARCH => '7 days', self::BGG_SEARCH => '7 days'];
 
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]

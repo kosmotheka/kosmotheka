@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Metadata\BggSource;
 use App\Metadata\BookProvider;
 use App\Metadata\ComicVineSource;
 use App\Metadata\RawgSource;
@@ -40,6 +41,7 @@ final class ServerController extends AbstractController
         private readonly BookProvider $books,
         private readonly TmdbSource $tmdb,
         private readonly RawgSource $rawg,
+        private readonly BggSource $bgg,
         private readonly ComicVineSource $comicVine,
     ) {
     }
@@ -63,6 +65,7 @@ final class ServerController extends AbstractController
                 $this->books->isConfigured() ? $this->books->name() : null,
                 $this->tmdb->isConfigured() ? TmdbSource::NAME : null,
                 $this->rawg->isConfigured() ? RawgSource::NAME : null,
+                $this->bgg->isConfigured() ? BggSource::NAME : null,
                 $this->comicVine->isConfigured() ? ComicVineSource::NAME : null,
             ])),
         ]);

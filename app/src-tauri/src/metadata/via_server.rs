@@ -403,7 +403,7 @@ where
 }
 
 /// How a failure of the server reads as a warning: its quota is a quota, anything else is unexpected.
-fn server_error(error: &Error) -> ProviderError {
+pub(super) fn server_error(error: &Error) -> ProviderError {
     match error {
         Error::Account { code, .. }
             if code == "metadata_quota_exhausted" || code == "too_many_requests" =>

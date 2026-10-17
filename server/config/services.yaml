@@ -99,6 +99,13 @@ when@test:
         App\Metadata\TmdbHttpSource:
             arguments:
                 $httpClient: '@app.http_client.tmdb_test'
+        # BoardGameGeek and RPGGeek, in memory: the same.
+        app.http_client.bgg_test:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeBggApi', 'client']
+        App\Metadata\BggHttpSource:
+            arguments:
+                $httpClient: '@app.http_client.bgg_test'
         # RAWG, in memory: the same.
         app.http_client.rawg:
             class: Symfony\Component\HttpClient\MockHttpClient

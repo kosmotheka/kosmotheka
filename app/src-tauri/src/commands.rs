@@ -29,6 +29,7 @@ use crate::libraries::{self, LibrarySummary};
 use crate::licenses;
 use crate::links::{self, Arrivals};
 use crate::marks;
+use crate::metadata::bgg::BGG;
 use crate::metadata::via_server::{COMIC_VINE, GOOGLE_BOOKS, RAWG, TMDB, choose_access};
 use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
@@ -226,7 +227,7 @@ fn books_cloud(database: &Database, settings: &Settings) -> Option<HttpCloud> {
     allowed.then(|| HttpCloud::connect(database).ok()).flatten()
 }
 
-/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`, `rawg`, `comic_vine`), so
+/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`, `rawg`, `comic_vine`, `bgg`), so
 /// Providers shows what is worth showing (7.8). Any failure, and no session, is an empty list.
 #[tauri::command]
 pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<String>> {
@@ -234,7 +235,7 @@ pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<
         return Ok(Vec::new());
     };
     let mut offered = Vec::new();
-    for provider in [GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE] {
+    for provider in [GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE, BGG] {
         if cloud.offers_metadata(provider).await.unwrap_or(false) {
             offered.push(provider.to_owned());
         }
@@ -285,12 +286,15 @@ pub async fn search_works(
         settings::load(&conn)?
     };
     let disabled_sources = settings.disabled_sources.clone();
-    // TMDB (films, series) and RAWG (video games) with the person's own key, or through the account's server; for
-    // the other kinds, neither. The server is only looked for when there is no key of their own.
+    // TMDB (films, series), RAWG (video games) and Comic Vine (comics) with the person's own key, or through the
+    // account's server; BoardGameGeek (board games) and RPGGeek (role-playing books, among the books) only through
+    // the server, as they have no key of their own. The server is only looked for when there is no key of their own.
     let source = match kind {
         Kind::Film | Kind::TvSeries => Some(Source::Tmdb),
         Kind::Videogame => Some(Source::Rawg),
         Kind::Comic => Some(Source::ComicVine),
+        Kind::Boardgame => Some(Source::BoardGameGeek),
+        Kind::Book => Some(Source::RpgGeek),
         _ => None,
     };
     let own_key = source

@@ -32,4 +32,31 @@ final class TextCleanerTest extends TestCase
         // The non-joiner is part of how Persian is written.
         self::assertSame("می\u{200C}خواهم", TextCleaner::clean("می\u{200C}خواهم", 100));
     }
+
+    /** @return iterable<string, array{mixed}> */
+    public static function notWhole(): iterable
+    {
+        yield 'too long' => [str_repeat('a', 101)];
+        yield 'a control' => ["Dune\x07"];
+        yield 'a C1 control' => ["Dune\u{0085}Messiah"];
+        yield 'right-to-left override' => ["Dune\u{202E}txt"];
+        yield 'zero width space' => ["Du\u{200B}ne"];
+        yield 'not UTF-8' => ["Dune\xFF"];
+        yield 'only blanks' => ['   '];
+        yield 'empty' => [''];
+        yield 'not text' => [12];
+    }
+
+    #[DataProvider('notWhole')]
+    public function testAValueThatDoesNotFitOrCarriesHiddenMarksIsDroppedWholeNotCut(mixed $value): void
+    {
+        self::assertNull(TextCleaner::whole($value, 100));
+    }
+
+    public function testAValueThatFitsComesOutAsItWasSent(): void
+    {
+        self::assertSame('Catán: 5 & 6 — 君', TextCleaner::whole('  Catán: 5 & 6 — 君 ', 100));
+        self::assertSame(str_repeat('é', 100), TextCleaner::whole(str_repeat('é', 100), 100));
+        self::assertSame("می\u{200C}خواهم", TextCleaner::whole("می\u{200C}خواهم", 100));
+    }
 }

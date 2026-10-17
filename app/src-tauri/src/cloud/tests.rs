@@ -91,6 +91,11 @@ struct CloudState {
         std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
     >,
     rawg_asks: Vec<String>,
+    /// The same for BoardGameGeek and RPGGeek: what it answers, in order, and the scope and text it was asked.
+    bgg_answers: std::collections::VecDeque<
+        std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
+    >,
+    bgg_asks: Vec<(crate::metadata::bgg::BggScope, String)>,
     /// The same for the comic search.
     comic_vine_answers: std::collections::VecDeque<
         std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
@@ -171,6 +176,20 @@ impl FakeCloud {
         let mut state = self.0.lock().unwrap();
         state.metadata.push("rawg".to_owned());
         state.rawg_answers = answers.into();
+    }
+
+    /// A server that searches BoardGameGeek and RPGGeek, answering these in order.
+    fn with_bgg(
+        &self,
+        answers: Vec<std::result::Result<Vec<crate::metadata::Candidate>, &'static str>>,
+    ) {
+        let mut state = self.0.lock().unwrap();
+        state.metadata.push("bgg".to_owned());
+        state.bgg_answers = answers.into();
+    }
+
+    fn bgg_asks(&self) -> Vec<(crate::metadata::bgg::BggScope, String)> {
+        self.0.lock().unwrap().bgg_asks.clone()
     }
 
     /// A server that searches comics in Comic Vine, answering these in order.
@@ -861,6 +880,20 @@ impl CloudApi for FakeApi {
         }
     }
 
+    async fn bgg_search(
+        &self,
+        scope: crate::metadata::bgg::BggScope,
+        query: &str,
+    ) -> Result<Vec<crate::metadata::Candidate>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.bgg_asks.push((scope, query.to_owned()));
+        match state.bgg_answers.pop_front() {
+            Some(Ok(candidates)) => Ok(candidates),
+            Some(Err(code)) => Err(Error::account(code)),
+            None => Err(Error::account("server_unavailable")),
+        }
+    }
+
     async fn rawg_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>> {
         let mut state = self.cloud.0.lock().unwrap();
         state.rawg_asks.push(query.to_owned());
@@ -1175,6 +1208,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 
 // --- Tests -----------------------------------------------------------------
 
+mod bgg_tests;
 mod comic_vine_tests;
 mod invitations_tests;
 mod links_tests;

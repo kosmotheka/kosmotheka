@@ -15,6 +15,7 @@ use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::metadata::Candidate;
 use crate::metadata::Metadata;
+use crate::metadata::bgg::{BggScope, parse_bgg_answer};
 use crate::metadata::via_server::{
     parse_answer, parse_comic_vine_answer, parse_rawg_answer, parse_tmdb_answer,
 };
@@ -318,6 +319,20 @@ impl CloudApi for HttpCloud {
         parse_comic_vine_answer(&answer).map_err(|()| Error::account("server_unavailable"))
     }
 
+    async fn bgg_search(&self, scope: BggScope, query: &str) -> Result<Vec<Candidate>> {
+        let body = json!({ "scope": scope.word(), "query": query });
+        let mut response = send(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/bgg/search", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await?;
+        let answer = read_capped_json(&mut response, MAX_SEARCH_ANSWER).await?;
+        parse_bgg_answer(&answer, scope).map_err(|()| Error::account("server_unavailable"))
+    }
+
     async fn rawg_search(&self, query: &str) -> Result<Vec<Candidate>> {
         let body = json!({ "query": query });
         let mut response = send(
@@ -566,6 +581,7 @@ mod tests {
         let app = Router::new()
             .route("/v1/metadata/tmdb/search", axum::routing::post(tmdb_route))
             .route("/v1/metadata/rawg/search", axum::routing::post(tmdb_route))
+            .route("/v1/metadata/bgg/search", axum::routing::post(tmdb_route))
             .route(
                 "/v1/metadata/comic-vine/search",
                 axum::routing::post(tmdb_route),
@@ -611,6 +627,31 @@ mod tests {
         assert_eq!(asked[0].1.as_deref(), Some("device-1"));
         assert_eq!(asked[0].2.as_deref(), Some("Bearer token-1"));
         assert_eq!(asked[0].3, json!({ "query": "grand theft & más ?x=1#/.." }));
+    }
+
+    #[tokio::test]
+    async fn the_board_game_text_goes_in_the_body_of_a_post_with_the_scope_and_nothing_else() {
+        let (api, stub) = tmdb_server("ok").await;
+
+        // The stub answers with a film, which is not what a board game answer looks like: the point is the request.
+        let _ = api.bgg_search(BggScope::Rpg, "dune & más ?x=1#/..").await;
+
+        let asked = stub.asked.lock().unwrap();
+        assert_eq!(asked.len(), 1);
+        assert_eq!(asked[0].0, "/v1/metadata/bgg/search");
+        assert_eq!(asked[0].1.as_deref(), Some("device-1"));
+        assert_eq!(asked[0].2.as_deref(), Some("Bearer token-1"));
+        assert_eq!(
+            asked[0].3,
+            json!({ "scope": "rpg", "query": "dune & más ?x=1#/.." })
+        );
+    }
+
+    #[tokio::test]
+    async fn an_enormous_board_game_answer_is_a_failure() {
+        let (api, _) = tmdb_server("huge").await;
+
+        assert!(api.bgg_search(BggScope::Boardgame, "catan").await.is_err());
     }
 
     #[tokio::test]
