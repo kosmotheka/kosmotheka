@@ -7,7 +7,7 @@ sidebar:
 
 Cada cierto tiempo el proyecto se audita: calidad, contratos entre capas, pruebas, integridad de los datos y seguridad. Esta página explica **el método**, para que puedas repetirlo en tu copia, con la herramienta que prefieras: una persona, o cualquier asistente de programación, no solo el que usamos nosotros.
 
-**Se publica el método, no los informes ni los hallazgos.** Lo que una auditoría encuentra se arregla antes de que pueda interesar a nadie; el procedimiento, en cambio, sirve a quien quiera revisar su propia copia o un cambio que prepara.
+**Se publican el método y los hallazgos ya cerrados; los abiertos, cuando se cierran.** Así nadie lee un fallo antes de que esté arreglado, y los identificadores que cita el código (`SEG-…`) llevan a algún sitio. El procedimiento, además, sirve a quien quiera revisar su propia copia o un cambio que prepara.
 
 ## La idea
 

@@ -83,7 +83,7 @@
 | D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada (revisada el 16/10/2026: sin UnifiedPush) |
 | D76 | La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos | aceptada |
 | D77 | Entrar con email o con Google | aceptada |
-| D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada (revisada el 02/10/2026: `otphp` en lugar de `scheb/2fa-bundle`) |
+| D78 | Desbloqueo con biometría y segundo factor, opcionales desde el principio | aceptada (revisada el 02/10/2026: `otphp` en lugar de `scheb/2fa-bundle`; el 17/10/2026: con Google también se pide el segundo factor propio) |
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 | D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
@@ -95,7 +95,7 @@
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
 | D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
-| D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | propuesta (acordados el 13 y el 16/10/2026: docs.kosmotheka.com con Starlight y un diario de desarrollo público, sin segundo repositorio) |
+| D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | aceptada (17/10/2026; con lo acordado el 13 y el 16/10/2026: docs.kosmotheka.com con Starlight y un diario de desarrollo público, sin segundo repositorio) |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
 | D92 | Catálogo del servidor con Doctrine ORM: cada fila lleva una clave propia del servidor | aceptada (revisada el 09/10/2026: el motor de fusión, con DBAL) |
 | D93 | La nube no guarda una biblioteca enlazada por quien su propio registro dice que no podía | aceptada |
@@ -1232,7 +1232,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 **Decisión:**
 - **Desbloquear la app con la huella o la cara**, en el móvil. Es local: protege que alguien con tu móvil abra la app, y funciona **también sin cuenta**. Plugin oficial `biometric` de Tauri (Android; en escritorio no hay). Se activa en Ajustes; apagado por defecto.
 - **Segundo factor en la cuenta** con un código de una app de autenticación (TOTP: Google Authenticator, Aegis…) y **códigos de respaldo** para quien pierda el móvil. *Revisado el 02/10/2026:* primero decía `scheb/2fa-bundle`; se cambia por **`spomky-labs/otphp`** (la librería que ese bundle usa por debajo para TOTP) y un flujo propio. El bundle se apoya en el firewall y en la sesión, con un estado de «autenticado a medias»; la API no tiene sesión, solo un inicio de sesión que da un token, así que basta con un campo `totp_code` opcional en ese inicio de sesión. El mismo autor mantiene `web-auth/webauthn-lib`, útil para las llaves de acceso de más adelante. Cada usuario decide si lo activa. Como solo se inicia sesión una vez por dispositivo, molesta poco.
-- **Propuesta, a revisar al construirlo:** el segundo factor se pide al entrar con email y contraseña; al entrar con Google lo protege el segundo factor de Google.
+- ~~**Propuesta, a revisar al construirlo:** el segundo factor se pide al entrar con email y contraseña; al entrar con Google lo protege el segundo factor de Google.~~ *Revisado el 17/10/2026, aceptado por el maintainer:* **quien tiene activado el segundo factor lo da siempre, también al entrar con Google** (`GoogleController::finish`), que es lo que ya hacía el código. Así una cuenta de Google robada no basta para entrar, y hay una sola regla.
 - **Quien aloja su servidor** decide si lo ofrece, con una variable de entorno; encendido por defecto.
 - **Sin respaldo ni autenticador**, el superadministrador puede quitar el segundo factor por consola (D51), y queda en el registro de actividad (D66).
 - **Llaves de acceso (passkeys), más adelante.** Tauri aún no tiene plugin oficial; si se construye la integración, la idea es publicarla como plugin libre de Tauri.
@@ -1472,6 +1472,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - **Instalaciones existentes, una sola vez al actualizar:** si su biblioteca con el id fijo está vacía, se quita y se crea la primera como en una instalación nueva; si tiene datos, se duplica como nueva (D58: los datos se conservan con operaciones firmadas, el historial no) y la vieja se quita de ese dispositivo. Los dispositivos que la compartían por la red local la vuelven a compartir.
 - **Se quedan las defensas generales**, que no dependían del id fijo: nunca fusionar una biblioteca que tu registro no enlazó (D84), SEG-010 y la puerta de la nube. Protegen igual contra un id repetido a propósito.
 
+> *Nota del 17/10/2026:* el paso «Instalaciones existentes, una sola vez al actualizar» (`libraries::retire_fixed_library`) ya no está en el código: lo quitó D97, que funda cada biblioteca con `library.found` y su primera persona como administradora (no hay `library.create`). Lo de abajo queda como historia.
+
 **Consecuencias:**
 - D46: su punto «Migración con continuidad» queda reemplazado; el resto sigue.
 - D84: deja de necesitar el caso especial del id fijo; sus costuras y tests siguen valiendo para cualquier id repetido.
@@ -1560,7 +1562,9 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 **Consecuencias:** cierra DAT-006. Una migración rehace las tablas afectadas con su regla; `schema.rs` y `CatalogEntity.php` dicen qué referencias son obligatorias u opcionales, y las tablas de PostgreSQL de 7.4.3 llevan las mismas reglas. Casos en `spec/conformance/merge.json`. Ninguna operación se pierde: siguen en el registro.
 
-## D90 · Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com — `propuesta`
+## D90 · Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com — `aceptada`
+
+> Aceptada por el maintainer el 17/10/2026, con todo lo acordado el 13 y el 16/10/2026. Donde el texto de abajo choca con lo del 16/10 (el diario de desarrollo público), manda lo del 16/10: se publican la documentación de trabajo y el registro de hallazgos cerrados; los abiertos y lo privado de verdad van a `library-privado/`. Sigue por decidir cómo se despliegan solas la web y la documentación.
 
 **Contexto:** D03 y D04 prometen abrir el repositorio. El maintainer quiere enseñar el historial, pero sin publicar secretos que se hayan escapado ni la documentación interna de trabajo, y sin mantener dos repositorios. Además falta la documentación pública para usuarios, para quien aloje su servidor y para quien colabore.
 

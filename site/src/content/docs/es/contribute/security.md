@@ -139,6 +139,7 @@ Dicho claro, para que nadie lo dé por supuesto:
 - **Un móvil desbloqueado en manos de otro actúa como su dueño,** hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **Un familiar con una app modificada puede estorbar:** por ejemplo, intentar que un dispositivo nuevo no entre. No gana acceso ni rol, y quien administra puede echarlo.
 - **Un editor con una app modificada puede bifurcar su propia cadena** (dos operaciones con la misma anterior) y que solo la reciban los dispositivos que iban por detrás. La cadena lo hace detectable, pero no se resuelve: está limitado a quien ya podía editar y a lo que ya podía hacer.
+- **Emparejar a través de alguien que quiere engañar.** Al dar acceso a un dispositivo nuevo, si alguien en medio consigue que su clave llegue al dispositivo de quien administra antes que la de verdad, ese dispositivo la daría por buena. Se nota, porque el dispositivo de verdad no consigue sincronizar con nadie, y entonces se le quita el acceso al falso. Está pendiente de mejorar ([D88](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md)).
 - **Un reloj muy mal puesto fecha mal sus cambios,** aunque nunca más de una hora por delante del de quien los recibe.
 - **Un enlace para copiar lo usa quien lo abra primero.** Por eso solo da el rol más bajo, solo a una persona nueva y caduca en un día; si hace falta más seguridad, se invita por correo.
 - **Quien sepa tu correo puede bloquearte la cuenta un rato:** cinco contraseñas fallidas en un cuarto de hora bloquean los intentos de entrada a esa cuenta, también el tuyo, hasta que pase ese tiempo. Es el precio de que nadie pueda adivinar una contraseña desde muchos sitios a la vez.
@@ -151,4 +152,4 @@ Dicho claro, para que nadie lo dé por supuesto:
 - **Las reglas de permisos son casos compartidos:** los mismos archivos los ejecutan la app (Rust) y el servidor (PHP).
 - **Auditorías periódicas** con un método escrito que cualquiera puede repetir: [Cómo auditamos](../audit-method/).
 
-El modelo se revisa cuando cambian las decisiones de seguridad. Los informes y hallazgos de las auditorías no se publican; sí se publica el método.
+El modelo se revisa cuando cambian las decisiones de seguridad. Se publican el método y los hallazgos ya cerrados; los abiertos, cuando se cierran.

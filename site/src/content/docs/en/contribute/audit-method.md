@@ -7,7 +7,7 @@ sidebar:
 
 From time to time the project is audited: quality, contracts between layers, tests, data integrity and security. This page explains **the method**, so that you can repeat it on your copy, with the tool you prefer: a person, or any programming assistant, not only the one we use.
 
-**The method is published, not the reports or the findings.** What an audit finds is fixed before it can interest anyone; the procedure, on the other hand, serves anyone who wants to review their own copy or a change they are preparing.
+**The method and the closed findings are published; open ones, once they are closed.** That way nobody reads about a flaw before it is fixed, and the ids the code cites (`SEG-…`) lead somewhere. The procedure, besides, serves anyone who wants to review their own copy or a change they are preparing.
 
 ## The idea
 
