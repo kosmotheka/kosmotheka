@@ -34,7 +34,7 @@ npm run tauri dev
 
 ```bash
 cd server
-make up       # PostgreSQL, PHP-FPM and nginx on http://localhost:8095
+make up       # PostgreSQL, PHP-FPM, nginx, Mailpit and Mercure; the API on http://localhost:8095
 make help     # every command
 ```
 
@@ -87,7 +87,7 @@ If you change a dependency that ships in the app, `npm run licenses` regenerates
 The full list is in [`AGENTS.md`](AGENTS.md). These are the ones most likely to affect your change.
 
 - **Every change to the catalogue is an operation.** Devices exchange operations, not rows, and that is what makes sync converge. Never write to a catalogue table directly.
-- **A new field or entity touches four places together:** a SQLite migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json` with its conformance cases, and the server's `CatalogEntity.php`. Miss one and the Rust and PHP sides stop agreeing.
+- **A new field or entity touches several places together:** a SQLite migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json` with its conformance cases, and on the server `CatalogEntity.php`, the Doctrine class in `src/Entity/Catalog/` and a migration. A new entity also goes into three lists of the app (`ORDER`, `CONTENTS`, `LIBRARY_CONTENTS_CHILDREN_FIRST`). Miss one and the Rust and PHP sides stop agreeing. The [contributor guide](https://docs.kosmotheka.com/es/contribute/how-to-contribute/) walks through it.
 - **The rules live in `spec/`.** Each rule has conformance cases that both the Rust and the PHP implementation run, so they cannot drift apart.
 - **Sync must converge.** A change to how operations apply needs a test that simulates several devices and checks they end up equal.
 - **Who receives a library is tested against a hostile peer first.** For anything that decides which device or account gets, keeps or loses data (pairing, sharing, revoking access), write the test of the attack first and see it fail, then write the fix. Think of a modified app, a peer that knows the ids, a forged notice.

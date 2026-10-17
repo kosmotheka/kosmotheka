@@ -60,7 +60,8 @@ Each part keeps its own tooling: the app and crates build in the `library-dev` D
 - **The server never trusts an id from the client** (D84): library, operation and device ids in a request are compared, never used to look up or decide access. Access comes only from the account, the access table and the server's own `cloud_library_id`.
 - Adding a field or entity means changing, together: a migration, `crates/domain/src/schema.rs`, `spec/operation.schema.json`, and conformance cases in `spec/conformance/`.
 - Every rule for an operation must be defined in `spec/` and covered by conformance cases that both the Rust and PHP implementations run.
-- Adding a field or entity also means updating `server/src/Enum/CatalogEntity.php`, the PHP mirror of `schema.rs`.
+- Adding a field or entity also means updating `server/src/Enum/CatalogEntity.php`, the PHP mirror of `schema.rs`, the Doctrine class in `server/src/Entity/Catalog/` and a server migration.
+- A new entity also goes into the fixed-size lists of the app: `ORDER` (`sync.rs`), `CONTENTS` (`backup.rs`) and `LIBRARY_CONTENTS_CHILDREN_FIRST` (`ops.rs`).
 - External services (metadata providers, AI) sit behind swappable interfaces and are **always optional**. The app must keep working when they are unavailable.
 - Never hold the database `MutexGuard` across an `.await`: read what you need in a block, drop the guard, then await (see `commands::lookup_isbn`).
 - Unit tests never touch the network: parse recorded responses in `app/src-tauri/tests/fixtures/`. Tests that need the network are `#[ignore]` and named `live_*`. The only other ignored tests are fixture generators, named `print_*`, run by hand when a format changes.
