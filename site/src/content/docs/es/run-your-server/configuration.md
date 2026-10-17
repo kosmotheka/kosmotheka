@@ -2,7 +2,7 @@
 title: La configuración, variable a variable
 description: Todas las variables de entorno del servidor de Kosmotheka, para qué sirven, cómo se generan y qué pasa si se dejan vacías.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 Toda la configuración son variables de entorno. Se ponen en `server/.env.local` (un fichero que no está en git y al que solo debe poder acceder el usuario del servidor), o en el entorno del servicio. **No edites `server/.env`**: es el fichero de valores por defecto y se sobrescribe al actualizar.

@@ -28,8 +28,8 @@ Estas son las limitaciones de montar tu propio servidor. Están aquí, al princi
 
 El servidor se puede montar de dos maneras con las mismas piezas (PHP, PostgreSQL, nginx y un proceso de tareas programadas):
 
-1. **[Sin Docker](/es/run-your-server/without-docker/)**, instalando todo en la máquina. Es como funciona el servidor oficial y está probado.
-2. **Con Docker.** Todavía no está escrito. Hoy los ficheros de Docker del repositorio son solo para desarrollo (corren como administrador y llevan un depurador), y no sirven para un servidor real. Cuando haya una imagen de producción, esta guía tendrá su página.
+1. **[Sin Docker](/es/run-your-server/without-docker/)**, instalando todo en la máquina. Es como funciona el servidor oficial.
+2. **[Con Docker](/es/run-your-server/with-docker/)**, con Docker Compose. Construyes la imagen tú: no se publica en ningún registro.
 
 Después de montarlo:
 

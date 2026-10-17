@@ -1,0 +1,12 @@
+# Used by `Dockerfile` in this folder (BuildKit): the context is the repository root.
+*
+!server
+!spec
+server/vendor
+server/var
+server/.env.local
+server/.env.*.local
+server/.env.local.php
+server/docker
+!server/docker/prod
+server/tests

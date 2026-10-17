@@ -2,7 +2,7 @@
 title: Actualizar a una versión nueva
 description: El orden para actualizar el servidor de Kosmotheka sin perder datos, y cuándo actualizar antes la app.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Actualizar es cambiar el código y aplicar las migraciones de la base de datos. El orden importa y **empieza siempre por una copia**: una migración no siempre se puede deshacer.

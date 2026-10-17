@@ -1,0 +1,83 @@
+# Production setup for the Kosmotheka server (D48): PHP-FPM, nginx, PostgreSQL and the
+# worker, with Mercure optional. Build context: the repository root.
+#
+#     cp env.example .env       # then fill it in; .env is not versioned
+#     docker compose build
+#     docker compose up -d
+#     docker compose run --rm php bin/console doctrine:migrations:migrate --no-interaction
+#
+# nginx listens on plain HTTP on HTTP_BIND:HTTP_PORT (by default 127.0.0.1:8080). HTTPS is
+# terminated by a proxy in front. No image is published to a registry: you build it.
+
+name: ${COMPOSE_PROJECT_NAME:-kosmotheka}
+
+x-php: &php
+    build:
+        context: ../../..
+        dockerfile: server/docker/prod/Dockerfile
+        target: php
+    image: ${COMPOSE_PROJECT_NAME:-kosmotheka}-php
+    env_file: .env
+    environment:
+        APP_ENV: prod
+        DATABASE_URL: postgresql://kosmotheka:${POSTGRES_PASSWORD:?set it in .env}@db:5432/kosmotheka?serverVersion=18&charset=utf8
+        TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,REMOTE_ADDR}
+        MERCURE_URL: ${MERCURE_URL:-}
+    restart: unless-stopped
+    depends_on:
+        db:
+            condition: service_healthy
+
+services:
+    db:
+        image: postgres:18
+        environment:
+            POSTGRES_DB: kosmotheka
+            POSTGRES_USER: kosmotheka
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in .env}
+            TZ: UTC
+            PGTZ: UTC
+        volumes:
+            - db:/var/lib/postgresql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U kosmotheka -d kosmotheka"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
+        restart: unless-stopped
+
+    php:
+        <<: *php
+
+    worker:
+        <<: *php
+        command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--time-limit=3600", "--memory-limit=128M"]
+
+    nginx:
+        build:
+            context: ../../..
+            dockerfile: server/docker/prod/Dockerfile
+            target: nginx
+        image: ${COMPOSE_PROJECT_NAME:-kosmotheka}-nginx
+        ports:
+            - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
+        depends_on:
+            - php
+        restart: unless-stopped
+
+    # Live notices. Off unless you start with `--profile mercure`.
+    mercure:
+        profiles: ["mercure"]
+        image: dunglas/mercure:v1.0.3
+        environment:
+            SERVER_NAME: ':80'
+            MERCURE_TRUSTED_ISSUERS: 'urn:kosmotheka:server'
+            MERCURE_EXTRA_DIRECTIVES: 'resource_identifier http://mercure/.well-known/mercure'
+            MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-}
+            MERCURE_PUBLISHER_JWT_ALG: HS256
+            MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-}
+            MERCURE_SUBSCRIBER_JWT_ALG: HS256
+        restart: unless-stopped
+
+volumes:
+    db:
