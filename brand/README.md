@@ -24,6 +24,7 @@ Figtree SemiBold (600), de Erik Kennedy, con licencia SIL OFL 1.1 y un tracking 
   - `icon-maskable` (512, fondo blanco, símbolo de 320 dentro del círculo del 80 %).
   - `og-image` (1200 × 630) y `github-social` (1280 × 640).
 - `play/capturas/`: cinco capturas de móvil para Google Play (1080 × 1920, 9:16), hechas con `?mock` en un navegador sin ventana a 360 × 640 con escala 3.
+- `play/tablet-7/` (1080 × 1920, vertical) y `play/tablet-10/` (2560 × 1440, horizontal): las mismas cinco pantallas para las tablets.
 - `play/`: `feature-graphic` (1024 × 500, SVG y PNG) e `icon-512.png` (el icono de la ficha de Google Play, sacado de `icono/icon-fullbleed`). Los PNG se generan con `rsvg-convert` en Docker.
 
 ## Comprobaciones
