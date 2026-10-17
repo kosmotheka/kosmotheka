@@ -16,9 +16,7 @@ Antes de empezar, abre un *issue* (ver [cómo contribuir](../how-to-contribute/)
 Todos los textos de la interfaz están en `app/src/i18n/locales/`, un archivo por idioma:
 
 - `en.json` y `es.json` hoy. Copia `en.json` como `fr.json` y traduce los valores, **nunca las claves**.
-- `app/src/i18n/index.ts` los registra: `import fr from "./locales/fr.json"`, `fr: { translation: fr }` en `resources`, y `"fr"` en `supportedLanguages`.
-
-`supportedLanguages` es lo que usan los selectores de idioma (Ajustes, la cuenta y el alta), y cada uno necesita el nombre del idioma **en su propio idioma**: `LANGUAGE_NAMES` en `settings-dialog.tsx` (TypeScript te avisa si falta) y el selector de `account-dialog.tsx` y `auth-dialog.tsx`.
+- `app/src/i18n/index.ts` es **la lista de idiomas de la interfaz**: `import fr from "./locales/fr.json"`, `fr: { translation: fr }` en `resources`, `"fr"` en `supportedLanguages` y su nombre, **en su propio idioma**, en `languageNames` (TypeScript avisa si falta). De ahí leen los selectores de idioma (Ajustes, la cuenta y el alta), las novedades, el enlace de la privacidad y el idioma de las búsquedas: no hay que tocar nada más en la interfaz, salvo el enlace de la política de privacidad si la tienes en tu idioma (`PRIVACY` en `about-dialog.tsx`; sin ella, se usa la inglesa).
 
 La app elige el idioma del sistema (`i18next-browser-languagedetector`) y, si no tiene el suyo, cae en inglés.
 
@@ -27,7 +25,7 @@ Cosas del texto que se tropiezan:
 - **Plurales**: una clave con `count` lleva `_one` y `_other` (`results_one`, `results_other`). Algunos idiomas necesitan más formas; consulta las reglas de i18next.
 - **Variables**: `{{title}}` y similares se dejan igual.
 - **Etiquetas**: `<link>RAWG</link>` en los textos de créditos se queda; solo se traduce lo de dentro.
-- **Sin texto en el código**: si un texto no está en `en.json`, no se puede traducir. Añádelo a los dos idiomas que ya existen.
+- **Sin texto en el código**: si un texto no está en `en.json`, no se puede traducir. Añádelo a los idiomas que ya existen.
 
 ### Las listas cerradas
 
@@ -51,30 +49,30 @@ Además, la auditoría (`.claude/skills/audit/bin/facts.py`) avisa de las claves
 
 Además, `npm run typecheck` y `npm run lint` tienen que seguir pasando, y conviene abrir la app en el idioma nuevo y recorrer las pantallas.
 
-### Los sitios con «español o inglés» escrito a mano
+### Dónde está la lista de cada parte
 
-Estos **no** salen solos de `supportedLanguages`. Con un idioma nuevo caen en inglés hasta que se cambian:
+Cada parte tiene **una sola lista** de idiomas, y lo demás la lee. Al añadir un idioma, tocas la de cada parte y nada más:
 
-| Dónde | Qué hace |
-|---|---|
-| `components/whats-new-dialog.tsx` | Elige `es` si el idioma empieza por «es»; si no, `en` |
-| `components/about-dialog.tsx` | La dirección de la política de privacidad: `es` o `en` |
-| `components/add-search.tsx` | Le dice a las búsquedas el idioma de la app, `es` o `en` (lo usa TMDB) |
-| `app/src-tauri/src/metadata/mod.rs` (`tmdb_tag`) | Traduce el idioma a la etiqueta de TMDB: `es-ES` o `en-US` |
-| El resto de buscadores | Preguntan en su idioma de siempre; para libros y títulos, el idioma de la edición no depende del de la app |
+| Parte | Dónde está la lista | Qué se añade |
+|---|---|---|
+| La interfaz | `app/src/i18n/index.ts`: `supportedLanguages`, `languageNames` | El código y el nombre del idioma en sí mismo, más su `locales/<código>.json` |
+| La política de privacidad que enlaza «Acerca de» | `PRIVACY` en `app/src/components/about-dialog.tsx` | La dirección de la política en el idioma nuevo. Opcional: sin ella se enseña la inglesa |
+| TMDB (películas y series) | `TMDB_TAGS` en `app/src-tauri/src/metadata/mod.rs` y `tmdbTag()` en `server/src/Enum/Locale.php` | Cómo escribe TMDB ese idioma (`fr` → `fr-FR`). Opcional: sin ella se pregunta en `en-US` |
+| Las novedades | Los archivos de `app/src/i18n/locales/` | Nada: `check:whats-new` exige texto en cada idioma que tenga archivo |
+| El servidor | `server/src/Enum/Locale.php` | Un caso nuevo; los tres formularios lo validan contra él |
 
-Si tu idioma tiene que verse en las novedades o en la privacidad, esas funciones pasan a mirar el idioma exacto.
+Los demás buscadores preguntan en su idioma de siempre: para libros y títulos, el idioma de la edición no depende del de la app.
 
 ## Las novedades (`whats-new.json`)
 
-Cada línea de `app/src/whats-new.json` lleva `es` y `en`. Tres cosas lo exigen: `app/scripts/check-whats-new.mjs` (`["es", "en"]`), la estructura `Line` de `app/src-tauri/src/whats_new.rs` (campos `es` y `en`) y el diálogo. Para un idioma nuevo hay que añadirle el campo a las tres y **traducir todas las líneas de todas las versiones** que quieras que se vean. Si no, la persona verá las novedades en inglés.
+Cada línea de `app/src/whats-new.json` lleva el texto de cada idioma, por su código (`"es": …`, `"en": …`, y el nuevo). El inglés es obligatorio y es el respaldo: si una línea no tiene texto en el idioma de la persona, se enseña el inglés. `npm run check:whats-new` exige texto en **todos los idiomas que tienen archivo** en `src/i18n/locales/`, así que para un idioma nuevo hay que **traducir todas las líneas de todas las versiones** que quieras que se vean. No hay que tocar ni el script ni `whats_new.rs`.
 
 ## El servidor
 
 Dos cosas:
 
-- **El idioma de la cuenta (`locale`)**. Hoy solo admite `en` y `es`: `server/src/Dto/RegisterAccountRequest.php`, `UpdateAccountRequest.php` y `GoogleStartRequest.php` lo validan con `#[Assert\Choice(choices: ['en', 'es'])]`. La app lo manda al crear la cuenta y al entrar con Google (`i18n.resolvedLanguage`). Hay que añadir el código a esos tres.
-- **Los correos**: `server/translations/emails.es.yaml` y `emails.en.yaml`, con el asunto y el cuerpo de cada uno (confirmar la cuenta, recuperar la contraseña, el aviso de que alguien intentó usar tu correo, la contraseña cambiada, el segundo factor, la invitación…). Hace falta un `emails.fr.yaml` con **todas** las claves. El idioma por defecto del servidor es `en` (`config/packages/translation.yaml`) y es el que usa si no hay traducción.
+- **La lista de idiomas (`locale` de la cuenta)**: `server/src/Enum/Locale.php`, un enum con un caso por idioma. `RegisterAccountRequest`, `UpdateAccountRequest` y `GoogleStartRequest` lo validan con `#[Assert\Choice(callback: [Locale::class, 'values'])]`, así que añadir el caso basta. La app manda su idioma al crear la cuenta y al entrar con Google. Si TMDB lo escribe distinto, añade también su etiqueta en `tmdbTag()`.
+- **Los correos**: `server/translations/emails.es.yaml` y `emails.en.yaml`, con el asunto y el cuerpo de cada uno (confirmar la cuenta, recuperar la contraseña, el aviso de que alguien intentó usar tu correo, la contraseña cambiada, el segundo factor, la invitación…). Hace falta un `emails.fr.yaml` con **todas** las claves. Son traducciones, no una lista. El idioma por defecto del servidor es `en` (`config/packages/translation.yaml`) y es el que usa si no hay traducción.
 
 Los textos de error que el servidor devuelve son **códigos** (`invalid_credentials`), no frases: la app los traduce con sus archivos. No hay que tocarlos.
 
@@ -89,10 +87,10 @@ Son aparte y se traducen cuando haya quien los mantenga:
 ## Lista de comprobación
 
 1. Un *issue* abierto, y quién mantendrá el idioma.
-2. `locales/<código>.json` completo y registrado en `i18n/index.ts`, con su nombre en los selectores.
+2. `locales/<código>.json` completo y registrado en `i18n/index.ts` (`resources`, `supportedLanguages`, `languageNames`).
 3. Géneros, estados, tipos, formatos y roles con texto; la app recorrida en el idioma nuevo.
-4. Los sitios con «es» o «en» a mano, revisados.
-5. `whats-new.json`, el script que lo comprueba y `whats_new.rs`, con el campo nuevo.
-6. Servidor: los tres `Assert\Choice` y `emails.<código>.yaml`.
+4. Opcional: la política de privacidad en `PRIVACY` y la etiqueta de TMDB (`TMDB_TAGS`, `Locale::tmdbTag()`).
+5. `whats-new.json`: texto en el idioma nuevo en cada línea.
+6. Servidor: un caso en `Locale` y `emails.<código>.yaml`.
 7. Documentación y web, cuando se pueda.
-8. `npm run typecheck`, `npm run lint`, `cargo test` y `make check` (en `server/`).
+8. `npm run typecheck`, `npm run lint`, `npm run check:i18n`, `npm run check:whats-new`, `cargo test` y `make check` (en `server/`).

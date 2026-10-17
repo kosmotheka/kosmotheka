@@ -16,9 +16,7 @@ Before you start, open an *issue* (see [how to contribute](../how-to-contribute/
 All the interface texts are in `app/src/i18n/locales/`, one file per language:
 
 - `en.json` and `es.json` today. Copy `en.json` as `fr.json` and translate the values, **never the keys**.
-- `app/src/i18n/index.ts` registers them: `import fr from "./locales/fr.json"`, `fr: { translation: fr }` in `resources`, and `"fr"` in `supportedLanguages`.
-
-`supportedLanguages` is what the language selectors use (Settings, the account and sign-up), and each one needs the name of the language **in its own language**: `LANGUAGE_NAMES` in `settings-dialog.tsx` (TypeScript warns you if one is missing) and the selector in `account-dialog.tsx` and `auth-dialog.tsx`.
+- `app/src/i18n/index.ts` is **the list of interface languages**: `import fr from "./locales/fr.json"`, `fr: { translation: fr }` in `resources`, `"fr"` in `supportedLanguages` and its name, **in its own language**, in `languageNames` (TypeScript warns you if one is missing). The language selectors (Settings, the account and sign-up), the what's-new notes, the privacy link and the language of the searches all read from there: nothing else in the interface needs touching, except the privacy-policy link if you have one in your language (`PRIVACY` in `about-dialog.tsx`; without it, the English one is used).
 
 The app picks the system language (`i18next-browser-languagedetector`) and, if it does not have that one, falls back to English.
 
@@ -27,7 +25,7 @@ Things in the text that trip people up:
 - **Plurals**: a key with `count` has `_one` and `_other` (`results_one`, `results_other`). Some languages need more forms; check the i18next rules.
 - **Variables**: `{{title}}` and the like are left as they are.
 - **Tags**: `<link>RAWG</link>` in the credit texts stays; only what is inside is translated.
-- **No text in the code**: if a text is not in `en.json`, it cannot be translated. Add it to the two languages that already exist.
+- **No text in the code**: if a text is not in `en.json`, it cannot be translated. Add it to the languages that already exist.
 
 ### The closed lists
 
@@ -51,30 +49,30 @@ Besides, the audit (`.claude/skills/audit/bin/facts.py`) reports keys the code u
 
 In addition, `npm run typecheck` and `npm run lint` have to keep passing, and it is worth opening the app in the new language and going through the screens.
 
-### The places with "Spanish or English" written by hand
+### Where the list of each part is
 
-These do **not** come out of `supportedLanguages` by themselves. With a new language they fall back to English until they are changed:
+Each part has **one list** of languages, and everything else reads it. To add a language you touch each part's list and nothing else:
 
-| Where | What it does |
-|---|---|
-| `components/whats-new-dialog.tsx` | Chooses `es` if the language starts with «es»; otherwise `en` |
-| `components/about-dialog.tsx` | The address of the privacy policy: `es` or `en` |
-| `components/add-search.tsx` | Tells the searches the app's language, `es` or `en` (TMDB uses it) |
-| `app/src-tauri/src/metadata/mod.rs` (`tmdb_tag`) | Turns the language into the TMDB tag: `es-ES` or `en-US` |
-| The rest of the search services | Ask in their usual language; for books and titles, the language of the edition does not depend on the app's |
+| Part | Where the list is | What you add |
+|---|---|---|
+| The interface | `app/src/i18n/index.ts`: `supportedLanguages`, `languageNames` | The code and the language's name in itself, plus its `locales/<code>.json` |
+| The privacy policy linked from «About» | `PRIVACY` in `app/src/components/about-dialog.tsx` | The policy's address in the new language. Optional: without it, the English one is shown |
+| TMDB (films and series) | `TMDB_TAGS` in `app/src-tauri/src/metadata/mod.rs` and `tmdbTag()` in `server/src/Enum/Locale.php` | How TMDB writes that language (`fr` → `fr-FR`). Optional: without it, it is asked in `en-US` |
+| The what's-new notes | The files in `app/src/i18n/locales/` | Nothing: `check:whats-new` requires text in every language that has a file |
+| The server | `server/src/Enum/Locale.php` | A new case; the three forms validate against it |
 
-If your language has to appear in the what's-new notes or in the privacy policy, those functions have to look at the exact language.
+The other search services ask in their usual language: for books and titles, the language of the edition does not depend on the app's.
 
 ## The what's-new notes (`whats-new.json`)
 
-Each line of `app/src/whats-new.json` has `es` and `en`. Three things require it: `app/scripts/check-whats-new.mjs` (`["es", "en"]`), the `Line` structure in `app/src-tauri/src/whats_new.rs` (fields `es` and `en`) and the dialog. For a new language, add the field to all three and **translate every line of every version** you want to be seen. Otherwise the person will see the what's-new notes in English.
+Each line of `app/src/whats-new.json` has the text of each language, by its code (`"es": …`, `"en": …`, and the new one). English is required and is the fallback: if a line has no text in the person's language, English is shown. `npm run check:whats-new` requires text in **every language that has a file** in `src/i18n/locales/`, so for a new language you have to **translate every line of every version** you want to be seen. Neither the script nor `whats_new.rs` needs touching.
 
 ## The server
 
 Two things:
 
-- **The account language (`locale`)**. Today it only accepts `en` and `es`: `server/src/Dto/RegisterAccountRequest.php`, `UpdateAccountRequest.php` and `GoogleStartRequest.php` validate it with `#[Assert\Choice(choices: ['en', 'es'])]`. The app sends it when the account is created and when signing in with Google (`i18n.resolvedLanguage`). The code has to be added to those three.
-- **The emails**: `server/translations/emails.es.yaml` and `emails.en.yaml`, with the subject and body of each (confirm the account, recover the password, the warning that someone tried to use your email, the password changed, the second factor, the invitation…). A `emails.fr.yaml` is needed with **all** the keys. The server's default language is `en` (`config/packages/translation.yaml`), and it is the one used when there is no translation.
+- **The list of languages (the account's `locale`)**: `server/src/Enum/Locale.php`, an enum with one case per language. `RegisterAccountRequest`, `UpdateAccountRequest` and `GoogleStartRequest` validate with `#[Assert\Choice(callback: [Locale::class, 'values'])]`, so adding the case is enough. The app sends its language when creating the account and when signing in with Google. If TMDB writes it differently, add its tag in `tmdbTag()` too.
+- **The emails**: `server/translations/emails.es.yaml` and `emails.en.yaml`, with the subject and body of each (confirm the account, recover the password, the notice that someone tried to use your email, password changed, the second factor, the invitation…). An `emails.fr.yaml` with **all** the keys is needed. They are translations, not a list. The server's default language is `en` (`config/packages/translation.yaml`) and it is used when there is no translation.
 
 The error texts the server returns are **codes** (`invalid_credentials`), not sentences: the app translates them with its own files. They do not need touching.
 
@@ -89,10 +87,10 @@ These are separate and are translated when someone is there to maintain them:
 ## Checklist
 
 1. An *issue* open, and who will maintain the language.
-2. `locales/<code>.json` complete and registered in `i18n/index.ts`, with its name in the selectors.
+2. `locales/<code>.json` complete and registered in `i18n/index.ts` (`resources`, `supportedLanguages`, `languageNames`).
 3. Genres, statuses, types, formats and roles with text; the app gone through in the new language.
-4. The places with «es» or «en» written by hand, checked.
-5. `whats-new.json`, the script that checks it and `whats_new.rs`, with the new field.
-6. Server: the three `Assert\Choice` and `emails.<code>.yaml`.
+4. Optional: the privacy policy in `PRIVACY` and the TMDB tag (`TMDB_TAGS`, `Locale::tmdbTag()`).
+5. `whats-new.json`: text in the new language on every line.
+6. Server: a case in `Locale` and `emails.<code>.yaml`.
 7. Documentation and website, when possible.
-8. `npm run typecheck`, `npm run lint`, `cargo test` and `make check` (in `server/`).
+8. `npm run typecheck`, `npm run lint`, `npm run check:i18n`, `npm run check:whats-new`, `cargo test` and `make check` (in `server/`).
