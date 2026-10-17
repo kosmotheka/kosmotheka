@@ -3,6 +3,10 @@
     {
       "es": "Las portadas de cualquier proporción ocupan la misma caja en las listas, y elegir una biblioteca en el menú te saca de la Ayuda y te lleva a su lista.",
       "en": "Covers of any proportion now fill the same box in lists, and choosing a library in the menu takes you out of Help and to its list."
+    },
+    {
+      "es": "Las formas de quitar un dispositivo tienen nombres más claros («Dejar de emparejar», «Retirar el acceso de este dispositivo», «Sacar de mi cuenta» y «Dejar este dispositivo como nuevo»), y la app avisa antes de crear la cuenta de que la nube es, por ahora, por invitación.",
+      "en": "The ways to remove a device have clearer names (“Unpair”, “Remove this device’s access”, “Remove from my account” and “Reset this device”), and the app tells you before you create an account that the cloud is, for now, by invitation."
     }
   ],
   "0.2.1": [

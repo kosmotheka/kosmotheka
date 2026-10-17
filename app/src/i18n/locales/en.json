@@ -48,7 +48,7 @@
     "title": "About",
     "version": "Version {{version}}",
     "versionUnknown": "Unknown version",
-    "summary": "A shared catalogue for a household library: what you own, where it is, who has read it and who borrowed it.",
+    "summary": "A shared catalog for a household library: what you own, where it is and who has read it.",
     "license": "Free software, under the AGPL-3.0-or-later licence.",
     "website": "Kosmotheka website",
     "privacy": "Privacy policy",
@@ -510,7 +510,7 @@
     "passphraseShort": "At least {{min}} characters.",
     "passphraseMismatch": "The passwords do not match.",
     "protectHint": "Without this password the backup cannot be opened, and the app does not keep it anywhere: write it down or use a password manager.",
-    "unprotectedWarning": "Without a password, the backup can be read by anyone who finds it: names, what you own, who borrowed what.",
+    "unprotectedWarning": "Without a password, the backup can be read by anyone who finds it: names and what you own.",
     "encryptedFile": "This backup is protected. Enter its password to restore it.",
     "unlockRestore": "Unlock and restore",
     "csvReadable": "A CSV file is not protected: anyone can read it.",
@@ -525,11 +525,11 @@
     "neverSynced": "Never synced",
     "pairedAndSynced": "Paired with {{name}}. Received {{received}} changes, sent {{sent}}.",
     "synced": "Synced with {{name}}: received {{received}} changes, sent {{sent}}.",
-    "forget": "Forget device",
-    "forgotten": "{{name}} forgotten.",
+    "forget": "Unpair",
+    "forgotten": "You are no longer paired with {{name}}.",
     "forgetConfirm": {
-      "title": "Forget {{name}}?",
-      "body": "You will have to pair again to sync with it. Nothing is deleted from the catalog."
+      "title": "Unpair from {{name}}?",
+      "body": "You will stop passing changes to each other. No book is deleted and no access is taken away. To go back, you will have to pair them again."
     },
     "errors": {
       "bad_code": "That is not a pairing code.",
@@ -685,8 +685,8 @@
         "title": "If you lose your phone",
         "steps": [
           "What you had is still in your account (if you uploaded the library to the cloud), on the other devices you shared it with and in your backups. If it was only on that phone and you have no backup, it cannot be recovered.",
-          "With an account: on another device, open Settings, your name and \"My devices\", and tap \"Remove\" next to the lost one. When it connects, it will delete its libraries. If you shared the library with others, whoever administers it can remove the device in \"People and permissions\", with \"Remove a device\".",
-          "\"Forget device\", in \"Sharing and devices\", only stops pairing that device with this one: it does not take away its access to anything.",
+          "With an account: on another device, open Settings, your name and “My devices”, and tap “Remove from my account” next to the lost one. When it connects, it will delete its libraries. If you shared the library with others, whoever administers it can remove its access in “People and permissions”, with “Remove this device’s access”.",
+          "“Unpair”, in “Sharing and devices”, only stops pairing that device with this one: it does not take away its access to anything.",
           "On the new phone, install the app and sign in with your account, or pair with another device, or restore a backup.",
           "If you had the second factor and have also lost your backup codes, write to privacy@kosmotheka.com from the account's email address."
         ]
@@ -758,8 +758,8 @@
     "deleteHint": "Deleted on every device. This cannot be undone.",
     "deleteTitle": "Delete {{name}}?",
     "cannotUndo": "This cannot be undone.",
-    "deleteWarning_one": "{{count}} work will be deleted with its copies, loans and history.",
-    "deleteWarning_other": "{{count}} works will be deleted with their copies, loans and history.",
+    "deleteWarning_one": "{{count}} work will be deleted with its copies and history.",
+    "deleteWarning_other": "{{count}} works will be deleted with their copies and history.",
     "deleteWarningShared_one": "{{count}} work will be deleted, on these devices too:",
     "deleteWarningShared_other": "{{count}} works will be deleted, on these devices too:",
     "backupSaved": "Backup saved",
@@ -778,7 +778,7 @@
     "moved": "“{{title}}” moved to {{name}}",
     "moveTitle": "Move “{{title}}”",
     "moveNow": "It is now in {{name}}.",
-    "moveExplained": "It moves to {{to}} with its copies and leaves {{from}}. Its loan history stays in {{from}}.",
+    "moveExplained": "It moves to {{to}} with its copies and leaves {{from}}.",
     "moveTo": "Move to {{name}}",
     "moveToAnother": "Move to another library",
     "searchWhere": "Where to search",
@@ -944,18 +944,18 @@
     "theirDevices": "Their devices",
     "sheetDescription": "Role, sharing permission and devices of {{person}}",
     "revoke": {
-      "menu": "Remove a device",
-      "title": "Remove a device of {{person}}",
-      "titleOne": "Remove {{device}}?",
+      "menu": "Remove this device’s access",
+      "title": "Remove the access of a device of {{person}}",
+      "titleOne": "Remove the access of {{device}}?",
       "why": "For when it is lost or stolen.",
       "loses": "It will stop receiving every library it shared: {{libraries}}.",
       "losesAll": "It will stop receiving every library it shared.",
-      "after": "It will get no more changes and what it sends will not count. If it connects again, these libraries will be erased from it.",
+      "after": "It will get no more changes, and the changes made on it will not count. If it connects again, these libraries will be erased from it.",
       "stays": "{{person}} keeps their {{device}}.",
-      "confirm": "Remove {{device}}",
-      "done": "{{device}} removed.",
+      "confirm": "Remove access",
+      "done": "Access of {{device}} removed.",
       "role": "It will no longer have {{person}}’s role in {{library}}. The cloud won’t give it back on its own, even if it is still signed in.",
-      "tip": "If it is lost, {{person}} should also remove it from “My devices” in their account, or change their password.",
+      "tip": "If it is lost, {{person}} should also take it out of their account in “My devices”, or change their password.",
       "lastBody": "{{person}} is the only one who administers {{library}} and can act, and this is their only device. Without it nobody could change permissions or give access to new devices.",
       "lastNote": "First make someone else an administrator, or link another device of {{person}}."
     },
@@ -964,7 +964,7 @@
       "menu": "Remove from {{library}}",
       "title": "Remove {{person}} from {{library}}?",
       "body": "They will no longer be able to get in, with their devices or with their account. Their devices remove the library the next time they connect.",
-      "keeps": "Their name stays in {{library}}: their books are still theirs, and their loans and marks are kept. Anything they already copied outside the app can’t be taken back.",
+      "keeps": "Their name stays in {{library}}: their books are still theirs, and what they marked is kept. Anything they already copied outside the app can’t be taken back.",
       "foot": "You can give their access back later.",
       "confirm": "Remove {{person}}",
       "done": "{{person}} no longer has access to {{library}}.",
@@ -1589,13 +1589,13 @@
     },
     "devices": {
       "title": "My devices",
-      "intro": "The ones that have signed in with your account. If you remove one, it deletes its libraries once it connects.",
+      "intro": "The ones that have signed in with your account. If you take one out, it deletes its libraries once it connects.",
       "current": "This one",
       "nowCurrent": "Now · this device",
       "never": "Never",
-      "remove": "Remove",
-      "removedPending": "Removed · will be wiped when it connects",
-      "removedFinal": "Removed",
+      "remove": "Remove from my account",
+      "removedPending": "Taken out · will be wiped when it connects",
+      "removedFinal": "Taken out",
       "undo": "Undo"
     },
     "proof": {
@@ -1610,11 +1610,11 @@
       "appCodeHelp": "Six digits from your authenticator app, or a backup code (XXXXX-XXXXX).",
       "backupFirst": "Save a backup first",
       "removeDevice": {
-        "title": "Remove {{name}}?",
-        "body": "It will be signed out of your account. Once it connects, it wipes all of its libraries and stops syncing.",
+        "title": "Remove {{name}} from your account?",
+        "body": "It will be signed out of your account. Once it connects, it deletes all of its libraries and stops updating.",
         "warn": "Libraries that only exist on that device will be lost.",
         "note": "You can undo this from the list until it connects.",
-        "action": "Remove"
+        "action": "Remove from my account"
       },
       "deleteAccount": {
         "title": "Delete your account?",
@@ -1624,15 +1624,15 @@
         "action": "Delete account"
       },
       "handOver": {
-        "title": "Hand this device to someone else?",
-        "body": "The app will go back to how it was freshly installed: every library here is deleted, and your session too, if there was one.",
+        "title": "Reset this device?",
+        "body": "Every library here and your signed-in account are deleted, so you can hand it to someone else. This cannot be undone: save a backup first if you need one.",
         "note": "What's in the cloud or on your other devices isn't touched.",
-        "action": "Wipe and hand it over"
+        "action": "Reset"
       },
       "signOut": {
         "title": "Sign out?",
         "body": "It's me and I'll be back: nothing is deleted. Your libraries stay here and keep sharing over your home network; anything you change will upload when you sign back in.",
-        "note": "Handing the device to someone else? Use \"Hand this device to someone else\" in Settings.",
+        "note": "Handing the device to someone else? Use “Reset this device” in Settings.",
         "action": "Sign out"
       },
       "twofaOff": {
@@ -1651,8 +1651,8 @@
     "thisDevice": {
       "section": "This device",
       "name": "Name",
-      "handOver": "Hand this device to someone else",
-      "handOverHint": "Resets it like a fresh install"
+      "handOver": "Reset this device",
+      "handOverHint": "Deletes everything here, to hand it to someone else"
     }
   },
   "accountErrors": {

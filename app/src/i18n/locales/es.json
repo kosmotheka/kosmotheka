@@ -48,7 +48,7 @@
     "title": "Acerca de",
     "version": "Versión {{version}}",
     "versionUnknown": "Versión desconocida",
-    "summary": "Un catálogo compartido para la biblioteca de casa: qué tenéis, dónde está, quién lo ha leído y a quién se lo habéis prestado.",
+    "summary": "Un catálogo compartido para la biblioteca de casa: qué tenéis, dónde está y quién lo ha leído.",
     "license": "Software libre, con licencia AGPL-3.0 o posterior.",
     "website": "Web de Kosmotheka",
     "privacy": "Política de privacidad",
@@ -524,7 +524,7 @@
     "passphraseShort": "Al menos {{min}} caracteres.",
     "passphraseMismatch": "Las contraseñas no coinciden.",
     "protectHint": "Sin esta contraseña la copia no se puede abrir, y la app no la guarda en ningún sitio: apúntala o usa un gestor de contraseñas.",
-    "unprotectedWarning": "Sin contraseña, quien encuentre la copia podrá leerla: nombres, lo que tenéis y quién ha prestado qué.",
+    "unprotectedWarning": "Sin contraseña, quien encuentre la copia podrá leerla: nombres y lo que tenéis.",
     "encryptedFile": "Esta copia está protegida. Escribe su contraseña para restaurarla.",
     "unlockRestore": "Desbloquear y restaurar",
     "csvReadable": "Un CSV no está protegido: cualquiera puede leerlo.",
@@ -539,11 +539,11 @@
     "neverSynced": "Nunca sincronizado",
     "pairedAndSynced": "Emparejado con {{name}}. Recibidos {{received}} cambios, enviados {{sent}}.",
     "synced": "Sincronizado con {{name}}: recibidos {{received}} cambios, enviados {{sent}}.",
-    "forget": "Olvidar dispositivo",
-    "forgotten": "{{name}} olvidado.",
+    "forget": "Dejar de emparejar",
+    "forgotten": "Ya no estás emparejado con {{name}}.",
     "forgetConfirm": {
-      "title": "¿Olvidar {{name}}?",
-      "body": "Habrá que volver a emparejarlo para sincronizar. No se borra nada del catálogo."
+      "title": "¿Dejar de emparejar con {{name}}?",
+      "body": "Dejaréis de pasaros cambios. No se borra ningún libro ni se le quita el acceso a nada. Para volver, habrá que emparejarlos otra vez."
     },
     "errors": {
       "bad_code": "Eso no es un código de emparejamiento.",
@@ -699,8 +699,8 @@
         "title": "Si pierdes el móvil",
         "steps": [
           "Lo que tenías sigue en tu cuenta (si subiste la biblioteca a la nube), en los otros dispositivos con los que la compartías y en tus copias de seguridad. Si estaba solo en ese móvil y sin copia, no se puede recuperar.",
-          "Con cuenta: en otro dispositivo, abre Ajustes, tu nombre y «Mis dispositivos», y pulsa «Quitar» junto al perdido. Cuando se conecte, borrará sus bibliotecas. Si compartías la biblioteca con más gente, quien la administra puede quitarlo en «Personas y permisos», con «Quitar un dispositivo».",
-          "«Olvidar dispositivo», en «Compartir y dispositivos», solo deja de emparejar ese dispositivo con este: no le quita el acceso a nada.",
+          "Con cuenta: en otro dispositivo, abre Ajustes, tu nombre y «Mis dispositivos», y pulsa «Sacar de mi cuenta» junto al perdido. Cuando se conecte, borrará sus bibliotecas. Si compartías la biblioteca con más gente, quien la administra puede retirarle el acceso en «Personas y permisos», con «Retirar el acceso de este dispositivo».",
+          "«Dejar de emparejar», en «Compartir y dispositivos», solo deja de emparejar ese dispositivo con este: no le quita el acceso a nada.",
           "En el móvil nuevo, instala la app y entra con tu cuenta, o empareja con otro dispositivo, o restaura una copia de seguridad.",
           "Si tenías el segundo factor y has perdido también los códigos de respaldo, escribe a privacy@kosmotheka.com desde el correo de la cuenta."
         ]
@@ -772,8 +772,8 @@
     "deleteHint": "Se borra en todos los dispositivos. No se puede deshacer.",
     "deleteTitle": "¿Borrar {{name}}?",
     "cannotUndo": "No se puede deshacer.",
-    "deleteWarning_one": "Se borrará {{count}} obra con sus ejemplares, préstamos e historial.",
-    "deleteWarning_other": "Se borrarán {{count}} obras con sus ejemplares, préstamos e historial.",
+    "deleteWarning_one": "Se borrará {{count}} obra con sus ejemplares e historial.",
+    "deleteWarning_other": "Se borrarán {{count}} obras con sus ejemplares e historial.",
     "deleteWarningShared_one": "Se borrará {{count}} obra, también en estos dispositivos:",
     "deleteWarningShared_other": "Se borrarán {{count}} obras, también en estos dispositivos:",
     "backupSaved": "Copia guardada",
@@ -792,7 +792,7 @@
     "moved": "«{{title}}» movido a {{name}}",
     "moveTitle": "Mover «{{title}}»",
     "moveNow": "Ahora está en {{name}}.",
-    "moveExplained": "Pasará a {{to}} con sus ejemplares y dejará de estar en {{from}}. El historial de préstamos se queda en {{from}}.",
+    "moveExplained": "Pasará a {{to}} con sus ejemplares y dejará de estar en {{from}}.",
     "moveTo": "Mover a {{name}}",
     "moveToAnother": "Mover a otra biblioteca",
     "searchWhere": "Dónde buscar",
@@ -958,18 +958,18 @@
     "theirDevices": "Sus dispositivos",
     "sheetDescription": "Rol, permiso para compartir y dispositivos de {{person}}",
     "revoke": {
-      "menu": "Quitar un dispositivo",
-      "title": "Quitar un dispositivo de {{person}}",
-      "titleOne": "¿Quitar {{device}}?",
+      "menu": "Retirar el acceso de este dispositivo",
+      "title": "Retirar el acceso de un dispositivo de {{person}}",
+      "titleOne": "¿Retirar el acceso de {{device}}?",
       "why": "Para cuando se pierde o te lo roban.",
       "loses": "Dejará de recibir todas las bibliotecas que compartía: {{libraries}}.",
       "losesAll": "Dejará de recibir todas las bibliotecas que compartía.",
-      "after": "No recibirá más cambios y lo que envíe no contará. Si vuelve a conectarse, se borrarán de él estas bibliotecas.",
+      "after": "No recibirá más cambios, y los cambios que haga en él no se tendrán en cuenta. Si vuelve a conectarse, se borrarán de él estas bibliotecas.",
       "stays": "{{person}} sigue con su {{device}}.",
-      "confirm": "Quitar {{device}}",
-      "done": "{{device}} quitado.",
+      "confirm": "Retirar el acceso",
+      "done": "Acceso de {{device}} retirado.",
       "role": "Dejará de tener el rol de {{person}} en {{library}}. La nube no se lo devolverá sola, aunque siga con la sesión abierta.",
-      "tip": "Si lo ha perdido, conviene además que {{person}} lo quite de «Mis dispositivos» en su cuenta, o que cambie la contraseña.",
+      "tip": "Si lo ha perdido, conviene además que {{person}} lo saque de su cuenta en «Mis dispositivos», o que cambie la contraseña.",
       "lastBody": "{{person}} es la única persona que administra {{library}} y puede actuar, y este es su único dispositivo. Sin él nadie podría cambiar los permisos ni dar acceso a dispositivos nuevos.",
       "lastNote": "Primero nombra a otra persona administradora, o vincula otro dispositivo de {{person}}."
     },
@@ -978,7 +978,7 @@
       "menu": "Quitar de {{library}}",
       "title": "¿Quitar a {{person}} de {{library}}?",
       "body": "Dejará de poder entrar, ni con sus dispositivos ni con su cuenta. Sus dispositivos borran la biblioteca la próxima vez que se conecten.",
-      "keeps": "Su nombre sigue en {{library}}: sus libros siguen siendo suyos y se conservan sus préstamos y lo que marcó. Lo que ya haya copiado fuera de la app no se le puede quitar.",
+      "keeps": "Su nombre sigue en {{library}}: sus libros siguen siendo suyos y se conserva lo que marcó. Lo que ya haya copiado fuera de la app no se le puede quitar.",
       "foot": "Podrás devolverle el acceso más tarde.",
       "confirm": "Quitar a {{person}}",
       "done": "{{person}} ya no tiene acceso a {{library}}.",
@@ -1603,13 +1603,13 @@
     },
     "devices": {
       "title": "Mis dispositivos",
-      "intro": "Los que han entrado con tu cuenta. Si quitas uno, cuando se conecte borrará sus bibliotecas.",
+      "intro": "Los que han entrado con tu cuenta. Si sacas uno, cuando se conecte borrará sus bibliotecas.",
       "current": "Este",
       "nowCurrent": "Ahora · este dispositivo",
       "never": "Nunca",
-      "remove": "Quitar",
-      "removedPending": "Quitado · se borrará al conectarse",
-      "removedFinal": "Quitado",
+      "remove": "Sacar de mi cuenta",
+      "removedPending": "Sacado · se borrará al conectarse",
+      "removedFinal": "Sacado",
       "undo": "Deshacer"
     },
     "proof": {
@@ -1624,11 +1624,11 @@
       "appCodeHelp": "Seis cifras de tu app de autenticación, o un código de respaldo (XXXXX-XXXXX).",
       "backupFirst": "Guardar una copia antes",
       "removeDevice": {
-        "title": "¿Quitar {{name}}?",
-        "body": "Saldrá de tu cuenta. Cuando se conecte, borrará de él todas sus bibliotecas y dejará de sincronizar.",
+        "title": "¿Sacar {{name}} de tu cuenta?",
+        "body": "Saldrá de tu cuenta. Cuando se conecte, borrará de él todas sus bibliotecas y dejará de ponerse al día.",
         "warn": "Las bibliotecas que solo estén en ese dispositivo se perderán.",
         "note": "Hasta que se conecte puedes deshacerlo desde la lista.",
-        "action": "Quitar"
+        "action": "Sacar de mi cuenta"
       },
       "deleteAccount": {
         "title": "¿Borrar tu cuenta?",
@@ -1638,15 +1638,15 @@
         "action": "Borrar la cuenta"
       },
       "handOver": {
-        "title": "¿Dejar este dispositivo a otra persona?",
-        "body": "La app quedará como recién instalada: se borran de aquí todas las bibliotecas y, si la hay, tu sesión.",
+        "title": "¿Dejar este dispositivo como nuevo?",
+        "body": "Se borran de aquí todas las bibliotecas y tu cuenta abierta, para dárselo a otra persona. No se puede deshacer: guarda antes una copia de seguridad si hace falta.",
         "note": "Lo que está en la nube o en tus otros dispositivos no se toca.",
-        "action": "Borrar y dejarlo"
+        "action": "Dejar como nuevo"
       },
       "signOut": {
         "title": "¿Cerrar sesión?",
         "body": "Soy yo y volveré: no se borra nada. Tus bibliotecas siguen aquí y se comparten por la red de casa; lo que cambies se subirá al volver a entrar.",
-        "note": "¿Vas a dar el dispositivo a otra persona? Usa «Dejar este dispositivo a otra persona», en Ajustes.",
+        "note": "¿Vas a dar el dispositivo a otra persona? Usa «Dejar este dispositivo como nuevo», en Ajustes.",
         "action": "Cerrar sesión"
       },
       "twofaOff": {
@@ -1665,8 +1665,8 @@
     "thisDevice": {
       "section": "Este dispositivo",
       "name": "Nombre",
-      "handOver": "Dejar este dispositivo a otra persona",
-      "handOverHint": "Lo deja como recién instalado"
+      "handOver": "Dejar este dispositivo como nuevo",
+      "handOverHint": "Borra todo lo de aquí, para dárselo a otra persona"
     }
   },
   "accountErrors": {
