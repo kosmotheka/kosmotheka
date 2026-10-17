@@ -1,5 +1,5 @@
 {
-  "next": [
+  "0.2.1": [
     {
       "es": "La primera vez, la app te pide tu nombre: tu biblioteca se crea a tu nombre, como administrador o administradora, y lo cambias luego en Ajustes. Al emparejar un dispositivo hay que decir de quién es y con qué rol («editor» por defecto).",
       "en": "The first time, the app asks for your name: your library is created in your name, as its administrator, and you can change it later in Settings. When you pair a device you must say whose it is and what role it has (\"editor\" by default)."

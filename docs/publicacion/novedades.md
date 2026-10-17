@@ -2,7 +2,13 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
-## Próxima versión (sin número; a elegir por el maintainer)
+## 0.2.1 (17/10/2026, para la prueba interna)
+
+**Texto para Google Play** (403 y 389 caracteres):
+
+- es-ES: Ahora la app te pide tu nombre y al emparejar dices de quién es cada dispositivo y su rol. Las acciones delicadas de la cuenta piden el código de verificación si lo tienes. Al añadir, un ISBN con guiones o de 10 cifras se reconoce. Con cuenta, juegos de mesa y libros de rol desde BoardGameGeek. Importante: borra los datos de prueba antes de usarla («Dejar este dispositivo a otra persona» en Ajustes).
+- en-US: The app now asks for your name, and when pairing you say whose each device is and its role. Sensitive account actions ask for your verification code if you use one. Adding recognises an ISBN with hyphens or ten digits. With an account, board games and role-playing books from BoardGameGeek. Important: delete your test data before using it ("Hand this device to someone else" in Settings).
+
 
 > **Las novedades que ve la gente dentro de la app salen de `app/src/whats-new.json`** (las líneas de «next»). Este documento es el borrador del texto de Google Play: sale de ese fichero, no al revés. Al elegir el número de versión, renombra `next` por él en el fichero (si no, `npm run check:whats-new` falla) y copia aquí lo que valga para Play (500 caracteres por idioma).
 
