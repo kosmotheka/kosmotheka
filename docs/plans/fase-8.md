@@ -6,7 +6,7 @@
 
 ## De dónde se parte
 
-- **Google Play:** prueba interna subida a mano, con la clave de subida guardada fuera del repositorio ([firma-android.md](../publicacion/firma-android.md)). La ficha y el formulario de seguridad de los datos ([ficha-google-play.md](../publicacion/ficha-google-play.md)) son del 29/09/2026: **no cuentan la cuenta ni el servidor**.
+- **Google Play:** prueba interna subida a mano, con la clave de subida guardada fuera del repositorio ([Publicar una versión](../../site/src/content/docs/es/contribute/release.md)). La ficha y el formulario de seguridad de los datos ([ficha-google-play.md](../publicacion/ficha-google-play.md)) son del 29/09/2026: **no cuentan la cuenta ni el servidor**.
 - **Web:** landing en kosmotheka.com con la página de descargas en «Próximamente»; las dos políticas de privacidad, sin servidor y con él.
 - **App:** bienvenida, «Novedades», «Licencias» y una Ayuda corta. Versión 0.2.0.
 - **CI:** compila Linux, Windows y Android en cada push; el instalador de Windows queda como artefacto de 14 días. No publica nada.

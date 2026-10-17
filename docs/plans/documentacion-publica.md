@@ -46,19 +46,19 @@ Alguien que sabe administrar un servidor, pero no conoce el proyecto.
 | Página | Tipo | Material | Cuándo |
 |---|---|---|---|
 | ¿Necesito un servidor? Qué aporta y qué no | explicación | `ROADMAP.md` (Fase 7), `architecture/cloud.md` | B |
-| Requisitos | referencia | `publicacion/servidor-produccion.md` | B |
+| Requisitos | referencia | `site/…/run-your-server/index.md` (escrita) | B |
 | Instalar con Docker | tutorial | `development/server.md`, `server/docker/` | B |
-| Instalar sin Docker (nginx, PHP-FPM, PostgreSQL) | tutorial | `publicacion/servidor-produccion.md` | B |
+| Instalar sin Docker (nginx, PHP-FPM, PostgreSQL) | tutorial | `site/…/run-your-server/without-docker.md` (escrita) | B |
 | Configuración: todas las variables | referencia | `server/.env`, que ya las comenta una a una | B |
 | Correo saliente | guía | `development/correo.md` | B |
 | Entrar con Google (opcional) | guía | `development/google-oauth.md` | B |
 | Claves de las fuentes de datos (opcional) y sus condiciones | guía | `research/proveedores.md`, `development/servicios-externos.md` | B |
-| Tareas programadas y limpieza | guía | `publicacion/servidor-produccion.md` | B |
+| Tareas programadas y limpieza | guía | `site/…/run-your-server/without-docker.md` y `administration.md` (escritas) | B |
 | Copias de seguridad y restauración | guía | Nada | B |
-| Actualizar a una versión nueva | guía | `publicacion/servidor-produccion.md` (script de actualización) | B |
+| Actualizar a una versión nueva | guía | `site/…/run-your-server/updating.md` (escrita) | B |
 | Apuntar la app a tu servidor | guía | Nada | B |
 | Qué guarda el servidor y qué puede ver quien lo administra | explicación | `architecture/cloud.md`, `architecture/security.md` | B |
-| Registros: qué se escribe y qué no | referencia | `publicacion/servidor-produccion.md` | B |
+| Registros: qué se escribe y qué no | referencia | `site/…/run-your-server/what-the-server-keeps.md` (escrita) | B |
 | Problemas frecuentes | referencia | Nada escrito; lo aprendido en el primer despliegue | C |
 
 ## 3 · Quien quiere colaborar o entender cómo funciona
@@ -83,7 +83,7 @@ Alguien que sabe administrar un servidor, pero no conoce el proyecto.
 | Avisar de una vulnerabilidad | guía | `SECURITY.md` | B |
 | Registro de decisiones | referencia | `DECISIONS.md` | B |
 | Glosario | referencia | `AGENTS.md` | B |
-| Publicar una versión | guía | `publicacion/firma-android.md`, D74 | C |
+| Publicar una versión | guía | `site/…/contribute/release.md` (escrita), D74 | C |
 | Hoja de ruta | referencia | `ROADMAP.md` | B |
 
 ## Lo que sale de este primer índice

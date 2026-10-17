@@ -42,7 +42,7 @@ Ninguno de estos se ha pasado todavía por TMview ni por los registros de domini
 
 ### Segunda ronda (26/09/2026)
 
-Dominios consultados el 26/09/2026 en los registros oficiales (Verisign para .com, Google Registry para .app). Marcas buscadas en TMview el mismo día con [`tmview-check.mjs`](tmview-check.mjs): búsqueda «Contiene» en todas las oficinas. Capturas y datos en [`tmview/`](tmview/).
+Dominios consultados el 26/09/2026 en los registros oficiales (Verisign para .com, Google Registry para .app). Marcas buscadas en TMview el mismo día con un script propio: búsqueda «Contiene» en todas las oficinas (resultado de la búsqueda del 26/09/2026; los datos no se conservan en el repositorio).
 
 | Nombre | Qué evoca | .com | .app | Marcas en TMview | Conflicto (clases 9, 41, 42) |
 |---|---|---|---|---|---|
@@ -103,7 +103,7 @@ Enfoque elegido: evocar **colección en general** (juegos, música, lo digital),
 
 ### Cuarta ronda (26/09/2026): nombres largos y potentes
 
-El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no es un negocio y no hay marketing que pelear. Se añade un criterio: **validar en Google Play**, no solo el dominio. Script: [`play-check.mjs`](play-check.mjs) (la búsqueda de Play es aproximada, así que se miran los títulos y los ids de las apps, no si hay resultados).
+El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no es un negocio y no hay marketing que pelear. Se añade un criterio: **validar en Google Play**, no solo el dominio. Con un script propio (la búsqueda de Play es aproximada, así que se miran los títulos y los ids de las apps, no si hay resultados).
 
 | Nombre | Idea | .com | .app | Google Play | Marcas en TMview |
 |---|---|---|---|---|---|
@@ -121,7 +121,7 @@ El maintainer prefiere un nombre largo pero potente a uno corto: el proyecto no 
 
 Candidatos: **Pantheca**, **Thesorium** y **Gatherium**. Omnitheca se descarta: «todo» suena prepotente y falso, porque el catálogo está acotado. Musary y Colleo siguen como candidatos.
 
-Validación: dominios por RDAP, Google Play con `play-check.mjs` y TMview con `tmview-check.mjs`. Se buscaron también variantes de escritura y pronunciación, porque una marca puede chocar por parecido.
+Validación: dominios por RDAP, Google Play y TMview con scripts propios. Se buscaron también variantes de escritura y pronunciación, porque una marca puede chocar por parecido.
 
 | | Pantheca | Thesorium | Gatherium |
 |---|---|---|---|
@@ -198,7 +198,7 @@ Varios de esos dominios se registraron en 2026: los nombres buenos vuelan. Cuand
 ## Siguientes pasos
 
 1. Decidir el enfoque: nombre neutro o nombre que diga lo que hace.
-2. Pasar por TMview los nombres de la primera ronda que sigan vivos (Funes, Kinshelf): `node docs/research/tmview-check.mjs funes kinshelf`.
+2. Pasar por TMview los nombres de la primera ronda que sigan vivos (Funes, Kinshelf).
 3. Con dos o tres favoritos:
    - Comprobar los .app que faltan y los .es.
    - Buscar por similitud en el buscador de la EUIPO (eSearch plus), no solo por texto literal.

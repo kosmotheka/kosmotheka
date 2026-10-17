@@ -31,6 +31,10 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 12. [Cuentas e inicio de sesión](./accounts/): registro, Google, segundo factor y el dispositivo como sesión.
 13. [La nube: la API y las reglas de acceso](./cloud-api/): un mapa de las rutas y de quién llega a qué biblioteca.
 
+## Publicar
+
+14. [Publicar una versión](./release/): el número, las novedades, las licencias y el paquete firmado de Android.
+
 ## Documentos del repositorio
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), el procedimiento y las reglas que importan (en inglés).

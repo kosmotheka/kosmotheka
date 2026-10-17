@@ -11,7 +11,7 @@ site/.astro/
 .env
 .env.*
 !.env.example
-# Android signing keys (they live in ~/.kosmotheka-release/; see docs/publicacion/firma-android.md)
+# Android signing keys (they live in ~/.kosmotheka-release/; see site/src/content/docs/es/contribute/release.md)
 *.jks
 *.keystore
 keystore.properties

@@ -22,11 +22,9 @@ Descargadas el 25/09/2026 (y las de bibliotecas el 26/09/2026) del proyecto Libr
 
 - Cada `*.dc.html` es una pieza (pantalla o componente como `AppBar`, `BottomNav`, `Sidebar`, `Cover`). `MobileScreens.dc.html` y `DesktopScreens.dc.html` las reúnen todas.
 - `app-tokens.css` propone **tokens nuevos**: `--success`, `--warning`, `--wish` (con sus variantes `-soft`) y `--scrim`, en claro y oscuro.
-- `support.js` y `ds-base.js` son el motor de Claude Design para mostrarlas; no se editan.
+- Las pantallas se dibujaron con el motor de Claude Design, que no forma parte del repositorio: aquí quedan como referencia visual del diseño, no como páginas que se abran en local.
 
-**Para verlas en local:** `ds-base.js` carga los estilos y componentes desde `../..`. Copia las carpetas a `ds-bundle/templates/mobile-screens` y `ds-bundle/templates/desktop-screens` (tras una sincronización con `/design-sync`) y sirve `ds-bundle/` con cualquier servidor estático.
-
-En las carpetas de bibliotecas, en `cloud-account/` y en `cloud-family/`, `ds-base.js` y `support.js` son copias de las de la primera descarga (el motor de Design no cambia) y `pair-qr.svg` es un QR de ejemplo sin los metadatos de procedencia que añade Design.
+En las carpetas de bibliotecas, en `cloud-account/` y en `cloud-family/`, `pair-qr.svg` es un QR de ejemplo sin los metadatos de procedencia que añade Design.
 
 **Diferencias de `cloud-account/` con el servidor**, a resolver al construir la app:
 - Los códigos de respaldo de las muestras tienen 8 caracteres (`7KQ4-M2XD`); el servidor da 10 (`xxxxx-xxxxx`). Manda el servidor.

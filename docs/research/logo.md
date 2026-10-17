@@ -4,15 +4,13 @@
 
 ## Cómo se comprueba
 
-[`tmview-image-check.mjs`](tmview-image-check.mjs) sube el símbolo, en negro sobre blanco, a la búsqueda por imagen de TMview. TMview cubre la EUIPO, las oficinas nacionales de la UE (OEPM incluida) y otras (EE. UU., China, Japón, Reino Unido…). El script se queda con las marcas de las clases de Niza 9 (software) y 42 (servicios informáticos). Guarda el JSON y una hoja con las miniaturas de las marcas que siguen vivas en Europa, en `tmview/logo-<nombre>*`.
+Se sube el símbolo, en negro sobre blanco, a la búsqueda por imagen de TMview, que cubre la EUIPO, las oficinas nacionales de la UE (OEPM incluida) y otras (EE. UU., China, Japón, Reino Unido…). Se miran las marcas de las clases de Niza 9 (software) y 42 (servicios informáticos) y las miniaturas de las que siguen vivas en Europa. Las capturas y los datos de cada búsqueda no se conservan en el repositorio: aquí queda el resultado.
 
 Hacer una búsqueda por imagen no es hacer un informe legal: encuentra candidatos, y quien decide si hay riesgo es un agente de la propiedad industrial.
 
 ## Concepto L: planeta con anillo y estrella (26/09/2026)
 
-![Símbolo consultado](tmview/logo-L-consulta.png)
-
-**Resultado:** 248 marcas parecidas en las clases 9 y 42, **30 de ellas vivas en Europa** ([hoja](tmview/logo-L-europa.png), [JSON](tmview/logo-L.json)). Ninguna es una copia, pero **el motivo está muy gastado**: un planeta con anillo es uno de los símbolos más registrados en tecnología.
+**Resultado:** 248 marcas parecidas en las clases 9 y 42, **30 de ellas vivas en Europa** (resultado de la búsqueda del 26/09/2026). Ninguna es una copia, pero **el motivo está muy gastado**: un planeta con anillo es uno de los símbolos más registrados en tecnología.
 
 Las más cercanas, vivas en Europa:
 
@@ -38,7 +36,7 @@ En cualquier caso, antes de registrar, pedir el informe a un agente (D72).
 
 ## Variantes «lienzo» 1–4: estrella calada en un cuadrado redondeado (26/09/2026)
 
-La variante 5 queda descartada por el maintainer. Las imágenes consultadas salen del generador de Claude Design (`templates/logo-kosmotheka/busqueda/gen4.js`, versión grande): `tmview/logo-lienzo-<n>-consulta.png`.
+La variante 5 queda descartada por el maintainer. Las imágenes consultadas salen del generador de Claude Design (`templates/logo-kosmotheka/busqueda/gen4.js`, versión grande):
 
 | Variante | Qué es | Parecidas (9 y 42) | Vivas en Europa | Lo más cercano |
 |---|---|---|---|---|
@@ -53,15 +51,15 @@ Siguiente paso con la elegida: repetir la búsqueda con la versión definitiva y
 
 ## Variante 2B: estrella calada y escalera de píxeles (27/09/2026)
 
-La elegida por el maintainer: el lienzo 2 con los píxeles en escalera sobre una rejilla de 8 × 8, ocupando la mitad del lienzo (`LienzoPixeles.dc.html` en Claude Design; a 16 y 32 px, rejilla de 4 × 4). Consulta: [negro](tmview/logo-2b-consulta.png) y [tamaños pequeños](tmview/logo-2b-tamanos.png).
+La elegida por el maintainer: el lienzo 2 con los píxeles en escalera sobre una rejilla de 8 × 8, ocupando la mitad del lienzo (`LienzoPixeles.dc.html` en Claude Design; a 16 y 32 px, rejilla de 4 × 4).
 
 | Búsqueda | Resultado |
 |---|---|
-| TMview, clases 9 y 42, en negro | 300 parecidas, **38 vivas en Europa** ([hoja](tmview/logo-2b-europa.png)). Ninguna junta estrella y escalera de píxeles en un cuadrado |
+| TMview, clases 9 y 42, en negro | 300 parecidas, **38 vivas en Europa**. Ninguna junta estrella y escalera de píxeles en un cuadrado |
 | TMview, todas las clases | De las 300 primeras, 9 vivas en Europa, las mismas que arriba más una de la clase 5 |
 | TMview con color | 0 resultados: parece que el parámetro de color no funciona así en el script. No cuenta como comprobación |
-| WIPO Global Brand Database, por concepto | Estrellas en corazones, chinchetas y cometas (Delivery Hero). Lo más cercano: una «t» hecha de bloques con una estrella gris al lado. No se parece en conjunto ([captura](tmview/logo-2b-wipo-concepto.png)) |
-| WIPO, por forma y combinada | Monogramas cuadrados y tableros de ajedrez: nada parecido ([forma](tmview/logo-2b-wipo-forma.png), [combinada](tmview/logo-2b-wipo-combinada.png)) |
+| WIPO Global Brand Database, por concepto | Estrellas en corazones, chinchetas y cometas (Delivery Hero). Lo más cercano: una «t» hecha de bloques con una estrella gris al lado. No se parece en conjunto |
+| WIPO, por forma y combinada | Monogramas cuadrados y tableros de ajedrez: nada parecido |
 | TinEye (búsqueda inversa, color y negro) | Unas 250 coincidencias débiles: tramas de cuadrados de bancos de imágenes, azulejos, ilusiones ópticas. **Ningún logo** |
 
 Las más cercanas en TMview, por partes:

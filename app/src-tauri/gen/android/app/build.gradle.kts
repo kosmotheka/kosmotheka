@@ -14,7 +14,7 @@ val tauriProperties = Properties().apply {
 }
 
 // The Google Play upload key lives outside the repository, so its passwords can
-// never be committed (docs/publicacion/firma-android.md). Without it, release
+// never be committed (see "Publicar una versión" in the contributor docs). Without it, release
 // builds come out unsigned.
 val keystoreProperties = Properties().apply {
     val path = System.getenv("KOSMOTHEKA_KEYSTORE_PROPERTIES")
