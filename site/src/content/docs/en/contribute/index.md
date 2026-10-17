@@ -25,11 +25,15 @@ It is written for people who program and do not know the project yet. Some techn
 9. [How we audit, so you can repeat it yourself](./audit-method/): the method, not the reports.
 10. [Report a security problem](./report-a-vulnerability/): how to do it in private.
 
+## Data, accounts and the cloud
+
+11. [The data model](./data-model/): the entities of the catalog and of sharing, and why the work and the edition are kept apart.
+12. [Accounts and sign-in](./accounts/): sign-up, Google, the second factor and the device as a session.
+13. [The cloud: the API and the access rules](./cloud-api/): a map of the routes and of who reaches which library.
+
 ## Repository documents
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), the procedure and the rules that matter (in English).
 - [SECURITY.md](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md), how to report a security problem privately.
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [The decision log](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) and [the architecture](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), in Spanish.
-
-The data model, the accounts and the cloud API are not in this documentation yet. Until they are, see the architecture folder linked above.

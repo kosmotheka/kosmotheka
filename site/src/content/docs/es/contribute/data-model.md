@@ -9,7 +9,7 @@ Esta página es el mapa de los datos: qué se guarda, cómo se relaciona y por q
 
 ## Principios
 
-- **Los ids son UUID, generados por la app**, y se guardan como texto. No hay ids autoincrementales: dos dispositivos pueden crear filas sin conexión y sin chocar. (Los UUID v7 empiezan por la fecha y se ordenan por momento de creación.) Una excepción: el id de una marca sale de su persona y su obra.
+- **Los ids son UUID, generados por la app**, y se guardan como texto. No hay ids autoincrementales: dos dispositivos pueden crear filas sin conexión y sin chocar. (Los UUID v7 empiezan por la fecha y se ordenan por momento de creación.) Una excepción: el id de una marca se calcula a partir de su persona y su obra (un UUID v5), así que dos dispositivos que marcan la misma obra para la misma persona escriben la misma fila.
 - **Todo pertenece a una biblioteca.** Cada fila del catálogo es de una biblioteca, y su identidad es la pareja (biblioteca, id): **el mismo id en dos bibliotecas son dos filas distintas**, y las referencias entre filas se resuelven siempre dentro de la misma biblioteca. *Por qué:* que una biblioteca nunca pise ni referencie datos de otra, aunque alguien invente ids a propósito.
 - **Una base de datos SQLite en cada dispositivo** (con tablas `STRICT`, que comprueban los tipos) y **PostgreSQL** en el servidor. El mismo modelo funciona en las dos.
 - **Fechas** en texto ISO 8601 (`2026-09-24` para días); **ISBN** normalizado a trece cifras sin guiones.
