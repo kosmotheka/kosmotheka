@@ -82,7 +82,7 @@ Todo está en **Play Console › la app › Contenido de la aplicación** (en el
 
 5. **Resultado esperado:** PEGI 3, con la nota «Los usuarios interactúan». Si sale otra cosa, dímelo antes de aceptarla.
 
-Hasta que se envía este cuestionario, la app sale «sin clasificar» y el control parental la bloquea. Pasa también en la prueba interna.
+**Comprobado el 17/10/2026:** en la prueba interna, aunque el cuestionario esté enviado, la clasificación no se aplica, porque esa pista no pasa revisión. Para Google Play, una app sin clasificar es **solo para mayores de 18**. Una cuenta de menor no puede instalarla ni aunque Family Link permita todas las apps: da error de edad. Los testers menores tienen que esperar a la **prueba cerrada**, que sí pasa revisión y publica la clasificación (PEGI 3).
 
 ## 5. Público objetivo y contenido
 
