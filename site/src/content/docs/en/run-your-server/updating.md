@@ -7,6 +7,16 @@ sidebar:
 
 Updating means changing the code and applying the database migrations. The order matters, and it **always starts with a copy**: a migration cannot always be undone.
 
+**If you have it set up without Docker, the steps below can be done in one go with `deploy/deploy.sh`**, the repository's script. It is run on the server itself, from the clone, and it only fetches code from the public repository. It does, in order: refuses to continue if the clone has local changes; fetches the tags; starts the backup (`kosmotheka-backup.service`); changes the code to the version you ask for; installs the dependencies; applies the migrations; refreshes the cache; restarts the services; and, if you ask, checks that the server answers. At the end it says how to go back.
+
+```bash
+deploy/deploy.sh            # the latest tag (vX.Y.Z)
+deploy/deploy.sh v0.3.0     # a specific tag
+deploy/deploy.sh main       # the tip of main (to try it)
+```
+
+It is set with environment variables, or with a file `deploy/deploy.env` next to the script (it is not uploaded to git): `KOSMOTHEKA_DIR` (the clone), `PHP_BIN` (by default `php8.5`), `COMPOSER_BIN`, `BACKUP_UNIT` (the earlier backup; empty, it is skipped), `RESTART_UNITS` (by default `php8.5-fpm kosmotheka-worker`), `BUILD_DOCS=1` (also builds the documentation; needs Node) and `HEALTH_URL` (for example `https://your-domain/v1/server`). Read the release notes **before** running it, and the new variables they ask for, before the script. What follows is what it does, step by step, in case you prefer doing it by hand or something fails.
+
 ## Before: read the release notes
 
 The release notes of each version say whether there is anything special. Two cases matter:

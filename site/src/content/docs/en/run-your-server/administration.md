@@ -43,6 +43,10 @@ bin/console app:user:block someone@example.org --undo
 
 Blocks the account and **signs out all of its devices**. With `--undo` it unblocks it. The blocked account cannot sign in and sees "This account is locked. If you think this is a mistake, contact whoever runs the server." It deletes nothing: the account, its libraries and its data stay. It is recorded in the [activity log](/en/run-your-server/what-the-server-keeps/#the-activity-log).
 
+### `app:user:delete` · delete an account
+
+It is further down, in [deleting someone's account when they ask by email](#deleting-someones-account-when-they-ask-by-email).
+
 ### `app:user:two-factor-disable` · remove the second factor
 
 ```bash
@@ -111,11 +115,32 @@ You rarely need it: when a server update changes how operations are judged and t
 
 ## Deleting someone's account when they ask by email
 
-**The server has no command to delete an account.** What exists:
+Whoever asks has the right to have the account deleted, and the project's privacy policy promises to do it within 30 days at most (yours will say what you promise). With `app:user:delete` it takes a minute:
 
-- **The person themselves**, from the app: **Settings › Cloud and account › Delete account**, with their password (or an email code if they sign in with Google) and their second factor. Offer this first.
-- **If they cannot sign in**, there is no clean way to do it from the server. If what stops them is the second factor, use `app:user:two-factor-disable`; if it is the password, they can recover it from the app (a code is sent to their email). Then they delete the account themselves.
+1. **Check that whoever writes is the owner of the email.** The request has to come **from the account's address**. If it comes from another, ask them to send it from theirs, or confirm it by another means you know. Never delete an account on a request you cannot verify: it cannot be undone.
+2. **If they can sign in to the app**, it is cleanest for them to do it: **Settings › Cloud and account › Delete account**, with their password (or an email code if they sign in with Google) and their second factor.
+3. **If they cannot sign in, or you prefer to**, run the command with the account's email.
+4. **Reply to them** when it is done.
 
-Deleting the rows by hand in the database **is not safe**: the account owns libraries and the server hands them over to another account with access before deleting it (they are only deleted with it if nobody else is left). A direct `DELETE` skips that rule and could take the library away from everyone.
+### `app:user:delete` · delete an account
 
-When it is deleted, the account, its devices and its codes go; **the activity log stays** until its year is up, without the email.
+```bash
+bin/console app:user:delete someone@example.org
+bin/console app:user:delete someone@example.org --force
+```
+
+It does **the same as the app's button**, with the same code: in a single transaction, the libraries the account uploaded to the cloud pass to another account that has a place in them (first whoever administers, and among equals the oldest), or they are deleted with the account if nobody else is left; one line is written to the activity log, and the account is deleted, with its devices and its codes.
+
+Without `--force`, before deleting it **shows what will happen and asks for confirmation** (the default is "no"):
+
+```
+Account: someone@example.org (0196b2f1-…)
+It uploaded 2 cloud libraries:
+  - 0196b2f3-…: passes to account 0196b2f0-…
+  - 0196b2f4-…: is deleted with the account (nobody else has a place in it)
+Delete this account? It cannot be undone. (yes/no) [no]:
+```
+
+With `--force` it does not ask, for use in a script. If the email has no account, it fails with an error message and a non-zero exit code, without touching anything. The activity log gets **one `account_deleted` line** with the account's id and a fingerprint of its email, **without the email**, and with the channel `console`; it is kept until its year is up.
+
+**Do not delete the database rows by hand**: a direct `DELETE` skips the handover of libraries and could take the library away from everyone.
