@@ -20,16 +20,16 @@
 | `SECURITY.md`, `LICENSE`, `THIRD-PARTY-NOTICES.md` | Ya existen | | Revisar. LICENSE y README, con la exclusión de la marca (D72) |
 | `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `TRADEMARKS.md` | No existen | | Escribirlos |
 | `AGENTS.md`, `CLAUDE.md`, `server/AGENTS.md`, `.claude/skills/` | Instrucciones para agentes | | Se publican (son útiles a quien colabore con un asistente), sin rutas a lo interno ni ejemplos de hallazgos reales |
-| `docs/DECISIONS.md` | 100 decisiones | | Se publica (D90). Traducir |
+| `docs/DECISIONS.md` | 101 decisiones | | Se publica (D90). Traducir |
 | `docs/architecture/` | Cómo está construido | 6 ficheros | Se publica; es la base de la parte para colaboradores. Traducir |
 | `docs/development/` | Entorno, servidor, correo, Google | 8 | Se publica casi todo; `revision-servidor.md`, a mirar |
 | `docs/ROADMAP.md`, `docs/VISION.md` | Plan y visión | | Se publican; el ROADMAP, resumido, sin notas de trabajo |
-| `docs/plans/`, `docs/historico/` | Planes y encargos | 4 + 42 | Se publica, como diario de desarrollo (D90, 16/10/2026) |
-| `docs/audits/` | Hallazgos de seguridad | 13 | Se publican el método, el modelo de amenazas y los hallazgos cerrados; los abiertos, a `library-privado/` hasta cerrarse |
-| `docs/research/` | Investigación | 60 ficheros, 5,8 MB | Interno: hay capturas de terceros. Se puede publicar alguna nota, como la de motores de sincronización |
-| `docs/design/` | Encargos y pantallas de Claude Design | 282 ficheros, 19 MB | Interno: imágenes y encargos. `errors.md` (catálogo de errores) se queda a la vista |
+| `docs/plans/`, `docs/historico/` | Planes y encargos | | Se publica, como diario de desarrollo (D90, 16/10/2026). `historico/` no se edita |
+| `docs/audits/` | Hallazgos de seguridad | | Se publican el método, el modelo de amenazas y el registro de hallazgos; los abiertos se cierran o se aceptan antes de abrir (no quedan filas «abierto») |
+| `docs/research/` | Investigación | | Se publica el texto. `tmview/` y los scripts `tmview-check.mjs`, `tmview-image-check.mjs` y `play-check.mjs` salen del historial; `logo.md` y `naming.md` ya no los enlazan |
+| `docs/design/` | Encargos y pantallas de Claude Design | | Se publica. `support.js` y `ds-base.js` de `design/screens/` salen del historial; el README de las pantallas ya no cuenta cómo verlas en local |
 | `docs/testing/` | Pruebas a mano por fase | 7 | Se publica; su material alimenta también la guía de usuario |
-| `docs/publicacion/` | Ficha, firma, políticas, web | 21 | Mezcla: las políticas ya son públicas en la web; la firma, el servidor de producción y la ficha, internos |
+| `docs/publicacion/` | Ficha, políticas, web | | `firma-android.md` y `servidor-produccion.md` salen a `library-privado/`; lo genérico está en las guías (`contribute/release.md`, `run-your-server/`) y los enlaces ya apuntan allí |
 | Código y tests | 75 ficheros nombran hallazgos (`SEG-058`…) y 8 apuntan a `docs/plans`, `docs/audits` o `docs/design` | | Los ids se quedan y el registro de los cerrados se publica. Las rutas a lo interno se cambian por la página pública que lo explique |
 
 El repositorio tiene 470 commits y `.git` ocupa 55 MB. La mayor parte son las imágenes de `docs/design/` y `docs/research/`; al quitarlas del historial bajará mucho.
@@ -119,5 +119,14 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
 - **Al abrir el repositorio:** «Será software libre» pasa a presente en `what-is-kosmotheka.md` y `faq.md` (los dos idiomas).
 - **Hecho (17/10/2026):** `operations.md`, `security.md` y `sync.md` de `docs/architecture/` puestos al día con el código ([encargo](../historico/encargo-arquitectura-al-dia.md)), y las preguntas frecuentes de la web iguales que las de la guía. `.claude/skills/audit/` se enlaza desde la guía pública como el método de auditoría; si se quitara del historial, cambiar el enlace de `audit-method.md`.
 - **Escaneo de secretos de todo el historial** (paso 8, 17/10/2026), con `gitleaks` 8.28.0 y `trufflehog` 3.90.8 en Docker: **limpio**. 187 avisos de gitleaks y 17 de trufflehog, ninguno verificado; todos son datos de prueba (claves públicas de los casos de conformidad, la clave de `.env.test` que está a propósito, claves inventadas `SENTIN…` de los tests, nombres de imágenes de RAWG y la cadena de conexión de desarrollo). Los informes no se guardan en el repositorio. Repetirlo justo antes de reescribir el historial.
+- **Ensayo de la reescritura del historial** (17/10/2026), con [reescribir-historial.sh](reescribir-historial.sh) sobre un clon en una carpeta temporal (no toca el original, quita el remoto del clon y no sube nada): `git filter-repo` 2.47.0 en Docker quita lo de la lista de [clasificacion-docs.md](../historico/clasificacion-docs.md) (TMview y sus scripts, `servidor-produccion.md`, `firma-android.md`, `provisional-pages/`, `server/.env.dev`, `support.js` y `ds-base.js` de Claude Design), renombra el encargo con eñe, pone como autor la dirección noreply de GitHub y quita las líneas `Claude-Session:`. Resultado: 569 commits (salen 2 que solo tocaban lo quitado), un solo autor, cero `Claude-Session:`, ningún rastro de lo quitado, `.git` de 66 a 31 MB, y gitleaks da los mismos 187 avisos de datos de prueba.
+
+  **El día de abrirlo** (el maintainer, en su terminal):
+  1. Mover `servidor-produccion.md` y `firma-android.md` a `library-privado/`, y guardar un `git bundle create ~/kosmotheka-antes-de-abrir.bundle --all` fuera de GitHub.
+  2. Ejecutar el script sobre el repositorio y revisar sus comprobaciones.
+  3. Pasar gitleaks y trufflehog sobre la copia reescrita.
+  4. Crear `kosmotheka/kosmotheka` vacío en GitHub, añadirlo como remoto a la copia y subirla.
+  5. Activar el aviso privado de vulnerabilidades (`SECURITY.md`) y comprobar que la CI pasa.
+  6. Cambiar el remoto del repositorio local de trabajo y, cuando todo esté comprobado, borrar el privado.
 - **Lo que falta en el servidor para administrarlo** (visto al escribir la guía, 17/10/2026): no hay orden para **borrar una cuenta** (la política promete hacerlo por correo en 30 días, y un `DELETE` a mano se salta el traspaso de bibliotecas de D99), ni para listar cuentas, ni `--email` en `app:activity:list`; dar de alta a alguien con el registro cerrado obliga a tocar `.env.local`. `ROLE_SUPER_ADMIN` no abre nada todavía.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
