@@ -34,6 +34,8 @@ It is written for people who program and do not know the project yet. Some techn
 ## Publishing
 
 14. [Publishing a release](./release/): the number, the what's-new notes, the licences and the signed Android package.
+15. [Adding a data source](./add-a-data-source/): a new catalogue in the app, and on the server if needed.
+16. [Adding a language](./add-a-language/): the app's texts, the what's-new notes, the server's emails and the documentation.
 
 ## Repository documents
 
