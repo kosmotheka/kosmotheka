@@ -5,21 +5,21 @@ sidebar:
   order: 5
 ---
 
-Puedes tener la misma biblioteca en varios aparatos de casa: tu móvil, el de tu pareja, un portátil. Para eso hay que **emparejarlos**. Emparejar es conectar dos aparatos para que se pasen los cambios.
+Puedes tener la misma biblioteca en varios dispositivos de casa: tu móvil, el de tu pareja, un portátil. Para eso hay que **emparejarlos**. Emparejar es conectar dos dispositivos para que se pasen los cambios.
 
-Se hace una sola vez, con un código QR (el cuadrado de puntos que se lee con la cámara), por la wifi de casa. No hace falta cuenta ni internet, y los datos no pasan por ningún otro ordenador: van directos de un aparato a otro.
+Se hace una sola vez, con un código QR (el cuadrado de puntos que se lee con la cámara), por la wifi de casa. No hace falta cuenta ni internet, y los datos no pasan por ningún otro ordenador: van directos de un dispositivo a otro.
 
-Cada aparato guarda la biblioteca entera. Cuando uno cambia algo, el otro lo recibe.
+Cada dispositivo guarda la biblioteca entera. Cuando uno cambia algo, el otro lo recibe.
 
 ## Antes de empezar
 
-- Los dos aparatos tienen la app y la tienen abierta.
-- Los dos están en **la misma wifi**, la de tu casa. No sirven los datos de la tarifa del móvil. Mejor no usar la wifi de invitados (la que se da a las visitas, con otra contraseña): en esa los aparatos suelen no verse entre ellos.
+- Los dos dispositivos tienen la app y la tienen abierta.
+- Los dos están en **la misma wifi**, la de tu casa. No sirven los datos de la tarifa del móvil. Mejor no usar la wifi de invitados (la que se da a las visitas, con otra contraseña): en esa los dispositivos suelen no verse entre ellos.
 - Si tienes instalado un programa de VPN o de privacidad que cambia tu conexión, apágalo mientras emparejas. Si no sabes qué es, no tienes que hacer nada.
 
-## Emparejar dos aparatos
+## Emparejar dos dispositivos
 
-Llama «A» al aparato que ya tiene la biblioteca y «B» al que la va a recibir.
+Llama «A» al dispositivo que ya tiene la biblioteca y «B» al que la va a recibir.
 
 **En A:**
 
@@ -41,9 +41,9 @@ Llama «A» al aparato que ya tiene la biblioteca y «B» al que la va a recibir
 
 Al terminar, B avisa con algo como «Emparejado con Móvil de Laura. Recibidos 12 cambios, enviados 3», y la biblioteca aparece en B. Un «cambio» es cada cosa que alguien ha añadido o modificado en la biblioteca. A avisa con «Emparejado con» y el nombre de B.
 
-## Decir de quién es el aparato nuevo
+## Decir de quién es el dispositivo nuevo
 
-Si tú administras la biblioteca (es decir, puedes cambiarlo todo en ella), la app te pregunta además «¿De quién es?» el aparato nuevo. Elige a una persona de la lista, o «Otra persona» y escribe su nombre. Lo que se haga desde ese aparato figurará como hecho por esa persona.
+Si tú administras la biblioteca (es decir, puedes cambiarlo todo en ella), la app te pregunta además «¿De quién es?» el dispositivo nuevo. Elige a una persona de la lista, o «Otra persona» y escribe su nombre. Lo que se haga desde ese dispositivo figurará como hecho por esa persona.
 
 También eliges qué podrá hacer esa persona en cada biblioteca. Eso se llama su **rol**. Si no eliges otro, será editor.
 
@@ -57,19 +57,19 @@ Si no administras la biblioteca, la app no te pregunta nada.
 
 ## Cómo se pasan los cambios después
 
-Los dos aparatos se actualizan solos cuando están en la misma wifi y la app está abierta. Pasa al abrir la app, al cambiar algo y, con la app en pantalla, cada cinco minutos: un cambio puede tardar hasta cinco minutos en llegar. Si uno está fuera de casa, se actualiza cuando vuelva.
+Los dos dispositivos se actualizan solos cuando están en la misma wifi y la app está abierta. Pasa al abrir la app, al cambiar algo y, con la app en pantalla, cada cinco minutos: un cambio puede tardar hasta cinco minutos en llegar. Si uno está fuera de casa, se actualiza cuando vuelva.
 
 ## Fuera de casa
 
-Si estáis juntos pero sin wifi, activa en uno de los móviles la opción de compartir internet (la «zona wifi») y conecta el otro a esa red. Después, empareja o pasa los cambios como en casa. No gasta los datos de tu tarifa: todo va entre los dos aparatos.
+Si estáis juntos pero sin wifi, activa en uno de los móviles la opción de compartir internet (la «zona wifi») y conecta el otro a esa red. Después, empareja o pasa los cambios como en casa. No gasta los datos de tu tarifa: todo va entre los dos dispositivos.
 
-## Cambiar qué biblioteca va a cada aparato
+## Cambiar qué biblioteca va a cada dispositivo
 
-En «Compartir y dispositivos» verás los aparatos emparejados, con una casilla por biblioteca. Solo se envía lo marcado. Si desmarcas una, desaparece de ese aparato la próxima vez que se actualicen; en el tuyo no cambia nada.
+En «Compartir y dispositivos» verás los dispositivos emparejados, con una casilla por biblioteca. Solo se envía lo marcado. Si desmarcas una, desaparece de ese dispositivo la próxima vez que se actualicen; en el tuyo no cambia nada.
 
 También puedes pulsar «Dejar de compartir» en los «Ajustes de la biblioteca». Podrás volver a compartirla cuando quieras.
 
-Con «Olvidar dispositivo», en el menú de tres puntos de cada aparato, los dos dejan de estar emparejados. No se borra nada de tus bibliotecas: tus libros se quedan donde están. Para que vuelvan a pasarse los cambios, habrá que emparejarlos otra vez.
+Con «Dejar de emparejar», en el menú de tres puntos de cada dispositivo, los dos dejan de estar emparejados. No se borra nada de tus bibliotecas: tus libros se quedan donde están. Para que vuelvan a pasarse los cambios, habrá que emparejarlos otra vez.
 
 Si en una biblioteca no puedes compartir, la app te dice que se lo pidas a quien la administra.
 
@@ -86,6 +86,6 @@ Algunos avisos concretos:
 
 - «No se encuentra el otro dispositivo»: no están en la misma wifi, o la app está cerrada en el otro.
 - «Los dos dispositivos tienen versiones distintas de la app»: actualiza los dos.
-- «El otro dispositivo ya tiene emparejado este»: en el otro, usa primero «Olvidar dispositivo» con este y vuelve a emparejar.
+- «El otro dispositivo ya tiene emparejado este»: en el otro, usa primero «Dejar de emparejar» con este y vuelve a emparejar.
 
 Si no se actualizan, no se pierde nada: lo harán solos en cuanto vuelvan a verse.

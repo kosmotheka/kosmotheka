@@ -37,14 +37,14 @@ Si tienes más de una biblioteca, el botón «Copia de todo el dispositivo» las
 2. Elige el archivo.
 3. Si tiene contraseña, escríbela y pulsa «Desbloquear y restaurar». Si te equivocas, no se recupera nada y puedes volver a intentarlo.
 
-Cada biblioteca del archivo vuelve con su nombre. Las que ya tienes en tu aparato con libros no se tocan.
+Cada biblioteca del archivo vuelve con su nombre. Las que ya tienes en tu dispositivo con libros no se tocan.
 
 **Una cosa que conviene saber.**
 
-- Si recuperas la copia en el mismo aparato que la hizo, la biblioteca vuelve tal cual.
-- Si la recuperas en otro aparato, aparece como una biblioteca nueva con los mismos libros, y **no se junta con la original**.
+- Si recuperas la copia en el mismo dispositivo que la hizo, la biblioteca vuelve tal cual.
+- Si la recuperas en otro dispositivo, aparece como una biblioteca nueva con los mismos libros, y **no se junta con la original**.
 
-Para tener en un aparato nuevo la biblioteca original, pásala desde otro aparato que la tenga (mira [Compartir en casa](../share-at-home/)) o bájala de tu cuenta, si tienes una.
+Para tener en un dispositivo nuevo la biblioteca original, pásala desde otro dispositivo que la tenga (mira [Compartir en casa](../share-at-home/)) o bájala de tu cuenta, si tienes una.
 
 Si la app dice que la copia se hizo con otra versión de la app, actualiza la app y vuelve a intentarlo.
 

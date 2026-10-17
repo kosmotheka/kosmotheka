@@ -69,7 +69,7 @@ In "Sharing and devices" you will see the paired devices, with a box for each li
 
 You can also tap "Stop sharing" in "Library settings". You can share it again whenever you like.
 
-With "Forget device", in the three-dot menu of each device, the two stop being paired. Nothing is deleted from your libraries: your books stay where they are. For changes to pass between them again, you will have to pair them again.
+With "Unpair", in the three-dot menu of each device, the two stop being paired. Nothing is deleted from your libraries: your books stay where they are. For changes to pass between them again, you will have to pair them again.
 
 If in a library you cannot share, the app tells you to ask whoever administers it.
 
@@ -86,6 +86,6 @@ Some specific messages:
 
 - "The other device cannot be reached. Is it on the same Wi-Fi, with the app open?": they are not on the same Wi-Fi, or the app is closed on the other one.
 - "The two devices run different versions of the app. Update both.": update both.
-- "The other device already has this one paired.": on the other one, first use "Forget device" on this one and pair again.
+- "The other device already has this one paired.": on the other one, first use "Unpair" on this one and pair again.
 
 If they do not update, nothing is lost: they will do it by themselves as soon as they see each other again.

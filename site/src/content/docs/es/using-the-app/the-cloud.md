@@ -1,18 +1,18 @@
 ---
-title: "La nube: tener tus bibliotecas en todos tus aparatos"
+title: "La nube: tener tus bibliotecas en todos tus dispositivos"
 description: Cómo crear una cuenta, subir una biblioteca, entrar con un móvil nuevo e invitar a otras personas.
 sidebar:
   order: 10
 ---
 
-La nube es guardar tus bibliotecas también en internet, en un ordenador al que se llama **servidor**, y no solo en tus aparatos. Es **opcional**. Sin cuenta, la app funciona entera: tus bibliotecas están en tus aparatos y se comparten con los de casa por la wifi ([Compartir en casa](./share-at-home/)). Con una cuenta, además, tus bibliotecas se ponen al día **desde cualquier sitio**, sin que los aparatos estén en la misma wifi, y puedes invitar a otras personas.
+La nube es guardar tus bibliotecas también en internet, en un ordenador al que se llama **servidor**, y no solo en tus dispositivos. Es **opcional**. Sin cuenta, la app funciona entera: tus bibliotecas están en tus dispositivos y se comparten con los de casa por la wifi ([Compartir en casa](./share-at-home/)). Con una cuenta, además, tus bibliotecas se ponen al día **desde cualquier sitio**, sin que los dispositivos estén en la misma wifi, y puedes invitar a otras personas.
 
 ## Lo que tienes que saber antes
 
 - **Lo que subes se guarda en un servidor** (el oficial, o el que te hayan dicho con «Otro servidor»). **Quien mantiene ese servidor puede leerlo.** Si no quieres que nadie más lo lea, no subas la biblioteca: la wifi de casa no pasa por ningún servidor.
 - **Ahora mismo, el servidor oficial solo deja crear cuenta a algunas direcciones de correo.** Si la tuya no está, la app avisa: «Si tu dirección no está, no te llegará ningún código».
 - **Solo puede subir una biblioteca quien la administra** (quien tiene el permiso de administrador; mira [Personas y permisos](./people-and-permissions/)).
-- **Los cambios de otros aparatos te llegan cuando abres la app o se pone al día**, no en el mismo momento. El servidor oficial todavía no avisa al instante.
+- **Los cambios de otros dispositivos te llegan cuando abres la app o se pone al día**, no en el mismo momento. El servidor oficial todavía no avisa al instante.
 - Si no tienes internet, todo sigue funcionando. Mira [Fuera de casa y sin conexión](./away-from-home/).
 
 ## Crear una cuenta
@@ -23,7 +23,7 @@ La nube es guardar tus bibliotecas también en internet, en un ordenador al que 
    - **Con correo:** pulsa «Crear cuenta». Escribe tu nombre (así te verán las personas con las que compartas), tu correo y el idioma. Te llega un **código de 6 cifras** al correo, que solo vale 15 minutos. Escríbelo y elige tu contraseña (mínimo 8 caracteres).
 3. Solo si alguien te ha dicho que uses otro servidor, pulsa «Otro servidor» y escribe su dirección.
 
-Si olvidas la contraseña, pulsa «¿La has olvidado?». Te mandan un código al correo para poner otra. **Al cambiarla, tus otros aparatos dejan de tener la cuenta abierta.** No se borra nada: allí entrarás con la contraseña nueva.
+Si olvidas la contraseña, pulsa «¿La has olvidado?». Te mandan un código al correo para poner otra. **Al cambiarla, tus otros dispositivos dejan de tener la cuenta abierta.** No se borra nada: allí entrarás con la contraseña nueva.
 
 ### Una comprobación extra al entrar
 
@@ -48,7 +48,7 @@ Algunas no se pueden subir tal cual:
 - Si no la administras tú: «La sube quien la administra».
 - Si se empezó con una versión muy antigua de la app, no se puede subir tal cual. Pulsa «Duplicar como nueva»: se crea otra con los mismos libros, y esa sí se puede subir.
 
-En los **ajustes de cada biblioteca** hay un interruptor, «La nube puede dar acceso a dispositivos nuevos». Si está encendido, el móvil nuevo de alguien de casa que tenga cuenta entra solo, con los mismos permisos que esa persona tiene en la biblioteca. Si está apagado, das tú el acceso a mano a cada aparato nuevo (mira [Compartir en casa](./share-at-home/)).
+En los **ajustes de cada biblioteca** hay un interruptor, «La nube puede dar acceso a dispositivos nuevos». Si está encendido, el móvil nuevo de alguien de casa que tenga cuenta entra solo, con los mismos permisos que esa persona tiene en la biblioteca. Si está apagado, das tú el acceso a mano a cada dispositivo nuevo (mira [Compartir en casa](./share-at-home/)).
 
 ## Un móvil nuevo recibe sus bibliotecas solo
 
@@ -59,8 +59,8 @@ En los **ajustes de cada biblioteca** hay un interruptor, «La nube puede dar ac
 
 Dos cosas más:
 
-- Si quien administra la biblioteca marcó que ese aparato es de **otra persona**, la app te lo cuenta («En “Casa”, este dispositivo es de Laura»). Se queda así; para cambiarlo, quien administra tiene que hacerlo desde su aparato, en «Personas y permisos».
-- Al móvil nuevo **solo llega lo que subiste a la nube**. Las bibliotecas que no subiste siguen en tus otros aparatos.
+- Si quien administra la biblioteca marcó que ese dispositivo es de **otra persona**, la app te lo cuenta («En “Casa”, este dispositivo es de Laura»). Se queda así; para cambiarlo, quien administra tiene que hacerlo desde su dispositivo, en «Personas y permisos».
+- Al móvil nuevo **solo llega lo que subiste a la nube**. Las bibliotecas que no subiste siguen en tus otros dispositivos.
 
 ## Invitar a otras personas
 

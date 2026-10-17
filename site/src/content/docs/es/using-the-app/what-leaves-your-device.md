@@ -36,13 +36,13 @@ La imagen de la portada se baja de internet desde el servicio que la tiene y se 
 
 ## La cámara
 
-La cámara solo se enciende cuando tú pulsas el botón de escanear. Las imágenes se leen en tu propio aparato: no se guardan ni se envían a ningún sitio.
+La cámara solo se enciende cuando tú pulsas el botón de escanear. Las imágenes se leen en tu propio dispositivo: no se guardan ni se envían a ningún sitio.
 
 En Android, para leer el código de barras la app usa una pieza de software de Google, que viene con la tienda Google Play. Puedes leer sus condiciones en el menú, en «Acerca de» y «Licencias».
 
 ## Compartir en casa
 
-Cuando conectas dos aparatos para compartir (se llama emparejarlos, y está explicado en [Compartir en casa](../share-at-home/)), los datos van **directamente de uno a otro, por tu wifi**. No pasan por internet ni por ningún otro ordenador. Solo se envían las bibliotecas que marques.
+Cuando conectas dos dispositivos para compartir (se llama emparejarlos, y está explicado en [Compartir en casa](../share-at-home/)), los datos van **directamente de uno a otro, por tu wifi**. No pasan por internet ni por ningún otro ordenador. Solo se envían las bibliotecas que marques.
 
 Las personas con las que compartes una biblioteca ven todo lo que hay en ella, incluidos los nombres de las personas y de quién es cada cosa.
 
@@ -59,13 +59,13 @@ La cuenta es opcional. Si creas una y subes una biblioteca, esa biblioteca vive 
 - No tiene anuncios.
 - No mide cómo la usas ni te sigue.
 - No vende ni cede datos.
-- No te pide ningún dato personal para funcionar sin cuenta, aparte del nombre que escribes al empezar. Ese nombre se queda en tu aparato y en los de las personas con las que compartes.
+- No te pide ningún dato personal para funcionar sin cuenta, aparte del nombre que escribes al empezar. Ese nombre se queda en tu dispositivo y en los de las personas con las que compartes.
 
 ## Borrar tus datos
 
-- **Borrar una biblioteca** (en «Ajustes de la biblioteca», «Borrar biblioteca») la quita de este aparato **y de todos los que la comparten**. No se puede deshacer. Antes de borrar, la app te ofrece guardar una copia de seguridad. Si solo quieres quitarla de este aparato y que los demás la conserven, usa «Salir de esta biblioteca».
-- **«Dejar este dispositivo a otra persona»**, en «Ajustes», deja el aparato como cuando se instaló la app por primera vez.
-- **Desinstalar la app** también quita sus datos del aparato.
+- **Borrar una biblioteca** (en «Ajustes de la biblioteca», «Borrar biblioteca») la quita de este dispositivo **y de todos los que la comparten**. No se puede deshacer. Antes de borrar, la app te ofrece guardar una copia de seguridad. Si solo quieres quitarla de este dispositivo y que los demás la conserven, usa «Salir de esta biblioteca».
+- **«Dejar este dispositivo como nuevo»**, en «Ajustes», deja el dispositivo como cuando se instaló la app por primera vez.
+- **Desinstalar la app** también quita sus datos del dispositivo.
 - Las copias de seguridad que hayas hecho siguen donde las guardaste.
 
 Si tienes cualquier duda: privacy@kosmotheka.com.

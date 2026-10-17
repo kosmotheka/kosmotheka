@@ -19,11 +19,11 @@ Es normal que en casa haya una o dos personas administradoras, los adultos como 
 
 ## Dónde se ve
 
-Abre el menú y entra en «Personas y permisos». Verás las personas de la biblioteca, el rol de cada una y desde qué aparatos entra. Arriba, la app te dice cuál es **tu** rol en esa biblioteca.
+Abre el menú y entra en «Personas y permisos». Verás las personas de la biblioteca, el rol de cada una y desde qué dispositivos entra. Arriba, la app te dice cuál es **tu** rol en esa biblioteca.
 
-Si eres administrador, al abrir a una persona puedes cambiar su rol, cambiar si **puede compartir** la biblioteca, es decir, llevarla a otros aparatos, y ver sus aparatos. Si no administras, ves la lista, pero los permisos los cambia quien administra, y la app te dice quién es.
+Si eres administrador, al abrir a una persona puedes cambiar su rol, cambiar si **puede compartir** la biblioteca, es decir, llevarla a otros dispositivos, y ver sus dispositivos. Si no administras, ves la lista, pero los permisos los cambia quien administra, y la app te dice quién es.
 
-Un aparato al que nadie ha asignado una persona aparece en «Dispositivos sin persona», y la app le da los permisos de lector. Para arreglarlo, quien administra pulsa «Asignar» y elige la persona a la que pertenece.
+Un dispositivo al que nadie ha asignado una persona aparece en «Dispositivos sin persona», y la app le da los permisos de lector. Para arreglarlo, quien administra pulsa «Asignar» y elige la persona a la que pertenece.
 
 ## Pedir en lugar de hacer
 
@@ -47,10 +47,10 @@ Cuando alguien pide algo, aparece un icono de campana con un número: las petici
 
 ## Cuando solo una persona administra
 
-Si eres la única persona que administra una biblioteca y pierdes tu único aparato, nadie podría cambiar los permisos ni atender las peticiones. Por eso la app te lo avisa («Solo tú administras Casa») y te propone hacer administradora a otra persona («Nombrar a otra persona»). Conviene hacerlo pronto. Por la misma razón, la app no te deja quitar a la última persona que administra, ni quitarle su único aparato.
+Si eres la única persona que administra una biblioteca y pierdes tu único dispositivo, nadie podría cambiar los permisos ni atender las peticiones. Por eso la app te lo avisa («Solo tú administras Casa») y te propone hacer administradora a otra persona («Nombrar a otra persona»). Conviene hacerlo pronto. Por la misma razón, la app no te deja quitar a la última persona que administra, ni quitarle su único dispositivo.
 
 ## Lo que no se puede
 
 - Si alguien hace una foto de la pantalla o copia lo que ve, la app no puede impedirlo. El rol decide qué se puede cambiar, no qué se puede ver.
 
-Para sacar a alguien de una biblioteca, mira [Quitar a una persona o un aparato](./remove-someone/).
+Para sacar a alguien de una biblioteca, mira [Quitar a una persona o un dispositivo](./remove-someone/).

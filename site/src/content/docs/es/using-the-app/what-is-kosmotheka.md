@@ -27,7 +27,7 @@ Cada tipo tiene su propia ficha. Un juego de mesa lleva jugadores y duración; u
 
 Tus datos se guardan en tu móvil u ordenador. La app funciona sin cuenta y sin conexión a internet. Solo usa internet para buscar los datos de un libro (título, quién lo escribió, portada…), y esa búsqueda se puede apagar. Lo cuenta con detalle la página [Qué sale de tu dispositivo y qué no](../what-leaves-your-device/).
 
-Hay también una cuenta opcional (como la de un correo), para tener tus bibliotecas en más aparatos aunque no estén en la misma wifi. Por ahora es una prueba. Sin cuenta, todo funciona igual.
+Hay también una cuenta opcional (como la de un correo), para tener tus bibliotecas en más dispositivos aunque no estén en la misma wifi. Por ahora es una prueba. Sin cuenta, todo funciona igual.
 
 Es gratis, sin anuncios y sin seguimiento. Cualquiera puede ver cómo está hecha.
 
