@@ -16,11 +16,7 @@ These are the guides for people who use the app. Each page answers one concrete 
 ## Your catalog
 
 4. [Copies, locations and whose each thing is](./copies-and-places/)
-5. [Books, comics, games, films, music: what changes with each kind](./kinds/) (in Spanish for now)
-6. [Your own: to read, read, stars, favorites and "I want it"](./marks/) (in Spanish for now)
-7. [Series and gaps](./series/) (in Spanish for now)
-8. [Several libraries](./several-libraries/) (in Spanish for now)
-
+5. [Books, comics, games, films, music: what changes with each kind](./kinds/)6. [Your own: to read, read, stars, favorites and "I want it"](./marks/)7. [Series and gaps](./series/)8. [Several libraries](./several-libraries/)
 ## Sharing and keeping safe
 
 9. [Share at home: pair devices over Wi-Fi](./share-at-home/)
@@ -28,8 +24,7 @@ These are the guides for people who use the app. Each page answers one concrete 
 
 ## Your data
 
-11. [Where the details come from: public catalogs, your own keys and how to turn them off](./data-sources/) (in Spanish for now)
-12. [What leaves your device and what does not](./what-leaves-your-device/)
+11. [Where the details come from: public catalogs, your own keys and how to turn them off](./data-sources/)12. [What leaves your device and what does not](./what-leaves-your-device/)
 
 ## People, account and cloud
 
@@ -42,8 +37,7 @@ These are the guides for people who use the app. Each page answers one concrete 
 
 17. [I lost my phone or changed it](./lost-phone/)
 18. [Delete my account and my data](./delete-account/)
-19. [Frequently asked questions](./faq/) (in Spanish for now)
-
+19. [Frequently asked questions](./faq/)
 ## On the project's website
 
 - [How it works](https://kosmotheka.com/en/faq.html), the frequently asked questions.
