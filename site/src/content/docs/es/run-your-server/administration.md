@@ -43,6 +43,10 @@ bin/console app:user:block alguien@ejemplo.org --undo
 
 Bloquea la cuenta y **cierra la sesión de todos sus dispositivos**. Con `--undo` la desbloquea. La cuenta bloqueada no puede iniciar sesión y ve «Esta cuenta está bloqueada. Si crees que es un error, escribe a quien gestiona el servidor.» No borra nada: la cuenta, sus bibliotecas y sus datos siguen. Queda en el [registro de actividad](/es/run-your-server/what-the-server-keeps/#el-registro-de-actividad).
 
+### `app:user:delete` · borrar una cuenta
+
+Va más abajo, en [borrar la cuenta de alguien que lo pide por correo](#borrar-la-cuenta-de-alguien-que-lo-pide-por-correo).
+
 ### `app:user:two-factor-disable` · quitar el segundo factor
 
 ```bash
@@ -111,11 +115,32 @@ Hace falta **poco**: cuando una actualización del servidor cambia cómo se juzg
 
 ## Borrar la cuenta de alguien que lo pide por correo
 
-**El servidor no tiene una orden para borrar una cuenta.** Lo que existe:
+Quien lo pide tiene derecho a que se borre, y la política de privacidad del proyecto promete hacerlo en 30 días como mucho (la tuya dirá lo que tú prometas). Con `app:user:delete` es cosa de un minuto:
 
-- **La propia persona**, desde la app: **Ajustes › Cuenta y nube › Borrar la cuenta**, con su contraseña (o un código por correo si entra con Google) y su segundo factor. Es lo que debes ofrecer primero.
-- **Si no puede entrar**, no hay forma limpia de hacerlo desde el servidor. Si lo que le impide entrar es el segundo factor, `app:user:two-factor-disable`; si es la contraseña, puede recuperarla desde la app (le manda un código al correo). Después la borra ella.
+1. **Comprueba que quien escribe es el dueño del correo.** La petición tiene que llegar **desde la dirección de la cuenta**. Si llega de otra, pídele que la mande desde la suya, o confírmalo por otro medio que conozcas. Nunca borres una cuenta por una petición que no puedas comprobar: no se deshace.
+2. **Si puede entrar en la app**, lo más limpio es que lo haga ella: **Ajustes › Cuenta y nube › Borrar la cuenta**, con su contraseña (o un código por correo si entra con Google) y su segundo factor.
+3. **Si no puede entrar, o lo prefieres tú**, lanza la orden con el correo de la cuenta.
+4. **Contéstale** cuando esté hecho.
 
-Borrar a mano las filas de la base de datos **no es seguro**: la cuenta es dueña de bibliotecas y el servidor las pasa a otra cuenta con acceso antes de borrarla (solo se borran con ella si no queda nadie). Un `DELETE` directo se salta esa regla y puede llevarse la biblioteca de todos.
+### `app:user:delete` · borrar una cuenta
 
-Cuando se borra, se van la cuenta, sus dispositivos y sus códigos; **el registro de actividad se queda** hasta cumplir su año, sin el correo.
+```bash
+bin/console app:user:delete alguien@ejemplo.org
+bin/console app:user:delete alguien@ejemplo.org --force
+```
+
+Hace **lo mismo que el botón de la app**, con el mismo código: en una sola transacción, las bibliotecas que la cuenta subió a la nube pasan a otra cuenta que tenga un sitio en ellas (primero quien administra, y entre iguales la más antigua), o se borran con ella si no queda nadie; se apunta una línea en el registro de actividad y se borra la cuenta, con sus dispositivos y sus códigos.
+
+Sin `--force`, antes de borrar **enseña qué va a pasar y pide confirmación** (por defecto, «no»):
+
+```
+Account: alguien@ejemplo.org (0196b2f1-…)
+It uploaded 2 cloud libraries:
+  - 0196b2f3-…: passes to account 0196b2f0-…
+  - 0196b2f4-…: is deleted with the account (nobody else has a place in it)
+Delete this account? It cannot be undone. (yes/no) [no]:
+```
+
+Con `--force` no pregunta, para un guion. Si el correo no tiene cuenta, falla con un mensaje de error y salida distinta de cero, sin tocar nada. En el registro de actividad queda **una línea `account_deleted`** con el id de la cuenta y la huella de su correo, **sin el correo**, y con el canal `console`; se conserva hasta cumplir su año.
+
+**No borres las filas de la base de datos a mano**: un `DELETE` directo se salta el traspaso de bibliotecas y puede llevarse la biblioteca de todos.

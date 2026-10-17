@@ -7,6 +7,16 @@ sidebar:
 
 Actualizar es cambiar el código y aplicar las migraciones de la base de datos. El orden importa y **empieza siempre por una copia**: una migración no siempre se puede deshacer.
 
+**Si lo tienes montado sin Docker, los pasos de abajo se pueden hacer de una vez con `deploy/deploy.sh`**, el script del repositorio. Se lanza en el propio servidor, desde el clon, y solo trae el código del repositorio público. Hace, por orden: se niega a seguir si el clon tiene cambios locales; trae las etiquetas; lanza la copia (`kosmotheka-backup.service`); cambia el código a la versión que le pidas; instala las dependencias; aplica las migraciones; renueva la caché; reinicia los servicios; y, si se lo pides, comprueba que el servidor responde. Al acabar dice cómo volver atrás.
+
+```bash
+deploy/deploy.sh            # la última etiqueta (vX.Y.Z)
+deploy/deploy.sh v0.3.0     # una etiqueta concreta
+deploy/deploy.sh main       # la punta de main (para probar)
+```
+
+Se ajusta con variables de entorno, o con un fichero `deploy/deploy.env` junto al script (no se sube a git): `KOSMOTHEKA_DIR` (el clon), `PHP_BIN` (por defecto `php8.5`), `COMPOSER_BIN`, `BACKUP_UNIT` (la copia previa; vacía, se salta), `RESTART_UNITS` (por defecto `php8.5-fpm kosmotheka-worker`), `BUILD_DOCS=1` (construye también la documentación; necesita Node) y `HEALTH_URL` (por ejemplo `https://tu-dominio/v1/server`). Lee las notas de la versión **antes** de lanzarlo, y las variables nuevas que pidan, antes que el script. Lo que sigue es lo que hace, paso a paso, por si lo prefieres a mano o algo falla.
+
 ## Antes: lee las notas de la versión
 
 Las notas de cada versión dicen si hay algo especial. Dos casos que importan:
