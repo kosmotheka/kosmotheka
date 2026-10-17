@@ -1,0 +1,101 @@
+---
+title: Añadir un idioma
+description: "Qué hay que traducir y tocar para que la app, el servidor, las novedades y la documentación de Kosmotheka estén en un idioma nuevo."
+sidebar:
+  order: 16
+---
+
+Hoy Kosmotheka está en **español e inglés**. Añadir un tercer idioma es posible, pero hay más sitios de los que parece: la mayoría se traducen sin tocar código, y unos pocos tienen «español o inglés» escrito a mano. Esta página los enumera todos, para que sepas el tamaño del trabajo antes de empezar. En los ejemplos, el idioma nuevo es el francés (`fr`).
+
+Antes de empezar, abre un *issue* (ver [cómo contribuir](../how-to-contribute/)): un idioma hay que **mantenerlo** en cada versión, y es mejor saber quién lo hará.
+
+## La app
+
+### Los textos
+
+Todos los textos de la interfaz están en `app/src/i18n/locales/`, un archivo por idioma:
+
+- `en.json` y `es.json` hoy. Copia `en.json` como `fr.json` y traduce los valores, **nunca las claves**.
+- `app/src/i18n/index.ts` los registra: `import fr from "./locales/fr.json"`, `fr: { translation: fr }` en `resources`, y `"fr"` en `supportedLanguages`.
+
+`supportedLanguages` es lo que usan los selectores de idioma (Ajustes, la cuenta y el alta), y cada uno necesita el nombre del idioma **en su propio idioma**: `LANGUAGE_NAMES` en `settings-dialog.tsx` (TypeScript te avisa si falta) y el selector de `account-dialog.tsx` y `auth-dialog.tsx`.
+
+La app elige el idioma del sistema (`i18next-browser-languagedetector`) y, si no tiene el suyo, cae en inglés.
+
+Cosas del texto que se tropiezan:
+
+- **Plurales**: una clave con `count` lleva `_one` y `_other` (`results_one`, `results_other`). Algunos idiomas necesitan más formas; consulta las reglas de i18next.
+- **Variables**: `{{title}}` y similares se dejan igual.
+- **Etiquetas**: `<link>RAWG</link>` en los textos de créditos se queda; solo se traduce lo de dentro.
+- **Sin texto en el código**: si un texto no está en `en.json`, no se puede traducir. Añádelo a los dos idiomas que ya existen.
+
+### Las listas cerradas
+
+Algunas listas viven en el dominio (Rust) y su texto, en los archivos de arriba:
+
+| Lista | Dónde está | Claves de texto |
+|---|---|---|
+| Géneros de cada tipo | `crates/domain/src/genre.rs` | `genres.*` |
+| Estados de lectura, de juego… por tipo | dominio | `marks.statuses.*`, `marks.statusesByKind.<tipo>.*` |
+| Tipos de obra, formatos de ejemplar | dominio | `types.*`, `typesPlural.*`, `formats.*` |
+| Roles de las personas y estados de las peticiones | dominio | `people.roles.*`, `requests.status.*` |
+| Códigos de error | Rust y servidor | `accountErrors.*`, `cloud.errors.*`, `invitations.errors.*`… |
+
+Un género o un estado **se guarda por su clave** (`science_fiction`), no por su texto: traducirlos no cambia ningún dato ni la sincronización. Pero **cada clave de la lista tiene que existir en tu archivo**; si falta una, la interfaz enseña la clave en bruto.
+
+### Lo que avisa de claves que faltan
+
+No hay una prueba que falle en la integración continua. Lo que hay es una comprobación de la auditoría: `.claude/skills/audit/bin/facts.py` compara `en.json` y `es.json` y dice las claves que están en uno y no en el otro, las usadas en código que no existen, y las listas cerradas (`contracts.json`) a las que les falta texto. Hoy solo compara **esos dos archivos**: para el nuevo, ajusta la función `section_i18n` o compara a mano:
+
+```bash
+cd app
+node -e 'const f=(o,p="")=>Object.entries(o).flatMap(([k,v])=>typeof v==="object"?f(v,p+k+"."):[p+k]);const a=f(require("./src/i18n/locales/en.json")),b=new Set(f(require("./src/i18n/locales/fr.json")));console.log(a.filter(k=>!b.has(k)).join("\n"))'
+```
+
+Además, `npm run typecheck` y `npm run lint` tienen que seguir pasando, y conviene abrir la app en el idioma nuevo y recorrer las pantallas.
+
+### Los sitios con «español o inglés» escrito a mano
+
+Estos **no** salen solos de `supportedLanguages`. Con un idioma nuevo caen en inglés hasta que se cambian:
+
+| Dónde | Qué hace |
+|---|---|
+| `components/whats-new-dialog.tsx` | Elige `es` si el idioma empieza por «es»; si no, `en` |
+| `components/about-dialog.tsx` | La dirección de la política de privacidad: `es` o `en` |
+| `components/add-search.tsx` | Le dice a las búsquedas el idioma de la app, `es` o `en` (lo usa TMDB) |
+| `app/src-tauri/src/metadata/mod.rs` (`tmdb_tag`) | Traduce el idioma a la etiqueta de TMDB: `es-ES` o `en-US` |
+| El resto de buscadores | Preguntan en su idioma de siempre; para libros y títulos, el idioma de la edición no depende del de la app |
+
+Si tu idioma tiene que verse en las novedades o en la privacidad, esas funciones pasan a mirar el idioma exacto.
+
+## Las novedades (`whats-new.json`)
+
+Cada línea de `app/src/whats-new.json` lleva `es` y `en`. Tres cosas lo exigen: `app/scripts/check-whats-new.mjs` (`["es", "en"]`), la estructura `Line` de `app/src-tauri/src/whats_new.rs` (campos `es` y `en`) y el diálogo. Para un idioma nuevo hay que añadirle el campo a las tres y **traducir todas las líneas de todas las versiones** que quieras que se vean. Si no, la persona verá las novedades en inglés.
+
+## El servidor
+
+Dos cosas:
+
+- **El idioma de la cuenta (`locale`)**. Hoy solo admite `en` y `es`: `server/src/Dto/RegisterAccountRequest.php`, `UpdateAccountRequest.php` y `GoogleStartRequest.php` lo validan con `#[Assert\Choice(choices: ['en', 'es'])]`. La app lo manda al crear la cuenta y al entrar con Google (`i18n.resolvedLanguage`). Hay que añadir el código a esos tres.
+- **Los correos**: `server/translations/emails.es.yaml` y `emails.en.yaml`, con el asunto y el cuerpo de cada uno (confirmar la cuenta, recuperar la contraseña, el aviso de que alguien intentó usar tu correo, la contraseña cambiada, el segundo factor, la invitación…). Hace falta un `emails.fr.yaml` con **todas** las claves. El idioma por defecto del servidor es `en` (`config/packages/translation.yaml`) y es el que usa si no hay traducción.
+
+Los textos de error que el servidor devuelve son **códigos** (`invalid_credentials`), no frases: la app los traduce con sus archivos. No hay que tocarlos.
+
+## La documentación y la web
+
+Son aparte y se traducen cuando haya quien los mantenga:
+
+- **La documentación** (`site/`): Starlight tiene los idiomas en `site/astro.config.mjs` (hoy `es` por defecto y `en`). Un idioma nuevo es una carpeta nueva en `site/src/content/docs/<idioma>/` con la **misma estructura de carpetas** (los nombres de carpeta son los mismos en todos los idiomas, porque el selector de idioma enlaza a la misma página). Lo que no esté traducido sale en español con un aviso.
+- **La web** (`web/`): una carpeta por idioma (`web/es/`, `web/en/`) con sus páginas, entre ellas la **política de privacidad** y la de borrar la cuenta.
+- **La política de privacidad** conviene tenerla en el idioma de quien usa la app: el enlace del diálogo «Acerca de» tiene que apuntar a ella.
+
+## Lista de comprobación
+
+1. Un *issue* abierto, y quién mantendrá el idioma.
+2. `locales/<código>.json` completo y registrado en `i18n/index.ts`, con su nombre en los selectores.
+3. Géneros, estados, tipos, formatos y roles con texto; la app recorrida en el idioma nuevo.
+4. Los sitios con «es» o «en» a mano, revisados.
+5. `whats-new.json`, el script que lo comprueba y `whats_new.rs`, con el campo nuevo.
+6. Servidor: los tres `Assert\Choice` y `emails.<código>.yaml`.
+7. Documentación y web, cuando se pueda.
+8. `npm run typecheck`, `npm run lint`, `cargo test` y `make check` (en `server/`).

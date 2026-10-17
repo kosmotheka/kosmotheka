@@ -43,6 +43,8 @@ Aquí están las guías para quien usa la app. Cada página responde a una pregu
 17. [He perdido el móvil o lo he cambiado](./lost-phone/)
 18. [Borrar mi cuenta y mis datos](./delete-account/)
 19. [Preguntas frecuentes](./faq/)
+20. [Mensajes de error y qué hacer](./error-messages/)
+21. [Novedades de cada versión](./whats-new/)
 
 ## En la web del proyecto
 

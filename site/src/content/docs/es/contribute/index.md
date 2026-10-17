@@ -34,6 +34,8 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 ## Publicar
 
 14. [Publicar una versión](./release/): el número, las novedades, las licencias y el paquete firmado de Android.
+15. [Añadir una fuente de datos](./add-a-data-source/): un catálogo nuevo en la app, y en el servidor si hace falta.
+16. [Añadir un idioma](./add-a-language/): los textos de la app, las novedades, los correos del servidor y la documentación.
 
 ## Documentos del repositorio
 
