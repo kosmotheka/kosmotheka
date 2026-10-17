@@ -53,4 +53,4 @@ Si eres la única persona que administra una biblioteca y pierdes tu único disp
 
 - Si alguien hace una foto de la pantalla o copia lo que ve, la app no puede impedirlo. El rol decide qué se puede cambiar, no qué se puede ver.
 
-Para sacar a alguien de una biblioteca, mira [Quitar a una persona o un dispositivo](./remove-someone/).
+Para sacar a alguien de una biblioteca, mira [Quitar a una persona o un dispositivo](../remove-someone/).

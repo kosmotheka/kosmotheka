@@ -5,15 +5,15 @@ sidebar:
   order: 15
 ---
 
-La nube es guardar tus bibliotecas también en internet, en un ordenador al que se llama **servidor**, y no solo en tus dispositivos. Es **opcional**. Sin cuenta, la app funciona entera: tus bibliotecas están en tus dispositivos y se comparten con los de casa por la wifi ([Compartir en casa](./share-at-home/)). Con una cuenta, además, tus bibliotecas se ponen al día **desde cualquier sitio**, sin que los dispositivos estén en la misma wifi, y puedes invitar a otras personas.
+La nube es guardar tus bibliotecas también en internet, en un ordenador al que se llama **servidor**, y no solo en tus dispositivos. Es **opcional**. Sin cuenta, la app funciona entera: tus bibliotecas están en tus dispositivos y se comparten con los de casa por la wifi ([Compartir en casa](../share-at-home/)). Con una cuenta, además, tus bibliotecas se ponen al día **desde cualquier sitio**, sin que los dispositivos estén en la misma wifi, y puedes invitar a otras personas.
 
 ## Lo que tienes que saber antes
 
 - **Lo que subes se guarda en un servidor** (el oficial, o el que te hayan dicho con «Otro servidor»). **Quien mantiene ese servidor puede leerlo.** Si no quieres que nadie más lo lea, no subas la biblioteca: la wifi de casa no pasa por ningún servidor.
 - **Ahora mismo, el servidor oficial solo deja crear cuenta a algunas direcciones de correo.** Si la tuya no está, la app avisa: «Si tu dirección no está, no te llegará ningún código».
-- **Solo puede subir una biblioteca quien la administra** (quien tiene el permiso de administrador; mira [Personas y permisos](./people-and-permissions/)).
+- **Solo puede subir una biblioteca quien la administra** (quien tiene el permiso de administrador; mira [Personas y permisos](../people-and-permissions/)).
 - **Los cambios de otros dispositivos te llegan cuando abres la app o se pone al día**, no en el mismo momento. El servidor oficial todavía no avisa al instante.
-- Si no tienes internet, todo sigue funcionando. Mira [Fuera de casa y sin conexión](./away-from-home/).
+- Si no tienes internet, todo sigue funcionando. Mira [Fuera de casa y sin conexión](../away-from-home/).
 
 ## Crear una cuenta
 
@@ -48,7 +48,7 @@ Algunas no se pueden subir tal cual:
 - Si no la administras tú: «La sube quien la administra».
 - Si se empezó con una versión muy antigua de la app, no se puede subir tal cual. Pulsa «Duplicar como nueva»: se crea otra con los mismos libros, y esa sí se puede subir.
 
-En los **ajustes de cada biblioteca** hay un interruptor, «La nube puede dar acceso a dispositivos nuevos». Si está encendido, el móvil nuevo de alguien de casa que tenga cuenta entra solo, con los mismos permisos que esa persona tiene en la biblioteca. Si está apagado, das tú el acceso a mano a cada dispositivo nuevo (mira [Compartir en casa](./share-at-home/)).
+En los **ajustes de cada biblioteca** hay un interruptor, «La nube puede dar acceso a dispositivos nuevos». Si está encendido, el móvil nuevo de alguien de casa que tenga cuenta entra solo, con los mismos permisos que esa persona tiene en la biblioteca. Si está apagado, das tú el acceso a mano a cada dispositivo nuevo (mira [Compartir en casa](../share-at-home/)).
 
 ## Un móvil nuevo recibe sus bibliotecas solo
 
@@ -81,4 +81,4 @@ Cada enlace vale una sola vez y caduca. Mientras no se use, en «Personas» ves 
 2. Abre la app y, en «Ajustes» (o en tu cuenta), pulsa «Tengo una invitación». **Pega el enlace** (mantén pulsado el cuadro de texto y elige «Pegar»). Si al pulsar el enlace se abre la app sola, mejor, pero no siempre pasa: pegarlo es lo seguro.
 3. Inicia sesión o crea una cuenta si no la tienes, y pulsa «Entrar en» y el nombre de la biblioteca.
 
-Si la biblioteca no está en la nube, o el servidor no hace invitaciones, aún se puede dar acceso con un código QR (el cuadrado de puntos que se lee con la cámara; mira [Compartir en casa](./share-at-home/)).
+Si la biblioteca no está en la nube, o el servidor no hace invitaciones, aún se puede dar acceso con un código QR (el cuadrado de puntos que se lee con la cámara; mira [Compartir en casa](../share-at-home/)).

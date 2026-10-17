@@ -40,7 +40,7 @@ Los mismos pasos están en la web, en [kosmotheka.com/es/borrar-cuenta.html](htt
 Borrar la cuenta no borra lo que hay en tus dispositivos. Para eso:
 
 - **Una biblioteca:** dentro de la biblioteca, abre el menú, entra en «Ajustes de la biblioteca» y pulsa «Borrar biblioteca». Se borra en todos los dispositivos con los que la compartes y no se puede deshacer. La app te ofrece guardar antes una copia de seguridad.
-- **Todo lo del móvil:** abre «Ajustes» y pulsa «Dejar este dispositivo como nuevo». Esto borra todo lo de ese móvil ([Quitar a una persona o un dispositivo](./remove-someone/)).
+- **Todo lo del móvil:** abre «Ajustes» y pulsa «Dejar este dispositivo como nuevo». Esto borra todo lo de ese móvil ([Quitar a una persona o un dispositivo](../remove-someone/)).
 - **Las copias de seguridad** que hiciste están donde las guardaste: bórralas tú.
 
 Más detalles en la [política de privacidad](https://kosmotheka.com/es/privacidad.html) (qué datos se guardan y para qué).

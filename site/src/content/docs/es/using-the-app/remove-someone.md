@@ -36,7 +36,7 @@ La app no te deja quitar a la última persona que administra, porque entonces na
 
 ### Devolver el acceso
 
-Si cambias de opinión, abre a la persona y pulsa «Devolver el acceso». Vuelve a poder entrar, **pero no recupera sus bibliotecas en sus dispositivos por sí solo**. Después hay que dar acceso de nuevo a un dispositivo suyo con «Dar acceso a un dispositivo» (o, si tiene cuenta, con una invitación; mira [La nube](./the-cloud/)).
+Si cambias de opinión, abre a la persona y pulsa «Devolver el acceso». Vuelve a poder entrar, **pero no recupera sus bibliotecas en sus dispositivos por sí solo**. Después hay que dar acceso de nuevo a un dispositivo suyo con «Dar acceso a un dispositivo» (o, si tiene cuenta, con una invitación; mira [La nube](../the-cloud/)).
 
 ## Retirar el acceso a un dispositivo perdido o robado
 
@@ -48,7 +48,7 @@ Si se ha perdido un dispositivo de una persona, quita ese dispositivo, no a la p
 
 Qué pasa: ese dispositivo **no recibirá más cambios, y los cambios que haga en él no se tendrán en cuenta**. Si algún día vuelve a conectarse, borrará esas bibliotecas. Su dueña sigue con sus demás dispositivos.
 
-Si el dispositivo tenía la cuenta abierta, conviene además que su dueña lo saque de su cuenta (mira abajo) o cambie la contraseña. Mira [He perdido el móvil](./lost-phone/).
+Si el dispositivo tenía la cuenta abierta, conviene además que su dueña lo saque de su cuenta (mira abajo) o cambie la contraseña. Mira [He perdido el móvil](../lost-phone/).
 
 ## Sacar un dispositivo de tu cuenta
 
@@ -56,7 +56,7 @@ Si un dispositivo tuyo se ha perdido y tienes cuenta: en otro dispositivo, abre 
 
 ## Dejar de emparejar dos dispositivos de casa
 
-Si solo quieres que dos dispositivos de casa dejen de pasarse cambios: abre «Compartir y dispositivos», pulsa el icono de tres puntos (⋮) del dispositivo y «Dejar de emparejar». **No se borra ningún libro.** Para que vuelvan a pasarse cambios, habrá que emparejarlos otra vez ([Compartir en casa](./share-at-home/)).
+Si solo quieres que dos dispositivos de casa dejen de pasarse cambios: abre «Compartir y dispositivos», pulsa el icono de tres puntos (⋮) del dispositivo y «Dejar de emparejar». **No se borra ningún libro.** Para que vuelvan a pasarse cambios, habrá que emparejarlos otra vez ([Compartir en casa](../share-at-home/)).
 
 Ojo: «Dejar de emparejar» no es «Retirar el acceso». Solo hace que ese dispositivo deje de estar emparejado con el móvil desde el que lo haces; no es una forma de echarlo.
 
@@ -64,6 +64,6 @@ Ojo: «Dejar de emparejar» no es «Retirar el acceso». Solo hace que ese dispo
 
 Para dárselo a otra persona (o venderlo): abre el menú, entra en «Ajustes» y pulsa «Dejar este dispositivo como nuevo».
 
-El móvil queda como si acabaras de instalar la app: **se borran de él todas las bibliotecas** y, si la tenías, tu cuenta abierta. Lo que está en la nube o en tus otros dispositivos no se toca. Si una biblioteca solo estaba en ese móvil, se pierde: guarda antes una copia de seguridad ([Copias de seguridad](./backups/)).
+El móvil queda como si acabaras de instalar la app: **se borran de él todas las bibliotecas** y, si la tenías, tu cuenta abierta. Lo que está en la nube o en tus otros dispositivos no se toca. Si una biblioteca solo estaba en ese móvil, se pierde: guarda antes una copia de seguridad ([Copias de seguridad](../backups/)).
 
 No lo confundas con «Cerrar sesión», que no borra nada: es para cuando eres tú y vas a volver.

@@ -12,18 +12,18 @@ La app guarda tus bibliotecas **en el propio dispositivo**. Por eso casi todo fu
 - Ver tu biblioteca, buscar, filtrar y abrir la página de cualquier libro y de cada uno de sus ejemplares (sus copias).
 - Añadir, editar y borrar escribiendo tú los datos.
 - Apuntar los libros que quieres tener («Me falta») y marcar lo que has leído.
-- Hacer una copia de seguridad ([Copias de seguridad](./backups/)).
+- Hacer una copia de seguridad ([Copias de seguridad](../backups/)).
 - Estando en una librería, saber si ya tienes ese libro («¿Lo tengo?»): la comprobación se hace en tu dispositivo.
 
 ## Lo que necesita internet
 
-- **Buscar los datos de un libro** (título, autor, portada): la app los pide a una web de internet. Sin conexión, la búsqueda por ISBN (el número que viene impreso en el libro, junto al código de barras), por código o por título no encuentra nada. Puedes **añadir el libro escribiendo tú los datos** y completarlo después ([Añadir](./add-a-book/)).
+- **Buscar los datos de un libro** (título, autor, portada): la app los pide a una web de internet. Sin conexión, la búsqueda por ISBN (el número que viene impreso en el libro, junto al código de barras), por código o por título no encuentra nada. Puedes **añadir el libro escribiendo tú los datos** y completarlo después ([Añadir](../add-a-book/)).
 - **Las portadas** que no tienes guardadas.
-- **Crear una cuenta, iniciar sesión** y todo lo de la nube ([La nube](./the-cloud/)).
+- **Crear una cuenta, iniciar sesión** y todo lo de la nube ([La nube](../the-cloud/)).
 
 ## Si compartes solo por la wifi de casa
 
-Los cambios pasan de un dispositivo a otro, si los has emparejado antes (conectado para que se pasen los cambios; mira [Compartir en casa](./share-at-home/)), cuando están en la misma wifi y la app está abierta en los dos. Si cambias algo fuera de casa, tus otros dispositivos no lo saben hasta que vuelvas. No se pierde nada: se ponen al día solos al volver.
+Los cambios pasan de un dispositivo a otro, si los has emparejado antes (conectado para que se pasen los cambios; mira [Compartir en casa](../share-at-home/)), cuando están en la misma wifi y la app está abierta en los dos. Si cambias algo fuera de casa, tus otros dispositivos no lo saben hasta que vuelvas. No se pierde nada: se ponen al día solos al volver.
 
 Si estáis juntos pero sin wifi, en uno de los dos móviles activa la «zona wifi» (la opción que comparte el internet de ese móvil con otro dispositivo) y conecta el otro a esa red. Después, empareja o pasa los cambios como en casa. **No gasta los datos de tu tarifa**: todo va entre los dos dispositivos.
 

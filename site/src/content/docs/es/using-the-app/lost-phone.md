@@ -12,24 +12,24 @@ Lo que puedes recuperar depende de **dónde estaban tus bibliotecas**.
 | Tus bibliotecas estaban… | ¿Se recuperan? |
 |---|---|
 | En la nube (con cuenta) | **Sí**, al iniciar sesión en el móvil nuevo |
-| En otro dispositivo que tenías conectado al perdido (portátil, móvil de casa) | **Sí**, emparejando el nuevo con ese dispositivo ([Compartir en casa](./share-at-home/)) |
+| En otro dispositivo que tenías conectado al perdido (portátil, móvil de casa) | **Sí**, emparejando el nuevo con ese dispositivo ([Compartir en casa](../share-at-home/)) |
 | En una copia de seguridad que guardaste | **Sí**, usando la copia |
 | **Solo en el móvil perdido**, sin cuenta, sin otro dispositivo y sin copia | **No** |
 
-Esa última fila es importante: si no tienes cuenta, no hay ninguna copia de tu biblioteca en internet. **Si pierdes el móvil donde estaba, se pierde.** Por eso conviene hacer una copia de seguridad de vez en cuando ([Copias de seguridad](./backups/)).
+Esa última fila es importante: si no tienes cuenta, no hay ninguna copia de tu biblioteca en internet. **Si pierdes el móvil donde estaba, se pierde.** Por eso conviene hacer una copia de seguridad de vez en cuando ([Copias de seguridad](../backups/)).
 
 ## Si has cambiado de móvil (el viejo lo tienes)
 
 **Con cuenta:**
 
 1. Instala la app en el móvil nuevo y pulsa «Iniciar sesión» con tu cuenta.
-2. Tus bibliotecas de la nube se descargan solas ([La nube](./the-cloud/#un-móvil-nuevo-recibe-sus-bibliotecas-solo)).
+2. Tus bibliotecas de la nube se descargan solas ([La nube](../the-cloud/#un-móvil-nuevo-recibe-sus-bibliotecas-solo)).
 3. Las bibliotecas que **no** subiste siguen en el móvil viejo: empareja los dos o pasa las bibliotecas con una copia de seguridad.
 
 **Sin cuenta:**
 
 - **Con una copia de seguridad:** en el móvil nuevo, abre «Copias de seguridad», pulsa «Restaurar copia» y elige el archivo de la copia: así recuperas las bibliotecas.
-- **Emparejando:** si el móvil viejo todavía funciona, empareja el nuevo con él por la wifi de casa ([Compartir en casa](./share-at-home/)). Recibe las bibliotecas que marques.
+- **Emparejando:** si el móvil viejo todavía funciona, empareja el nuevo con él por la wifi de casa ([Compartir en casa](../share-at-home/)). Recibe las bibliotecas que marques.
 
 Cuando termines, en el móvil viejo usa «Dejar este dispositivo como nuevo» (en «Ajustes») antes de regalarlo o venderlo.
 
@@ -38,7 +38,7 @@ Cuando termines, en el móvil viejo usa «Dejar este dispositivo como nuevo» (e
 Haz estas tres cosas, por orden:
 
 1. **Quita el móvil perdido de tu cuenta**, si tienes cuenta. En otro dispositivo, abre «Ajustes», pulsa tu nombre, después «Mis dispositivos» y, junto al móvil perdido, «Sacar de mi cuenta». Cuando ese móvil se conecte a internet, borrará sus bibliotecas y dejará de actualizarse. Hasta que se conecte puedes pulsar «Deshacer». O bien **cambia la contraseña**: así tus otros dispositivos dejan de tener la cuenta abierta. Eso no borra nada del móvil perdido, pero ya no podrá entrar con tu cuenta.
-2. **Si compartías la biblioteca con otras personas,** quien la administra puede retirar el acceso de ese dispositivo en «Personas y permisos», con «Retirar el acceso de este dispositivo» ([Quitar a una persona o un dispositivo](./remove-someone/)). El dispositivo no recibirá más cambios y, si se conecta, borrará esas bibliotecas.
+2. **Si compartías la biblioteca con otras personas,** quien la administra puede retirar el acceso de ese dispositivo en «Personas y permisos», con «Retirar el acceso de este dispositivo» ([Quitar a una persona o un dispositivo](../remove-someone/)). El dispositivo no recibirá más cambios y, si se conecta, borrará esas bibliotecas.
 3. **Si lo tenías emparejado en casa,** en otro dispositivo abre «Compartir y dispositivos» y, junto al perdido, pulsa el icono de tres puntos (⋮) y «Dejar de emparejar». Eso solo deja de emparejarlos: **no borra nada del móvil perdido ni le quita el acceso**.
 
 Si tenías activado «Desbloquear con huella o cara», la app pide tu huella o tu cara para abrirse.
