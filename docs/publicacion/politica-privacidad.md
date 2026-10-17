@@ -1,5 +1,7 @@
 # Política de privacidad (borrador para la web y Google Play)
 
+> **VIGENTE desde el 17/10/2026: [politica-privacidad-con-servidor.md](politica-privacidad-con-servidor.md)**, ya en la web (`web/es/privacidad.html` y `web/en/privacy.html`). Este fichero es la política anterior, para la app sin servidor, y se conserva como historia: **no se edita ni se publica**. Lo que se sube a la web sale del otro fichero (sin su cabecera de borrador, sin el apartado de Play Console y sin «Lo que queda fuera»); si cambia uno, cambia el otro. La web la sube el maintainer.
+
 > Redactada el 29/09/2026 para la primera publicación en Google Play (prueba cerrada). Describe la app **sin servidor**. Irá en HTML en la web del proyecto, junto a una página provisional de «próximamente».
 >
 > **Antes de que llegue el inicio de sesión en el servidor (nube opcional)** hay que ampliarla: con cuenta se guardarán en el servidor nombre, apellidos y correo, además del catálogo de las bibliotecas que se suban. Habrá que explicar qué se guarda, dónde, para qué, cuánto tiempo, cómo borrar la cuenta y los derechos del RGPD (acceso, rectificación, supresión, portabilidad), y el responsable del tratamiento. También cambia el formulario de seguridad de los datos de Play Console: pasará a «recoge datos» (nombre, correo, contenido del usuario).
