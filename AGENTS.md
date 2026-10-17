@@ -145,6 +145,7 @@ The interactive flag (`-i`) is required: it loads the environment from `~/.bashr
 | UI build / typecheck / lint / format / dead code | `cd app && npm run build` · `npm run typecheck` · `npm run lint` · `npm run format` (check: `npm run format:check`) · `npm run knip` |
 | Spec schema vs conformance cases | `cd app && npm run check:spec` |
 | Second-factor code rule (6 digits or a backup code) | `cd app && npm run check:codes` |
+| Every UI key in every language (`genresByKind` overrides excepted) | `cd app && npm run check:i18n` |
 | What's-new file has the app version's entry | `cd app && npm run check:whats-new` |
 | «Licences» list still covers what ships, by package name (needs cargo; what the CI runs, so Dependabot version bumps pass) | `cd app && npm run check:licenses` |
 | Same, with exact versions: **before every release**, after `npm run licenses` | `cd app && npm run check:licenses:exact` |

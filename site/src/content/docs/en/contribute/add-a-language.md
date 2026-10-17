@@ -45,12 +45,9 @@ A genre or a status **is stored by its key** (`science_fiction`), not by its tex
 
 ### What warns about missing keys
 
-There is no test that fails in continuous integration. What exists is an audit check: `.claude/skills/audit/bin/facts.py` compares `en.json` and `es.json` and lists the keys that are in one and not in the other, the keys used in code that do not exist, and the closed lists (`contracts.json`) that lack text. Today it only compares **those two files**: for the new one, adjust the `section_i18n` function or compare by hand:
+`npm run check:i18n` (in `app/`, and in continuous integration) fails when a key is in one language and not in another. It compares **every** file in `src/i18n/locales/`, so yours is included on its own. The only exception is `genresByKind`: one language may need to agree a genre with the kind (in Spanish, «Policiaca» for a film) and another may not, because the app then uses the general one (`genres.<key>`).
 
-```bash
-cd app
-node -e 'const f=(o,p="")=>Object.entries(o).flatMap(([k,v])=>typeof v==="object"?f(v,p+k+"."):[p+k]);const a=f(require("./src/i18n/locales/en.json")),b=new Set(f(require("./src/i18n/locales/fr.json")));console.log(a.filter(k=>!b.has(k)).join("\n"))'
-```
+Besides, the audit (`.claude/skills/audit/bin/facts.py`) reports keys the code uses that do not exist, and closed lists (`contracts.json`) missing a text.
 
 In addition, `npm run typecheck` and `npm run lint` have to keep passing, and it is worth opening the app in the new language and going through the screens.
 

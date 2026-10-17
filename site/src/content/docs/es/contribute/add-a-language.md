@@ -45,12 +45,9 @@ Un género o un estado **se guarda por su clave** (`science_fiction`), no por su
 
 ### Lo que avisa de claves que faltan
 
-No hay una prueba que falle en la integración continua. Lo que hay es una comprobación de la auditoría: `.claude/skills/audit/bin/facts.py` compara `en.json` y `es.json` y dice las claves que están en uno y no en el otro, las usadas en código que no existen, y las listas cerradas (`contracts.json`) a las que les falta texto. Hoy solo compara **esos dos archivos**: para el nuevo, ajusta la función `section_i18n` o compara a mano:
+`npm run check:i18n` (en `app/`, y en la integración continua) falla si una clave está en un idioma y no en otro. Compara **todos** los archivos de `src/i18n/locales/`, así que el tuyo entra solo. La única excepción son los `genresByKind`: un idioma puede necesitar ajustar un género según el tipo (en español, «Policiaca» para una película) y otro no, porque la app usa entonces el general (`genres.<clave>`).
 
-```bash
-cd app
-node -e 'const f=(o,p="")=>Object.entries(o).flatMap(([k,v])=>typeof v==="object"?f(v,p+k+"."):[p+k]);const a=f(require("./src/i18n/locales/en.json")),b=new Set(f(require("./src/i18n/locales/fr.json")));console.log(a.filter(k=>!b.has(k)).join("\n"))'
-```
+Además, la auditoría (`.claude/skills/audit/bin/facts.py`) avisa de las claves que el código usa y no existen, y de las listas cerradas (`contracts.json`) a las que les falta texto.
 
 Además, `npm run typecheck` y `npm run lint` tienen que seguir pasando, y conviene abrir la app en el idioma nuevo y recorrer las pantallas.
 

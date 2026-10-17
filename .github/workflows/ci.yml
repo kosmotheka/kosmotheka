@@ -55,6 +55,8 @@ jobs:
         working-directory: app
       - run: npm run check:codes
         working-directory: app
+      - run: npm run check:i18n
+        working-directory: app
       - run: npm run check:whats-new
         working-directory: app
       - run: cargo fmt --all --check

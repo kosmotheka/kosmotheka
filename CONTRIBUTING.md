@@ -69,6 +69,7 @@ npm run check:licenses       # needs cargo; by package name (exact versions: che
 ```bash
 npm run check:spec           # schema against the conformance cases
 npm run check:codes
+npm run check:i18n           # every key in every language
 ```
 
 **The server**, from `server/`:
