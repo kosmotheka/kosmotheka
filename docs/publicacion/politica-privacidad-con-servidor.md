@@ -53,6 +53,10 @@ Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos
 
 Si tu servidor lo ofrece y no has puesto una clave tuya de Comic Vine ni lo has apagado en Ajustes › Proveedores de datos, al buscar un cómic por su título la app **envía a tu servidor lo que escribes**, junto con tu sesión. El servidor lo busca en Comic Vine con su propia clave, así que **Comic Vine ve la búsqueda como del servidor, no tuya**. El servidor guarda la respuesta unos días (hasta 30; la búsqueda, 7), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. Ni el texto ni su autor se apuntan en ningún registro. Solo se cuenta cuántas búsquedas haces para ponerte un límite (600 por hora, junto con las de libros, películas y videojuegos). Si pones tu propia clave, la app pregunta directamente a Comic Vine y el servidor ni se entera. Los datos de cómics vienen de [Comic Vine](https://comicvine.gamespot.com).
 
+## Si buscas un juego de mesa o un libro de rol con la cuenta
+
+Si tu servidor lo ofrece y no lo has apagado en Ajustes › Proveedores de datos, al buscar un juego de mesa por su título (y, al buscar un libro por su título, los libros de rol) la app **envía a tu servidor lo que escribes**, junto con tu sesión y si es un juego o un libro de rol. El servidor lo busca en BoardGameGeek con su propio token, así que **BoardGameGeek ve la búsqueda como del servidor, no tuya**. El servidor guarda la respuesta unos días (hasta 30; la búsqueda, 7), **sin guardar quién la pidió ni el texto que escribiste**: la búsqueda se guarda bajo una huella que no permite recuperar el texto. No se envía nada más. BoardGameGeek no tiene relación con esta aplicación.
+
 ## Si invitas a alguien
 
 Si invitas por correo, el servidor envía un mensaje a esa dirección. **No guardamos la dirección**: solo una huella que permite comprobar que quien acepta es quien invitaste. El mensaje no incluye tu nombre ni el de la biblioteca.

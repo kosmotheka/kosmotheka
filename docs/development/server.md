@@ -143,6 +143,12 @@ Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador 
 
 `COMIC_VINE_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de la API de Comic Vine (`comicvine.gamespot.com/api/`, hace falta una cuenta de Comic Vine; uso estrictamente no comercial). Con ella, las cuentas pueden buscar cómics por título y `GET /v1/server` lista `comic_vine` en `metadata`; vacía, la ruta responde `404 metadata_unavailable`. **Solo la admite en la dirección de la llamada saliente**, como RAWG: se pregunta con un cliente HTTP sin registrador y con las excepciones sin la dirección. Comic Vine cuenta 200 peticiones por recurso y hora; el servidor se limita a 150 por recurso (`comic_vine_search`, `comic_vine_volume`, `comic_vine_issue`). Ver [cloud.md](../architecture/cloud.md#buscar-cómics-por-título-en-comic-vine-78-quinta-parte-d62).
 
+### BoardGameGeek: juegos de mesa y de rol por el servidor (7.8, D62)
+
+`BGG_API_TOKEN` (en `.env.local`; `.env` la trae vacía): el token de la aplicación registrada en BoardGameGeek (registro no comercial). Con él, las cuentas pueden buscar juegos de mesa por título, y libros de rol (RPGGeek, con el mismo token) al buscar libros; `GET /v1/server` lista `bgg` en `metadata`; vacío, la ruta responde `404 metadata_unavailable`. **Va en la cabecera `Authorization: Bearer`**, nunca en una dirección. `BGG_DAILY_CALL_CAP` (en `.env`, 1000): las llamadas reales al día que el servidor hace a BoardGameGeek entre los dos ámbitos; BoardGameGeek no publica cifras, así que se ajusta aquí, sin tocar código. Los dos ámbitos preguntan a `boardgamegeek.com` (`rpggeek.com` responde con un reto de Cloudflare). Diseño y lo probado con el servicio real en [cloud.md](../architecture/cloud.md#buscar-juegos-de-mesa-y-de-rol-por-título-en-boardgamegeek-78-sexta-parte-d62).
+
+**Prueba real** (la hace el maintainer; el token nunca se imprime ni se copia): con `BGG_API_TOKEN` en `server/.env.local`, `make up`; entrar con la app de desarrollo (`npm run tauri dev`) en ese servidor; en «Añadir» elegir juegos de mesa y buscar «catan» (deben salir «Catan» primero, con editorial, jugadores y portada); buscar «Catan: Cities» (una expansión: la ficha no guarda todavía la relación); en libros, buscar «dungeon master» (al final aparecen los de RPGGeek, con su nombre de fuente). Ver en «Créditos» y en la pantalla de resultados el logo «Powered by BGG» en tema claro y oscuro. En Proveedores, apagar BoardGameGeek y comprobar que la búsqueda ya no lo pide.
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

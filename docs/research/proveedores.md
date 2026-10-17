@@ -123,6 +123,8 @@ Códigos de barras: el de un libro es su ISBN (EAN-13 con 978 o 979). Los demás
 - Cada búsqueda de libros por título gasta una llamada a BoardGameGeek: cuenta para sus límites y los del servidor.
 - Sin tipo «rol» nuevo en la app: lo que se añade desde RPGGeek es un libro.
 
+**Hecho en 7.8 (sexta parte, 17/10/2026): BoardGameGeek y RPGGeek por título, por el servidor.** Probado con el servicio real: la búsqueda no viene ordenada (el servidor ordena), `rpggeek.com` responde con un reto de Cloudflare y `rpgitem` se pide a `boardgamegeek.com` con el mismo token. Registro no comercial; «Usage» no da cifras (el servidor se pone 1.000 llamadas al día, `BGG_DAILY_CALL_CAP`). El logo «Powered by BGG» es obligatorio (confirmado por el correo de aprobación). Diseño en [architecture/cloud.md](../architecture/cloud.md#buscar-juegos-de-mesa-y-de-rol-por-título-en-boardgamegeek-78-sexta-parte-d62).
+
 ## Comic Vine: por qué no tiene clave en el servidor oficial
 
 Decidido el 12/10/2026 ([D62](../DECISIONS.md)). La página de su API pide no construir «some crappy collection app» ni un producto que compita con ellos. Por eso el servidor oficial no pone clave y en la app funciona solo con la clave propia de cada persona. El código del servidor está hecho y probado: basta poner `COMIC_VINE_API_KEY` el día que haya permiso.
