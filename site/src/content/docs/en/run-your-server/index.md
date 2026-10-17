@@ -1,12 +1,39 @@
 ---
-title: Run your server
-description: How to host your own Kosmotheka server, and what its limits are.
+title: Before you start
+description: What you need to know before hosting your own Kosmotheka server, and what it takes to do it.
+sidebar:
+  order: 1
 ---
 
-The server is optional: the app works without it. If you want your own, the guide will go here, with the limits stated first: the official app can connect to any server, but with your own there are no notices while the app is closed, signing in with Google and email are set up separately, and whoever runs the server can read the libraries uploaded to it.
+The server is optional: the app works completely without it, with its database on your phone or computer. A server lets you have your libraries on all your devices without sharing Wi-Fi, and share them with other people by invitation. This guide is for those who want to host their own instead of using the official one.
 
-The guide (without Docker, every configuration variable, backups, updating and common problems) is written in Spanish for now; the English version will follow, and the Docker path is not written yet. See the [Spanish guide](/es/run-your-server/). Working notes, also in Spanish:
+## What you need to know
 
-- [How the server is set up for development](https://github.com/kosmotheka/kosmotheka/blob/main/docs/development/server.md).
-- [The server folder](https://github.com/kosmotheka/kosmotheka/blob/main/server) with its Docker setup.
-- [The cloud: how it is designed](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture/cloud.md).
+These are the limits of hosting your own server. They are here, at the start, so you can decide with them in front of you.
+
+- **The official app can connect to your server.** Under "Other server" you choose the address of yours. You do not need to compile anything.
+- **No notices while the app is closed.** The app updates when you open it. The server can notify the apps that are open right away (with an optional component, Mercure), but it does not send notifications to the phone.
+- **Invitation links are pasted into the app.** Those from your own server do not open with a tap by themselves: the person who receives the link copies it and pastes it into the app.
+- **Signing in with Google, email and the keys for the data search services are optional and set up separately.** Without email, nobody can confirm a new account with a code (see [the configuration](./configuration/#the-email)). Each search service (films, video games, comics…) needs a key that you request from its provider, under its conditions.
+- **Whoever runs the server can read what is uploaded to it.** The libraries are not encrypted end to end: they are in the server's database. If you host the server for other people, tell them.
+- **The name and the logo are not yours.** The code is free, but "Kosmotheka" and its logo cannot be used to make your server or your app pass for the official one (see [TRADEMARKS.md](https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md)). Saying that your server "works with Kosmotheka" is allowed.
+
+## What you need
+
+- **A domain with HTTPS.** The Android app from the stores does not connect to a server without HTTPS, and in any case passwords and libraries must not travel unencrypted. You need a name (for example `kosmotheka.your-domain.example`) pointing to the machine, and a certificate (the guide uses Let's Encrypt).
+- **A Linux server with modest resources.** For a family a small machine is enough: 1 CPU, 2 GB of memory and a few GB of disk. To give you an idea: in load tests, uploading a library of 2,000 books at once takes about a minute, a normal change arrives in less than a tenth of a second, and a normal request uses about 120 MB of PHP memory. If the machine shares space with other services, give PHP a limited `memory_limit` (the guide does it).
+- **Knowing how to administer a Linux server:** installing packages, editing the nginx configuration, using systemd and reading an error log. You do not need to know Symfony or PHP.
+
+## The two paths
+
+The server can be set up in two ways with the same parts (PHP, PostgreSQL, nginx and a scheduled-task process):
+
+1. **[Without Docker](./without-docker/)**, installing everything on the machine. This is how the official server works.
+2. **[With Docker](./with-docker/)**, with Docker Compose. You build the image yourself: it is not published in any registry.
+
+After setting it up:
+
+- [The configuration, variable by variable](./configuration/).
+- [Backups and how to restore](./backups/).
+- [Updating to a new version](./updating/).
+- [Common problems](./troubleshooting/).

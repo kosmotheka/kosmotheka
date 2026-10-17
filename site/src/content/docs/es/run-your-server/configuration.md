@@ -24,7 +24,7 @@ Una convención repetida: **vacía = esa función no se ofrece**, y el servidor 
 | `INVITATION_BASE_URL` | sí, para invitar | Con lo que empiezan los enlaces de invitación, sin barra final (`https://tu-dominio`; el enlace es `<esto>/i/<código>`). Vacío, el servidor no hace invitaciones |
 | `REGISTRATION_ALLOWED_EMAILS` | no | Correos que pueden crear una cuenta, separados por comas. **Vacío, cualquiera puede registrarse.** Para un servidor familiar, ponlo: para el resto el registro parece funcionar pero no se crea nada ni se envía ningún correo, y quien ya tiene cuenta entra como siempre. Entrar con Google también respeta la lista |
 | `TWO_FACTOR_ENABLED` | no | `true` por defecto: las cuentas nuevas pueden activar un segundo factor (app de autenticación). A `false`, ya no se ofrece; las cuentas que lo tenían siguen necesitándolo para entrar |
-| `SERVER_EXTRA_ORIGINS` | no | **Déjala vacía.** Otras direcciones por las que se llega al mismo servidor; solo sirve en desarrollo. Cada dirección que se añade es otra por la que vale la firma de entrada de un dispositivo |
+| `SERVER_EXTRA_ORIGINS` | no | **Déjala vacía.** Otras direcciones por las que se llega al mismo servidor; solo sirve en desarrollo. Un dispositivo firma su entrada para la dirección del servidor, y cada dirección que añades aquí es otra en la que esa firma también vale |
 
 Variables que ya traen un valor razonable y no hace falta tocar: `APP_SHARE_DIR`, `LOCK_DSN` (`flock`, bloqueos en el sistema de ficheros de una sola máquina) y `MESSENGER_TRANSPORT_DSN` (la cola de tareas va en la propia base de datos).
 
@@ -37,7 +37,7 @@ Las cuentas envían correo: el código para confirmar el alta, el de recuperar l
 | `MAILER_DSN` | sí, para registrarse | Cómo se envía. Por defecto es `null://null`, que **no envía nada**: nadie podrá confirmar una cuenta nueva con un código. Con un servidor SMTP, `smtp://usuario:contraseña@servidor:587`. Con Brevo (incluido de serie), `brevo+api://CLAVE@default`. Cualquier otro servicio necesita su paquete de Symfony Mailer |
 | `MAILER_FROM` | sí | Dirección desde la que se envía. Por defecto es la del servicio oficial: **pon una tuya**, de un dominio que puedas autenticar (SPF y DKIM) para que no caiga en el correo no deseado |
 
-Con Google configurado, una cuenta se puede crear sin correo del servidor (Google confirma la dirección), pero la recuperación de contraseña, y los avisos de invitación, sí lo necesitan. Cuenta el correo como necesario.
+Con Google configurado, una cuenta se puede crear sin correo del servidor (Google confirma la dirección), pero la recuperación de contraseña, y los avisos de invitación, sí lo necesitan. Así que configura el correo siempre.
 
 ## Entrar con Google
 
