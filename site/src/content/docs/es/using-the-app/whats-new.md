@@ -7,7 +7,9 @@ sidebar:
 
 La app te enseña estas novedades al actualizarse, una sola vez. Si quieres volver a verlas, abre **Ajustes › Acerca de › Novedades**.
 
-Cuando una novedad cambia lo que sale de tu dispositivo, la app te enseña a la vez un **interruptor** para que decidas tú si la quieres. Aquí lo indicamos con la palabra «interruptor».
+Cuando una novedad cambia lo que se envía desde tu móvil u ordenador a internet, la app te enseña a la vez un **interruptor** para que decidas tú si la quieres. Aquí lo indicamos con la palabra «interruptor».
+
+Las líneas de cada versión son el texto que enseña la app, tal cual. Si una palabra no te suena: [La nube](../the-cloud/) explica la nube, el servidor y el segundo factor (el código extra al entrar, de la «app de autenticación»); [Compartir en casa](../share-at-home/), qué es emparejar; y el ISBN es el número que traen los libros junto al código de barras.
 
 ## Versión 0.2.1
 
