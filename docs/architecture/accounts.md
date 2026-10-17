@@ -167,6 +167,8 @@ Ambos cambios de contraseña reutilizan `App\Repository\DeviceRepository::signOu
 
 **Sus bibliotecas de la nube (D99).** Una biblioteca no se pierde con la cuenta de quien la subió: antes de borrarla, y en la misma transacción, cada biblioteca de la que es dueña pasa a otra cuenta con un sitio activo en ella (administradora primero, y entre iguales la membresía más antigua), y solo se borra con la cuenta si no queda nadie. La base ya no lo hace por su cuenta (`owner_id` es `RESTRICT`). Detalle en [cloud.md](cloud.md#quién-es-la-dueña-de-una-biblioteca-de-la-nube-d99).
 
+**Por la ruta y por la consola, el mismo código.** `App\Security\AccountDeletion::delete()` hace las tres cosas en una transacción (traspaso de bibliotecas, línea `account_deleted`, borrado). La usan `DELETE /v1/account` y `app:user:delete <email> [--force]`, que pide confirmación enseñando qué bibliotecas pasan a otra cuenta y cuáles se van (`CloudOwnership::previewFor`); desde la consola no hay dispositivo y el registro anota el canal `console`.
+
 ## Purga de cuentas e invitaciones caducadas (D49)
 
 `App\Security\AccountPurger` borra, en una pasada: las cuentas nunca confirmadas con más de 24 h desde su creación, y los códigos de email caducados (de cualquier cuenta: un `reset_password` sin usar también caduca). Cada borrado es un `DELETE` DQL masivo; borrar un usuario arrastra sus dispositivos y códigos por la cascada de la base de datos. Cada paso va en su propia transacción: si uno falla, los demás se hacen igual, y al final la purga avisa con `PurgeFailedException` de cuáles fallaron (CAL-008).

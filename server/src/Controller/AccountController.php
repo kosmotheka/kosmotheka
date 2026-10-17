@@ -21,6 +21,7 @@ use App\Enum\SignOutReason;
 use App\Repository\BackupCodeRepository;
 use App\Repository\DeviceRepository;
 use App\Repository\UserRepository;
+use App\Security\AccountDeletion;
 use App\Security\AccountException;
 use App\Security\AccountMailer;
 use App\Security\ActivityLog;
@@ -29,7 +30,6 @@ use App\Security\EmailCodeIssuer;
 use App\Security\RateLimitKey;
 use App\Security\RegistrationGate;
 use App\Security\SensitiveAction;
-use App\Sync\CloudOwnership;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
@@ -61,7 +61,7 @@ final class AccountController extends AbstractController
         private readonly ActivityLog $activityLog,
         private readonly RegistrationGate $registrationGate,
         private readonly SensitiveAction $sensitiveAction,
-        private readonly CloudOwnership $cloudOwnership,
+        private readonly AccountDeletion $accountDeletion,
         private readonly PasswordHasherFactoryInterface $hasherFactory,
         private readonly ClockInterface $clock,
     ) {
@@ -219,15 +219,7 @@ final class AccountController extends AbstractController
         $this->sensitiveAction->requireSecondFactor($user, $payload->totpCode);
         $this->sensitiveAction->spendProof($user);
 
-        // One transaction: the libraries the account uploaded pass to someone else with a place in them, or go with it if
-        // there is nobody (D99), and then the account goes. The line of the log keeps the account's id and the fingerprint
-        // of its email, not the email: it outlives the account (D66).
-        $deviceId = $this->currentDevice->get()->getDeviceId();
-        $this->entityManager->wrapInTransaction(function () use ($user, $deviceId): void {
-            $this->cloudOwnership->handOverLibrariesOf($user);
-            $this->activityLog->record(ActivityKind::AccountDeleted, $user, $deviceId);
-            $this->entityManager->remove($user);
-        });
+        $this->accountDeletion->delete($user, $this->currentDevice->get()->getDeviceId());
 
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
