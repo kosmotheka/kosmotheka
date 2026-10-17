@@ -1228,7 +1228,7 @@
   },
   "providers": {
     "title": "Data providers",
-    "description": "Where the app searches when you add something. Sources that need a key work with your own; with the cloud, every source works without keys.",
+    "description": "Where the app searches when you add something. Sources that need a key work with your own; with the cloud, the ones that say so work without a key.",
     "viaCloud": "Search Google Books through the cloud",
     "viaCloudHelp": "Only the ISBN is sent to your account's server, which looks it up with its own key and does not keep who asked. Switch it off to search Google Books directly, as before.",
     "noCloud": "No cloud. Keyless sources already work; for the others, add your key.",

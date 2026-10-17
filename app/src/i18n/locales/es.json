@@ -1129,7 +1129,7 @@
   "wish": {
     "toggle": "Lo deseo",
     "byMeOnly": "Lo deseas tú",
-    "byMeAnd": "Lo deseas tú y {{names}}",
+    "byMeAnd": "Lo deseáis tú y {{names}}",
     "byOne": "Lo desea {{name}}",
     "byMany": "Lo desean {{names}}"
   },
@@ -1242,7 +1242,7 @@
   },
   "providers": {
     "title": "Proveedores de datos",
-    "description": "Dónde busca la app cuando añades algo. Las que piden clave funcionan con la tuya; con la nube, todas funcionan sin claves.",
+    "description": "Dónde busca la app cuando añades algo. Las que piden clave funcionan con la tuya; con la nube, las que lo indican funcionan sin clave.",
     "viaCloud": "Buscar en Google Books a través de la nube",
     "viaCloudHelp": "Solo se envía el ISBN al servidor de tu cuenta, que lo busca con su propia clave y no guarda quién lo pidió. Apágalo para buscar en Google Books directamente, como antes.",
     "noCloud": "Sin nube. Las fuentes sin clave funcionan ya; para las otras, pon tu clave.",
@@ -1258,7 +1258,7 @@
     "testBadKey": "Esta clave se ha rechazado.",
     "testFailed": "No se ha podido probar la clave. Revisa la conexión.",
     "getKey": "Cómo conseguir una clave",
-    "other": "«“Otro” no busca en ningún sitio: se añade a mano.»",
+    "other": "«Otro» no busca en ningún sitio: se añade a mano.",
     "fewSources": "{{count}} de {{total}}",
     "noSources": "A mano",
     "descriptions": {

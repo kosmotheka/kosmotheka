@@ -152,7 +152,7 @@ export function copyWhereText(
     .join(" · ");
 }
 
-/** Who wishes a work (D61): «Lo desea Hugo», «Lo deseas tú y Hugo», «Lo desean Laura, Hugo».
+/** Who wishes a work (D61): «Lo desea Hugo», «Lo deseáis tú y Hugo», «Lo desean Laura, Hugo».
  * `wishedBy` has this device's person first, as `"me"`, when they wish it too. */
 export function wishSummary(t: Translate, wishedBy: string[]): string {
   const others = wishedBy.filter((name) => name !== "me");
