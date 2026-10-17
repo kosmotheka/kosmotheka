@@ -506,7 +506,12 @@ fn read_covers(
     let mut found = Vec::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index)?;
-        let Some(name) = entry.name().strip_prefix(COVERS_PREFIX).map(str::to_owned) else {
+        let name = entry.name().ok();
+        let Some(name) = name
+            .as_deref()
+            .and_then(|name| name.strip_prefix(COVERS_PREFIX))
+            .map(str::to_owned)
+        else {
             continue;
         };
         let Some(extension) = cover_extension(&name) else {
