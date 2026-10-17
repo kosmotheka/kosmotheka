@@ -154,6 +154,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Seguridad del servidor antes de producción:** una sesión con el maintainer para revisarla, proporcionada a un VPS pequeño y compartido; ahí se decide cómo hacer las copias de PostgreSQL sin gastar o gastando lo mínimo.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
+- **Para cerrarla (17/10/2026), lo que falta** (lista completa en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7)): las pruebas en pantalla de 7.1, 7.3, 7.5.5 y 7.6; la sesión de seguridad de 7.9; las copias automáticas y, si se quiere, Mercure en producción; `assetlinks.json` y los enlaces que abren la app sola; GameUPC (espera su clave); la segunda pasada del maintainer por el servidor; y la prueba que la cierra. El resto está hecho y revisado.
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación
