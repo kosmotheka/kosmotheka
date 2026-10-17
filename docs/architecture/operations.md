@@ -37,31 +37,79 @@ Nada escribe directamente en las tablas del catálogo. Cada acción del usuario 
 | `intent` | Etiqueta de intención: palabras en minúscula separadas por puntos. **Solo informativa**: los permisos y la fusión miran los cambios, nunca la etiqueta |
 | `previous` | Id de la última operación replicable del mismo dispositivo en la misma biblioteca cuando se hizo esta, o `null` si es la primera (D87). Obligatoria: la clave siempre está, aunque sea nula. Va firmada. Ver «Cadena de cada autor», más abajo |
 | `changes` | Cambios: entidad, id, acción (`create`, `update`, `delete`) y campos |
-| `signature` | Firma Ed25519 del dispositivo autor (D56). Las operaciones anteriores a la Fase 5 no la llevan. Ver «Firmas», más abajo |
+| `signature` | Firma Ed25519 del dispositivo autor (D56). El formato no la exige, pero quien recibe una operación sin firma la rechaza siempre. Ver «Firmas», más abajo |
 
 Qué campos acepta cada entidad está en `crates/domain/src/schema.rs` y en `spec/operation.schema.json`, que deben coincidir.
 
 ### Intenciones en uso
 
-| Intención | Cuándo |
+Sacadas del código de la app (`app/src-tauri/src`) y del servidor. La intención **solo informa** (historial y pantalla); no hay una lista cerrada: el formato exige palabras en minúscula separadas por puntos y el servidor acepta cualquiera bien formada.
+
+**Catálogo**
+
+| Intención | Qué cambia |
 |---|---|
-| `book.add` | Alta de un libro nuevo: obra, autores, edición, detalles y ejemplar |
+| `book.add` | Alta de una obra nueva: obra, personas, editorial, edición, detalles del tipo, géneros, etiquetas y ejemplar |
 | `copy.add` | Alta con un ISBN ya catalogado: solo el ejemplar (y el propietario, si es nuevo) |
-| `edition.edit` | Cambios en la ficha: solo los campos que cambian, más autores añadidos, movidos o quitados |
+| `edition.edit` | Cambios en la ficha: solo los campos que cambian, más personas, géneros y etiquetas añadidos o quitados |
 | `copy.edit` | Cambios en un ejemplar: solo los campos que cambian |
 | `copy.remove` | Borrado de un ejemplar |
-| `book.remove` | Borrado de un libro: ejemplares, detalles, edición y, si no quedan más ediciones, la obra y sus autorías |
-| `backup.restore` | Restauración de una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
+| `book.remove` | Borrado de una edición con sus ejemplares y detalles y, si no quedan más ediciones, su obra y lo que cuelga de ella |
+| `book.move_in` · `book.move_out` | Mover una obra a otra biblioteca (D46): la primera crea la obra en el destino, con ids nuevos; la segunda la quita del origen. Son dos operaciones, cada una en su biblioteca |
+| `work.add_missing` | Apuntar una obra sin ejemplar («Me falta», D61) |
+| `work.require` · `work.unrequire` | Apuntar o quitar que una obra «necesita» otra (una expansión y su juego base) |
+| `mark.set` | Lo que una persona apunta de una obra: estado, valoración, favorito, «lo deseo» (D68). Solo viajan los campos que cambian |
+| `tag.rename` · `tag.remove` | Renombrar una etiqueta (o unirla con otra que ya existe) y borrarla |
+| `series.add` · `series.update` · `series.remove` | Crear, renombrar y borrar una serie |
+| `series.entry_add` · `series.entry_remove` · `series.reorder` | Meter una obra en una serie, sacarla, y cambiar los números de varias a la vez |
+| `backup.restore` | Restaurar una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
-| `wish.add` / `wish.remove` | Apuntar o quitar un deseo (D36) |
-| `library.found` / `library.rename` / `library.delete` | Fundar (D97), renombrar o borrar una biblioteca (D65) |
-| `library.revoke` / `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
-| `device.register` | La primera escritura de un dispositivo en una biblioteca: su fila `device` con la clave pública (D56) |
-| `member.role` / `device.assign` | Cambiar el rol o el permiso de compartir de alguien; decir de quién es un dispositivo |
-| `device.remove` | Dispositivo perdido: deja de ser de su persona y se le retira el acceso, en cada biblioteca donde escribe (D58) |
-| `library.duplicate` | Copiar el catálogo de una biblioteca en otra nueva, fundada por quien copia: el último recurso de D58 |
-| `request.accept` / `request.reject` | Resolver una petición: crea su fila `change_request` y, al aceptar, repite los cambios pedidos (D73) |
 
+**Bibliotecas**
+
+| Intención | Qué cambia |
+|---|---|
+| `library.found` | La fundación (D97): la fila `library` con su `founding_nonce`, su primera persona como `admin` y el `device` del autor asignado a ella |
+| `library.rename` · `library.delete` | Renombrar y borrar una biblioteca (D65) |
+| `library.duplicate` | Copiar el catálogo de una biblioteca en otra nueva, fundada por quien copia: el último recurso de D58 |
+| `library.revoke` · `library.grant` | Retirar o devolver el acceso de un dispositivo a una biblioteca (D71) |
+| `library.cloud` | Nombrar al dispositivo de la nube en la biblioteca, o quitarle su poder (`cloud_device_id`, D76, D95), y enlazar la biblioteca con su identidad en un servidor |
+| `library.vouch` | Una sola vez, para las asignaciones anteriores a D96: un administrador escribe la `vouched_key` de los dispositivos que ya son de una persona y no la tienen |
+
+**Personas y dispositivos**
+
+| Intención | Qué cambia |
+|---|---|
+| `device.register` | La primera escritura de un dispositivo en una biblioteca: su fila `device` con la clave pública (D56). También la escribe el servidor para el dispositivo de la nube (D95) |
+| `device.rename` | Un dispositivo publica su nombre nuevo en las bibliotecas donde ya está |
+| `device.assign` | Decir de quién es un dispositivo, con su clave avalada y, si cambia de persona, su valla (D96, D84) |
+| `device.give_access` | Al emparejar: una persona entra en las bibliotecas elegidas, con el rol dado si no tenía ninguno, y el dispositivo nuevo pasa a ser suyo (D73) |
+| `device.remove` | Dispositivo perdido: deja de ser de su persona y se le retira el acceso, en cada biblioteca donde escribe (D58) |
+| `member.role` | Cambiar el rol o el permiso de compartir de una persona; si baja poder, lleva la valla de sus dispositivos |
+| `member.rename` | Cambiar el nombre de una persona |
+| `member.invite` | Crear a la persona que va a entrar con una invitación: siempre lector y sin poder compartir (D43) |
+| `member.withdraw` · `member.restore` | Echar a una persona de la biblioteca y devolverle el acceso (D98) |
+
+**Peticiones**
+
+| Intención | Qué cambia |
+|---|---|
+| `request.accept` · `request.reject` | Resolver una petición: crea su fila `change_request` y, al aceptar, repite los cambios pedidos (D73). Al aceptar, la operación lleva la intención `request.accept` aunque el cambio fuera un alta |
+| `request.withdraw` | Quien pidió la retira mientras está pendiente |
+
+**Las que escribe el servidor** como dispositivo de la nube, con su propia clave: `device.register` (su identidad en la biblioteca), `member.link_account` y `member.unlink_account` (enlazar y desenlazar la cuenta de una persona) y `device.link_account` (vincular a una persona un dispositivo en el que su cuenta ha entrado).
+
+### Ya no se usan
+
+Quedan en migraciones, en pruebas o en bibliotecas antiguas, pero la app ya no las escribe:
+
+| Intención | La sustituyó |
+|---|---|
+| `wish.add` · `wish.remove` | La lista de deseos era una entidad propia, `wish` (D36). Se sustituyó por las obras sin ejemplar, `work.add_missing`, y por el campo «lo deseo» de las marcas, `mark.set` (D61, D68). La migración 25 borró la tabla sin convertir lo que había. Una operación así en el registro no impide abrir la base de datos |
+| `book.edit` | `edition.edit` |
+| `member.add`, `member.roles`, `member.account`, `member.remove`, `person.rename`, `person.claim`, `publisher.add`, `publisher.remove`, `work.remove`, `work.genre_add`, `work.genre_remove`, `edition.add`, `tag.add`, `device.swap` | Solo aparecen en pruebas. Las personas, editoriales, etiquetas y géneros nuevos nacen dentro de la operación que los usa (`book.add`, `edition.edit`, `member.role`…) |
+
+Una operación vieja con una de estas intenciones se sigue leyendo y aplicando: la intención nunca decide nada.
 
 ## Reloj lógico híbrido (HLC)
 
@@ -78,7 +126,7 @@ El texto tiene ceros a la izquierda para que ordenar como texto sea igual que or
 
 - **Cada dispositivo tiene su clave Ed25519**, creada la primera vez que hace falta y guardada en su base de datos (`local_state`, clave `signing_seed`). No va en las copias de seguridad (D58).
 - **Qué se firma:** la operación sin su firma, en JSON canónico (RFC 8785: claves ordenadas, sin espacios). Es lo que Rust (`crates/domain/src/signature.rs`) y PHP (`server/src/Sync/OperationSignature.php`) comprueban con los mismos casos, `spec/conformance/signatures.json`.
-- **La clave pública viaja con la biblioteca** en una fila `device` (su id es el del dispositivo). La crea el propio dispositivo en su primera operación de esa biblioteca, firmada con esa misma clave. Así una operación que llega a través de otro dispositivo se puede comprobar igual.
+- **La clave pública viaja con la biblioteca** en una fila `device` (su id es el del dispositivo). La crea el propio dispositivo en una operación suya (`device.register`) antes de su primera escritura en esa biblioteca, firmada con esa misma clave. Así una operación que llega a través de otro dispositivo se puede comprobar igual.
 - **Al recibir** (`sync::merge`), se rechaza y se cuenta como rechazada:
   - una operación con firma que no cuadra con la clave de su autor, o de un autor sin clave conocida;
   - una que intenta cambiar la clave de un dispositivo que ya tiene una: la primera es la que vale.
@@ -99,20 +147,24 @@ Dónde está:
 - **Las reglas**, como función pura, en `crates/domain/src/permission.rs` (`is_allowed`), para que el servidor pueda usar las mismas.
 - **Las preguntas** que necesitan («¿está fundada la biblioteca?», «¿qué rol tiene este dispositivo?», «¿creó esta fila su misma persona?»), en `app/src-tauri/src/permissions.rs`, leyendo la base de datos.
 - **Escrituras propias:** `ops::record` juzga la operación igual que si llegara de fuera. Si no está permitida, devuelve `NotAllowed` y no escribe nada, salvo en **modo petición** (`ops::as_request`): entonces la guarda como petición, sin aplicarla. Es lo que usará el botón «Pedir que se añada».
-- **Peticiones** (`app/src-tauri/src/requests.rs`, hito 5.5): `list_requests` las lista con su autor, persona, fecha, cambios y estado (pendiente, aceptada o rechazada). `accept` graba una operación del administrador que crea la fila `change_request` y repite los cambios pedidos; si ya no se pueden aplicar (una fila que editaban se borró), falla sin cambiar nada. `reject` solo crea la fila. Resolver una ya resuelta da `RequestResolved`.
+- **Peticiones** (`app/src-tauri/src/requests.rs`, hito 5.5): `list_requests` las lista con su autor, persona, fecha, cambios y estado (pendiente, aceptada, rechazada o retirada). `accept` graba una operación del administrador que crea la fila `change_request` y repite los cambios pedidos; si ya no se pueden aplicar (una fila que editaban se borró), falla sin cambiar nada. `reject` solo crea la fila, y `withdraw` es la de quien pidió, mientras sigue pendiente. Resolver una ya resuelta da `RequestResolved`.
 - **El registro del dispositivo** (su fila `device` con la clave) va en una operación propia, `device.register`, antes de la primera escritura en cada biblioteca. Así «todo o nada» nunca se lo lleva por delante.
 
 ## Validación, en dos niveles
 
 1. **Estructural** (`Operation::validate`, en el dominio): ids con formato UUID, etiqueta bien formada, campos que la entidad conoce, tipos correctos, obligatorios presentes al crear y nunca nulos. Cualquier implementación la replica, y los **casos de conformidad** (`spec/conformance/`) lo comprueban.
-2. **Al aplicar** (en la base de datos): que las filas referenciadas existan (claves foráneas), que el ISBN no esté repetido, y que una modificación o un borrado encuentre su fila.
+2. **Al aplicar** (en la base de datos): que las filas referenciadas existan (claves foráneas), y que una modificación o un borrado encuentre su fila.
 
 Si falla cualquiera de los dos, la transacción entera se deshace.
 
 ## Pendiente
 
-- **Fusión campo a campo (Fase 2):** para decidir qué valor gana cuando dos dispositivos cambian el mismo campo, hará falta saber qué HLC escribió por última vez cada campo. Se añadirá con la sincronización; el registro de operaciones ya tiene todo lo necesario para reconstruirlo.
-- **Permisos (Fase 5):** reglas por entidad y acción («un lector no puede borrar ejemplares»). Las firmas (5.1) ya dicen quién hizo cada operación; los roles (5.3) dirán qué puede hacer.
-- Los libros dados de alta antes del hito 1.2 no tienen operaciones, y por tanto tampoco historial.
-- ~~Versionar el formato de las operaciones~~ Resuelto en D31: cada operación guarda su versión de esquema, las anteriores a la sincronización quedan como historial no replicable y cada dispositivo registra una operación inicial `sync.baseline`. Ver [sync.md](sync.md).
+- **Fusionar duplicados a mano (D33):** lo que se crea a la vez en dos dispositivos sin conexión (un mismo autor, una misma editorial, un mismo ISBN) se conserva duplicado al sincronizar. La opción de juntarlos, que quedaría registrada como una operación más, no existe todavía.
+
+## Ya resuelto (antes figuraba aquí)
+
+- ~~**Fusión campo a campo:**~~ hecha. Cada dispositivo guarda, por campo, la marca que lo escribió por última vez (`field_versions`). Ver [sync.md](sync.md).
+- ~~**Permisos:**~~ hechos. Las firmas dicen quién hizo cada operación y los roles qué puede hacer; lo que no puede queda como petición.
+- ~~**Versionar el formato de las operaciones:**~~ resuelto en D31: cada operación guarda su versión de esquema, las anteriores a la sincronización quedan como historial no replicable y cada dispositivo registra una operación inicial `sync.baseline`. Ver [sync.md](sync.md).
 - **Índice de búsqueda:** `ops::record` también reindexa las ediciones afectadas (D29), así que cualquier operación, venga de donde venga, deja la búsqueda al día.
+- Los libros dados de alta antes de que existieran las operaciones no tienen historial propio: su primer rastro es la operación `sync.baseline`.

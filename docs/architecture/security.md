@@ -1,6 +1,6 @@
 # Seguridad: qué protege Kosmotheka y cómo
 
-> **Borrador (10/10/2026).** Está escrito para que lo entienda quien no ha seguido el desarrollo. Si una frase no se entiende, el fallo es de la página. La Fase 7 (la nube) está a medias: cada pieza dice si está construida. El detalle técnico está en [sync.md](sync.md), [cloud.md](cloud.md), [accounts.md](accounts.md) y en `spec/README.md`.
+> Puesto al día el 17/10/2026. Está escrito para que lo entienda quien no ha seguido el desarrollo. Si una frase no se entiende, el fallo es de la página. Todas las piezas descritas están construidas; lo que falta o queda como límite está en «Lo que no protege». El detalle técnico está en [sync.md](sync.md), [cloud.md](cloud.md), [accounts.md](accounts.md) y en `spec/README.md`.
 
 ## La idea en cuatro frases
 
@@ -15,7 +15,7 @@ Hay dos fronteras, y conviene no mezclarlas.
 
 | Frontera | Ejemplo | Qué está en juego |
 |---|---|---|
-| **Los de fuera** | Un vecino en la misma wifi, alguien en internet, quien encuentra un móvil | Que lean tu biblioteca: qué tienes, dónde está, a quién se lo prestaste |
+| **Los de fuera** | Un vecino en la misma wifi, alguien en internet, quien encuentra un móvil | Que lean tu biblioteca: qué tienes, dónde está, de quién es |
 | **Los de dentro** | Un familiar que solo lee e instala una versión modificada de la app para saltarse su rol | Que cambie o borre el catálogo, o se haga administrador. Leer, ya podía |
 
 La primera es la importante. La segunda es la que más mecanismos necesita, porque quien ataca ya tiene una copia de la biblioteca y un dispositivo que los demás conocen.
@@ -60,7 +60,7 @@ Y no hay un momento en que una biblioteca pase de no tener roles a tenerlos, que
 - **En casa**, dos dispositivos se emparejan con un código QR que se enseña en pantalla. A partir de ahí hablan cifrado y cada uno reconoce al otro por su certificado, no por su dirección en la red.
 - **Quién puede dar una biblioteca a otro dispositivo:** quien la administra o quien tiene «Puede compartir».
 - **Retirar el acceso:** quien administra puede decir que un dispositivo ya no recibe una biblioteca; los demás dejan de entregársela. Lo que ese dispositivo ya tenía copiado no se le puede quitar.
-- **Echar a una persona:** quien administra puede decir que una persona ya no entra en la biblioteca. Sus dispositivos dejan de contar como suyos y se les retira el acceso, de modo que borran la biblioteca al conectar; su nombre y lo suyo (sus libros, sus préstamos) se quedan. Si vuelve, quien administra le devuelve el acceso y le vuelve a vincular un dispositivo. No se puede echar al último administrador.
+- **Echar a una persona:** quien administra puede decir que una persona ya no entra en la biblioteca. Sus dispositivos dejan de contar como suyos y se les retira el acceso, de modo que borran la biblioteca al conectar; su nombre y lo suyo (sus libros, sus marcas) se quedan. Si vuelve, quien administra le devuelve el acceso y le vuelve a vincular un dispositivo. No se puede echar al último administrador.
 
 *Construida. Nombres: emparejamiento, `can_share`, retirada (`revocation`), acceso retirado (`access_withdrawn`).*
 
@@ -75,7 +75,7 @@ Y no hay un momento en que una biblioteca pase de no tener roles a tenerlos, que
 - **En una biblioteca con roles, por la nube solo lee quien es alguien en ella.** Una cuenta que no corresponde a ninguna persona de la biblioteca no recibe nada, aunque fuera quien la subió. Así nadie queda fuera del alcance de «echar a una persona».
 - **Si echan a una persona o retiran un dispositivo, la nube deja de entregarles la biblioteca al momento**, aunque entren desde un móvil nuevo; a la cuenta echada se le olvida también el vínculo con su persona. Al dispositivo cortado le enseña la prueba firmada de quien administra, y el dispositivo solo borra la biblioteca si esa prueba es buena: un servidor que mintiera no podría hacer perder una biblioteca. Quien nunca tuvo la biblioteca sigue recibiendo «no existe», no «te la quitaron».
 
-*Construida para una cuenta por biblioteca. Varias cuentas en la misma biblioteca: en construcción (hito 7.5).*
+*Construida, también con varias cuentas en la misma biblioteca (cada una es una `membership` ligada a una persona). Nombres: `cloud_library`, `membership`.*
 
 ### 6. La nube es un dispositivo más, con un solo poder
 
@@ -93,7 +93,7 @@ Cada biblioteca de la nube tiene su propia clave, guardada cifrada. El identific
 
 Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave que él ha visto** de ese dispositivo. Un dispositivo solo cuenta como de Laura si su clave es esa. Presentarse con el identificador de otro y una clave propia deja de servir para nada. Es la misma idea que «vincular un dispositivo» en las aplicaciones de mensajería.
 
-*En construcción (hito 7.5.2). Nombre: clave avalada, `vouched_key`.*
+*Construida, en los dispositivos y en la nube. Nombre: clave avalada, `vouched_key`. Queda un límite, en «Lo que no protege».*
 
 ### 8. Invitar a alguien de fuera
 
@@ -105,11 +105,11 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 - **A quien administra no se le invita nunca**, ni a quien tiene el acceso retirado, ni a quien ya tiene cuenta: con un correo robado se podría echar a los demás.
 - **Todo se vuelve a comprobar al aceptar**, no solo al crear: la persona, el rol, quién invitó y si la biblioteca sigue con roles. Y si dos cuentas abren el mismo enlace a la vez, entra una sola. Anular y aceptar a la vez tampoco se pisan: anular toma los mismos bloqueos y en el mismo orden, así que gana el que llegue primero y el otro lo sabe (o se anuló, o ya entró alguien), nunca las dos cosas.
 - **Un enlace no se ata a un correo**: si la app manda una dirección con un enlace para copiar, el servidor lo rechaza en vez de ignorarla, para que nadie crea que ese enlace solo lo abre esa persona.
-- **La app solo da un enlace por bueno si es de su servidor.** Compara los dominios sin fijarse en mayúsculas ni en un punto final, un servidor propio nunca se queda con `kosmotheka.app` ni con nada que cuelgue de él, y si un servidor antiguo no dice dónde están sus enlaces, solo valen los de su mismo dominio (no el de encima, que en sitios como `github.io` es de cualquiera).
+- **La app solo da un enlace por bueno si es de su servidor.** Compara los dominios sin fijarse en mayúsculas ni en un punto final, un servidor propio nunca se queda con el dominio del servidor oficial ni con nada que cuelgue de él, y si un servidor antiguo no dice dónde están sus enlaces, solo valen los de su mismo dominio (no el de encima, que en sitios como `github.io` es de cualquiera).
 - **El servidor no sirve para mandar correo a desconocidos**: pocas invitaciones por correo al día y por cuenta, tres por biblioteca a cada dirección y diez en total a una misma dirección aunque vengan de bibliotecas distintas (así otra biblioteca no puede gastarte el cupo para escribir a alguien). Solo cuentan los correos que salen de verdad. El texto del correo es fijo y **no lleva nada que escriba quien invita**, ni el nombre de la biblioteca: sale de nuestro dominio hacia direcciones ajenas, y un nombre como «tu cuenta caduca: entra en tal sitio» sería una frase nuestra. El nombre se ve en la app al abrir el enlace. Quien use alias de una dirección (`ana+1@…`) cuenta como una dirección distinta: no se adivina qué proveedor los trata como el mismo buzón.
 - **Quien mira el enlace sin haber entrado** solo ve el nombre de la biblioteca (y, si no vale, por qué: caducado, usado o anulado). No ve quién más está en ella ni quién invitó.
 
-*Construida en el servidor (hito 7.6.1). La app llega en 7.6.2 y 7.6.3. Nombres: invitación (`invitation`), por correo (`email`), enlace para copiar (`link`).*
+*Construida, en el servidor y en la app. Nombres: invitación (`invitation`), por correo (`email`), enlace para copiar (`link`).*
 
 ### 9. Un registro de lo que pasó
 
@@ -121,10 +121,10 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 - **Sobrevive a lo borrado**: no depende de ninguna cuenta ni biblioteca. De una cuenta borrada se guarda su identificador y una **huella** de su correo, no el correo: sirve para contestar «¿fue esta dirección?», no para sacar la dirección.
 - **Qué no guarda nunca**: contraseñas, códigos, enlaces de invitación, el correo de una invitación ni el correo de nadie. De una invitación solo el tipo (por correo o para copiar).
 - **Un año, y se borra solo.** La dirección IP es un dato personal: se guarda por seguridad y con ese plazo, y la política de privacidad lo cuenta.
-- **Nadie lo ve desde la app**, ni quien administra una biblioteca: no hay ninguna ruta que devuelva sus filas. Se consulta por consola, en el servidor, hasta que exista el panel.
+- **Nadie lo ve desde la app**, ni quien administra una biblioteca: no hay ninguna ruta que devuelva sus filas. Se consulta por consola, en el servidor: todavía no hay panel de administración.
 - **La dirección es la de verdad** mientras el servidor sepa qué proxys son de fiar: delante de nginx hay que decírselo (ver cloud.md), o todas las filas llevarían la dirección de nginx.
 
-*Construida en el servidor (hito 7.7). Nombre: registro de actividad (`activity_log`).*
+*Construida en el servidor. Nombre: registro de actividad (`activity_log`).*
 
 ### 10. Entrar con Google
 
@@ -139,7 +139,7 @@ Por eso, quien dice «este dispositivo es de Laura» apunta también **la clave 
 - **Lo demás sigue igual:** el registro cerrado vale (fuera de la lista no nace ninguna cuenta), una cuenta bloqueada no entra, el segundo factor se pide también con Google, y el dispositivo prueba su clave como en un inicio de sesión normal.
 - **Se guarda lo mínimo:** el identificador de Google, el correo y el nombre. Ningún token de Google. Ni el código, ni el secreto, ni nada de Google en el registro de actividad ni en los errores. Las dos direcciones del servidor que llevan un secreto en la dirección (`connect` y `callback`) se excluyen del registro de accesos.
 
-*Construida en el servidor y en la app (hito 7.1). Detalle y rutas en [accounts.md](accounts.md#continuar-con-google-71-d77). Duda abierta para el maintainer: el segundo factor con Google (se pide).*
+*Construida en el servidor y en la app. Detalle y rutas en [accounts.md](accounts.md#continuar-con-google-71-d77). El código pide el segundo factor también al entrar con Google, mientras que D78 proponía confiar en el de Google y dejaba la duda abierta «a revisar al construirlo»: sigue por confirmar.*
 
 ## Lo que no protege
 
@@ -153,11 +153,11 @@ Dicho claro, para que nadie lo dé por supuesto:
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **El registro de actividad es tan fiable como el servidor.** Quien administra el servidor puede leerlo y, con acceso a la base de datos, cambiarlo: no está firmado ni cifrado, y sirve para responder a una reclamación, no para una pericia.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.
-- **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. Pendiente de mejorar.
+- **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. **Sigue pendiente en el código:** D96 lo deja dicho en «Lo que queda» y lo remite a D88 (emparejar una vez), que sigue abierta.
 
 ## Cómo se comprueba
 
 - **El caso hostil se prueba antes de escribir la defensa**, y se ve fallar: una app modificada, alguien que conoce los identificadores, un aviso falsificado.
 - **Las reglas de permisos son casos compartidos**: los mismos ficheros los ejecutan la app (Rust) y el servidor (PHP).
 - **Auditorías periódicas** con un método escrito, que cualquiera puede repetir: ver [`docs/audits/README.md`](../audits/README.md).
-- **Al terminar el lado del servidor de la Fase 7** se hará una revisión de seguridad de conjunto, con todo construido.
+- **Revisión de seguridad de conjunto** de la nube, ahora que está construida: en curso (hay una primera pasada hecha; faltan las cuentas y el acceso a las bibliotecas completos). El modelo de amenazas, en [`docs/audits/amenazas.md`](../audits/amenazas.md), se revisa cuando cambian las decisiones de seguridad.
