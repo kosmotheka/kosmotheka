@@ -42,23 +42,16 @@ TUS DATOS SON TUYOS
 • Copias de seguridad cuando quieras, y puedes borrar tu cuenta desde la app.
 ```
 
-## Seguridad de los datos (formulario de Play Console)
+## Formularios de Play Console
 
-Con la cuenta y la nube (17/10/2026) la app **recoge datos, solo si se crea una cuenta**, y **no los comparte** con terceros para sus propios fines (el correo lo envía Brevo y el servidor está alojado en DigitalOcean: son encargados del tratamiento). A declarar:
-
-- **Correo electrónico y nombre** (gestión de la cuenta).
-- **Contenido generado por el usuario**: el catálogo de las bibliotecas que se suben (funcionalidad de la app).
-- Cifrado en tránsito: **sí**. Se puede pedir el borrado: **sí**, desde la app y por correo (`https://kosmotheka.com/es/borrar-cuenta.html`). La recogida es **opcional**.
-- Sin cuenta, la app no recoge nada: las búsquedas (un ISBN, un código de barras o un título) no son datos personales, y la sincronización en casa va entre los dispositivos del usuario, cifrada.
-
-Texto de apoyo: [politica-privacidad-con-servidor.md](politica-privacidad-con-servidor.md), ya en la web.
+Todos, respondidos pregunta a pregunta (incluida «Seguridad de los datos», con ML Kit): [play-console-formularios.md](play-console-formularios.md) (17/10/2026). Texto de apoyo: [politica-privacidad-con-servidor.md](politica-privacidad-con-servidor.md), ya en la web.
 
 ## Pendiente para publicar
 
 - El escáner usa **ML Kit** (Google, a través de Google Play Services) y se rige por sus términos ([ML Kit](https://developers.google.com/ml-kit/terms), [APIs de Google](https://developers.google.com/terms)). La política de privacidad y el formulario «Seguridad de los datos» tienen que nombrar ML Kit y sus términos de datos.
 - URL de la política de privacidad: `https://kosmotheka.com/es/privacidad.html`, en la web del proyecto ([web.md](web.md)).
 - URL para pedir que se borre la cuenta (la exige Google a toda app con cuentas): `https://kosmotheka.com/es/borrar-cuenta.html` (16/10/2026). Hay que subirla a la web antes de rellenar ese campo.
-- **La ficha y el formulario «Seguridad de los datos» se rehicieron el 17/10/2026** para la cuenta y la nube (arriba); hay que **rellenar el formulario en Play Console con lo de arriba** antes de publicar una versión con la cuenta.
+- **Hay que rellenar los formularios en Play Console** con [play-console-formularios.md](play-console-formularios.md) antes de publicar una versión con la cuenta. La clasificación de contenido, cuanto antes: sin ella, el control parental bloquea la app.
 - Icono de 512 × 512 y gráfico destacado de 1024 × 500 (en `brand/`), al menos dos capturas de móvil.
 - Si la cuenta de desarrollador es personal y nueva: prueba cerrada con al menos 12 personas durante 14 días antes de producción.
 - Antes de la primera subida: confirmar el identificador de la app (no se puede cambiar después), crear la clave de subida fuera del repositorio y compilar el `.aab`.
