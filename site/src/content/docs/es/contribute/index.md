@@ -17,6 +17,14 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 4. [Cómo contribuir: estilo, pruebas y commits](./how-to-contribute/): las reglas que importan y cómo añadir un campo o una entidad.
 5. [Glosario](./glossary/): cómo se llama cada cosa en español y en el código.
 
+## Cómo funciona por dentro
+
+6. [El motor de sincronización, explicado](./sync-engine/): cómo varios dispositivos llegan al mismo resultado sin que nadie mande.
+7. [Las operaciones: la especificación y los casos de conformidad](./operations-spec/): el formato, las reglas y cómo escribir un cliente o un servidor compatible.
+8. [Seguridad: el modelo de amenazas](./security/): de quién protege, con qué piezas y qué no protege.
+9. [Cómo auditamos, para repetirlo por tu cuenta](./audit-method/): el método, no los informes.
+10. [Avisar de un fallo de seguridad](./report-a-vulnerability/): cómo hacerlo en privado.
+
 ## Documentos del repositorio
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), el procedimiento y las reglas que importan (en inglés).
@@ -24,6 +32,4 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [El registro de decisiones](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) y [la arquitectura](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), en español.
 
-## Lo que viene después
-
-Todavía se están ordenando para esta documentación el motor de sincronización, las operaciones y la especificación con sus casos de conformidad, el modelo de seguridad y el método de auditoría. Hasta entonces, están en la carpeta [`docs/architecture`](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture) del repositorio.
+Todavía no están en esta documentación el modelo de datos, las cuentas y la API de la nube. Hasta que lo estén, mira la carpeta de arquitectura, enlazada arriba.
