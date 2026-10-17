@@ -29,7 +29,7 @@ Your data is stored on your phone or computer. The app works without an account 
 
 There is also an optional account (like an email account), so you can have your libraries on more devices even when they are not on the same Wi-Fi. For now it is a trial. Without an account, everything works the same.
 
-It is free, with no ads and no tracking. Anyone can see how it is built.
+It is free, with no ads and no tracking. It will be free software: anyone will be able to see how it is built.
 
 ## What it is not
 

@@ -5,79 +5,116 @@ sidebar:
   order: 11
 ---
 
-La app no lleva guardados los datos de los libros, las películas o los juegos. Cuando añades algo, los **busca por ti** en servicios de internet (catálogos públicos, como el de la Biblioteca Nacional de España). Esta página explica cuáles son, qué les llega y cómo elegir cuáles usar. Para el resumen de todo lo que sale de tu dispositivo, mira [Qué sale de tu dispositivo y qué no](../what-leaves-your-device/).
+La app no lleva guardados los datos de los libros, las películas o los juegos. Cuando añades algo, **los busca por ti** en servicios de internet. Son bases de datos públicas, como el catálogo de la Biblioteca Nacional de España.
 
-Si prefieres no usar ninguno, apágalos todos: todo se puede añadir a mano.
+Esta página explica cuáles son, qué les envía la app y cómo elegir cuáles usar. Para ver todo lo que sale de tu dispositivo, mira [Qué sale de tu dispositivo y qué no](../what-leaves-your-device/).
+
+Si prefieres no usar ninguno, apágalos todos. Todo se puede añadir a mano.
 
 ## Dónde se cambia
 
 ![La pantalla «Proveedores de datos», sin cuenta: para cada tipo, cuántos servicios se pueden usar.](./data-sources-dialog.webp)
 
-Abre el menú, entra en «Ajustes» y pulsa «Proveedores de datos». A la izquierda eliges «Todas» o un tipo (libros, cómics, películas…), y ves los servicios que se usan para ese tipo. Cada tipo dice «N de M»: cuántos de sus servicios puede usar ahora. Si hay pocos, sale en naranja: buscará poco. «Otro» no busca en ningún sitio, se añade a mano.
+1. Abre el menú y entra en «Ajustes».
+2. Pulsa «Proveedores de datos».
+3. A la izquierda, elige «Todas» o un tipo (libros, cómics, películas…).
 
-Cada servicio tiene un **interruptor** para encenderlo o apagarlo, y una etiqueta que dice qué necesita:
+Verás los servicios que se usan para ese tipo.
 
-- **«Sin clave»:** funciona ya, sin hacer nada. Vienen encendidos.
-- **«Pide clave»:** necesita una clave propia que te da su web. Hasta que la pongas, no se usa.
-- **«Pide cuenta»:** solo funciona a través del servidor de una cuenta de Kosmotheka (más abajo).
-- **«Pide clave o cuenta»:** vale una clave tuya o una cuenta en un servidor que lo ofrezca.
+Cada tipo muestra un número como «2 de 5». Quiere decir que 2 de sus 5 servicios se pueden usar ahora. Si son pocos, el número sale en naranja: la app buscará en pocos sitios.
+
+«Otro» no busca en ningún sitio: se añade a mano.
+
+## Qué quiere decir cada etiqueta
+
+Cada servicio tiene un **interruptor** para encenderlo o apagarlo. Debajo lleva una etiqueta que dice qué necesita:
+
+- **«Sin clave»**: funciona ya, sin hacer nada. Vienen encendidos.
+- **«Pide clave»**: necesita una clave tuya. Una **clave** es como una contraseña: la web del servicio te la da gratis para que uses sus datos. Hasta que la pongas, ese servicio no se usa.
+- **«Pide cuenta»**: solo funciona si tienes una cuenta de Kosmotheka. Se explica [más abajo](#si-tienes-cuenta-algunos-van-por-el-servidor).
+- **«Pide clave o cuenta»**: vale una clave tuya o una cuenta.
 
 ## Qué servicios hay para cada tipo
 
-| Tipo | Servicios | Qué necesitan |
-|---|---|---|
-| Libro | Biblioteca Nacional de España, Library of Congress, Open Library, Inventaire, Wikidata | Nada |
-| Libro | Google Books (la más completa por ISBN) | Clave propia, o cuenta |
-| Libro | RPGGeek (libros de rol, solo por título) | Cuenta |
-| Cómic | Wikidata | Nada |
-| Cómic | Comic Vine | Clave propia, o cuenta |
-| Juego de mesa | Wikidata | Nada |
-| Juego de mesa | GameUPC (por el código de barras de la caja) | Clave propia |
-| Juego de mesa | BoardGameGeek | Cuenta |
-| Película y serie | Wikidata | Nada |
-| Película y serie | TMDB | Clave propia, o cuenta |
-| Videojuego | Wikidata | Nada |
-| Videojuego | RAWG | Clave propia, o cuenta |
-| Música | MusicBrainz | Nada |
+| Tipo | Servicio | Qué es | Qué necesita |
+|---|---|---|---|
+| Libro | Biblioteca Nacional de España, Library of Congress (la biblioteca de Estados Unidos), Open Library, Inventaire | Catálogos de libros | Nada |
+| Libro | Wikidata | Una enciclopedia gratuita que cualquiera puede consultar | Nada |
+| Libro | Google Books | El buscador de libros de Google; el más completo por ISBN | Clave propia, o cuenta |
+| Libro | RPGGeek | Una web de libros de rol; solo busca por título | Cuenta |
+| Cómic | Wikidata | Como arriba | Nada |
+| Cómic | Comic Vine | Una web de cómics | Clave propia, o cuenta |
+| Juego de mesa | Wikidata | Como arriba | Nada |
+| Juego de mesa | GameUPC | Busca juegos por el código de barras de la caja | Clave propia |
+| Juego de mesa | BoardGameGeek | Una web de juegos de mesa | Cuenta |
+| Película y serie | Wikidata | Como arriba | Nada |
+| Película y serie | TMDB | Una web de películas y series | Clave propia, o cuenta |
+| Videojuego | Wikidata | Como arriba | Nada |
+| Videojuego | RAWG | Una web de videojuegos | Clave propia, o cuenta |
+| Música | MusicBrainz | Una base de datos abierta de discos | Nada |
+
+El **ISBN** es el número que va junto al código de barras de un libro.
 
 Las portadas se bajan del servicio que las tiene y se guardan en tu dispositivo.
 
-Sin clave ni cuenta, los cómics, los juegos de mesa, las películas, las series y los videojuegos se buscan solo en Wikidata, una enciclopedia abierta de datos. Funciona, pero a veces faltan portadas o ediciones; por eso aparece el aviso.
+Sin clave ni cuenta, los cómics, los juegos de mesa, las películas, las series y los videojuegos se buscan solo en Wikidata. Funciona, pero a veces faltan portadas o ediciones. Por eso la app te avisa.
 
 ## Poner una clave propia
 
-Una clave es una contraseña gratuita que te da la web del servicio para dejarte usar sus datos.
-
 1. En «Proveedores de datos», abre el servicio que pide clave.
 2. Pulsa «Cómo conseguir una clave» y sigue los pasos de su web.
-3. Pega la clave en «Pega aquí tu clave» y pulsa «Guardar».
-4. Pulsa «Probar». La app te dice «La clave funciona.» o «Esta clave se ha rechazado.».
+3. Pega la clave en «Pega aquí tu clave».
+4. Pulsa «Guardar».
+5. Pulsa «Probar». La app te dice «La clave funciona.» o «Esta clave se ha rechazado.».
 
-Con la clave puesta, la app le pregunta **directamente** al servicio y no pasa nada por ningún servidor de Kosmotheka («Usa tu propia clave»). Para quitarla, usa «Quitar la clave de…». En TMDB, la que hay que pegar es el «API Read Access Token», no la clave corta.
+En TMDB hay dos claves. Pega la larga, la que lleva el nombre «API Read Access Token». No pegues la clave corta.
+
+Con la clave puesta, la app pregunta **directamente** al servicio. Los datos no pasan por ningún ordenador de Kosmotheka. La app lo dice así: «Usa tu propia clave».
+
+Para quitar la clave, pulsa «Quitar la clave de…» y el nombre del servicio.
 
 ## Apagar un servicio
 
-Pulsa el interruptor del servicio. Deja de recibir preguntas y no sale en los resultados. La clave que hubieras puesto se queda guardada, por si lo enciendes otra vez.
+Pulsa el interruptor del servicio. Deja de recibir preguntas y no sale en los resultados.
+
+Si habías puesto una clave, se queda guardada por si lo vuelves a encender.
 
 ## Qué se envía a cada servicio
 
-Solo **lo que buscas**: el título que escribes, o el número del código de barras (por ejemplo, el ISBN). Nunca tu lista de libros, tu nombre ni lo que tienes. Como cualquier página web, cada servicio ve desde qué dirección de internet le preguntas y que la pregunta viene de Kosmotheka, con su versión.
+Se envía solo **lo que buscas**. Es el título que escribes o el número del código de barras (por ejemplo, el ISBN).
 
-## Si tienes cuenta: algunos van a través del servidor
+No se envía tu lista de libros, ni tu nombre, ni lo que tienes.
 
-Con una cuenta, algunos servicios se pueden consultar a través del servidor de tu cuenta, que busca con su propia clave y por eso **no necesitas poner la tuya**. Son Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek y RPGGeek, y solo si tu servidor los ofrece.
+Como cualquier página web, cada servicio ve desde qué conexión de internet le preguntas. Ve también que la pregunta viene de Kosmotheka y qué versión de la app la hace.
 
-En ese caso la app envía a tu servidor lo que escribes (y, según el servicio, si es película o serie, o el idioma de la app) junto con tu sesión, que necesita para saber que tienes cuenta. El servicio ve la búsqueda como del servidor, no tuya. El servidor guarda la respuesta unos días para no repetir la pregunta, **sin guardar quién la pidió ni el texto que escribiste**.
+## Si tienes cuenta: algunos van por el servidor
 
-Para que no pase por el servidor:
+Con una cuenta de Kosmotheka, algunos servicios se consultan a través del **servidor** de tu cuenta. El servidor es el ordenador, en internet, que guarda las bibliotecas de la nube. La **nube** es tener tus bibliotecas también en internet, en tu cuenta. Está explicada en [La nube](../the-cloud/).
 
-- pon tu propia clave, que tiene preferencia, o
-- apaga el servicio. En Google Books hay además un interruptor propio, «Buscar en Google Books a través de la nube», que viene encendido.
+El servidor busca con su propia clave. Por eso **no necesitas poner la tuya**.
 
-BoardGameGeek y RPGGeek no admiten clave propia: sin cuenta, esos dos no se usan.
+Los servicios que se pueden consultar así son Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek y RPGGeek. Solo funciona si tu servidor los ofrece.
+
+Qué pasa cuando buscas por el servidor:
+
+1. La app envía a tu servidor lo que escribes. Según el servicio, envía también si es película o serie, o el idioma de la app.
+2. Lo envía con un permiso que te da la app al entrar con tu cuenta. Así el servidor sabe que tienes cuenta.
+3. El servicio de internet cree que la pregunta la hace Kosmotheka, no tú.
+4. El servidor guarda la respuesta unos días, para no repetir la pregunta. **No guarda quién la pidió ni el texto que escribiste.**
+
+Para que una búsqueda no pase por el servidor, tienes dos caminos:
+
+- pon tu propia clave, que tiene preferencia; o
+- apaga ese servicio.
+
+Google Books tiene además su propio interruptor, «Buscar en Google Books a través de la nube», que viene encendido. Con él apagado, la app pregunta a Google Books directamente.
+
+BoardGameGeek y RPGGeek no admiten clave propia. Sin cuenta, esos dos no se usan.
 
 Los detalles (qué guarda el servidor y cuánto tiempo) están en la [política de privacidad](https://kosmotheka.com/es/privacidad.html).
 
 ## Créditos
 
-Los datos de TMDB, RAWG, Comic Vine y BoardGameGeek tienen su aviso en la propia pantalla («Créditos»). Esta aplicación usa los datos de TMDB y de BoardGameGeek, pero no está respaldada ni relacionada con ellos.
+TMDB, RAWG, Comic Vine y BoardGameGeek tienen su aviso en la propia pantalla, en «Créditos».
+
+Esta aplicación usa los datos de TMDB y de BoardGameGeek, pero no tiene nada que ver con ellos ni la hacen ellos.

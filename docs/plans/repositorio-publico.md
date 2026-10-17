@@ -116,4 +116,5 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
   - **«Borrar biblioteca»** se ve con cualquier rol; la regla dice que solo administra. Qué pasa con la copia en la nube al borrarla no lo dice la app.
   - **«Cambiar portada»** está desactivado en la ficha (D82, abierta).
   - `docs/testing/fase-6.md` habla de «Reordenar» en las series; en la app es «Editar».
+- **Al abrir el repositorio:** «Será software libre» pasa a presente en `what-is-kosmotheka.md` y `faq.md` (los dos idiomas). Las preguntas frecuentes de la guía (`faq.md`) explican más que las de la web (`preguntas.html`, `faq.html`) tras la revisión de jerga del 17/10/2026: «solo puedes usar la nube si te invitan», el QR, «administrar, editar o solo ver», el CSV y «apuntar». Pasarlo a la web cuando se toque.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
