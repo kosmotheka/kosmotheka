@@ -1,4 +1,10 @@
 {
+  "next": [
+    {
+      "es": "Las portadas de cualquier proporción ocupan la misma caja en las listas, y elegir una biblioteca en el menú te saca de la Ayuda y te lleva a su lista.",
+      "en": "Covers of any proportion now fill the same box in lists, and choosing a library in the menu takes you out of Help and to its list."
+    }
+  ],
   "0.2.1": [
     {
       "es": "La primera vez, la app te pide tu nombre: tu biblioteca se crea a tu nombre, como administrador o administradora, y lo cambias luego en Ajustes. Al emparejar un dispositivo hay que decir de quién es y con qué rol («editor» por defecto).",

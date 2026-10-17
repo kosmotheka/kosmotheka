@@ -16,7 +16,7 @@ export function LibraryPicker({ open, desktop }: { open: boolean; desktop: boole
 
   const choose = async (id: string) => {
     if (id !== libraries.active?.id) await libraries.switchTo(id);
-    closeOverlay();
+    navigate("catalog");
   };
   const openSettings = async (id: string) => {
     if (id !== libraries.active?.id) await libraries.switchTo(id);

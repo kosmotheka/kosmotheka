@@ -6,7 +6,7 @@ import { MenuList } from "@/components/shell/menu-list";
 import { appNav, libraryNav } from "@/components/shell/nav-items";
 import { type useSyncStatus, SyncStatus } from "@/components/shell/sync-status";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { closeOverlay, openOverlay } from "@/lib/navigation";
+import { navigate, closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 /** Mobile side menu: the user's libraries, then what belongs to the current one. */
@@ -24,7 +24,7 @@ export function NavDrawer({
   const nameOf = useLibraryName();
   const choose = async (id: string) => {
     if (id !== libraries.active?.id) await libraries.switchTo(id);
-    closeOverlay();
+    navigate("catalog");
   };
   return (
     <Sheet open={open} onOpenChange={(next) => !next && closeOverlay()}>

@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
 
 import { coverSrc, type Kind } from "@/lib/api";
-import { COVER_SHAPES, KIND_ICONS, type CoverShape } from "@/lib/kinds";
+import { COVER_SHAPES, KIND_ICONS } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
-
-const SHAPE_ASPECT: Record<CoverShape, string> = {
-  tall: "aspect-[2/3]",
-  square: "aspect-square",
-  case: "aspect-[5/7]",
-  game: "aspect-[3/4]",
-};
 
 /**
  * A remote `url` (not yet saved) wins over a stored `file`; otherwise a placeholder
  * shaped like the kind's cover (Design's `Cover.dc.html`). Callers set the height
- * through `className`; the width follows the kind's aspect ratio.
+ * through `className`; every cover gets the same 2:3 box so lists line up; images are centred inside it, never cropped.
  */
 export function Cover({
   file,
@@ -47,7 +40,7 @@ export function Cover({
   const shape = COVER_SHAPES[kind];
   const box = cn(
     "relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted",
-    SHAPE_ASPECT[shape],
+    "aspect-[2/3]",
     className,
   );
 
@@ -66,7 +59,7 @@ export function Cover({
       <img
         src={src}
         alt={alt}
-        className={cn("size-full object-cover", loaded !== src && "opacity-0")}
+        className={cn("size-full object-contain", loaded !== src && "opacity-0")}
         onLoad={() => setLoaded(src)}
         onError={() => setBroken(src)}
       />
