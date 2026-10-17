@@ -2,7 +2,7 @@
 title: Qué sale de tu dispositivo y qué no
 description: Qué datos se envían, a quién y cuándo, y cómo apagarlo.
 sidebar:
-  order: 7
+  order: 12
 ---
 
 **Tus libros y demás cosas se quedan en tu móvil u ordenador.** Tus notas, tus estrellas, de quién es cada cosa y tus copias de seguridad no salen de ahí por su cuenta. Sin cuenta, la app solo usa internet para buscar los datos de lo que añades.

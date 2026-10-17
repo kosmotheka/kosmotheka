@@ -109,4 +109,11 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
   - **«Añadir» no reconoce un ISBN con guiones o de 10 cifras** en el buscador: lo busca como título. La casilla ISBN del formulario sí lo acepta.
   - **El botón «Escanear» del escritorio** lleva a «¿Lo tengo?», no escanea.
   - **El CSV** solo lleva datos de libros, y al importar todo entra como libro.
+- **Guía de usuario, tercera tanda** (17/10/2026): seis páginas en español (tipos, lo de cada uno, series, varias bibliotecas, de dónde salen los datos, preguntas frecuentes) y el índice al día, con las 19 páginas. Falta la revisión de jerga y el inglés. Corregido de paso en la app: «con la nube, todas funcionan sin claves» (GameUPC siempre pide la suya), las comillas de «Otro» y «Lo deseáis tú y…». Diferencias con la app que salieron al escribirla, **para mirar en pantalla antes de arreglar nada**:
+  - **Contadores del catálogo:** en el ordenador de `?mock`, la barra lateral decía 7 y el título «20 obras». Puede ser el mock. Además, «Lo tengo · Me falta · Todo» solo existe en el ordenador; en el móvil el catálogo enseña todo.
+  - **Series:** la lista dice «tienes 3 de 5» y dentro de la serie «3 de 6», porque dentro cuenta los huecos. Conviene unificarlo.
+  - **Mover una obra a otra biblioteca** no lleva lo de cada persona (estado, estrellas, favorito, «Lo deseo») ni la serie: `move_book` solo pasa la edición, los ejemplares, los géneros, las etiquetas, las notas y la portada. No consta si es a propósito.
+  - **«Borrar biblioteca»** se ve con cualquier rol; la regla dice que solo administra. Qué pasa con la copia en la nube al borrarla no lo dice la app.
+  - **«Cambiar portada»** está desactivado en la ficha (D82, abierta).
+  - `docs/testing/fase-6.md` habla de «Reordenar» en las series; en la app es «Editar».
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.
