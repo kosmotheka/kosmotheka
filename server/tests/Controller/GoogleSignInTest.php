@@ -368,7 +368,8 @@ final class GoogleSignInTest extends WebTestCase
         self::assertSame('two_factor_required', $this->body($client)['error'] ?? null);
 
         $this->finish($client, ['totp_code' => '000000'] + $came);
-        self::assertSame('invalid_two_factor_code', $this->body($client)['error'] ?? null);
+        $wrongCode = $this->body($client);
+        self::assertSame('invalid_two_factor_code', $wrongCode['error'] ?? null);
 
         // The code of Google was not burned by asking: with the second factor, the same one gets in.
         $this->finish($client, ['totp_code' => self::totpAt($secret, 'now')] + $came);
