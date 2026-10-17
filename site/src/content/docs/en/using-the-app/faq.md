@@ -49,7 +49,7 @@ Nothing. It is free and has no advertising.
 
 It will be free software (under the AGPL licence, which sets out the rules of use): anyone can read the code, change it and share it. And you can run your own server, your own computer on the internet with your libraries, if you prefer not to use the official one.
 
-## What can I note down?
+## What can I keep track of?
 
 Books, comics, board games, films, series, video games and music, each one with its own details page. And for everything else (model kits, puzzles, toys…), "Other". See [what changes with each kind](../kinds/).
 
