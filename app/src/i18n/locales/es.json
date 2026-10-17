@@ -669,10 +669,10 @@
       "away": {
         "title": "Compartir fuera de casa",
         "steps": [
-          "Sin internet ni wifi, la app sigue funcionando: lo que cambias se pasa a los demás aparatos cuando pueden verse.",
+          "Sin internet ni wifi, la app sigue funcionando: lo que cambias se pasa a los demás dispositivos cuando pueden verse.",
           "Para pasarlo fuera de casa, activa la zona wifi («compartir internet») en un móvil y conecta el otro a esa red. No gasta los datos de tu tarifa.",
           "Empareja o pasa los cambios como en casa.",
-          "Con cuenta y la biblioteca en la nube, tus aparatos se ponen al día desde cualquier sitio donde tengan internet."
+          "Con cuenta y la biblioteca en la nube, tus dispositivos se ponen al día desde cualquier sitio donde tengan internet."
         ]
       },
       "pairing": {
@@ -698,10 +698,10 @@
       "lost": {
         "title": "Si pierdes el móvil",
         "steps": [
-          "Lo que tenías sigue en tu cuenta (si subiste la biblioteca a la nube), en los otros aparatos con los que la compartías y en tus copias de seguridad. Si estaba solo en ese móvil y sin copia, no se puede recuperar.",
-          "Con cuenta: en otro aparato, abre Ajustes, tu nombre y «Mis dispositivos», y pulsa «Quitar» junto al perdido. Cuando se conecte, borrará sus bibliotecas. Si compartías la biblioteca con más gente, quien la administra puede quitarlo en «Personas y permisos», con «Quitar un dispositivo».",
-          "«Olvidar dispositivo», en «Compartir y dispositivos», solo deja de emparejar ese aparato con este: no le quita el acceso a nada.",
-          "En el móvil nuevo, instala la app y entra con tu cuenta, o empareja con otro aparato, o restaura una copia de seguridad.",
+          "Lo que tenías sigue en tu cuenta (si subiste la biblioteca a la nube), en los otros dispositivos con los que la compartías y en tus copias de seguridad. Si estaba solo en ese móvil y sin copia, no se puede recuperar.",
+          "Con cuenta: en otro dispositivo, abre Ajustes, tu nombre y «Mis dispositivos», y pulsa «Quitar» junto al perdido. Cuando se conecte, borrará sus bibliotecas. Si compartías la biblioteca con más gente, quien la administra puede quitarlo en «Personas y permisos», con «Quitar un dispositivo».",
+          "«Olvidar dispositivo», en «Compartir y dispositivos», solo deja de emparejar ese dispositivo con este: no le quita el acceso a nada.",
+          "En el móvil nuevo, instala la app y entra con tu cuenta, o empareja con otro dispositivo, o restaura una copia de seguridad.",
           "Si tenías el segundo factor y has perdido también los códigos de respaldo, escribe a privacy@kosmotheka.com desde el correo de la cuenta."
         ]
       },
@@ -1518,6 +1518,7 @@
       "name": "Nombre",
       "nameHint": "Así te verán en las bibliotecas que compartas.",
       "passwordHint": "Mínimo 8 caracteres",
+      "byInvitation": "Por ahora, la nube es por invitación. Si no tienes una, puedes usar la app sin cuenta: todo funciona igual en tus dispositivos.",
       "restrictedServer": "Este servidor solo admite algunas direcciones. Si la tuya no está, no te llegará ningún código.",
       "verifyPassword": "Elige tu contraseña",
       "language": "Idioma",

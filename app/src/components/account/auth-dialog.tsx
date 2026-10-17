@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Globe, Info, LogOut, Server } from "lucide-react";
+import { Check, Globe, Info, LogOut, MailOpen, Server } from "lucide-react";
 
 import { AuthErrorBlock } from "@/components/account/auth-error-block";
 import { CodeInput } from "@/components/account/code-input";
@@ -25,7 +25,7 @@ import {
   startGoogle,
 } from "@/lib/api";
 import { GOOGLE_RESULT } from "@/lib/arrived-link";
-import { closeOverlay } from "@/lib/navigation";
+import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { isSecondFactorCode } from "@/lib/second-factor-code";
 import { supportedLanguages } from "@/i18n";
 
@@ -459,6 +459,25 @@ export function AuthDialog({
               </span>
             )}
           </label>
+        )}
+        {restricted && (
+          <div
+            role="status"
+            className="flex flex-col gap-2 rounded-xl bg-muted p-3.5 text-sm text-pretty"
+          >
+            <span className="flex gap-3">
+              <Info className="mt-0.5 size-[18px] shrink-0" />
+              <span>{t("account.auth.byInvitation")}</span>
+            </span>
+            <button
+              type="button"
+              className="flex items-center gap-2 self-start pl-[30px] font-medium text-primary"
+              onClick={() => openOverlay({ name: "invitation" })}
+            >
+              <MailOpen className="size-4" />
+              {t("invitations.open.entry")}
+            </button>
+          </div>
         )}
         {emailField}
         {passwordField}

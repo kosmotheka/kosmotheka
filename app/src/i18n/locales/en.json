@@ -1504,6 +1504,7 @@
       "name": "Name",
       "nameHint": "This is how you'll appear in the libraries you share.",
       "passwordHint": "At least 8 characters",
+      "byInvitation": "For now, the cloud is by invitation. If you don't have one, you can use the app without an account: everything works the same on your devices.",
       "restrictedServer": "This server only admits some addresses. If yours isn't one of them, no code will reach you.",
       "verifyPassword": "Choose your password",
       "language": "Language",
