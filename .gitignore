@@ -37,3 +37,8 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Deploy script settings on a server (deploy/deploy.sh) and its build leftovers
+deploy/deploy.env
+site/dist-next/
+site/dist-previous/

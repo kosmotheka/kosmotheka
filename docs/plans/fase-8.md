@@ -57,7 +57,12 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 
 ## Pendiente técnico apuntado (17/10/2026)
 
-- **Despliegues sin rsync.** El maintainer no quiere depender de subir la web y el servidor a mano. Hoy se asume; antes de abrir el repositorio, no. Opciones a proponer: un único script en el VPS que actualiza (ya está escrito en sus notas privadas, sesión 9.2) y se lanza con una orden; después, un workflow de GitHub que lo dispara con una clave de despliegue limitada a ese script. La web y la documentación, igual (D90).
+- **Despliegues sin rsync** (decidido el 17/10/2026, D90): [`deploy/deploy.sh`](../../deploy/deploy.sh), que corre en el VPS sobre un clon del repositorio público y actualiza a la vez el servidor (dependencias, copia, migraciones, caché, reinicio), la web (nginx sirve `web/` del clon) y la documentación (`BUILD_DOCS=1` la construye en `site/dist/` y la cambia de golpe). **Sesión con el maintainer**, el día de abrir el repositorio:
+  1. Instalar Node LTS en el VPS (solo para construir la documentación).
+  2. Clonar el repositorio en el sitio del servidor y llevar allí `server/.env.local` y `server/var/` (o apuntar el clon a donde están hoy).
+  3. nginx: `root` de la API en `<clon>/server/public`, de kosmotheka.com en `<clon>/web`, y un sitio nuevo `docs.kosmotheka.com` con `root <clon>/site/dist`, con su certificado.
+  4. `deploy/deploy.env` con las rutas y `HEALTH_URL`; probar `deploy/deploy.sh main`.
+  5. Quitar las carpetas viejas que se subían con rsync.
 - **Hecho (17/10/2026): `#[RateLimit]`, `#[CurrentUser]`, sin `#[IsGranted('ROLE_USER')]` repetidos y el reloj inyectado** ([encargo](../historico/encargo-symfony-atributos.md)). Los límites que se gastan por llegar son atributos con su clave en `RateLimitKey`; los que dependen del flujo (fallos de inicio de sesión, correos, llamadas reales a los proveedores) siguen en `RequestLimiter`. La respuesta 429 sigue siendo `too_many_requests`. Dos cambios pequeños: un cuerpo mal formado ya no gasta el límite, y en metadatos un ISBN inválido o un proveedor sin configurar sí lo gastan (solo se nota pasando de 600 al día).
 
 ## Lo que se puede hacer ya, sin ti
