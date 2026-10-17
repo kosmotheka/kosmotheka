@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
+import { ProvidersDialog } from "@/components/providers-dialog";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,8 @@ export function SettingsDialog({
   const [lockAfter, setLockAfterState] = useState(60);
   const [lockBusy, setLockBusy] = useState(false);
   const [theme, setTheme] = useState(themeChoice);
+  // Opened over Settings, so closing it comes back here, as from About.
+  const [providers, setProviders] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -196,7 +199,7 @@ export function SettingsDialog({
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg border p-3 text-left hover:bg-accent"
-            onClick={() => openOverlay({ name: "providers" })}
+            onClick={() => setProviders(true)}
           >
             <span className="flex-1">
               <span className="block text-sm font-medium">{t("settings.providers")}</span>
@@ -323,6 +326,7 @@ export function SettingsDialog({
       />
 
       <HandOverConfirm open={handingOver} desktop={desktop} onClose={() => setHandingOver(false)} />
+      <ProvidersDialog open={providers} onOpenChange={setProviders} />
     </>
   );
 }
