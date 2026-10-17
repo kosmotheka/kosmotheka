@@ -2,7 +2,7 @@
 title: Updating to a new version
 description: The order for updating the Kosmotheka server without losing data, and when to update the app first.
 sidebar:
-  order: 6
+  order: 9
 ---
 
 Updating means changing the code and applying the database migrations. The order matters, and it **always starts with a copy**: a migration cannot always be undone.

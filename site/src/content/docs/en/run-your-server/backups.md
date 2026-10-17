@@ -2,7 +2,7 @@
 title: Backups and restore
 description: A script that makes a daily copy of the Kosmotheka database and its configuration, how to take it off the machine and how to restore it.
 sidebar:
-  order: 5
+  order: 8
 ---
 
 The cloud libraries live in the server's database. If the machine is lost and you have no copy, what was only there is lost (the apps keep their own local copy, but rebuilding from them is a lot of work). A useful copy does four things: it is **outside the machine**, it is **encrypted**, it contains **everything that cannot be regenerated** and it **has been restored once for real**.

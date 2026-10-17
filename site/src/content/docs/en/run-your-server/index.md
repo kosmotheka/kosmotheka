@@ -34,6 +34,9 @@ The server can be set up in two ways with the same parts (PHP, PostgreSQL, nginx
 After setting it up:
 
 - [The configuration, variable by variable](./configuration/).
+- [Connecting the app to your server](./connect-the-app/).
+- [Administering the server](./administration/): who can sign up and the console commands.
+- [What your server keeps and what you can see](./what-the-server-keeps/), and your obligations if you host other people.
 - [Backups and how to restore](./backups/).
 - [Updating to a new version](./updating/).
 - [Common problems](./troubleshooting/).
