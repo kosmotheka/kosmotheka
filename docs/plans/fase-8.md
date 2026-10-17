@@ -54,6 +54,11 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 - **El registro de accesos de nginx en producción:** comprobar que no apunta `/v1/metadata/`. Hacer una búsqueda desde la app y después `grep -c "metadata"` sobre el registro de la API: tiene que dar 0. La política lo promete.
 - **Las copias automáticas cifradas** (sesión 9.1 de las notas privadas de producción) y una restauración de prueba.
 
+## Pendiente técnico apuntado (17/10/2026)
+
+- **Despliegues sin rsync.** El maintainer no quiere depender de subir la web y el servidor a mano. Hoy se asume; antes de abrir el repositorio, no. Opciones a proponer: un único script en el VPS que actualiza (ya está escrito en sus notas privadas, sesión 9.2) y se lanza con una orden; después, un workflow de GitHub que lo dispara con una clave de despliegue limitada a ese script. La web y la documentación, igual (D90).
+- **El límite de peticiones con `#[RateLimit]` de Symfony.** El maintainer preguntó si no lo resuelve Symfony con configuración: Symfony 8.1 trae el atributo `#[RateLimit]` en el controlador (`RateLimitAttributeListener`), con clave por expresión. Encaja en los límites sencillos por cuenta o por IP (`cloud_sync`, `cloud_link`, los de proveedores). No encaja en los que cuentan solo los fallos (`login_failed_account`) ni en los que van por la huella de un correo del cuerpo. Se hace como refactorización, con los tests de límites como red, cuando el maintainer haya probado la 0.2.1. La respuesta 429 tiene que seguir siendo nuestro JSON (`too_many_requests`).
+
 ## Lo que se puede hacer ya, sin ti
 
 - ✅ La primera nota de investigación de 8.3: [notificaciones.md](../research/notificaciones.md) (16/10/2026). Trae dos cosas nuevas: un servidor propio no puede mandar avisos a la app de Google Play, y Play pide además una página web para pedir que se borre la cuenta.

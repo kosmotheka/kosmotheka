@@ -12,7 +12,7 @@ Kosmotheka es una aplicación para catalogar lo que tiene una familia o un grupo
 
 ## Quién es el responsable
 
-Responsable: Kosmotheka, proyecto personal con sede en España. Contacto: privacy@kosmotheka.com
+Responsable: Sergio Rebollo, España, que mantiene Kosmotheka como proyecto personal. Contacto: privacy@kosmotheka.com
 
 ## Si usas la app sin cuenta
 
