@@ -31,6 +31,10 @@ It is written for people who program and do not know the project yet. Some techn
 12. [Accounts and sign-in](./accounts/): sign-up, Google, the second factor and the device as a session.
 13. [The cloud: the API and the access rules](./cloud-api/): a map of the routes and of who reaches which library.
 
+## Publishing
+
+14. [Publishing a release](./release/): the number, the what's-new notes, the licences and the signed Android package.
+
 ## Repository documents
 
 - [CONTRIBUTING.md](https://github.com/kosmotheka/kosmotheka/blob/main/CONTRIBUTING.md), the procedure and the rules that matter (in English).
