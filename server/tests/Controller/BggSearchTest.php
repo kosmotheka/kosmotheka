@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use Symfony\Component\Uid\Uuid;
 use App\Entity\ActivityEntry;
 use App\Entity\MetadataCacheEntry;
 use App\Entity\User;
@@ -19,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\MailerAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpClient\Exception\TransportException;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Searching board games (BoardGameGeek) and role-playing books (RPGGeek) by title through the server (7.8, D62). The

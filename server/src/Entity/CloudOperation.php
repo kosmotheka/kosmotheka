@@ -48,7 +48,7 @@ final readonly class CloudOperation
         private string $hlc,
         #[ORM\Column(type: Types::INTEGER)]
         private int $schemaVersion,
-        #[ORM\Column(type: Types::JSON, options: ['jsonb' => true])]
+        #[ORM\Column(type: Types::JSONB_OBJECT)]
         private \stdClass $body,
         #[ORM\Column]
         private \DateTimeImmutable $receivedAt,

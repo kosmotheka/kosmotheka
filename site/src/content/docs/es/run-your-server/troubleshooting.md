@@ -24,10 +24,6 @@ php8.5 bin/console doctrine:migrations:migrate --no-interaction
 
 Lo más limpio es borrar y volver a crear la base entera (`DROP DATABASE` y `CREATE DATABASE`), que no deja nada atrás. Hazlo solo si no te importa lo que hay dentro: **es irreversible**.
 
-## `doctrine:schema:validate` da un `[FAIL]`
-
-Con `php8.5 bin/console doctrine:schema:validate`, el servidor actual dice que el esquema no está sincronizado por una diferencia en `CloudOperation#body`. **Es un aviso, no un error**: la base funciona y no hace falta tocarla. Se arreglará en una versión próxima; hasta entonces, ignóralo.
-
 ## Nadie puede iniciar sesión (`invalid_device_proof`)
 
 `DEFAULT_URI` no coincide con la dirección que la app tiene guardada para el servidor. Tiene que ser `https://tu-dominio` exactamente igual (minúsculas, sin barra final, sin puerto si es el 443). Corrígela, `cache:clear` y reinicia PHP-FPM.
