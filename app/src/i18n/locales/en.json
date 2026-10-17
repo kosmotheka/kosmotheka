@@ -655,9 +655,10 @@
       "away": {
         "title": "Share away from home",
         "steps": [
-          "Turn on the hotspot (\"internet sharing\") on a phone.",
-          "Connect the other device to that network.",
-          "Pair or pass the changes as at home. It uses no data: everything goes between the two devices."
+          "With no internet or Wi-Fi the app keeps working: what you change is passed to your other devices when they can see each other.",
+          "To pass it on away from home, turn on the hotspot (\"internet sharing\") on one phone and connect the other to that network. It does not use your mobile data.",
+          "Pair or pass the changes as at home.",
+          "With an account and the library in the cloud, your devices update from anywhere they have internet."
         ]
       },
       "pairing": {
@@ -683,9 +684,11 @@
       "lost": {
         "title": "If you lose your phone",
         "steps": [
-          "What you had is still on the devices you shared the library with, and in your backups.",
-          "On another device, open \"Sharing and devices\" and, in the three-dot menu of the lost one, tap \"Forget device\".",
-          "On the new phone, install the app and pair again."
+          "What you had is still in your account (if you uploaded the library to the cloud), on the other devices you shared it with and in your backups. If it was only on that phone and you have no backup, it cannot be recovered.",
+          "With an account: on another device, open Settings, your name and \"My devices\", and tap \"Remove\" next to the lost one. When it connects, it will delete its libraries. If you shared the library with others, whoever administers it can remove the device in \"People and permissions\", with \"Remove a device\".",
+          "\"Forget device\", in \"Sharing and devices\", only stops pairing that device with this one: it does not take away its access to anything.",
+          "On the new phone, install the app and sign in with your account, or pair with another device, or restore a backup.",
+          "If you had the second factor and have also lost your backup codes, write to privacy@kosmotheka.com from the account's email address."
         ]
       },
       "search": {
@@ -1957,7 +1960,7 @@
       "not_found": "That library is not in your cloud account any more.",
       "schema_version": "The app and the server run different versions. Update the app.",
       "not_signed_in": "Sign in to your account to use the cloud.",
-      "unsigned_history": "This library has changes from before signing existed, so it cannot go to the cloud. Duplicate it as a new library and upload that one.",
+      "unsigned_history": "This library was started with a very old version of the app, so it cannot be uploaded as it is. Tap \"Duplicate as new\": it makes another one with the same books, and that one can be uploaded.",
       "already_linked": "This library is already in a cloud.",
       "offline": "Not connected to the cloud.",
       "link_rejected": "The cloud did not accept this library’s link. Nothing was uploaded; try again.",
@@ -2013,7 +2016,7 @@
       "inCloud": "already in the cloud",
       "otherServer": "In a cloud on another server",
       "notAdmin": "Uploaded by whoever administers it",
-      "unsigned": "It has changes from before signing existed, so it cannot go up as it is. A copy can.",
+      "unsigned": "It was started with a very old version of the app, so it cannot be uploaded as it is. Make a new one with the same books and upload that.",
       "duplicate": "Duplicate as new",
       "duplicated": "Created “{{name}}”. It is ticked, so you can upload it now.",
       "duplicateFailed": "The copy could not be made. Nothing changed.",
@@ -2037,7 +2040,7 @@
       "otherServer": "In a cloud on another server",
       "conflict": "Not mixed with another library on this device",
       "notUploaded": "Not in the cloud",
-      "unsigned": "Needs a copy to go up",
+      "unsigned": "Needs to be duplicated to go up",
       "locked": "Only whoever administers it can upload it",
       "upload": "Upload",
       "fix": "Duplicate as new"

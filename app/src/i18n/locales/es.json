@@ -669,9 +669,10 @@
       "away": {
         "title": "Compartir fuera de casa",
         "steps": [
-          "Activa el punto de acceso («compartir internet») en un móvil.",
-          "Conecta el otro dispositivo a esa red.",
-          "Empareja o pasa los cambios como en casa. No gasta datos: todo va entre los dos aparatos."
+          "Sin internet ni wifi, la app sigue funcionando: lo que cambias se pasa a los demás aparatos cuando pueden verse.",
+          "Para pasarlo fuera de casa, activa la zona wifi («compartir internet») en un móvil y conecta el otro a esa red. No gasta los datos de tu tarifa.",
+          "Empareja o pasa los cambios como en casa.",
+          "Con cuenta y la biblioteca en la nube, tus aparatos se ponen al día desde cualquier sitio donde tengan internet."
         ]
       },
       "pairing": {
@@ -697,9 +698,11 @@
       "lost": {
         "title": "Si pierdes el móvil",
         "steps": [
-          "Lo que tenías sigue en los dispositivos con los que compartías la biblioteca y en tus copias.",
-          "En otro dispositivo, abre «Compartir y dispositivos» y, en el menú de tres puntos del perdido, pulsa «Olvidar dispositivo».",
-          "En el móvil nuevo, instala la app y empareja otra vez."
+          "Lo que tenías sigue en tu cuenta (si subiste la biblioteca a la nube), en los otros aparatos con los que la compartías y en tus copias de seguridad. Si estaba solo en ese móvil y sin copia, no se puede recuperar.",
+          "Con cuenta: en otro aparato, abre Ajustes, tu nombre y «Mis dispositivos», y pulsa «Quitar» junto al perdido. Cuando se conecte, borrará sus bibliotecas. Si compartías la biblioteca con más gente, quien la administra puede quitarlo en «Personas y permisos», con «Quitar un dispositivo».",
+          "«Olvidar dispositivo», en «Compartir y dispositivos», solo deja de emparejar ese aparato con este: no le quita el acceso a nada.",
+          "En el móvil nuevo, instala la app y entra con tu cuenta, o empareja con otro aparato, o restaura una copia de seguridad.",
+          "Si tenías el segundo factor y has perdido también los códigos de respaldo, escribe a privacy@kosmotheka.com desde el correo de la cuenta."
         ]
       },
       "search": {
@@ -1971,7 +1974,7 @@
       "not_found": "Esa biblioteca ya no está en tu cuenta de la nube.",
       "schema_version": "La app y el servidor tienen versiones distintas. Actualiza la app.",
       "not_signed_in": "Inicia sesión en tu cuenta para usar la nube.",
-      "unsigned_history": "Esta biblioteca tiene cambios de antes de que existieran las firmas, así que no puede subir a la nube. Duplícala como nueva y sube esa.",
+      "unsigned_history": "Esta biblioteca se empezó con una versión muy antigua de la app y no se puede subir tal cual. Pulsa «Duplicar como nueva»: se crea otra con los mismos libros, y esa sí se puede subir.",
       "already_linked": "Esta biblioteca ya está en una nube.",
       "offline": "Sin conexión con la nube.",
       "link_rejected": "La nube no ha aceptado el enlace de esta biblioteca. No se ha subido nada; inténtalo de nuevo.",
@@ -2027,7 +2030,7 @@
       "inCloud": "ya está en la nube",
       "otherServer": "En una nube de otro servidor",
       "notAdmin": "La sube quien la administra",
-      "unsigned": "Tiene cambios de antes de que existieran las firmas y no puede subir tal cual. Una copia sí.",
+      "unsigned": "Se empezó con una versión muy antigua de la app y no se puede subir tal cual. Haz otra nueva con los mismos libros y sube esa.",
       "duplicate": "Duplicar como nueva",
       "duplicated": "Creada «{{name}}». Está marcada, así que ya puedes subirla.",
       "duplicateFailed": "No se pudo hacer la copia. No ha cambiado nada.",
@@ -2051,7 +2054,7 @@
       "otherServer": "En una nube de otro servidor",
       "conflict": "No se mezcló con otra biblioteca de este dispositivo",
       "notUploaded": "No está en la nube",
-      "unsigned": "Hace falta una copia para subirla",
+      "unsigned": "Hay que duplicarla para subirla",
       "locked": "Solo la sube quien la administra",
       "upload": "Subir",
       "fix": "Duplicar como nueva"
