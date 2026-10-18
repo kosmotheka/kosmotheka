@@ -2,6 +2,15 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 0.3.0 (18/10/2026, para la prueba interna y después la cerrada)
+
+**Antes de subirla: el servidor de producción tiene que estar desplegado con este código.** «Salir de la biblioteca» es una regla nueva que el servidor tiene que conocer (D102); un servidor anterior la convertiría en una petición a quien administra.
+
+**Texto para Google Play** (445 y 409 caracteres):
+
+- es-ES: Dos formas de irte de una biblioteca: «Quitar de este dispositivo» (sigue en tu nube y puedes volver a bajarla) y «Salir de la biblioteca» (dejas de tener acceso en todos tus dispositivos; tus libros siguen en ella). «Borrar biblioteca» solo para quien administra. Las series cuentan igual en la lista y dentro. Nombres más claros para quitar un dispositivo. La Ayuda enlaza con la guía completa. En el ordenador, «Escanear» pasa a «¿Lo tengo?».
+- en-US: Two ways to go from a library: "Remove from this device" (it stays in your cloud and you can bring it down again) and "Leave the library" (you lose access on all your devices; your books stay in it). "Delete library" only for those who administer. Series count the same in the list and inside. Clearer names for removing a device. Help links to the full guide. On the computer, "Scan" becomes "Do I have it?".
+
 ## 0.2.1 (17/10/2026, para la prueba interna)
 
 **Texto para Google Play** (403 y 389 caracteres):
