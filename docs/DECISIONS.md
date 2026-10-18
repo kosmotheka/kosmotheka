@@ -79,7 +79,7 @@
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
 | D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
 | D73 | Cómo se comprueban los permisos, sin servidor y con él | aceptada |
-| D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | propuesta |
+| D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | aceptada |
 | D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada (revisada el 16/10/2026: sin UnifiedPush) |
 | D76 | La cuenta en la biblioteca: enlace automático y la nube vincula los dispositivos nuevos | aceptada |
 | D77 | Entrar con email o con Google | aceptada |
@@ -1129,7 +1129,9 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Escenarios revisados con el maintainer:** administradora que edita sin cobertura (se aplica), lector que pide borrar (petición), editor que pierde el rol sin conexión (petición; su dispositivo se corrige al recalcular), app modificada que hace lo que su rol no permite (petición), operación falsificada (rechazada por la firma) y dispositivo retirado que sigue enviando (rechazado).
 - **Hora y zonas horarias:** la marca HLC son milisegundos desde 1970 en UTC, así que las zonas horarias no influyen; solo se pasan a hora local para mostrarlas. El límite que sigue es el de D55: un dispositivo con el reloj mal puesto, o manipulado, fecha mal sus cambios. Con cobertura, la nube no tiene prioridad sobre nadie: gana el cambio más reciente campo a campo, como siempre. La nube guarda además la hora real de llegada de cada operación (D66) y puede avisar al dispositivo cuyo reloj vaya muy desviado; no reescribe marcas, porque están firmadas y también viajan por la red local.
 
-## D74 · Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos — `propuesta`
+## D74 · Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos — `aceptada`
+
+> **Aceptada el 18/10/2026** por el maintainer, con un límite: **el workflow solo compila y publica la app** (Android, Linux y Windows). El servidor, la web y la documentación **no** se despliegan desde GitHub: los actualiza el maintainer a mano en el VPS con `deploy/deploy.sh` (D90).
 
 **Contexto:** la landing (D22) tendrá una página de descargas: Linux (`.deb`, `.rpm`, AppImage), el instalador de Windows y el enlace a Google Play, y conviene ofrecer también las versiones anteriores. Hay que decidir dónde viven los binarios y cómo llegan allí. Propuesto el 01/10/2026, al generar los primeros instaladores.
 
