@@ -70,5 +70,5 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 - ✅ La primera nota de investigación de 8.3: [notificaciones.md](../research/notificaciones.md) (16/10/2026). Trae dos cosas nuevas: un servidor propio no puede mandar avisos a la app de Google Play, y Play pide además una página web para pedir que se borre la cuenta.
 - ✅ La página web para pedir que se borre la cuenta: `web/es/borrar-cuenta.html` y `web/en/delete-account.html` (16/10/2026), sin subir.
 - Revisar la ficha de Play y el formulario de seguridad de los datos contra lo que hace hoy la app, y preparar el texto nuevo (8.1), sin subir nada.
-- El workflow de 8.2, escrito y comprobado en local hasta donde se pueda. Sin los secretos no publica nada, y solo corre cuando tú hagas push.
+- ✅ El workflow de 8.2 (18/10/2026): `.github/workflows/release.yml`, comprobado con `actionlint` (no se puede lanzar en local). Falta, con el repositorio público: los secretos y el entorno `release` ([firma-android.md](../publicacion/firma-android.md), apartado 5) y una primera etiqueta para verlo correr. Sin los secretos no publica nada, y solo corre cuando tú hagas push.
 - Montar el esqueleto de Starlight y las primeras páginas «A» que no hablan del servidor (8.4).

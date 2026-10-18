@@ -13,6 +13,7 @@
     "check:spec": "node scripts/check-spec.mjs",
     "check:codes": "node scripts/check-second-factor-code.mjs",
     "check:whats-new": "node scripts/check-whats-new.mjs",
+    "release-notes": "node scripts/release-notes.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
     "licenses": "node scripts/licenses.mjs",
     "format": "prettier --write src",

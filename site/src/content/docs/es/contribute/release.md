@@ -30,6 +30,24 @@ Esta página es para quien publica una versión de la app: el número, las noved
    En la integración continua la comprobación solo mira los nombres de los paquetes, para que las actualizaciones automáticas de dependencias pasen solas. Antes de publicar, la pantalla «Licencias» tiene que llevar las versiones que se publican. Si `app/src/licenses.json` cambia, va en el commit de la versión.
 4. **Las comprobaciones de siempre:** `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, y en `app/`: `npm run typecheck`, `npm run lint` y `npm run check:spec` (ver [Preparar el entorno: la app](../setup-app/)).
 
+## Con el workflow
+
+`.github/workflows/release.yml` compila y publica **solo la app** (D74): el servidor, la web y la documentación se despliegan a mano con `deploy/deploy.sh`.
+
+1. Deja la versión lista (el apartado «Antes de cada versión») y súbela a `main`.
+2. Crea y sube la etiqueta, que tiene que ser `v` más la versión de `tauri.conf.json` (por ejemplo `v0.3.0`); si no coincide, el workflow falla antes de compilar.
+3. El workflow hace, en este orden:
+   - **Comprobar la versión:** las versiones de los tres archivos y la entrada de `whats-new.json`.
+   - **Linux** (Ubuntu 22.04): `.deb`, `.rpm` y AppImage. **Windows:** el instalador. Los nombres no llevan versión: `Kosmotheka-linux-x86_64.AppImage`, `Kosmotheka-linux-amd64.deb`, `Kosmotheka-linux-x86_64.rpm`, `Kosmotheka-windows-x64-setup.exe`.
+   - **El *release* en borrador,** con los cuatro archivos, un `SHA256SUMS` y, de cuerpo, las líneas en inglés de la versión en `whats-new.json`.
+   - **Android:** compila el `.aab`, comprueba que va firmado y lo sube a Google Play como versión en **borrador**, a la pista que diga la variable `PLAY_TRACK` del entorno `release` (`internal` si no existe; `alpha` es la prueba cerrada).
+4. **Revisa y publica el borrador** en GitHub (*Releases*). Hasta entonces nadie lo ve, y los enlaces `…/releases/latest/download/…` siguen dando la versión anterior.
+5. **En Google Play,** abre la pista, revisa la versión en borrador, añade las notas (salen de `whats-new.json`) y envíala a revisión.
+
+Para ensayar sin publicar, lanza el workflow a mano (*Actions › Release › Run workflow*): compila todo y deja los archivos como artefactos del workflow (14 días), pero no crea el *release* ni sube nada a Google Play. Sin los secretos de Android, el `.aab` sale sin firmar y el resumen lo dice.
+
+Los secretos y el entorno se preparan una vez, en el repositorio público, y es cosa de quien lo mantiene. Lo que sigue, hecho a mano, vale si el workflow no está disponible.
+
 ## La clave de subida
 
 Google Play usa **Play App Signing**: la clave que firma la app que se instala en los móviles la genera y la guarda Google. Quien publica solo tiene una **clave de subida**, que demuestra a Google que el paquete es suyo. Si se pierde o se filtra, Google permite cambiarla (en Play Console, *Integridad de la app*), pero hay que guardarla bien.

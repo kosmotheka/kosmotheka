@@ -30,6 +30,24 @@ This page is for whoever publishes a release of the app: the number, the what's-
    In continuous integration the check only looks at package names, so that automatic dependency updates pass on their own. Before publishing, the «Licences» screen has to carry the versions that are published. If `app/src/licenses.json` changes, it goes in the release commit.
 4. **The usual checks:** `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, and in `app/`: `npm run typecheck`, `npm run lint` and `npm run check:spec` (see [Setting up the environment: the app](../setup-app/)).
 
+## With the workflow
+
+`.github/workflows/release.yml` builds and publishes **only the app** (D74): the server, the website and the documentation are deployed by hand with `deploy/deploy.sh`.
+
+1. Get the version ready (the "Before each release" section) and push it to `main`.
+2. Create and push the tag, which must be `v` plus the version in `tauri.conf.json` (for example `v0.3.0`); if it does not match, the workflow fails before building.
+3. The workflow does, in this order:
+   - **Check the version:** the versions of the three files and the entry in `whats-new.json`.
+   - **Linux** (Ubuntu 22.04): `.deb`, `.rpm` and AppImage. **Windows:** the installer. The names carry no version: `Kosmotheka-linux-x86_64.AppImage`, `Kosmotheka-linux-amd64.deb`, `Kosmotheka-linux-x86_64.rpm`, `Kosmotheka-windows-x64-setup.exe`.
+   - **The draft release,** with the four files, a `SHA256SUMS` and, as its body, the English lines of the version in `whats-new.json`.
+   - **Android:** builds the `.aab`, checks that it is signed and uploads it to Google Play as a **draft** release, to the track named by the `PLAY_TRACK` variable of the `release` environment (`internal` if it does not exist; `alpha` is the closed test).
+4. **Review and publish the draft** on GitHub (*Releases*). Until then nobody sees it, and the `…/releases/latest/download/…` links still give the previous version.
+5. **In Google Play,** open the track, review the draft release, add the notes (they come from `whats-new.json`) and send it for review.
+
+To rehearse without publishing, run the workflow by hand (*Actions › Release › Run workflow*): it builds everything and keeps the files as workflow artifacts (14 days), but creates no release and uploads nothing to Google Play. Without the Android secrets, the `.aab` is built unsigned and the summary says so.
+
+The secrets and the environment are set up once, in the public repository, by whoever maintains it. Everything below, done by hand, still works if the workflow is not available.
+
 ## The upload key
 
 Google Play uses **Play App Signing**: the key that signs the app installed on phones is generated and kept by Google. Whoever publishes only has an **upload key**, which shows Google that the package is theirs. If it is lost or leaked, Google allows changing it (in Play Console, *App integrity*), but it has to be kept safe.

@@ -1,0 +1,286 @@
+name: Release
+
+# Builds and publishes the app, nothing else (D74): Linux and Windows go into a draft GitHub
+# release, Android goes to Google Play. The server, the website and the docs are deployed by
+# hand with deploy/deploy.sh (D90).
+#
+# - Pushing a tag `v*` builds everything and publishes: a draft release, and the .aab to Play.
+# - Running it by hand (workflow_dispatch) is a rehearsal: it builds and keeps the files as
+#   workflow artifacts, but creates no release and uploads nothing to Play.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# Read-only token by default; only the job that creates the release gets more.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  version:
+    name: Check the version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The versions of Cargo.toml, package.json and tauri.conf.json agree and whats-new.json has the entry.
+      - run: node scripts/check-whats-new.mjs
+        working-directory: app
+      - name: The tag matches tauri.conf.json
+        id: read
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
+          if [ "$REF_TYPE" = tag ] && [ "$REF_NAME" != "v$version" ]; then
+            echo "::error::The tag $REF_NAME does not match version $version in app/src-tauri/tauri.conf.json"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: Linux (.deb, .rpm, AppImage)
+    needs: version
+    # Not 24.04: what is built on a newer glibc does not run on older systems (D74, point 5).
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: npm run tauri build -- --bundles deb,rpm,appimage
+        working-directory: app
+      # Names without a version, so the website can link to .../releases/latest/download/<file> (D74, point 2).
+      - name: Rename the bundles
+        run: |
+          mkdir dist
+          pick() {
+            local found
+            found=$(find target/release/bundle/"$1" -maxdepth 1 -type f -name "$2")
+            if [ "$(printf '%s\n' "$found" | grep -c .)" -ne 1 ]; then
+              echo "::error::Expected exactly one $2 in bundle/$1, found: ${found:-none}"
+              exit 1
+            fi
+            cp "$found" "dist/$3"
+          }
+          pick appimage '*.AppImage' Kosmotheka-linux-x86_64.AppImage
+          pick deb '*.deb' Kosmotheka-linux-amd64.deb
+          pick rpm '*.rpm' Kosmotheka-linux-x86_64.rpm
+          ls -l dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-linux
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows (installer)
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      # NSIS installer; it installs WebView2 if it is missing.
+      - run: npm run tauri build -- --bundles nsis
+        working-directory: app
+      - name: Rename the installer
+        shell: bash
+        run: |
+          mkdir dist
+          found=$(find target/release/bundle/nsis -maxdepth 1 -type f -name '*-setup.exe')
+          if [ "$(printf '%s\n' "$found" | grep -c .)" -ne 1 ]; then
+            echo "::error::Expected exactly one *-setup.exe, found: ${found:-none}"
+            exit 1
+          fi
+          cp "$found" dist/Kosmotheka-windows-x64-setup.exe
+          ls -l dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-windows
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # A draft: the maintainer reads it, and publishes it from GitHub. Only for tags.
+  release:
+    name: Draft release
+    if: github.ref_type == 'tag'
+    needs: [version, linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: desktop-*
+          path: dist
+          merge-multiple: true
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node app/scripts/release-notes.mjs "$VERSION" > notes.md
+          cd dist
+          sha256sum Kosmotheka-* > SHA256SUMS
+          cat SHA256SUMS
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+            --title "Kosmotheka $VERSION" --notes-file ../notes.md \
+            Kosmotheka-* SHA256SUMS
+
+  android:
+    name: Android (.aab)
+    needs: version
+    runs-on: ubuntu-24.04
+    # The secrets live in this environment, not in the repository's, so that the maintainer can ask
+    # for an approval before each use (Settings > Environments > release).
+    environment: release
+    # The secrets are given only to the steps that use them, never to the whole job: npm ci runs the
+    # dependencies' install scripts, and the other actions would see them too.
+    env:
+      # The same versions as docs/development/setup.md.
+      NDK_VERSION: 30.0.16248370
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK and NDK
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" --install "platforms;android-36" "build-tools;37.0.0" "ndk;$NDK_VERSION" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      # The upload key goes to the runner's temp folder, never into the repository, and nothing is printed.
+      # build.gradle.kts reads the properties file named by KOSMOTHEKA_KEYSTORE_PROPERTIES
+      # (docs/publicacion/firma-android.md). Without the secrets there is no file and the bundle is built unsigned.
+      - name: Upload key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          HAS_PLAY_ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        run: |
+          # Secrets cannot be tested in an `if`: what the later steps need to know goes out as outputs.
+          echo "play=$HAS_PLAY_ACCOUNT" >> "$GITHUB_OUTPUT"
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/upload.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=upload"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > "$RUNNER_TEMP/keystore.properties"
+          echo "KOSMOTHEKA_KEYSTORE_PROPERTIES=$RUNNER_TEMP/keystore.properties" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+      - run: npm run tauri android build -- --aab
+        working-directory: app
+      # Gone before any other action runs, whether the build worked or not.
+      - name: Remove the upload key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/keystore.properties"
+      - name: The bundle
+        id: bundle
+        env:
+          SIGNED: ${{ steps.key.outputs.signed }}
+        run: |
+          aab=app/src-tauri/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab
+          test -f "$aab"
+          if [ "$SIGNED" = true ]; then
+            # Fails if the bundle carries no certificate. Asks for no password.
+            keytool -printcert -jarfile "$aab"
+          else
+            {
+              echo "### Android bundle built unsigned"
+              echo "The upload key is not in the \`release\` environment (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD), so the .aab is not signed and cannot go to Google Play."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Android bundle built unsigned: the upload key secrets are not set"
+          fi
+          echo "path=$aab" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-aab
+          path: ${{ steps.bundle.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+      - name: Google Play account is missing
+        if: github.ref_type == 'tag' && steps.key.outputs.signed == 'true' && steps.key.outputs.play != 'true'
+        run: |
+          echo "### Not uploaded to Google Play" >> "$GITHUB_STEP_SUMMARY"
+          echo "PLAY_SERVICE_ACCOUNT_JSON is not set in the \`release\` environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::Not uploaded to Google Play: PLAY_SERVICE_ACCOUNT_JSON is not set"
+      # A draft release in the track: the maintainer moves it on from the Play Console. The first upload of an
+      # app is always by hand, the API only works with apps that already exist there (D74).
+      - name: Upload to Google Play
+        if: github.ref_type == 'tag' && steps.key.outputs.signed == 'true' && steps.key.outputs.play == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.kosmotheka
+          releaseFiles: ${{ steps.bundle.outputs.path }}
+          # `internal` by default; `alpha` is the closed test. Set PLAY_TRACK in the `release` environment.
+          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          status: draft
