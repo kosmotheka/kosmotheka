@@ -32,6 +32,27 @@ sudo mkdir -p /etc/kosmotheka
 echo 'age1...your-public-key...' | sudo tee /etc/kosmotheka/backup-recipient.txt
 ```
 
+### With gpg instead of age
+
+If you would rather not install anything, `gpg` does the same and already comes with almost every Linux, on the server and on your computer. Create the key pair **on your computer**; the email is only a label and does not need to exist:
+
+```bash
+gpg --quick-generate-key "Kosmotheka backups <backups@example.org>" future-default default never
+gpg --armor --export backups@example.org > backups-public.asc
+gpg --armor --export-secret-keys backups@example.org > backups-private.asc   # keep it elsewhere and delete it here
+```
+
+On the server, import only the public one (`sudo gpg --import backups-public.asc`) and note its fingerprint, the 40-character line of `sudo gpg --list-keys`. In the script, replace each `age -R "$RECIPIENT"` with:
+
+```bash
+gpg --homedir /root/.gnupg --batch --yes --trust-model always --no-auto-key-locate --encrypt --recipient THE_FINGERPRINT
+```
+
+- Use the fingerprint, not the email: with an email that is not in the keyring, gpg tries to look the key up on the internet and the backup fails.
+- `--homedir` sets `root`'s keyring even when systemd starts the service without `HOME`.
+- Change the `.age` extension of the names to `.gpg` as well. The check at the end of the script changes: a gpg file does not start with `age-encryption.org/v1`. Remove it, or check with `gpg --list-packets` from your computer.
+- To open a backup: `gpg -d db-YYYY-MM-DD.dump.gpg`, instead of `age -d -i …`.
+
 ## The script
 
 Save it as `/usr/local/sbin/kosmotheka-backup`, with `chmod 750`. It runs as the administrator (`root`), asks `postgres` for the dump, encrypts it through a pipe (the plain dump never touches the disk) and keeps seven daily copies and four weekly ones.

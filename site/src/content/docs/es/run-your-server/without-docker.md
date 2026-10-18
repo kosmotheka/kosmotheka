@@ -47,7 +47,7 @@ El servidor es la carpeta `server/`. Necesita tener al lado la carpeta `spec/` (
 
 ## 4. La configuración: `.env.local`
 
-Toda la configuración va en `server/.env.local`, un fichero que no está en git. Crea uno mínimo (todas las variables, una por una, están en [la configuración](/es/run-your-server/configuration/)):
+Toda la configuración va en `server/.env.local`, un archivo que no está en git. Crea uno mínimo (todas las variables, una por una, están en [la configuración](/es/run-your-server/configuration/)):
 
 ```bash
 cd /srv/kosmotheka/server
@@ -107,7 +107,7 @@ Con una máquina pequeña, `pm.max_children` bajo evita que un pico se coma la m
 
 ## 7. nginx
 
-Dos ficheros. El primero va **fuera** del sitio, en `/etc/nginx/conf.d/kosmotheka-log.conf`, porque `map` solo vale en el nivel `http`:
+Dos archivos. El primero va **fuera** del sitio, en `/etc/nginx/conf.d/kosmotheka-log.conf`, porque `map` solo vale en el nivel `http`:
 
 ```nginx
 # Qué direcciones no se escriben nunca en el registro de accesos:

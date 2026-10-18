@@ -32,6 +32,27 @@ sudo mkdir -p /etc/kosmotheka
 echo 'age1...tu-clave-publica...' | sudo tee /etc/kosmotheka/backup-recipient.txt
 ```
 
+### Con gpg en lugar de age
+
+Si prefieres no instalar nada, `gpg` hace lo mismo y ya viene en casi cualquier Linux, en el servidor y en tu ordenador. Crea la pareja de claves **en tu ordenador**; el correo es solo una etiqueta, no hace falta que exista:
+
+```bash
+gpg --quick-generate-key "Copias de Kosmotheka <copias@example.org>" future-default default never
+gpg --armor --export copias@example.org > copias-publica.asc
+gpg --armor --export-secret-keys copias@example.org > copias-privada.asc   # guárdala fuera y bórrala de aquí
+```
+
+En el servidor, importa solo la pública (`sudo gpg --import copias-publica.asc`) y apunta su huella, la línea de 40 caracteres de `sudo gpg --list-keys`. En el script, cambia cada `age -R "$RECIPIENT"` por:
+
+```bash
+gpg --homedir /root/.gnupg --batch --yes --trust-model always --no-auto-key-locate --encrypt --recipient LA_HUELLA
+```
+
+- Usa la huella y no el correo: con un correo que no está en el llavero, gpg intenta buscar la clave por internet y la copia falla.
+- `--homedir` fija el llavero de `root` aunque systemd lance el servicio sin `HOME`.
+- Cambia también la extensión `.age` de los nombres por `.gpg`. La comprobación del final del script cambia: un archivo de gpg no empieza por `age-encryption.org/v1`. Quítala, o compara con `gpg --list-packets` desde tu ordenador.
+- Para abrir una copia: `gpg -d db-AAAA-MM-DD.dump.gpg`, en lugar de `age -d -i …`.
+
 ## El script
 
 Guárdalo como `/usr/local/sbin/kosmotheka-backup`, con `chmod 750`. Se ejecuta como administrador (`root`), pide el volcado a `postgres`, lo cifra por tubería (el volcado en claro nunca toca el disco) y guarda siete copias diarias y cuatro semanales.
@@ -57,7 +78,7 @@ mv "$DEST/daily/db-$STAMP.dump.age.partial" "$DEST/daily/db-$STAMP.dump.age"
 
 age -R "$RECIPIENT" < "$ENV_FILE" > "$DEST/daily/env-$STAMP.local.age"
 
-# El servidor no puede descifrar, así que solo comprueba que lo escrito es un fichero de age.
+# El servidor no puede descifrar, así que solo comprueba que lo escrito es un archivo de age.
 for f in "$DEST/daily/db-$STAMP.dump.age" "$DEST/daily/env-$STAMP.local.age"; do
   [ "$(head -c 21 "$f")" = "age-encryption.org/v1" ] || { echo "copia dañada: $f" >&2; exit 1; }
 done

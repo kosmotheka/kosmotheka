@@ -127,6 +127,9 @@ Cada paso es un encargo cerrado para `library-sonnet`, revisado antes del siguie
   3. Pasar gitleaks y trufflehog sobre la copia reescrita.
   4. Crear `kosmotheka/kosmotheka` vacío en GitHub, añadirlo como remoto a la copia y subirla.
   5. Activar el aviso privado de vulnerabilidades (`SECURITY.md`) y comprobar que la CI pasa.
-  6. Cambiar el remoto del repositorio local de trabajo y, cuando todo esté comprobado, borrar el privado.
+  6. **El VPS, antes de borrar nada:** su clon tira del repositorio privado con una clave de despliegue. Cambiar su remoto al público (`git remote set-url origin https://github.com/kosmotheka/kosmotheka.git`), `git fetch` y comprobar `deploy/deploy.sh main`; después borrar la clave de despliegue en GitHub y en el VPS. **Si se borra el privado antes, el despliegue deja de funcionar.** Ojo: el historial reescrito tiene otros commits, así que el primer `deploy.sh` salta a ellos sin poder comparar con el anterior; el código es el mismo.
+  7. **La documentación:** DNS de `docs.kosmotheka.com`, Node LTS en el VPS, `site` en el sparse checkout del clon, sitio de nginx con `root <clon>/site/dist` y su certificado, `BUILD_DOCS=1` en `deploy/deploy.env` y un `deploy.sh`.
+  8. **Enlazarla:** un enlace a la documentación en el menú de kosmotheka.com (`web/es/` y `web/en/`); hasta este día daría 404, por eso no está.
+  9. Cambiar el remoto del repositorio local de trabajo y, cuando todo esté comprobado, borrar el privado.
 - **Lo que falta en el servidor para administrarlo** (visto al escribir la guía, 17/10/2026): ~~no hay orden para **borrar una cuenta**~~ (hecho el 17/10/2026: `app:user:delete`, con el mismo código que la app, D99), ni para listar cuentas, ni `--email` en `app:activity:list`; dar de alta a alguien con el registro cerrado obliga a tocar `.env.local`. `ROLE_SUPER_ADMIN` no abre nada todavía.
 - **Ficheros de la raíz hechos** (paso 3): README, CONTRIBUTING, código de conducta, TRADEMARKS en borrador (D72) y plantillas de *issue* y PR. La licencia de las contribuciones (la del proyecto, sin CLA), confirmada por el maintainer el 16/10/2026.

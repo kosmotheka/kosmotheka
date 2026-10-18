@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository. Human contributors
 
 ## Project
 
-A shared catalog for a household library (books first; board games, comics, video games, films later): what we own, where it is, who has read it and who borrowed it. The product is called **Kosmotheka** (D70). In the code, `library` is not the product: it is the domain entity, a library that people share (see the glossary). Never rename it along with the product.
+A shared catalog for a household library (books first; board games, comics, video games, films later): what we own, where it is and who has read it (loans come later, see `docs/ROADMAP.md`). The product is called **Kosmotheka** (D70). In the code, `library` is not the product: it is the domain entity, a library that people share (see the glossary). Never rename it along with the product.
 
 - **Local-first**: the app always reads and writes its own SQLite database and works fully without a server or an account.
 - **Optional authoritative server**: in connected mode, the client sends *operations* (atomic batches of entity changes) to the server, which checks permissions and re-applies them and is the source of truth.

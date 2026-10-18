@@ -15,7 +15,7 @@ Esta página es para quien publica una versión de la app: el número, las noved
    - `version` en `app/src-tauri/tauri.conf.json`;
    - la clave de esa versión en `app/src/whats-new.json` (ver el punto 2).
 
-   Los ficheros de bloqueo (`Cargo.lock`, `app/package-lock.json`) llevan también la versión: se actualizan al compilar o con `npm install`. Las versiones de `Cargo.toml`, `package.json` y `tauri.conf.json` las compara `npm run check:whats-new`.
+   Los archivos de bloqueo (`Cargo.lock`, `app/package-lock.json`) llevan también la versión: se actualizan al compilar o con `npm install`. Las versiones de `Cargo.toml`, `package.json` y `tauri.conf.json` las compara `npm run check:whats-new`.
 
    **Cada versión que se sube a Google Play tiene que subir de número:** Google rechaza un `versionCode` repetido. Tauri lo calcula a partir de `version` (`0.1.0` → `1000`).
 2. **Las novedades.** Las líneas de lo que cambia para la gente viven en `app/src/whats-new.json`, bajo la clave `next` mientras la versión no tiene número. Al elegirlo, renombra `next` por el número (`"0.2.1"`, por ejemplo). Después, `cd app && npm run check:whats-new` tiene que pasar: comprueba que la versión de la app tiene su entrada, no que esté completa; léela.
@@ -42,7 +42,7 @@ Lo que se sube es un **Android App Bundle** (`.aab`), no un APK; Google genera d
   keystore.properties      dónde está y sus contraseñas
 ```
 
-`app/src-tauri/gen/android/app/build.gradle.kts` lee `keystore.properties` de esa carpeta, o de la ruta que diga la variable de entorno `KOSMOTHEKA_KEYSTORE_PROPERTIES`. Si el fichero no existe, la compilación de *release* sale **sin firmar**. El `.gitignore` del repositorio ignora `*.jks`, `*.keystore` y `keystore.properties` en cualquier sitio, por si acaso. **Nunca** los subas.
+`app/src-tauri/gen/android/app/build.gradle.kts` lee `keystore.properties` de esa carpeta, o de la ruta que diga la variable de entorno `KOSMOTHEKA_KEYSTORE_PROPERTIES`. Si el archivo no existe, la compilación de *release* sale **sin firmar**. El `.gitignore` del repositorio ignora `*.jks`, `*.keystore` y `keystore.properties` en cualquier sitio, por si acaso. **Nunca** los subas.
 
 ### Crearla (una sola vez)
 

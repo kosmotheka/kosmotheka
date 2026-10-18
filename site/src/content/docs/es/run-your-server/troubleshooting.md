@@ -38,4 +38,4 @@ Casi siempre es que PHP-FPM no está corriendo o que el socket de `fastcgi_pass`
 
 ## «Permission denied» en `var/`
 
-PHP-FPM no puede escribir en `server/var/`. `sudo chown -R www-data: /srv/kosmotheka/server/var` (o el usuario de tu *pool*). Si ejecutaste `composer` o `bin/console` como administrador, puede haber dejado ficheros de caché que ya no puede tocar PHP-FPM: bórralos con `sudo rm -rf server/var/cache` y vuelve a crear la caché con `cache:clear` como el usuario del *pool*.
+PHP-FPM no puede escribir en `server/var/`. `sudo chown -R www-data: /srv/kosmotheka/server/var` (o el usuario de tu *pool*). Si ejecutaste `composer` o `bin/console` como administrador, puede haber dejado archivos de caché que ya no puede tocar PHP-FPM: bórralos con `sudo rm -rf server/var/cache` y vuelve a crear la caché con `cache:clear` como el usuario del *pool*.

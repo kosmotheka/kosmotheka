@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-Las mismas piezas que [sin Docker](/es/run-your-server/without-docker/), empaquetadas. Los ficheros están en `server/docker/prod/` del repositorio. **No se publica ninguna imagen en un registro**: la construyes tú, en tu máquina, a partir del código de la versión que elijas. Los `Dockerfile` de `server/docker/` (sin `prod`) son solo para desarrollo: no los uses en un servidor.
+Las mismas piezas que [sin Docker](/es/run-your-server/without-docker/), empaquetadas. Los archivos están en `server/docker/prod/` del repositorio. **No se publica ninguna imagen en un registro**: la construyes tú, en tu máquina, a partir del código de la versión que elijas. Los `Dockerfile` de `server/docker/` (sin `prod`) son solo para desarrollo: no los uses en un servidor.
 
 Lo que hace esta configuración:
 
@@ -27,7 +27,7 @@ cp env.example .env
 chmod 600 .env
 ```
 
-Rellena `.env` (todos los secretos se generan con `openssl`, como dice el propio fichero):
+Rellena `.env` (todos los secretos se generan con `openssl`, como dice el propio archivo):
 
 - `POSTGRES_PASSWORD`: `openssl rand -hex 24`.
 - `APP_SECRET`: `openssl rand -hex 32`.

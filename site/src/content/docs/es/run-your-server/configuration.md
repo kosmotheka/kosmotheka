@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-Toda la configuración son variables de entorno. Se ponen en `server/.env.local` (un fichero que no está en git y al que solo debe poder acceder el usuario del servidor), o en el entorno del servicio. **No edites `server/.env`**: es el fichero de valores por defecto y se sobrescribe al actualizar.
+Toda la configuración son variables de entorno. Se ponen en `server/.env.local` (un archivo que no está en git y al que solo debe poder acceder el usuario del servidor), o en el entorno del servicio. **No edites `server/.env`**: es el archivo de valores por defecto y se sobrescribe al actualizar.
 
 Después de cambiar una variable: `php8.5 bin/console cache:clear` y reinicia PHP-FPM (y el servicio de tareas si la usa).
 
@@ -26,7 +26,7 @@ Una convención repetida: **vacía = esa función no se ofrece**, y el servidor 
 | `TWO_FACTOR_ENABLED` | no | `true` por defecto: las cuentas nuevas pueden activar un segundo factor (app de autenticación). A `false`, ya no se ofrece; las cuentas que lo tenían siguen necesitándolo para entrar |
 | `SERVER_EXTRA_ORIGINS` | no | **Déjala vacía.** Otras direcciones por las que se llega al mismo servidor; solo sirve en desarrollo. Un dispositivo firma su entrada para la dirección del servidor, y cada dirección que añades aquí es otra en la que esa firma también vale |
 
-Variables que ya traen un valor razonable y no hace falta tocar: `APP_SHARE_DIR`, `LOCK_DSN` (`flock`, bloqueos en el sistema de ficheros de una sola máquina) y `MESSENGER_TRANSPORT_DSN` (la cola de tareas va en la propia base de datos).
+Variables que ya traen un valor razonable y no hace falta tocar: `APP_SHARE_DIR`, `LOCK_DSN` (`flock`, bloqueos en el sistema de archivos de una sola máquina) y `MESSENGER_TRANSPORT_DSN` (la cola de tareas va en la propia base de datos).
 
 ## El correo
 
