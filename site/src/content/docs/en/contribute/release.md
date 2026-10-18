@@ -15,6 +15,8 @@ This page is for whoever publishes a release of the app: the number, the what's-
    - `version` in `app/src-tauri/tauri.conf.json`;
    - the key for that version in `app/src/whats-new.json` (see point 2).
 
+   If the first non-zero number changes (from `0.2.x` to `0.3.0`, for example), also change the version the app asks of the domain crate, `kosmotheka-domain = { version = "…" }` in `app/src-tauri/Cargo.toml`: with a leading `0.`, Cargo does not take a `0.3` as compatible with a `0.2`, and the build fails.
+
    The lock files (`Cargo.lock`, `app/package-lock.json`) also carry the version: they are updated when you build or with `npm install`. `npm run check:whats-new` compares the versions in `Cargo.toml`, `package.json` and `tauri.conf.json`.
 
    **Every release uploaded to Google Play has to have a higher number:** Google rejects a repeated `versionCode`. Tauri calculates it from `version` (`0.1.0` → `1000`).

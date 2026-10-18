@@ -15,6 +15,8 @@ Esta página es para quien publica una versión de la app: el número, las noved
    - `version` en `app/src-tauri/tauri.conf.json`;
    - la clave de esa versión en `app/src/whats-new.json` (ver el punto 2).
 
+   Si cambia el primer número distinto de cero (de `0.2.x` a `0.3.0`, por ejemplo), cambia también la versión con la que la app pide el dominio, `kosmotheka-domain = { version = "…" }` en `app/src-tauri/Cargo.toml`: con un `0.` delante, Cargo no da por compatible una `0.3` con una `0.2`, y la compilación falla.
+
    Los archivos de bloqueo (`Cargo.lock`, `app/package-lock.json`) llevan también la versión: se actualizan al compilar o con `npm install`. Las versiones de `Cargo.toml`, `package.json` y `tauri.conf.json` las compara `npm run check:whats-new`.
 
    **Cada versión que se sube a Google Play tiene que subir de número:** Google rechaza un `versionCode` repetido. Tauri lo calcula a partir de `version` (`0.1.0` → `1000`).
