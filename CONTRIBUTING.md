@@ -83,6 +83,19 @@ Tests never use the network. Tests against real services are marked `#[ignore]` 
 
 If you change a dependency that ships in the app, `npm run licenses` regenerates the licences list. It needs Docker and the network.
 
+## Improving the documentation
+
+The public guide (docs.kosmotheka.com) is built with [Starlight](https://starlight.astro.build), a documentation theme for Astro, from the Markdown in `site/src/content/docs/`. It is static HTML: nothing of it runs on a server. To see it while you edit:
+
+```bash
+cd site
+npm ci
+npm run dev        # http://localhost:4321, reloads as you save
+npm run build && npm run check:links   # what the CI runs
+```
+
+Write a page in Spanish first, then in English with the same path. `site/README.md` has the details. `docs/` is not the guide: it is the development diary, in Spanish.
+
 ## Rules that matter here
 
 The full list is in [`AGENTS.md`](AGENTS.md). These are the ones most likely to affect your change.

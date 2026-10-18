@@ -74,6 +74,19 @@ Para una **entidad nueva** (una tabla nueva), todo lo anterior y además:
 
 Comprueba al final con `cargo test`, `npm run check:spec` y `make check`.
 
+## Mejorar esta documentación
+
+Esta guía está hecha con [Starlight](https://starlight.astro.build), un tema de documentación de Astro, a partir del Markdown de `site/src/content/docs/`. Es HTML estático: no se ejecuta nada en un servidor. Para verla mientras la editas:
+
+```bash
+cd site
+npm ci
+npm run dev        # http://localhost:4321, se recarga al guardar
+npm run build && npm run check:links   # lo que comprueba la CI
+```
+
+Cada página se escribe primero en español (`es/`) y después en inglés (`en/`), con la misma ruta. Los enlaces entre páginas son `../página/`. Los detalles están en `site/README.md`. La carpeta `docs/` no es esta guía: es el diario de desarrollo, en español.
+
 ## Antes de abrir el *pull request*
 
 - Ejecuta las comprobaciones que correspondan a lo que tocaste.

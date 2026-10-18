@@ -74,6 +74,19 @@ For a **new entity** (a new table), everything above plus:
 
 Check at the end with `cargo test`, `npm run check:spec` and `make check`.
 
+## Improving this documentation
+
+This guide is built with [Starlight](https://starlight.astro.build), a documentation theme for Astro, from the Markdown in `site/src/content/docs/`. It is static HTML: nothing of it runs on a server. To see it while you edit:
+
+```bash
+cd site
+npm ci
+npm run dev        # http://localhost:4321, reloads as you save
+npm run build && npm run check:links   # what the CI checks
+```
+
+Each page is written first in Spanish (`es/`) and then in English (`en/`), with the same path. Links between pages are `../page/`. The details are in `site/README.md`. The `docs/` folder is not this guide: it is the development diary, in Spanish.
+
 ## Before opening the *pull request*
 
 - Run the checks that match what you touched.
