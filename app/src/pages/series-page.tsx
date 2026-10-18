@@ -65,7 +65,7 @@ export function SeriesPage({ desktop, version }: { desktop: boolean; version: nu
               <span className="text-[13px] text-muted-foreground">
                 {t(s.ordered ? "series.ordered" : "series.unordered")}
                 {" · "}
-                {t("series.haveOf", { have: s.works - s.missing, total: s.works })}
+                {t("series.haveOf", { have: s.have, total: s.total })}
               </span>
             </div>
           </button>

@@ -28,7 +28,7 @@ Dos series de una misma biblioteca no pueden llamarse igual.
 4. Elige «Con orden» o «Sin orden».
 5. Pulsa el botón «Nueva serie» que sale abajo.
 
-En la lista, cada serie dice cuántas cosas tiene y cuántas tienes («tienes 3 de 5»).
+En la lista, cada serie dice cuántas cosas tiene y cuántas tienes («tienes 3 de 5»). Igual que dentro de la serie, el total cuenta los huecos de una serie con orden.
 
 Dentro de una serie, «Renombrar» cambia su nombre. «Eliminar serie» la borra. Al borrarla, **las cosas se quedan en tu Catálogo** (la lista de todo lo que has apuntado). Solo desaparece la agrupación.
 

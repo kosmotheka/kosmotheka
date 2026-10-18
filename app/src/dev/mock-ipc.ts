@@ -505,8 +505,18 @@ function seriesEntryOf(b: BookSummary, entryId: string, position: number | null)
   };
 }
 
+/** The counts the Rust side adds: an ordered series counts its gaps. */
+function counted(series: Omit<SeriesDetail, "have" | "total">): SeriesDetail {
+  const highest = Math.max(0, ...series.entries.map((e) => e.position ?? 0));
+  return {
+    ...series,
+    have: series.entries.filter((e) => e.copies > 0).length,
+    total: series.ordered ? Math.max(series.entries.length, highest) : series.entries.length,
+  };
+}
+
 const seriesById: Record<string, SeriesDetail> = {
-  [DUNE_SERIES]: {
+  [DUNE_SERIES]: counted({
     id: DUNE_SERIES,
     name: "Dune",
     ordered: true,
@@ -518,13 +528,13 @@ const seriesById: Record<string, SeriesDetail> = {
       // Position 5 is left out on purpose: that is the gap.
       seriesEntryOf(bookAt(17), "d6", 6),
     ],
-  },
-  [CATAN_SERIES]: {
+  }),
+  [CATAN_SERIES]: counted({
     id: CATAN_SERIES,
     name: "Catán",
     ordered: false,
     entries: [seriesEntryOf(bookAt(8), "c1", null), seriesEntryOf(bookAt(15), "c2", null)],
-  },
+  }),
 };
 
 const lan: LanStatus = {
@@ -1292,6 +1302,8 @@ mockIPC((cmd, args) => {
         ordered: s.ordered,
         works: s.entries.length,
         missing: s.entries.filter((e) => e.copies === 0).length,
+        have: s.have,
+        total: s.total,
       }));
     case "get_series": {
       const id = (args as { id: string }).id;

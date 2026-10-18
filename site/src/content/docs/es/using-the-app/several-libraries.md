@@ -81,7 +81,7 @@ Para volver a tenerla, hay que emparejar de nuevo con uno de los dispositivos qu
 
 ### «Borrar biblioteca»
 
-La borra **en todos los dispositivos** que la tienen, con todas sus cosas, sus ejemplares y su historial. **No se puede deshacer.**
+La borra **en todos los dispositivos** que la tienen, con todas sus cosas, sus ejemplares y su historial. **No se puede deshacer.** Solo ve esta opción quien administra la biblioteca; el resto ve «Salir de esta biblioteca».
 
 La app te cuenta cuántas cosas se van y, si la biblioteca está compartida, en qué dispositivos.
 

@@ -44,6 +44,8 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   // Only where it is the way out: a library this device cannot administer.
   const { myRole } = useRequests();
   const mayDuplicate = myRole !== "admin";
+  // Deleting travels to every device (D65, D73): only for those who administer.
+  const mayDelete = myRole === "admin";
   const cloudRow = useCloudRows().find((row) => row.library.id === library?.id);
 
   // Another library became active: start from its name.
@@ -283,17 +285,21 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
               <span className="text-[13px] text-muted-foreground">{t("libraries.leaveHint")}</span>
             </span>
           </button>
-          <button
-            type="button"
-            className="flex min-h-16 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left text-destructive hover:bg-muted"
-            onClick={() => openOverlay({ name: "deleteLibrary" })}
-          >
-            <Trash2 className="size-5 shrink-0" />
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-semibold">{t("libraries.delete")}</span>
-              <span className="text-[13px] text-muted-foreground">{t("libraries.deleteHint")}</span>
-            </span>
-          </button>
+          {mayDelete && (
+            <button
+              type="button"
+              className="flex min-h-16 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left text-destructive hover:bg-muted"
+              onClick={() => openOverlay({ name: "deleteLibrary" })}
+            >
+              <Trash2 className="size-5 shrink-0" />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[15px] font-semibold">{t("libraries.delete")}</span>
+                <span className="text-[13px] text-muted-foreground">
+                  {t("libraries.deleteHint")}
+                </span>
+              </span>
+            </button>
+          )}
         </section>
       </div>
     </div>

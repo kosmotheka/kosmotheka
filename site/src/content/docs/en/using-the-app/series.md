@@ -28,7 +28,7 @@ Two series in the same library cannot have the same name.
 4. Choose "Ordered" or "Unordered".
 5. Tap the "New series" button at the bottom.
 
-In the list, each series says how many things it has and how many you have ("you have 3 of 5").
+In the list, each series says how many things it has and how many you have ("you have 3 of 5"). As inside the series, the total counts the gaps of an ordered series.
 
 Inside a series, "Rename" changes its name and "Delete series" deletes it. When you delete it, **the things stay in your catalog** (the list of everything you have noted). Only the grouping disappears.
 

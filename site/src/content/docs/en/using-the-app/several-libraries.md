@@ -81,7 +81,7 @@ To have it back, you must pair again with one of the devices that have it.
 
 ### "Delete library"
 
-It is deleted on **all the devices** that have it, with all its things, copies and history. **It cannot be undone.**
+It is deleted on **all the devices** that have it, with all its things, copies and history. **It cannot be undone.** Only people who administer the library see this option; everyone else sees "Leave this library".
 
 The app tells you how many things will go and, if the library is shared, on which devices.
 

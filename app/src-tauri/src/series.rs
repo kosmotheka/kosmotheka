@@ -22,6 +22,10 @@ pub struct SeriesSummary {
     pub works: i64,
     /// Works in the series with no copies.
     pub missing: i64,
+    /// Works you have at least one copy of.
+    pub have: i64,
+    /// What the series holds counting its gaps: the same number the series page shows.
+    pub total: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,6 +35,8 @@ pub struct SeriesDetail {
     pub name: String,
     pub ordered: bool,
     pub entries: Vec<SeriesEntry>,
+    pub have: i64,
+    pub total: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -305,6 +311,19 @@ pub fn reorder(
     Ok(())
 }
 
+/// How many entries you have a copy of, out of how many the series holds. An ordered series counts its
+/// gaps (positions not logged yet, D61), so the list and the series page say the same.
+fn tally(ordered: bool, entries: &[SeriesEntry]) -> (i64, i64) {
+    let count = |n: usize| i64::try_from(n).unwrap_or(i64::MAX);
+    let have = count(entries.iter().filter(|entry| entry.copies > 0).count());
+    let mut total = count(entries.len());
+    if ordered {
+        let highest = entries.iter().filter_map(|entry| entry.position).max();
+        total = total.max(highest.unwrap_or(0));
+    }
+    (have, total)
+}
+
 pub fn list_series(conn: &Connection, library: &str) -> Result<Vec<SeriesSummary>> {
     let mut statement = conn.prepare(
         "SELECT s.id, s.name, s.ordered,
@@ -327,9 +346,17 @@ pub fn list_series(conn: &Connection, library: &str) -> Result<Vec<SeriesSummary
             ordered: row.get::<_, i64>(2)? != 0,
             works: row.get(3)?,
             missing: row.get(4)?,
+            have: 0,
+            total: 0,
         })
     })?;
-    Ok(rows.collect::<rusqlite::Result<_>>()?)
+    let mut summaries: Vec<SeriesSummary> = rows.collect::<rusqlite::Result<_>>()?;
+    for summary in &mut summaries {
+        let detail = get_series(conn, library, &summary.id)?;
+        summary.have = detail.have;
+        summary.total = detail.total;
+    }
+    Ok(summaries)
 }
 
 /// Ordered series by position (entries without one last), unordered by title;
@@ -403,11 +430,14 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
     } else {
         entries.sort_by_key(|entry| entry.title.to_lowercase());
     }
+    let (have, total) = tally(ordered, &entries);
     Ok(SeriesDetail {
         id: id.to_owned(),
         name,
         ordered,
         entries,
+        have,
+        total,
     })
 }
 
@@ -669,6 +699,50 @@ mod tests {
             .unwrap();
         assert_eq!(summary.works, 2);
         assert_eq!(summary.missing, 1);
+    }
+
+    #[test]
+    fn the_list_and_the_series_count_gaps_the_same() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
+        // Positions 1, 2 and 5: two gaps; 3 titles, 2 of them with a copy.
+        let first = add_work(&mut conn, "Dune");
+        let second = add_work(&mut conn, "Dune Messiah");
+        add_to_series(&mut conn, &lib, &series_id, &first, Some(1)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &second, Some(2)).unwrap();
+        let edition_id = catalog::create_book(&mut conn, &lib, &book("Heretics"), None)
+            .unwrap()
+            .edition_id;
+        let third = catalog::get_book(&conn, &lib, &edition_id).unwrap().work_id;
+        let copy_id = catalog::get_book(&conn, &lib, &edition_id).unwrap().copies[0]
+            .id
+            .clone();
+        catalog::delete_copy(&mut conn, &lib, &copy_id).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &third, Some(5)).unwrap();
+
+        let summary = list_series(&conn, &lib)
+            .unwrap()
+            .into_iter()
+            .find(|s| s.id == series_id)
+            .unwrap();
+        let detail = get_series(&conn, &lib, &series_id).unwrap();
+
+        assert_eq!((summary.have, summary.total), (2, 5));
+        assert_eq!((detail.have, detail.total), (2, 5));
+    }
+
+    #[test]
+    fn an_unordered_series_total_is_its_works() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Misc", false).unwrap();
+        let work = add_work(&mut conn, "Dune");
+        add_to_series(&mut conn, &lib, &series_id, &work, None).unwrap();
+
+        let summary = list_series(&conn, &lib).unwrap().remove(0);
+
+        assert_eq!((summary.have, summary.total), (1, 1));
     }
 
     #[test]

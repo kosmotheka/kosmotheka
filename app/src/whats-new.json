@@ -1,6 +1,10 @@
 {
   "0.3.0": [
     {
+      "es": "«Borrar biblioteca» solo aparece a quien administra la biblioteca, y la lista de series y cada serie cuentan igual lo que tienes, huecos incluidos («tienes 3 de 6» en los dos sitios).",
+      "en": "“Delete library” now only shows for those who administer the library, and the series list and each series count what you have the same way, gaps included (“you have 3 of 6” in both places)."
+    },
+    {
       "es": "La Ayuda enlaza con la guía completa, en docs.kosmotheka.com.",
       "en": "Help links to the full guide, at docs.kosmotheka.com."
     },

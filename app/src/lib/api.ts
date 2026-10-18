@@ -1063,6 +1063,9 @@ export interface SeriesSummary {
   works: number;
   /** Works in the series with no copies. */
   missing: number;
+  /** Works you have a copy of, out of `total`, which counts the gaps of an ordered series. */
+  have: number;
+  total: number;
 }
 
 export interface SeriesEntry {
@@ -1082,6 +1085,8 @@ export interface SeriesDetail {
   name: string;
   ordered: boolean;
   entries: SeriesEntry[];
+  have: number;
+  total: number;
 }
 
 export function listSeries(): Promise<SeriesSummary[]> {

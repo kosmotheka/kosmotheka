@@ -76,8 +76,6 @@ export function SeriesDetailView({
 
   const shown = detail?.id === seriesId ? detail : null;
   const rows = shown ? rowsOf(shown) : [];
-  const have = shown ? shown.entries.filter((e) => e.copies > 0).length : 0;
-  const total = shown ? (shown.ordered ? rows.length : shown.entries.length) : 0;
   const missing = shown ? shown.entries.filter((e) => e.copies === 0).length : 0;
   const gaps = rows.filter((r) => r.entry === null).length;
 
@@ -85,7 +83,7 @@ export function SeriesDetailView({
     shown &&
     [
       t(shown.ordered ? "series.orderedKind" : "series.unorderedKind"),
-      t("series.haveOf", { have, total }),
+      t("series.haveOf", { have: shown.have, total: shown.total }),
       shown.ordered && missing > 0 ? t("series.missing", { count: missing }) : null,
       shown.ordered && gaps > 0 ? t("series.gaps", { count: gaps }) : null,
     ]
