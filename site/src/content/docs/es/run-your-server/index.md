@@ -16,7 +16,7 @@ Estas son las limitaciones de montar tu propio servidor. Están aquí, al princi
 - **Los enlaces de invitación se pegan en la app.** Los de un servidor propio no se abren solos con un toque: quien recibe el enlace lo copia y lo pega en la app.
 - **Entrar con Google, el correo y las claves de los buscadores son opcionales y se configuran aparte.** Sin correo, nadie puede confirmar una cuenta nueva con un código (ver [la configuración](/es/run-your-server/configuration/#el-correo)). Cada buscador (películas, videojuegos, cómics…) necesita una clave que pides tú a su proveedor, con sus condiciones.
 - **Quien administra el servidor puede leer lo que se sube a él.** Las bibliotecas no se cifran de extremo a extremo: están en la base de datos del servidor. Si alojas el servidor de otras personas, díselo.
-- **El nombre y el logo no son tuyos.** El código es libre, pero «Kosmotheka» y su logo no se pueden usar para hacer pasar tu servidor o tu app por el oficial (ver [TRADEMARKS.md](https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md)). Que tu servidor «funcione con Kosmotheka» sí se puede decir.
+- **El nombre y los logos no son tuyos.** El código es libre, pero «Kosmotheka» y sus logos no se pueden usar para hacer pasar tu servidor o tu app por el oficial (ver [El nombre y los logos](/es/run-your-server/name-and-logos/)). Que tu servidor «funcione con Kosmotheka» sí se puede decir.
 
 ## Qué hace falta
 

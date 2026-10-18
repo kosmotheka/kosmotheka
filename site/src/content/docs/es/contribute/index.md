@@ -43,3 +43,4 @@ Está pensada para quien programa y no conoce el proyecto. Se usan términos té
 - [SECURITY.md](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md), cómo avisar de un fallo de seguridad en privado.
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [El registro de decisiones](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) y [la arquitectura](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), en español.
+- [El nombre y los logos](/es/run-your-server/name-and-logos/): qué se puede hacer con ellos, y los logos para descargar.

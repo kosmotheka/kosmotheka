@@ -77,7 +77,7 @@
 | D69 | Reserva de regalos oculta solo en pantalla | aceptada |
 | D70 | Nombre del proyecto: Kosmotheka | aceptada |
 | D71 | Dejar de compartir quita el acceso y borra la biblioteca en el otro dispositivo | aceptada |
-| D72 | La marca (nombre y logo), fuera de la AGPL y protegida | propuesta |
+| D72 | La marca (nombre y logo), fuera de la AGPL y protegida | aceptada (la política; el registro, pendiente) |
 | D73 | Cómo se comprueban los permisos, sin servidor y con él | aceptada |
 | D74 | Publicar versiones: escritorio en GitHub Releases, Android a Google Play, ambos automáticos | aceptada |
 | D75 | Avisos al momento: Mercure con la app abierta, notificaciones push en Android | aceptada (revisada el 16/10/2026: sin UnifiedPush) |
@@ -1070,7 +1070,9 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Consecuencias:** concreta el hito 4.4. Casos de validación de `revocation` en `spec/`; tests por TLS real en `lan/client.rs`, uno de ellos con tres dispositivos. Amplía D65 y D66; la parte con cuentas y roles se retoma en la Fase 5 (D55).
 
-## D72 · La marca (nombre y logo), fuera de la AGPL y protegida — `propuesta`
+## D72 · La marca (nombre y logo), fuera de la AGPL y protegida — `aceptada`
+
+> **Aceptada el 18/10/2026** por el maintainer en su primer punto: el nombre y **todos los logos** (símbolo, logotipo, horizontal y apilado, en todos sus colores, y los iconos de la app) quedan fuera de las licencias, con la política de `TRADEMARKS.md`, ya definitiva. Se suman dos cosas: una página de la documentación, «El nombre y los logos», con los logos para descargar y cómo usarlos para referirse al proyecto (como hace BoardGameGeek); y que la app oficial avise cuando la nube no es la oficial (`api.kosmotheka.app`). Los puntos 2 a 4 (comprobar que el logo y el nombre están libres y registrarlos) siguen pendientes: son trámites del maintainer.
 
 **Contexto:** hace falta un logo para Google Play y la web ([encargo](design/encargo-logo.md), ya pasado a Claude Design). El logo tiene que ser original y estar protegido. Propuesta preparada en la sesión del logo con el maintainer.
 

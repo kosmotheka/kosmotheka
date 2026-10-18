@@ -4,6 +4,8 @@ Símbolo: lienzo 2B (un lienzo añil con una estrella de cinco puntas arriba a l
 
 Todas las piezas son SVG con viewBox, de una sola silueta (sin máscaras, degradados ni imágenes) y con el texto en trazos.
 
+Los SVG de `marca/` se publican también en la documentación, en `site/public/brand/`, para descargarlos desde «El nombre y los logos». **Si cambian aquí, cópialos allí.**
+
 ## Colores
 - Añil `#4b53c2` · `oklch(0.50 0.17 275)`: color del símbolo, acento en modo claro y fondo de og-image, github-social y feature-graphic (6,3:1 sobre blanco; texto blanco encima 6,3:1).
 - Añil claro `#8d9df5` · `oklch(0.72 0.13 275)`: acento en modo oscuro (7,8:1 sobre `#0a0a0a`).

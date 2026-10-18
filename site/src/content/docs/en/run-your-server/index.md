@@ -16,7 +16,7 @@ These are the limits of hosting your own server. They are here, at the start, so
 - **Invitation links are pasted into the app.** Those from your own server do not open with a tap by themselves: the person who receives the link copies it and pastes it into the app.
 - **Signing in with Google, email and the keys for the data search services are optional and set up separately.** Without email, nobody can confirm a new account with a code (see [the configuration](./configuration/#the-email)). Each search service (films, video games, comics…) needs a key that you request from its provider, under its conditions.
 - **Whoever runs the server can read what is uploaded to it.** The libraries are not encrypted end to end: they are in the server's database. If you host the server for other people, tell them.
-- **The name and the logo are not yours.** The code is free, but "Kosmotheka" and its logo cannot be used to make your server or your app pass for the official one (see [TRADEMARKS.md](https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md)). Saying that your server "works with Kosmotheka" is allowed.
+- **The name and the logos are not yours.** The code is free, but "Kosmotheka" and its logos cannot be used to make your server or your app pass for the official one (see [The name and the logos](./name-and-logos/)). Saying that your server "works with Kosmotheka" is allowed.
 
 ## What you need
 

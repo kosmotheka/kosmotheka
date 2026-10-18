@@ -43,3 +43,4 @@ It is written for people who program and do not know the project yet. Some techn
 - [SECURITY.md](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md), how to report a security problem privately.
 - [CODE_OF_CONDUCT.md](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md).
 - [The decision log](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md) and [the architecture](https://github.com/kosmotheka/kosmotheka/blob/main/docs/architecture), in Spanish.
+- [The name and the logos](/en/run-your-server/name-and-logos/): what can be done with them, and the logos to download.

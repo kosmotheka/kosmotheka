@@ -129,3 +129,41 @@
 #starlight__mobile-toc:not([open]) .dropdown {
   display: none;
 }
+
+/* The logos to download (run-your-server/name-and-logos). */
+.logo-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+.logo-card {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+.logo-card.on-dark {
+  background: #0a0a0a;
+}
+.logo-card img {
+  display: block;
+  height: 3rem;
+  max-width: 100%;
+  margin: 0 auto 0.75rem;
+  object-fit: contain;
+}
+.logo-card figcaption {
+  font-size: var(--sl-text-xs);
+  text-align: center;
+  color: #52525b;
+}
+.logo-card.on-dark figcaption {
+  color: #d4d4d8;
+}
+.logo-card.on-dark figcaption a {
+  color: #8d9df5;
+}
+.logo-card figcaption a {
+  color: #4b53c2;
+}
