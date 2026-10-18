@@ -107,6 +107,7 @@
 | D99 | Al borrar la cuenta dueña de una biblioteca de la nube, la biblioteca pasa a otra cuenta con acceso | aceptada (revisada el 15/10/2026) |
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
 | D101 | Una retirada firmada se obedece, aunque después haya podido deshacerse | aceptada |
+| D102 | Dos formas de irse: quitar la biblioteca de un dispositivo, o salir de ella del todo (retirarse uno mismo el acceso) | aceptada |
 
 ---
 
@@ -1907,3 +1908,36 @@ Aceptada por el maintainer el 16/10/2026, al cerrar SEG-040 antes de abrir el re
 **Decisión.** Quien recibe una retirada firmada y auténtica la obedece: borra la biblioteca de ese dispositivo, como hoy. Hace falta un servidor o un dispositivo hostil, y no se pierde nada que no se pueda recuperar: el resto del grupo conserva la biblioteca, y un administrador puede volver a compartirla.
 
 **Consecuencias.** SEG-040 pasa a `aceptado (D101)`. El test que lo reproducía pasa a documentar lo aceptado. Si algún día se cambia el protocolo para la frescura de lo firmado, se revisa esta decisión. Precisa D71 y D87.
+
+## D102 · Dos formas de irse: quitar la biblioteca de un dispositivo, o salir de ella del todo — `aceptada`
+
+Aceptada el 18/10/2026 por el maintainer, para antes de la prueba cerrada. Concreta D71 y D98.
+
+**Contexto.** La app tenía una sola acción, «Salir de esta biblioteca», que la quitaba **de ese dispositivo**: la cuenta seguía con acceso, la nube la seguía guardando y los demás seguían viéndote como miembro. Para quien deja un club o una familia no había forma de irse del todo; y una vez quitada, no se podía volver a bajar de la nube, porque la marca que lo impide (`forgotten_libraries`, SEG-017) era la misma para «la dejé» y «me la retiraron».
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Una sola acción, «Salir», siempre del todo | Un solo concepto | No hay forma de liberar un móvil sin irse de la biblioteca |
+| Una sola acción, solo del dispositivo (lo de antes) | Nada nuevo | No hay forma de irse del todo; confunde |
+| **Dos acciones con nombres distintos** | Cada una dice lo que hace | Dos botones donde había uno |
+
+**Decisión: dos acciones.**
+
+1. **«Quitar de este dispositivo»** (lo de antes, con otro nombre). Desaparece de ese dispositivo; la cuenta conserva el acceso.
+   - Si la biblioteca no está en ningún otro dispositivo, se puede quitar igualmente cuando **la nube confirma en ese momento** que la tiene (no basta con lo que recuerda la app). Sin conexión, o si la nube no la tiene, no se puede quitar sin perderla, como hasta ahora.
+   - **«Volver a bajar»** desde la parte de la nube de «Compartir y dispositivos», solo para las que quitó uno mismo y solo cuando lo pide. Una biblioteca **retirada** (D71, D98) no vuelve nunca por este camino: la retirada siempre gana, también sobre una que antes se quitó a mano. El motivo se guarda en el estado local del dispositivo, sin migración: una migración subiría `schemaVersion` y obligaría a actualizar a la vez el servidor y todos los dispositivos.
+   - Por qué la app se sigue negando por su cuenta: la nube ya niega la biblioteca a un dispositivo retirado, pero solo cuando la retirada ha llegado a la nube. Una retirada hecha por la red local y aún sin subir no la conoce.
+2. **«Salir de la biblioteca»**: la persona se retira el acceso a sí misma. Es lo mismo que D98 (`member.access_withdrawn`), pero escrito por la propia persona sobre su propia fila: desaparece de todos sus dispositivos y de su cuenta, y sigue en el catálogo con sus ejemplares y sus marcas.
+   - **Regla nueva** en `spec/`, con casos de conformidad que pasan la app y el servidor: cualquiera puede poner `access_withdrawn` en **su propia** persona. Retirárselo a otra persona sigue siendo solo de quien administra. Quitarse la marca, no: volver solo lo decide quien administra (D98, SEG-032).
+   - **El último administrador no puede salir**, igual que no se le puede echar: la app le pide que nombre a otro administrador o que borre la biblioteca.
+   - Funciona igual sin cuenta, solo por la red local.
+
+**No es borrar la cuenta.** Salir de una biblioteca no toca la cuenta de la nube. Borrar la cuenta es otra cosa: el botón de la app, la página web para pedirlo y, por correo, `app:user:delete` en el servidor (D99).
+
+**Consecuencias.**
+- La app y el servidor se actualizan juntos para la 0.3.0: un servidor sin la regla nueva convertiría «Salir» en una petición a quien administra (D73) en lugar de aplicarlo.
+- Test hostil primero: nadie que no administra puede retirar el acceso a otra persona, ni quitarse la marca a sí mismo.
+- Guía: `several-libraries.md`, `people-and-permissions.md` y `the-cloud.md`.
+
