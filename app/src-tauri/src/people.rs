@@ -642,7 +642,12 @@ pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Re
         member,
         json!({ "access_withdrawn": true }),
     )];
-    changes.extend(permissions::cut_off_changes(&tx, library, &devices)?);
+    changes.extend(permissions::cut_off_changes(
+        &tx,
+        library,
+        &devices,
+        |_| true,
+    )?);
     // A device paired and given to this person that has not registered yet has no row in
     // `devices`, only a waiting assignment (SEG-035): it is cut off the same way, with nothing
     // to fence since it has written nothing.
@@ -669,6 +674,46 @@ pub fn withdraw_person(conn: &mut Connection, library: &str, member: &str) -> Re
     Ok(())
 }
 
+/// Leaving the library for good (D102, rule 15): this device's person withdraws their own access. One operation
+/// (`member.leave`) writes the mark and, with the same changes as expelling (`cut_off_changes`), takes the person away
+/// from each of their devices and withdraws their access; only this device, the signing one, fences itself, at its
+/// previous operation, so nothing it did is disbelieved. The other devices are not fenced: they may hold work no
+/// device has seen, and others may have built on it.
+///
+/// The library does not vanish here at once: the operation has to reach another device first (it is not anywhere
+/// else yet), and then the usual way takes over: whoever receives it sends this device its revocation, with the
+/// proof, and it removes the library (`lan::remove_if_proved`, `cloud::cut_off`). Not the last administrator.
+pub fn leave_for_good(conn: &mut Connection, library: &str) -> Result<()> {
+    let me = ops::device_id(conn)?;
+    let Some(person) = permissions::person_of_device(conn, library, &me)? else {
+        return Err(Error::NotAllowed);
+    };
+    if is_last_admin(conn, library, &person)? {
+        return Err(Error::LastAdmin);
+    }
+    let tx = conn.transaction()?;
+    let devices: Vec<(String, String)> = tx
+        .prepare(
+            "SELECT id, name FROM devices WHERE library_id = ?1 AND member_id = ?2 ORDER BY id",
+        )?
+        .query_map([library, &person], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut changes = vec![Change::update(
+        Entity::Member,
+        &person,
+        json!({ "access_withdrawn": true }),
+    )];
+    changes.extend(permissions::cut_off_changes(
+        &tx,
+        library,
+        &devices,
+        |device| device == me,
+    )?);
+    ops::record(&tx, library, "member.leave", changes)?;
+    tx.commit()?;
+    Ok(())
+}
+
 /// Gives the access back: only removes the mark (D98). The devices stay without their person and
 /// the revocations stay; whoever administers links a device again, the usual way.
 pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Result<()> {
@@ -676,7 +721,7 @@ pub fn restore_person(conn: &mut Connection, library: &str, member: &str) -> Res
     // Devices the withdrawal did not name still point at the person; cut them off first, in the
     // same operation, or removing the mark would give them their access back (SEG-033).
     let strays = permissions::devices_of_withdrawn(&tx, library, Some(member))?;
-    let mut changes = permissions::cut_off_changes(&tx, library, &strays)?;
+    let mut changes = permissions::cut_off_changes(&tx, library, &strays, |_| true)?;
     changes.push(Change::update(
         Entity::Member,
         member,

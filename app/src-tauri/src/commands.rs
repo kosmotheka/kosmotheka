@@ -809,6 +809,15 @@ pub fn withdraw_person(database: State<'_, Database>, member: String) -> Result<
     people::withdraw_person(&mut conn, &library, &member)
 }
 
+/// «Leave the library» for good (D102): this device's person withdraws her own access in the active library.
+/// The operation has to reach another device before the library goes from this one (see `people::leave_for_good`).
+#[tauri::command]
+pub fn leave_library_for_good(database: State<'_, Database>) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    people::leave_for_good(&mut conn, &library)
+}
+
 /// Takes the mark off a person sent away (D98). It gives nothing back by itself.
 #[tauri::command]
 pub fn restore_person(database: State<'_, Database>, member: String) -> Result<()> {

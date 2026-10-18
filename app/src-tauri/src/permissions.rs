@@ -145,6 +145,19 @@ impl LibraryView for SqlView<'_> {
         self.member_of(device)
     }
 
+    fn raw_member_of_device(&self, device: &str) -> Option<String> {
+        self.conn
+            .query_row(
+                "SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2",
+                [self.library, device],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .optional()
+            .ok()
+            .flatten()
+            .flatten()
+    }
+
     fn device_has_member_id(&self, device: &str) -> bool {
         self.conn
             .query_row(
@@ -485,16 +498,21 @@ pub fn devices_of_withdrawn(
 
 /// The changes that cut `devices` off from a withdrawn person (D98): no person nor vouched key,
 /// the fence (D84, D87) and the withdrawal of their access (D71). Then each is forgotten as a
-/// peer, once the operation is recorded (`libraries::forget_peer`).
+/// peer, once the operation is recorded (`libraries::forget_peer`). `fenced` says which devices get
+/// the fence: all of them when someone expels a person; only the signing one when a person leaves
+/// by herself (D102, rule 15), whose other devices might hold work no other device has seen.
 pub fn cut_off_changes(
     conn: &Connection,
     library: &str,
     devices: &[(String, String)],
+    fenced: impl Fn(&str) -> bool,
 ) -> Result<Vec<Change>> {
     let mut changes = Vec::new();
     for (device, name) in devices {
         let mut fields = assignment_fields(conn, library, device, None)?;
-        fields["trusted_through"] = serde_json::json!(fence_mark(conn, library, device)?);
+        if fenced(device) {
+            fields["trusted_through"] = serde_json::json!(fence_mark(conn, library, device)?);
+        }
         changes.push(Change::update(Entity::Device, device, fields));
         changes.extend(crate::libraries::revocation_change(
             conn, library, device, name,
@@ -519,7 +537,7 @@ pub fn complete_withdrawals(conn: &mut Connection, libraries: &[String]) -> Resu
             continue;
         }
         let tx = conn.transaction()?;
-        let changes = cut_off_changes(&tx, library, &devices)?;
+        let changes = cut_off_changes(&tx, library, &devices, |_| true)?;
         ops::record(&tx, library, "member.withdraw", changes)?;
         for (device, _) in &devices {
             crate::libraries::forget_peer(&tx, library, device)?;

@@ -94,6 +94,16 @@ final readonly class CatalogLibraryView implements LibraryView
         return \is_array($member) && \is_string($member['id']) ? $member['id'] : null;
     }
 
+    public function rawMemberOfDevice(string $device): ?string
+    {
+        $member = $this->entityManager->createQuery(\sprintf(
+            'SELECT m.id FROM %s d JOIN d.member m WHERE d.cloudLibrary = :library AND m.cloudLibrary = :library AND d.id = :device',
+            Device::class,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('device', $device)->setMaxResults(1)->getOneOrNullResult();
+
+        return \is_array($member) && \is_string($member['id']) ? $member['id'] : null;
+    }
+
     public function deviceHasMemberId(string $device): bool
     {
         return [] !== $this->entityManager->createQuery(\sprintf('SELECT 1 FROM %s d WHERE d.cloudLibrary = :library AND d.id = :device AND d.member IS NOT NULL', Device::class))

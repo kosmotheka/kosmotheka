@@ -49,6 +49,7 @@ export type Overlay =
   | { name: "newLibrary" }
   | { name: "deleteLibrary" }
   | { name: "leaveLibrary" }
+  | { name: "leaveForGood" }
   | { name: "duplicateLibrary" }
   | { name: "move"; editionId: string; title: string }
   | { name: "series"; seriesId: string }

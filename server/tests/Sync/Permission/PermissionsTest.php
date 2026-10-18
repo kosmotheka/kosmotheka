@@ -143,18 +143,33 @@ final class PermissionsTest extends TestCase
 
     public function testOnlyAnAdministratorWritesAccessWithdrawn(): void
     {
-        $member = '01997c7e-0000-7000-8000-000000000013';
+        // Another person than the one the signing device belongs to: leaving oneself is rule 15, tested apart.
+        $member = self::OTHER_MEMBER;
         $withdraw = fn (bool $value): OperationPayload => $this->op([Ops::update(CatalogEntity::Member, $member, ['access_withdrawn' => $value])]);
 
         foreach ([true, false] as $value) {
             self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Editor)), 'an editor');
-            self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Reader, samePerson: true)), 'a reader, the person themself');
+            self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(Role::Reader, samePerson: true)), 'a reader');
             self::assertFalse(Permissions::isAllowed($withdraw($value), $this->view(null)), 'a device of nobody');
             self::assertTrue(Permissions::isAllowed($withdraw($value), $this->view(Role::Admin)));
             self::assertFalse(Permissions::isAllowed($withdraw($value), new FakeView(founded: true, cloud: true)), 'the cloud');
         }
         $born = $this->op([Ops::create(CatalogEntity::Member, $member, ['name' => 'Hugo', 'access_withdrawn' => true])]);
         self::assertFalse(Permissions::isAllowed($born, $this->view(Role::Editor)), 'not at creation');
+    }
+
+    public function testAPersonLeavesByMarkingHerselfAndNeverTakesTheMarkOffNorMarksAnother(): void
+    {
+        $mark = fn (string $member, bool $value): OperationPayload => $this->op([Ops::update(CatalogEntity::Member, $member, ['access_withdrawn' => $value])]);
+
+        foreach ([Role::Editor, Role::Reader] as $role) {
+            self::assertTrue(Permissions::isAllowed($mark(self::MY_MEMBER, true), $this->view($role)), 'herself, '.$role->value);
+            self::assertFalse(Permissions::isAllowed($mark(self::MY_MEMBER, false), $this->view($role)), 'not to take it off');
+            self::assertFalse(Permissions::isAllowed($mark(self::OTHER_MEMBER, true), $this->view($role)), 'not another person');
+            self::assertFalse(Permissions::isAllowed($mark(self::MY_MEMBER, true), $this->view($role, fenced: true)), 'not a fenced device');
+        }
+        self::assertFalse(Permissions::isAllowed($mark(self::MY_MEMBER, true), $this->view(null)), 'a device of nobody');
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::update(CatalogEntity::Member, self::MY_MEMBER, ['access_withdrawn' => true, 'role' => 'admin'])]), $this->view(Role::Editor)), 'nothing more than the mark');
     }
 
     public function testAnUnsignedOperationIsNeverAllowed(): void

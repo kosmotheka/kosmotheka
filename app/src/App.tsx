@@ -27,6 +27,7 @@ import { NewLibraryDialog } from "@/components/libraries/new-library-dialog";
 import {
   DeleteLibraryDialog,
   DuplicateLibraryDialog,
+  LeaveForGoodDialog,
   LeaveLibraryDialog,
 } from "@/components/libraries/remove-library-dialogs";
 import { type Libraries, LibrariesContext } from "@/components/libraries-context";
@@ -584,6 +585,13 @@ function AppShell({ news }: { news: WhatsNew | null }) {
             open={overlay?.name === "duplicateLibrary"}
             desktop={desktop}
             onDone={(name) => setNotice(t("libraries.duplicated", { name }))}
+          />
+          <LeaveForGoodDialog
+            open={overlay?.name === "leaveForGood"}
+            desktop={desktop}
+            onDone={(left, removed) =>
+              setNotice(t(removed ? "libraries.exitDone" : "libraries.exitPending", { name: left }))
+            }
           />
           <LeaveLibraryDialog
             open={overlay?.name === "leaveLibrary"}

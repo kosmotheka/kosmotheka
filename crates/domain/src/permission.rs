@@ -40,6 +40,10 @@ pub trait LibraryView {
     /// and is not the key it is registered with belongs to nobody (D96), and neither does one
     /// of a person whose access was withdrawn (D98).
     fn member_of_device(&self, device: &str) -> Option<String>;
+    /// The `member_id` of `device` as its row says, whatever its `vouched_key` or the person's access say; `None`
+    /// when the device is not registered or has none. Leaving a library asks this (rule 15): the devices it cuts
+    /// off must be the signer's person's in the state of whoever receives it.
+    fn raw_member_of_device(&self, device: &str) -> Option<String>;
     /// Whether the `member_id` of `device` is set, whatever its `vouched_key` says. The
     /// cloud's rule asks this, not `member_of_device`: it only links devices of nobody (D76).
     fn device_has_member_id(&self, device: &str) -> bool;
@@ -77,6 +81,10 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
     if !fenced && !view.founded() && is_founding(operation) {
         return true;
     }
+    // A person leaving the library themself (D102, rule 15): judged before the roles, since it is for any role.
+    if !fenced && is_exit(operation, author, view) {
+        return true;
+    }
     let role = if fenced {
         None
     } else {
@@ -91,6 +99,76 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         .changes
         .iter()
         .all(|change| change_allowed(change, author, role, cloud, view))
+}
+
+/// A person leaving the library themself (D102, rule 15). The operation is signed by a device of that person
+/// (`member_of_device`: its vouched key matches and their access is not withdrawn already) and holds exactly:
+/// - their own `member` row updated with `access_withdrawn: true` and nothing else;
+/// - for devices that are hers now (their `member_id`, as it stands), the take-away of the person and the vouched
+///   key, which is the same `device` update that expelling writes (rule 14); the signing device also fences itself
+///   at its previous operation (`trusted_through`), the others are not fenced;
+/// - a `revocation` of such a device, with its name.
+///
+/// Anything else, a device of another person included, makes the whole operation a request.
+fn is_exit(operation: &Operation, author: &str, view: &impl LibraryView) -> bool {
+    let Some(person) = view.member_of_device(author) else {
+        return false;
+    };
+    let is_hers = |device: &str| {
+        view.raw_member_of_device(device)
+            .is_some_and(|member| member.eq_ignore_ascii_case(&person))
+    };
+    let exactly = |change: &Change, keys: &[&str]| {
+        change.fields.len() == keys.len() && keys.iter().all(|key| change.fields.contains_key(*key))
+    };
+    let mut marked = false;
+    for change in &operation.changes {
+        match (change.entity, change.action) {
+            (Entity::Member, Action::Update) => {
+                if marked
+                    || !change.id.eq_ignore_ascii_case(&person)
+                    || !exactly(change, &["access_withdrawn"])
+                    || change.fields["access_withdrawn"].as_bool() != Some(true)
+                {
+                    return false;
+                }
+                marked = true;
+            }
+            (Entity::Device, Action::Update) => {
+                let own = change.id == author;
+                let keys: &[&str] = if own {
+                    &["member_id", "vouched_key", "trusted_through"]
+                } else {
+                    &["member_id", "vouched_key"]
+                };
+                if !exactly(change, keys)
+                    || !change.fields["member_id"].is_null()
+                    || !change.fields["vouched_key"].is_null()
+                    || !is_hers(&change.id)
+                {
+                    return false;
+                }
+                if own {
+                    // Everything the device did before is an ancestor of its previous operation: nothing of it is disbelieved.
+                    let through = change.fields["trusted_through"].as_str();
+                    if through != Some(operation.previous.as_deref().unwrap_or("")) {
+                        return false;
+                    }
+                }
+            }
+            (Entity::Revocation, Action::Create) => {
+                let device = change.fields.get("device_id").and_then(|v| v.as_str());
+                if !exactly(change, &["device_id", "device_name"])
+                    || change.fields["device_name"].as_str().is_none()
+                    || !device.is_some_and(is_hers)
+                {
+                    return false;
+                }
+            }
+            _ => return false,
+        }
+    }
+    marked
 }
 
 /// Whether `operation` is the founding of its library (D97, rule 1): it creates the `library` row with a
@@ -279,6 +357,9 @@ mod tests {
             self.same_person
         }
         fn member_of_device(&self, _: &str) -> Option<String> {
+            self.role.map(|_| MY_MEMBER.to_owned())
+        }
+        fn raw_member_of_device(&self, _: &str) -> Option<String> {
             self.role.map(|_| MY_MEMBER.to_owned())
         }
         fn device_has_member_id(&self, _: &str) -> bool {

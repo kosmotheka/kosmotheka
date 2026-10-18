@@ -34,6 +34,12 @@ interface LibraryView
     public function memberOfDevice(string $device): ?string;
 
     /**
+     * The `member_id` of `$device` as its row says, whatever its `vouched_key` or the person's access say; null when
+     * the device is not registered or has none. Leaving a library asks this (rule 15).
+     */
+    public function rawMemberOfDevice(string $device): ?string;
+
+    /**
      * Whether the `member_id` of `$device` is set, whatever its `vouched_key` says. The cloud's rule asks this, not
      * `memberOfDevice`: it only links devices of nobody (D76).
      */

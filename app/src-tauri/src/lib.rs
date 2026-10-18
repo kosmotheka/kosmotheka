@@ -213,6 +213,7 @@ pub fn run() {
             commands::assign_device,
             commands::remove_device,
             commands::withdraw_person,
+            commands::leave_library_for_good,
             commands::restore_person,
             commands::duplicate_library,
             commands::list_series,

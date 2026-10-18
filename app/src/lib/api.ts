@@ -823,6 +823,14 @@ export function leaveLibrary(id: string): Promise<string> {
   return invoke<string>("leave_library", { id });
 }
 
+/**
+ * «Leave the library» for good (D102): this device's person withdraws her own access in the active library. The
+ * library goes from this device once the operation has reached another one.
+ */
+export function leaveLibraryForGood(): Promise<void> {
+  return invoke("leave_library_for_good");
+}
+
 /** Whether the cloud of the signed-in account offers this library right now. Any failure is `false`. */
 export function libraryInCloud(id: string): Promise<boolean> {
   return invoke<boolean>("library_in_cloud", { id });

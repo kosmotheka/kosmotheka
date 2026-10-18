@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Cloud,
   Copy,
+  DoorOpen,
   History,
   LogOut,
   MonitorSmartphone,
@@ -285,6 +286,19 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
               <span className="text-[13px] text-muted-foreground">{t("libraries.leaveHint")}</span>
             </span>
           </button>
+          {myRole !== null && (
+            <button
+              type="button"
+              className="flex min-h-16 items-center gap-3.5 rounded-xl px-1 py-2.5 text-left hover:bg-muted"
+              onClick={() => openOverlay({ name: "leaveForGood" })}
+            >
+              <DoorOpen className="size-5 shrink-0" />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[15px] font-medium">{t("libraries.exit")}</span>
+                <span className="text-[13px] text-muted-foreground">{t("libraries.exitHint")}</span>
+              </span>
+            </button>
+          )}
           {mayDelete && (
             <button
               type="button"

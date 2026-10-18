@@ -3942,6 +3942,188 @@ mod tests {
         assert_converged(&[&laptop, &phone]);
     }
 
+    /// D102, rule 15: a person leaves by themself. One operation; their device is cut off and fenced at its previous
+    /// operation; the others learn of it, and with the proof their device removes the library.
+    #[test]
+    fn a_person_who_leaves_is_cut_off_and_their_device_removes_the_library_with_the_proof() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let phone_id = device_id_of(&phone);
+        let previous = ops::latest_of(&phone.0, &lib, &phone_id).unwrap().unwrap();
+
+        crate::people::leave_for_good(&mut phone.0, &lib).unwrap();
+
+        let steps = operations_with_intent(&phone, "member.leave");
+        assert_eq!(steps.len(), 1, "one operation");
+        assert_eq!(status_of_id(&phone, &steps[0]), "applied");
+        assert!(
+            crate::libraries::library_exists(&phone.0, &lib).unwrap(),
+            "the operation has to reach another device before the library goes"
+        );
+        let (person, key, fence) = device_row(&phone, &phone_id);
+        assert_eq!((person, key), (None, None));
+        assert_eq!(fence, Some(previous), "fenced at its previous operation");
+
+        laptop.pull_from(&phone);
+        assert_eq!(status_of_id(&laptop, &steps[0]), "applied");
+        assert_eq!(member_row(&laptop, &hugo), (Some(1), "Hugo".to_owned()));
+        assert!(
+            !crate::lan::revocations_of(&laptop.0, &lib, &phone_id)
+                .unwrap()
+                .is_empty()
+        );
+        let notices = crate::lan::notices_for(&laptop.0, &phone_id).unwrap();
+        assert!(
+            crate::lan::remove_if_proved(&mut phone.0, &lib, &notices.proofs, "the laptop")
+                .unwrap()
+        );
+        assert!(!crate::libraries::library_exists(&phone.0, &lib).unwrap());
+        assert!(
+            laptop.titles().contains(&"Tehanu".to_owned()),
+            "her book stays"
+        );
+    }
+
+    /// D102: nobody leaves with more than the mark and the cut of their own devices, and the last administrator
+    /// does not leave. A modified app that records it anyway gets `NotAllowed`, and nothing is written.
+    #[test]
+    fn leaving_asks_for_nothing_more_and_the_last_administrator_does_not_leave() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        let tersoal = own_person(&laptop.0, &lib);
+        let (phone_id, laptop_id) = (device_id_of(&phone), device_id_of(&laptop));
+        let previous = ops::latest_of(&phone.0, &lib, &phone_id).unwrap().unwrap();
+
+        let mark = |member: &str| {
+            Change::update(Entity::Member, member, json!({ "access_withdrawn": true }))
+        };
+        let cut = |device: &str, fence: Option<&str>| {
+            let mut fields = json!({ "member_id": null, "vouched_key": null });
+            if let Some(fence) = fence {
+                fields["trusted_through"] = json!(fence);
+            }
+            Change::update(Entity::Device, device, fields)
+        };
+        let attempts: Vec<(&str, Vec<Change>)> = vec![
+            ("another person's mark", vec![mark(&tersoal)]),
+            (
+                "another person's device",
+                vec![
+                    mark(&hugo),
+                    cut(&phone_id, Some(&previous)),
+                    cut(&laptop_id, None),
+                ],
+            ),
+            (
+                "a book",
+                vec![
+                    mark(&hugo),
+                    cut(&phone_id, Some(&previous)),
+                    Change::create(Entity::Tag, ops::new_id(), json!({ "name": "extra" })),
+                ],
+            ),
+            ("no mark", vec![cut(&phone_id, Some(&previous))]),
+            (
+                "a fence that is not the previous operation",
+                vec![mark(&hugo), cut(&phone_id, Some(""))],
+            ),
+            (
+                "the signing device unfenced",
+                vec![mark(&hugo), cut(&phone_id, None)],
+            ),
+        ];
+        for (what, changes) in attempts {
+            let tx = phone.0.transaction().unwrap();
+            let result = ops::record(&tx, &lib, "member.leave", changes);
+            drop(tx); // rolled back
+            assert!(
+                matches!(result, Err(crate::error::Error::NotAllowed)),
+                "{what}: {result:?}"
+            );
+        }
+        assert!(operations_with_intent(&phone, "member.leave").is_empty());
+
+        // The only administrator cannot leave.
+        assert!(matches!(
+            crate::people::leave_for_good(&mut laptop.0, &lib),
+            Err(crate::error::Error::LastAdmin)
+        ));
+    }
+
+    /// D102: when a person leaves from one device, her other devices are not fenced. Their work that the leaving
+    /// device has not seen is still believed, and what another person built on it is not lost.
+    #[test]
+    fn leaving_does_not_disbelieve_the_work_of_her_other_devices() {
+        let (mut laptop, mut phone) = laptop_admin_phone_reader();
+        let lib = laptop.1.clone();
+        let hugo = phone_person(&laptop, &phone);
+        crate::people::set_role(&mut laptop.0, &lib, &hugo, Some("editor"), false).unwrap();
+        // Hugo's second device.
+        let mut tablet = Device::receiving(&laptop);
+        let tx = tablet.0.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        laptop.pull_from(&tablet);
+        let tablet_id = device_id_of(&tablet);
+        crate::people::assign_device(&mut laptop.0, &lib, &tablet_id, Some(&hugo)).unwrap();
+        phone.pull_from(&laptop);
+        tablet.pull_from(&laptop);
+
+        // The tablet adds a book the phone does not know; the laptop sees it and builds on it.
+        let book_id = tablet.add("From the tablet", None, "Hugo");
+        let added = operations_with_intent(&tablet, "book.add");
+        laptop.pull_from(&tablet);
+        crate::catalog::add_copy(
+            &mut laptop.0,
+            &lib,
+            &book_id,
+            &book("x", None, "Tersoal").copy,
+        )
+        .unwrap();
+
+        // The phone, which has not seen it, leaves.
+        crate::people::leave_for_good(&mut phone.0, &lib).unwrap();
+        let steps = operations_with_intent(&phone, "member.leave");
+
+        for _ in 0..2 {
+            laptop.sync_with(&mut phone);
+            laptop.sync_with(&mut tablet);
+            phone.sync_with(&mut tablet);
+        }
+        crate::permissions::complete_withdrawals(&mut laptop.0, std::slice::from_ref(&lib))
+            .unwrap();
+        for _ in 0..2 {
+            laptop.sync_with(&mut phone);
+            laptop.sync_with(&mut tablet);
+        }
+
+        assert_eq!(status_of_id(&laptop, &steps[0]), "applied");
+        // No fence on the tablet, then or later: the administrator completing the cut has nothing to fence.
+        assert_eq!(device_row(&laptop, &tablet_id).2, None);
+        for id in &added {
+            assert_eq!(
+                status_of_id(&laptop, id),
+                "applied",
+                "the tablet's work stays"
+            );
+        }
+        for device in [&laptop, &phone, &tablet] {
+            assert!(device.titles().contains(&"From the tablet".to_owned()));
+        }
+        let copies: i64 = laptop
+            .0
+            .query_row(
+                "SELECT count(*) FROM copies WHERE library_id = ?1 AND edition_id = ?2",
+                [&lib, &book_id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(copies, 2, "the laptop's copy stays");
+        assert_converged(&[&laptop, &phone, &tablet]);
+    }
+
     #[test]
     fn the_last_administrator_and_oneself_are_not_withdrawn_and_the_withdrawn_do_not_count() {
         let (mut laptop, mut phone) = two_administrators();

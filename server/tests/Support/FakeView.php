@@ -49,6 +49,11 @@ final readonly class FakeView implements LibraryView
         return $this->role instanceof Role ? self::MY_MEMBER : null;
     }
 
+    public function rawMemberOfDevice(string $device): ?string
+    {
+        return $this->role instanceof Role ? self::MY_MEMBER : null;
+    }
+
     public function deviceHasMemberId(string $device): bool
     {
         return $this->role instanceof Role;

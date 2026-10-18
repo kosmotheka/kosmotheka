@@ -35,6 +35,10 @@ final class Permissions
         if (!$fenced && !$view->founded() && self::isFounding($operation)) {
             return true;
         }
+        // A person leaving the library themself (D102, rule 15): for any role, so it is judged before them.
+        if (!$fenced && self::isExit($operation, $author, $view)) {
+            return true;
+        }
         $role = $fenced ? null : $view->roleOfDevice($author);
         // The cloud's power (D76, D95) is the named device's, unless a fence makes it nobody's.
         // Asked only when a change could use it.
@@ -44,6 +48,54 @@ final class Permissions
             && $named === $author;
 
         return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
+    }
+
+    /**
+     * A person leaving the library themself (D102, rule 15). The operation is signed by a device of that person
+     * (`memberOfDevice`: its vouched key matches and their access is not withdrawn already) and holds exactly: their own
+     * `member` row updated with `access_withdrawn: true` and nothing else; for devices that are hers now (their
+     * `member_id`, as it stands), the take-away of the person and the vouched key, the same `device` update that
+     * expelling writes (rule 14), the signing device also fencing itself at its previous operation (`trusted_through`)
+     * and the others not fenced; and a `revocation` of such a device, with its name. Anything else, a device of another
+     * person included, makes the whole operation a request.
+     */
+    private static function isExit(OperationPayload $operation, string $author, LibraryView $view): bool
+    {
+        $person = $view->memberOfDevice($author);
+        if (null === $person) {
+            return false;
+        }
+        $isHers = static fn (string $device): bool => null !== ($member = $view->rawMemberOfDevice($device)) && 0 === strcasecmp($member, $person);
+        $exactly = static fn (ChangePayload $change, array $keys): bool => \count($change->fields) === \count($keys)
+            && array_all($keys, static fn (mixed $key): bool => \is_string($key) && \array_key_exists($key, $change->fields));
+        $marked = false;
+        foreach ($operation->changes as $change) {
+            if (CatalogEntity::Member === $change->entity && ChangeAction::Update === $change->action) {
+                if ($marked || 0 !== strcasecmp($change->id, $person) || !$exactly($change, ['access_withdrawn']) || true !== $change->fields['access_withdrawn']) {
+                    return false;
+                }
+                $marked = true;
+            } elseif (CatalogEntity::Device === $change->entity && ChangeAction::Update === $change->action) {
+                $own = $change->id === $author;
+                if (!$exactly($change, $own ? ['member_id', 'vouched_key', 'trusted_through'] : ['member_id', 'vouched_key'])
+                    || null !== $change->fields['member_id'] || null !== $change->fields['vouched_key'] || !$isHers($change->id)) {
+                    return false;
+                }
+                // Everything the device did before is an ancestor of its previous operation: nothing of it is disbelieved.
+                if ($own && ($operation->previous ?? '') !== $change->fields['trusted_through']) {
+                    return false;
+                }
+            } elseif (CatalogEntity::Revocation === $change->entity && ChangeAction::Create === $change->action) {
+                $device = $change->fields['device_id'] ?? null;
+                if (!$exactly($change, ['device_id', 'device_name']) || !\is_string($change->fields['device_name']) || !\is_string($device) || !$isHers($device)) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return $marked;
     }
 
     /**

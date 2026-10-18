@@ -1,8 +1,8 @@
 {
   "0.3.0": [
     {
-      "es": "«Salir de esta biblioteca» se llama ahora «Quitar de este dispositivo», y se puede hacer también con una biblioteca que está en la nube de tu cuenta: la app comprueba en ese momento que la nube la tiene. Después puedes volver a bajarla desde «Compartir y dispositivos».",
-      "en": "“Leave this library” is now called “Remove from this device”, and it also works for a library that is in your account's cloud: the app checks at that moment that the cloud has it. Afterwards you can bring it down again from “Sharing and devices”."
+      "es": "«Salir de esta biblioteca» se llama ahora «Quitar de este dispositivo»: la biblioteca desaparece solo de ese dispositivo, también si está en la nube de tu cuenta (la app comprueba en ese momento que la nube la tiene), y después puedes volver a bajarla desde «Compartir y dispositivos». Nueva: «Salir de la biblioteca», con la que dejas de tener acceso en todos tus dispositivos y en tu cuenta; tus libros siguen en la biblioteca, a tu nombre.",
+      "en": "“Leave this library” is now called “Remove from this device”: the library disappears only from that device, also when it is in your account's cloud (the app checks at that moment that the cloud has it), and afterwards you can bring it down again from “Sharing and devices”. New: “Leave the library”, with which you lose access on all your devices and in your account; your books stay in the library, in your name."
     },
     {
       "es": "En el ordenador, el botón de arriba se llama «¿Lo tengo?» y ya no dice «Escanear», porque el ordenador no escanea con cámara: ahí se teclea o se pega el número del libro.",

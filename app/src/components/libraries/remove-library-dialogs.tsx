@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Archive, CircleCheck, Copy, LogOut, MonitorSmartphone, Trash2 } from "lucide-react";
+import {
+  Archive,
+  CircleCheck,
+  Copy,
+  DoorOpen,
+  LogOut,
+  MonitorSmartphone,
+  Trash2,
+} from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
@@ -15,9 +23,14 @@ import {
   exportBackup,
   isCommandError,
   leaveLibrary,
+  leaveLibraryForGood,
   libraryDevices,
+  listLibraries,
+  permissionErrorKey,
+  syncWith,
   libraryInCloud,
 } from "@/lib/api";
+import { runCloudSync } from "@/lib/cloud";
 import { closeOverlay, navigate, openOverlay } from "@/lib/navigation";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -325,6 +338,90 @@ export function LeaveLibraryDialog({
             {t("libraries.goToDelete")}
           </Button>
         )}
+      </div>
+    </SheetOrDialog>
+  );
+}
+
+/**
+ * Leaving the library for good (D102): the person withdraws her own access, so it goes from all her devices and her
+ * account. Her books stay in the library, in her name; only whoever administers can let her back in. The operation
+ * has to reach another device before the library goes from this one, so it syncs at once with what it can reach.
+ */
+export function LeaveForGoodDialog({
+  open,
+  desktop,
+  onDone,
+}: {
+  open: boolean;
+  desktop: boolean;
+  /** `removed`: the library is already gone from this device. */
+  onDone: (name: string, removed: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const libraries = useLibraries();
+  const nameOf = useLibraryName();
+  const library = libraries.active;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!library) return null;
+  const name = nameOf(library);
+
+  const close = () => {
+    setError(null);
+    closeOverlay();
+  };
+
+  const leave = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const peers = await libraryDevices(library.id).catch(() => []);
+      await leaveLibraryForGood();
+      // Best effort: whoever receives the operation sends this device the proof, and it removes the library.
+      await Promise.allSettled([runCloudSync(), ...peers.map((peer) => syncWith(peer.deviceId))]);
+      const removed = !(await listLibraries()).some((other) => other.id === library.id);
+      libraries.reload();
+      closeOverlay();
+      onDone(name, removed);
+      navigate("catalog");
+    } catch (e) {
+      const key = permissionErrorKey(e);
+      setError(
+        key?.endsWith("last_admin") ? t("libraries.exitLastAdmin") : key ? t(key) : String(e),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SheetOrDialog
+      open={open}
+      desktop={desktop}
+      onClose={close}
+      title={t("libraries.exitTitle", { name })}
+      description={t("libraries.exitHint")}
+      icon={
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+          <DoorOpen className="size-[22px]" />
+        </span>
+      }
+    >
+      <ul className="flex list-disc flex-col gap-2 pl-5 text-[15px] leading-normal text-pretty">
+        <li>{t("libraries.exitEverywhere", { name })}</li>
+        <li>{t("libraries.exitBooks")}</li>
+        <li>{t("libraries.exitBack")}</li>
+      </ul>
+      {error && <p className="text-[13px] text-destructive">{error}</p>}
+      <div className="grid grid-cols-2 gap-2.5">
+        <Button variant="outline" className="h-12" onClick={close}>
+          {t("form.cancel")}
+        </Button>
+        <Button variant="destructive" className="h-12" disabled={busy} onClick={() => void leave()}>
+          {t("libraries.exitNamed", { name })}
+        </Button>
       </div>
     </SheetOrDialog>
   );
