@@ -73,17 +73,44 @@
   }
 }
 
-/* On a phone, the theme and language stay at the foot of the menu, however long it is. */
+/* On a wide screen the menu, the text and the table of contents stay together in the middle, with
+   the same margin on both sides, instead of leaving all the room on the right. */
+@media (min-width: 90rem) {
+  :root {
+    --sl-content-width: 52rem;
+  }
+}
+@media (min-width: 100rem) {
+  :root {
+    --kosmo-gutter: calc((100vw - 96rem) / 2);
+  }
+  :root[data-has-sidebar] {
+    --sl-content-inline-start: calc(var(--sl-sidebar-width) + var(--kosmo-gutter));
+  }
+  .sidebar-pane {
+    inset-inline-start: var(--kosmo-gutter);
+    border-inline-start: 1px solid var(--sl-color-hairline-shade);
+  }
+}
+
+/* On a phone, the theme and language are a bar fixed at the foot of the menu: only the menu scrolls. */
 @media (max-width: 49.99rem) {
+  .sidebar-pane {
+    scrollbar-gutter: auto;
+  }
+  .sidebar-content {
+    padding-bottom: 4.5rem;
+  }
   .mobile-preferences {
-    position: sticky;
+    position: fixed;
+    inset-inline: 0;
     bottom: 0;
-    margin-top: auto;
-    margin-inline: calc(-1 * var(--sl-sidebar-pad-x));
-    padding: 0.5rem var(--sl-sidebar-pad-x) calc(0.5rem + env(safe-area-inset-bottom));
+    z-index: 1;
     flex-wrap: nowrap;
     align-items: center;
     column-gap: 0.5rem;
+    padding: 0.625rem var(--sl-sidebar-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--sl-color-hairline-shade);
     background-color: var(--sl-color-bg-nav);
   }
   .mobile-preferences .social-icons {
