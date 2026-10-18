@@ -58,6 +58,7 @@
    fixed width; what is left goes to the right. */
 @media (min-width: 72rem) {
   :root {
+    --sl-sidebar-width: 21rem;
     --sl-content-width: 48rem;
     --kosmo-toc-width: 15rem;
   }
@@ -82,7 +83,7 @@
 }
 @media (min-width: 100rem) {
   :root {
-    --kosmo-gutter: calc((100vw - 96rem) / 2);
+    --kosmo-gutter: calc((100vw - 98rem) / 2);
   }
   :root[data-has-sidebar] {
     --sl-content-inline-start: calc(var(--sl-sidebar-width) + var(--kosmo-gutter));
@@ -98,22 +99,33 @@
   .sidebar-pane {
     scrollbar-gutter: auto;
   }
-  .sidebar-content {
-    padding-bottom: 4.5rem;
+  :root {
+    --kosmo-menu-foot: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+  .sidebar-pane {
+    inset-block-end: var(--kosmo-menu-foot);
   }
   .mobile-preferences {
     position: fixed;
     inset-inline: 0;
     bottom: 0;
     z-index: 1;
+    box-sizing: border-box;
+    height: var(--kosmo-menu-foot);
     flex-wrap: nowrap;
     align-items: center;
     column-gap: 0.5rem;
-    padding: 0.625rem var(--sl-sidebar-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    padding: 0 var(--sl-sidebar-pad-x) env(safe-area-inset-bottom);
     border-top: 1px solid var(--sl-color-hairline-shade);
     background-color: var(--sl-color-bg-nav);
   }
   .mobile-preferences .social-icons {
     padding-block: 0;
   }
+}
+
+/* The folded «On this page» of a phone: some versions of Chrome still draw the border and shadow of
+   its closed panel, a grey line down the left of the page. */
+#starlight__mobile-toc:not([open]) .dropdown {
+  display: none;
 }
