@@ -1985,6 +1985,17 @@
     }
   },
   "cloud": {
+    "official": {
+      "note": "Esta nube no es la oficial de Kosmotheka: la lleva {{host}}.",
+      "account": "Tu cuenta y tus bibliotecas subidas estarán allí.",
+      "label": "No oficial",
+      "libraryRow": "En la nube de {{host}} (no es la oficial)",
+      "libraryNotConnected": "Esta app no se conecta a ella a menos que entres en esa cuenta.",
+      "arrived": "«{{name}}» está en una nube que no es la oficial de Kosmotheka: la lleva {{host}}. Esta app no se conecta a ella a menos que entres en esa cuenta.",
+      "invitationOther": "Esta invitación es de {{host}}, que no es el servidor de tu cuenta. No se ha abierto.",
+      "downloading": "Viene de {{host}}, que no es la nube oficial.",
+      "downloaded": "Vienen de {{host}}, que no es la nube oficial."
+    },
     "errors": {
       "unknown": "Algo ha fallado con la nube. Prueba otra vez.",
       "not_left": "Esa biblioteca no se puede volver a bajar.",

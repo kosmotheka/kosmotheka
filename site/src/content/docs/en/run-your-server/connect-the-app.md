@@ -28,6 +28,10 @@ That is why you need [email set up](/en/run-your-server/configuration/#the-email
 
 When you sign in, the device registers with the server under its name, an identifier and its public key, and signs the entry for **that address**: a signature made for another server is not valid on yours. If you later change the server's public address (`DEFAULT_URI`), **nobody can sign in** until the app has the new one.
 
+### The "not official" notice
+
+Kosmotheka's app is the same for the official server (`api.kosmotheka.app`) and for yours, and it works with any server, but **whoever uses it has to know when their data is on a server that is not the official one**. So, with yours, people will see "This cloud is not the official one of Kosmotheka: *your-domain* runs it" when they type its address, in their account and in "Sharing and devices", when they open an invitation of yours, and in the libraries that live on it. It is a notice, not a block: nothing has to be set on the server, and it does not change with another name. "Official" is exactly `https://api.kosmotheka.app`: a test server on your network also shows as not official.
+
 ### Changing server
 
 The app only lets you change server **while signed out**. Anyone signed in to another one must sign out first (**Settings › Cloud and account › Sign out**: it deletes nothing from the device).

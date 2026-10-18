@@ -29,6 +29,11 @@ export async function refreshAccount(): Promise<AccountStatus> {
   return next;
 }
 
+/** The account state now, for code that is not a component. */
+export function currentAccount(): AccountStatus {
+  return status;
+}
+
 export function useAccount(): AccountStatus {
   return useSyncExternalStore(
     (listener) => {

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLibraries } from "@/components/libraries-context";
 import type { LibraryCloudStatus, LibrarySummary } from "@/lib/api";
 import { type CloudState, useCloud } from "@/lib/cloud";
+import { hostOf } from "@/lib/server";
 import { cn } from "@/lib/utils";
 
 /** What to say about one library's cloud, and whether the person can act on it. */
@@ -97,7 +98,9 @@ export function CloudStateLine({ row, className }: { row: CloudRow; className?: 
         ? when
           ? t("cloud.row.offlineSince", { when })
           : t("cloud.row.offline")
-        : t(`cloud.row.${row.kind}`);
+        : row.kind === "otherServer" && row.status.cloudServer
+          ? t("cloud.official.libraryRow", { host: hostOf(row.status.cloudServer) })
+          : t(`cloud.row.${row.kind}`);
   return (
     <span className={cn("flex items-center gap-1.5 text-[13px] text-muted-foreground", className)}>
       <span className={cn("size-1.5 shrink-0 rounded-full", DOT[row.kind])} aria-hidden />

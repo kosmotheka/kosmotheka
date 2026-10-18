@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { languageNames, supportedLanguages } from "@/i18n";
+import { hostOf } from "@/lib/server";
 import { useAccount } from "@/lib/account";
 import {
   type LibrarySummary,
@@ -51,7 +52,7 @@ export function SettingsDialog({
 }) {
   const { t, i18n } = useTranslation();
   const account = useAccount();
-  const host = account.official ? "kosmotheka.app" : account.server.replace(/^https?:\/\//, "");
+  const host = account.official ? "kosmotheka.app" : hostOf(account.server);
 
   const [deviceName, setDeviceNameState] = useState("");
   const [editingName, setEditingName] = useState(false);

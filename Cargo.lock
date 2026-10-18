@@ -2386,7 +2386,7 @@ dependencies = [
 
 [[package]]
 name = "kosmotheka"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -2426,7 +2426,7 @@ dependencies = [
 
 [[package]]
 name = "kosmotheka-domain"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "base64 0.23.1",
  "chrono",

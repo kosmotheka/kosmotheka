@@ -215,6 +215,7 @@ pub async fn sync(database: &Database, device_id: &str) -> Result<SyncReport> {
         report.received.add(&again.received);
         report.sent += again.sent;
         report.removed.extend(again.removed);
+        report.foreign_clouds.extend(again.foreign_clouds);
     }
     Ok(report)
 }
@@ -243,7 +244,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
             }
             other => other?,
         };
-    let (received, to_send, taken_up, removed) = {
+    let (received, to_send, taken_up, removed, foreign_clouds) = {
         let mut conn = database.lock()?;
         let before = shared_libraries(&conn, device_id)?;
         let offered: Vec<String> = pulled.vectors.keys().cloned().collect();
@@ -255,10 +256,22 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
                 removed.push(library.clone());
             }
         }
+        let had: Vec<String> = shared
+            .iter()
+            .filter(|library| libraries::library_exists(&conn, library).unwrap_or(false))
+            .cloned()
+            .collect();
         let received = sync::merge(
             &mut conn,
             only_shared_operations(pulled.operations, &shared),
         )?;
+        // Only the libraries that arrived now: the ones already here were told about when they came.
+        let new: Vec<String> = shared
+            .iter()
+            .filter(|library| !had.contains(library))
+            .cloned()
+            .collect();
+        let foreign_clouds = libraries::foreign_clouds(&conn, &new)?;
         register_in_shared(&mut conn, device_id)?;
         // With what the peer had already merged, and before working out what to send it (D96).
         crate::permissions::vouch_if_missing(&mut conn, &shared)?;
@@ -269,6 +282,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
             sync::operations_since(&conn, &theirs)?,
             taken_up,
             removed,
+            foreign_clouds,
         )
     };
 
@@ -292,6 +306,7 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
         sent,
         taken_up,
         removed,
+        foreign_clouds,
     })
 }
 
@@ -372,7 +387,7 @@ async fn find_among(fingerprint: &str, device_id: &str, candidates: Vec<String>)
 mod tests {
     use std::sync::Mutex;
 
-    use kosmotheka_domain::{CopyInput, EditionInput, Format, ValidBook};
+    use kosmotheka_domain::{Change, CopyInput, EditionInput, Entity, Format, ValidBook};
     use tokio::net::TcpListener;
 
     use super::*;
@@ -625,6 +640,58 @@ mod tests {
             .unwrap()
             .libraries = libraries;
         code
+    }
+
+    /// A library that arrives linked to the cloud of a server that is not the official one is marked in the
+    /// report, to tell the person; one in the official cloud, or with no cloud, is not.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_library_in_the_cloud_of_another_server_is_marked_in_the_report_when_it_arrives() {
+        let desk = serve().await;
+        add(&desk.database, "Desk's own");
+        let home_id = home(&desk.database);
+        let foreign =
+            libraries::create_library(&mut desk.database.lock().unwrap(), "Club").unwrap();
+        let plain = libraries::create_library(&mut desk.database.lock().unwrap(), "Plain").unwrap();
+        for (library, server) in [
+            (&home_id, crate::account::OFFICIAL_SERVER),
+            (&foreign, "https://biblio.casa-ruiz.es"),
+        ] {
+            let mut conn = desk.database.lock().unwrap();
+            let tx = conn.transaction().unwrap();
+            ops::record(
+                &tx,
+                library,
+                "library.link",
+                vec![Change::update(
+                    Entity::Library,
+                    library,
+                    serde_json::json!({ "cloud_library_id": ops::new_id(), "cloud_server": server }),
+                )],
+            )
+            .unwrap();
+            tx.commit().unwrap();
+        }
+        let phone = Database::in_memory();
+
+        let code = open_pairing_for(&desk, vec![home_id, foreign.clone(), plain]);
+        let server = pair(&phone, &code, &[]).await.unwrap();
+        let report = sync(&phone, &server.device_id).await.unwrap();
+
+        assert_eq!(
+            report.foreign_clouds.len(),
+            1,
+            "{:?}",
+            report.foreign_clouds
+        );
+        assert_eq!(report.foreign_clouds[0].library, foreign);
+        assert_eq!(report.foreign_clouds[0].name, "Club");
+        assert_eq!(
+            report.foreign_clouds[0].cloud_server,
+            "https://biblio.casa-ruiz.es"
+        );
+        // The next session has no news: the library is not new any more.
+        let again = sync(&phone, &server.device_id).await.unwrap();
+        assert!(again.foreign_clouds.is_empty());
     }
 
     #[tokio::test(flavor = "multi_thread")]

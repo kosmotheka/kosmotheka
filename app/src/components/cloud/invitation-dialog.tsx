@@ -5,6 +5,7 @@ import { Loader2, MailOpen } from "lucide-react";
 import { useLibraries } from "@/components/libraries-context";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NotOfficialNote } from "@/components/cloud/not-official-note";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,6 +21,7 @@ import {
 import { useAccount } from "@/lib/account";
 import { cloudNotices, refreshCloudStatus } from "@/lib/cloud";
 import { expiryText } from "@/lib/invitations";
+import { hostOf } from "@/lib/server";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -99,7 +101,13 @@ export function InvitationDialog({
       setExpiredFor(null);
       setLink("");
     } catch (e) {
-      setError(t(invitationErrorKey(e)));
+      const key = invitationErrorKey(e);
+      // A link of another server says whose it is (the host only, never the token).
+      setError(
+        key.endsWith("invitation_other_server")
+          ? t("cloud.official.invitationOther", { host: hostOf(link) })
+          : t(key),
+      );
     } finally {
       setBusy(null);
     }
@@ -202,6 +210,7 @@ export function InvitationDialog({
               {t("invitations.open.validUntil", { when })}
             </p>
           </div>
+          {!account.official && <NotOfficialNote host={hostOf(account.server)} />}
           {account.signedIn ? (
             <p className="text-sm leading-relaxed text-pretty">
               {t("invitations.open.signedInBody", {

@@ -613,6 +613,8 @@ export interface SyncReport {
   takenUp: boolean;
   /** Libraries removed here because the other device withdrew access (D71). */
   removed: string[];
+  /** Libraries that arrived linked to a cloud on a server that is not the official one. */
+  foreignClouds: { library: string; name: string; cloudServer: string }[];
 }
 
 /** A paired device and the libraries that go to it. */

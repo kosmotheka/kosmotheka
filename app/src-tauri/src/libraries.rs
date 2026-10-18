@@ -324,6 +324,42 @@ fn leave(conn: &mut Connection, id: &str, in_cloud: bool) -> Result<String> {
     Ok(active)
 }
 
+/// A library that lives in the cloud of a server that is not the official one (`account::OFFICIAL_SERVER`), run by
+/// somebody else. Only said, never followed: the app talks to the account's server and no other (D84).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForeignCloud {
+    pub library: String,
+    /// Empty for a library never named: the UI shows its own default name.
+    pub name: String,
+    pub cloud_server: String,
+}
+
+/// Which of `ids` this device has, linked to a cloud on a server that is not the official one.
+/// A library with no cloud, or in the official one, is not among them.
+pub fn foreign_clouds(conn: &Connection, ids: &[String]) -> Result<Vec<ForeignCloud>> {
+    let mut found = Vec::new();
+    for id in ids {
+        let row = conn
+            .query_row(
+                "SELECT name, cloud_server FROM libraries WHERE id = ?1 AND cloud_library_id IS NOT NULL",
+                [id],
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
+            )
+            .optional()?;
+        if let Some((name, Some(cloud_server))) = row
+            && cloud_server != crate::account::OFFICIAL_SERVER
+        {
+            found.push(ForeignCloud {
+                library: id.clone(),
+                name,
+                cloud_server,
+            });
+        }
+    }
+    Ok(found)
+}
+
 /// A library this device left by its own choice, and that was linked to a cloud library: what it takes to ask for
 /// it again (`cloud::redownload`) and to show it in the meantime. Local state, not a table: the library's row
 /// is gone. Whoever withdrew the device's access is never listed here (`forget_here` drops it), and only a
@@ -705,6 +741,38 @@ mod tests {
             )
             .unwrap();
         assert_eq!(kept, 1, "the delete stays on record (D66)");
+    }
+
+    #[test]
+    fn a_library_in_the_cloud_of_another_server_is_marked_and_the_others_are_not() {
+        let mut conn = db::open_in_memory().unwrap();
+        let official = create_library(&mut conn, "Official").unwrap();
+        let foreign = create_library(&mut conn, "Foreign").unwrap();
+        let local = create_library(&mut conn, "Local").unwrap();
+        let unlinked_server = create_library(&mut conn, "Odd").unwrap();
+        for (id, cloud, server) in [
+            (&official, Some("c1"), Some(crate::account::OFFICIAL_SERVER)),
+            (&foreign, Some("c2"), Some("https://biblio.casa-ruiz.es")),
+            (&unlinked_server, None, Some("https://biblio.casa-ruiz.es")),
+        ] {
+            conn.execute(
+                "UPDATE libraries SET cloud_library_id = ?2, cloud_server = ?3 WHERE id = ?1",
+                params![id, cloud, server],
+            )
+            .unwrap();
+        }
+        let ids = [official, foreign.clone(), local, unlinked_server];
+
+        let marked = foreign_clouds(&conn, &ids).unwrap();
+
+        assert_eq!(
+            marked,
+            vec![ForeignCloud {
+                library: foreign,
+                name: "Foreign".to_owned(),
+                cloud_server: "https://biblio.casa-ruiz.es".to_owned(),
+            }]
+        );
     }
 
     #[test]

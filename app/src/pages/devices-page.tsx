@@ -42,6 +42,7 @@ import {
   syncErrorKey,
 } from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
+import { foreignCloudNotices } from "@/lib/server";
 import { syncDevice, useSyncErrors } from "@/lib/sync-errors";
 import { cn } from "@/lib/utils";
 
@@ -134,9 +135,13 @@ export function DevicesPage({
         received: report.received.received,
         sent: report.sent,
       });
-      return report.removed.length > 0
-        ? `${summary} ${t("sharing.removed", { count: report.removed.length })}`
-        : summary;
+      return [
+        summary,
+        ...(report.removed.length > 0
+          ? [t("sharing.removed", { count: report.removed.length })]
+          : []),
+        ...foreignCloudNotices(report, t, t("nav.myLibrary")),
+      ].join(" ");
     });
 
   const forget = (device: Device) =>

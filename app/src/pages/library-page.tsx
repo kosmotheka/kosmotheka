@@ -28,7 +28,10 @@ import {
   renameLibrary,
   setSharing,
 } from "@/lib/api";
+import { NotOfficialNote } from "@/components/cloud/not-official-note";
+import { useCloud } from "@/lib/cloud";
 import { leaveSection, navigate, openOverlay } from "@/lib/navigation";
+import { hostOf, isOfficial } from "@/lib/server";
 
 /** Settings of the active library: name, who it is shared with, leave or delete it. */
 export function LibraryPage({ desktop }: { desktop: boolean }) {
@@ -48,6 +51,12 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
   // Deleting travels to every device (D65, D73): only for those who administer.
   const mayDelete = myRole === "admin";
   const cloudRow = useCloudRows().find((row) => row.library.id === library?.id);
+  // Linked to a cloud that is not the official one and that this device does not use: said even without a session.
+  const linked = useCloud().status.find((status) => status.library === library?.id);
+  const foreignHost =
+    linked?.cloudServer && !linked.linkedHere && !isOfficial(linked.cloudServer)
+      ? hostOf(linked.cloudServer)
+      : null;
 
   // Another library became active: start from its name.
   if (library && shownId !== library.id) {
@@ -240,6 +249,11 @@ export function LibraryPage({ desktop }: { desktop: boolean }) {
           </section>
         )}
 
+        {foreignHost && (
+          <NotOfficialNote host={foreignHost}>
+            {t("cloud.official.libraryNotConnected")}
+          </NotOfficialNote>
+        )}
         {cloudRow?.status.linkedHere && (
           <AutolinkSwitch status={cloudRow.status} library={nameOf(library)} desktop={desktop} />
         )}

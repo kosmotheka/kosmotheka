@@ -1971,6 +1971,17 @@
     }
   },
   "cloud": {
+    "official": {
+      "note": "This cloud is not the official one of Kosmotheka: {{host}} runs it.",
+      "account": "Your account and the libraries you upload will be there.",
+      "label": "Not official",
+      "libraryRow": "In the cloud of {{host}} (not the official one)",
+      "libraryNotConnected": "This app does not connect to it unless you sign in to that account.",
+      "arrived": "“{{name}}” is in a cloud that is not the official one of Kosmotheka: {{host}} runs it. This app does not connect to it unless you sign in to that account.",
+      "invitationOther": "This invitation is from {{host}}, which is not your account's server. It was not opened.",
+      "downloading": "It comes from {{host}}, which is not the official cloud.",
+      "downloaded": "They come from {{host}}, which is not the official cloud."
+    },
     "errors": {
       "unknown": "Something went wrong with the cloud. Try again.",
       "not_left": "That library cannot be brought down again.",

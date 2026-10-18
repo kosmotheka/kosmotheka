@@ -103,6 +103,9 @@ pub struct SyncReport {
     pub taken_up: bool,
     /// Libraries removed here because the peer withdrew this device's access (D71).
     pub removed: Vec<String>,
+    /// Libraries that arrived in this session linked to a cloud on a server that is not the official one: the
+    /// person is told, since this device does not talk to that server unless she signs in there.
+    pub foreign_clouds: Vec<crate::libraries::ForeignCloud>,
 }
 
 #[derive(Debug, Clone, Serialize)]

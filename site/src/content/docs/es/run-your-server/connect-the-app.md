@@ -28,6 +28,10 @@ Por eso necesitas [el correo configurado](/es/run-your-server/configuration/#el-
 
 Al iniciar sesión, el dispositivo se da de alta en el servidor con su nombre, un identificador y su clave pública, y firma la entrada para **esa dirección**: una firma hecha para otro servidor no vale en el tuyo. Si más tarde cambias la dirección pública del servidor (`DEFAULT_URI`), **nadie podrá iniciar sesión** hasta que la app tenga la nueva.
 
+### El aviso de «no oficial»
+
+La app de Kosmotheka es la misma para el servidor oficial (`api.kosmotheka.app`) y para el tuyo, y funciona con cualquier servidor, pero **quien la usa tiene que saber cuándo sus datos están en un servidor que no es el oficial**. Por eso, con el tuyo, las personas verán «Esta nube no es la oficial de Kosmotheka: la lleva *tu-dominio*» al escribir su dirección, en su cuenta y en «Compartir y dispositivos», al abrir una invitación tuya y en las bibliotecas que vivan en él. Es un aviso, no un bloqueo: no hace falta configurar nada en el servidor, y no cambia al poner otro nombre. «Oficial» es exactamente `https://api.kosmotheka.app`: un servidor de pruebas en tu red también sale como no oficial.
+
 ### Cambiar de servidor
 
 La app solo deja cambiar de servidor **sin sesión iniciada**. Quien ya está conectado a otro tiene que cerrar sesión antes (**Ajustes › Cuenta y nube › Cerrar sesión**: no borra nada del dispositivo).

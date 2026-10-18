@@ -55,6 +55,10 @@ An administrator can change everything, including adding or removing people from
 
 If you do not administer the library, the app asks you nothing.
 
+## If the library is in the cloud of another server
+
+A library that reaches you by QR may be uploaded to the cloud of another server, which is not Kosmotheka's official one. When pairing ends the app tells you: "“Club” is in a cloud that is not the official one of Kosmotheka: … runs it". **Your app does not connect to that server** because you received the library: it keeps talking to your account's server, or to none if you have no account, and the library is shared with you over the home network like any other. Only if you later sign in to an account on that server will your data go there; the app will warn you then too. The line stays in the library's settings.
+
 ## How changes are passed on afterwards
 
 The two devices update themselves when they are on the same Wi-Fi and the app is open. This happens when you open the app, when you change something and, while the app is on screen, every five minutes: a change can take up to five minutes to arrive. If one is away from home, it updates when it gets back.

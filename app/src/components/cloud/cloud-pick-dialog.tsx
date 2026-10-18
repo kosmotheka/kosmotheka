@@ -17,6 +17,7 @@ import {
 } from "@/lib/api";
 import { recordSynced, refreshCloudStatus, useCloud } from "@/lib/cloud";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
+import { hostOf } from "@/lib/server";
 
 type Progress = "waiting" | "uploading" | "done" | { failed: string };
 
@@ -125,7 +126,11 @@ export function CloudPickDialog({
   const sub = (status: LibraryCloudStatus, library: LibrarySummary) => {
     const works = t("nav.works", { count: library.works });
     if (status.linkedHere) return `${works} · ${t("cloud.pick.inCloud")}`;
-    if (status.cloudLibrary) return t("cloud.pick.otherServer");
+    if (status.cloudLibrary) {
+      return status.cloudServer
+        ? t("cloud.official.libraryRow", { host: hostOf(status.cloudServer) })
+        : t("cloud.pick.otherServer");
+    }
     return works;
   };
 

@@ -1071,6 +1071,7 @@ mockIPC((cmd, args) => {
         sent: 0,
         takenUp: false,
         removed: [],
+        foreignClouds: [],
       };
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");

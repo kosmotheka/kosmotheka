@@ -62,6 +62,18 @@ Two more things:
 - If whoever administers the library marked that device as belonging to **another person**, the app tells you ("In “Home”, this device belongs to Laura"). It stays that way; to change it, whoever administers has to do it from their device, in "People and permissions".
 - Only what you uploaded to the cloud reaches the new phone. The libraries you did not upload stay on your other devices.
 
+## When the cloud is not the official one
+
+Kosmotheka's official cloud is `kosmotheka.app`. Anyone can run their own server and the app connects to it if you type its address under "Another server", but then your account and the libraries you upload are on a server **that someone else runs**. The app tells you every time it matters, in one line: "This cloud is not the official one of Kosmotheka: … runs it", with the name of the server.
+
+You see it in these places:
+- when you type another server's address while signing in, before you continue, and on the sign-in screen while you are on one;
+- in "Account", next to the server, with the label "Not official", and in "Sharing and devices", above the cloud rows;
+- when you open an invitation from a server that is not the official one, before accepting it;
+- in the library, if it is in the cloud of a server that is not the official one, and when you receive it by QR (see [Share at home](../share-at-home/)).
+
+It is only a notice: it does not stop you using that server. If it is not yours or someone you trust, go back to "Use the official one".
+
 ## Bring down a library you removed
 
 If you remove a library from a device ("Remove from this device", see [Several libraries](../several-libraries/)) and your account's cloud has it, it appears in "Sharing and devices", in the cloud part, under "Removed from this device", with the button "Bring down again". The app does not bring it down by itself when it syncs: only when you ask.

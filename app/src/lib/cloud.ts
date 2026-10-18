@@ -16,6 +16,8 @@ import {
   isCloudOffline,
   syncCloud,
 } from "@/lib/api";
+import { currentAccount } from "@/lib/account";
+import { hostOf } from "@/lib/server";
 
 // What the app knows about the cloud, cached between renders like lib/account.ts. Rust
 // keeps the link (local, in `cloudStatus`); the rest is what this session's syncs saw.
@@ -227,6 +229,10 @@ export function cloudNotices(
         t("cloud.notice.downloadedCount", { count: downloaded.length }),
         ...lines,
         t("cloud.notice.downloadedNotUploaded"),
+        // From a server that is not the official one: said once more, where the person learns they came down.
+        ...(currentAccount().official
+          ? []
+          : [t("cloud.official.downloaded", { host: hostOf(currentAccount().server) })]),
       ].join(" "),
     );
   }

@@ -46,11 +46,7 @@ import {
 } from "@/lib/api";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { isSecondFactorCode } from "@/lib/second-factor-code";
-
-/** The host part only ("biblio.casa-ruiz.es", not the scheme), as AuthDialog shows it. */
-function hostOf(url: string): string {
-  return url.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-}
+import { hostOf } from "@/lib/server";
 
 type TwofaAction = "disable" | "regenerate";
 
@@ -208,8 +204,15 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
                 {t("account.screen.server")}
               </span>
               <span className="flex flex-1 items-center gap-1.5 truncate text-[15px]">
-                <span className="size-1.5 shrink-0 rounded-full bg-success" />
+                <span
+                  className={`size-1.5 shrink-0 rounded-full ${account.official ? "bg-success" : "bg-warning"}`}
+                />
                 {host}
+                {!account.official && (
+                  <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium">
+                    {t("cloud.official.label")}
+                  </span>
+                )}
               </span>
             </div>
           </section>

@@ -1,4 +1,10 @@
 {
+  "0.3.1": [
+    {
+      "es": "Cuando una nube no es la oficial de Kosmotheka, la app lo dice: al escribir otra dirección de servidor, en la cuenta, en «Compartir y dispositivos», en la biblioteca, al recibir por QR una biblioteca que vive en otra nube y al abrir una invitación de otro servidor, siempre con quién la lleva.",
+      "en": "When a cloud is not the official one of Kosmotheka, the app says so: when you type another server address, in the account, in “Sharing and devices”, in the library, when you receive by QR a library that lives in another cloud, and when you open an invitation from another server, always with who runs it."
+    }
+  ],
   "0.3.0": [
     {
       "es": "«Salir de esta biblioteca» se llama ahora «Quitar de este dispositivo»: la biblioteca desaparece solo de ese dispositivo, también si está en la nube de tu cuenta (la app comprueba en ese momento que la nube la tiene), y después puedes volver a bajarla desde «Compartir y dispositivos». Nueva: «Salir de la biblioteca», con la que dejas de tener acceso en todos tus dispositivos y en tu cuenta; tus libros siguen en la biblioteca, a tu nombre.",

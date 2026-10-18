@@ -3,11 +3,14 @@ import { useTranslation } from "react-i18next";
 import { Cloud, CloudDownload, CloudOff, RefreshCw, TriangleAlert } from "lucide-react";
 
 import { CloudStateLine, useCloudRows } from "@/components/cloud/cloud-state";
+import { NotOfficialNote } from "@/components/cloud/not-official-note";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { Button } from "@/components/ui/button";
 import { type LeftLibrary, cloudErrorKey, leftLibraries, redownloadLibrary } from "@/lib/api";
 import { cloudNotices, refreshCloudStatus, runCloudSync, useCloud } from "@/lib/cloud";
+import { useAccount } from "@/lib/account";
 import { openOverlay } from "@/lib/navigation";
+import { hostOf } from "@/lib/server";
 
 /**
  * The libraries this device removed by its own choice and the cloud may hand over again: one button each, the only
@@ -108,6 +111,7 @@ export function CloudSharingSection({
 }) {
   const { t } = useTranslation();
   const cloud = useCloud();
+  const account = useAccount();
   const rows = useCloudRows();
   const libraries = useLibraries();
   const nameOf = useLibraryName();
@@ -142,6 +146,8 @@ export function CloudSharingSection({
             {t("devices.syncNow")}
           </Button>
         </div>
+
+        {!account.official && <NotOfficialNote host={hostOf(account.server)} />}
 
         {cloud.offline && (
           <div className="flex flex-col gap-1 rounded-xl border border-warning/40 bg-warning-soft px-3.5 py-3 text-sm text-pretty text-foreground">

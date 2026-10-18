@@ -62,6 +62,18 @@ Dos cosas más:
 - Si quien administra la biblioteca marcó que ese dispositivo es de **otra persona**, la app te lo cuenta («En “Casa”, este dispositivo es de Laura»). Se queda así; para cambiarlo, quien administra tiene que hacerlo desde su dispositivo, en «Personas y permisos».
 - Al móvil nuevo **solo llega lo que subiste a la nube**. Las bibliotecas que no subiste siguen en tus otros dispositivos.
 
+## Cuando la nube no es la oficial
+
+La nube oficial de Kosmotheka es `kosmotheka.app`. Cualquiera puede montar su propio servidor y la app se conecta a él si escribes su dirección en «Otro servidor», pero entonces tu cuenta y tus bibliotecas subidas están en un servidor que **lleva otra persona**. La app te lo dice cada vez que importa, con una línea: «Esta nube no es la oficial de Kosmotheka: la lleva …» y el nombre del servidor.
+
+La ves en estos sitios:
+- al escribir la dirección de otro servidor al entrar, antes de seguir, y en la pantalla de entrar mientras estés en uno;
+- en «Cuenta», junto al servidor, con la etiqueta «No oficial», y en «Compartir y dispositivos», encima de las filas de la nube;
+- al abrir una invitación de un servidor que no es el oficial, antes de aceptarla;
+- en la biblioteca, si está en la nube de un servidor que no es el oficial, y al recibirla por QR (ver [Compartir en casa](../share-at-home/)).
+
+Es solo un aviso: no te impide usar ese servidor. Si no es el tuyo ni el de alguien de confianza, vuelve a «Usar el oficial».
+
 ## Volver a bajar una biblioteca que quitaste
 
 Si quitas una biblioteca de un dispositivo («Quitar de este dispositivo», ver [Varias bibliotecas](../several-libraries/)) y la nube de tu cuenta la tiene, en «Compartir y dispositivos», en la parte de la nube, aparece en «Quitadas de este dispositivo» con el botón «Volver a bajar». La app no la baja sola al sincronizar: solo cuando tú lo pides.

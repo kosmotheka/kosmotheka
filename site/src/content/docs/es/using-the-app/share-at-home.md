@@ -55,6 +55,10 @@ Quien administra puede cambiarlo todo, también añadir o quitar personas de la 
 
 Si no administras la biblioteca, la app no te pregunta nada.
 
+## Si la biblioteca está en la nube de otro servidor
+
+Una biblioteca que te llega por QR puede estar subida a la nube de otro servidor, que no es la oficial de Kosmotheka. Al terminar el emparejamiento la app te lo dice: ««Club» está en una nube que no es la oficial de Kosmotheka: la lleva …». **Tu app no se conecta a ese servidor** por haber recibido la biblioteca: sigue hablando con el de tu cuenta, o con ninguno si no tienes cuenta, y la biblioteca se comparte contigo por la red de casa como cualquier otra. Solo si más tarde entras en una cuenta de ese servidor, tus datos irán allí; la app te avisará entonces también. La línea sigue viéndose en los ajustes de la biblioteca.
+
 ## Cómo se pasan los cambios después
 
 Los dos dispositivos se actualizan solos cuando están en la misma wifi y la app está abierta. Pasa al abrir la app, al cambiar algo y, con la app en pantalla, cada cinco minutos: un cambio puede tardar hasta cinco minutos en llegar. Si uno está fuera de casa, se actualiza cuando vuelva.

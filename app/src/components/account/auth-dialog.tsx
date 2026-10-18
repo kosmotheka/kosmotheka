@@ -8,7 +8,9 @@ import { SecondFactorInput } from "@/components/account/second-factor-input";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NotOfficialNote } from "@/components/cloud/not-official-note";
 import { useAccount, refreshAccount } from "@/lib/account";
+import { hostOf, isOfficial } from "@/lib/server";
 import {
   type ServerInfo,
   accountServerInfo,
@@ -52,11 +54,6 @@ function errorOf(e: unknown): ActionError {
   if (isCommandError(e) && e.kind === "account")
     return { reason: e.reason, retryAfter: e.retryAfter };
   return { reason: "internal" };
-}
-
-/** The host part only, as the design shows it ("biblio.casa-ruiz.es", not the scheme). */
-function hostOf(url: string): string {
-  return url.replace(/^https?:\/\//, "").replace(/\/+$/, "");
 }
 
 const RESEND_SECONDS = 60;
@@ -458,6 +455,10 @@ export function AuthDialog({
             )}
           </label>
         )}
+        {step === "server" && serverUrl.trim() !== "" && !isOfficial(serverUrl) && (
+          <NotOfficialNote host={hostOf(serverUrl)}>{t("cloud.official.account")}</NotOfficialNote>
+        )}
+        {step === "signin" && !account.official && <NotOfficialNote host={host} />}
         {restricted && (
           <div
             role="status"

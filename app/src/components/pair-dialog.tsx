@@ -22,6 +22,7 @@ import {
 } from "@/lib/api";
 import { closeOverlay } from "@/lib/navigation";
 import { CameraDenied, scanQr } from "@/lib/scanner";
+import { foreignCloudNotices } from "@/lib/server";
 import { syncDevice } from "@/lib/sync-errors";
 import { cn } from "@/lib/utils";
 
@@ -168,11 +169,14 @@ export function PairDialog({
       await finish.current(
         device.deviceId,
         device.name,
-        t("devices.pairedAndSynced", {
-          name: device.name,
-          received: report.received.received,
-          sent: report.sent,
-        }),
+        [
+          t("devices.pairedAndSynced", {
+            name: device.name,
+            received: report.received.received,
+            sent: report.sent,
+          }),
+          ...foreignCloudNotices(report, t, t("nav.myLibrary")),
+        ].join(" "),
       );
     } catch (e) {
       setError(t(permissionErrorKey(e) ?? syncErrorKey(e)));

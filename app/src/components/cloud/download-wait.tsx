@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAccount } from "@/lib/account";
 import { useCloud } from "@/lib/cloud";
+import { hostOf } from "@/lib/server";
 
 // A sync that finishes at once is not worth a screen; one that lasts is a library coming down.
 const SHOW_AFTER_MS = 2500;
@@ -15,6 +17,7 @@ const SHOW_AFTER_MS = 2500;
 export function DownloadWait() {
   const { t } = useTranslation();
   const cloud = useCloud();
+  const account = useAccount();
   const waiting = cloud.syncing && !cloud.status.some((s) => s.linkedHere);
   const [slow, setSlow] = useState(false);
 
@@ -32,7 +35,11 @@ export function DownloadWait() {
     <Alert className="mb-4">
       <Loader2 className="animate-spin" />
       <AlertTitle>{t("cloud.download.title")}</AlertTitle>
-      <AlertDescription>{t("cloud.download.lead")}</AlertDescription>
+      <AlertDescription>
+        {t("cloud.download.lead")}
+        {!account.official &&
+          ` ${t("cloud.official.downloading", { host: hostOf(account.server) })}`}
+      </AlertDescription>
     </Alert>
   );
 }
