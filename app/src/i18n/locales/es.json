@@ -716,7 +716,8 @@
         ]
       }
     },
-    "showWelcome": "Ver la bienvenida"
+    "showWelcome": "Ver la bienvenida",
+    "fullGuide": "¿No está aquí? La guía completa está en <link>docs.kosmotheka.com</link>."
   },
   "types": {
     "all": "Todo",

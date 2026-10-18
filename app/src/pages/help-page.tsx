@@ -1,9 +1,17 @@
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 
+import { ExternalLink } from "@/components/external-link";
 import { Button } from "@/components/ui/button";
+import { type Language, languageOf } from "@/i18n";
 import { ChevronDown } from "lucide-react";
 
 const TOPICS = ["share", "away", "pairing", "backups", "lost", "search"] as const;
+
+/** The full guide in each language that has one; the others get the fallback language's. */
+const GUIDE: Partial<Record<Language, string>> & { en: string } = {
+  es: "https://docs.kosmotheka.com/es/using-the-app/",
+  en: "https://docs.kosmotheka.com/en/using-the-app/",
+};
 
 /** Short answers, one folded topic each. Cloud, roles and requests join as they are built. */
 export function HelpPage({
@@ -13,7 +21,8 @@ export function HelpPage({
   desktop: boolean;
   onShowWelcome: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const guide = GUIDE[languageOf(i18n.language)] ?? GUIDE.en;
   return (
     <div className="flex max-w-2xl flex-col gap-3">
       {desktop && <h1 className="text-[22px] font-semibold tracking-tight">{t("help.title")}</h1>}
@@ -35,6 +44,9 @@ export function HelpPage({
           </details>
         ))}
       </div>
+      <p className="text-sm text-muted-foreground">
+        <Trans i18nKey="help.fullGuide" components={{ link: <ExternalLink url={guide} /> }} />
+      </p>
       <Button variant="outline" className="self-start" onClick={onShowWelcome}>
         {t("help.showWelcome")}
       </Button>
