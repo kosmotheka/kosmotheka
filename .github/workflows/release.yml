@@ -211,7 +211,7 @@ jobs:
         working-directory: app
       # The upload key goes to the runner's temp folder, never into the repository, and nothing is printed.
       # build.gradle.kts reads the properties file named by KOSMOTHEKA_KEYSTORE_PROPERTIES
-      # (docs/publicacion/firma-android.md). Without the secrets there is no file and the bundle is built unsigned.
+      # (see «Release a version» in the docs site). Without the secrets there is no file and the bundle is built unsigned.
       - name: Upload key
         id: key
         env:
