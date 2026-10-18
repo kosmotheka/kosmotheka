@@ -15,7 +15,7 @@ deploy/deploy.sh v0.3.0     # a specific tag
 deploy/deploy.sh main       # the tip of main (to try it)
 ```
 
-It is set with environment variables, or with a file `deploy/deploy.env` next to the script (it is not uploaded to git): `KOSMOTHEKA_DIR` (the clone), `PHP_BIN` (by default `php8.5`), `COMPOSER_BIN`, `BACKUP_UNIT` (the earlier backup; empty, it is skipped), `RESTART_UNITS` (by default `php8.5-fpm kosmotheka-worker`), `BUILD_DOCS=1` (also builds the documentation; needs Node) and `HEALTH_URL` (for example `https://your-domain/v1/server`). Read the release notes **before** running it, and the new variables they ask for, before the script. What follows is what it does, step by step, in case you prefer doing it by hand or something fails.
+It is set with environment variables, or with a file `deploy/deploy.env` next to the script (it is not uploaded to git): `KOSMOTHEKA_DIR` (the clone), `APP_USER` (when you run it as root: the user that owns the clone and runs PHP), `PHP_BIN` (by default `php8.5`), `COMPOSER_BIN`, `BACKUP_UNIT` (the earlier backup; empty, it is skipped), `RESTART_UNITS` (by default `php8.5-fpm kosmotheka-worker`), `BUILD_DOCS=1` (also builds the documentation; needs Node) and `HEALTH_URL` (for example `https://your-domain/v1/server`). Read the release notes **before** running it, and the new variables they ask for, before the script. What follows is what it does, step by step, in case you prefer doing it by hand or something fails.
 
 ## Before: read the release notes
 

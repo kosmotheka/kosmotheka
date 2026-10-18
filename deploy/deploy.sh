@@ -10,6 +10,7 @@
 #
 # Settings come from the environment, or from deploy/deploy.env next to this script (not versioned):
 #   KOSMOTHEKA_DIR   the clone (default: the repository this script is in)
+#   APP_USER         the user that owns the clone and runs PHP, when the script is run as root (default: the current user)
 #   PHP_BIN          default php8.5
 #   COMPOSER_BIN     default /usr/bin/composer
 #   BACKUP_UNIT      systemd unit run before migrating (default kosmotheka-backup.service; empty to skip)
@@ -31,25 +32,28 @@ backup_unit="${BACKUP_UNIT-kosmotheka-backup.service}"
 restart_units="${RESTART_UNITS:-php8.5-fpm kosmotheka-worker}"
 build_docs="${BUILD_DOCS:-0}"
 health_url="${HEALTH_URL:-}"
+app_user="${APP_USER:-}"
 
 step() { printf '\n== %s\n' "$*"; }
+# Everything that writes in the clone runs as its owner, so a run as root leaves no root-owned files behind.
+as_app() { if [[ -n "$app_user" ]]; then sudo -u "$app_user" -H "$@"; else "$@"; fi; }
 
 cd "$repo"
 
 # Local changes would be overwritten or mixed into the release: stop instead. .env.local, var/ and site/dist are
 # ignored by git, so they do not count.
-if ! git diff --quiet || ! git diff --cached --quiet; then
+if ! as_app git diff --quiet || ! as_app git diff --cached --quiet; then
   echo "The clone at $repo has local changes; deploy refuses to mix them in. See: git status" >&2
   exit 1
 fi
 
 step "Fetching"
-git fetch --tags --prune --quiet origin
-target="${1:-$(git tag --list 'v*' --sort=-v:refname | head -n 1)}"
+as_app git fetch --tags --prune --quiet origin
+target="${1:-$(as_app git tag --list 'v*' --sort=-v:refname | head -n 1)}"
 [[ -n "$target" ]] || { echo "No vX.Y.Z tag yet: pass a ref, e.g. deploy/deploy.sh main" >&2; exit 1; }
 [[ "$target" == "main" ]] && target="origin/main"
-previous="$(git rev-parse --short HEAD)"
-next="$(git rev-parse --short "$target^{commit}")"
+previous="$(as_app git rev-parse --short HEAD)"
+next="$(as_app git rev-parse --short "$target^{commit}")"
 echo "From $previous to $next ($target)"
 
 if [[ -n "$backup_unit" ]]; then
@@ -58,25 +62,25 @@ if [[ -n "$backup_unit" ]]; then
 fi
 
 step "Code"
-git checkout --quiet --detach "$target"
+as_app git checkout --quiet --detach "$target"
 
 step "Server: dependencies, migrations, cache"
 cd "$repo/server"
-"$php" "$composer" install --no-dev --optimize-autoloader --no-interaction --quiet
-"$php" bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
-"$php" bin/console cache:clear --no-warmup
-"$php" bin/console cache:warmup
+as_app "$php" "$composer" install --no-dev --optimize-autoloader --no-interaction --quiet
+as_app "$php" bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+as_app "$php" bin/console cache:clear --no-warmup
+as_app "$php" bin/console cache:warmup
 
 if [[ "$build_docs" == "1" ]]; then
   step "Documentation site"
   cd "$repo/site"
-  npm ci --no-audit --no-fund --silent
+  as_app npm ci --no-audit --no-fund --silent
   # Built aside and swapped in one move, so nginx never serves a half-written site.
-  rm -rf dist-next dist-previous
-  ASTRO_TELEMETRY_DISABLED=1 npx astro build --outDir dist-next
-  [[ -d dist ]] && mv dist dist-previous
-  mv dist-next dist
-  rm -rf dist-previous
+  as_app rm -rf dist-next dist-previous
+  as_app env ASTRO_TELEMETRY_DISABLED=1 npx astro build --outDir dist-next
+  [[ -d dist ]] && as_app mv dist dist-previous
+  as_app mv dist-next dist
+  as_app rm -rf dist-previous
 fi
 
 step "Restarting: $restart_units"
