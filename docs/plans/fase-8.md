@@ -53,11 +53,11 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 - ~~**El centro de datos del VPS**~~: confirmado por el maintainer el 17/10/2026, es Ámsterdam, como dice la política.
 - **Cuenta de revisión de Google Play:** hecha el 17/10/2026, con su biblioteca en la nube.
 - **El registro de accesos de nginx en producción:** comprobar que no apunta `/v1/metadata/`. Hacer una búsqueda desde la app y después `grep -c "metadata"` sobre el registro de la API: tiene que dar 0. La política lo promete.
-- **Las copias automáticas cifradas** (sesión 9.1 de las notas privadas de producción) y una restauración de prueba.
+- ~~**Las copias automáticas cifradas**~~: hechas el 18/10/2026 (cifradas con gpg de clave pública, fuera del VPS) y restauración probada ese día. `deploy/deploy.sh` las lanza antes de migrar.
 
 ## Pendiente técnico apuntado (17/10/2026)
 
-- **Despliegues sin rsync** (decidido el 17/10/2026, D90): [`deploy/deploy.sh`](../../deploy/deploy.sh), que corre en el VPS sobre un clon del repositorio público y actualiza a la vez el servidor (dependencias, copia, migraciones, caché, reinicio), la web (nginx sirve `web/` del clon) y la documentación (`BUILD_DOCS=1` la construye en `site/dist/` y la cambia de golpe). **Sesión con el maintainer**, el día de abrir el repositorio:
+- **Despliegues sin rsync** (decidido el 17/10/2026, D90): [`deploy/deploy.sh`](../../deploy/deploy.sh), que corre en el VPS sobre un clon del repositorio público y actualiza a la vez el servidor (dependencias, copia, migraciones, caché, reinicio), la web (nginx sirve `web/` del clon) y la documentación (`BUILD_DOCS=1` la construye en `site/dist/` y la cambia de golpe). **Sesión con el maintainer**, adelantada: el servidor y la web, en cuanto pueda (pasos en las notas privadas); la documentación, el día de abrir el repositorio:
   1. Instalar Node LTS en el VPS (solo para construir la documentación).
   2. Clonar el repositorio en el sitio del servidor y llevar allí `server/.env.local` y `server/var/` (o apuntar el clon a donde están hoy).
   3. nginx: `root` de la API en `<clon>/server/public`, de kosmotheka.com en `<clon>/web`, y un sitio nuevo `docs.kosmotheka.com` con `root <clon>/site/dist`, con su certificado.
