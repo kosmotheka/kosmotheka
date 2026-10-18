@@ -66,7 +66,7 @@ Two more things:
 
 If you remove a library from a device ("Remove from this device", see [Several libraries](../several-libraries/)) and your account's cloud has it, it appears in "Sharing and devices", in the cloud part, under "Removed from this device", with the button "Bring down again". The app does not bring it down by itself when it syncs: only when you ask.
 
-Only the ones you removed yourself show up. If your access to a library was withdrawn (yours, your account's or this device's), it does not come back this way.
+Only the ones you removed yourself show up. If your access to a library was withdrawn (yours, your account's or this device's), or if you left it with "Leave the library", it does not come back this way: in both cases whoever administers has to give you access again.
 
 ## Invite other people
 

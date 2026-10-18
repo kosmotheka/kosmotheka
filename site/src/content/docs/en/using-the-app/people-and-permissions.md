@@ -49,6 +49,12 @@ When someone asks for something, a bell icon with a number appears: the pending 
 
 If you are the only person who administers a library and you lose your only device, nobody could change the permissions or answer the requests. That is why the app warns you ("You are the only administrator of Home") and suggests making another person an administrator ("Name someone else"). It is best to do it soon. For the same reason, the app does not let you remove the last person who administers, or remove their only device.
 
+## Leaving the library yourself
+
+Anyone, with any role, can **leave the library** ("Library settings", "Leave the library"): they withdraw their own access. It disappears from all their devices and from their account, but **their name, books and marks stay in the library**. Coming back is only decided by whoever administers: they have to give them access again and link another device of theirs.
+
+Nobody who does not administer can withdraw another person's access, nor give it back to themself after leaving. **The only person who administers cannot leave**: they have to name another administrator first, or delete the library. More in [Several libraries](../several-libraries/).
+
 ## What it cannot do
 
 - If someone takes a photo of the screen or copies what they see, the app cannot stop them. The role decides what can be changed, not what can be seen.

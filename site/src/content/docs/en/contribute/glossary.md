@@ -35,6 +35,7 @@ The project's working documents are in Spanish and the code is in English. This 
 | dispositivo | `device` | |
 | biblioteca | `library` | On the server, the unit that owns the data |
 | rol: administrador · editor · lector | `admin` · `editor` · `reader` | |
+| salir de la biblioteca | `leave_for_good` | A person withdraws their own access and cuts off their own devices (`member.leave`). Not `leave_library`, which removes the library from one device and keeps the access |
 | acceso retirado (de una persona) | `access_withdrawn` | Field of a `member`: the person can no longer reach the library, from any device or through their account, but stays in the catalogue. It is not a `revocation`, which is about one device |
 
 ## Operations and sync

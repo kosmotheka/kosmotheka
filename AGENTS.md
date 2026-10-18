@@ -96,6 +96,7 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | sello | `seal` | An applied operation that fences its own author's device; it fences every device, named or not (D94) |
 | acceso retirado (de una persona) | `access_withdrawn` | Field of a `member`: the person may no longer reach the library, from any device or through its account; the person stays in the catalog (D98). Not a `revocation`, which is about one device |
 | clave avalada | `vouched_key` | Field of a `device` row: the public key that whoever said whose the device is had registered for it; the device is its person's only if it matches its own key (D96) |
+| salir de la biblioteca (retirarse uno mismo el acceso) | `leave_for_good` · intent `member.leave` | A person withdraws their own access (`access_withdrawn`) and cuts off their own devices (D102, rule 15). Not `leave_library`, which is «quitar de este dispositivo» (it removes the library from one device and keeps the access) |
 | dispositivo de la nube | `cloud_device_id` | Field of the `library` row: the device that is the cloud in this library, and the only one with the cloud's power (D76, D95) |
 | cuenta de una persona | `account_id` | Field of a `member`: a random id of the account linked to that person; only the cloud writes it (D76) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |

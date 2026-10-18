@@ -35,6 +35,7 @@ La documentación de trabajo del proyecto está en español y el código en ingl
 | dispositivo | `device` | |
 | biblioteca | `library` | En el servidor, la unidad que posee los datos |
 | rol: administrador · editor · lector | `admin` · `editor` · `reader` | |
+| salir de la biblioteca | `leave_for_good` | Una persona se retira el acceso a sí misma y corta sus propios dispositivos (`member.leave`). No es `leave_library`, que quita la biblioteca de un dispositivo y deja el acceso |
 | acceso retirado (de una persona) | `access_withdrawn` | Campo de un `member`: la persona ya no puede llegar a la biblioteca, desde ningún dispositivo ni por su cuenta, pero sigue en el catálogo. No es una `revocation`, que va de un dispositivo |
 
 ## Operaciones y sincronización

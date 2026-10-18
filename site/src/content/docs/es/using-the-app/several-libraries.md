@@ -67,9 +67,9 @@ Lo que pasa:
 
 En la biblioteca de destino hay que volver a apuntar tus marcas y la serie.
 
-## Quitarla de este dispositivo, duplicarla o borrarla
+## Quitarla de este dispositivo, salir de ella, duplicarla o borrarla
 
-Estas tres opciones están en «Ajustes de la biblioteca», abajo del todo.
+Estas cuatro opciones están en «Ajustes de la biblioteca», abajo del todo.
 
 ### «Quitar de este dispositivo»
 
@@ -80,6 +80,17 @@ Solo funciona si la biblioteca está también en otro sitio: en otro dispositivo
 Para volver a tenerla:
 - Si está en la nube de tu cuenta, usa «Volver a bajar» en «Compartir y dispositivos» (ver [La nube](../the-cloud/)).
 - Si no, hay que emparejar de nuevo con uno de los dispositivos que la tienen.
+
+### «Salir de la biblioteca»
+
+Es distinto de «Quitar de este dispositivo». Aquí **dejas de tener acceso** a la biblioteca: desaparece de **todos tus dispositivos** y de **tu cuenta** de la nube. Es lo que haces si te vas de una familia o de un club.
+
+- **Tus libros siguen en la biblioteca, a tu nombre.** No se borra nada tuyo.
+- **Volver solo lo decide quien administra la biblioteca:** tiene que darte acceso de nuevo y vincular un dispositivo tuyo. Esta biblioteca no aparece en «Quitadas de este dispositivo», porque no la quitaste tú: te retiraste.
+- La puede usar cualquiera, sea lector, editor o administrador. **Quien es la única persona que administra no puede salir:** la app le pide que nombre antes a otra, o que borre la biblioteca.
+- Funciona igual sin cuenta, solo con la red de casa.
+- Tu dispositivo no borra la biblioteca en ese mismo momento: la salida tiene que llegar antes a otro dispositivo (por la nube o por la red de casa). Cuando llega, la biblioteca desaparece del tuyo. Si no hay nadie a quien llegar, la app te avisa de que desaparecerá en cuanto se sincronice.
+- **No es borrar tu cuenta.** Salir de una biblioteca no toca tu cuenta de la nube; para eso, ver [La nube](../the-cloud/).
 
 ### «Borrar biblioteca»
 

@@ -1934,6 +1934,8 @@ Aceptada el 18/10/2026 por el maintainer, para antes de la prueba cerrada. Concr
    - **El último administrador no puede salir**, igual que no se le puede echar: la app le pide que nombre a otro administrador o que borre la biblioteca.
    - Funciona igual sin cuenta, solo por la red local.
 
+**Precisado al construir la parte 2 (18/10/2026).** La regla de `spec/` (regla 15) deja a cualquier persona escribir, en **una** operación, la marca de su propia persona y el corte de sus propios dispositivos (quitarles la persona y la clave avalada, y crear su retirada), y nada más: lo que traiga de más hace de toda la operación una petición. Dos matices respecto a echar (D98): (1) **solo el dispositivo que firma pone su valla** (a su operación anterior, así que no se deja de creer nada suyo); los demás dispositivos de la persona se cortan **sin valla**, porque la valla desacreditaría el trabajo que el dispositivo que firma aún no ha visto y otras personas ya podrían haber editado, y eso lo puede provocar cualquiera sin mala intención. Queda abierto que un dispositivo suyo firme después operaciones con fecha anterior a la salida; quien administra lo cierra echándola. (2) **El dispositivo que sale no borra la biblioteca en ese mismo momento**: la operación solo existe ahí hasta que llega a otro dispositivo; quien la recibe manda la retirada firmada y entonces la borra, por la nube o por la red local, por el camino de siempre (y nunca ofrece «Volver a bajar»).
+
 **No es borrar la cuenta.** Salir de una biblioteca no toca la cuenta de la nube. Borrar la cuenta es otra cosa: el botón de la app, la página web para pedirlo y, por correo, `app:user:delete` en el servidor (D99).
 
 **Consecuencias.**

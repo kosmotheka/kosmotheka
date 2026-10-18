@@ -67,9 +67,9 @@ What happens:
 
 In the destination library you have to note your marks and the series again.
 
-## Remove it from this device, duplicate it or delete it
+## Remove it from this device, leave it, duplicate it or delete it
 
-All three are in "Library settings", at the very bottom.
+All four are in "Library settings", at the very bottom.
 
 ### "Remove from this device"
 
@@ -80,6 +80,17 @@ This only works if the library is also somewhere else: on another paired device,
 To have it back:
 - If it is in your account's cloud, use "Bring down again" in "Sharing and devices" (see [The cloud](../the-cloud/)).
 - If not, you must pair again with one of the devices that have it.
+
+### "Leave the library"
+
+This is different from "Remove from this device". Here **you lose access** to the library: it disappears from **all your devices** and from **your cloud account**. It is what you do when you leave a family or a club.
+
+- **Your books stay in the library, in your name.** Nothing of yours is deleted.
+- **Only whoever administers the library decides whether you come back:** they have to give you access again and link a device of yours. This library does not appear under "Removed from this device", because you did not remove it: you withdrew.
+- Anyone can use it, reader, editor or administrator. **The only person who administers a library cannot leave:** the app asks them to name another administrator first, or to delete the library.
+- It works the same without an account, on the home network alone.
+- Your device does not delete the library at that very moment: the exit has to reach another device first (through the cloud or the home network). When it does, the library disappears from yours. If there is nobody for it to reach, the app tells you it will disappear as soon as it syncs.
+- **It is not deleting your account.** Leaving a library does not touch your cloud account; for that, see [The cloud](../the-cloud/).
 
 ### "Delete library"
 

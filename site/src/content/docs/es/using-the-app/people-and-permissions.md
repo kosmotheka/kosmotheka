@@ -49,6 +49,12 @@ Cuando alguien pide algo, aparece un icono de campana con un número: las petici
 
 Si eres la única persona que administra una biblioteca y pierdes tu único dispositivo, nadie podría cambiar los permisos ni atender las peticiones. Por eso la app te lo avisa («Solo tú administras Casa») y te propone hacer administradora a otra persona («Nombrar a otra persona»). Conviene hacerlo pronto. Por la misma razón, la app no te deja quitar a la última persona que administra, ni quitarle su único dispositivo.
 
+## Irte tú de la biblioteca
+
+Cualquier persona, con cualquier rol, puede **salir de la biblioteca** («Ajustes de la biblioteca», «Salir de la biblioteca»): se retira el acceso a sí misma. Desaparece de todos sus dispositivos y de su cuenta, pero **su nombre, sus libros y sus marcas se quedan en la biblioteca**. Volver solo lo decide quien administra: tiene que darle acceso de nuevo y vincular otro dispositivo suyo.
+
+Nadie puede retirarle el acceso a otra persona si no administra, ni devolvérselo a sí misma después de salir. **La única persona que administra no puede salir**: tiene que nombrar antes a otra persona como administradora, o borrar la biblioteca. Más detalles en [Varias bibliotecas](../several-libraries/).
+
 ## Lo que no se puede
 
 - Si alguien hace una foto de la pantalla o copia lo que ve, la app no puede impedirlo. El rol decide qué se puede cambiar, no qué se puede ver.

@@ -66,7 +66,7 @@ Dos cosas más:
 
 Si quitas una biblioteca de un dispositivo («Quitar de este dispositivo», ver [Varias bibliotecas](../several-libraries/)) y la nube de tu cuenta la tiene, en «Compartir y dispositivos», en la parte de la nube, aparece en «Quitadas de este dispositivo» con el botón «Volver a bajar». La app no la baja sola al sincronizar: solo cuando tú lo pides.
 
-Solo aparecen las que quitaste tú. Si te retiraron el acceso a una biblioteca (a ti, a tu cuenta o a este dispositivo), no vuelve por este camino.
+Solo aparecen las que quitaste tú. Si te retiraron el acceso a una biblioteca (a ti, a tu cuenta o a este dispositivo), o si saliste de ella con «Salir de la biblioteca», no vuelve por este camino: en ambos casos quien administra tiene que darte acceso de nuevo.
 
 ## Invitar a otras personas
 
