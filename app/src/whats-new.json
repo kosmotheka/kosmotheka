@@ -1,6 +1,10 @@
 {
   "0.3.0": [
     {
+      "es": "En el ordenador, el botón de arriba se llama «¿Lo tengo?» y ya no dice «Escanear», porque el ordenador no escanea con cámara: ahí se teclea o se pega el número del libro.",
+      "en": "On the computer, the button at the top is now called “Do I have it?” instead of “Scan”, because the computer does not scan with a camera: there you type or paste the book's number."
+    },
+    {
       "es": "«Borrar biblioteca» solo aparece a quien administra la biblioteca, y la lista de series y cada serie cuentan igual lo que tienes, huecos incluidos («tienes 3 de 6» en los dos sitios).",
       "en": "“Delete library” now only shows for those who administer the library, and the series list and each series count what you have the same way, gaps included (“you have 3 of 6” in both places)."
     },

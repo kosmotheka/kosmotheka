@@ -772,6 +772,7 @@
     "leaveTitle": "Leave {{name}}?",
     "leaveKeptIn": "{{name}} will disappear from this device. It stays on: {{devices}}.",
     "leaveOnlyHere": "{{name}} is only on this device: leaving would lose it. To remove it, delete it and save a backup first.",
+    "leaveOnlyHereKeep": "{{name}} is only on this device, so it cannot be removed without losing it. You can save a backup of it.",
     "leaveComeBack": "You can come back by pairing with one of them again.",
     "leaveNamed": "Leave {{name}}",
     "goToDelete": "Go to delete",

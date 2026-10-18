@@ -786,6 +786,7 @@
     "leaveTitle": "¿Salir de {{name}}?",
     "leaveKeptIn": "{{name}} desaparecerá de este dispositivo. Seguirá en: {{devices}}.",
     "leaveOnlyHere": "{{name}} solo está en este dispositivo: si sales, se pierde. Para quitarla, bórrala y guarda antes una copia.",
+    "leaveOnlyHereKeep": "{{name}} solo está en este dispositivo, así que no se puede quitar sin perderla. Puedes guardar una copia.",
     "leaveComeBack": "Podrás volver emparejando otra vez con uno de ellos.",
     "leaveNamed": "Salir de {{name}}",
     "goToDelete": "Ir a borrar",

@@ -4,6 +4,7 @@ import { Archive, CircleCheck, Copy, LogOut, MonitorSmartphone, Trash2 } from "l
 import { save } from "@tauri-apps/plugin-dialog";
 
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { useRequests } from "@/components/requests-context";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,10 +196,38 @@ export function LeaveLibraryDialog({
   const nameOf = useLibraryName();
   const library = libraries.active;
   const devices = useDevices(open, library?.id);
+  // Only the people who administer can delete it for everyone (D73): the others are never sent there.
+  const mayDelete = useRequests().myRole === "admin";
   const [busy, setBusy] = useState(false);
+  const [savedTo, setSavedTo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!library) return null;
   const name = nameOf(library);
+
+  const close = () => {
+    setSavedTo(null);
+    setError(null);
+    closeOverlay();
+  };
+
+  const backUp = async () => {
+    setError(null);
+    const path = await save({
+      defaultPath: `${name.toLocaleLowerCase().replace(/\s+/g, "-")}-${today()}.zip`,
+      filters: [{ name: t("data.backupFile"), extensions: ["zip"] }],
+    });
+    if (!path) return;
+    setBusy(true);
+    try {
+      await exportBackup(path, library.id);
+      setSavedTo(path);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const leave = async () => {
     setBusy(true);
@@ -216,7 +245,7 @@ export function LeaveLibraryDialog({
     <SheetOrDialog
       open={open}
       desktop={desktop}
-      onClose={closeOverlay}
+      onClose={close}
       title={t("libraries.leaveTitle", { name })}
       description={t("libraries.leaveHint")}
       icon={
@@ -228,20 +257,34 @@ export function LeaveLibraryDialog({
       <p className="text-[15px] leading-normal text-pretty">
         {devices.length > 0
           ? t("libraries.leaveKeptIn", { name, devices: devices.map((d) => d.name).join(", ") })
-          : t("libraries.leaveOnlyHere", { name })}
+          : t(mayDelete ? "libraries.leaveOnlyHere" : "libraries.leaveOnlyHereKeep", { name })}
       </p>
+      {devices.length === 0 && !mayDelete && savedTo && (
+        <div className="flex items-center gap-3 rounded-2xl bg-success-soft px-4 py-3.5 text-success">
+          <CircleCheck className="size-[22px] shrink-0" />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[15px] font-semibold">{t("libraries.backupSaved")}</span>
+            <span className="truncate text-[13px] text-foreground">{savedTo}</span>
+          </span>
+        </div>
+      )}
+      {error && <p className="text-[13px] text-destructive">{error}</p>}
       {devices.length > 0 && (
         <p className="-mt-2 text-[13px] text-pretty text-muted-foreground">
           {t("libraries.leaveComeBack")}
         </p>
       )}
       <div className="grid grid-cols-2 gap-2.5">
-        <Button variant="outline" className="h-12" onClick={closeOverlay}>
-          {t("form.cancel")}
+        <Button variant="outline" className="h-12" onClick={close}>
+          {savedTo ? t("common.close") : t("form.cancel")}
         </Button>
         {devices.length > 0 ? (
           <Button className="h-12" disabled={busy} onClick={() => void leave()}>
             {t("libraries.leaveNamed", { name })}
+          </Button>
+        ) : !mayDelete ? (
+          <Button className="h-12" disabled={busy} onClick={() => void backUp()}>
+            <Archive /> {t("libraries.saveBackupOf", { name })}
           </Button>
         ) : (
           // Only here, leaving would lose it for good: deleting offers a backup first.

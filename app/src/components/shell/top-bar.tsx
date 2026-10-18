@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Plus, ScanBarcode, Search, Send, Zap } from "lucide-react";
+import { BookCheck, Plus, Search, Send, Zap } from "lucide-react";
 
 import { useLibraries } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
@@ -62,7 +62,7 @@ export function TopBar({
       <RequestsBell />
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <Button variant="outline" size="lg" onClick={() => navigate("check")}>
-        <ScanBarcode /> {t("nav.scan")}
+        <BookCheck /> {t("nav.check")}
       </Button>
       {reader ? (
         <Button
