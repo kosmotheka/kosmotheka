@@ -33,6 +33,8 @@ export default defineConfig({
       components: {
         Footer: "./src/components/Footer.astro",
         SocialIcons: "./src/components/SocialIcons.astro",
+        ThemeSelect: "./src/components/ThemeSelect.astro",
+        LanguageSelect: "./src/components/LanguageSelect.astro",
       },
       sidebar: [
         {

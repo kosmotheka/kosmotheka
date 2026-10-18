@@ -1,0 +1,117 @@
+---
+import { Icon } from "@astrojs/starlight/components";
+
+// Three icon buttons in one pill instead of Starlight's select. Same storage key and same theme
+// provider, so the inline script that avoids a flash of the wrong theme keeps working.
+const options = [
+  { value: "light", icon: "sun", label: Astro.locals.t("themeSelect.light") },
+  { value: "dark", icon: "moon", label: Astro.locals.t("themeSelect.dark") },
+  { value: "auto", icon: "laptop", label: Astro.locals.t("themeSelect.auto") },
+] as const;
+---
+
+<kosmo-theme-select>
+  <div class="pill" role="group" aria-label={Astro.locals.t("themeSelect.accessibleLabel")}>
+    {
+      options.map(({ value, icon, label }) => (
+        <button type="button" data-theme-value={value} aria-pressed="false" title={label}>
+          <Icon name={icon} size="1rem" />
+          <span class="sr-only">{label}</span>
+        </button>
+      ))
+    }
+  </div>
+</kosmo-theme-select>
+
+<script>
+  type Theme = "auto" | "dark" | "light";
+  const storageKey = "starlight-theme";
+
+  const parseTheme = (theme: unknown): Theme =>
+    theme === "dark" || theme === "light" ? theme : "auto";
+
+  function loadTheme(): Theme {
+    try {
+      return parseTheme(localStorage.getItem(storageKey));
+    } catch {
+      return "auto";
+    }
+  }
+
+  function storeTheme(theme: Theme): void {
+    try {
+      localStorage.setItem(storageKey, theme === "auto" ? "" : theme);
+    } catch {
+      // Private window or blocked storage: the choice lasts until the page closes.
+    }
+  }
+
+  const systemTheme = (): "dark" | "light" =>
+    matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+  function apply(theme: Theme): void {
+    document.documentElement.dataset.theme = theme === "auto" ? systemTheme() : theme;
+    document.querySelectorAll("kosmo-theme-select button").forEach((button) => {
+      button.setAttribute(
+        "aria-pressed",
+        String(button.getAttribute("data-theme-value") === theme),
+      );
+    });
+  }
+
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    if (loadTheme() === "auto") apply("auto");
+  });
+
+  class KosmoThemeSelect extends HTMLElement {
+    constructor() {
+      super();
+      apply(loadTheme());
+      this.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const theme = parseTheme(button.getAttribute("data-theme-value"));
+          storeTheme(theme);
+          apply(theme);
+        });
+      });
+    }
+  }
+  customElements.define("kosmo-theme-select", KosmoThemeSelect);
+</script>
+
+<style>
+  .pill {
+    display: inline-flex;
+    gap: 0.125rem;
+    padding: 0.1875rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 999px;
+    background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+  }
+  button {
+    display: grid;
+    place-items: center;
+    width: 1.875rem;
+    height: 1.625rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  button:hover {
+    color: var(--sl-color-white);
+  }
+  button[aria-pressed="true"] {
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 1px;
+  }
+</style>

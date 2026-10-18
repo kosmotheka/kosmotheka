@@ -1,0 +1,76 @@
+---
+import Default from "@astrojs/starlight/components/LanguageSelect.astro";
+import config from "virtual:starlight/user-config";
+
+// With a few languages, one pill with a link per language (ES · EN) instead of Starlight's select:
+// one click, and each link goes to the same page in the other language. With many, the select.
+const locales = Object.entries(config.locales ?? {});
+const current = Astro.locals.starlightRoute.locale;
+const compact = locales.length > 1 && locales.length <= 4;
+// Every language has its prefix (astro.config.mjs): the same page elsewhere is the same path with another one.
+// A page outside both prefixes (the 404) links to each language's home.
+const prefix = new RegExp(`^/${current}(?=/|$)`);
+const pathFor = (code: string) =>
+  current && prefix.test(Astro.url.pathname)
+    ? Astro.url.pathname.replace(prefix, `/${code}`)
+    : `/${code}/`;
+---
+
+{
+  compact ? (
+    <nav class="pill" aria-label={Astro.locals.t("languageSelect.accessibleLabel")}>
+      {locales.map(([code, locale]) => (
+        <a
+          href={pathFor(code)}
+          hreflang={locale!.lang}
+          lang={locale!.lang}
+          title={locale!.label}
+          aria-current={code === current ? "page" : undefined}
+        >
+          <span aria-hidden="true">{code.toUpperCase()}</span>
+          <span class="sr-only">{locale!.label}</span>
+        </a>
+      ))}
+    </nav>
+  ) : (
+    <Default />
+  )
+}
+
+<style>
+  .pill {
+    display: inline-flex;
+    gap: 0.125rem;
+    padding: 0.1875rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 999px;
+    background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+  }
+  a {
+    display: grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 1.625rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  a:hover {
+    color: var(--sl-color-white);
+  }
+  a[aria-current="page"] {
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  a:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 1px;
+  }
+</style>
