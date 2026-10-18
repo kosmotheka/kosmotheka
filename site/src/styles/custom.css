@@ -39,3 +39,54 @@
   --sl-color-accent-high: #a9b5f8;
   --sl-color-black: #0a0a0a;
 }
+
+/* Anchors scroll instead of jumping, unless the system asks for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* The three top-level groups are already sections: no extra rule down their left side. */
+.sidebar-content ul ul li {
+  border-inline-start: none;
+  margin-inline-start: 0;
+}
+
+/* Starlight centres the text in the space between the menu and a table of contents that grows with
+   the screen. Here the text sits next to the menu and the table of contents next to the text, at a
+   fixed width; what is left goes to the right. */
+@media (min-width: 72rem) {
+  :root {
+    --sl-content-width: 48rem;
+    --kosmo-toc-width: 15rem;
+  }
+  .right-sidebar-container {
+    width: var(--kosmo-toc-width);
+  }
+  [data-has-sidebar][data-has-toc] .main-pane {
+    --sl-content-margin-inline: 0;
+    width: min(
+      calc(100% - var(--kosmo-toc-width)),
+      calc(var(--sl-content-width) + 2 * var(--sl-content-pad-x))
+    );
+  }
+}
+
+/* On a phone, the theme and language stay at the foot of the menu, however long it is. */
+@media (max-width: 49.99rem) {
+  .mobile-preferences {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    margin-inline: calc(-1 * var(--sl-sidebar-pad-x));
+    padding: 0.5rem var(--sl-sidebar-pad-x) calc(0.5rem + env(safe-area-inset-bottom));
+    flex-wrap: nowrap;
+    align-items: center;
+    column-gap: 0.5rem;
+    background-color: var(--sl-color-bg-nav);
+  }
+  .mobile-preferences .social-icons {
+    padding-block: 0;
+  }
+}

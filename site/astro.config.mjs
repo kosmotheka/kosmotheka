@@ -36,19 +36,24 @@ export default defineConfig({
         ThemeSelect: "./src/components/ThemeSelect.astro",
         LanguageSelect: "./src/components/LanguageSelect.astro",
       },
+      // Groups start folded, except the one with the page open: on a phone the menu fits, with
+      // the theme and language at its foot.
       sidebar: [
         {
           label: "Using the app",
+          collapsed: true,
           translations: { es: "Usar la app" },
           items: [{ autogenerate: { directory: "using-the-app" } }],
         },
         {
           label: "Run your server",
+          collapsed: true,
           translations: { es: "Montar tu servidor" },
           items: [{ autogenerate: { directory: "run-your-server" } }],
         },
         {
           label: "Contribute",
+          collapsed: true,
           translations: { es: "Colaborar" },
           items: [{ autogenerate: { directory: "contribute" } }],
         },
