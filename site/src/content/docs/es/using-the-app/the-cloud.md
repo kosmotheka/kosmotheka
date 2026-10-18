@@ -62,6 +62,12 @@ Dos cosas más:
 - Si quien administra la biblioteca marcó que ese dispositivo es de **otra persona**, la app te lo cuenta («En “Casa”, este dispositivo es de Laura»). Se queda así; para cambiarlo, quien administra tiene que hacerlo desde su dispositivo, en «Personas y permisos».
 - Al móvil nuevo **solo llega lo que subiste a la nube**. Las bibliotecas que no subiste siguen en tus otros dispositivos.
 
+## Volver a bajar una biblioteca que quitaste
+
+Si quitas una biblioteca de un dispositivo («Quitar de este dispositivo», ver [Varias bibliotecas](../several-libraries/)) y la nube de tu cuenta la tiene, en «Compartir y dispositivos», en la parte de la nube, aparece en «Quitadas de este dispositivo» con el botón «Volver a bajar». La app no la baja sola al sincronizar: solo cuando tú lo pides.
+
+Solo aparecen las que quitaste tú. Si te retiraron el acceso a una biblioteca (a ti, a tu cuenta o a este dispositivo), no vuelve por este camino.
+
 ## Invitar a otras personas
 
 Para invitar, la biblioteca tiene que estar en la nube, tienes que administrarla y tienes que haber iniciado sesión. Si falta algo, la app te dice qué («Súbela primero y entonces podrás invitar»).

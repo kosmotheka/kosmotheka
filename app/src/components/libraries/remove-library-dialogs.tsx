@@ -16,6 +16,7 @@ import {
   isCommandError,
   leaveLibrary,
   libraryDevices,
+  libraryInCloud,
 } from "@/lib/api";
 import { closeOverlay, navigate, openOverlay } from "@/lib/navigation";
 
@@ -34,6 +35,23 @@ function useDevices(open: boolean, id: string | undefined) {
     };
   }, [open, id]);
   return devices;
+}
+
+/** Whether the cloud offers the library to this account right now: `null` while it is being asked. */
+function useInCloud(open: boolean, id: string | undefined, ask: boolean) {
+  const [answer, setAnswer] = useState<{ id: string; offered: boolean } | null>(null);
+  useEffect(() => {
+    if (!open || !id || !ask) return;
+    let cancelled = false;
+    libraryInCloud(id)
+      .then((offered) => !cancelled && setAnswer({ id, offered }))
+      .catch(() => !cancelled && setAnswer({ id, offered: false }));
+    return () => {
+      cancelled = true;
+      setAnswer(null);
+    };
+  }, [open, id, ask]);
+  return ask && answer !== null && answer.id === id ? answer.offered : null;
 }
 
 /**
@@ -181,7 +199,7 @@ export function DeleteLibraryDialog({
   );
 }
 
-/** Leaving only removes the library from this device; the others keep it. */
+/** Removes the library from this device only; the others, and the cloud of the account, keep it. */
 export function LeaveLibraryDialog({
   open,
   desktop,
@@ -196,6 +214,8 @@ export function LeaveLibraryDialog({
   const nameOf = useLibraryName();
   const library = libraries.active;
   const devices = useDevices(open, library?.id);
+  // Only on this device, the cloud can still be the other place it stays: it is asked, never assumed.
+  const inCloud = useInCloud(open, library?.id, devices.length === 0);
   // Only the people who administer can delete it for everyone (D73): the others are never sent there.
   const mayDelete = useRequests().myRole === "admin";
   const [busy, setBusy] = useState(false);
@@ -231,11 +251,14 @@ export function LeaveLibraryDialog({
 
   const leave = async () => {
     setBusy(true);
+    setError(null);
     try {
       const active = await leaveLibrary(library.id);
       libraries.reload();
       onDone(name, active);
       navigate("catalog");
+    } catch (e) {
+      setError(String(e));
     } finally {
       setBusy(false);
     }
@@ -257,9 +280,11 @@ export function LeaveLibraryDialog({
       <p className="text-[15px] leading-normal text-pretty">
         {devices.length > 0
           ? t("libraries.leaveKeptIn", { name, devices: devices.map((d) => d.name).join(", ") })
-          : t(mayDelete ? "libraries.leaveOnlyHere" : "libraries.leaveOnlyHereKeep", { name })}
+          : inCloud
+            ? t("libraries.leaveInCloud", { name })
+            : t(mayDelete ? "libraries.leaveOnlyHere" : "libraries.leaveOnlyHereKeep", { name })}
       </p>
-      {devices.length === 0 && !mayDelete && savedTo && (
+      {devices.length === 0 && !inCloud && !mayDelete && savedTo && (
         <div className="flex items-center gap-3 rounded-2xl bg-success-soft px-4 py-3.5 text-success">
           <CircleCheck className="size-[22px] shrink-0" />
           <span className="flex min-w-0 flex-col gap-0.5">
@@ -278,9 +303,13 @@ export function LeaveLibraryDialog({
         <Button variant="outline" className="h-12" onClick={close}>
           {savedTo ? t("common.close") : t("form.cancel")}
         </Button>
-        {devices.length > 0 ? (
+        {devices.length > 0 || inCloud ? (
           <Button className="h-12" disabled={busy} onClick={() => void leave()}>
             {t("libraries.leaveNamed", { name })}
+          </Button>
+        ) : inCloud === null ? (
+          <Button className="h-12" disabled>
+            {t("libraries.leaveChecking")}
           </Button>
         ) : !mayDelete ? (
           <Button className="h-12" disabled={busy} onClick={() => void backUp()}>

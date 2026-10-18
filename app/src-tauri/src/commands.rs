@@ -670,9 +670,48 @@ pub fn delete_library(database: State<'_, Database>, id: String) -> Result<Strin
     libraries::delete_library(&mut *database.lock()?, &id)
 }
 
+/// Removes the library from this device. Without another paired device having it, the cloud has to say, now,
+/// that it still has it for this account: with no session, no connection or no such library, nothing changes
+/// (`OnlyOnThisDevice`).
 #[tauri::command]
-pub fn leave_library(database: State<'_, Database>, id: String) -> Result<String> {
-    libraries::leave_library(&mut *database.lock()?, &id)
+pub async fn leave_library(database: State<'_, Database>, id: String) -> Result<String> {
+    match HttpCloud::connect(&database) {
+        Ok(api) => cloud::leave(&database, &api, &id).await,
+        Err(_) => libraries::leave_library(&mut *database.lock()?, &id),
+    }
+}
+
+/// Whether the cloud of the signed-in account offers this library right now: what the dialog asks before it
+/// promises that the library stays in the account. Any failure is a no.
+#[tauri::command]
+pub async fn library_in_cloud(database: State<'_, Database>, id: String) -> Result<bool> {
+    Ok(match HttpCloud::connect(&database) {
+        Ok(api) => cloud::offers(&database, &api, &id).await,
+        Err(_) => false,
+    })
+}
+
+/// The libraries this device removed by its own choice and that the cloud may hand over again. Local, no network.
+#[tauri::command]
+pub fn left_libraries(database: State<'_, Database>) -> Result<Vec<libraries::LeftLibrary>> {
+    libraries::left_libraries(&*database.lock()?)
+}
+
+/// «Bring it down again»: one of `left_libraries`, when the person asks. Nothing else can come back this way.
+#[tauri::command]
+pub async fn redownload_library(
+    app: AppHandle,
+    database: State<'_, Database>,
+    reset: State<'_, ResetDeps>,
+    id: String,
+) -> Result<LibraryReport> {
+    let result = match HttpCloud::connect(&database) {
+        Ok(api) => cloud::redownload(&database, &api, &id).await,
+        Err(error) => Err(error),
+    };
+    let result = account::react_to_account_error(&database, reset.context(), result).await;
+    emit_if_reset(&app, &result);
+    result
 }
 
 #[tauri::command]

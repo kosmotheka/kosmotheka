@@ -55,7 +55,7 @@ works ──< work_contributors >── people
 | `known_servers`, `known_clients` | Dispositivos emparejados para sincronizar por la red local; locales, no se sincronizan (D34) | ver [sync.md](sync.md) |
 | `library_peers` | Qué bibliotecas van a cada dispositivo emparejado; local (D46) | `library_id`, `device_id` |
 | `leave_notices` | Bibliotecas de las que este dispositivo salió, pendientes de decírselo a cada dispositivo que se las ofrecía; local (D71) | `library_id`, `device_id` |
-| `forgotten_libraries` | Bibliotecas que este dispositivo dejó o de las que lo retiraron, para que la nube no se las devuelva; local, no es una entidad | `library_id` |
+| `forgotten_libraries` | Bibliotecas que este dispositivo quitó o de las que lo retiraron, para que la nube no se las devuelva; local, no es una entidad. Sin motivo: el de «la quité yo» está aparte, en `local_state` (`left_libraries`, ver cloud.md) | `library_id` |
 | `device_fences`, `device_fence_chains` | Las vallas que se están respetando y las operaciones que cada una aún cuenta ([sync.md](sync.md)); **derivadas del registro**: se borran y se rehacen con la biblioteca | `library_id`, `device_id`, `through`, `until_hlc`, `operation_id` |
 | `pending_owners` | A quién asignar un dispositivo recién emparejado cuando llegue su registro (D73); local | `library_id`, `device_id`, `member_id` |
 | `request_notices` | Las peticiones propias que resultaron ser peticiones, a enseñar una vez; local | `library_id`, `operation_id` |

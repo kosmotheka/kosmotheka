@@ -815,9 +815,35 @@ export function duplicateLibrary(id: string, name: string): Promise<string> {
   return invoke<string>("duplicate_library", { id, name });
 }
 
-/** Removes it from this device only. Returns the library now active. */
+/**
+ * Removes it from this device only. Returns the library now active. When no paired device has it, the cloud has
+ * to confirm it keeps it for this account; otherwise it fails with `OnlyOnThisDevice`.
+ */
 export function leaveLibrary(id: string): Promise<string> {
   return invoke<string>("leave_library", { id });
+}
+
+/** Whether the cloud of the signed-in account offers this library right now. Any failure is `false`. */
+export function libraryInCloud(id: string): Promise<boolean> {
+  return invoke<boolean>("library_in_cloud", { id });
+}
+
+/** A library this device removed by its own choice, which the cloud may hand over again. */
+export interface LeftLibrary {
+  id: string;
+  /** Empty for a library never named. */
+  name: string;
+  cloudLibrary: string;
+  cloudServer: string;
+}
+
+export function leftLibraries(): Promise<LeftLibrary[]> {
+  return invoke<LeftLibrary[]>("left_libraries");
+}
+
+/** Brings one of `leftLibraries` down from the cloud again. Nothing else can come back this way. */
+export function redownloadLibrary(id: string): Promise<CloudLibraryReport> {
+  return invoke<CloudLibraryReport>("redownload_library", { id });
 }
 
 export function libraryDevices(id: string): Promise<KnownDevice[]> {

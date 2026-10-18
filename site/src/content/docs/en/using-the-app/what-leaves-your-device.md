@@ -65,7 +65,7 @@ The account is optional. If you create one and upload a library, that library al
 
 ## Deleting your data
 
-- **Deleting a library** (in "Library settings", "Delete library") removes it from this device **and from all the ones that share it**. It cannot be undone. Before deleting, the app offers to save a backup. If you only want to remove it from this device and let the others keep it, use "Leave this library".
+- **Deleting a library** (in "Library settings", "Delete library") removes it from this device **and from all the ones that share it**. It cannot be undone. Before deleting, the app offers to save a backup. If you only want to remove it from this device and let the others keep it, use "Remove from this device".
 - **"Reset this device"**, in "Settings", leaves the device as it was when the app was first installed.
 - **Uninstalling the app** also removes its data from the device.
 - The backups you have made stay where you saved them.

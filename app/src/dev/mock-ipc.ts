@@ -1015,6 +1015,12 @@ mockIPC((cmd, args) => {
     }
     case "library_devices":
       return lan.servers;
+    case "library_in_cloud":
+      return true;
+    case "left_libraries":
+      return [{ id: "club-old", name: "Club", cloudLibrary: "cloud-club", cloudServer: "mock" }];
+    case "redownload_library":
+      return { library: "club-old", cloudLibrary: "cloud-club", outcome: "downloaded" };
     case "sharing_overview":
       return lan.servers.map((device) => ({
         ...device,

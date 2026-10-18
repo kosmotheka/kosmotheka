@@ -6,7 +6,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use kosmotheka_domain::{Change, Entity, ErrorCode, FieldError, Hlc, validate_library_name};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::error::{Error, Result};
@@ -295,15 +295,145 @@ pub fn delete_library(conn: &mut Connection, id: &str) -> Result<String> {
 /// Leaves the library on this device only: its rows and its log go, the other
 /// devices keep it, and this device stops syncing it. Not an operation, since
 /// nothing changes for anyone else. Returns the library now active.
+///
+/// Only where another device of the local network has it: a library that is only here
+/// would be lost. `leave_library_in_cloud` is for the one the cloud has too.
 pub fn leave_library(conn: &mut Connection, id: &str) -> Result<String> {
+    leave(conn, id, false)
+}
+
+/// `leave_library` for a library the caller has just checked the cloud still offers to this account
+/// (`cloud::leave`): the cloud is the other place it stays, and it can be brought down again (`left_libraries`).
+pub(crate) fn leave_library_in_cloud(conn: &mut Connection, id: &str) -> Result<String> {
+    leave(conn, id, true)
+}
+
+fn leave(conn: &mut Connection, id: &str, in_cloud: bool) -> Result<String> {
     ensure_exists(conn, id)?;
-    if lan::devices_sharing(conn, id)?.is_empty() {
+    if !in_cloud && lan::devices_sharing(conn, id)?.is_empty() {
         return Err(Error::OnlyOnThisDevice);
     }
     let tx = conn.transaction()?;
+    // Read before the library's row goes.
+    let left = LeftLibrary::of(&tx, id)?;
     let active = remove_here(&tx, id, None)?;
+    if let Some(left) = left {
+        remember_left(&tx, left)?;
+    }
     tx.commit()?;
     Ok(active)
+}
+
+/// A library this device left by its own choice, and that was linked to a cloud library: what it takes to ask for
+/// it again (`cloud::redownload`) and to show it in the meantime. Local state, not a table: the library's row
+/// is gone. Whoever withdrew the device's access is never listed here (`forget_here` drops it), and only a
+/// library also in `forgotten_libraries` counts (SEG-017): a row from before this list existed means «withdrawn».
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LeftLibrary {
+    pub id: String,
+    /// Empty for a library never named: the UI shows its own default name.
+    pub name: String,
+    pub cloud_library: String,
+    pub cloud_server: String,
+}
+
+const LEFT_LIBRARIES: &str = "left_libraries";
+
+impl LeftLibrary {
+    /// `None` for a library that is not linked to a cloud one: it comes back by pairing, as it always did.
+    fn of(conn: &Connection, id: &str) -> Result<Option<Self>> {
+        Ok(conn
+            .query_row(
+                "SELECT name, cloud_library_id, cloud_server FROM libraries WHERE id = ?1",
+                [id],
+                |row| {
+                    let cloud: (Option<String>, Option<String>) = (row.get(1)?, row.get(2)?);
+                    Ok(match cloud {
+                        (Some(cloud_library), Some(cloud_server)) => Some(Self {
+                            id: id.to_owned(),
+                            name: row.get(0)?,
+                            cloud_library,
+                            cloud_server,
+                        }),
+                        _ => None,
+                    })
+                },
+            )
+            .optional()?
+            .flatten())
+    }
+}
+
+fn read_left(conn: &Connection) -> Result<Vec<LeftLibrary>> {
+    Ok(match ops::read_state(conn, LEFT_LIBRARIES)? {
+        // A list that cannot be read is an empty one: nothing comes back, which is the safe side.
+        Some(text) => serde_json::from_str(&text).unwrap_or_default(),
+        None => Vec::new(),
+    })
+}
+
+fn write_left(conn: &Connection, left: &[LeftLibrary]) -> Result<()> {
+    let text = serde_json::to_string(left).map_err(|_| Error::CorruptState(LEFT_LIBRARIES))?;
+    ops::write_state(
+        conn,
+        LEFT_LIBRARIES,
+        (!left.is_empty()).then_some(text.as_str()),
+    )
+}
+
+fn remember_left(conn: &Connection, entry: LeftLibrary) -> Result<()> {
+    let mut left = read_left(conn)?;
+    left.retain(|other| other.id != entry.id);
+    left.push(entry);
+    write_left(conn, &left)
+}
+
+fn drop_left(conn: &Connection, id: &str) -> Result<()> {
+    let mut left = read_left(conn)?;
+    left.retain(|other| other.id != id);
+    write_left(conn, &left)
+}
+
+/// The libraries this device left by choice and may ask for again. Withdrawn ones are not there, whatever the
+/// list says: they must be in `forgotten_libraries` too, and a withdrawal drops them from the list.
+pub fn left_libraries(conn: &Connection) -> Result<Vec<LeftLibrary>> {
+    let mut left = read_left(conn)?;
+    for entry in &mut left {
+        entry.name = entry.name.trim().to_owned();
+    }
+    left.retain(|entry| library_forgotten(conn, &entry.id).unwrap_or(false));
+    Ok(left)
+}
+
+/// Gives a left library back its place before it is brought down: out of both memories. The caller puts them back
+/// with `restore_left` if the cloud does not hand it over.
+pub(crate) fn take_left(conn: &Connection, id: &str) -> Result<Option<LeftLibrary>> {
+    let Some(entry) = left_libraries(conn)?
+        .into_iter()
+        .find(|entry| entry.id == id)
+    else {
+        return Ok(None);
+    };
+    conn.execute(
+        "DELETE FROM forgotten_libraries WHERE library_id = ?1",
+        [id],
+    )?;
+    drop_left(conn, id)?;
+    Ok(Some(entry))
+}
+
+/// Undoes `take_left`. `asked_again` is false when the cloud has shown that the access was withdrawn: then the
+/// library stays forgotten and is no longer one the person left.
+pub(crate) fn restore_left(conn: &Connection, entry: LeftLibrary, asked_again: bool) -> Result<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO forgotten_libraries (library_id) VALUES (?1)",
+        [&entry.id],
+    )?;
+    if asked_again {
+        remember_left(conn, entry)?;
+    }
+    Ok(())
 }
 
 /// A peer withdrew this device's access (D71): the library goes from here, as if
@@ -335,6 +465,8 @@ fn forget_here(tx: &Transaction<'_>, id: &str, told: Option<&str>) -> Result<()>
         "INSERT OR IGNORE INTO forgotten_libraries (library_id) VALUES (?1)",
         [id],
     )?;
+    // A withdrawal beats leaving: whatever the person once chose, this library does not come back by asking.
+    drop_left(tx, id)?;
     ops::delete_library(tx, id)?;
     tx.execute("DELETE FROM operations WHERE library_id = ?1", [id])?;
     tx.execute("DELETE FROM library_peers WHERE library_id = ?1", [id])?;

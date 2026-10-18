@@ -59,6 +59,8 @@ struct CloudState {
     /// How many operations one push request carries, as the real client cuts them;
     /// zero for all at once.
     batch: usize,
+    /// No connection: listing the libraries fails.
+    offline: bool,
     /// A server with no secret: its libraries get no cloud device.
     without_identity: bool,
     /// A server that names a cloud device whose id is not the one its key gives.
@@ -710,6 +712,9 @@ impl CloudApi for FakeApi {
 
     async fn list_libraries(&self) -> Result<Listing> {
         let state = self.cloud.0.lock().unwrap();
+        if state.offline {
+            return Err(Error::Cloud("offline"));
+        }
         let device = self.device.as_ref().map(|(id, _)| id.as_str());
         let mut listing = Listing::default();
         for (id, library) in state
@@ -2200,6 +2205,225 @@ async fn a_library_removed_by_a_revocation_is_not_downloaded_again() {
 
     assert_eq!(reports[0].outcome, Outcome::DeletedHere);
     assert!(!libraries::library_exists(&phone.lock().unwrap(), &library).unwrap());
+}
+
+// --- Leaving a library that is in the cloud, and asking for it again --------------------------------
+
+/// SEG-017, the hostile case, first: a device whose access was withdrawn does not get the library back from the
+/// cloud by asking for it. Here the cloud does not know of the withdrawal yet (it travelled over the local
+/// network only), so nothing but the app says no.
+#[tokio::test]
+async fn a_device_whose_access_was_withdrawn_cannot_ask_the_cloud_for_the_library_again() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let api = cloud.api("hugo").on(&phone);
+    libraries::remove_revoked(&mut phone.lock().unwrap(), &lib, "laptop").unwrap();
+
+    let asked = redownload(&phone, &api, &lib).await;
+
+    assert!(asked.is_err(), "{asked:?}");
+    assert!(!library_exists_here(&phone, &lib));
+    let reports = sync_all(&phone, &api).await.unwrap();
+    assert_eq!(reports[0].outcome, Outcome::DeletedHere);
+    assert!(!library_exists_here(&phone, &lib));
+}
+
+/// A library forgotten before the list of those left existed was, as far as anyone knows, withdrawn: it stays
+/// forgotten, however it is asked for.
+#[tokio::test]
+async fn a_forgotten_library_with_no_record_of_having_been_left_does_not_come_back() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let api = cloud.api("hugo").on(&phone);
+    libraries::leave_library_in_cloud(&mut phone.lock().unwrap(), &lib).unwrap();
+    // As the app left it before the record existed: the memory is there, the list is not.
+    ops::write_state(&phone.lock().unwrap(), "left_libraries", None).unwrap();
+
+    let asked = redownload(&phone, &api, &lib).await;
+
+    assert!(asked.is_err(), "{asked:?}");
+    assert!(!library_exists_here(&phone, &lib));
+    assert_eq!(
+        sync_all(&phone, &api).await.unwrap()[0].outcome,
+        Outcome::DeletedHere
+    );
+}
+
+/// Left by choice and then cut off: the withdrawal wins, and the library cannot be asked for.
+#[tokio::test]
+async fn a_withdrawal_after_leaving_takes_the_library_off_the_list_of_those_that_can_come_back() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    let api = cloud.api("hugo").on(&phone);
+    libraries::leave_library_in_cloud(&mut phone.lock().unwrap(), &lib).unwrap();
+    assert_eq!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .len(),
+        1
+    );
+    libraries::remove_revoked(&mut phone.lock().unwrap(), &lib, "laptop").unwrap();
+
+    assert!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .is_empty()
+    );
+    assert!(redownload(&phone, &api, &lib).await.is_err());
+    assert!(!library_exists_here(&phone, &lib));
+}
+
+/// A device with only the cloud for company: no paired device has the library.
+fn without_paired_devices(device: &Database, library: &str) {
+    device
+        .lock()
+        .unwrap()
+        .execute("DELETE FROM library_peers WHERE library_id = ?1", [library])
+        .unwrap();
+}
+
+#[tokio::test]
+async fn a_library_only_here_and_in_the_cloud_can_be_left() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    without_paired_devices(&phone, &lib);
+    let api = cloud.api("hugo").on(&phone);
+
+    leave(&phone, &api, &lib).await.unwrap();
+
+    assert!(!library_exists_here(&phone, &lib));
+    assert_eq!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+/// The link is only what this device remembers: if the cloud does not offer the library, leaving would lose it.
+#[tokio::test]
+async fn a_library_the_cloud_does_not_offer_cannot_be_left() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    without_paired_devices(&phone, &lib);
+    let api = cloud.api("hugo").on(&phone);
+
+    // Another account asks: it does not see this library.
+    let other = cloud.api("someone-else").on(&phone);
+    assert!(matches!(
+        leave(&phone, &other, &lib).await,
+        Err(Error::OnlyOnThisDevice)
+    ));
+    // No connection: the same.
+    cloud.0.lock().unwrap().offline = true;
+    assert!(matches!(
+        leave(&phone, &api, &lib).await,
+        Err(Error::OnlyOnThisDevice)
+    ));
+    assert!(library_exists_here(&phone, &lib));
+    assert!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[tokio::test]
+async fn a_library_that_is_only_here_still_cannot_be_left() {
+    let cloud = FakeCloud::default();
+    let device = Database::in_memory();
+    let lib = libraries::create_library(&mut device.lock().unwrap(), "Family").unwrap();
+
+    let result = leave(&device, &cloud.api("ana").on(&device), &lib).await;
+
+    assert!(matches!(result, Err(Error::OnlyOnThisDevice)));
+    assert!(library_exists_here(&device, &lib));
+}
+
+#[tokio::test]
+async fn after_leaving_sync_does_not_bring_the_library_down_and_asking_does() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    without_paired_devices(&phone, &lib);
+    let api = cloud.api("hugo").on(&phone);
+    let before = state(&laptop, &lib);
+    leave(&phone, &api, &lib).await.unwrap();
+
+    let reports = sync_all(&phone, &api).await.unwrap();
+    assert_eq!(reports[0].outcome, Outcome::DeletedHere);
+    assert!(!library_exists_here(&phone, &lib));
+
+    let report = redownload(&phone, &api, &lib).await.unwrap();
+
+    assert_eq!(report.outcome, Outcome::Downloaded);
+    assert!(library_exists_here(&phone, &lib));
+    assert_eq!(titles(&phone, &lib), titles(&laptop, &lib));
+    assert_eq!(state(&laptop, &lib), before);
+    assert!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .is_empty()
+    );
+    // Back to normal: the next session syncs it.
+    assert_eq!(
+        sync_all(&phone, &api).await.unwrap()[0].outcome,
+        Outcome::Synced
+    );
+    assert_converged(&[&laptop, &phone], &lib);
+}
+
+/// If the cloud does not hand it over, it stays as it was and can be asked for again.
+#[tokio::test]
+async fn a_library_the_cloud_no_longer_has_stays_left() {
+    let cloud = FakeCloud::default();
+    let (_laptop, phone, lib, _hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    without_paired_devices(&phone, &lib);
+    let api = cloud.api("hugo").on(&phone);
+    leave(&phone, &api, &lib).await.unwrap();
+
+    let other = cloud.api("someone-else").on(&phone);
+    let report = redownload(&phone, &other, &lib).await.unwrap();
+
+    assert_eq!(report.outcome, Outcome::MissingInCloud);
+    assert!(!library_exists_here(&phone, &lib));
+    assert_eq!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        redownload(&phone, &api, &lib).await.unwrap().outcome,
+        Outcome::Downloaded
+    );
+}
+
+/// Left by choice, and while away the cloud cut the device: asking finds the proof and the library stays gone.
+#[tokio::test]
+async fn a_library_cut_while_it_was_left_does_not_come_back_by_asking() {
+    let cloud = FakeCloud::default();
+    let (laptop, phone, lib, hugo, _c) = laptop_and_hugos_phone_in_sync(&cloud).await;
+    without_paired_devices(&phone, &lib);
+    let api = cloud.api("hugo").on(&phone);
+    leave(&phone, &api, &lib).await.unwrap();
+    people::withdraw_person(&mut laptop.lock().unwrap(), &lib, &hugo).unwrap();
+    sync_library(&laptop, &cloud.api("tersoal").on(&laptop), &lib)
+        .await
+        .unwrap();
+
+    let report = redownload(&phone, &api, &lib).await.unwrap();
+
+    assert_ne!(report.outcome, Outcome::Downloaded, "{report:?}");
+    assert!(!library_exists_here(&phone, &lib));
+    assert!(
+        libraries::left_libraries(&phone.lock().unwrap())
+            .unwrap()
+            .is_empty()
+    );
+    // The cloud lists nothing for this account now, so a session does not bring it down either.
+    let again = sync_all(&phone, &api).await.unwrap();
+    assert!(again.iter().all(|r| r.outcome != Outcome::Downloaded));
+    assert!(!library_exists_here(&phone, &lib));
 }
 
 #[tokio::test]

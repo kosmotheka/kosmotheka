@@ -65,7 +65,7 @@ La cuenta es opcional. Si creas una y subes una biblioteca, esa biblioteca vive 
 
 ## Borrar tus datos
 
-- **Borrar una biblioteca** (en «Ajustes de la biblioteca», «Borrar biblioteca») la quita de este dispositivo **y de todos los que la comparten**. No se puede deshacer. Antes de borrar, la app te ofrece guardar una copia de seguridad. Si solo quieres quitarla de este dispositivo y que los demás la conserven, usa «Salir de esta biblioteca».
+- **Borrar una biblioteca** (en «Ajustes de la biblioteca», «Borrar biblioteca») la quita de este dispositivo **y de todos los que la comparten**. No se puede deshacer. Antes de borrar, la app te ofrece guardar una copia de seguridad. Si solo quieres quitarla de este dispositivo y que los demás la conserven, usa «Quitar de este dispositivo».
 - **«Dejar este dispositivo como nuevo»**, en «Ajustes», deja el dispositivo como cuando se instaló la app por primera vez.
 - **Desinstalar la app** también quita sus datos del dispositivo.
 - Las copias de seguridad que hayas hecho siguen donde las guardaste.

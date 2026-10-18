@@ -67,21 +67,23 @@ Lo que pasa:
 
 En la biblioteca de destino hay que volver a apuntar tus marcas y la serie.
 
-## Salir de una biblioteca, duplicarla o borrarla
+## Quitarla de este dispositivo, duplicarla o borrarla
 
 Estas tres opciones están en «Ajustes de la biblioteca», abajo del todo.
 
-### «Salir de esta biblioteca»
+### «Quitar de este dispositivo»
 
-La biblioteca desaparece de este dispositivo. Los demás dispositivos la conservan.
+La biblioteca desaparece de este dispositivo. Los demás dispositivos la conservan, y tu cuenta de la nube, si la tiene, también.
 
-Solo funciona si la biblioteca está también en otro dispositivo. Si solo está en este, salir la perdería. La app te lo avisa y te lleva a «Borrar biblioteca», donde puedes guardar antes una copia.
+Solo funciona si la biblioteca está también en otro sitio: en otro dispositivo emparejado, o en la nube de tu cuenta. Con la nube, la app se lo pregunta en ese momento: sin conexión, o si la nube no la tiene, la biblioteca se considera que solo está en este dispositivo, y quitarla la perdería. Si eres quien la administra, la app te lleva a «Borrar biblioteca», donde puedes guardar antes una copia. Si no, te ofrece guardar una copia.
 
-Para volver a tenerla, hay que emparejar de nuevo con uno de los dispositivos que la tienen.
+Para volver a tenerla:
+- Si está en la nube de tu cuenta, usa «Volver a bajar» en «Compartir y dispositivos» (ver [La nube](../the-cloud/)).
+- Si no, hay que emparejar de nuevo con uno de los dispositivos que la tienen.
 
 ### «Borrar biblioteca»
 
-La borra **en todos los dispositivos** que la tienen, con todas sus cosas, sus ejemplares y su historial. **No se puede deshacer.** Solo ve esta opción quien administra la biblioteca; el resto ve «Salir de esta biblioteca».
+La borra **en todos los dispositivos** que la tienen, con todas sus cosas, sus ejemplares y su historial. **No se puede deshacer.** Solo ve esta opción quien administra la biblioteca; el resto ve «Quitar de este dispositivo».
 
 La app te cuenta cuántas cosas se van y, si la biblioteca está compartida, en qué dispositivos.
 

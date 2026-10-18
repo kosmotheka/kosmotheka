@@ -67,21 +67,23 @@ What happens:
 
 In the destination library you have to note your marks and the series again.
 
-## Leave a library, duplicate it or delete it
+## Remove it from this device, duplicate it or delete it
 
 All three are in "Library settings", at the very bottom.
 
-### "Leave this library"
+### "Remove from this device"
 
-The library disappears from this device. The other devices keep it.
+The library disappears from this device. The other devices keep it, and so does your cloud account, if it has it.
 
-This only works if the library is also on another device. If it is only on this one, leaving would lose it. The app warns you and takes you to "Delete library", where you can save a backup first.
+This only works if the library is also somewhere else: on another paired device, or in your account's cloud. With the cloud, the app asks it at that moment: with no connection, or if the cloud does not have it, the library counts as being only on this device, and removing it would lose it. If you administer the library, the app takes you to "Delete library", where you can save a backup first. If you do not, it offers to save a backup.
 
-To have it back, you must pair again with one of the devices that have it.
+To have it back:
+- If it is in your account's cloud, use "Bring down again" in "Sharing and devices" (see [The cloud](../the-cloud/)).
+- If not, you must pair again with one of the devices that have it.
 
 ### "Delete library"
 
-It is deleted on **all the devices** that have it, with all its things, copies and history. **It cannot be undone.** Only people who administer the library see this option; everyone else sees "Leave this library".
+It is deleted on **all the devices** that have it, with all its things, copies and history. **It cannot be undone.** Only people who administer the library see this option; everyone else sees "Remove from this device".
 
 The app tells you how many things will go and, if the library is shared, on which devices.
 

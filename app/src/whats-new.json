@@ -1,6 +1,10 @@
 {
   "0.3.0": [
     {
+      "es": "«Salir de esta biblioteca» se llama ahora «Quitar de este dispositivo», y se puede hacer también con una biblioteca que está en la nube de tu cuenta: la app comprueba en ese momento que la nube la tiene. Después puedes volver a bajarla desde «Compartir y dispositivos».",
+      "en": "“Leave this library” is now called “Remove from this device”, and it also works for a library that is in your account's cloud: the app checks at that moment that the cloud has it. Afterwards you can bring it down again from “Sharing and devices”."
+    },
+    {
       "es": "En el ordenador, el botón de arriba se llama «¿Lo tengo?» y ya no dice «Escanear», porque el ordenador no escanea con cámara: ahí se teclea o se pega el número del libro.",
       "en": "On the computer, the button at the top is now called “Do I have it?” instead of “Scan”, because the computer does not scan with a camera: there you type or paste the book's number."
     },
@@ -9,12 +13,8 @@
       "en": "“Delete library” now only shows for those who administer the library, and the series list and each series count what you have the same way, gaps included (“you have 3 of 6” in both places)."
     },
     {
-      "es": "La Ayuda enlaza con la guía completa, en docs.kosmotheka.com.",
-      "en": "Help links to the full guide, at docs.kosmotheka.com."
-    },
-    {
-      "es": "Las portadas de cualquier proporción ocupan la misma caja en las listas, y elegir una biblioteca en el menú te saca de la Ayuda y te lleva a su lista.",
-      "en": "Covers of any proportion now fill the same box in lists, and choosing a library in the menu takes you out of Help and to its list."
+      "es": "La Ayuda enlaza con la guía completa, en docs.kosmotheka.com. Las portadas de cualquier proporción ocupan la misma caja en las listas, y elegir una biblioteca en el menú te saca de la Ayuda y te lleva a su lista.",
+      "en": "Help links to the full guide, at docs.kosmotheka.com. Covers of any proportion now fill the same box in lists, and choosing a library in the menu takes you out of Help and to its list."
     },
     {
       "es": "Las formas de quitar un dispositivo tienen nombres más claros («Dejar de emparejar», «Retirar el acceso de este dispositivo», «Sacar de mi cuenta» y «Dejar este dispositivo como nuevo»), y la app avisa antes de crear la cuenta de que la nube es, por ahora, por invitación.",

@@ -62,6 +62,12 @@ Two more things:
 - If whoever administers the library marked that device as belonging to **another person**, the app tells you ("In “Home”, this device belongs to Laura"). It stays that way; to change it, whoever administers has to do it from their device, in "People and permissions".
 - Only what you uploaded to the cloud reaches the new phone. The libraries you did not upload stay on your other devices.
 
+## Bring down a library you removed
+
+If you remove a library from a device ("Remove from this device", see [Several libraries](../several-libraries/)) and your account's cloud has it, it appears in "Sharing and devices", in the cloud part, under "Removed from this device", with the button "Bring down again". The app does not bring it down by itself when it syncs: only when you ask.
+
+Only the ones you removed yourself show up. If your access to a library was withdrawn (yours, your account's or this device's), it does not come back this way.
+
 ## Invite other people
 
 To invite someone, the library has to be in the cloud, you have to administer it, and you have to be signed in. If something is missing, the app tells you what ("Upload it first and then you can invite").

@@ -861,6 +861,111 @@ fn this_device_as(conn: &Connection, library: &str) -> Result<Option<Joined>> {
         }))
 }
 
+/// Whether the cloud of this account offers `library` right now: it is linked here, the cloud lists it with this
+/// very local id and it is not among those the account was cut from. Asks the cloud, because the link is only what
+/// this device remembers (`MissingInCloud`). Any failure, no connection included, is a no: leaving would lose it.
+pub async fn offers<A: CloudApi>(database: &Database, api: &A, library: &str) -> bool {
+    let cloud = {
+        let Ok(conn) = database.lock() else {
+            return false;
+        };
+        // The session is `api`'s: no api without one.
+        match link_of(&conn, library) {
+            Ok(Some(link)) => link
+                .cloud_library
+                .clone()
+                .filter(|cloud| link.is(cloud, api.server())),
+            _ => None,
+        }
+    };
+    let Some(cloud) = cloud else {
+        return false;
+    };
+    let Ok(listing) = api.list_libraries().await else {
+        return false;
+    };
+    !listing.withdrawn.contains(&cloud)
+        && listing.libraries.iter().any(|offered| {
+            offered.id == cloud && offered.local_library_id.as_deref() == Some(library)
+        })
+}
+
+/// Leaves a library on this device. Another device of the local network having it is enough; failing that, the
+/// cloud has to offer it to this account (`offers`), or it would be lost: `OnlyOnThisDevice`.
+pub async fn leave<A: CloudApi>(database: &Database, api: &A, library: &str) -> Result<String> {
+    let alone = lan::devices_sharing(&*database.lock()?, library)?.is_empty();
+    let in_cloud = alone && offers(database, api, library).await;
+    let mut conn = database.lock()?;
+    if in_cloud {
+        libraries::leave_library_in_cloud(&mut conn, library)
+    } else {
+        libraries::leave_library(&mut conn, library)
+    }
+}
+
+/// Brings down a library this device left by its own choice, when the person asks for it. Not `sync_all`'s
+/// job: that one never brings back what was left (`Outcome::DeletedHere`).
+///
+/// Only a library in the list of those left (`libraries::left_libraries`): one that was withdrawn (SEG-017) is
+/// not there, and neither is a forgotten one from before the list existed. The cloud has to offer it
+/// still, and not as cut. If it does not hand it over, everything is as it was.
+pub async fn redownload<A: CloudApi>(
+    database: &Database,
+    api: &A,
+    local: &str,
+) -> Result<LibraryReport> {
+    let entry = libraries::left_libraries(&*database.lock()?)?
+        .into_iter()
+        .find(|entry| entry.id == local)
+        .ok_or(Error::Cloud("not_left"))?;
+    if entry.cloud_server != api.server() {
+        return Ok(LibraryReport::new(
+            local,
+            Some(&entry.cloud_library),
+            Outcome::OtherServer,
+        ));
+    }
+    let listing = api.list_libraries().await?;
+    if listing.withdrawn.contains(&entry.cloud_library) {
+        // The account lost it while this device was away: it is no longer one it can ask for.
+        {
+            let conn = database.lock()?;
+            if let Some(taken) = libraries::take_left(&conn, local)? {
+                libraries::restore_left(&conn, taken, false)?;
+            }
+        }
+        return Ok(LibraryReport::new(
+            local,
+            Some(&entry.cloud_library),
+            Outcome::AccessWithdrawn,
+        ));
+    }
+    let offered = listing.libraries.iter().any(|cloud| {
+        cloud.id == entry.cloud_library && cloud.local_library_id.as_deref() == Some(local)
+    });
+    if !offered {
+        return Ok(LibraryReport::new(
+            local,
+            Some(&entry.cloud_library),
+            Outcome::MissingInCloud,
+        ));
+    }
+    let taken = libraries::take_left(&*database.lock()?, local)?.ok_or(Error::Cloud("not_left"))?;
+    let result = download(database, api, &entry.cloud_library, local).await;
+    let (back, asked_again) = match &result {
+        Ok(report) if report.outcome == Outcome::Downloaded => (false, false),
+        // Cut while it came down: it stays forgotten, and is no longer one that was merely left.
+        Ok(report) if matches!(report.outcome, Outcome::AccessWithdrawn | Outcome::Removed) => {
+            (true, false)
+        }
+        _ => (true, true),
+    };
+    if back {
+        libraries::restore_left(&*database.lock()?, taken, asked_again)?;
+    }
+    result
+}
+
 fn linked_libraries(conn: &Connection) -> Result<Vec<(String, Link)>> {
     let mut statement = conn.prepare(
         "SELECT id, cloud_library_id, cloud_server FROM libraries
