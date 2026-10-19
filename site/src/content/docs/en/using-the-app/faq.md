@@ -47,7 +47,7 @@ Nothing. It is free and has no advertising.
 
 ## Is it free software?
 
-It will be free software (under the AGPL licence, which sets out the rules of use): anyone can read the code, change it and share it. And you can run your own server, your own computer on the internet with your libraries, if you prefer not to use the official one.
+Yes, it is free software (under the AGPL licence, which sets out the rules of use): anyone can read [the code](https://github.com/kosmotheka/kosmotheka), change it and share it. And you can run your own server, your own computer on the internet with your libraries, if you prefer not to use the official one.
 
 ## What can I keep track of?
 

@@ -29,7 +29,7 @@ Tus datos se guardan en tu móvil u ordenador. La app funciona sin cuenta y sin 
 
 Hay también una cuenta opcional (como la de un correo), para tener tus bibliotecas en más dispositivos aunque no estén en la misma wifi. Por ahora es una prueba. Sin cuenta, todo funciona igual.
 
-Es gratis, sin anuncios y sin seguimiento. Será software libre: cualquiera podrá ver cómo está hecha.
+Es gratis, sin anuncios y sin seguimiento. Es software libre: cualquiera puede ver [cómo está hecha](https://github.com/kosmotheka/kosmotheka).
 
 ## Qué no es
 

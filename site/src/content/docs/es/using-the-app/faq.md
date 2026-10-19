@@ -47,7 +47,7 @@ Nada. Es gratis y sin publicidad.
 
 ## ¿Es software libre?
 
-Será software libre (licencia AGPL, que son las reglas de uso): cualquiera podrá leer el código, cambiarlo y compartirlo. Y podrás montar tu propio servidor, tu propio ordenador en internet con tus bibliotecas, si prefieres no usar el oficial.
+Sí, es software libre (licencia AGPL, que son las reglas de uso): cualquiera puede leer [el código](https://github.com/kosmotheka/kosmotheka), cambiarlo y compartirlo. Y podrás montar tu propio servidor, tu propio ordenador en internet con tus bibliotecas, si prefieres no usar el oficial.
 
 ## ¿Qué puedo apuntar?
 
