@@ -9,6 +9,7 @@ const texts = {
     trademarkLabel: "Política de marca",
     privacy: "Política de privacidad",
     privacyUrl: "https://kosmotheka.com/es/privacidad.html",
+    siteUrl: "https://kosmotheka.com/es/",
   },
   en: {
     license:
@@ -17,6 +18,7 @@ const texts = {
     trademarkLabel: "Trademark policy",
     privacy: "Privacy policy",
     privacyUrl: "https://kosmotheka.com/en/privacy.html",
+    siteUrl: "https://kosmotheka.com/en/",
   },
 } as const;
 const t = texts[Astro.currentLocale === "en" ? "en" : "es"];
@@ -27,6 +29,7 @@ const t = texts[Astro.currentLocale === "en" ? "en" : "es"];
   <p>© 2026 Kosmotheka</p>
   <p>{t.license} {t.trademark}</p>
   <p>
+    <a href={t.siteUrl} rel="noopener">kosmotheka.com</a> ·
     <a href="https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md" rel="noopener"
       >{t.trademarkLabel}</a
     >

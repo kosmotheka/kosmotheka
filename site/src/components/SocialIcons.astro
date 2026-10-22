@@ -2,9 +2,11 @@
 import Default from "@astrojs/starlight/components/SocialIcons.astro";
 
 const text = "kosmotheka.com";
+// The website in the page's language, so going back does not switch languages.
+const href = `https://kosmotheka.com/${Astro.currentLocale === "en" ? "en" : "es"}/`;
 ---
 
-<a class="site-link" href="https://kosmotheka.com/" rel="noopener">{text}</a>
+<a class="site-link" href={href} rel="noopener">{text}</a>
 <Default><slot /></Default>
 
 <style>
