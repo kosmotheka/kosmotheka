@@ -40,6 +40,12 @@
   --sl-color-black: #0a0a0a;
 }
 
+/* The symbol and the name, at the size of the website's header (30 px symbol). */
+.site-title img {
+  height: 1.875rem;
+  width: auto;
+}
+
 /* Anchors scroll instead of jumping, unless the system asks for less motion. */
 @media (prefers-reduced-motion: no-preference) {
   html {

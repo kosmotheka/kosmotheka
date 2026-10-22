@@ -16,8 +16,8 @@ export default defineConfig({
         en: { label: "English", lang: "en" },
       },
       logo: {
-        light: "./src/assets/logotipo-color.svg",
-        dark: "./src/assets/logotipo-blanco.svg",
+        light: "./src/assets/horizontal-color.svg",
+        dark: "./src/assets/horizontal-color-oscuro.svg",
         alt: "Kosmotheka",
         replacesTitle: true,
       },

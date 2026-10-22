@@ -21,6 +21,7 @@ const texts = {
     siteUrl: "https://kosmotheka.com/en/",
   },
 } as const;
+const trademarksUrl = "https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md";
 const t = texts[Astro.currentLocale === "en" ? "en" : "es"];
 ---
 
@@ -29,11 +30,9 @@ const t = texts[Astro.currentLocale === "en" ? "en" : "es"];
   <p>© 2026 Kosmotheka</p>
   <p>{t.license} {t.trademark}</p>
   <p>
-    <a href={t.siteUrl} rel="noopener">kosmotheka.com</a> ·
-    <a href="https://github.com/kosmotheka/kosmotheka/blob/main/TRADEMARKS.md" rel="noopener"
-      >{t.trademarkLabel}</a
-    >
-    · <a href={t.privacyUrl} rel="noopener">{t.privacy}</a> ·
+    <a href={t.siteUrl} rel="noopener">kosmotheka.com</a>{" · "}
+    <a href={trademarksUrl} rel="noopener">{t.trademarkLabel}</a>{" · "}
+    <a href={t.privacyUrl} rel="noopener">{t.privacy}</a>{" · "}
     <a href="mailto:info@kosmotheka.com">info@kosmotheka.com</a>
   </p>
 </div>
