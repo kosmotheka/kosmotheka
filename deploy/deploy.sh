@@ -16,6 +16,7 @@
 #   BACKUP_UNIT      systemd unit run before migrating (default kosmotheka-backup.service; empty to skip)
 #   RESTART_UNITS    restarted at the end (default "php8.5-fpm kosmotheka-worker")
 #   BUILD_DOCS       1 to build the documentation site into site/dist (needs Node and npm; default 0)
+#   NODE_DIR         the folder with the node and npm to build it with, e.g. an nvm version's bin/ (default: the PATH)
 #   HEALTH_URL       checked at the end, e.g. https://api.example.org/v1/server (empty to skip)
 #
 # The website needs no step: nginx serves web/ from the clone, so the checkout updates it.
@@ -31,6 +32,7 @@ composer="${COMPOSER_BIN:-/usr/bin/composer}"
 backup_unit="${BACKUP_UNIT-kosmotheka-backup.service}"
 restart_units="${RESTART_UNITS:-php8.5-fpm kosmotheka-worker}"
 build_docs="${BUILD_DOCS:-0}"
+node_dir="${NODE_DIR:-}"
 health_url="${HEALTH_URL:-}"
 app_user="${APP_USER:-}"
 
@@ -74,10 +76,13 @@ as_app "$php" bin/console cache:warmup
 if [[ "$build_docs" == "1" ]]; then
   step "Documentation site"
   cd "$repo/site"
-  as_app npm ci --no-audit --no-fund --silent
+  # sudo resets PATH, so a Node from nvm is passed in explicitly.
+  node_path="${node_dir:+$node_dir:}$PATH"
+  as_app env PATH="$node_path" node --version
+  as_app env PATH="$node_path" npm ci --no-audit --no-fund --silent
   # Built aside and swapped in one move, so nginx never serves a half-written site.
   as_app rm -rf dist-next dist-previous
-  as_app env ASTRO_TELEMETRY_DISABLED=1 npx astro build --outDir dist-next
+  as_app env PATH="$node_path" ASTRO_TELEMETRY_DISABLED=1 npx astro build --outDir dist-next
   [[ -d dist ]] && as_app mv dist dist-previous
   as_app mv dist-next dist
   as_app rm -rf dist-previous
