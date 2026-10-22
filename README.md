@@ -22,17 +22,17 @@ The [downloads page](https://kosmotheka.com/en/download.html) on kosmotheka.com 
 
 ## Documentation
 
-A documentation site at docs.kosmotheka.com is coming soon, in three parts: using the app, running your own server and contributing. Until then, the working documents are in [`docs/`](docs/) (currently in Spanish).
+The documentation is at **[docs.kosmotheka.com](https://docs.kosmotheka.com)**, in English and Spanish, in three parts: [using the app](https://docs.kosmotheka.com/en/using-the-app/), [running your own server](https://docs.kosmotheka.com/en/run-your-server/) and [contributing](https://docs.kosmotheka.com/en/contribute/). The working documents behind the project, decisions and plans included, are in [`docs/`](docs/) (in Spanish).
 
 ## Run your own server
 
-The server is optional and you can host it yourself. The official app can connect to any server. A guide will be part of the documentation site.
+The server is optional and you can host it yourself. The official app can connect to any server. The [self-hosting guide](https://docs.kosmotheka.com/en/run-your-server/) covers installing it, with or without Docker, backups and updates.
 
 ## Roadmap
 
 What is planned, roughly in this order. There are no dates: it is a personal project, and each thing ships when it is ready.
 
-**Now:** the public release. Closed testing on Google Play, the documentation site, and opening this repository.
+**Now:** the public release. Closed testing on Google Play; the documentation site and this repository are open.
 
 **Next, once the app is live:**
 - **Notifications on Android** with the app closed: a new request, a request accepted or declined, an invitation accepted.
