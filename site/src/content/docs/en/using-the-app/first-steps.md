@@ -14,6 +14,28 @@ This page takes you from installing the app to your first book. It takes about f
 
 The [downloads page](https://kosmotheka.com/en/download.html) always shows what can be installed today.
 
+### On Windows: the "Windows protected your PC" message
+
+When you open the installer, Windows may show a blue window that says "Windows protected your PC" and that the app comes from an "unknown publisher". This is normal: it appears for programs that have not paid for a Microsoft certificate, and Kosmotheka, which is free, does not have one for now. It does not mean anything is wrong with the file.
+
+To go on:
+
+1. Click **"More info"**.
+2. Check that the app is called `Kosmotheka-windows-x64-setup.exe`.
+3. Click **"Run anyway"**.
+
+Download the installer only from the downloads page on kosmotheka.com or from GitHub. If you want to check that the file is complete and is the one we published, every version comes with a `SHA256SUMS` file holding its fingerprint.
+
+### On Linux
+
+- **`.deb`** (Ubuntu, Debian, Linux Mint): double-click it to install it with the software centre, or in a terminal: `sudo apt install ./Kosmotheka-linux-amd64.deb`.
+- **`.rpm`** (Fedora and similar): `sudo dnf install ./Kosmotheka-linux-x86_64.rpm`.
+- **AppImage** (almost any Linux, nothing to install): allow it to run (in the file's properties, or `chmod +x Kosmotheka-linux-x86_64.AppImage`) and open it.
+
+### Earlier versions
+
+The downloads page always takes you to the latest version. If you need an earlier one, they are all in the [list of versions on GitHub](https://github.com/kosmotheka/kosmotheka/releases), each with its installers and what changed. On Android, Google Play only offers the latest.
+
 ## Open it for the first time
 
 When you open it, a welcome appears with a few screens.

@@ -14,6 +14,28 @@ Esta página te lleva de la instalación a tu primer libro. Tarda unos cinco min
 
 En la [página de descargas](https://kosmotheka.com/es/descargas.html) está siempre lo que ya se puede instalar.
 
+### En Windows: el aviso «Windows protegió su PC»
+
+Al abrir el instalador, Windows puede mostrar una ventana azul que dice «Windows protegió su PC» y que la aplicación es de un «editor desconocido». Es normal: sale con los programas que no han pagado un certificado de Microsoft, y Kosmotheka, que es gratis, por ahora no lo tiene. No quiere decir que haya un problema con el fichero.
+
+Para seguir:
+
+1. Pulsa **«Más información»**.
+2. Comprueba que la aplicación se llama `Kosmotheka-windows-x64-setup.exe`.
+3. Pulsa **«Ejecutar de todas formas»**.
+
+Descarga el instalador solo de la página de descargas de kosmotheka.com o de GitHub. Si quieres comprobar que el fichero está entero y es el que publicamos, cada versión trae un fichero `SHA256SUMS` con su huella.
+
+### En Linux
+
+- **`.deb`** (Ubuntu, Debian, Linux Mint): ábrelo con doble clic para instalarlo con el centro de software, o en una terminal: `sudo apt install ./Kosmotheka-linux-amd64.deb`.
+- **`.rpm`** (Fedora y parecidas): `sudo dnf install ./Kosmotheka-linux-x86_64.rpm`.
+- **AppImage** (casi cualquier Linux, sin instalar nada): dale permiso para ejecutarse (en las propiedades del fichero, o `chmod +x Kosmotheka-linux-x86_64.AppImage`) y ábrelo.
+
+### Versiones anteriores
+
+La página de descargas lleva siempre a la última versión. Si necesitas una anterior, están todas en la [lista de versiones de GitHub](https://github.com/kosmotheka/kosmotheka/releases), cada una con sus instaladores y lo que cambió. En Android, Google Play solo ofrece la última.
+
 ## Ábrela por primera vez
 
 Al abrirla aparece una bienvenida con unas pocas pantallas.
