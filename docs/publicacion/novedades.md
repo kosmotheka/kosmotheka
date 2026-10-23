@@ -2,6 +2,15 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 0.4.0 (23/10/2026, para la prueba cerrada)
+
+**Antes de subirla: el servidor de producción tiene que ofrecer GameUPC** (`/v1/server` lo lista en `metadata`). Desplegado y comprobado el 23/10/2026. Sin él, la app no lo pregunta y sigue igual que la 0.3.1.
+
+**Texto para Google Play** (378 y 410 caracteres):
+
+- es-ES: Con cuenta, al escanear un juego de mesa la app pregunta a GameUPC qué juego es, a través del servidor de tu cuenta y sin clave propia. Si duda, eliges el tuyo entre sus propuestas o lo buscas por su nombre; al guardarlo le decimos cuál era para que aprenda (le llega el código, el juego y un identificador de tu cuenta que no dice quién eres). Se apaga en Proveedores de datos.
+- en-US: With an account, when you scan a board game the app asks GameUPC which game it is, through your account's server and with no key of your own. If it is not sure, you pick yours among its suggestions or search for it by name; when you save it we tell it which one it was so it learns (it receives the code, the game and an identifier of your account that does not say who you are). Turn it off in Data providers.
+
 ## 0.3.0 (18/10/2026, para la prueba interna y después la cerrada)
 
 **Antes de subirla: el servidor de producción tiene que estar desplegado con este código.** «Salir de la biblioteca» es una regla nueva que el servidor tiene que conocer (D102); un servidor anterior la convertiría en una petición a quien administra.

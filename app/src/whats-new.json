@@ -1,5 +1,5 @@
 {
-  "next": [
+  "0.4.0": [
     {
       "es": "Con cuenta, al escanear un juego de mesa la app pregunta a GameUPC, a través del servidor de tu cuenta, qué juego es: ya no hace falta clave propia. Si no está seguro, eliges el tuyo entre sus propuestas o lo buscas por su nombre, y al guardarlo le decimos cuál era para que aprenda; le llega el código y el juego, con un identificador de tu cuenta que no dice quién eres. Puedes apagarlo en Proveedores de datos.",
       "en": "With an account, when you scan a board game the app asks GameUPC, through your account's server, which game it is: no key of your own is needed any more. If it is not sure, you pick yours among its suggestions or search for it by name, and when you save it we tell it which one it was so it learns; it receives the code and the game, with an identifier of your account that does not say who you are. You can turn it off in Data providers.",
