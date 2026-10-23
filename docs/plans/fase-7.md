@@ -441,5 +441,5 @@ Lo que de verdad falta (17/10/2026). Todo lo demás de la lista de arriba está 
 - [ ] **Copias automáticas en producción:** la [guía](../../site/src/content/docs/es/run-your-server/backups.md) y el script ya existen y están probados en un contenedor; falta ponerlos en el VPS oficial, con la copia fuera de la máquina.
 - [ ] **Mercure en producción** (opcional: sin él, las apps se ponen al día al abrirlas).
 - [ ] **`assetlinks.json` en `kosmotheka.app`** y probar en un móvil real que el enlace de una invitación abre la app sola (condición para publicar la nube, 7.6.4).
-- [ ] **GameUPC:** espera la clave que se pidió por correo; sin ella, solo con clave propia.
+- [ ] **GameUPC:** la clave llegó el 15/10/2026. **El servidor, hecho el 23/10/2026** (mirar un código y devolver la elección, con la huella por cuenta; [cloud.md](../architecture/cloud.md#qué-juego-de-mesa-es-un-código-de-barras-gameupc-d62)); falta poner la clave en producción y **la app**: usar la ruta con cuenta, quitar la clave propia (D62) y los tres casos en pantalla (seguro, elegir entre propuestas, buscar), con la política de privacidad al día.
 - [ ] **La segunda pasada del maintainer por el servidor,** más a fondo que la del 17/10/2026.

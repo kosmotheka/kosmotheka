@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Metadata\BggSource;
 use App\Metadata\BookProvider;
 use App\Metadata\ComicVineSource;
+use App\Metadata\GameUpcSource;
 use App\Metadata\RawgSource;
 use App\Metadata\TmdbSource;
 use App\Security\Google\GoogleSignIn;
@@ -43,6 +44,7 @@ final class ServerController extends AbstractController
         private readonly RawgSource $rawg,
         private readonly BggSource $bgg,
         private readonly ComicVineSource $comicVine,
+        private readonly GameUpcSource $gameUpc,
     ) {
     }
 
@@ -67,6 +69,7 @@ final class ServerController extends AbstractController
                 $this->rawg->isConfigured() ? RawgSource::NAME : null,
                 $this->bgg->isConfigured() ? BggSource::NAME : null,
                 $this->comicVine->isConfigured() ? ComicVineSource::NAME : null,
+                $this->gameUpc->isConfigured() ? GameUpcSource::NAME : null,
             ])),
         ]);
     }

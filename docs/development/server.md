@@ -149,6 +149,12 @@ Dos rutas llevan un secreto en la dirección, porque es la vuelta del navegador 
 
 **Prueba real** (la hace el maintainer; el token nunca se imprime ni se copia): con `BGG_API_TOKEN` en `server/.env.local`, `make up`; entrar con la app de desarrollo (`npm run tauri dev`) en ese servidor; en «Añadir» elegir juegos de mesa y buscar «catan» (deben salir «Catan» primero, con editorial, jugadores y portada); buscar «Catan: Cities» (una expansión: la ficha no guarda todavía la relación); en libros, buscar «dungeon master» (al final aparecen los de RPGGeek, con su nombre de fuente). Ver en «Créditos» y en la pantalla de resultados el logo «Powered by BGG» en tema claro y oscuro. En Proveedores, apagar BoardGameGeek y comprobar que la búsqueda ya no lo pide.
 
+### GameUPC: qué juego de mesa es un código de barras (D62)
+
+`GAMEUPC_API_KEY` (en `.env.local`; `.env` la trae vacía): la clave de producción de GameUPC, que se pide por correo y solo dan a quien hace la app. Con ella, las cuentas pueden mirar qué juego es un código de barras y devolver el que eligieron, y `GET /v1/server` lista `gameupc` en `metadata`; vacía, las dos rutas responden `404 metadata_unavailable`. **Va en la cabecera `x-api-key`**, nunca en una dirección. Diseño en [cloud.md](../architecture/cloud.md#qué-juego-de-mesa-es-un-código-de-barras-gameupc-d62).
+
+**Prueba real** (la hace el maintainer; la clave nunca se imprime ni se copia): con `GAMEUPC_API_KEY` en `server/.env.local`, `make up`, y con una sesión, `POST /v1/metadata/gameupc/lookup` con `{"code":"019962194719"}` (Gloomhaven: `verified`). Los códigos de prueba de GameUPC (`111111111117`, `222222222224`, `333333333331`) son de su servidor `test`, no del de producción: en producción, un juego de casa. **Una elección cambia sus datos de verdad**: solo con un juego y su código reales.
+
 ## Comandos habituales
 
 | Tarea | Comando (desde `server/`) |

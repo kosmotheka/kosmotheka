@@ -44,6 +44,14 @@ final readonly class RequestLimiter
         private RateLimiterFactoryInterface $bggAccountLimiter,
         #[Target('comic_vine_account')]
         private RateLimiterFactoryInterface $comicVineAccountLimiter,
+        #[Target('gameupc_calls')]
+        private RateLimiterFactoryInterface $gameUpcCallsLimiter,
+        #[Target('gameupc_account')]
+        private RateLimiterFactoryInterface $gameUpcAccountLimiter,
+        #[Target('gameupc_choices')]
+        private RateLimiterFactoryInterface $gameUpcChoicesLimiter,
+        #[Target('gameupc_choice_account')]
+        private RateLimiterFactoryInterface $gameUpcChoiceAccountLimiter,
         #[Target('email_per_address')]
         private RateLimiterFactoryInterface $emailPerAddressLimiter,
         #[Target('two_factor')]
@@ -167,6 +175,36 @@ final readonly class RequestLimiter
     {
         $this->consume($this->comicVineAccountLimiter, $accountId.'|'.$resource->value);
         $this->consumeComicVineCall($resource);
+    }
+
+    /**
+     * One look at GameUPC for this account: its own share of the day first, then the server's (D62). What comes from
+     * the cache spends neither.
+     *
+     * @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted
+     */
+    public function consumeGameUpcCallOf(string $accountId): void
+    {
+        $this->consume($this->gameUpcAccountLimiter, $accountId);
+        $limit = $this->gameUpcCallsLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
+    }
+
+    /**
+     * One choice sent to GameUPC for this account: few a day, since each one changes GameUPC's data under our key,
+     * and a ceiling for the whole server.
+     *
+     * @throws AccountException with AccountErrorCode::TooManyRequests or MetadataQuotaExhausted
+     */
+    public function consumeGameUpcChoiceOf(string $accountId): void
+    {
+        $this->consume($this->gameUpcChoiceAccountLimiter, $accountId);
+        $limit = $this->gameUpcChoicesLimiter->create('server')->consume();
+        if (!$limit->isAccepted()) {
+            throw AccountException::metadataQuotaExhausted($limit->getRetryAfter()->getTimestamp() - time());
+        }
     }
 
     /**

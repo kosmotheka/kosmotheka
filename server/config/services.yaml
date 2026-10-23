@@ -106,6 +106,13 @@ when@test:
         App\Metadata\BggHttpSource:
             arguments:
                 $httpClient: '@app.http_client.bgg_test'
+        # GameUPC, in memory: the same.
+        app.http_client.gameupc_test:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            factory: ['App\Tests\Support\FakeGameUpcApi', 'client']
+        App\Metadata\GameUpcHttpSource:
+            arguments:
+                $httpClient: '@app.http_client.gameupc_test'
         # RAWG, in memory: the same.
         app.http_client.rawg:
             class: Symfony\Component\HttpClient\MockHttpClient

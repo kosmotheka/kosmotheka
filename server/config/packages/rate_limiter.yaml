@@ -65,6 +65,16 @@ framework:
             policy: sliding_window
             limit: 150
             interval: '1 hour'
+        # GameUPC (D62): it takes a hundred barcodes a day that it does not know yet, and answers the known ones without
+        # a stated limit, so the server keeps to 500 looks a day. Choices change its data under our key: 200 a day.
+        gameupc_calls:
+            policy: sliding_window
+            limit: 500
+            interval: '1 day'
+        gameupc_choices:
+            policy: sliding_window
+            limit: 200
+            interval: '1 day'
         # Each account's share of the real calls to each provider, about a tenth of the server's, so that no account can
         # spend the server's for everybody (SEG-052, decided on 2026-10-15). What comes from the cache spends nothing.
         google_books_account:
@@ -82,6 +92,15 @@ framework:
         bgg_account:
             policy: sliding_window
             limit: 100
+            interval: '1 day'
+        gameupc_account:
+            policy: sliding_window
+            limit: 50
+            interval: '1 day'
+        # Choosing the game of a barcode: a household cataloguing its shelves chooses a few at a time.
+        gameupc_choice_account:
+            policy: sliding_window
+            limit: 30
             interval: '1 day'
         # Per account and resource, like the server's.
         comic_vine_account:

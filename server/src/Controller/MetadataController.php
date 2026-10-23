@@ -6,6 +6,8 @@ namespace App\Controller;
 
 use App\Dto\BggSearchRequest;
 use App\Dto\ComicVineSearchRequest;
+use App\Dto\GameUpcChoiceRequest;
+use App\Dto\GameUpcLookupRequest;
 use App\Dto\RawgSearchRequest;
 use App\Dto\TmdbSearchRequest;
 use App\Entity\User;
@@ -16,6 +18,8 @@ use App\Metadata\BookMetadata;
 use App\Metadata\BookProvider;
 use App\Metadata\ComicVineSearch;
 use App\Metadata\ComicVineSource;
+use App\Metadata\GameUpcLookup;
+use App\Metadata\GameUpcSource;
 use App\Metadata\Isbn;
 use App\Metadata\RawgSearch;
 use App\Metadata\RawgSource;
@@ -25,6 +29,7 @@ use App\Security\AccountException;
 use App\Security\RateLimitKey;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\Routing\Attribute\Route;
@@ -50,6 +55,8 @@ final class MetadataController extends AbstractController
         private readonly BggSearch $bggSearch,
         private readonly ComicVineSource $comicVineSource,
         private readonly ComicVineSearch $comicVineSearch,
+        private readonly GameUpcSource $gameUpcSource,
+        private readonly GameUpcLookup $gameUpcLookup,
     ) {
     }
 
@@ -137,5 +144,41 @@ final class MetadataController extends AbstractController
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;
+    }
+
+    /**
+     * Which board game a barcode is (D62): a POST, as the searches, so that what a person scans is never in an address.
+     * The answer says whether GameUPC is sure (`verified`), has guesses for the person to choose from (`choose`) or
+     * knows nothing of it (`unknown`).
+     */
+    #[Route('/gameupc/lookup', methods: ['POST'])]
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function gameUpcLookup(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] GameUpcLookupRequest $payload, #[CurrentUser] User $user): JsonResponse
+    {
+        if (!$this->gameUpcSource->isConfigured()) {
+            throw AccountException::metadataUnavailable();
+        }
+
+        $response = new JsonResponse($this->gameUpcLookup->lookup($payload->barcode(), $user->getId()->toRfc4122())->toArray());
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /**
+     * The game a person chose for a barcode, among GameUPC's guesses or by searching BoardGameGeek, sent back to
+     * GameUPC under the account's GameUPC id: that is how its data grows, and it asked us to do it.
+     */
+    #[Route('/gameupc/choice', methods: ['POST'])]
+    #[RateLimit('metadata_account', key: RateLimitKey::account(...))]
+    public function gameUpcChoice(#[MapRequestPayload(serializationContext: [AbstractNormalizer::ALLOW_EXTRA_ATTRIBUTES => false])] GameUpcChoiceRequest $payload, #[CurrentUser] User $user): JsonResponse
+    {
+        if (!$this->gameUpcSource->isConfigured()) {
+            throw AccountException::metadataUnavailable();
+        }
+
+        $this->gameUpcLookup->choose($payload->barcode(), $payload->externalId, $user->getId()->toRfc4122());
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }

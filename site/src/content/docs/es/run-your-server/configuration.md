@@ -61,6 +61,7 @@ Con una cuenta, la app puede buscar libros, películas y demás a través del se
 | `COMIC_VINE_API_KEY` | Cómics (Comic Vine) | Una cuenta de Comic Vine; uso estrictamente no comercial. El servidor se limita a 150 peticiones por hora y recurso (el servicio admite 200) |
 | `BGG_API_TOKEN` | Juegos de mesa (BoardGameGeek) y libros de rol (RPGGeek) | El token de una aplicación registrada en BoardGameGeek, no comercial. Hay que mostrar el logo «Powered by BGG», y la app lo hace |
 | `BGG_DAILY_CALL_CAP` | — | Tope de llamadas reales al día a BoardGameGeek (1000 por defecto). El servicio no publica cifras: ajústalo mirando el «uso» de tu aplicación registrada |
+| `GAMEUPC_API_KEY` | Juegos de mesa por código de barras (GameUPC), y devolverle el juego que elige la persona cuando no está seguro | GameUPC da la clave por correo a quien hace la app. Le llega, con cada elección, una huella de la cuenta que no dice de quién es |
 
 Cómo se guardan: todas viajan en una cabecera salvo RAWG y Comic Vine, que **solo admiten la clave en la dirección de la llamada**. Por eso con esas dos no debes poner delante del servidor un proxy de salida ni un registro que guarde las direcciones de `api.rawg.io` y `comicvine.gamespot.com`, ni bajar el nivel de registro por debajo de `warning`. Las direcciones `/v1/metadata/` llevan el ISBN que busca una cuenta: tampoco se escriben en el registro de accesos (la guía ya lo hace).
 

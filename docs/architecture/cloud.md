@@ -814,6 +814,29 @@ Los juegos de mesa solo se buscaban en Wikidata (y por código de barras en Game
 
 **Sin probar:** nada en pantalla (ni el logo en tema claro y oscuro, ni la lista con rol al final); la ruta del servidor con una sesión real (la prueba real fue directa contra BoardGameGeek con el código de `BggHttpSource` y el XML guardado); cómo se ve RPGGeek con libros en español.
 
+## Qué juego de mesa es un código de barras: GameUPC (D62)
+
+GameUPC (gameupc.com) dice qué juego de BoardGameGeek es el código de barras de una caja. Es de una sola persona y vive de lo que eligen quienes lo usan: cuando no está seguro, propone varios, y la app le devuelve el que eligió la persona. Hasta el 23/10/2026 solo funcionaba en la app con clave propia; ahora va **solo por el servidor y con cuenta**, con la clave del proyecto (GameUPC solo da claves a quien hace la app, 15/10/2026; ver [proveedores.md](../research/proveedores.md#gameupc-lo-que-hay-y-lo-que-falta-leído-en-su-página-el-12102026)).
+
+**Mirar un código.** `POST /v1/metadata/gameupc/lookup`, con sesión, cuerpo `{code}`. Un `POST`, como las búsquedas, para que lo escaneado no vaya en una dirección. `code` tiene que ser un código de barras de verdad: 8, 12, 13 o 14 cifras con el dígito de control correcto (`Barcode`); si no, `422` y nadie es preguntado. La respuesta, `{status, candidates}`:
+- `verified`: GameUPC está seguro; un candidato.
+- `choose`: sus propuestas (hasta ocho), para que la persona elija o busque otro.
+- `unknown`: no sabe nada; la persona busca el juego.
+
+Cada candidato es `{external_id, title, cover_url}`: el número de BoardGameGeek, el nombre y la portada, que es de BoardGameGeek y pasa el mismo filtro que las suyas (`BggHttpSource::coverAddress`). Lo que GameUPC manda se lee con tope de tamaño (256 KB) y campo a campo: un id que no es un número entero, un nombre vacío o demasiado largo o una portada de otro sitio se descartan.
+
+**Devolver la elección.** `POST /v1/metadata/gameupc/choice`, cuerpo `{code, external_id}`: el servidor manda a GameUPC `POST /upc/{code}/bgg_id/{external_id}` con `{"user_id": …}` y responde `204`. Vale tanto para un juego de sus propuestas como para uno que la persona encontró buscando en BoardGameGeek. Después olvida lo que tenía guardado de ese código, para que la siguiente consulta pregunte otra vez.
+
+**El `user_id` que recibe GameUPC** (decidido el 23/10/2026): lo pidió para poder deshacer lo que mande alguien de mala fe sin tirar todo lo de nuestra clave. Es una huella de la cuenta con una clave secreta del servidor, sacada de `APP_SECRET` con un propósito propio (`GameUpcUserId`), 32 caracteres hexadecimales: la misma cuenta da siempre la misma, dos cuentas dan dos distintas, y desde fuera no se puede saber de quién es ni relacionarla con nada más. Nunca el id de la cuenta ni el correo. Sin cuenta no se manda nada. Cambiar `APP_SECRET` cambia todas las huellas (lo anterior queda a nombre de huellas que ya no usa nadie).
+
+**La clave**, `GAMEUPC_API_KEY`, va en la cabecera `x-api-key`, nunca en una dirección; los tests comprueban que no aparece en respuestas, filas ni registros.
+
+**Caché.** Una fila por código (`provider = gameupc`), con el código en claro, como el ISBN de un libro, y nunca quién preguntó. Una respuesta `verified` se guarda 30 días; `choose` y `unknown`, un día, porque la elección de alguien puede convertirlas en `verified`. Un fallo no se guarda.
+
+**Límites.** GameUPC admite cien códigos nuevos al día y responde `429` («Overloaded») al pasarse: es un rechazo por cupo, que deja a GameUPC en paz media hora (`ProviderGate`). El servidor se queda en 500 consultas reales al día y 50 por cuenta (`gameupc_calls`, `gameupc_account`); lo que sale de la caché no gasta. Las elecciones cambian sus datos con nuestra clave: 200 al día en todo el servidor y 30 por cuenta (`gameupc_choices`, `gameupc_choice_account`).
+
+**Tests:** `tests/Controller/GameUpcTest.php`, con un GameUPC en memoria (`FakeGameUpcApi`) que sigue los ejemplos de su descripción de la API. Los casos hostiles primero: códigos que no lo son, una ruta o una dirección en el código, campos de más, un id propio para GameUPC, respuestas que no sirven o enormes, juegos mal formados, la clave en una respuesta de error, y el código fuera de los registros.
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.
