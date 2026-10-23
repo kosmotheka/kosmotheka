@@ -1165,7 +1165,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Por estudiar cuando llegue:**
 - **Actualizaciones automáticas en escritorio** con el plugin `updater` de Tauri: lee un `latest.json` del mismo *release*. Los ficheros van firmados con otra clave propia, también fuera del repositorio.
-- **Firma de código en Windows:** sin ella, SmartScreen avisa al instalar («Windows protegió su PC»). Los certificados cuestan dinero; hay opciones gratuitas para open source (SignPath Foundation).
+- **Firma de código en Windows:** sin ella, SmartScreen avisa al instalar («Windows protegió su PC»). Los certificados cuestan dinero; hay opciones gratuitas para open source (SignPath Foundation). *Decidido el 23/10/2026: por ahora no (ver abajo).*
 - ~~F-Droid para Android~~: descartado (16/10/2026, ver D63).
 
 **Consecuencias:**
@@ -1174,6 +1174,12 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - Hoy el CI genera el instalador de Windows como artefacto de cada push (caduca a los 14 días); es solo para pruebas y no sustituye a los *releases*.
 - En la Fase 8 del ROADMAP: el workflow de publicación y la página de descargas.
 - Mientras tanto, en la máquina del maintainer (Ubuntu 20.04) la app se ejecuta dentro del contenedor `library-dev`; ver [development/setup.md](development/setup.md).
+
+**Decidido por el maintainer el 23/10/2026, al configurar la firma de Android:**
+- **Windows sale sin firma de código, por ahora.** Se vuelve a mirar si hay quejas. Para que nadie se asuste, la guía de instalación explica el aviso de SmartScreen y cómo seguir.
+- **Linux**, sin firma, como es lo normal; las sumas de `SHA256SUMS` para quien quiera comprobar la descarga. **Flathub se hace**, después de la Snap Store.
+- **Android, solo en Google Play** (D63): no se publica ningún APK para descargar. Un APK con nuestra firma no podría actualizarse encima de la app de Google Play sin desinstalarla, y desinstalar borra los datos.
+- **La página de descargas enlaza a la última versión** (`…/releases/latest/download/<fichero>`) **y al histórico de *releases*** de GitHub, donde están todas las versiones anteriores con sus instaladores, para quien necesite una más vieja.
 
 ## D75 · Avisos al momento: Mercure con la app abierta, notificaciones push en Android — `aceptada`
 
