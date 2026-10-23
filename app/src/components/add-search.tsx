@@ -17,6 +17,7 @@ import {
   type Kind,
   type NewBook,
   type Source,
+  gameUpcChoice,
   kinds,
   lookupCode,
   searchWorks,
@@ -169,6 +170,13 @@ export function AddSearch({
   const [invalidIsbn, setInvalidIsbn] = useState(false);
   const [isbnByCode, setIsbnByCode] = useState<string | null>(null);
   const [formBook, setFormBook] = useState<NewBook | null>(null);
+  // A barcode GameUPC was not sure of (D62), and how unsure: the board game the person picks for it, among its guesses or
+  // searched by name, is sent back once it is saved, so GameUPC learns it.
+  const [gameUpcCode, setGameUpcCode] = useState<string | null>(null);
+  const [gameUpcStatus, setGameUpcStatus] = useState<"choose" | "unknown" | null>(null);
+  const [pendingChoice, setPendingChoice] = useState<{ code: string; externalId: string } | null>(
+    null,
+  );
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const requestId = useRef(0);
@@ -180,6 +188,9 @@ export function AddSearch({
     setWarnings(result.warnings);
     setInvalidIsbn(result.invalidIsbn);
     setIsbnByCode(result.isbn);
+    const unsure = result.gameUpc === "verified" ? null : result.gameUpc;
+    setGameUpcCode(unsure ? trimmed : null);
+    setGameUpcStatus(unsure);
     if (result.kind) {
       setKind(result.kind);
       setCandidates(result.candidates);
@@ -254,12 +265,22 @@ export function AddSearch({
 
   // A valid ISBN that nobody knows is surely a book: the form starts with its number.
   const handleManualAdd = () => {
-    const book = emptyNewBook(kind, askCode);
+    const book = emptyNewBook(kind, askCode ?? (kind === "boardgame" ? gameUpcCode : null));
     if (foundByCode && isbnByCode && kind === "book") book.isbn = isbnByCode;
     setFormBook(book);
   };
 
-  const pickManualKindForCode = (picked: Kind) => setFormBook(emptyNewBook(picked, askCode));
+  const pickManualKindForCode = (picked: Kind) => {
+    // GameUPC knew nothing of this code: a board game is searched by name, so that GameUPC can learn which it is.
+    if (picked === "boardgame" && gameUpcStatus === "unknown") {
+      setKind("boardgame");
+      setAskCode(null);
+      setQuery("");
+      queryRef.current?.focus();
+      return;
+    }
+    setFormBook(emptyNewBook(picked, askCode));
+  };
 
   const dupOf = (candidate: Candidate): string | null =>
     candidate.existingEditionId ?? (foundByCode ? existingByCode : null);
@@ -270,7 +291,23 @@ export function AddSearch({
       openOverlay({ name: "book", editionId: existing });
       return;
     }
-    setFormBook(newBookFromCandidate(candidate));
+    const book = newBookFromCandidate(candidate);
+    const { externalId } = candidate;
+    const teaches =
+      gameUpcCode !== null &&
+      externalId !== null &&
+      candidate.kind === "boardgame" &&
+      (candidate.source === "game_upc" || candidate.source === "board_game_geek");
+    if (teaches) book.barcode = gameUpcCode;
+    setPendingChoice(teaches ? { code: gameUpcCode, externalId } : null);
+    setFormBook(book);
+  };
+
+  // Saved (or asked for): only now does GameUPC hear which game it was. Best effort, and silent.
+  const sendChoice = () => {
+    if (pendingChoice)
+      void gameUpcChoice(pendingChoice.code, pendingChoice.externalId).catch(() => {});
+    setPendingChoice(null);
   };
 
   const sources = KIND_SOURCES[kind];
@@ -285,9 +322,18 @@ export function AddSearch({
         initial={formBook}
         missing={missing}
         onOpenChange={onOpenChange}
-        onCreated={onCreated}
-        onRequested={onRequested}
-        onBack={() => setFormBook(null)}
+        onCreated={(result, title) => {
+          sendChoice();
+          onCreated(result, title);
+        }}
+        onRequested={(requested) => {
+          sendChoice();
+          onRequested?.(requested);
+        }}
+        onBack={() => {
+          setPendingChoice(null);
+          setFormBook(null);
+        }}
       />
     );
   }
@@ -314,7 +360,14 @@ export function AddSearch({
             type="button"
             role="radio"
             aria-checked={active}
-            onClick={() => setKind(k)}
+            onClick={() => {
+              setKind(k);
+              // What GameUPC was unsure of is a board game: another type has nothing to teach it.
+              if (k !== "boardgame") {
+                setGameUpcCode(null);
+                setGameUpcStatus(null);
+              }
+            }}
             className={cn(
               "flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium",
               active
@@ -411,6 +464,25 @@ export function AddSearch({
         {t(invalidIsbn ? "addSearch.invalidIsbn" : "addSearch.isbnNotFound")}
       </p>
     ) : null;
+
+  // GameUPC was not sure of the scanned code: say what picking a game does.
+  const gameUpcNote = askCode === null && gameUpcCode !== null && kind === "boardgame" && (
+    <div
+      className={cn(
+        "flex gap-2 pb-2 text-[13px] leading-snug text-pretty text-muted-foreground",
+        desktop ? "px-3" : "px-2",
+      )}
+    >
+      <Info className="mt-0.5 size-4 shrink-0" />
+      <span>
+        {t(
+          gameUpcStatus === "choose" && foundByCode
+            ? "addSearch.gameUpcChoose"
+            : "addSearch.gameUpcSearch",
+        )}
+      </span>
+    </div>
+  );
 
   const resultsList = askCode === null && (
     <div className="flex flex-col gap-1">
@@ -544,6 +616,7 @@ export function AddSearch({
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
               {askStep}
+              {gameUpcNote}
               {resultsList}
               {codeNote}
               {sourceCredits}
@@ -577,6 +650,7 @@ export function AddSearch({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3.5 pb-2">
           {askStep}
+          {gameUpcNote}
           {resultsList}
           {codeNote}
           {sourceCredits}

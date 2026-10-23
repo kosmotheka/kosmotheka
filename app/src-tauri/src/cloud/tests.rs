@@ -98,6 +98,12 @@ struct CloudState {
         std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
     >,
     bgg_asks: Vec<(crate::metadata::bgg::BggScope, String)>,
+    /// The same for GameUPC: what it answers, in order, the barcodes it was asked and the choices it was sent.
+    gameupc_answers: std::collections::VecDeque<
+        std::result::Result<crate::metadata::gameupc::GameUpcAnswer, &'static str>,
+    >,
+    gameupc_asks: Vec<String>,
+    gameupc_choices: Vec<(String, u64)>,
     /// The same for the comic search.
     comic_vine_answers: std::collections::VecDeque<
         std::result::Result<Vec<crate::metadata::Candidate>, &'static str>,
@@ -192,6 +198,24 @@ impl FakeCloud {
 
     fn bgg_asks(&self) -> Vec<(crate::metadata::bgg::BggScope, String)> {
         self.0.lock().unwrap().bgg_asks.clone()
+    }
+
+    /// A server that asks GameUPC, answering these in order.
+    fn with_gameupc(
+        &self,
+        answers: Vec<std::result::Result<crate::metadata::gameupc::GameUpcAnswer, &'static str>>,
+    ) {
+        let mut state = self.0.lock().unwrap();
+        state.metadata.push("gameupc".to_owned());
+        state.gameupc_answers = answers.into();
+    }
+
+    fn gameupc_asks(&self) -> Vec<String> {
+        self.0.lock().unwrap().gameupc_asks.clone()
+    }
+
+    fn gameupc_choices(&self) -> Vec<(String, u64)> {
+        self.0.lock().unwrap().gameupc_choices.clone()
     }
 
     /// A server that searches comics in Comic Vine, answering these in order.
@@ -899,6 +923,26 @@ impl CloudApi for FakeApi {
         }
     }
 
+    async fn gameupc_lookup(&self, code: &str) -> Result<crate::metadata::gameupc::GameUpcAnswer> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.gameupc_asks.push(code.to_owned());
+        match state.gameupc_answers.pop_front() {
+            Some(Ok(answer)) => Ok(answer),
+            Some(Err(code)) => Err(Error::account(code)),
+            None => Err(Error::account("server_unavailable")),
+        }
+    }
+
+    async fn gameupc_choice(&self, code: &str, external_id: u64) -> Result<()> {
+        self.cloud
+            .0
+            .lock()
+            .unwrap()
+            .gameupc_choices
+            .push((code.to_owned(), external_id));
+        Ok(())
+    }
+
     async fn rawg_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>> {
         let mut state = self.cloud.0.lock().unwrap();
         state.rawg_asks.push(query.to_owned());
@@ -1215,6 +1259,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 
 mod bgg_tests;
 mod comic_vine_tests;
+mod gameupc_tests;
 mod invitations_tests;
 mod links_tests;
 mod metadata_tests;

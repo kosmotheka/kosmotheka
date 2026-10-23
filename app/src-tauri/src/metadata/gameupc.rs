@@ -1,62 +1,130 @@
-//! GameUPC (gameupc.com): board games by barcode, resolved against BoardGameGeek.
-//! Every endpoint needs a key, sent as the `x-api-key` header (D62): without one this
-//! provider is simply never called (see `Lookup::lookup_non_isbn_code`).
-//! https://gameupc.com/gameupc-oas.yaml
+//! GameUPC (gameupc.com): which BoardGameGeek game the barcode of a box is, asked through the server of the account
+//! (D62). Only through the server: GameUPC gives keys to whoever makes the app, never to the people using it, so there
+//! is no key of their own. Only the barcode leaves the app, and only to a server that says it offers GameUPC.
+//!
+//! GameUPC answers in three ways, and asks apps to handle all three: it is sure (`Verified`, one game), it has guesses
+//! for the person to choose from (`Choose`), or it knows nothing (`Unknown`, the person searches). When the person picks
+//! the game in the last two, the app sends that choice back (`send_choice`): that is how GameUPC learns.
+
+use std::time::Duration;
 
 use kosmotheka_domain::{Format, Kind};
-use reqwest::StatusCode;
+use serde::Serialize;
 use serde_json::Value;
 
-use super::{Candidate, ProviderError, Source, text, year_in};
+use super::bgg::{is_cover, whole_text};
+use super::via_server::server_error;
+use super::{Candidate, ProviderError, Source};
+use crate::cloud::CloudApi;
 
-const BASE: &str = "https://api.gameupc.com/v1";
+/// The provider's id in `GET /v1/server`'s `metadata` list.
+pub const GAMEUPC: &str = "gameupc";
 
-/// A scanned barcode (UPC/EAN). `None` when GameUPC has nothing verified enough
-/// to trust (ambiguous or unknown).
-pub async fn lookup(
-    client: &reqwest::Client,
-    barcode: &str,
-    api_key: &str,
-) -> Result<Option<Candidate>, ProviderError> {
-    let response = client
-        .get(format!("{BASE}/upc/{barcode}"))
-        .header("x-api-key", api_key)
-        .send()
-        .await?;
-    match response.status() {
-        StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => return Err(ProviderError::BadKey),
-        StatusCode::TOO_MANY_REQUESTS => return Err(ProviderError::Quota),
-        status if !status.is_success() => {
-            return Err(ProviderError::Unexpected(format!("HTTP {status}")));
-        }
-        _ => {}
-    }
-    let body: Value = response.json().await?;
-    Ok(parse_upc_info(&body))
+const PATIENCE: Duration = Duration::from_secs(10);
+const MAX_CANDIDATES: usize = 8;
+const MAX_TEXT: usize = 300;
+/// The biggest number a server may give for a game, as the server itself allows it.
+const MAX_ID: u64 = 1_000_000_000;
+
+/// How sure GameUPC is of a barcode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GameUpcStatus {
+    /// One game, checked by people.
+    Verified,
+    /// Its guesses: the person chooses one, or searches for the game.
+    Choose,
+    /// Nothing: the person searches for the game.
+    Unknown,
 }
 
-/// Only a `verified` match becomes a candidate: anything else means the game
-/// is ambiguous and GameUPC itself is asking for a human pick, which this app
-/// does not support (the person can still search by title instead).
-pub fn parse_upc_info(body: &Value) -> Option<Candidate> {
-    if body.get("bgg_info_status").and_then(Value::as_str) != Some("verified") {
-        return None;
+#[derive(Debug, Clone, PartialEq)]
+pub struct GameUpcAnswer {
+    pub status: GameUpcStatus,
+    /// One when verified, the guesses when choosing, none when unknown. Each carries the barcode.
+    pub candidates: Vec<Candidate>,
+}
+
+/// Asks through the server of the account. `Ok(None)` when nothing was asked: no session, or a server that does not
+/// say it offers GameUPC. A server that fails or is slow is a warning, as for any provider.
+pub async fn lookup<C: CloudApi>(
+    cloud: Option<&C>,
+    code: &str,
+) -> Result<Option<GameUpcAnswer>, ProviderError> {
+    let Some(cloud) = cloud else {
+        return Ok(None);
+    };
+    let asked = tokio::time::timeout(PATIENCE, async {
+        if !cloud.offers_metadata(GAMEUPC).await.unwrap_or(false) {
+            return Ok(None);
+        }
+        cloud.gameupc_lookup(code).await.map(Some)
+    })
+    .await;
+    match asked {
+        Ok(Ok(answer)) => Ok(answer),
+        Ok(Err(error)) => Err(server_error(&error)),
+        Err(_) => Err(ProviderError::Unexpected("server too slow".to_owned())),
     }
-    let game = body.get("bgg_info")?.get(0)?;
-    let title = text(game.get("name").and_then(Value::as_str))?;
+}
+
+/// Sends the game a person chose for a barcode. Best effort: the book is already in the catalogue, and a choice that
+/// does not reach GameUPC only means it learns nothing this time.
+pub async fn send_choice<C: CloudApi>(cloud: &C, code: &str, external_id: u64) -> bool {
+    tokio::time::timeout(PATIENCE, async {
+        cloud.offers_metadata(GAMEUPC).await.unwrap_or(false)
+            && cloud.gameupc_choice(code, external_id).await.is_ok()
+    })
+    .await
+    .unwrap_or(false)
+}
+
+/// Reads the server's answer: a status and at most eight games of the fixed shape, each field checked. `Err` when it
+/// is not the shape at all (the caller treats that as a failed server).
+pub fn parse_answer(body: &Value, code: &str) -> Result<GameUpcAnswer, ()> {
+    let status = match body.get("status").and_then(Value::as_str) {
+        Some("verified") => GameUpcStatus::Verified,
+        Some("choose") => GameUpcStatus::Choose,
+        Some("unknown") => GameUpcStatus::Unknown,
+        _ => return Err(()),
+    };
+    let candidates: Vec<Candidate> = body
+        .get("candidates")
+        .and_then(Value::as_array)
+        .ok_or(())?
+        .iter()
+        .take(10 * MAX_CANDIDATES)
+        .filter_map(|item| candidate(item, code))
+        .take(match status {
+            GameUpcStatus::Verified => 1,
+            GameUpcStatus::Choose => MAX_CANDIDATES,
+            GameUpcStatus::Unknown => 0,
+        })
+        .collect();
+    // A status the games do not back is no status: nothing sure, nothing to choose from.
+    let status = if candidates.is_empty() {
+        GameUpcStatus::Unknown
+    } else {
+        status
+    };
+    Ok(GameUpcAnswer { status, candidates })
+}
+
+fn candidate(item: &Value, code: &str) -> Option<Candidate> {
+    let id = item
+        .get("external_id")?
+        .as_u64()
+        .filter(|id| (1..=MAX_ID).contains(id))?;
+    let title = whole_text(item.get("title"), MAX_TEXT)?;
 
     let mut candidate = Candidate::new(Kind::Boardgame, Source::GameUpc, title);
-    candidate.published_year = game
-        .get("published")
+    candidate.external_id = Some(id.to_string());
+    candidate.cover_url = item
+        .get("cover_url")
         .and_then(Value::as_str)
-        .and_then(year_in);
-    candidate.cover_url = text(game.get("image_url").and_then(Value::as_str))
-        .or_else(|| text(game.get("thumbnail_url").and_then(Value::as_str)));
-    candidate.barcode = text(body.get("upc").and_then(Value::as_str));
-    candidate.external_id = game
-        .get("id")
-        .and_then(Value::as_i64)
-        .map(|id| id.to_string());
+        .filter(|url| is_cover(url))
+        .map(str::to_owned);
+    candidate.barcode = Some(code.to_owned());
     candidate.format = Some(Format::Box);
     Some(candidate)
 }
@@ -64,81 +132,119 @@ pub fn parse_upc_info(body: &Value) -> Option<Candidate> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
-    // Real response for upc=019962194719 (Gloomhaven), recorded on 2026-09-29
-    // with the public test key from https://gameupc.com; trimmed to bgg_info[0]
-    // and stripped of its `versions` (not used here). The key itself is not in
-    // this fixture.
-    const VERIFIED: &str = include_str!("../../tests/fixtures/gameupc-verified-019962194719.json");
-    // Real response for the OpenAPI doc's own "needs user input" example
-    // (upc=222222222224, Tiny Towns), same recording; a second bgg_info entry
-    // was hand-added (not from the live response) to exercise "more than one
-    // candidate, still ambiguous".
-    const AMBIGUOUS: &str =
-        include_str!("../../tests/fixtures/gameupc-ambiguous-222222222224.json");
-    // Hand-built (no barcode returned this from the live test server): an
-    // empty `bgg_info` array, the shape the OpenAPI schema allows for "ok" but
-    // nothing found.
-    const NOT_FOUND: &str = include_str!("../../tests/fixtures/gameupc-not-found.json");
+    const COVER: &str = "https://cf.geekdo-images.com/sZYp_3BTDGjh2unaZfZmuA__original/img/7d-lj5Gd1e8PFnD97LYFah2c45M=/0x0/filters:format(jpeg)/pic2437871.jpg";
 
     #[test]
-    fn reads_a_verified_match() {
-        let candidate = parse_upc_info(&serde_json::from_str(VERIFIED).unwrap()).unwrap();
+    fn reads_a_verified_game_with_its_barcode() {
+        let answer = parse_answer(
+            &json!({ "status": "verified", "candidates": [{ "external_id": 174430, "title": "Gloomhaven", "cover_url": COVER }] }),
+            "019962194719",
+        )
+        .unwrap();
 
-        assert_eq!(candidate.kind, Kind::Boardgame);
-        assert_eq!(candidate.source, Source::GameUpc);
-        assert_eq!(candidate.title, "Gloomhaven");
-        assert_eq!(candidate.published_year, Some(2017));
-        assert_eq!(
-            candidate.cover_url.as_deref(),
-            Some(
-                "https://cf.geekdo-images.com/sZYp_3BTDGjh2unaZfZmuA__original/img/7d-lj5Gd1e8PFnD97LYFah2c45M=/0x0/filters:format(jpeg)/pic2437871.jpg"
-            )
+        assert_eq!(answer.status, GameUpcStatus::Verified);
+        let game = &answer.candidates[0];
+        assert_eq!(game.kind, Kind::Boardgame);
+        assert_eq!(game.source, Source::GameUpc);
+        assert_eq!(game.title, "Gloomhaven");
+        assert_eq!(game.external_id.as_deref(), Some("174430"));
+        assert_eq!(game.cover_url.as_deref(), Some(COVER));
+        assert_eq!(game.barcode.as_deref(), Some("019962194719"));
+        assert_eq!(game.format, Some(Format::Box));
+    }
+
+    #[test]
+    fn reads_guesses_to_choose_from() {
+        let answer = parse_answer(
+            &json!({ "status": "choose", "candidates": [
+                { "external_id": 265736, "title": "Tiny Towns", "cover_url": null },
+                { "external_id": 287576, "title": "Tiny Towns: Fortune" },
+            ] }),
+            "222222222224",
+        )
+        .unwrap();
+
+        assert_eq!(answer.status, GameUpcStatus::Choose);
+        assert_eq!(answer.candidates.len(), 2);
+        assert!(
+            answer
+                .candidates
+                .iter()
+                .all(|c| c.barcode.as_deref() == Some("222222222224"))
         );
-        assert_eq!(candidate.barcode.as_deref(), Some("019962194719"));
-        assert_eq!(candidate.external_id.as_deref(), Some("174430"));
-        assert_eq!(candidate.format, Some(Format::Box));
-        assert_eq!(
-            candidate.players_min, None,
-            "GameUPC does not report player counts"
-        );
     }
 
     #[test]
-    fn an_ambiguous_match_is_not_a_candidate() {
-        let candidate = parse_upc_info(&serde_json::from_str(AMBIGUOUS).unwrap());
-        assert!(candidate.is_none());
+    fn nothing_known_is_unknown() {
+        let answer = parse_answer(
+            &json!({ "status": "unknown", "candidates": [] }),
+            "333333333331",
+        )
+        .unwrap();
+
+        assert_eq!(answer.status, GameUpcStatus::Unknown);
+        assert!(answer.candidates.is_empty());
     }
 
     #[test]
-    fn no_match_is_not_a_candidate() {
-        let candidate = parse_upc_info(&serde_json::from_str(NOT_FOUND).unwrap());
-        assert!(candidate.is_none());
+    fn a_status_without_a_usable_game_is_unknown() {
+        let answer = parse_answer(
+            &json!({ "status": "verified", "candidates": [{ "external_id": "174430", "title": "Text id" }, { "external_id": 1, "title": "" }] }),
+            "019962194719",
+        )
+        .unwrap();
+
+        assert_eq!(answer.status, GameUpcStatus::Unknown);
+        assert!(answer.candidates.is_empty());
     }
 
     #[test]
-    fn a_missing_status_is_not_a_candidate() {
-        assert!(parse_upc_info(&serde_json::json!({})).is_none());
+    fn a_verified_answer_keeps_one_game_and_guesses_keep_eight() {
+        let games: Vec<Value> = (1..=20)
+            .map(|id| json!({ "external_id": id, "title": format!("Game {id}") }))
+            .collect();
+
+        let verified = parse_answer(
+            &json!({ "status": "verified", "candidates": games }),
+            "96385074",
+        )
+        .unwrap();
+        let guesses = parse_answer(
+            &json!({ "status": "choose", "candidates": games }),
+            "96385074",
+        )
+        .unwrap();
+
+        assert_eq!(verified.candidates.len(), 1);
+        assert_eq!(guesses.candidates.len(), 8);
     }
-}
 
-/// Hits the real service. Not run by default: `GAMEUPC_API_KEY=... cargo test -p kosmotheka
-/// -- --ignored --nocapture live_gameupc`
-#[cfg(test)]
-mod live {
-    use super::*;
+    #[test]
+    fn a_cover_from_elsewhere_and_ids_that_cannot_be_real_are_dropped() {
+        let answer = parse_answer(
+            &json!({ "status": "choose", "candidates": [
+                { "external_id": 1, "title": "Cover elsewhere", "cover_url": "https://evil.example/pic.jpg" },
+                { "external_id": 0, "title": "Id zero" },
+                { "external_id": 10_000_000_000_u64, "title": "Id too big" },
+                { "external_id": -3, "title": "Negative" },
+                { "external_id": 2, "title": "Hidden\u{202E}mark" },
+            ] }),
+            "96385074",
+        )
+        .unwrap();
 
-    #[tokio::test]
-    #[ignore = "needs network and a key"]
-    async fn live_gameupc_lookup() {
-        let Ok(api_key) = std::env::var("GAMEUPC_API_KEY") else {
-            return;
-        };
-        let client = super::super::http_client().unwrap();
+        assert_eq!(answer.candidates.len(), 1);
+        assert_eq!(answer.candidates[0].title, "Cover elsewhere");
+        assert_eq!(answer.candidates[0].cover_url, None);
+    }
 
-        let candidate = lookup(&client, "019962194719", &api_key).await.unwrap();
-
-        println!("gameupc: {candidate:#?}");
-        assert!(candidate.is_some());
+    #[test]
+    fn an_answer_without_the_shape_is_a_failure() {
+        assert!(parse_answer(&json!({ "candidates": [] }), "96385074").is_err());
+        assert!(parse_answer(&json!({ "status": "maybe", "candidates": [] }), "96385074").is_err());
+        assert!(parse_answer(&json!({ "status": "verified" }), "96385074").is_err());
+        assert!(parse_answer(&json!("verified"), "96385074").is_err());
     }
 }

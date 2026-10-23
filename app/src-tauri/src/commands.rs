@@ -30,6 +30,7 @@ use crate::licenses;
 use crate::links::{self, Arrivals};
 use crate::marks;
 use crate::metadata::bgg::BGG;
+use crate::metadata::gameupc::{self, GAMEUPC};
 use crate::metadata::via_server::{COMIC_VINE, GOOGLE_BOOKS, RAWG, TMDB, choose_access};
 use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
@@ -227,7 +228,7 @@ fn books_cloud(database: &Database, settings: &Settings) -> Option<HttpCloud> {
     allowed.then(|| HttpCloud::connect(database).ok()).flatten()
 }
 
-/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`, `rawg`, `comic_vine`, `bgg`), so
+/// Which catalogues the server of this device's session looks up for its accounts (`google_books`, `tmdb`, `rawg`, `comic_vine`, `bgg`, `gameupc`), so
 /// Providers shows what is worth showing (7.8). Any failure, and no session, is an empty list.
 #[tauri::command]
 pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<String>> {
@@ -235,7 +236,7 @@ pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<
         return Ok(Vec::new());
     };
     let mut offered = Vec::new();
-    for provider in [GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE, BGG] {
+    for provider in [GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE, BGG, GAMEUPC] {
         if cloud.offers_metadata(provider).await.unwrap_or(false) {
             offered.push(provider.to_owned());
         }
@@ -350,6 +351,10 @@ pub async fn lookup_code(
         (settings::load(&conn)?, existing)
     };
     let cloud = books_cloud(&database, &settings);
+    // GameUPC only through the account's server, with no key of their own (D62).
+    let gameupc_cloud = (!settings.disabled_sources.contains(Source::GameUpc.id()))
+        .then(|| HttpCloud::connect(&database).ok())
+        .flatten();
     let mut result = lookup
         .lookup_code(
             &code,
@@ -358,12 +363,39 @@ pub async fn lookup_code(
                 settings.google_books_via_server,
                 cloud.as_ref(),
             ),
-            settings.api_keys.get("gameupc").map(String::as_str),
+            gameupc_cloud.as_ref(),
             &settings.disabled_sources,
         )
         .await;
     result.existing_edition_id = existing_edition_id;
     Ok(result)
+}
+
+/// Sends GameUPC the game a person chose for a barcode it was not sure of, once the game is in the catalogue (D62).
+/// Best effort, and silent: without a session, with GameUPC turned off or with a server that does not offer it,
+/// nothing is sent, and a failure only means GameUPC learns nothing this time.
+#[tauri::command]
+pub async fn gameupc_choice(
+    database: State<'_, Database>,
+    code: String,
+    external_id: String,
+) -> Result<()> {
+    let disabled = {
+        let conn = database.lock()?;
+        settings::load(&conn)?
+            .disabled_sources
+            .contains(Source::GameUpc.id())
+    };
+    let Ok(external_id) = external_id.parse::<u64>() else {
+        return Ok(());
+    };
+    if disabled {
+        return Ok(());
+    }
+    if let Ok(cloud) = HttpCloud::connect(&database) {
+        gameupc::send_choice(&cloud, &code, external_id).await;
+    }
+    Ok(())
 }
 
 #[tauri::command]

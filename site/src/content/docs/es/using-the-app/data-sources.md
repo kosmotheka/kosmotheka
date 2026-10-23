@@ -45,7 +45,7 @@ Cada servicio tiene un **interruptor** para encenderlo o apagarlo. Debajo lleva 
 | Cómic | Wikidata | Como arriba | Nada |
 | Cómic | Comic Vine | Una web de cómics | Clave propia, o cuenta |
 | Juego de mesa | Wikidata | Como arriba | Nada |
-| Juego de mesa | GameUPC | Busca juegos por el código de barras de la caja | Clave propia |
+| Juego de mesa | GameUPC | Dice qué juego es el código de barras de la caja | Cuenta |
 | Juego de mesa | BoardGameGeek | Una web de juegos de mesa | Cuenta |
 | Película y serie | Wikidata | Como arriba | Nada |
 | Película y serie | TMDB | Una web de películas y series | Clave propia, o cuenta |
@@ -93,7 +93,7 @@ Con una cuenta de Kosmotheka, algunos servicios se consultan a través del **ser
 
 El servidor busca con su propia clave. Por eso **no necesitas poner la tuya**.
 
-Los servicios que se pueden consultar así son Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek y RPGGeek. Solo funciona si tu servidor los ofrece.
+Los servicios que se pueden consultar así son Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek, RPGGeek y GameUPC. Solo funciona si tu servidor los ofrece.
 
 Qué pasa cuando buscas por el servidor:
 
@@ -109,7 +109,9 @@ Para que una búsqueda no pase por el servidor, tienes dos caminos:
 
 Google Books tiene además su propio interruptor, «Buscar en Google Books a través de la nube», que viene encendido. Con él apagado, la app pregunta a Google Books directamente.
 
-BoardGameGeek y RPGGeek no admiten clave propia. Sin cuenta, esos dos no se usan.
+BoardGameGeek, RPGGeek y GameUPC no admiten clave propia. Sin cuenta, esos tres no se usan.
+
+**GameUPC aprende de lo que eliges.** A veces no está seguro de qué juego es un código: entonces te propone varios, o ninguno, y eliges el tuyo o lo buscas por su nombre. Al guardarlo, la app le dice a GameUPC, a través del servidor, qué juego era, para que la próxima vez lo sepa. Le llega el código, el número del juego en BoardGameGeek y un identificador de tu cuenta que no dice quién eres: GameUPC lo pide para poder deshacer lo que mande alguien de mala fe.
 
 Los detalles (qué guarda el servidor y cuánto tiempo) están en la [política de privacidad](https://kosmotheka.com/es/privacidad.html).
 

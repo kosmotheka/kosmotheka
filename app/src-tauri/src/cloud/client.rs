@@ -16,6 +16,7 @@ use crate::error::{Error, Result};
 use crate::metadata::Candidate;
 use crate::metadata::Metadata;
 use crate::metadata::bgg::{BggScope, parse_bgg_answer};
+use crate::metadata::gameupc::{self, GameUpcAnswer};
 use crate::metadata::via_server::{
     parse_answer, parse_comic_vine_answer, parse_rawg_answer, parse_tmdb_answer,
 };
@@ -333,6 +334,32 @@ impl CloudApi for HttpCloud {
         parse_bgg_answer(&answer, scope).map_err(|()| Error::account("server_unavailable"))
     }
 
+    async fn gameupc_lookup(&self, code: &str) -> Result<GameUpcAnswer> {
+        let body = json!({ "code": code });
+        let mut response = send(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/gameupc/lookup", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await?;
+        let answer = read_capped_json(&mut response, MAX_SEARCH_ANSWER).await?;
+        gameupc::parse_answer(&answer, code).map_err(|()| Error::account("server_unavailable"))
+    }
+
+    async fn gameupc_choice(&self, code: &str, external_id: u64) -> Result<()> {
+        let body = json!({ "code": code, "external_id": external_id });
+        send_empty(
+            &self.client,
+            Method::POST,
+            &format!("{}/v1/metadata/gameupc/choice", self.base),
+            self.auth(),
+            Some(&body),
+        )
+        .await
+    }
+
     async fn rawg_search(&self, query: &str) -> Result<Vec<Candidate>> {
         let body = json!({ "query": query });
         let mut response = send(
@@ -583,6 +610,14 @@ mod tests {
             .route("/v1/metadata/rawg/search", axum::routing::post(tmdb_route))
             .route("/v1/metadata/bgg/search", axum::routing::post(tmdb_route))
             .route(
+                "/v1/metadata/gameupc/lookup",
+                axum::routing::post(tmdb_route),
+            )
+            .route(
+                "/v1/metadata/gameupc/choice",
+                axum::routing::post(tmdb_route),
+            )
+            .route(
                 "/v1/metadata/comic-vine/search",
                 axum::routing::post(tmdb_route),
             )
@@ -645,6 +680,34 @@ mod tests {
             asked[0].3,
             json!({ "scope": "rpg", "query": "dune & más ?x=1#/.." })
         );
+    }
+
+    #[tokio::test]
+    async fn only_the_barcode_goes_to_gameupc_in_the_body_of_a_post() {
+        let (api, stub) = tmdb_server("ok").await;
+
+        // The stub answers with a film, which is not a GameUPC answer: the point is the request.
+        let _ = api.gameupc_lookup("019962194719").await;
+        let _ = api.gameupc_choice("222222222224", 265736).await;
+
+        let asked = stub.asked.lock().unwrap();
+        assert_eq!(asked.len(), 2);
+        assert_eq!(asked[0].0, "/v1/metadata/gameupc/lookup");
+        assert_eq!(asked[0].1.as_deref(), Some("device-1"));
+        assert_eq!(asked[0].2.as_deref(), Some("Bearer token-1"));
+        assert_eq!(asked[0].3, json!({ "code": "019962194719" }));
+        assert_eq!(asked[1].0, "/v1/metadata/gameupc/choice");
+        assert_eq!(
+            asked[1].3,
+            json!({ "code": "222222222224", "external_id": 265736 })
+        );
+    }
+
+    #[tokio::test]
+    async fn an_enormous_gameupc_answer_is_a_failure() {
+        let (api, _) = tmdb_server("huge").await;
+
+        assert!(api.gameupc_lookup("019962194719").await.is_err());
     }
 
     #[tokio::test]

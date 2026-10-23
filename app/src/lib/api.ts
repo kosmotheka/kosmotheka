@@ -486,10 +486,17 @@ export interface CodeResult {
   invalidIsbn: boolean;
   /** The ISBN-13 of a valid ISBN, found or not. */
   isbn: string | null;
+  /** How sure GameUPC was of this barcode, when it was asked (D62): with `choose` or `unknown`, the game picked is sent back. */
+  gameUpc: "verified" | "choose" | "unknown" | null;
 }
 
 export function lookupCode(code: string): Promise<CodeResult> {
   return invoke<CodeResult>("lookup_code", { code });
+}
+
+/** Tells GameUPC, through the account's server, the board game a person chose for a barcode it was not sure of (D62). */
+export function gameUpcChoice(code: string, externalId: string): Promise<void> {
+  return invoke("gameupc_choice", { code, externalId });
 }
 
 export interface Settings {

@@ -17,7 +17,7 @@ const GOOGLE_BOOKS_VIA_SERVER_KEY: &str = "google_books_via_server";
 
 /// Provider ids that need a key (see `metadata::Source` for every source,
 /// keyless ones included).
-pub const KEYED_PROVIDERS: &[&str] = &["google_books", "gameupc", "tmdb", "rawg", "comic_vine"];
+pub const KEYED_PROVIDERS: &[&str] = &["google_books", "tmdb", "rawg", "comic_vine"];
 
 fn api_key_state_key(provider: &str) -> String {
     format!("api_key.{provider}")
@@ -82,6 +82,8 @@ pub fn save(conn: &Connection, settings: &Settings) -> Result<()> {
             )]));
         }
     }
+    // GameUPC had a key of its own until it moved to the account's server (D62): a key nobody uses is not kept.
+    write_state(conn, &api_key_state_key("gameupc"), None)?;
     for &provider in KEYED_PROVIDERS {
         let key = settings
             .api_keys

@@ -26,7 +26,7 @@ Estos servicios vienen encendidos desde el principio. Cada uno se puede apagar.
 
 ![En la bienvenida, cada servicio tiene su interruptor para encenderlo o apagarlo.](./what-leaves-your-device-sources.webp)
 
-Otros servicios piden una **contraseña propia**, gratuita, que te da su web para dejarte usar sus datos. La consigues tú. Son Google Books (libros), GameUPC (juegos de mesa), TMDB (películas y series), RAWG (videojuegos) y Comic Vine (cómics). Hasta que no pongas tu contraseña, no se usan.
+Otros servicios piden una **contraseña propia**, gratuita, que te da su web para dejarte usar sus datos. La consigues tú. Son Google Books (libros), TMDB (películas y series), RAWG (videojuegos) y Comic Vine (cómics). Hasta que no pongas tu contraseña, no se usan.
 
 **Dónde cambiarlo.** Entra en «Ajustes», «Proveedores de datos». Ahí ves, para cada tipo de cosa (libros, películas…), qué servicios se usan, los enciendes o apagas, y pones tus contraseñas. Si apagas todos, puedes añadirlo todo a mano.
 

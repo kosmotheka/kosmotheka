@@ -173,7 +173,7 @@ fn names(value: Option<&Value>) -> Vec<String> {
 
 /// A value as it was sent, with only the blanks around it trimmed, or nothing: one that is too long, or holds control
 /// characters or marks that hide or reverse text, is dropped whole and never cut or cleaned.
-fn whole_text(value: Option<&Value>, max: usize) -> Option<String> {
+pub(super) fn whole_text(value: Option<&Value>, max: usize) -> Option<String> {
     let text = value?.as_str()?.trim();
     let hidden = |c: char| {
         c.is_control()
@@ -185,7 +185,7 @@ fn whole_text(value: Option<&Value>, max: usize) -> Option<String> {
 
 /// `https://cf.geekdo-images.com/…` made only of the characters its addresses use and ending in an image extension:
 /// nothing else is ever downloaded for a candidate.
-fn is_cover(raw: &str) -> bool {
+pub(super) fn is_cover(raw: &str) -> bool {
     if raw.len() > MAX_URL
         || raw.contains("..")
         || raw.contains(['%', '\\'])

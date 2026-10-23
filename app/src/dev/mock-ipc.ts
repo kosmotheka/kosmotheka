@@ -1137,6 +1137,7 @@ mockIPC((cmd, args) => {
           existingEditionId: null,
           invalidIsbn: true,
           isbn: null,
+          gameUpc: null,
         };
       }
       // A 978/979 EAN-13 is an ISBN: always a book. One sample EAN is a known
@@ -1152,6 +1153,7 @@ mockIPC((cmd, args) => {
           existingEditionId: candidates[0]?.existingEditionId ?? null,
           invalidIsbn: false,
           isbn: digits,
+          gameUpc: null,
         };
       }
       if (digits === "5099902988371") {
@@ -1162,6 +1164,25 @@ mockIPC((cmd, args) => {
           existingEditionId: null,
           invalidIsbn: false,
           isbn: null,
+          gameUpc: null,
+        };
+      }
+      // GameUPC's own test codes (D62): guesses to choose from, and a code it knows nothing of.
+      if (digits === "222222222224" && mockAccount.signedIn) {
+        const guesses = ["Tiny Towns", "Tiny Towns: Fortune"].map((title, i) => ({
+          ...mockCandidates("boardgame", title)[0],
+          source: "game_upc" as const,
+          externalId: String(265736 + i),
+          barcode: digits,
+        }));
+        return {
+          kind: "boardgame",
+          candidates: guesses,
+          warnings: [],
+          existingEditionId: null,
+          invalidIsbn: false,
+          isbn: null,
+          gameUpc: "choose",
         };
       }
       return {
@@ -1171,8 +1192,11 @@ mockIPC((cmd, args) => {
         existingEditionId: null,
         invalidIsbn: false,
         isbn: null,
+        gameUpc: digits === "333333333331" && mockAccount.signedIn ? "unknown" : null,
       };
     }
+    case "gameupc_choice":
+      return null;
     case "work_marks": {
       const { workId } = args as { workId: string };
       return {
@@ -1428,7 +1452,9 @@ mockIPC((cmd, args) => {
     case "get_settings":
       return mockSettings;
     case "cloud_metadata_offers":
-      return mockAccount.signedIn ? ["google_books", "tmdb", "rawg", "comic_vine", "bgg"] : [];
+      return mockAccount.signedIn
+        ? ["google_books", "tmdb", "rawg", "comic_vine", "bgg", "gameupc"]
+        : [];
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;

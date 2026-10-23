@@ -204,6 +204,9 @@ pub struct CodeResult {
     pub invalid_isbn: bool,
     /// The ISBN-13 of a valid ISBN, found or not, so the form can start with it.
     pub isbn: Option<String>,
+    /// How sure GameUPC was of this barcode, when it was asked: with `choose` or `unknown`, the game the person picks
+    /// is sent back to it (D62).
+    pub game_upc: Option<gameupc::GameUpcStatus>,
 }
 
 /// What a typed or scanned code is, by its shape and check digit (decided here, never in the UI).
@@ -571,7 +574,7 @@ impl Lookup {
         &self,
         code: &str,
         google: GoogleAccess<'_, C>,
-        gameupc_api_key: Option<&str>,
+        gameupc_cloud: Option<&C>,
         disabled: &BTreeSet<String>,
     ) -> CodeResult {
         match classify_code(code) {
@@ -582,7 +585,7 @@ impl Lookup {
                 ..CodeResult::default()
             },
             CodeShape::Other => {
-                self.lookup_non_isbn_code(code, gameupc_api_key, disabled)
+                self.lookup_non_isbn_code(code, gameupc_cloud, disabled)
                     .await
             }
         }
@@ -621,30 +624,23 @@ impl Lookup {
         result
     }
 
-    /// A non-ISBN code: MusicBrainz always runs (it needs no key); GameUPC
-    /// (board games) only runs when a key is set. `decide_kind` resolves the
-    /// ambiguity when a code could plausibly be either.
-    async fn lookup_non_isbn_code(
+    /// A non-ISBN code: MusicBrainz always runs (it needs no key); GameUPC (board games) only through the account's
+    /// server (D62). `decide_kind` resolves the ambiguity when a code could plausibly be either.
+    async fn lookup_non_isbn_code<C: CloudApi>(
         &self,
         code: &str,
-        gameupc_api_key: Option<&str>,
+        gameupc_cloud: Option<&C>,
         disabled: &BTreeSet<String>,
     ) -> CodeResult {
         let mut result = CodeResult::default();
-        let run_gameupc = gameupc_api_key.filter(|_| !disabled.contains(Source::GameUpc.id()));
-        let gameupc_fut = async {
-            match run_gameupc {
-                Some(key) => gameupc::lookup(&self.client, code, key).await,
-                None => Ok(None),
-            }
-        };
+        let gameupc_cloud = gameupc_cloud.filter(|_| !disabled.contains(Source::GameUpc.id()));
 
         let (music, gameupc) = tokio::join!(
             maybe_vec(
                 disabled.contains(Source::MusicBrainz.id()),
                 musicbrainz::lookup_barcode(&self.client, code),
             ),
-            gameupc_fut,
+            gameupc::lookup(gameupc_cloud, code),
         );
 
         let mut music_found = false;
@@ -659,11 +655,13 @@ impl Lookup {
             }),
         }
 
+        // Guesses count as a board game too: GameUPC only guesses among board games.
         let mut boardgame_found = false;
         match gameupc {
-            Ok(Some(candidate)) => {
-                boardgame_found = true;
-                result.candidates.push(candidate);
+            Ok(Some(answer)) => {
+                boardgame_found = !answer.candidates.is_empty();
+                result.game_upc = Some(answer.status);
+                result.candidates.extend(answer.candidates);
             }
             Ok(None) => {}
             Err(error) => result.warnings.push(ProviderWarning {

@@ -1117,7 +1117,9 @@
     "foundByCode": "Found by the code",
     "resultCount_one": "{{count}} result",
     "resultCount_other": "{{count}} results",
-    "alreadyHere": "Already in {{library}} · add a copy"
+    "alreadyHere": "Already in {{library}} · add a copy",
+    "gameUpcChoose": "GameUPC is not sure which game this code is. Pick yours or search for it by name: once you save it, we tell GameUPC which one it is, so it learns.",
+    "gameUpcSearch": "Search for the game by name. Once you save it, we tell GameUPC which game this code is, so it learns."
   },
   "notices": {
     "title_one": "A change of yours became a request",

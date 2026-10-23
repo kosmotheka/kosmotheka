@@ -26,7 +26,7 @@ These services are on from the start. Each one can be turned off.
 
 ![In the welcome, each service has a switch to turn it on or off. (Screenshot from the Spanish app.)](../../es/using-the-app/what-leaves-your-device-sources.webp)
 
-Other services ask for a **key of your own**, free, which their website gives you so you can use their data. You get it yourself. They are Google Books (books), GameUPC (board games), TMDB (films and series), RAWG (video games) and Comic Vine (comics). Until you put in your key, they are not used.
+Other services ask for a **key of your own**, free, which their website gives you so you can use their data. You get it yourself. They are Google Books (books), TMDB (films and series), RAWG (video games) and Comic Vine (comics). Until you put in your key, they are not used.
 
 **Where to change it.** Go to "Settings", "Data providers". There you can see, for each kind of thing (books, films…), which services are used, turn them on or off, and put in your keys. If you turn them all off, you can add everything by hand.
 

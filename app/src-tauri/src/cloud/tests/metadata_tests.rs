@@ -403,12 +403,7 @@ async fn an_isbn_with_a_wrong_check_digit_says_so_and_asks_nobody() {
 
     for code in ["978-84-450-7389-3", "9788445073893", "0306406151"] {
         let result = lookup
-            .lookup_code(
-                code,
-                GoogleAccess::<FakeApi>::Anonymous,
-                Some("a-key"),
-                &nothing_off,
-            )
+            .lookup_code(code, GoogleAccess::<FakeApi>::Anonymous, None, &nothing_off)
             .await;
 
         assert!(result.invalid_isbn, "{code}");

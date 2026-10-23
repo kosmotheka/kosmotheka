@@ -14,7 +14,6 @@ import {
   kinds,
   cloudMetadataOffers,
   getSettings,
-  lookupCode,
   lookupIsbn,
   saveSettings,
   searchWorks,
@@ -53,17 +52,16 @@ function kindsOf(source: Source): Kind[] {
 /** What is selected on the left: every source at once, one type, or (on a phone) nothing yet. */
 type Selection = Kind | "all" | null;
 
-const KEYED_SOURCES = new Set<Source>(["google_books", "game_upc", "tmdb", "rawg", "comic_vine"]);
+const KEYED_SOURCES = new Set<Source>(["google_books", "tmdb", "rawg", "comic_vine"]);
 
 /** Sources the account's server can also ask when there is no key of their own (D62, D83). */
 const ACCOUNT_SOURCES = new Set<Source>(["tmdb", "rawg", "comic_vine"]);
 
-/** Sources that only the account's server asks, never with a key of their own (D62: BoardGameGeek wants it so). */
-const ACCOUNT_ONLY_SOURCES = new Set<Source>(["board_game_geek", "rpg_geek"]);
+/** Sources that only the account's server asks, never with a key of their own (D62: BoardGameGeek wants it so, and GameUPC only gives keys to whoever makes the app). */
+const ACCOUNT_ONLY_SOURCES = new Set<Source>(["board_game_geek", "rpg_geek", "game_upc"]);
 
 const GET_KEY_URL: Partial<Record<Source, string>> = {
   google_books: "https://developers.google.com/books/docs/v1/using#APIKey",
-  game_upc: "https://gameupc.com",
   tmdb: "https://www.themoviedb.org/settings/api",
   rawg: "https://rawg.io/apidocs",
   comic_vine: "https://comicvine.gamespot.com/api/",
@@ -80,9 +78,7 @@ async function testSource(source: Source): Promise<"ok" | "bad_key" | "failed"> 
           ? await searchWorks("film", "matrix", "en")
           : source === "rawg"
             ? await searchWorks("videogame", "zelda", "en")
-            : source === "comic_vine"
-              ? await searchWorks("comic", "batman", "en")
-              : await lookupCode("019962194719");
+            : await searchWorks("comic", "batman", "en");
     return result.warnings.some((w) => w.source === source && w.kind === "bad_key")
       ? "bad_key"
       : "ok";
@@ -98,6 +94,7 @@ interface Offers {
   rawg: boolean;
   comicVine: boolean;
   bgg: boolean;
+  gameUpc: boolean;
 }
 
 const NO_OFFERS: Offers = {
@@ -106,6 +103,7 @@ const NO_OFFERS: Offers = {
   rawg: false,
   comicVine: false,
   bgg: false,
+  gameUpc: false,
 };
 
 function usableCount(sources: Source[], settings: Settings, offers: Offers): number {
@@ -118,6 +116,7 @@ function viaAccount(source: Source, settings: Settings, offers: Offers): boolean
   if (source === "tmdb") return offers.tmdb;
   if (source === "rawg") return offers.rawg;
   if (source === "comic_vine") return offers.comicVine;
+  if (source === "game_upc") return offers.gameUpc;
   if (ACCOUNT_ONLY_SOURCES.has(source)) return offers.bgg;
   return false;
 }
@@ -168,6 +167,7 @@ export function ProvidersDialog({
           rawg: offered.includes("rawg"),
           comicVine: offered.includes("comic_vine"),
           bgg: offered.includes("bgg"),
+          gameUpc: offered.includes("gameupc"),
         }),
       )
       .catch(() => setOffers(NO_OFFERS));
@@ -493,7 +493,12 @@ export function ProvidersDialog({
         <div className="flex items-center gap-2.5 rounded-lg border p-3 text-sm">
           <span className="flex-1">
             {t(
-              offers.googleBooks || offers.tmdb || offers.rawg || offers.comicVine || offers.bgg
+              offers.googleBooks ||
+                offers.tmdb ||
+                offers.rawg ||
+                offers.comicVine ||
+                offers.bgg ||
+                offers.gameUpc
                 ? "providers.withCloud"
                 : "providers.noCloud",
             )}

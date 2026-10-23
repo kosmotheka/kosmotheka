@@ -99,6 +99,11 @@ pub trait CloudApi {
     /// A comic searched by title in Comic Vine through the server (7.8, D62): series and issues, the series first.
     /// The text goes in the body of a `POST`, never in an address; the answer is already cut to the fixed shape.
     async fn comic_vine_search(&self, query: &str) -> Result<Vec<crate::metadata::Candidate>>;
+    /// Which board game a barcode is, asked of GameUPC through the server (D62). Only the barcode leaves the app.
+    async fn gameupc_lookup(&self, code: &str) -> Result<crate::metadata::gameupc::GameUpcAnswer>;
+    /// The game a person chose for a barcode, sent to GameUPC through the server (D62): GameUPC learns from it. The
+    /// server, not the app, says to GameUPC which account it was, with an id that does not say whose it is.
+    async fn gameupc_choice(&self, code: &str, external_id: u64) -> Result<()>;
     /// One ISBN in Google Books through the server (7.8, D83): `Ok(None)` is the server saying it is not found.
     /// Only the ISBN leaves the app.
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>>;

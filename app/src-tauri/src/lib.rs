@@ -151,6 +151,7 @@ pub fn run() {
             commands::lookup_isbn,
             commands::search_works,
             commands::lookup_code,
+            commands::gameupc_choice,
             commands::get_settings,
             commands::save_settings,
             commands::covers_dir,

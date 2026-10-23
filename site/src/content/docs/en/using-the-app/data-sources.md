@@ -45,7 +45,7 @@ Each service has a **switch** to turn it on or off. Below it there is a label th
 | Comic | Wikidata | As above | Nothing |
 | Comic | Comic Vine | A comics website | Your own key, or an account |
 | Board game | Wikidata | As above | Nothing |
-| Board game | GameUPC | Searches games by the box's barcode | Your own key |
+| Board game | GameUPC | Tells which game the box's barcode is | An account |
 | Board game | BoardGameGeek | A board game website | An account |
 | Film and TV series | Wikidata | As above | Nothing |
 | Film and TV series | TMDB | A films and series website | Your own key, or an account |
@@ -93,7 +93,7 @@ With a Kosmotheka account, some services are queried through your account's **se
 
 The server searches with its own key. That is why **you do not need to put in yours**.
 
-The services that can be searched this way are Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek and RPGGeek. It only works if your server offers them.
+The services that can be searched this way are Google Books, TMDB, RAWG, Comic Vine, BoardGameGeek, RPGGeek and GameUPC. It only works if your server offers them.
 
 What happens when you search through the server:
 
@@ -109,7 +109,9 @@ To make a search not go through the server, you have two ways:
 
 Google Books also has its own switch, "Search Google Books through the cloud", which is on by default. With it off, the app asks Google Books directly.
 
-BoardGameGeek and RPGGeek do not accept your own key. Without an account, those two are not used.
+BoardGameGeek, RPGGeek and GameUPC do not accept your own key. Without an account, those three are not used.
+
+**GameUPC learns from what you choose.** Sometimes it is not sure which game a code is: then it suggests several, or none, and you pick yours or search for it by name. When you save it, the app tells GameUPC, through the server, which game it was, so it knows next time. It receives the code, the game's number on BoardGameGeek and an identifier of your account that does not say who you are: GameUPC asks for it so that it can undo what someone sends in bad faith.
 
 The details (what the server keeps and for how long) are in the [privacy policy](https://kosmotheka.com/en/privacy.html).
 
