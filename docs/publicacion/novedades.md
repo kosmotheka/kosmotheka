@@ -2,6 +2,15 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 0.5.0 (24/10/2026, para la prueba cerrada)
+
+**Antes de subirla: el servidor de producción tiene que estar desplegado con este código** (la migración de `cloud_cover` y las rutas de portadas, D82). Sin él, las portadas no pasan por la nube; por la wifi de casa sí, y el resto funciona igual.
+
+**Texto para Google Play** (394 y 406 caracteres):
+
+- es-ES: Las portadas pasan a tus otros dispositivos al sincronizar, por la wifi de casa o por la nube, y ocupan mucho menos: se guardan más pequeñas, también las que ya tenías, y se ven igual de bien. Emparejar con el ordenador es más fácil: el código QR sale más grande y más sencillo. Y al emparejar dos dispositivos que ya tenían bibliotecas, decir de quién es el otro ya no da un error de permisos.
+- en-US: Covers now go to your other devices when they sync, over your home Wi-Fi or through the cloud, and take up much less space: they are stored smaller, including the ones you already had, and look just as good. Pairing with a computer is easier: the QR code is bigger and simpler. And when pairing two devices that already had libraries, saying whose the other one is no longer fails with a permissions error.
+
 ## 0.4.0 (23/10/2026, para la prueba cerrada)
 
 **Antes de subirla: el servidor de producción tiene que ofrecer GameUPC** (`/v1/server` lo lista en `metadata`). Desplegado y comprobado el 23/10/2026. Sin él, la app no lo pregunta y sigue igual que la 0.3.1.
