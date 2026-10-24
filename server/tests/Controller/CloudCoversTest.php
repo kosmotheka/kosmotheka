@@ -9,6 +9,7 @@ use App\Entity\CloudCover;
 use App\Entity\CloudLibrary;
 use App\Entity\Membership;
 use App\Entity\User;
+use App\Security\AccountDeletion;
 use App\Security\AccountPurger;
 use App\Sync\CloudCovers;
 use App\Tests\Support\DeviceAuthTestTrait;
@@ -230,6 +231,21 @@ final class CloudCoversTest extends WebTestCase
         self::assertSame(1, $purger->purge()['covers']);
         self::assertSame(0, $this->rowsOf(CloudCover::class));
         self::assertFileDoesNotExist($this->coversDir()."/$cloud/$name");
+    }
+
+    public function testTheCoversOfALibraryGoneWithItsOwnerAreRemoved(): void
+    {
+        [$name, $bytes] = $this->webp('catan');
+        $cloud = $this->libraryWithCover($name);
+        $this->put($this->family, $cloud, $name, $bytes);
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $owner = $em->getRepository(User::class)->findOneBy(['email' => $this->family['email']]) ?? self::fail('No owner.');
+        self::getContainer()->get(AccountDeletion::class)->delete($owner, null);
+
+        self::assertNull($em->find(CloudLibrary::class, Uuid::fromString($cloud)), 'nobody else had a place in it');
+        self::assertSame(0, $this->rowsOf(CloudCover::class), 'the rows go with the library');
+        self::getContainer()->get(AccountPurger::class)->purge();
+        self::assertDirectoryDoesNotExist($this->coversDir()."/$cloud");
     }
 
     // ----------------------------------------------------------- helpers ---
