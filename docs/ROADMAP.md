@@ -160,6 +160,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 ## Fase 8 — Publicación
 
 - **Plan de la fase:** [plans/fase-8.md](plans/fase-8.md), con hitos, orden y preguntas (16/10/2026).
+- **Portadas que viajan entre dispositivos (D82, aceptada el 24/10/2026), antes de la próxima versión:** hoy ninguna portada pasa a otro dispositivo, ni por la red local ni por la nube. Las imágenes viajan como ficheros por su hash, reducidas a ~800 px en WebP, primero por la red local y después por la nube (200 MB por biblioteca). Plan por partes en [plans/d82-portadas.md](plans/d82-portadas.md).
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
 - **Notificaciones push en Android** con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.

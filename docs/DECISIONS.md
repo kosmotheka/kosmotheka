@@ -87,7 +87,7 @@
 | D79 | Dominios: `.app` es lo que usa la app, `.com` es lo que se lee | aceptada |
 | D80 | Correo: `info@kosmotheka.com` reenviado a Gmail, envíos con Brevo | aceptada |
 | D81 | Dar un dispositivo a otra persona: la identidad es de la instalación y se puede empezar de cero | aceptada |
-| D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | abierta |
+| D82 | Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos | aceptada |
 | D83 | Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE | aceptada (la BNE, por investigar) |
 | D84 | Acceso a la nube: id propio de la nube y tabla de acceso; el servidor no se fía de ningún id del cliente | aceptada |
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
@@ -1347,7 +1347,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 - **Auditoría:** el caso entra en las costuras de compartir (`flows-sharing`).
 - Amplía D56, D57, D71, D73 y D76.
 
-## D82 · Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos — `abierta`
+## D82 · Portadas propias (foto o fichero) y cómo viajan las imágenes entre dispositivos — `aceptada`
 
 **Contexto** (maintainer, 03/10/2026, probando la versión de Google Play):
 - Quiere **sacar una foto a la portada** con el móvil, o elegir una imagen del dispositivo. Hoy está desactivado: D27 solo guarda portadas **descargadas** de los servidores conocidos (Open Library y Google Books), y dejó pendiente la portada propia.
@@ -1378,10 +1378,20 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 5. **Limpieza:** las portadas que ya no usa ningún libro se quedan en disco (pendiente desde D27); con ficheros que viajan conviene limpiarlas.
 
+**Decisión** (maintainer, 24/10/2026). Se reabrió al ver, emparejando un ordenador y un móvil, que la portada de *Catán* estaba en el móvil y no en el ordenador: no viaja ninguna, por ningún camino, desde que existe la sincronización. El maintainer no quiere que la prueba cerrada se encuentre con eso, y pidió que fuera **la misma imagen** en todos los dispositivos, nunca otra búsqueda, y que una biblioteca de cientos de obras no sea un problema.
+1. **Viajan los ficheros, pedidos por su hash después de sincronizar las operaciones.** Nunca se vuelve a buscar ni a bajar de la URL de origen: la imagen es la que eligió el primer dispositivo, y al llegar se recalcula el hash y se rechaza si no coincide.
+2. **Tamaño:** al guardarla, toda portada se reduce a **unos 800 px por el lado largo** y se guarda en **WebP con pérdida** (libwebp, licencia BSD; la alternativa en Rust puro solo hace WebP sin pérdida, que con fotos pesa más que JPEG). Unos 40-60 KB por portada, por medir con portadas reales al empezar. **Las que ya existen se recomprimen una vez** al actualizar, y la edición pasa a apuntar al fichero nuevo. Se quitan los metadatos (EXIF).
+3. **Primero la red local, en los dos sentidos** (el cliente baja las que le faltan y sube las que le faltan al otro): solo entre dispositivos emparejados y solo portadas de bibliotecas que el otro puede recibir (D71). Después de las operaciones, poco a poco y sin bloquear: la biblioteca se ve enseguida y las portadas van llegando; lo que se corte se retoma en la sincronización siguiente.
+4. **Después la nube:** el servidor guarda las portadas de cada biblioteca subida. Solo sube o baja quien tiene acceso a esa biblioteca (D84: nada de fiarse de ids del cliente); rechaza un fichero cuyo hash no coincide o que no es portada de ninguna edición de esa biblioteca (para que nadie use el servidor de almacén); tamaño máximo por imagen y **200 MB por biblioteca**. **El servidor no abre las imágenes**: comprueba tamaño, tipo por la firma de los bytes y hash.
+5. **En el servidor, las portadas son una copia de trabajo**: fuera de la copia diaria del VPS. Si se pierden, el servidor dice cuáles le faltan y los dispositivos que las tienen las vuelven a subir.
+6. **Datos móviles:** bajan siempre por ahora. Un ajuste «solo con wifi» queda en «Ideas para el futuro» del ROADMAP.
+7. **Tests hostiles antes que el arreglo** (batería de acceso): un emparejado que pide una portada de una biblioteca que no puede recibir, un dispositivo retirado o con valla, una cuenta sin acceso, un fichero que no corresponde a su hash o que no es de la biblioteca.
+8. Las preguntas 2 (fotos propias), 3 y 5 quedan como se proponen arriba; las fotos propias se activan cuando el transporte esté hecho. La 4 (portadas grandes de Google Books) no cambia.
+
 **Consecuencias:**
 - La spec no cambia: el campo `cover` ya existe. Cambian el protocolo de la red local (un endpoint nuevo) y el servidor (almacenamiento de ficheros y su API), y la copia de seguridad sigue igual (ya lleva las portadas).
-- **Cuándo:** propuesta de hacerlo en su propio hito, **después de la 7.2**, para no mezclarlo con las cuentas. Tiene que estar antes de que la nube sincronice catálogos, para que no se diseñe dos veces.
-- Amplía D27.
+- **Cuándo:** ya, antes de seguir con la prueba cerrada (24/10/2026). Plan en [plans/d82-portadas.md](plans/d82-portadas.md).
+- Amplía D27. Una dependencia nueva en la app (libwebp, en C) y la recompresión cambian `cover` en las ediciones existentes.
 
 ## D83 · Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE — `aceptada` (la BNE, por investigar)
 
