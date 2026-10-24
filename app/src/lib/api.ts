@@ -515,6 +515,20 @@ export function cloudMetadataOffers(): Promise<string[]> {
   return invoke<string[]>("cloud_metadata_offers");
 }
 
+/** What the server of the session asks for its accounts, and the part this device has not been told about (D91). */
+export interface ServerServices {
+  offered: string[];
+  new: string[];
+}
+
+export function serverServices(): Promise<ServerServices> {
+  return invoke<ServerServices>("server_services");
+}
+
+export function markServerServicesSeen(services: string[]): Promise<void> {
+  return invoke("mark_server_services_seen", { services });
+}
+
 export function saveSettings(settings: Settings): Promise<void> {
   return invoke("save_settings", { settings });
 }

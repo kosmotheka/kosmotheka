@@ -32,6 +32,7 @@ import type {
 
 // Mutable so the Providers screen can save keys and toggles across calls,
 // preserved only for the life of this dev-server tab.
+const mockServicesSeen = new Set<string>();
 let mockSettings: Settings = { apiKeys: {}, disabledSources: [], googleBooksViaServer: true };
 
 // The biometric plugin itself cannot be mocked through IPC, so the switch always
@@ -1455,6 +1456,15 @@ mockIPC((cmd, args) => {
       return mockAccount.signedIn
         ? ["google_books", "tmdb", "rawg", "comic_vine", "bgg", "gameupc"]
         : [];
+    case "server_services": {
+      const offered = mockAccount.signedIn
+        ? ["google_books", "tmdb", "rawg", "comic_vine", "bgg", "gameupc"]
+        : [];
+      return { offered, new: offered.filter((s) => !mockServicesSeen.has(s)) };
+    }
+    case "mark_server_services_seen":
+      (args as { services: string[] }).services.forEach((s) => mockServicesSeen.add(s));
+      return null;
     case "save_settings":
       mockSettings = (args as { settings: typeof mockSettings }).settings;
       return null;

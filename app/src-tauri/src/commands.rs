@@ -244,6 +244,26 @@ pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<
     Ok(offered)
 }
 
+/// The search services the server of the session asks for its accounts, and those this device has not been told
+/// about yet (D91): the screen that tells them shows when there is one. Empty without a session.
+#[tauri::command]
+pub async fn server_services(database: State<'_, Database>) -> Result<settings::ServerServices> {
+    let offered = cloud_metadata_offers(database.clone()).await?;
+    let conn = database.lock()?;
+    let server = crate::account::server(&conn)?;
+    settings::server_services(&conn, &server, offered)
+}
+
+#[tauri::command]
+pub fn mark_server_services_seen(
+    database: State<'_, Database>,
+    services: Vec<String>,
+) -> Result<()> {
+    let conn = database.lock()?;
+    let server = crate::account::server(&conn)?;
+    settings::mark_server_services_seen(&conn, &server, &services)
+}
+
 #[tauri::command]
 pub async fn lookup_isbn(
     database: State<'_, Database>,

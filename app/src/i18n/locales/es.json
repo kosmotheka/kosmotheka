@@ -2156,5 +2156,21 @@
       "wikidata": "Libros, películas, juegos y más",
       "music_brainz": "Discos y sus portadas"
     }
+  },
+  "serverServices": {
+    "title": "Búsquedas a través de tu servidor",
+    "body": "Con tu cuenta, tu servidor ({{server}}) busca por ti en estos catálogos con sus propias claves. El catálogo ve la búsqueda como del servidor, no tuya, y el servidor no apunta quién buscó qué: solo cuenta cuántas búsquedas haces, para ponerte un límite. Solo se envía lo que buscas, nunca tu catálogo.",
+    "new": "Nuevo",
+    "later": "Puedes cambiarlo cuando quieras en Ajustes → Proveedores de datos. Si pones una clave tuya de un catálogo, la app le pregunta directamente y el servidor no se entera.",
+    "done": "Entendido",
+    "sources": {
+      "google_books": "Libros por su ISBN, si no tienes una clave tuya. Se envía el ISBN.",
+      "tmdb": "Películas y series. Se envía lo que escribes y el idioma de la app.",
+      "rawg": "Videojuegos. Se envía lo que escribes.",
+      "comic_vine": "Cómics. Se envía lo que escribes.",
+      "board_game_geek": "Juegos de mesa. Se envía lo que escribes.",
+      "rpg_geek": "Libros de rol, al buscar un libro por su título. Se envía lo que escribes.",
+      "game_upc": "Juegos de mesa por su código de barras. Se envía el código y, al guardarlo, qué juego era, con un identificador de tu cuenta que no dice quién eres."
+    }
   }
 }

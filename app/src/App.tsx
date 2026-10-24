@@ -34,6 +34,7 @@ import { type Libraries, LibrariesContext } from "@/components/libraries-context
 import { PairDialog } from "@/components/pair-dialog";
 import { AboutDialog } from "@/components/about-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
+import { ServerServicesDialog } from "@/components/server-services-dialog";
 import { WELCOME_VERSION, WelcomeDialog } from "@/components/welcome-dialog";
 import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { NewSeriesDialog } from "@/components/new-series-dialog";
@@ -731,6 +732,9 @@ function AppShell({ news }: { news: WhatsNew | null }) {
             codes={overlay?.name === "twoFactor" ? overlay.codes : undefined}
           />
           <AccountNotice libraries={allLibraries} />
+          <ServerServicesDialog
+            blocked={welcome !== false || (newsOpen && news !== null) || overlay?.name === "auth"}
+          />
           <OtherOwnerDialog desktop={desktop} />
           {!desktop && (
             <BookDetailView

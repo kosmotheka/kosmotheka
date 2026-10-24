@@ -54,7 +54,7 @@ Los archivos que creas los guardas tú, donde quieras. Si los subes a un servici
 
 ## Si creas una cuenta
 
-La cuenta es opcional. Si creas una y subes una biblioteca, esa biblioteca vive también en un ordenador de internet (el servidor de tu cuenta) que la guarda por ti. Además, las búsquedas de algunos servicios pueden pasar por ese ordenador. Qué guarda, durante cuánto tiempo y cómo borrarlo está en [la página de privacidad](https://kosmotheka.com/es/privacidad.html).
+La cuenta es opcional. Si creas una y subes una biblioteca, esa biblioteca vive también en un ordenador de internet (el servidor de tu cuenta) que la guarda por ti. Además, las búsquedas de algunos servicios pueden pasar por ese ordenador. Al entrar con tu cuenta, una pantalla te dice cuáles, qué se envía a cada uno, y te deja apagarlos; vuelve a salir si tu servidor añade uno nuevo o cambias de servidor. Qué guarda, durante cuánto tiempo y cómo borrarlo está en [la página de privacidad](https://kosmotheka.com/es/privacidad.html).
 
 ## Lo que la app no hace
 

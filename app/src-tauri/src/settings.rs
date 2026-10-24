@@ -138,6 +138,64 @@ pub fn set_whats_new_seen(conn: &Connection, version: &str) -> Result<()> {
     write_state(conn, WHATS_NEW_SEEN_KEY, Some(version))
 }
 
+/// The search services a server asks for its accounts that this device has been told about (D91), one entry per
+/// server: another server is another operator, so its services are told again.
+fn server_services_seen_key(server: &str) -> String {
+    format!("server_services_seen.{server}")
+}
+
+pub fn server_services_seen(conn: &Connection, server: &str) -> Result<BTreeSet<String>> {
+    Ok(read_state(conn, &server_services_seen_key(server))?
+        .map(|value| {
+            value
+                .split(',')
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+/// Adds `services` to what this device has been told about `server`; what was there stays, so a service the
+/// server stops offering and offers again is not told twice.
+pub fn mark_server_services_seen(
+    conn: &Connection,
+    server: &str,
+    services: &[String],
+) -> Result<()> {
+    let mut seen = server_services_seen(conn, server)?;
+    seen.extend(
+        services
+            .iter()
+            .filter(|s| !s.is_empty() && !s.contains(','))
+            .cloned(),
+    );
+    let value = seen.into_iter().collect::<Vec<_>>().join(",");
+    write_state(conn, &server_services_seen_key(server), Some(&value))
+}
+
+/// What the server of the session asks for its accounts, and the part of it this device has not been told about.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerServices {
+    pub offered: Vec<String>,
+    pub new: Vec<String>,
+}
+
+pub fn server_services(
+    conn: &Connection,
+    server: &str,
+    offered: Vec<String>,
+) -> Result<ServerServices> {
+    let seen = server_services_seen(conn, server)?;
+    let new = offered
+        .iter()
+        .filter(|s| !seen.contains(*s))
+        .cloned()
+        .collect();
+    Ok(ServerServices { offered, new })
+}
+
 const PERSON_NAME_KEY: &str = "person_name";
 
 /// The name this device's person founds libraries with (D97): one per device, asked at the welcome. `None`
@@ -207,6 +265,42 @@ pub fn set_app_lock_after(conn: &Connection, minutes: u32) -> Result<()> {
 mod tests {
     use super::*;
     use crate::db;
+
+    #[test]
+    fn server_services_are_told_once_per_server() {
+        let conn = db::open_in_memory().unwrap();
+        let official = "https://api.kosmotheka.app";
+        let offered = vec!["google_books".to_owned(), "tmdb".to_owned()];
+        assert_eq!(
+            server_services(&conn, official, offered.clone())
+                .unwrap()
+                .new,
+            offered
+        );
+
+        mark_server_services_seen(&conn, official, &offered).unwrap();
+        assert!(
+            server_services(&conn, official, offered.clone())
+                .unwrap()
+                .new
+                .is_empty()
+        );
+
+        // A new service on the same server is told; the others are not told again.
+        let more = vec![
+            "google_books".to_owned(),
+            "tmdb".to_owned(),
+            "gameupc".to_owned(),
+        ];
+        assert_eq!(
+            server_services(&conn, official, more).unwrap().new,
+            vec!["gameupc".to_owned()]
+        );
+
+        // Another server is another operator: everything is told again.
+        let other = server_services(&conn, "https://books.example.org", offered.clone()).unwrap();
+        assert_eq!(other.new, offered);
+    }
 
     fn keys(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
         pairs

@@ -161,6 +161,8 @@ pub fn run() {
             commands::request_delete_book,
             commands::book_history,
             commands::cloud_metadata_offers,
+            commands::server_services,
+            commands::mark_server_services_seen,
             commands::lookup_isbn,
             commands::search_works,
             commands::lookup_code,

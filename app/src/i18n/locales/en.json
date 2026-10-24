@@ -2142,5 +2142,21 @@
       "wikidata": "Books, films, games and more",
       "music_brainz": "Records and their covers"
     }
+  },
+  "serverServices": {
+    "title": "Searches through your server",
+    "body": "With your account, your server ({{server}}) searches these catalogues for you with its own keys. The catalogue sees the search as the server's, not yours, and the server does not note who searched for what: it only counts how many searches you make, to set you a limit. Only what you search for is sent, never your catalogue.",
+    "new": "New",
+    "later": "You can change it whenever you like in Settings → Data providers. If you add a key of your own for a catalogue, the app asks it directly and the server never knows.",
+    "done": "Got it",
+    "sources": {
+      "google_books": "Books by their ISBN, if you have no key of your own. The ISBN is sent.",
+      "tmdb": "Films and series. What you type and the app's language are sent.",
+      "rawg": "Video games. What you type is sent.",
+      "comic_vine": "Comics. What you type is sent.",
+      "board_game_geek": "Board games. What you type is sent.",
+      "rpg_geek": "Role-playing books, when you search for a book by its title. What you type is sent.",
+      "game_upc": "Board games by their barcode. The code is sent and, when you save it, which game it was, with an identifier of your account that does not say who you are."
+    }
   }
 }

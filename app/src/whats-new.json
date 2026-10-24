@@ -1,4 +1,10 @@
 {
+  "next": [
+    {
+      "es": "Al entrar con tu cuenta, una pantalla te cuenta qué catálogos consulta tu servidor por ti, qué se envía a cada uno y te deja apagar el que quieras. Vuelve a salir si tu servidor añade uno nuevo.",
+      "en": "When you sign in, a screen tells you which catalogues your server asks for you, what is sent to each one, and lets you turn off any of them. It shows again if your server adds a new one."
+    }
+  ],
   "0.5.0": [
     {
       "es": "Las portadas pasan a los otros dispositivos al sincronizar, por la wifi de casa o por la nube: verás la misma portada en todos, aunque la obra se añadiera en otro.",

@@ -54,7 +54,7 @@ The files you create, you keep wherever you like. If you upload them to an onlin
 
 ## If you create an account
 
-The account is optional. If you create one and upload a library, that library also lives on a computer on the internet (your account's server) that keeps it for you. Also, searches in some services can go through that computer. What it keeps, for how long and how to delete it is in [the privacy page](https://kosmotheka.com/en/privacy.html).
+The account is optional. If you create one and upload a library, that library also lives on a computer on the internet (your account's server) that keeps it for you. Also, searches in some services can go through that computer. When you sign in, a screen tells you which ones, what is sent to each one, and lets you turn them off; it shows again if your server adds a new one or you move to another server. What it keeps, for how long and how to delete it is in [the privacy page](https://kosmotheka.com/en/privacy.html).
 
 ## What the app does not do
 
