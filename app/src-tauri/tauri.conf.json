@@ -53,6 +53,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Catalogue what your household owns and share it",
+    "longDescription": "Kosmotheka catalogues what a household owns (books, comics, board games, films, video games, music) and where each thing is, and shares that catalogue with the people you live with. It works offline and without an account, keeps your data on your devices and syncs paired devices over your home network; an optional account keeps a library in sync from anywhere.",
+    "homepage": "https://kosmotheka.com",
+    "publisher": "Kosmotheka",
+    "license": "AGPL-3.0-or-later",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
