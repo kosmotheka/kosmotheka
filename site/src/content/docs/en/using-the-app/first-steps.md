@@ -28,7 +28,7 @@ Download the installer only from the downloads page on kosmotheka.com or from Gi
 
 ### On Linux
 
-- **`.deb`** (Ubuntu, Debian, Linux Mint): double-click it to install it with the software centre, or in a terminal: `sudo apt install ./Kosmotheka-linux-amd64.deb`.
+- **`.deb`** (Ubuntu, Debian, Linux Mint): the surest way is a terminal, in the folder you downloaded it to: `sudo apt install ./Kosmotheka-linux-amd64.deb`. Double-clicking depends on the version: on some (Ubuntu 22.04, for example) it opens the file without offering to install it. Without a terminal at hand, try right-click › "Open With" › "Software Install".
 - **`.rpm`** (Fedora and similar): `sudo dnf install ./Kosmotheka-linux-x86_64.rpm`.
 - **AppImage** (almost any Linux, nothing to install): allow it to run (in the file's properties, or `chmod +x Kosmotheka-linux-x86_64.AppImage`) and open it.
 
