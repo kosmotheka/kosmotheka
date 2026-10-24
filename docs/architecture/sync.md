@@ -143,6 +143,14 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
 3. `POST /v1/sync/push` con esas operaciones. El servidor las aplica.
 4. El cliente coloca primero la dirección que ha funcionado, para la próxima vez.
 
+**Portadas** (D82). Las operaciones solo llevan el nombre de la portada (`<sha256>.<ext>`, D27); los ficheros van aparte, después de sincronizar y en segundo plano (`sync_with` lanza `lan::client::exchange_covers`, que emite `covers-arrived` si llegó alguna):
+1. `POST /v1/covers/inventory` con los nombres que el cliente tiene de las portadas de las bibliotecas que comparten. El servidor contesta qué le mandará (`send`) y qué quiere (`want`), **solo entre las portadas a las que apunta alguna edición de esas bibliotecas** (`cover_exchange::referenced`, con `shared_libraries`: un dispositivo retirado no cuenta).
+2. `GET /v1/covers/{nombre}` para cada una que falta y `PUT /v1/covers/{nombre}` para cada una que el otro quiere, cuatro a la vez. Los dos lados vuelven a filtrar por sus propias bibliotecas compartidas: lo que diga el otro no abre nada.
+3. Al llegar, `Covers::store_arrived` comprueba que el contenido da el hash del nombre, que es una imagen del tipo de su extensión (solo la cabecera) y su tamaño, y la guarda **sin recomprimirla**: el nombre es lo que todos los dispositivos comparten. Lo que falla se reintenta en la sincronización siguiente; no hay estado que guardar.
+4. La interfaz (`Cover`) vuelve a intentar una portada que no estaba cuando llega `covers-arrived` o `library-changed`.
+
+Con la nube es igual, por las rutas de [cloud.md](cloud.md#portadas-d82). Desde D82, toda portada se guarda reducida a 800 px en WebP; las de antes se reducen una vez al arrancar (`covers::reduce_stored`), y las que ya no usa ninguna edición ni ninguna petición pendiente se borran un día después (`covers::remove_unused`).
+
 **Cuándo escucha el servidor.** Solo cuando hace falta: si hay dispositivos que se sincronizan con este, o mientras se muestra un código de emparejamiento. El puerto se guarda para que los emparejados lo encuentren en el mismo sitio; si está ocupado, se usa otro. En Windows, la primera vez el cortafuegos preguntará si se permite.
 
 **Cuándo se sincroniza** (D75, hito 7.3). En silencio y sin preguntar cada cierto tiempo; si un dispositivo o la nube no responde, no pasa nada. También a mano, con «Sincronizar ahora».

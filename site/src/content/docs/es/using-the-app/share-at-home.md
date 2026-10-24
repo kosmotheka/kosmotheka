@@ -63,6 +63,8 @@ Una biblioteca que te llega por QR puede estar subida a la nube de otro servidor
 
 Los dos dispositivos se actualizan solos cuando están en la misma wifi y la app está abierta. Pasa al abrir la app, al cambiar algo y, con la app en pantalla, cada cinco minutos: un cambio puede tardar hasta cinco minutos en llegar. Si uno está fuera de casa, se actualiza cuando vuelva.
 
+**Las portadas también pasan**, justo después de los cambios y poco a poco: la obra aparece enseguida y su portada un momento más tarde. Es la misma imagen en todos los dispositivos, no se vuelve a buscar. La app guarda las portadas reducidas (unos 40 KB cada una), así que una biblioteca de cientos de obras pasa en segundos.
+
 ## Fuera de casa
 
 Si estáis juntos pero sin wifi, activa en uno de los móviles la opción de compartir internet (la «zona wifi») y conecta el otro a esa red. Después, empareja o pasa los cambios como en casa. No gasta los datos de tu tarifa: todo va entre los dos dispositivos.

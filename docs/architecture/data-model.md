@@ -73,7 +73,6 @@ works ──< work_contributors >── people
 ## Pendiente
 
 - Ubicaciones como jerarquía (salón → estantería → balda) en lugar de texto libre.
-- Limpiar las portadas que ya no usa ningún libro: se quedan en disco.
 - Fusionar duplicados a mano (D33; ver [operations.md](operations.md)).
 
 ## Actualizar la app: copia automática
@@ -150,4 +149,4 @@ El formato se comprobó así con una copia generada por la app (test `print_encr
 
 ## Ficheros fuera de la base de datos
 
-- `covers/`: portadas, con nombre `<sha256>.<ext>` (D27). Una portada que ya no usa ningún libro se queda en disco; limpiarlas es una tarea pendiente.
+- `covers/`: portadas, con nombre `<sha256>.<ext>` (D27): desde D82, WebP de 800 px como mucho, y las de antes se reducen una vez al arrancar. Una portada que ya no usa ninguna edición ni ninguna petición pendiente se borra un día después. Viajan a los demás dispositivos aparte de las operaciones ([sync.md](sync.md)).

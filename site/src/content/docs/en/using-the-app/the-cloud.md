@@ -42,6 +42,8 @@ Apart from the account, in "Settings", under "Security", you can turn on "Unlock
 2. Under "Which libraries do you want in the cloud?", tick the ones you want and tap "Upload". The ones you do not tick stay as they are until now, over the Wi-Fi at home.
 3. The app tells you when they are in the cloud.
 
+**Their covers** go up with the library, and the other devices get them from the cloud. Until they arrive, the item shows with an empty cover. On mobile data they count: about 40 KB per cover, some 20 MB for a library of 500 items the first time.
+
 Some cannot be uploaded as they are:
 
 - If you do not administer it: "Uploaded by whoever administers it".

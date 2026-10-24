@@ -42,6 +42,8 @@ Aparte de la cuenta, en «Ajustes», en «Seguridad», puedes activar «Desbloqu
 2. En «¿Qué bibliotecas subes a la nube?», marca las que quieras y pulsa «Subir». Las que no marques siguen como hasta ahora, por la wifi de casa.
 3. La app te avisa cuando están en la nube.
 
+Con la biblioteca suben también **sus portadas**, y los demás dispositivos las reciben de la nube. Mientras llegan, la obra se ve con su hueco de portada. Si usas datos móviles, cuentan: unos 40 KB por portada, unos 20 MB para una biblioteca de 500 obras la primera vez.
+
 Algunas no se pueden subir tal cual:
 
 - Si no la administras tú: «La sube quien la administra».

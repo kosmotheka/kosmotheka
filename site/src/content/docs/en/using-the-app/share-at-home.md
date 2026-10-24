@@ -63,6 +63,8 @@ A library that reaches you by QR may be uploaded to the cloud of another server,
 
 The two devices update themselves when they are on the same Wi-Fi and the app is open. This happens when you open the app, when you change something and, while the app is on screen, every five minutes: a change can take up to five minutes to arrive. If one is away from home, it updates when it gets back.
 
+**Covers go too**, right after the changes and a few at a time: the item shows at once and its cover a moment later. It is the same image on every device, never looked up again. The app keeps covers reduced (about 40 KB each), so a library of hundreds of items goes across in seconds.
+
 ## Away from home
 
 If you are together but without Wi-Fi, turn on the option to share internet (the "hotspot") on one of the phones and connect the other to that network. Then pair, or pass the changes, as you would at home. It does not use your mobile data: everything goes between the two devices.

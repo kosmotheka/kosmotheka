@@ -33,7 +33,7 @@ La cuenta sirve para tener una biblioteca en varios dispositivos sin que estén 
 
 ## Si subes una biblioteca a la nube
 
-Subir una biblioteca es una decisión aparte de crear la cuenta, y la toma quien administra esa biblioteca. Al hacerlo, el servidor guarda **el contenido de esa biblioteca**: las obras, los ejemplares, dónde están y de quién son, las personas de la biblioteca con su nombre y su papel, lo que cada una apunta (estado, valoración, favoritos, deseos), y el historial de cambios con el dispositivo que hizo cada uno.
+Subir una biblioteca es una decisión aparte de crear la cuenta, y la toma quien administra esa biblioteca. Al hacerlo, el servidor guarda **el contenido de esa biblioteca**: las obras, los ejemplares, dónde están y de quién son, las personas de la biblioteca con su nombre y su papel, lo que cada una apunta (estado, valoración, favoritos, deseos), y el historial de cambios con el dispositivo que hizo cada uno. También guarda **las portadas** de esas obras, como imágenes, para que lleguen a los demás dispositivos de la biblioteca; solo las que usa alguna obra, y las que dejan de usarse se borran al día siguiente (D82, 24/10/2026).
 
 **Lo que conviene saber:** estos datos viajan cifrados hasta el servidor, pero **en el servidor no están cifrados de extremo a extremo**. Quien administra el servidor podría técnicamente leerlos. No lo hacemos, salvo que sea imprescindible para resolver una incidencia que tú nos pidas resolver. Si prefieres que nadie más pueda leerlos, usa la app sin nube: la sincronización entre tus dispositivos por la red local no pasa por ningún servidor.
 

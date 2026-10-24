@@ -2,6 +2,19 @@
 
 > 24/10/2026. Decisión en [D82](../DECISIONS.md) (aceptada ese día). Va **antes de la próxima versión**: la prueba cerrada no debe encontrarse con obras sin portada en un dispositivo y con ella en otro.
 
+**Estado (24/10/2026): las cinco partes hechas en código, con sus tests; falta la prueba en dispositivos reales.**
+
+| Parte | Commit | Qué quedó |
+|---|---|---|
+| 0 · Medir | `0db11c70` | WebP calidad 75: unos 35 KB de media, una séptima parte de lo que llega (tabla en `covers::tests::print_cover_sizes`). libwebp compila en Linux y Android; Windows lo dirá el CI |
+| 1 · Reducir | `0db11c70` | 1.000 portadas en 6,7 s en el ordenador, en 10 operaciones |
+| 2 · Red local | `7050325e` | Casos hostiles vistos fallar antes del arreglo |
+| 3 · Servidor | `ef546646` | 2.108 tests del servidor; en el servidor los casos hostiles se escribieron junto a las reglas, no antes |
+| 4 · App con la nube | `f2cf8009` | |
+| 5 · Cerrar | este | Limpieza en el dispositivo (contando las portadas de peticiones pendientes), política, guías y arquitectura |
+
+**Para probar en dispositivos:** emparejar por wifi un ordenador y el móvil con portadas en los dos sentidos (el caso de Catán), y dos dispositivos que solo se ven por la nube (el móvil con datos). El servidor necesita el despliegue con la migración nueva antes de la parte de la nube.
+
 ## Lo que pasa hoy
 
 - Al guardar una obra, la app baja la portada de su proveedor, la guarda en `covers/<sha256>.<ext>` y la edición apunta a ese nombre (campo `cover`, D27). Hasta 5 MB por imagen; las de BoardGameGeek, por ejemplo, en su tamaño original.

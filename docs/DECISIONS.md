@@ -1390,7 +1390,7 @@ Relacionada con D03 y con la documentación pública futura (guías de usuario e
 
 **Consecuencias:**
 - La spec no cambia: el campo `cover` ya existe. Cambian el protocolo de la red local (un endpoint nuevo) y el servidor (almacenamiento de ficheros y su API), y la copia de seguridad sigue igual (ya lleva las portadas).
-- **Cuándo:** ya, antes de seguir con la prueba cerrada (24/10/2026). Plan en [plans/d82-portadas.md](plans/d82-portadas.md).
+- **Cuándo:** ya, antes de seguir con la prueba cerrada (24/10/2026). Plan en [plans/d82-portadas.md](plans/d82-portadas.md). **Hecho en código el mismo día** (red local, servidor y nube, con reducción y limpieza); falta la prueba en dispositivos reales.
 - Amplía D27. Una dependencia nueva en la app (libwebp, en C) y la recompresión cambian `cover` en las ediciones existentes.
 
 ## D83 · Google Books sin clave no basta: clave propia, servidor solo con cuenta y la BNE — `aceptada` (la BNE, por investigar)
