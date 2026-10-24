@@ -25,20 +25,19 @@
 <div class="wrap">
 <header class="page-hero"><span class="eyebrow" data-reveal>Code signing</span><h1 data-reveal style="--rd:.08s">Code signing policy</h1><p data-reveal style="--rd:.16s"><span class="updated">Last updated: 24 October 2026</span></p></header>
 <article class="prose" data-reveal>
-<p>Signing a program lets Windows check who publishes it and that nobody changed it on the way. This page explains how Kosmotheka is signed and who decides it.</p>
-<p><strong>Status:</strong> we have applied to the free open source programme of <a href="https://signpath.org/" rel="noopener">SignPath Foundation</a>. Until we are accepted, the Windows installer is <strong>unsigned</strong>, and Windows may warn that it comes from an “unknown publisher” (<a href="https://docs.kosmotheka.com/en/using-the-app/first-steps/">what to do</a>).</p>
-<p>Once signed: <strong>free code signing provided by <a href="https://signpath.io/" rel="noopener">SignPath.io</a>, certificate by <a href="https://signpath.org/" rel="noopener">SignPath Foundation</a>.</strong></p>
-<h2>What is signed</h2>
-<ul><li><strong>Windows:</strong> the installer (<code>Kosmotheka-windows-x64-setup.exe</code>) and the program it installs.</li><li><strong>Linux:</strong> unsigned, as is usual; each release publishes its checksums (<code>SHA256SUMS</code>).</li><li><strong>Android:</strong> only on Google Play, which signs the app that gets installed.</li></ul>
+<p>Signing a program lets Windows check who publishes it and that nobody changed it on the way. This page explains how Kosmotheka is published, how it will be signed and who decides it.</p>
+<p><strong>Status:</strong> for now the Windows installer is <strong>unsigned</strong>, and Windows may warn that it comes from an “unknown publisher” (<a href="https://docs.kosmotheka.com/en/using-the-app/first-steps/">what to do</a>). We applied to the free programme of <a href="https://signpath.org/" rel="noopener">SignPath Foundation</a>, which signs open source projects that are already well known; we will apply again once Kosmotheka is. Meanwhile, every release publishes its checksums (<code>SHA256SUMS</code>) for anyone who wants to check a download.</p>
+<h2>What will be signed</h2>
+<ul><li><strong>Windows:</strong> the installer (<code>Kosmotheka-windows-x64-setup.exe</code>) and the program it installs, once there is a certificate.</li><li><strong>Linux:</strong> unsigned, as is usual; each release publishes its checksums (<code>SHA256SUMS</code>).</li><li><strong>Android:</strong> only on Google Play, which signs the app that gets installed.</li></ul>
 <h2>How it is built</h2>
-<ul><li>Everything comes from the public source code in <a href="https://github.com/kosmotheka/kosmotheka">kosmotheka/kosmotheka</a>, under the AGPL-3.0 licence (the sync specification, MIT).</li><li>GitHub Actions builds it (<a href="https://github.com/kosmotheka/kosmotheka/blob/main/.github/workflows/release.yml"><code>release.yml</code></a>) from a version tag. Nothing that gets signed is built on a personal computer.</li><li>Every signed release is approved by hand before it is signed.</li></ul>
+<ul><li>Everything comes from the public source code in <a href="https://github.com/kosmotheka/kosmotheka">kosmotheka/kosmotheka</a>, under the AGPL-3.0 licence (the sync specification, MIT).</li><li>GitHub Actions builds it (<a href="https://github.com/kosmotheka/kosmotheka/blob/main/.github/workflows/release.yml"><code>release.yml</code></a>) from a version tag. Nothing that is published is built on a personal computer.</li><li>Every release is approved by hand before it is published.</li></ul>
 <h2>Who does what</h2>
-<ul><li><strong>Committers</strong> (can push changes to the repository): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li><li><strong>Reviewers</strong> (review every change from other people before it goes in): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li><li><strong>Approvers</strong> (approve every signing): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li></ul>
-<p>Part of the code is written with the help of an AI assistant; every change is reviewed and pushed by the maintainer. The team’s GitHub and SignPath accounts use two-factor authentication.</p>
+<ul><li><strong>Committers</strong> (can push changes to the repository): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li><li><strong>Reviewers</strong> (review every change from other people before it goes in): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li><li><strong>Approvers</strong> (approve every release): Sergio Rebollo (<a href="https://github.com/Tersoal" rel="noopener">@Tersoal</a>).</li></ul>
+<p>Part of the code is written with the help of an AI assistant; every change is reviewed and pushed by the maintainer. The team’s accounts use two-factor authentication.</p>
 <h2>Privacy</h2>
 <p>Kosmotheka does not send information to any networked system unless the person using it asks for it: looking a work up in a public catalogue, creating an account or uploading a library to the cloud. The app’s welcome says which catalogues it uses, and all of them can be turned off in Settings → Data providers. The details are in the <a href="privacy.html">privacy policy</a>.</p>
 <h2>Contact</h2>
-<p>If you think a signed release of Kosmotheka is not what it claims to be, write to <a href="mailto:info@kosmotheka.com">info@kosmotheka.com</a>.</p>
+<p>If you think a release of Kosmotheka is not what it claims to be, write to <a href="mailto:info@kosmotheka.com">info@kosmotheka.com</a>.</p>
 </article>
 </div>
 </main>
