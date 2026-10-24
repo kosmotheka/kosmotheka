@@ -93,7 +93,7 @@
 | D85 | Adiós al id fijo de «Mi biblioteca»: toda biblioteca nace con id aleatorio | aceptada |
 | D86 | Copias de seguridad cifradas con contraseña, activado por defecto | aceptada |
 | D87 | Cada operación encadena la anterior de su autor | aceptada |
-| D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local | abierta |
+| D88 | Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local, y un código corto para la primera vez | aceptada (25/10/2026; se programa en «Tras el lanzamiento») |
 | D89 | Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato | aceptada |
 | D90 | Abrir el repositorio con su historial y documentación pública en docs.kosmotheka.com | aceptada (17/10/2026; con lo acordado el 13 y el 16/10/2026: docs.kosmotheka.com con Starlight y un diario de desarrollo público, sin segundo repositorio) |
 | D91 | Bienvenida al primer arranque, con los servicios externos explicados y desactivables | aceptada |
@@ -1550,7 +1550,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - Una entidad que se quite del esquema en el futuro no puede dejar operaciones sin enviar en medio de una cadena (como pasó con `wish`, D61): habrá que convertirlas, no saltarlas.
 - Glosario: «operación anterior del autor» = `previous`.
 
-## D88 · Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local — `abierta`
+## D88 · Emparejar una vez: los dispositivos de una biblioteca se reconocen solos en la red local, y un código corto para la primera vez — `aceptada`
 
 **Contexto:** hoy la confianza en la red local va de dos en dos: cada pareja de dispositivos se empareja con un QR (D13), uno hace de servidor y otro de cliente. En una familia con portátil, dos móviles con nube y el de un hijo sin cuenta, eso obliga a emparejar varias veces o deja una cadena que se corta: si el móvil que hace de puente se va de viaje, los demás dejan de hablarse aunque estén en la misma casa. El maintainer (04/10/2026): emparejar varias veces es incómodo para el usuario y hay que mejorarlo; **se hará**, aunque no ahora.
 
@@ -1564,7 +1564,18 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 - Qué hace de servidor: hoy un móvil solo escucha con la app abierta; ¿ambos lados pueden iniciar?
 - Cómo convive con el emparejamiento por QR de hoy, que sigue siendo la puerta de entrada.
 
-**Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3).
+**Decisión (aceptada por el maintainer en la noche del 24 al 25/10/2026, al repasar el ROADMAP):** se empareja una vez con cualquiera de la biblioteca y después los dispositivos de esa biblioteca se encuentran y se hablan solos en casa. Se une a esta decisión el **código corto** para esa primera vez, que salió probando el 24/10/2026: el código de emparejar de hoy tiene unos 350 caracteres y no se puede teclear en un móvil. Las respuestas a lo que quedaba por decidir:
+
+1. **Quién entra:** solo un dispositivo de esa biblioteca con su persona asignada y su clave avalada (D96), que no esté retirado (D71) ni con valla (D84, D87). Estar en el registro de la biblioteca no basta. Es la misma regla que decide si sus operaciones cuentan.
+2. **Cómo se autentican, sin secreto compartido:** cada uno firma un reto con su clave de dispositivo (D56) y el otro la compara con la que la biblioteca tiene registrada para él. No hace falta ningún secreto nuevo.
+3. **Cómo se encuentran:** anuncio en la red local (mDNS) con **un identificador aleatorio que cambia**, nunca el nombre del dispositivo ni el de la biblioteca, para que en una red ajena no se sepa quién es. Si el anuncio no llega (redes de invitados), las últimas direcciones conocidas; si tampoco, el QR.
+4. **Retirado o con valla:** quien contesta lo comprueba en cada conexión con lo que él sabe de la biblioteca, y lo rechaza aunque el otro aún no se haya enterado. Es el primer caso hostil que se prueba.
+5. **Quién inicia:** cualquiera de los dos; escucha quien tenga la app abierta, como hoy.
+6. **Con el QR:** el QR sigue siendo la puerta de la primera vez, y el código corto es la otra forma de esa primera vez: **comparar un número de 6 cifras en las dos pantallas**, como con Bluetooth. El QR se queda.
+
+Antes de programarla: los casos hostiles de la [batería de acceso](plans/fase-7.md), vistos fallar antes del arreglo. mDNS pide permisos nuevos en Android y en la snap.
+
+**Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3). Se programa en el punto 5 de «Tras el lanzamiento» del [ROADMAP](ROADMAP.md), «Emparejar más fácil».
 
 ## D89 · Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato — `aceptada`
 
