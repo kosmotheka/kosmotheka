@@ -714,10 +714,31 @@
           "Sin conexión, pulsa «Añadir a mano» y complétalo después.",
           "Algunos catálogos, como Google Books, piden una clave propia: se pone en «Ajustes», «Proveedores de datos»."
         ]
+      },
+      "cloud": {
+        "title": "Tus bibliotecas en todos tus dispositivos (la nube)",
+        "steps": [
+          "En «Ajustes», «Cuenta y nube», pulsa «Iniciar sesión o crear cuenta»: con Google o con tu correo (te llega un código de 6 cifras).",
+          "Para subir una biblioteca, pulsa tu nombre en «Ajustes» y, en «Bibliotecas en la nube», marca cuáles y pulsa «Subir». Solo puede subirla quien la administra.",
+          "Lo que subes se guarda en el servidor, y quien lo mantiene podría leerlo. Lo que no subes sigue solo en tus dispositivos y por la wifi de casa.",
+          "En un móvil nuevo, inicia sesión con la misma cuenta: baja tus bibliotecas con tu permiso en cada una.",
+          "Para invitar a alguien, en «Personas y permisos» pulsa «Invitar»: por correo, o copiando un enlace que solo debe abrir esa persona."
+        ]
+      },
+      "people": {
+        "title": "Personas, permisos y peticiones",
+        "steps": [
+          "Cada biblioteca tiene sus personas, cada una con un rol: administrador (todo, incluido decidir quién entra), editor (crea y cambia; borra solo lo suyo) o lector (ve y pide). Se ven en «Personas y permisos».",
+          "Si administras, abre a una persona para cambiar su rol, si puede llevar la biblioteca a otros dispositivos, y sus dispositivos.",
+          "Un lector que quiere añadir o borrar algo envía una petición, con una nota si quiere, y la sigue en «Mis peticiones».",
+          "Quien administra ve las peticiones en la campana: «Aceptar», «Rechazar» o «Editar y aceptar».",
+          "Si solo una persona administra, conviene nombrar a otra: si pierde sus dispositivos, nadie podría cambiar los permisos."
+        ]
       }
     },
     "showWelcome": "Ver la bienvenida",
-    "fullGuide": "¿No está aquí? La guía completa está en <link>docs.kosmotheka.com</link>."
+    "fullGuide": "¿No está aquí? La guía completa está en <link>docs.kosmotheka.com</link>.",
+    "more": "Más en la guía"
   },
   "types": {
     "all": "Todo",

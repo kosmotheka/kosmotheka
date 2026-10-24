@@ -700,10 +700,31 @@
           "Offline, tap \"Add manually\" and complete it later.",
           "Some catalogues, such as Google Books, need your own key: set it in \"Settings\", \"Data providers\"."
         ]
+      },
+      "cloud": {
+        "title": "Your libraries on all your devices (the cloud)",
+        "steps": [
+          "In «Settings», «Cloud and account», tap «Sign in or create an account»: with Google or with your email (you get a 6-digit code).",
+          "To upload a library, tap your name in «Settings» and, in «Libraries in the cloud», tick which ones and tap «Upload». Only someone who administers it can upload it.",
+          "What you upload is kept on the server, and whoever runs it could read it. What you do not upload stays only on your devices and on your home Wi-Fi.",
+          "On a new phone, sign in with the same account: it brings down your libraries, with your permission in each one.",
+          "To invite someone, tap «Invite» in «People and permissions»: by email, or by copying a link that only that person should open."
+        ]
+      },
+      "people": {
+        "title": "People, permissions and requests",
+        "steps": [
+          "Each library has its people, each with a role: administrator (everything, including who gets in), editor (adds and changes; deletes only their own) or reader (sees and asks). You find them in «People and permissions».",
+          "If you administer, open a person to change their role, whether they may take the library to other devices, and their devices.",
+          "A reader who wants to add or delete something sends a request, with a note if they like, and follows it in «My requests».",
+          "Whoever administers sees the requests under the bell: «Accept», «Reject» or «Edit and accept».",
+          "If only one person administers, name another: if they lose their devices, nobody could change the permissions."
+        ]
       }
     },
     "showWelcome": "See the welcome again",
-    "fullGuide": "Not here? The full guide is at <link>docs.kosmotheka.com</link>."
+    "fullGuide": "Not here? The full guide is at <link>docs.kosmotheka.com</link>.",
+    "more": "More in the guide"
   },
   "types": {
     "all": "All",

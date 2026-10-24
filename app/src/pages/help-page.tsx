@@ -5,7 +5,28 @@ import { Button } from "@/components/ui/button";
 import { type Language, languageOf } from "@/i18n";
 import { ChevronDown } from "lucide-react";
 
-const TOPICS = ["share", "away", "pairing", "backups", "lost", "search"] as const;
+const TOPICS = [
+  "search",
+  "share",
+  "pairing",
+  "away",
+  "cloud",
+  "people",
+  "backups",
+  "lost",
+] as const;
+
+/** The guide's page that tells each topic in full, the same path in every language. */
+const PAGE: Record<(typeof TOPICS)[number], string> = {
+  search: "add-a-book/",
+  share: "share-at-home/",
+  pairing: "share-at-home/",
+  away: "away-from-home/",
+  cloud: "the-cloud/",
+  people: "people-and-permissions/",
+  backups: "backups/",
+  lost: "lost-phone/",
+};
 
 /** The full guide in each language that has one; the others get the fallback language's. */
 const GUIDE: Partial<Record<Language, string>> & { en: string } = {
@@ -13,7 +34,7 @@ const GUIDE: Partial<Record<Language, string>> & { en: string } = {
   en: "https://docs.kosmotheka.com/en/using-the-app/",
 };
 
-/** Short answers, one folded topic each. Cloud, roles and requests join as they are built. */
+/** Short answers, one folded topic each, with its page of the full guide. */
 export function HelpPage({
   desktop,
   onShowWelcome,
@@ -41,6 +62,9 @@ export function HelpPage({
                 ),
               )}
             </ol>
+            <p className="pr-4 pb-4 pl-9 text-sm md:pr-1 md:pl-6">
+              <ExternalLink url={guide + PAGE[topic]}>{t("help.more")}</ExternalLink>
+            </p>
           </details>
         ))}
       </div>
