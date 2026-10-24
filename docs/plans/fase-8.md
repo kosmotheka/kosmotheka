@@ -20,7 +20,7 @@ Lo que **no** necesita producción puede ir adelantándose: 8.2, la investigaci�
 
 ## Hitos
 
-**Repasado con el maintainer el 24/10/2026:** la fase termina con la app en producción en Google Play. Se quedan la prueba cerrada y la ficha (8.1), la bienvenida con los servicios del servidor, las páginas «A» de la ayuda (8.4), la snap (8.6) y lo de 8.7 que moleste a los testers; 8.2 y 8.5 están hechos. Salen a «Por colocar» del [ROADMAP](../ROADMAP.md): las notificaciones (8.3, junto con Mercure en producción), Flathub, el `updater`, la firma de Windows, el resto de la documentación pública y el método de auditoría. El registro de la marca pasa a la lista privada del maintainer.
+**Repasado con el maintainer el 24/10/2026:** la fase termina con la app en producción en Google Play. Se quedan la prueba cerrada y la ficha (8.1), la bienvenida con los servicios del servidor, las páginas «A» de la ayuda (8.4), la snap (8.6) y lo de 8.7 que moleste a los testers; 8.2 y 8.5 están hechos. Salen a «Tras el lanzamiento» del [ROADMAP](../ROADMAP.md): las notificaciones (8.3, junto con Mercure en producción), Flathub, el `updater`, la firma de Windows, el resto de la documentación pública y el método de auditoría. El registro de la marca pasa a la lista privada del maintainer. **Entra en la fase**, adelantado de la Fase 10: leer con la cámara el ISBN impreso y la estantería, sin IA, con el plugin de reconocimiento de texto («parte necesaria de la UX»).
 
 | Hito | Qué | Depende de |
 |---|---|---|

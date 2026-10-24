@@ -118,7 +118,7 @@ Deja de estar centrado en libros.
 - [x] 6.6 Series con orden o sin él, huecos, y la relación «necesita».
 - [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
 
-Lo que quedó por pulir, en «Por colocar» desde el 24/10/2026.
+Lo que quedó por pulir, en «Tras el lanzamiento» desde el 24/10/2026.
 
 ## Fase 7 — La nube
 
@@ -145,7 +145,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad. *Servidor hecho en 7.7 (11/10/2026, pendiente de revisión): tabla `activity_log`, purga al año, consulta por consola; ver [cloud.md](architecture/cloud.md#el-registro-de-actividad-77-d66).*
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
-- **Para cerrarla** (repasado con el maintainer el 24/10/2026): solo **la prueba que la cierra**, compartir una biblioteca por la nube con alguien de otra ciudad (con uno de los testers). Las pruebas en pantalla y la segunda revisión del servidor son trabajo atrasado del maintainer y se siguen en su lista, no aquí; la sesión de seguridad y Mercure en producción salen de la fase (ver «Por colocar»). Lista original en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7).
+- **Para cerrarla** (repasado con el maintainer el 24/10/2026): solo **la prueba que la cierra**, compartir una biblioteca por la nube con alguien de otra ciudad (con uno de los testers). Las pruebas en pantalla y la segunda revisión del servidor son trabajo atrasado del maintainer y se siguen en su lista, no aquí; la sesión de seguridad y Mercure en producción salen de la fase (ver «Tras el lanzamiento»). Lista original en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7).
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación
@@ -170,8 +170,11 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - ✅ **Documentación en docs.kosmotheka.com (D90)**, publicada el 22/10/2026. Lo que se acordó: Markdown en el repo, convertido con un generador estático (Starlight propuesto) y desplegado solo al cambiar `main`. La landing también deja rsync y pasa a desplegarse sola.
 - ✅ **Antes de abrir el repositorio** (auditoría 03/10/2026, hecho el 22/10/2026): activar en GitHub el aviso privado de vulnerabilidades (*Settings › Code security › Private vulnerability reporting*), al que remite `SECURITY.md`. Pantalla «Licencias» en la app (hecha el 16/10/2026): `app/src/licenses.json` se genera con `npm run licenses` (cargo-about en Docker para las crates, el bundle de Vite para npm, `app/licenses/extra.json` a mano para Android y SQLite) y `npm run check:licenses` en la CI avisa si cambia lo que se publica. ML Kit y Play Services salen con sus términos, no como un aviso.
 - ✅ **Publicar versiones (D74)**, funcionando desde la 0.4.0 (24/10/2026); con la 0.5.0, el `.aab` llega solo a la prueba cerrada de Play. Lo que se acordó: un workflow que, al subir una etiqueta, crea un *release* en borrador en GitHub con los instaladores de Linux y Windows (nombres sin versión, para enlazar siempre a la última) y sube el `.aab` firmado a la pista de prueba de Google Play. La primera subida a Play es a mano; las claves, en los secretos de GitHub y con copia fuera del repositorio. Android, solo en Google Play, sin APK para descargar.
-- **Linux para todos (D74):** el `.deb`, `.rpm` y AppImage, compilados en Ubuntu 22.04 en el CI (valen de la 22.04 en adelante); la **Snap Store** para Ubuntu 20.04 y cualquier Ubuntu, con un clic desde el centro de software (Flathub, en «Por colocar»). *24/10/2026: `.deb`, `.rpm` y AppImage publicados; la snap, probada en Ubuntu 20.04 y subida a la tienda, espera su revisión manual (el permiso de D-Bus) y aún es privada.*
+- **Linux para todos (D74):** el `.deb`, `.rpm` y AppImage, compilados en Ubuntu 22.04 en el CI (valen de la 22.04 en adelante); la **Snap Store** para Ubuntu 20.04 y cualquier Ubuntu, con un clic desde el centro de software (Flathub, en «Tras el lanzamiento»). *24/10/2026: `.deb`, `.rpm` y AppImage publicados; la snap, probada en Ubuntu 20.04 y subida a la tienda, espera su revisión manual (el permiso de D-Bus) y aún es privada.*
 - ✅ **Página de descargas** en la landing, con los ficheros de verdad desde el 24/10/2026 (siempre la última versión) y el histórico de *releases* de GitHub. En estática, con enlaces a la última versión de GitHub; si pasa a Symfony, rutas `/download/{plataforma}`.
+- **Leer con la cámara: el ISBN impreso y la estantería** (adelantado de la Fase 10 el 24/10/2026; el maintainer: «es parte necesaria de la UX», aunque no sea perfecto y sin IA). Con el plugin de reconocimiento de texto, que está casi hecho en su propio repositorio, y puede llegar durante la prueba cerrada como una actualización:
+  - **Leer el ISBN impreso con la cámara** (05/10/2026), para cuando el código de barras es una etiqueta de tienda: reconocimiento de texto en el propio móvil (ML Kit, sin red), buscar un número que empiece por 978 o 979 y comprobar su dígito de control. No hay plugin de Tauri para esto: se escribe uno y se publica como **plugin libre de Tauri** (MIT o Apache 2.0), como las passkeys. El mismo plugin sirve para la foto de balda sin IA. En **su propio repositorio**, como aporte a la comunidad; la app lo usa como una dependencia más (decidido el 17/10/2026, [notas](research/ia-reconocer-imagenes.md#el-plugin-de-tauri-que-hay-que-escribir)). Mientras tanto, el escáner salta los códigos de tienda y deja escribir el número.
+  - **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20). Primera prueba con fotos reales, el 12/10/2026: [notas](research/foto-estanteria.md). **Orden decidido el 17/10/2026:** primero sin salir del dispositivo (vía 3 de D19, con el plugin); la IA sigue en la Fase 10, con la app ya en producción ([Symfony AI y lo que haría falta](research/ia-reconocer-imagenes.md)).
 - **Hecho cuando:** cualquiera puede instalarla desde la tienda.
 
 ## Fase 9 — Vida de la biblioteca
@@ -189,9 +192,8 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 ## Fase 10 — Herramientas de estantería
 
 - **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
+- La foto de balda sin IA y el ISBN impreso pasan a la Fase 8 (24/10/2026); aquí queda la IA para reconocer lo que el texto no basta.
 - **Etiquetas QR imprimibles** para pegar en los ejemplares (D67), útiles en el modo inventario y en ludotecas: código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
-- **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20). Primera prueba con fotos reales, el 12/10/2026: [notas](research/foto-estanteria.md). **Orden decidido el 17/10/2026:** primero sin salir del dispositivo (vía 3 de D19, con el plugin de lectura de texto de abajo); la IA, al roadmap, con la app ya en producción ([Symfony AI y lo que haría falta](research/ia-reconocer-imagenes.md)).
-- **Leer el ISBN impreso con la cámara** (05/10/2026), para cuando el código de barras es una etiqueta de tienda: reconocimiento de texto en el propio móvil (ML Kit, sin red), buscar un número que empiece por 978 o 979 y comprobar su dígito de control. No hay plugin de Tauri para esto: se escribe uno y se publica como **plugin libre de Tauri** (MIT o Apache 2.0), como las passkeys. El mismo plugin sirve para la foto de balda sin IA. En **su propio repositorio**, como aporte a la comunidad; la app lo usa como una dependencia más (decidido el 17/10/2026, [notas](research/ia-reconocer-imagenes.md#el-plugin-de-tauri-que-hay-que-escribir)). Mientras tanto, el escáner salta los códigos de tienda y deja escribir el número.
 - **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla. Referencias: Google Lens, bookidentifier.com; probar antes el OCR local con el título y la autoría de la portada ([notas](testing/ux-escanear-y-editar.md)).
 
 ## Fase 11 — Servicio
@@ -204,31 +206,34 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 - **Web para el personal** (D53).
 - Licencias comerciales de los proveedores que las exigen; protección de datos con menores.
 
-## Por colocar
+## Tras el lanzamiento
 
-Salido del repaso del 24/10/2026; se les da sitio al decidir el orden después del lanzamiento.
+Ordenado en el repaso del 24/10/2026: va después de la Fase 8 y antes de la Fase 9. Primero la lista numerada, en este orden; después, lo que no tiene orden y se hace cuando toque.
 
-- **Seguridad del servidor** (sale de la Fase 7 el 24/10/2026: no es urgente, hoy no hay carga y el servidor admite muchas bibliotecas): una sesión con el maintainer, proporcionada a un VPS pequeño y compartido. Lleva, entre otras cosas, un tope de bibliotecas por cuenta y de operaciones por biblioteca (visto al revisar D82: con el registro abierto, una cuenta podría hacer crecer la base de datos sin freno). Las copias de PostgreSQL, que también iban en esta sesión, ya están hechas (18/10/2026).
-- **Avisos: Mercure en producción y notificaciones push** (juntados el 24/10/2026, «avisar de los cambios»). Mercure, los avisos al momento con la app abierta, ya está hecho en código (7.3) y apagado en producción: la app se pone al día al abrirse. Las push, con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
+1. **Foto propia de portada** (24/10/2026, prioridad alta): con la cámara o una imagen del dispositivo; hoy el botón está desactivado en el formulario. Con el transporte de D82 hecho, pasa por la misma reducción y viaja igual («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)). Entra antes si lo piden los testers.
+2. **Pulir lo que digan los testers**, un punto que no se cierra: se va cogiendo de la lista. Lo que quedó de la Fase 6, no urgente:
+   - Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
+   - La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
+   - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
+   - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
+   - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
+   - El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia está desactivada (punto propio arriba, «Foto propia de portada»).
+   - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
+   - Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
+   - Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
+   - Exportar e importar CSV: siguen siendo solo de libros.
+   - Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
+3. **Avisos: Mercure en producción y notificaciones push** (juntados el 24/10/2026, «avisar de los cambios»). Mercure, los avisos al momento con la app abierta, ya está hecho en código (7.3) y apagado en producción: la app se pone al día al abrirse. Las push, con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
+4. **Seguridad del servidor** (sale de la Fase 7 el 24/10/2026: no es urgente, hoy no hay carga y el servidor admite muchas bibliotecas; antes de anunciarlo a lo grande, como en r/selfhosted): una sesión con el maintainer, proporcionada a un VPS pequeño y compartido. Lleva, entre otras cosas, un tope de bibliotecas por cuenta y de operaciones por biblioteca (visto al revisar D82: con el registro abierto, una cuenta podría hacer crecer la base de datos sin freno). Las copias de PostgreSQL, que también iban en esta sesión, ya están hechas (18/10/2026).
+5. **Emparejar más fácil** (24/10/2026; junto con D88, abierta): un código corto en lugar del de unos 350 caracteres, que no se puede teclear en un móvil (propuesta: comparar un número de 6 cifras en las dos pantallas, como Bluetooth), y emparejar una vez para que los dispositivos de una biblioteca se encuentren solos en casa. Las dos piden descubrirse en la red local (mDNS), así que van juntas. Es diseño de seguridad: decisión propia y caso hostil probado antes; mDNS no funciona en redes de invitados y pide permisos nuevos en Android y en la snap. El QR se queda.
+6. **Actualizaciones automáticas en el escritorio** (plugin `updater` de Tauri), por estudiar.
+
+**Sin orden, cuando toque** (no dependen de nada ni bloquean nada):
+
 - **Flathub** (sale de la Fase 8 el 24/10/2026), después de la Snap Store (D74).
-- **Actualizaciones automáticas en el escritorio** (plugin `updater` de Tauri), por estudiar.
 - **Firmar Windows** (D74): SignPath Foundation lo rechazó el 24/10/2026 («todavía no»); se vuelve a pedir cuando el proyecto tenga uso público. Mientras, sale sin firma y la guía explica el aviso de SmartScreen. Certum Open Source, como alternativa sin decidir.
 - **El resto de la documentación pública** (sale de la Fase 8 el 24/10/2026; [índice](plans/documentacion-publica.md)): primer índice, con qué material hay para cada página, en [plans/documentacion-publica.md](plans/documentacion-publica.md) (13/10/2026). Antes de escribirla, revisar la de proyectos open source famosos y bien estructurados para inspirarse. Dos públicos: quien usa la app y quien quiere colaborar. Entre otras cosas, explicar bien el motor de sincronización local-first (operaciones, reloj, fusión campo a campo, firmas y permisos) y compararlo con otros enfoques (WebRTC con relé, sincronizar ficheros, servidor central).
 - **El método de auditoría, público y repetible** (D90; sale de la Fase 8 el 24/10/2026): se publica qué se audita y cómo (temas, preguntas, reglas, scripts, gravedad, lo que aún no cubre), no los informes ni los hallazgos de nuestro proceso. Una página en la documentación pública separa la parte determinista (cualquiera la ejecuta con Docker; cada salida explicada y cómo interpretarla) de la de juicio (un procedimiento que sigue una persona o cualquier asistente, no solo Claude), y explica cómo avisar de un fallo. El método se revisa cada cierto tiempo con lo que llegue de fuera.
-- **Emparejar más fácil** (24/10/2026; junto con D88, abierta): un código corto en lugar del de unos 350 caracteres, que no se puede teclear en un móvil (propuesta: comparar un número de 6 cifras en las dos pantallas, como Bluetooth), y emparejar una vez para que los dispositivos de una biblioteca se encuentren solos en casa. Las dos piden descubrirse en la red local (mDNS), así que van juntas. Es diseño de seguridad: decisión propia y caso hostil probado antes; mDNS no funciona en redes de invitados y pide permisos nuevos en Android y en la snap. El QR se queda.
-- **Foto propia de portada** (24/10/2026, prioridad alta): con la cámara o una imagen del dispositivo; hoy el botón está desactivado en el formulario. Con el transporte de D82 hecho, pasa por la misma reducción y viaja igual («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)). Entra antes si lo piden los testers.
-- **Pulir el catálogo general** (lo que quedó de la Fase 6; no urgente, se coge lo que moleste en la prueba cerrada):
-  - Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
-  - La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
-  - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
-  - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
-  - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
-  - El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia está desactivada (punto propio arriba, «Foto propia de portada»).
-  - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
-  - Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
-  - Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
-  - Exportar e importar CSV: siguen siendo solo de libros.
-  - Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
 
 ## Queda abierto
 
