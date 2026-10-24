@@ -13,6 +13,8 @@ The cloud libraries live in the server's database. If the machine is lost and yo
 2. **`server/.env.local`**, which carries `CLOUD_KEY_SECRET`, `APP_SECRET` and the keys of the services. **Without `CLOUD_KEY_SECRET`, the copy of the database does not allow signing** for the libraries already created. The script encrypts it the same way as the database.
 3. Your nginx and systemd configuration, if you do not have it written down somewhere else. The code is not needed: it is in its repository.
 
+**The covers (`server/var/covers/`) do not need copying.** They are a working copy: if they are lost, the server asks for each one again from the first device that has it and syncs.
+
 ## Encrypt the copies: whoever gets into the machine cannot read them
 
 The copies carry the data of all the libraries and the server's secrets. If someone gets into the machine and the copies are in the clear, they also take the old ones. That is why they are encrypted with [age](https://github.com/FiloSottile/age), using a **public** key that lives on the server and **only serves to encrypt**; the **private** key is never on the server, but on your computer (and in another safe place). That way not even yesterday's copy can be opened from the machine.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Sync\CloudCovers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,9 @@ final class V1RoutesNeedASessionTest extends WebTestCase
         '#^/v1/server$#',
     ];
 
+    /** A value for each parameter requirement there is, by requirement. */
+    private const array SAMPLES = [CloudCovers::NAME => '0000000000000000000000000000000000000000000000000000000000000000.webp'];
+
     /** Looking at an invitation by its token needs no session; accepting one does. */
     private const string PUBLIC_GET = '#^/v1/cloud/invitations/[^/]+$#';
 
@@ -39,7 +43,8 @@ final class V1RoutesNeedASessionTest extends WebTestCase
             if (!str_starts_with($path, '/v1')) {
                 continue;
             }
-            $concrete = preg_replace('#\{[^}]+\}#', 'x', $path);
+            // Each parameter as `x`, or as a value its requirement accepts: a route that does not match is a 404, not a 401.
+            $concrete = preg_replace_callback('#\{([^}]+)\}#', static fn (array $parameter): string => self::SAMPLES[$route->getRequirement($parameter[1]) ?? ''] ?? 'x', $path);
             \assert(\is_string($concrete));
             $methods = [] === $route->getMethods() ? ['GET'] : $route->getMethods();
             foreach ($methods as $method) {

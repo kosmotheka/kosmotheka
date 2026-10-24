@@ -13,6 +13,8 @@ Las bibliotecas de la nube viven en la base de datos del servidor. Si la máquin
 2. **`server/.env.local`**, que lleva `CLOUD_KEY_SECRET`, `APP_SECRET` y las claves de los servicios. **Sin `CLOUD_KEY_SECRET`, la copia de la base no permite firmar** en las bibliotecas ya creadas. El script lo cifra igual que la base.
 3. Tu configuración de nginx y de systemd, si no la tienes escrita en otro sitio. El código no hace falta: está en su repositorio.
 
+**Las portadas (`server/var/covers/`) no hace falta copiarlas.** Son una copia de trabajo: si se pierden, el servidor pide cada una otra vez al primer dispositivo que la tenga y sincronice.
+
 ## Cifrar las copias: quien entre en la máquina no las lee
 
 Las copias llevan los datos de todas las bibliotecas y los secretos del servidor. Si alguien entra en la máquina y las copias están en claro, se lleva también las antiguas. Por eso se cifran con [age](https://github.com/FiloSottile/age) con una clave **pública** que vive en el servidor y **solo sirve para cifrar**; la clave **privada** no está nunca en el servidor, sino en tu ordenador (y en otro sitio seguro). Así ni la copia de ayer se puede abrir desde la máquina.

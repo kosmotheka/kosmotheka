@@ -29,6 +29,8 @@ Subir una biblioteca a la nube es una decisión aparte de tener cuenta. Cuando s
 
 También guarda, por cada biblioteca, una clave propia con la que el servidor firma como «la nube», cifrada con `CLOUD_KEY_SECRET`.
 
+**Las portadas** de las obras de cada biblioteca subida, como ficheros en `server/var/covers/`, una carpeta por biblioteca: las suben los dispositivos que las tienen y las bajan los que no. Solo las que usa alguna obra de esa biblioteca, como mucho **200 MB por biblioteca** (unos 40 KB cada una, porque la app las reduce). Las que ya no usa ninguna obra se borran al día siguiente, con la purga.
+
 ### Las invitaciones
 
 Quién invita, a qué persona y cuándo caduca (24 horas). El código se guarda solo como huella; en las invitaciones por correo **no se guarda la dirección**, sino una huella con clave que solo permite comprobar que quien acepta es quien se invitó. Se borran una semana después de caducar.

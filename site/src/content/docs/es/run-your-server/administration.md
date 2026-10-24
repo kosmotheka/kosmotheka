@@ -98,7 +98,8 @@ Borra, en una pasada:
 - las invitaciones **caducadas hace más de una semana**;
 - las líneas del registro de actividad **de más de un año**;
 - los intentos caducados de entrar con Google;
-- las búsquedas guardadas que han pasado su plazo (ver [la caché de búsquedas](/es/run-your-server/what-the-server-keeps/#la-caché-de-búsquedas)).
+- las búsquedas guardadas que han pasado su plazo (ver [la caché de búsquedas](/es/run-your-server/what-the-server-keeps/#la-caché-de-búsquedas));
+- las portadas que ya no usa ninguna obra de su biblioteca, un día después, y las carpetas de portadas de bibliotecas que ya no existen.
 
 **No hace falta lanzarla a mano**: la lanza cada hora el proceso programado (el servicio `worker` de Docker, o `kosmotheka-worker` de systemd, que montaste en la guía de instalación). Sin ese proceso corriendo, no se borra nada. Cada paso va por separado: si uno falla, los demás se hacen igual y la orden termina con un aviso de cuáles fallaron.
 

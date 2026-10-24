@@ -825,7 +825,7 @@ final class InvitationControllerTest extends WebTestCase
         $this->invite($this->family, $cloud, self::NORA, 'link');
         $connection = self::getContainer()->get(Connection::class);
         $connection->executeStatement("UPDATE invitation SET expires_at = now() - interval '2 days'");
-        self::assertSame(['unconfirmed_users' => 0, 'expired_codes' => 0, 'invitations' => 0, 'activity' => 0, 'google_attempts' => 0, 'metadata_cache' => 0], self::getContainer()->get(AccountPurger::class)->purge());
+        self::assertSame(['unconfirmed_users' => 0, 'expired_codes' => 0, 'invitations' => 0, 'activity' => 0, 'google_attempts' => 0, 'metadata_cache' => 0, 'covers' => 0], self::getContainer()->get(AccountPurger::class)->purge());
 
         $connection->executeStatement("UPDATE invitation SET expires_at = now() - interval '10 days'");
 

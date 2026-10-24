@@ -839,6 +839,24 @@ Cada candidato es `{external_id, title, cover_url}`: el número de BoardGameGeek
 
 **Tests:** `tests/Controller/GameUpcTest.php`, con un GameUPC en memoria (`FakeGameUpcApi`) que sigue los ejemplos de su descripción de la API. Los casos hostiles primero: códigos que no lo son, una ruta o una dirección en el código, campos de más, un id propio para GameUPC, respuestas que no sirven o enormes, juegos mal formados, la clave en una respuesta de error, y el código fuera de los registros.
 
+## Portadas (D82)
+
+Las portadas viajan como ficheros, aparte de las operaciones: la edición solo lleva el nombre del fichero, `<sha256>.<ext>` (D27), y el servidor guarda los ficheros de cada biblioteca subida para que los dispositivos que no se ven por la red local los reciban. Es el mismo intercambio que la red local ([sync.md](sync.md)), con las mismas reglas.
+
+| Ruta | Cuerpo | Respuesta |
+|---|---|---|
+| `POST /v1/cloud/libraries/{C}/covers/inventory` | `{"have": [nombre, …]}` (como mucho 50.000; cada uno con la forma de un nombre de portada, o `422`) | `200 {"send": [nombre, …], "want": [nombre, …]}`: lo que el servidor tiene y el dispositivo no, y lo que el dispositivo tiene y el servidor no |
+| `GET /v1/cloud/libraries/{C}/covers/{nombre}` | — | `200` con los bytes (`application/octet-stream`, `nosniff`); `404 {"code":"cover_not_found"}` |
+| `PUT /v1/cloud/libraries/{C}/covers/{nombre}` | los bytes | `204`; `404 cover_not_found`, `422 cover_not_the_one_named` o `cover_not_an_image`, `413 cover_too_large` o `covers_library_full` |
+
+- **El acceso, primero:** `CloudLibraryAccess::require`, como `pull` (una cuenta sin la biblioteca o cortada no ve ni da nada, D84, D98). Un nombre que no tiene la forma `<64 hex>.(jpg|png|webp|gif)` no casa con la ruta: `404` sin llegar al controlador.
+- **Solo portadas de la biblioteca:** el servidor guarda y da una portada solo si alguna edición de `C` en su catálogo (D92) apunta a ella. Así no sirve de almacén para nada más, y conocer el nombre de una portada de otra biblioteca no abre nada. El inventario solo cuenta esas.
+- **Al guardar:** que los bytes den el hash del nombre, que empiecen como una imagen de su tipo (la firma de JPEG, PNG, GIF o WebP) y su tamaño. **El servidor no descodifica nunca una imagen**: no hay librería de imágenes que atacar. Como mucho 2 MB por portada (una reducida pesa unos 40 KB; el margen es para las guardadas antes de reducirlas) y **200 MB por biblioteca** (`CloudCovers::MAX_PER_LIBRARY`). Se escriben enteras a un temporal y se renombran.
+- **Dónde:** `app.covers_dir` (`var/covers/<C>/<nombre>`; en los tests, dentro de la caché), y una fila de `cloud_cover` por fichero, para el límite y la limpieza. **Guardada quiere decir en el disco:** si la carpeta se pierde, el inventario vuelve a pedir esas portadas y se reescriben. Por eso no van en la copia diaria.
+- **Limpieza** (`AccountPurger`, cada hora): las portadas a las que ya no apunta ninguna edición, un día después de guardarlas (su edición puede estar a punto de llegar), y las carpetas de bibliotecas que ya no existen.
+- **Límite de peticiones:** `cloud_covers`, 3.000 por cuenta y hora, para el inventario, cada bajada y cada subida.
+- **Código:** `App\Controller\CloudCoverController`, `App\Sync\CloudCovers`, `App\Entity\CloudCover` y su repositorio, `App\Enum\CoverRejection`. Tests: `CloudCoversTest` (los casos hostiles de arriba, vistos antes que el arreglo en la red local, D82).
+
 ## Tablas del catálogo (7.4.3, rehecho por D92)
 
 > Las tablas donde el motor de fusión de 7.4.4 escribirá el catálogo de cada biblioteca de la nube. Desde 7.4.6 las escribe el `push` (a través del motor y el juez); `pull` sigue trabajando solo con `cloud_operation`. [D92](../DECISIONS.md) (08/10/2026) sustituyó la migración a mano de 7.4.3 por **entidades de Doctrine**; la migración es `Version20261008120000`.

@@ -11,6 +11,8 @@ parameters:
     app.fixtures_cast_file: '%kernel.project_dir%/var/fixtures/cast.json'
     # Who signs the Mercure tokens; the hub trusts it (MERCURE_TRUSTED_ISSUERS in docker-compose.yaml).
     app.mercure_issuer: 'urn:kosmotheka:server'
+    # The cover files of the cloud libraries (D82), one folder per library. A working copy: outside the daily backup.
+    app.covers_dir: '%kernel.project_dir%/var/covers'
 
 services:
     # default configuration for services in *this* file
@@ -71,6 +73,8 @@ when@dev:
 when@test:
     parameters:
         app.fixtures_cast_file: '%kernel.project_dir%/var/fixtures/cast.test.json'
+        # A fresh folder per run: the database is rolled back after each test, files are not.
+        app.covers_dir: '%kernel.cache_dir%/covers'
     services:
         _defaults:
             autowire: true

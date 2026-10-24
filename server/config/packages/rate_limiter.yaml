@@ -7,6 +7,12 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+        # Cover files of the cloud libraries (D82), per account: the inventory, each download and each upload. A first
+        # sync of a library of 2,000 covers fits in an hour.
+        cloud_covers:
+            policy: sliding_window
+            limit: 3000
+            interval: '1 hour'
         # Per address; a family behind one router shares it (SEG-051), so it is wide. The challenge and the login spend it.
         login:
             policy: sliding_window

@@ -10,6 +10,7 @@ use App\Repository\ActivityEntryRepository;
 use App\Repository\GoogleAttemptRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MetadataCacheRepository;
+use App\Sync\CloudCovers;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 
@@ -17,7 +18,8 @@ use Symfony\Component\Clock\ClockInterface;
  * Deletes what D49 says must not linger: accounts never confirmed after 24h,
  * invitations a week after they expire (D43), activity-log lines after a year (D66), and email codes past their expiry
  * (confirmed accounts can also leave dead codes behind, e.g. an unused reset_password code). It also empties the
- * metadata cache of books past their age (7.8). Run hourly by
+ * metadata cache of books past their age (7.8), and the cloud covers no edition points to any more, a day after (D82).
+ * Run hourly by
  * App\Scheduler\PurgeAccountsMessageHandler, and by hand with
  * `app:accounts:purge`.
  *
@@ -35,6 +37,7 @@ final readonly class AccountPurger
         private ActivityEntryRepository $activity,
         private GoogleAttemptRepository $googleAttempts,
         private MetadataCacheRepository $metadataCache,
+        private CloudCovers $covers,
     ) {
     }
 
@@ -47,7 +50,7 @@ final readonly class AccountPurger
     /**
      * Each step on its own, so that one that fails does not keep the others waiting for the next hour (CAL-008).
      *
-     * @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int, google_attempts: int, metadata_cache: int}
+     * @return array{unconfirmed_users: int, expired_codes: int, invitations: int, activity: int, google_attempts: int, metadata_cache: int, covers: int}
      *
      * @throws PurgeFailedException after running every step, if any failed
      */
@@ -65,6 +68,7 @@ final readonly class AccountPurger
             'activity' => fn (): int => $this->activity->deleteBefore($now->modify(self::ACTIVITY_RETENTION)),
             'google_attempts' => fn (): int => $this->googleAttempts->deleteExpiredBefore($now),
             'metadata_cache' => fn (): int => $this->metadataCache->deleteStaleBefore($now),
+            'covers' => $this->covers->purge(...),
         ];
 
         $deleted = [];

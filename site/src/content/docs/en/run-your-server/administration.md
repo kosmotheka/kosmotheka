@@ -98,7 +98,8 @@ In one pass, it deletes:
 - invitations **that expired more than a week ago**;
 - activity log lines **older than a year**;
 - expired attempts to sign in with Google;
-- saved searches that have passed their time limit (see [the search cache](/en/run-your-server/what-the-server-keeps/#the-search-cache)).
+- saved searches that have passed their time limit (see [the search cache](/en/run-your-server/what-the-server-keeps/#the-search-cache));
+- covers no work of their library uses any more, a day later, and the cover folders of libraries that no longer exist.
 
 **You do not need to run it by hand**: the scheduled process runs it every hour (the `worker` service of Docker, or `kosmotheka-worker` of systemd, which you set up in the installation guide). Without that process running, nothing is deleted. Each step runs separately: if one fails, the others still happen and the command ends with a warning listing which ones failed.
 
