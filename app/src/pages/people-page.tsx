@@ -196,10 +196,12 @@ export function PeoplePage({
         <TriangleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
         <p className="text-sm leading-snug text-pretty">
           <strong className="font-semibold">{t("people.lone.title", { library })}</strong>{" "}
-          {t("people.lone.body", {
-            devices: admins[0]?.devices.map((d) => d.name).join(t("people.and")) ?? "",
-            count: admins[0]?.devices.length ?? 0,
-          })}
+          {(admins[0]?.devices.length ?? 0) > 2
+            ? t("people.lone.bodyMany", { count: admins[0]?.devices.length ?? 0 })
+            : t("people.lone.body", {
+                devices: admins[0]?.devices.map((d) => d.name).join(t("people.and")) ?? "",
+                count: admins[0]?.devices.length ?? 0,
+              })}
         </p>
       </div>
       {others.length > 0 && (
@@ -402,6 +404,7 @@ export function PeoplePage({
                 <span key={device.id} className="flex items-center gap-1">
                   <Smartphone className="size-3.5" />
                   {device.name}
+                  {device.thisDevice && ` · ${t("people.thisDevice")}`}
                   {linkNote(device, t) && ` · ${linkNote(device, t)}`}
                 </span>
               ))}

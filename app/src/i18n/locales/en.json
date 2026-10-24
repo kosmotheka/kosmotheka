@@ -962,6 +962,7 @@
       "title": "You are the only administrator of {{library}}.",
       "body_one": "If you lose {{devices}}, your only device, nobody will be able to change permissions or answer requests. Name someone else.",
       "body_other": "If you lose {{devices}}, nobody will be able to change permissions or answer requests. Name someone else.",
+      "bodyMany": "If you lose your {{count}} devices, nobody will be able to change permissions or answer requests. Name someone else.",
       "action": "Name someone else"
     },
     "yourRole": "Your role in {{library}}: {{role}}.",

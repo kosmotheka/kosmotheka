@@ -146,7 +146,12 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
         })?
         .collect::<rusqlite::Result<_>>()?;
     let mut unassigned = Vec::new();
+    // The device the library names as its cloud is nobody's by rule (D76) and is never offered a person.
+    let named_cloud = cloud_device_of(conn, library)?;
     for (id, name, member, assigned_at) in &devices {
+        if member.is_none() && named_cloud.as_ref() == Some(id) {
+            continue;
+        }
         match people.iter_mut().find(|p| Some(&p.id) == member.as_ref()) {
             Some(person) => person
                 .devices
@@ -358,6 +363,10 @@ pub fn assign_device(
     device: &str,
     member: Option<&str>,
 ) -> Result<()> {
+    // The cloud with a person would be the server with that person's role, administrator included.
+    if member.is_some() && cloud_device_of(conn, library)?.as_deref() == Some(device) {
+        return Err(Error::NotAllowed);
+    }
     let tx = conn.transaction()?;
     let current: Option<String> = tx
         .query_row(
@@ -987,6 +996,35 @@ mod tests {
         name_cloud_device(&mut laptop, &lib, &phone_id).unwrap();
         pull(&mut phone, &laptop, &lib);
         (laptop, phone, lib, laura)
+    }
+
+    #[test]
+    fn the_cloud_is_not_a_device_of_nobody_waiting_for_a_person() {
+        let (laptop, phone, lib, _) = laptop_with_a_cloud_phone();
+        let cloud = ops::device_id(&phone).unwrap();
+        let people = list_people(&laptop, &lib).unwrap();
+        assert!(
+            people.unassigned.iter().all(|device| device.id != cloud),
+            "the cloud is shown apart, never with «Assign»"
+        );
+    }
+
+    #[test]
+    fn the_cloud_is_never_given_a_person() {
+        // Giving the cloud a person would give the server that person's role, administrator included.
+        let (mut laptop, phone, lib, laura) = laptop_with_a_cloud_phone();
+        let cloud = ops::device_id(&phone).unwrap();
+        let admin = sync::own_person(&laptop, &lib);
+        for person in [&admin, &laura] {
+            assert!(matches!(
+                assign_device(&mut laptop, &lib, &cloud, Some(person)),
+                Err(Error::NotAllowed)
+            ));
+        }
+        assert_eq!(
+            permissions::person_of_device(&laptop, &lib, &cloud).unwrap(),
+            None
+        );
     }
 
     fn write_account(conn: &mut Connection, lib: &str, member: &str) -> String {

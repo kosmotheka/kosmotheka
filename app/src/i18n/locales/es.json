@@ -976,6 +976,7 @@
       "title": "Solo tú administras {{library}}.",
       "body_one": "Si pierdes {{devices}}, tu único dispositivo, nadie podrá cambiar los permisos ni atender las peticiones. Conviene nombrar a otra persona.",
       "body_other": "Si pierdes {{devices}}, nadie podrá cambiar los permisos ni atender las peticiones. Conviene nombrar a otra persona.",
+      "bodyMany": "Si pierdes tus {{count}} dispositivos, nadie podrá cambiar los permisos ni atender las peticiones. Conviene nombrar a otra persona.",
       "action": "Nombrar a otra persona"
     },
     "yourRole": "Tu rol en {{library}}: {{role}}.",

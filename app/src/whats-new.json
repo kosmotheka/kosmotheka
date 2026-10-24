@@ -7,6 +7,10 @@
     {
       "es": "La Ayuda explica también la nube y las personas, permisos y peticiones, y cada tema lleva a su página de la guía completa.",
       "en": "Help now also covers the cloud and people, permissions and requests, and each topic takes you to its page of the full guide."
+    },
+    {
+      "es": "En «Personas y permisos», el servidor de la nube ya no aparece como un dispositivo sin persona que se pueda asignar, se ve cuál es este dispositivo, y el aviso de administrador único no repite la lista entera cuando tienes muchos.",
+      "en": "In «People and permissions», the cloud's server no longer shows as a device with no person that can be assigned, you can see which one is this device, and the only-administrator warning no longer repeats the whole list when you have many."
     }
   ],
   "0.5.0": [
