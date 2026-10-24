@@ -5,6 +5,7 @@ mod backup;
 mod catalog;
 pub mod cloud;
 mod commands;
+mod cover_exchange;
 mod covers;
 mod csv_io;
 pub mod data_folder;
@@ -88,6 +89,7 @@ pub fn run() {
             });
             app.manage(database.clone());
             app.manage(covers.clone());
+            lan.serve_covers(covers.clone());
             app.manage(Lookup::new()?);
             app.manage(lan.clone());
             app.manage(DataDir(data_dir.clone()));

@@ -22,6 +22,8 @@ use super::{
     reconcile, record_server_sync, register_in_shared, save_server, share_library,
     shared_libraries,
 };
+use crate::cover_exchange::{self, Swap};
+use crate::covers::{Covers, MAX_COVER_BYTES};
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::libraries;
@@ -310,6 +312,120 @@ async fn sync_once(database: &Database, device_id: &str) -> Result<SyncReport> {
     })
 }
 
+/// What a cover swap did, for the UI to reload covers when some arrived.
+#[derive(Debug, Default, PartialEq)]
+pub struct CoverReport {
+    pub received: usize,
+    pub sent: usize,
+}
+
+/// Swaps the cover files of the libraries shared with a paired device, after the operations (D82): this device
+/// says what it has, the other says what it will send and what it wants, and each cover is checked when it
+/// arrives. Nothing is trusted from the other side: only covers of editions of the shared libraries are fetched or
+/// sent. A cover that fails is left for the next sync.
+pub async fn exchange_covers(
+    database: &Database,
+    covers: &Covers,
+    device_id: &str,
+) -> Result<CoverReport> {
+    let (server, local_device, referenced) = {
+        let conn = database.lock()?;
+        let server = find_server(&conn, device_id)?.ok_or(Error::Lan("unknown_device"))?;
+        let shared = shared_libraries(&conn, device_id)?;
+        (
+            server,
+            ops::device_id(&conn)?,
+            cover_exchange::referenced(&conn, &shared)?,
+        )
+    };
+    if referenced.is_empty() {
+        return Ok(CoverReport::default());
+    }
+    let client = pinned_client(&server.fingerprint)?;
+    let auth = Some((local_device.as_str(), server.secret.as_str()));
+    let inventory = cover_exchange::inventory(covers, &referenced);
+    let (swap, address): (Swap, String) = post(
+        &client,
+        &server.addresses,
+        "/v1/covers/inventory",
+        auth,
+        &inventory,
+    )
+    .await?;
+
+    let mut report = CoverReport::default();
+    let fetch: Vec<String> = swap
+        .send
+        .into_iter()
+        .filter(|name| referenced.contains(name) && !covers.has(name))
+        .collect();
+    for batch in fetch.chunks(cover_exchange::AT_ONCE) {
+        let mut downloads = tokio::task::JoinSet::new();
+        for name in batch {
+            let request = authorized(client.get(cover_url(&address, name)), auth);
+            let name = name.clone();
+            downloads.spawn(async move { (name, fetch_bytes(request).await) });
+        }
+        while let Some(Ok((name, bytes))) = downloads.join_next().await {
+            if let Some(bytes) = bytes
+                && covers.store_arrived(&name, &bytes).is_ok()
+            {
+                report.received += 1;
+            }
+        }
+    }
+    let give: Vec<String> = swap
+        .want
+        .into_iter()
+        .filter(|name| referenced.contains(name))
+        .collect();
+    for batch in give.chunks(cover_exchange::AT_ONCE) {
+        let mut uploads = tokio::task::JoinSet::new();
+        for name in batch {
+            let Some(bytes) = covers.read(name) else {
+                continue;
+            };
+            let request = authorized(client.put(cover_url(&address, name)).body(bytes), auth);
+            uploads
+                .spawn(async move { request.send().await.is_ok_and(|r| r.status().is_success()) });
+        }
+        while let Some(Ok(sent)) = uploads.join_next().await {
+            report.sent += usize::from(sent);
+        }
+    }
+    Ok(report)
+}
+
+fn cover_url(address: &str, name: &str) -> String {
+    format!("https://{address}/v1/covers/{name}")
+}
+
+fn authorized(
+    request: reqwest::RequestBuilder,
+    auth: Option<(&str, &str)>,
+) -> reqwest::RequestBuilder {
+    match auth {
+        Some((device_id, secret)) => request.header("x-device-id", device_id).bearer_auth(secret),
+        None => request,
+    }
+}
+
+/// The body of a successful answer, read up to the size a cover can have.
+async fn fetch_bytes(request: reqwest::RequestBuilder) -> Option<Vec<u8>> {
+    let mut response = request.send().await.ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await.ok()? {
+        bytes.extend_from_slice(&chunk);
+        if bytes.len() > MAX_COVER_BYTES {
+            return None;
+        }
+    }
+    Some(bytes)
+}
+
 /// Looks for a paired device that moved to another address on this device's own
 /// subnets, at the ports it used before (D37). Only a peer presenting the pinned
 /// certificate and the same device id counts as found.
@@ -475,6 +591,7 @@ mod tests {
             database: database.clone(),
             pairing: Arc::new(Mutex::new(None)),
             arrival: Arc::new(std::sync::OnceLock::new()),
+            covers: Arc::new(std::sync::OnceLock::new()),
         };
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let server =
@@ -1131,5 +1248,239 @@ mod tests {
             find_among(impostor.fingerprint(), &desk_id, candidates).await,
             None
         );
+    }
+
+    // --- Covers (D82) -------------------------------------------------------------------------------------------
+
+    fn covers_in(name: &str) -> Covers {
+        let dir = std::env::temp_dir().join(format!(
+            "kosmotheka-lan-covers-{name}-{}-{}",
+            std::process::id(),
+            ops::new_id()
+        ));
+        Covers::new(dir).unwrap()
+    }
+
+    /// A small cover, different for each seed.
+    fn cover(covers: &Covers, seed: u8) -> String {
+        let picture = image::RgbImage::from_fn(60, 90, |x, y| {
+            image::Rgb([
+                seed.wrapping_mul(47),
+                u8::try_from((x * 4) % 256).unwrap(),
+                u8::try_from((y * 2) % 256).unwrap() ^ seed.wrapping_mul(91),
+            ])
+        });
+        let mut png = std::io::Cursor::new(Vec::new());
+        picture.write_to(&mut png, image::ImageFormat::Png).unwrap();
+        covers.store_cover(png.get_ref()).unwrap()
+    }
+
+    fn add_with_cover(database: &Database, library: &str, title: &str, cover: &str) {
+        let book = ValidBook {
+            edition: EditionInput {
+                title: title.into(),
+                ..EditionInput::default()
+            }
+            .validate()
+            .unwrap(),
+            copy: CopyInput {
+                owner: None,
+                format: Format::Paperback,
+                quantity: 1,
+                location: None,
+                acquired_on: None,
+                platform: None,
+                seasons: None,
+            }
+            .validate()
+            .unwrap(),
+        };
+        catalog::create_book(&mut database.lock().unwrap(), library, &book, Some(cover)).unwrap();
+    }
+
+    /// What a modified app could ask the desk for directly, with the phone's own credentials.
+    async fn ask_for_cover(phone: &Database, desk: &Serving, name: &str) -> StatusCode {
+        let server = find_server(&phone.lock().unwrap(), &id_of(&desk.database))
+            .unwrap()
+            .unwrap();
+        let phone_id = id_of(phone);
+        let client = pinned_client(&server.fingerprint).unwrap();
+        let request = authorized(
+            client.get(cover_url(&desk.server.address.to_string(), name)),
+            Some((phone_id.as_str(), server.secret.as_str())),
+        );
+        request.send().await.unwrap().status()
+    }
+
+    async fn offer_cover(
+        phone: &Database,
+        desk: &Serving,
+        name: &str,
+        bytes: Vec<u8>,
+    ) -> StatusCode {
+        let server = find_server(&phone.lock().unwrap(), &id_of(&desk.database))
+            .unwrap()
+            .unwrap();
+        let phone_id = id_of(phone);
+        let client = pinned_client(&server.fingerprint).unwrap();
+        let request = authorized(
+            client
+                .put(cover_url(&desk.server.address.to_string(), name))
+                .body(bytes),
+            Some((phone_id.as_str(), server.secret.as_str())),
+        );
+        request.send().await.unwrap().status()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn covers_travel_both_ways_after_the_operations() {
+        let desk = serve().await;
+        let desk_covers = covers_in("desk");
+        assert!(desk.state.covers.set(desk_covers.clone()).is_ok());
+        let library = home(&desk.database);
+        let on_desk = cover(&desk_covers, 1);
+        add_with_cover(&desk.database, &library, "Catan", &on_desk);
+        let phone = Database::in_memory();
+        let phone_covers = covers_in("phone");
+
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        let first = exchange_covers(&phone, &phone_covers, &server.device_id)
+            .await
+            .unwrap();
+        assert_eq!(
+            first,
+            CoverReport {
+                received: 1,
+                sent: 0
+            }
+        );
+        assert_eq!(
+            phone_covers.read(&on_desk),
+            desk_covers.read(&on_desk),
+            "the very same file"
+        );
+
+        give_place(&desk, &phone, &library);
+        let on_phone = cover(&phone_covers, 2);
+        add_with_cover(&phone, &library, "Tehanu", &on_phone);
+        sync(&phone, &server.device_id).await.unwrap();
+        let second = exchange_covers(&phone, &phone_covers, &server.device_id)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            second,
+            CoverReport {
+                received: 0,
+                sent: 1
+            }
+        );
+        assert!(desk_covers.has(&on_phone));
+        let third = exchange_covers(&phone, &phone_covers, &server.device_id)
+            .await
+            .unwrap();
+        assert_eq!(third, CoverReport::default(), "nothing left to swap");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_paired_device_never_gets_a_cover_of_a_library_not_shared_with_it() {
+        let desk = serve().await;
+        let desk_covers = covers_in("desk-secret");
+        assert!(desk.state.covers.set(desk_covers.clone()).is_ok());
+        let secret = {
+            let mut conn = desk.database.lock().unwrap();
+            crate::libraries::create_library(&mut conn, "Diario").unwrap()
+        };
+        let hidden = cover(&desk_covers, 3);
+        add_with_cover(&desk.database, &secret, "Mi diario", &hidden);
+        let phone = Database::in_memory();
+        let phone_covers = covers_in("phone-secret");
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+
+        // Knowing the name is not enough: the phone may only get covers of what it receives.
+        assert_eq!(
+            ask_for_cover(&phone, &desk, &hidden).await,
+            StatusCode::NOT_FOUND
+        );
+        // Nor does saying it lacks it in the inventory.
+        let report = exchange_covers(&phone, &phone_covers, &server.device_id)
+            .await
+            .unwrap();
+        assert_eq!(report.received, 0);
+        assert!(!phone_covers.has(&hidden));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_device_whose_access_was_withdrawn_gets_no_cover() {
+        let desk = serve().await;
+        let desk_covers = covers_in("desk-revoked");
+        assert!(desk.state.covers.set(desk_covers.clone()).is_ok());
+        let library = home(&desk.database);
+        let shown = cover(&desk_covers, 4);
+        add_with_cover(&desk.database, &library, "Catan", &shown);
+        let phone = Database::in_memory();
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        assert_eq!(ask_for_cover(&phone, &desk, &shown).await, StatusCode::OK);
+
+        desk.database
+            .lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO revocations (library_id, id, device_id, device_name) VALUES (?1, ?2, ?3, 'Phone')",
+                [&library, &ops::new_id(), &id_of(&phone)],
+            )
+            .unwrap();
+
+        assert_eq!(
+            ask_for_cover(&phone, &desk, &shown).await,
+            StatusCode::NOT_FOUND
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_desk_only_takes_covers_it_lacks_of_its_shared_editions_and_proved_to_be_them() {
+        let desk = serve().await;
+        let desk_covers = covers_in("desk-take");
+        assert!(desk.state.covers.set(desk_covers.clone()).is_ok());
+        let library = home(&desk.database);
+        let phone = Database::in_memory();
+        let phone_covers = covers_in("phone-take");
+        let server = pair(&phone, &desk.open_pairing(), &[]).await.unwrap();
+        sync(&phone, &server.device_id).await.unwrap();
+        give_place(&desk, &phone, &library);
+        let real = cover(&phone_covers, 5);
+        add_with_cover(&phone, &library, "Tehanu", &real);
+        sync(&phone, &server.device_id).await.unwrap();
+        let unrelated = cover(&phone_covers, 6);
+
+        // Another image under the name of the real one.
+        let other = phone_covers.read(&unrelated).unwrap();
+        assert_eq!(
+            offer_cover(&phone, &desk, &real, other).await,
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+        // A cover no shared edition points to: the desk is no storage for anything else.
+        let bytes = phone_covers.read(&unrelated).unwrap();
+        assert_eq!(
+            offer_cover(&phone, &desk, &unrelated, bytes).await,
+            StatusCode::NOT_FOUND
+        );
+        // A name that tries to leave the covers folder never reaches the disk.
+        assert_ne!(
+            offer_cover(&phone, &desk, "..%2F..%2Fsync-key.der", b"x".to_vec()).await,
+            StatusCode::NO_CONTENT
+        );
+        assert!(!desk_covers.has(&real) && !desk_covers.has(&unrelated));
+
+        // The real one, with its real bytes, is taken.
+        let bytes = phone_covers.read(&real).unwrap();
+        assert_eq!(
+            offer_cover(&phone, &desk, &real, bytes).await,
+            StatusCode::NO_CONTENT
+        );
+        assert!(desk_covers.has(&real));
     }
 }

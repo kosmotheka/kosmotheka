@@ -1,8 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { listen } from "@tauri-apps/api/event";
 
 import { coverSrc, type Kind } from "@/lib/api";
 import { COVER_SHAPES, KIND_ICONS } from "@/lib/kinds";
 import { cn } from "@/lib/utils";
+
+// Covers that come from another device after the book did (D82): a cover whose file was missing is tried again
+// whenever some arrive. One listener for every cover on screen.
+let arrivals = 0;
+const watchers = new Set<() => void>();
+let listening = false;
+function watchArrivals(onChange: () => void) {
+  if (!listening) {
+    listening = true;
+    const arrived = () => {
+      arrivals += 1;
+      watchers.forEach((watcher) => watcher());
+    };
+    void listen("covers-arrived", arrived).catch(() => {});
+    void listen("library-changed", arrived).catch(() => {});
+  }
+  watchers.add(onChange);
+  return () => watchers.delete(onChange);
+}
 
 /**
  * A remote `url` (not yet saved) wins over a stored `file`; otherwise a placeholder
@@ -26,6 +46,7 @@ export function Cover({
   const [broken, setBroken] = useState<string | null>(null);
   // Remote covers can take a while: the box pulses until the image has arrived.
   const [loaded, setLoaded] = useState<string | null>(null);
+  const arrived = useSyncExternalStore(watchArrivals, () => arrivals);
 
   useEffect(() => {
     if (!file) return;
@@ -44,7 +65,7 @@ export function Cover({
     className,
   );
 
-  if (!src || broken === src) {
+  if (!src || broken === `${arrived}:${src}`) {
     const Icon = KIND_ICONS[kind];
     return (
       <div className={cn(box, "cover-placeholder")} aria-hidden>
@@ -57,11 +78,13 @@ export function Cover({
   return (
     <div className={cn(box, loaded !== src && "animate-pulse")}>
       <img
+        // Only an image that failed before is made again, so that it is fetched again.
+        key={broken === null ? 0 : arrived}
         src={src}
         alt={alt}
         className={cn("size-full object-contain", loaded !== src && "opacity-0")}
         onLoad={() => setLoaded(src)}
-        onError={() => setBroken(src)}
+        onError={() => setBroken(`${arrived}:${src}`)}
       />
     </div>
   );

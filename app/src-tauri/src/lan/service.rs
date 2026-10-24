@@ -14,6 +14,7 @@ use super::{
     KnownDevice, device_name, has_clients, list_devices, local_addresses, random_secret,
     store_port, stored_port,
 };
+use crate::covers::Covers;
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::ops;
@@ -27,6 +28,7 @@ pub struct LanService {
     pairing: Arc<Mutex<Option<PairingWindow>>>,
     server: Arc<tokio::sync::Mutex<Option<RunningServer>>>,
     arrival: Arc<OnceLock<ArrivalHook>>,
+    covers: Arc<OnceLock<Covers>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,6 +61,7 @@ impl LanService {
             pairing: Arc::new(Mutex::new(None)),
             server: Arc::new(tokio::sync::Mutex::new(None)),
             arrival: Arc::new(OnceLock::new()),
+            covers: Arc::new(OnceLock::new()),
         }
     }
 
@@ -66,6 +69,11 @@ impl LanService {
     /// the UI to reload). Set once at startup; later calls do nothing.
     pub fn on_arrival(&self, hook: impl Fn() + Send + Sync + 'static) {
         let _ = self.arrival.set(Arc::new(hook));
+    }
+
+    /// Where covers are kept, so that the server can swap them with paired devices (D82).
+    pub fn serve_covers(&self, covers: Covers) {
+        let _ = self.covers.set(covers);
     }
 
     fn identity(&self) -> Result<Arc<Identity>> {
@@ -102,6 +110,7 @@ impl LanService {
             database: self.database.clone(),
             pairing: self.pairing.clone(),
             arrival: self.arrival.clone(),
+            covers: self.covers.clone(),
         };
         let running = server::start(listener, self.identity()?.server_config()?, state)?;
         let port = running.address.port();

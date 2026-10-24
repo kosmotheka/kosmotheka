@@ -4,7 +4,8 @@
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use axum::extract::State;
+use axum::body::Bytes;
+use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -23,6 +24,8 @@ use super::{
     reconcile, record_client_sync, register_in_shared, save_client, share_library,
     shared_libraries,
 };
+use crate::cover_exchange::{self, Inventory, Swap};
+use crate::covers::{Covers, MAX_COVER_BYTES};
 use crate::db::Database;
 use crate::error::Result;
 use crate::ops;
@@ -40,6 +43,8 @@ pub struct ServerState {
     /// Set once by the app (it tells the UI to reload); read at each push, so it does
     /// not matter whether the server started before or after it was set.
     pub arrival: Arc<OnceLock<ArrivalHook>>,
+    /// Set once by the app, like `arrival`: without it no cover is served or taken (D82).
+    pub covers: Arc<OnceLock<Covers>>,
 }
 
 pub struct RunningServer {
@@ -88,6 +93,13 @@ fn router(state: ServerState) -> Router {
         .route("/v1/pair", post(pair))
         .route("/v1/sync/pull", post(pull))
         .route("/v1/sync/push", post(push))
+        .route("/v1/covers/inventory", post(cover_inventory))
+        .route(
+            "/v1/covers/{name}",
+            get(cover_get)
+                .put(cover_put)
+                .layer(DefaultBodyLimit::max(MAX_COVER_BYTES)),
+        )
         .with_state(state)
 }
 
@@ -96,6 +108,8 @@ enum ApiError {
     Unauthorized,
     AlreadyPaired,
     OtherVersion,
+    NotFound,
+    Rejected,
     Internal,
 }
 
@@ -105,6 +119,8 @@ impl IntoResponse for ApiError {
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
             ApiError::AlreadyPaired => StatusCode::FORBIDDEN,
             ApiError::OtherVersion => StatusCode::CONFLICT,
+            ApiError::NotFound => StatusCode::NOT_FOUND,
+            ApiError::Rejected => StatusCode::UNPROCESSABLE_ENTITY,
             ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
         .into_response()
@@ -240,4 +256,69 @@ fn authorized_client(
     } else {
         Err(ApiError::Unauthorized)
     }
+}
+
+// --- Covers (D82) ---------------------------------------------------------------------------------------------------
+
+/// The covers of the editions of the libraries shared with the client, which are all it may get or give, and where
+/// this device keeps covers. Nothing before the app set them.
+fn shared_covers(
+    state: &ServerState,
+    headers: &HeaderMap,
+) -> std::result::Result<(std::collections::BTreeSet<String>, Covers), ApiError> {
+    let covers = state.covers.get().cloned().ok_or(ApiError::NotFound)?;
+    let conn = state.database.lock()?;
+    let client = authorized_client(&conn, headers)?;
+    let shared = shared_libraries(&conn, &client)?;
+    Ok((cover_exchange::referenced(&conn, &shared)?, covers))
+}
+
+async fn cover_inventory(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+    Json(theirs): Json<Inventory>,
+) -> std::result::Result<Json<Swap>, ApiError> {
+    blocking(move || {
+        let (referenced, covers) = shared_covers(&state, &headers)?;
+        Ok(Json(cover_exchange::answer(&covers, &referenced, &theirs)))
+    })
+    .await
+}
+
+async fn cover_get(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+    Path(name): Path<String>,
+) -> std::result::Result<Vec<u8>, ApiError> {
+    blocking(move || {
+        let (referenced, covers) = shared_covers(&state, &headers)?;
+        // Only covers of editions this device may receive: knowing a name opens nothing.
+        if !referenced.contains(&name) {
+            return Err(ApiError::NotFound);
+        }
+        covers.read(&name).ok_or(ApiError::NotFound)
+    })
+    .await
+}
+
+async fn cover_put(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+    Path(name): Path<String>,
+    body: Bytes,
+) -> std::result::Result<StatusCode, ApiError> {
+    blocking(move || {
+        let (referenced, covers) = shared_covers(&state, &headers)?;
+        if !referenced.contains(&name) || covers.has(&name) {
+            return Err(ApiError::NotFound);
+        }
+        covers
+            .store_arrived(&name, &body)
+            .map_err(|_| ApiError::Rejected)?;
+        if let Some(arrival) = state.arrival.get() {
+            arrival();
+        }
+        Ok(StatusCode::NO_CONTENT)
+    })
+    .await
 }

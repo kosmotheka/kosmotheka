@@ -92,6 +92,41 @@ impl Covers {
         }
     }
 
+    /// Whether this device has the file of a cover. Only a valid name is ever looked up.
+    pub fn has(&self, name: &str) -> bool {
+        is_cover_name(name) && self.dir.join(name).is_file()
+    }
+
+    /// The bytes of a stored cover, to send to another device.
+    pub fn read(&self, name: &str) -> Option<Vec<u8>> {
+        if !is_cover_name(name) {
+            return None;
+        }
+        std::fs::read(self.dir.join(name)).ok()
+    }
+
+    /// Keeps a cover that arrived from another device under the name it travelled with, once it is proved to be
+    /// that cover: its bytes give that hash, and they are an image of the type its extension says. Never
+    /// re-encoded: the name is what every device agrees on.
+    pub fn store_arrived(&self, name: &str, bytes: &[u8]) -> Result<()> {
+        if !is_cover_name(name) {
+            return Err(Error::CoverRejected("bad name"));
+        }
+        if bytes.len() > MAX_COVER_BYTES {
+            return Err(Error::CoverRejected("too large"));
+        }
+        let (hash, extension) = name.split_once('.').unwrap_or_default();
+        if sha256_hex(bytes) != hash {
+            return Err(Error::CoverRejected("not the cover it says"));
+        }
+        if !is_image_of_type(bytes, extension) {
+            return Err(Error::CoverRejected("not an image"));
+        }
+        let stored = self.store(bytes, extension)?;
+        debug_assert_eq!(stored, name);
+        Ok(())
+    }
+
     /// Same bytes, same name: storing a cover twice is harmless.
     pub fn store(&self, bytes: &[u8], extension: &str) -> Result<String> {
         let name = format!("{}.{extension}", sha256_hex(bytes));
@@ -116,6 +151,23 @@ pub fn is_cover_name(name: &str) -> bool {
             .bytes()
             .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
         && matches!(extension, "jpg" | "png" | "webp" | "gif")
+}
+
+/// Whether `bytes` are an image of that extension's type, of a size a cover can have. Only the header is read.
+fn is_image_of_type(bytes: &[u8], extension: &str) -> bool {
+    let expected = match extension {
+        "jpg" => image::ImageFormat::Jpeg,
+        "png" => image::ImageFormat::Png,
+        "webp" => image::ImageFormat::WebP,
+        "gif" => image::ImageFormat::Gif,
+        _ => return false,
+    };
+    image::guess_format(bytes).is_ok_and(|format| format == expected)
+        && image::ImageReader::with_format(std::io::Cursor::new(bytes), expected)
+            .into_dimensions()
+            .is_ok_and(|(width, height)| {
+                (1..=MAX_INPUT_SIDE).contains(&width) && (1..=MAX_INPUT_SIDE).contains(&height)
+            })
 }
 
 /// Edition covers changed at a time, in one operation each.
@@ -558,6 +610,49 @@ mod tests {
             "{changed} editions in {:.1} s, {} operations",
             elapsed.as_secs_f64(),
             operations_after - operations_before
+        );
+    }
+
+    #[test]
+    fn a_cover_from_another_device_is_kept_only_if_it_is_the_one_its_name_says() {
+        let source = Covers::new(temp_dir("arrived-source")).unwrap();
+        let target = Covers::new(temp_dir("arrived-target")).unwrap();
+        let name = source
+            .store_cover(&encoded(300, 450, image::ImageFormat::Png))
+            .unwrap();
+        let bytes = source.read(&name).unwrap();
+        let other = source
+            .read(
+                &source
+                    .store_cover(&encoded(200, 300, image::ImageFormat::Png))
+                    .unwrap(),
+            )
+            .unwrap();
+
+        assert!(
+            target.store_arrived(&name, &other).is_err(),
+            "another image under its name"
+        );
+        let png = encoded(300, 450, image::ImageFormat::Png);
+        let png_as_webp = format!("{}.webp", sha256_hex(&png));
+        assert!(
+            target.store_arrived(&png_as_webp, &png).is_err(),
+            "a PNG called WebP"
+        );
+        let text = b"not an image at all".to_vec();
+        assert!(
+            target
+                .store_arrived(&format!("{}.webp", sha256_hex(&text)), &text)
+                .is_err()
+        );
+        assert!(target.store_arrived("../sync-key.der", &bytes).is_err());
+        assert!(!target.has(&name));
+
+        target.store_arrived(&name, &bytes).unwrap();
+        assert_eq!(
+            target.read(&name),
+            Some(bytes),
+            "kept as it came, never re-encoded"
         );
     }
 

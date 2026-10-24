@@ -657,9 +657,25 @@ pub async fn pair_with(
     })
 }
 
+/// After the operations, the covers they point to are swapped in the background (D82): the library shows at once
+/// and its covers follow. `covers-arrived` tells the UI to show the ones that came.
 #[tauri::command]
-pub async fn sync_with(database: State<'_, Database>, device_id: String) -> Result<SyncReport> {
-    lan::client::sync(&database, &device_id).await
+pub async fn sync_with(
+    app: AppHandle,
+    database: State<'_, Database>,
+    covers: State<'_, Covers>,
+    device_id: String,
+) -> Result<SyncReport> {
+    let report = lan::client::sync(&database, &device_id).await?;
+    let (database, covers) = (database.inner().clone(), covers.inner().clone());
+    tauri::async_runtime::spawn(async move {
+        if let Ok(swapped) = lan::client::exchange_covers(&database, &covers, &device_id).await
+            && swapped.received > 0
+        {
+            let _ = app.emit("covers-arrived", ());
+        }
+    });
+    Ok(report)
 }
 
 #[tauri::command]
