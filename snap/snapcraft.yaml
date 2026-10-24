@@ -1,6 +1,8 @@
 # The Snap Store package (D74): the way Kosmotheka reaches Ubuntu 20.04, which cannot install the .deb because it has
-# no WebKitGTK 4.1. The snap carries its own WebKit. It repackages the .deb that `tauri build` makes, as Tauri's guide
-# does (https://v2.tauri.app/distribute/snapcraft/).
+# no WebKitGTK 4.1. It repackages the .deb that `tauri build` makes, as Tauri's guide does
+# (https://v2.tauri.app/distribute/snapcraft/), but takes WebKit from the gnome extension instead of staging it: a staged
+# WebKit brings its own Mesa, which clashes with the extension's and stops the window from opening
+# ("libEGL fatal: did not find extension DRI_Mesa version 1", seen on Ubuntu 20.04).
 name: kosmotheka
 title: Kosmotheka
 base: core22
@@ -27,11 +29,6 @@ confinement: strict
 
 architectures:
   - build-on: [amd64]
-
-# WebKit starts its helper processes from the path it was built with.
-layout:
-  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
-    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1
 
 apps:
   kosmotheka:
@@ -78,9 +75,6 @@ parts:
       - libayatana-appindicator3-dev
       - librsvg2-dev
       - dpkg
-    stage-packages:
-      - libwebkit2gtk-4.1-0
-      - libayatana-appindicator3-1
     override-build: |
       set -eu
       craftctl set version="$(node -p "require('./app/src-tauri/tauri.conf.json').version")"
