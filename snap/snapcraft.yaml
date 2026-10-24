@@ -45,18 +45,19 @@ apps:
     slots:
       - single-instance
 
-# A second launch, or a kosmotheka:// link (signing in with Google), goes to the window already open.
+# A second launch, or a kosmotheka:// link (signing in with Google), goes to the window already open. The name is the
+# one tauri-plugin-single-instance asks for: the identifier plus ".SingleInstance" (Tauri's snap guide shows another).
 slots:
   single-instance:
     interface: dbus
     bus: session
-    name: org.app_kosmotheka.SingleInstance
+    name: app.kosmotheka.SingleInstance
 
 plugs:
   single-instance-plug:
     interface: dbus
     bus: session
-    name: org.app_kosmotheka.SingleInstance
+    name: app.kosmotheka.SingleInstance
 
 parts:
   kosmotheka:
