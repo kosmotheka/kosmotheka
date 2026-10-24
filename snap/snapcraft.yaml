@@ -41,20 +41,15 @@ apps:
       - network-bind
       # Backups and CSV exports the person saves in their own folders.
       - home
-      - single-instance-plug
     slots:
       - single-instance
 
-# A second launch, or a kosmotheka:// link (signing in with Google), goes to the window already open. The name is the
-# one tauri-plugin-single-instance asks for: the identifier plus ".SingleInstance" (Tauri's snap guide shows another).
+# A second launch, or a kosmotheka:// link (signing in with Google), goes to the window already open. The slot lets the
+# first instance own the name tauri-plugin-single-instance asks for (the identifier plus ".SingleInstance"; Tauri's
+# snap guide shows another), with its D-Bus path (/app/kosmotheka/SingleInstance). No plug: snapd already lets the
+# apps of one snap talk to each other over D-Bus, and a dbus plug is never connected on its own.
 slots:
   single-instance:
-    interface: dbus
-    bus: session
-    name: app.kosmotheka.SingleInstance
-
-plugs:
-  single-instance-plug:
     interface: dbus
     bus: session
     name: app.kosmotheka.SingleInstance
