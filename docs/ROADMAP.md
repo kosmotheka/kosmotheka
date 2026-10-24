@@ -118,18 +118,7 @@ Deja de estar centrado en libros.
 - [x] 6.6 Series con orden o sin él, huecos, y la relación «necesita».
 - [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
 
-**Pendiente de pulir** (no bloquea; se decide tras probar con la familia):
-- Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
-- La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
-- Filtros: el género y la etiqueta activos se ven dos veces en la barra.
-- Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
-- Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
-- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (foto con la cámara o imagen del dispositivo) está desactivada porque el motor no la guarda ni la transmite todavía: con el transporte de D82 ya hecho, queda activarla («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)).
-- Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
-- Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
-- Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
-- Exportar e importar CSV: siguen siendo solo de libros.
-- Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
+Lo que quedó por pulir, en «Por colocar» desde el 24/10/2026.
 
 ## Fase 7 — La nube
 
@@ -195,7 +184,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - Ejemplar firmado o dedicado, con foto.
 - **Estadísticas** de lectura por año y por persona.
 - **Copia automática periódica** (D58, cambiado el 03/10/2026): la app guarda su propia copia sin claves cada cierto tiempo y, al reinstalar, ofrece restaurarla. Un ajuste para activarla o desactivarla. Por decidir en detalle: dónde se guarda (solo en el dispositivo, Google Drive u otro servicio), cada cuánto y qué hacer con las portadas si no caben.
-- ¿**Papelera** para deshacer borrados? (abierto; podría adelantarse a la Fase 5).
+- ¿**Papelera** para deshacer borrados? (abierto; antes también en «Queda abierto»).
 
 ## Fase 10 — Herramientas de estantería
 
@@ -204,7 +193,6 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20). Primera prueba con fotos reales, el 12/10/2026: [notas](research/foto-estanteria.md). **Orden decidido el 17/10/2026:** primero sin salir del dispositivo (vía 3 de D19, con el plugin de lectura de texto de abajo); la IA, al roadmap, con la app ya en producción ([Symfony AI y lo que haría falta](research/ia-reconocer-imagenes.md)).
 - **Leer el ISBN impreso con la cámara** (05/10/2026), para cuando el código de barras es una etiqueta de tienda: reconocimiento de texto en el propio móvil (ML Kit, sin red), buscar un número que empiece por 978 o 979 y comprobar su dígito de control. No hay plugin de Tauri para esto: se escribe uno y se publica como **plugin libre de Tauri** (MIT o Apache 2.0), como las passkeys. El mismo plugin sirve para la foto de balda sin IA. En **su propio repositorio**, como aporte a la comunidad; la app lo usa como una dependencia más (decidido el 17/10/2026, [notas](research/ia-reconocer-imagenes.md#el-plugin-de-tauri-que-hay-que-escribir)). Mientras tanto, el escáner salta los códigos de tienda y deja escribir el número.
 - **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla. Referencias: Google Lens, bookidentifier.com; probar antes el OCR local con el título y la autoría de la portada ([notas](testing/ux-escanear-y-editar.md)).
-- **Importar desde plataformas** digitales (Steam).
 
 ## Fase 11 — Servicio
 
@@ -227,11 +215,24 @@ Salido del repaso del 24/10/2026; se les da sitio al decidir el orden después d
 - **Firmar Windows** (D74): SignPath Foundation lo rechazó el 24/10/2026 («todavía no»); se vuelve a pedir cuando el proyecto tenga uso público. Mientras, sale sin firma y la guía explica el aviso de SmartScreen. Certum Open Source, como alternativa sin decidir.
 - **El resto de la documentación pública** (sale de la Fase 8 el 24/10/2026; [índice](plans/documentacion-publica.md)): primer índice, con qué material hay para cada página, en [plans/documentacion-publica.md](plans/documentacion-publica.md) (13/10/2026). Antes de escribirla, revisar la de proyectos open source famosos y bien estructurados para inspirarse. Dos públicos: quien usa la app y quien quiere colaborar. Entre otras cosas, explicar bien el motor de sincronización local-first (operaciones, reloj, fusión campo a campo, firmas y permisos) y compararlo con otros enfoques (WebRTC con relé, sincronizar ficheros, servidor central).
 - **El método de auditoría, público y repetible** (D90; sale de la Fase 8 el 24/10/2026): se publica qué se audita y cómo (temas, preguntas, reglas, scripts, gravedad, lo que aún no cubre), no los informes ni los hallazgos de nuestro proceso. Una página en la documentación pública separa la parte determinista (cualquiera la ejecuta con Docker; cada salida explicada y cómo interpretarla) de la de juicio (un procedimiento que sigue una persona o cualquier asistente, no solo Claude), y explica cómo avisar de un fallo. El método se revisa cada cierto tiempo con lo que llegue de fuera.
+- **Emparejar más fácil** (24/10/2026; junto con D88, abierta): un código corto en lugar del de unos 350 caracteres, que no se puede teclear en un móvil (propuesta: comparar un número de 6 cifras en las dos pantallas, como Bluetooth), y emparejar una vez para que los dispositivos de una biblioteca se encuentren solos en casa. Las dos piden descubrirse en la red local (mDNS), así que van juntas. Es diseño de seguridad: decisión propia y caso hostil probado antes; mDNS no funciona en redes de invitados y pide permisos nuevos en Android y en la snap. El QR se queda.
+- **Foto propia de portada** (24/10/2026, prioridad alta): con la cámara o una imagen del dispositivo; hoy el botón está desactivado en el formulario. Con el transporte de D82 hecho, pasa por la misma reducción y viaja igual («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)). Entra antes si lo piden los testers.
+- **Pulir el catálogo general** (lo que quedó de la Fase 6; no urgente, se coge lo que moleste en la prueba cerrada):
+  - Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
+  - La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
+  - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
+  - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
+  - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
+  - El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia está desactivada (punto propio arriba, «Foto propia de portada»).
+  - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
+  - Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
+  - Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
+  - Exportar e importar CSV: siguen siendo solo de libros.
+  - Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.
 
 ## Queda abierto
 
-- Papelera para deshacer borrados.
-- Salida para el administrador único que pierde su único dispositivo.
+- Salida para el administrador único que pierde su único dispositivo, **solo sin cuenta**: con la nube, un móvil nuevo recibe sus bibliotecas con su rol (D76).
 - Campos personalizados por el usuario (solo si alguien los pide).
 
 ## Ideas para el futuro
@@ -243,6 +244,9 @@ No entran en ninguna fase; se guardan para no perderlas de vista ([referentes §
 - **Portadas solo con wifi** (pedido por el maintainer el 24/10/2026, al decidir D82): un ajuste para que las portadas que llegan por la nube no se bajen con datos móviles. Mientras no exista, bajan siempre (reducidas, unos 50 KB cada una). Exige saber en Android si la conexión es de datos (código nativo o un plugin).
 - **Añadir varios resultados de una búsqueda a la vez** (pedido por el maintainer el 11/10/2026, probando TMDB): buscar «matrix» y dar de alta toda la saga de una vez, en lugar de una a una. En el móvil, manteniendo pulsado para seleccionar; en escritorio, quizá con casillas. Por pensar: qué datos de ejemplar (formato, ubicación, dueño) se aplican a todos, como hace ya Alta rápida.
 - **Buscar dónde comprar lo que falta o se desea** (idea del maintainer, 13/10/2026; para después del lanzamiento): desde «Me falta», los huecos de una serie y «Lo deseo», un botón que abre el navegador con una búsqueda ya escrita. Sin ganar dinero: ni afiliados ni enlaces con comisión. Un buscador general y no tiendas concretas, porque cada tipo de obra tiene las suyas. **Un comparador de precios propio queda descartado:** son miles de tiendas, y reducirlo a una sola no interesa. Apuntes sin decidir: buscar por ISBN o código de barras cuando lo haya, que es exacto; la pestaña de compras del buscador ya compara precios sin que la app haga nada; y dejar elegir el buscador en Ajustes. La segunda mano no lleva tiendas ni plataformas propias: sale en el mismo buscador. La app no envía nada por su cuenta: solo abre el enlace cuando la persona lo pulsa.
+- **Añadir ebooks desde una carpeta** (idea del maintainer, 23/10/2026): en el móvil o el ordenador, PDF, ePub y demás formatos; la persona elige la carpeta, nunca todo el dispositivo. Una fuente de datos más, sin red: una lista de lo que hay y la persona marca qué añadir, con el formato ya puesto. **No se guardan rutas** (cambian, se mueven, se borran): el fichero solo se lee para añadir, y volver a mirar la misma carpeta reconoce lo ya añadido por sus datos. Por estudiar: en Android, el selector de carpetas del sistema (acceso solo a la elegida, sin permiso de almacenamiento) y si hay plugin de Tauri; qué se lee de cada formato sin red (título, autor, ISBN) y completar con las fuentes de siempre; la portada de la primera página o la del ePub; las subcarpetas.
+- **Lo mismo desde almacenamiento en la nube** (23/10/2026): Google Drive, Box, OneDrive… Cada proveedor lleva su trabajo (cuenta, permisos, su API). Si se conecta Drive, que sirva también para guardar las copias de seguridad (Fase 4, aplazado, y la copia automática de D58).
+- **Importar la biblioteca de las tiendas de videojuegos** (Steam, Epic Games…; antes en la Fase 10, pasado aquí el 24/10/2026): por mirar qué da cada tienda; Steam tiene una API pública de la biblioteca de un perfil, otras quizá nada.
 - **La dimensión social:** comentarios, préstamo entre desconocidos, compartir en redes (§3.3).
 - **Encontrar cerca quién tiene una obra** (idea del maintainer, 13/10/2026; unida a la dimensión social): saber quién en tu ciudad tiene un libro o un videojuego y lo presta. Condiciones que puso:
   - **Nada activado por defecto.** Ni aparecer, ni la ubicación, ni qué obras se enseñan: cada cosa la enciende la persona.
@@ -293,7 +297,7 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] APK de depuración compilado.
 - [x] APK instalado y funcionando en un móvil real (moto g84 5G, Android 15).
 - [x] Repo privado en GitHub y CI en verde: lint, tests y compilación en Linux y Windows.
-- [ ] Probar en Windows a mano.
+- [x] Probar en Windows a mano (24/10/2026, con el instalador de la 0.4.0).
 
 ### Fase 1 — Catálogo en el escritorio (modo local)
 
