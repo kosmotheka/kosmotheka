@@ -10,7 +10,6 @@ The cloud means keeping your libraries also on the internet, on a computer calle
 ## What you need to know first
 
 - **What you upload is stored on a server** (the official one, or the one someone has told you to use with "Other server"). **Whoever runs that server can read it.** If you do not want anyone else to read it, do not upload the library: the Wi-Fi at home does not go through any server.
-- **For now, the official server only lets some email addresses create an account.** If yours is not one of them, the app warns you: "If yours isn't one of them, no code will reach you."
 - **Only whoever administers a library can upload it** (the administrator permission; see [People and permissions](../people-and-permissions/)).
 - **Changes from other devices reach you when you open the app or it updates**, not at the same moment. The official server does not yet send instant notices.
 - If you have no internet, everything keeps working. See [Away from home and offline](../away-from-home/).

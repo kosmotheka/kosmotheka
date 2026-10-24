@@ -10,7 +10,6 @@ La nube es guardar tus bibliotecas también en internet, en un ordenador al que 
 ## Lo que tienes que saber antes
 
 - **Lo que subes se guarda en un servidor** (el oficial, o el que te hayan dicho con «Otro servidor»). **Quien mantiene ese servidor puede leerlo.** Si no quieres que nadie más lo lea, no subas la biblioteca: la wifi de casa no pasa por ningún servidor.
-- **Ahora mismo, el servidor oficial solo deja crear cuenta a algunas direcciones de correo.** Si la tuya no está, la app avisa: «Si tu dirección no está, no te llegará ningún código».
 - **Solo puede subir una biblioteca quien la administra** (quien tiene el permiso de administrador; mira [Personas y permisos](../people-and-permissions/)).
 - **Los cambios de otros dispositivos te llegan cuando abres la app o se pone al día**, no en el mismo momento. El servidor oficial todavía no avisa al instante.
 - Si no tienes internet, todo sigue funcionando. Mira [Fuera de casa y sin conexión](../away-from-home/).
