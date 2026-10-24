@@ -1,0 +1,96 @@
+# The Snap Store package (D74): the way Kosmotheka reaches Ubuntu 20.04, which cannot install the .deb because it has
+# no WebKitGTK 4.1. The snap carries its own WebKit. It repackages the .deb that `tauri build` makes, as Tauri's guide
+# does (https://v2.tauri.app/distribute/snapcraft/).
+name: kosmotheka
+title: Kosmotheka
+base: core22
+adopt-info: kosmotheka
+summary: Catalogue what your household owns and share it with the people you live with
+description: |
+  Kosmotheka catalogues what a household owns (books, comics, board games,
+  films, video games, music) and where each thing is, and shares that
+  catalogue with the people you live with.
+
+  It is local-first: it works fully offline and without an account, keeps
+  your data on your devices, and syncs paired devices directly over your
+  home network. An optional account keeps a library in sync from anywhere
+  and lets you invite other people; you can also run your own server.
+license: AGPL-3.0-or-later
+icon: app/src-tauri/icons/icon.png
+website: https://kosmotheka.com
+source-code: https://github.com/kosmotheka/kosmotheka
+issues: https://github.com/kosmotheka/kosmotheka/issues
+contact: mailto:info@kosmotheka.com
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: [amd64]
+
+# WebKit starts its helper processes from the path it was built with.
+layout:
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1:
+    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.1
+
+apps:
+  kosmotheka:
+    command: usr/bin/kosmotheka
+    desktop: usr/share/applications/Kosmotheka.desktop
+    extensions: [gnome]
+    plugs:
+      - network
+      # Pairing and sync at home: the device that is paired with listens on the local network.
+      - network-bind
+      # Backups and CSV exports the person saves in their own folders.
+      - home
+      - single-instance-plug
+    slots:
+      - single-instance
+
+# A second launch, or a kosmotheka:// link (signing in with Google), goes to the window already open.
+slots:
+  single-instance:
+    interface: dbus
+    bus: session
+    name: org.app_kosmotheka.SingleInstance
+
+plugs:
+  single-instance-plug:
+    interface: dbus
+    bus: session
+    name: org.app_kosmotheka.SingleInstance
+
+parts:
+  kosmotheka:
+    plugin: dump
+    source: .
+    build-snaps:
+      - node/22/stable
+      - rustup/latest/stable
+    build-packages:
+      - libwebkit2gtk-4.1-dev
+      - build-essential
+      - curl
+      - file
+      - libxdo-dev
+      - libssl-dev
+      - libayatana-appindicator3-dev
+      - librsvg2-dev
+      - dpkg
+    stage-packages:
+      - libwebkit2gtk-4.1-0
+      - libayatana-appindicator3-1
+    override-build: |
+      set -eu
+      craftctl set version="$(node -p "require('./app/src-tauri/tauri.conf.json').version")"
+      rustup default stable
+      cd app
+      npm ci
+      npm run tauri build -- --bundles deb
+      dpkg -x ../target/release/bundle/deb/*.deb "$CRAFT_PART_INSTALL/"
+      # The snap's own icon, and the link it opens passed on to the app.
+      sed -i \
+        -e 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/128x128/apps/kosmotheka.png|' \
+        -e 's|^Exec=kosmotheka$|Exec=kosmotheka %u|' \
+        "$CRAFT_PART_INSTALL/usr/share/applications/Kosmotheka.desktop"
