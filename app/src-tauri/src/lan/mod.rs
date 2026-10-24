@@ -189,16 +189,56 @@ pub fn store_port(conn: &Connection, port: u16) -> Result<()> {
     write_state(conn, PORT_KEY, Some(&port.to_string()))
 }
 
-/// `ip:port` for every non-loopback IPv4 interface.
+/// `ip:port` for every non-loopback IPv4 interface another device at home could reach.
 pub fn local_addresses(port: u16) -> Vec<String> {
-    if_addrs::get_if_addrs()
+    let interfaces: Vec<(String, std::net::Ipv4Addr)> = if_addrs::get_if_addrs()
         .unwrap_or_default()
         .into_iter()
         .filter(|interface| !interface.is_loopback())
         .filter_map(|interface| match interface.ip() {
-            std::net::IpAddr::V4(ip) => Some(format!("{ip}:{port}")),
+            std::net::IpAddr::V4(ip) => Some((interface.name, ip)),
             std::net::IpAddr::V6(_) => None,
         })
+        .collect();
+    reachable(interfaces)
+        .into_iter()
+        .map(|ip| format!("{ip}:{port}"))
+        .collect()
+}
+
+/// Interfaces that only lead into this computer: containers and virtual machines. A phone can never reach them, and
+/// each one makes the pairing code longer and its QR denser, until a phone cannot read it. Docker names its networks
+/// `br-<id>`; a plain `br0` may well be the home network, and so may a Hyper-V `vEthernet` other than these two.
+const VIRTUAL_INTERFACES: [&str; 13] = [
+    "docker",
+    "br-",
+    "veth",
+    "virbr",
+    "lxdbr",
+    "lxcbr",
+    "vboxnet",
+    "vmnet",
+    "podman",
+    "cni",
+    "flannel",
+    "vEthernet (WSL",
+    "vEthernet (Default Switch)",
+];
+
+/// The addresses worth offering. Only virtual ones means guessing wrong, so then all of them are kept.
+fn reachable(interfaces: Vec<(String, std::net::Ipv4Addr)>) -> Vec<std::net::Ipv4Addr> {
+    let is_virtual = |name: &str| {
+        VIRTUAL_INTERFACES
+            .iter()
+            .any(|prefix| name.starts_with(prefix))
+    };
+    if interfaces.iter().all(|(name, _)| is_virtual(name)) {
+        return interfaces.into_iter().map(|(_, ip)| ip).collect();
+    }
+    interfaces
+        .into_iter()
+        .filter(|(name, _)| !is_virtual(name))
+        .map(|(_, ip)| ip)
         .collect()
 }
 
@@ -620,9 +660,50 @@ pub fn forget_device(conn: &Connection, device_id: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::net::Ipv4Addr;
+
     use kosmotheka_domain::Operation;
 
     use super::*;
+
+    fn interface(name: &str, ip: [u8; 4]) -> (String, Ipv4Addr) {
+        (name.to_owned(), Ipv4Addr::from(ip))
+    }
+
+    #[test]
+    fn the_pairing_code_leaves_out_containers_and_virtual_machines() {
+        let offered = reachable(vec![
+            interface("wlp3s0", [192, 168, 1, 149]),
+            interface("docker0", [172, 17, 0, 1]),
+            interface("br-5328dd14c4b6", [172, 194, 0, 1]),
+            interface("veth1a2b3c", [169, 254, 1, 1]),
+            interface("virbr0", [192, 168, 122, 1]),
+            interface("vEthernet (WSL)", [172, 20, 0, 1]),
+            interface("enp0s31f6", [10, 0, 0, 5]),
+            interface("br0", [192, 168, 1, 20]),
+            interface("vEthernet (External)", [192, 168, 1, 30]),
+        ]);
+
+        assert_eq!(
+            offered,
+            vec![
+                Ipv4Addr::new(192, 168, 1, 149),
+                Ipv4Addr::new(10, 0, 0, 5),
+                Ipv4Addr::new(192, 168, 1, 20),
+                Ipv4Addr::new(192, 168, 1, 30),
+            ]
+        );
+    }
+
+    #[test]
+    fn with_only_virtual_interfaces_every_address_is_kept() {
+        let offered = reachable(vec![
+            interface("docker0", [172, 17, 0, 1]),
+            interface("vEthernet (Default Switch)", [172, 30, 0, 1]),
+        ]);
+
+        assert_eq!(offered.len(), 2);
+    }
 
     fn operation_in(library: &str) -> SyncOperation {
         SyncOperation {

@@ -224,7 +224,7 @@ export function PairDialog({
         {shown && left > 0 ? (
           <>
             <div
-              className="w-44 rounded-xl border bg-white p-2"
+              className="w-full max-w-72 rounded-xl border bg-white p-2"
               // The SVG comes from the qrcode library, built from our own pairing code.
               dangerouslySetInnerHTML={{ __html: shown.qr }}
             />

@@ -1,4 +1,10 @@
 {
+  "next": [
+    {
+      "es": "Emparejar con el ordenador es más fácil: el código QR sale más grande y, en ordenadores con Docker o máquinas virtuales, mucho más sencillo, así que el móvil lo lee a la primera.",
+      "en": "Pairing with a computer is easier: the QR code is bigger and, on computers with Docker or virtual machines, much simpler, so the phone reads it first time."
+    }
+  ],
   "0.4.0": [
     {
       "es": "Con cuenta, al escanear un juego de mesa la app pregunta a GameUPC, a través del servidor de tu cuenta, qué juego es: ya no hace falta clave propia. Si no está seguro, eliges el tuyo entre sus propuestas o lo buscas por su nombre, y al guardarlo le decimos cuál era para que aprenda; le llega el código y el juego, con un identificador de tu cuenta que no dice quién eres. Puedes apagarlo en Proveedores de datos.",
