@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Catalog\Edition;
 use App\Entity\CloudCover;
 use App\Entity\CloudLibrary;
+use App\Entity\User;
 use App\Sync\CloudCovers;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -50,6 +51,31 @@ final class CloudCoverRepository extends ServiceEntityRepository
             ->select('COALESCE(SUM(c.size), 0)')
             ->where('c.cloudLibrary = :library')
             ->setParameter('library', $library)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $total;
+    }
+
+    /** What the covers of all the libraries `$owner` owns take, in bytes. */
+    public function sizeOfOwner(User $owner): int
+    {
+        $total = $this->createQueryBuilder('c')
+            ->select('COALESCE(SUM(c.size), 0)')
+            ->join('c.cloudLibrary', 'l')
+            ->where('l.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $total;
+    }
+
+    /** What every cover the server keeps takes, in bytes. */
+    public function totalSize(): int
+    {
+        $total = $this->createQueryBuilder('c')
+            ->select('COALESCE(SUM(c.size), 0)')
             ->getQuery()
             ->getSingleScalarResult();
 

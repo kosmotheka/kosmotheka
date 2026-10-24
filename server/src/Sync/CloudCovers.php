@@ -30,6 +30,8 @@ final readonly class CloudCovers
     /** Far above a reduced cover (about 40 KB) and enough for one stored before covers were reduced. */
     public const int MAX_BYTES = 2 * 1024 * 1024;
     public const int MAX_PER_LIBRARY = 200 * 1024 * 1024;
+    /** Across all the libraries an account owns: creating libraries has no limit, the room for covers does. */
+    public const int MAX_PER_OWNER = 300 * 1024 * 1024;
     /** At most this many names in an inventory: far more covers than any library has. */
     public const int MAX_LISTED = 50_000;
     /** A cover nobody points to is removed after this, not at once: its edition may be about to arrive. */
@@ -41,6 +43,8 @@ final readonly class CloudCovers
         private ClockInterface $clock,
         #[Autowire(param: 'app.covers_dir')]
         private string $directory,
+        #[Autowire(param: 'app.covers_server_max_bytes')]
+        private int $serverMaxBytes,
         private Filesystem $filesystem,
     ) {
     }
@@ -107,8 +111,8 @@ final readonly class CloudCovers
         if (!$this->isImageOfType($bytes, $extension)) {
             throw new CoverRejectedException(CoverRejection::NotAnImage);
         }
-        if (!$kept instanceof CloudCover && $this->covers->sizeOf($library) + \strlen($bytes) > self::MAX_PER_LIBRARY) {
-            throw new CoverRejectedException(CoverRejection::LibraryFull);
+        if (!$kept instanceof CloudCover) {
+            $this->checkRoom($library, \strlen($bytes));
         }
         // Written whole to a temporary file and renamed: never half a cover on disk.
         $this->filesystem->dumpFile($path, $bytes);
@@ -142,6 +146,25 @@ final readonly class CloudCovers
         }
 
         return $removed;
+    }
+
+    /**
+     * Room for `$size` more bytes: in the library, in all the libraries of its owner (creating libraries has no
+     * limit), and in the whole server.
+     *
+     * @throws CoverRejectedException
+     */
+    private function checkRoom(CloudLibrary $library, int $size): void
+    {
+        if ($this->covers->sizeOf($library) + $size > self::MAX_PER_LIBRARY) {
+            throw new CoverRejectedException(CoverRejection::LibraryFull);
+        }
+        if ($this->covers->sizeOfOwner($library->getOwner()) + $size > self::MAX_PER_OWNER) {
+            throw new CoverRejectedException(CoverRejection::AccountFull);
+        }
+        if ($this->covers->totalSize() + $size > $this->serverMaxBytes) {
+            throw new CoverRejectedException(CoverRejection::ServerFull);
+        }
     }
 
     private function path(CloudLibrary $library, string $name): string

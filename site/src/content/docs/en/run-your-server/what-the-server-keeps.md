@@ -29,7 +29,7 @@ Uploading a library to the cloud is a separate decision from having an account. 
 
 For each library it also keeps its own key, with which the server signs as "the cloud", encrypted with `CLOUD_KEY_SECRET`.
 
-**The covers** of the works of each uploaded library, as files in `server/var/covers/`, one folder per library: the devices that have them upload them and those that do not download them. Only those some work of that library uses, at most **200 MB per library** (about 40 KB each, as the app reduces them). Those no work uses any more are deleted the next day, by the purge.
+**The covers** of the works of each uploaded library, as files in `server/var/covers/`, one folder per library: the devices that have them upload them and those that do not download them. Only those some work of that library uses, at most **200 MB per library**, 300 MB per account across all its libraries and what `COVERS_SERVER_MAX_BYTES` says for the whole server (about 40 KB each, as the app reduces them). Those no work uses any more are deleted the next day, by the purge.
 
 ### Invitations
 

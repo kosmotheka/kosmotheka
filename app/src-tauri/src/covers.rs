@@ -22,7 +22,7 @@ pub const MAX_SIDE: u32 = 800;
 const QUALITY: f32 = 75.0;
 /// Far beyond any real cover, and small enough that a crafted file is refused before it can exhaust memory.
 const MAX_INPUT_SIDE: u32 = 12_000;
-const MAX_DECODE_BYTES: u64 = 256 * 1024 * 1024;
+const MAX_DECODE_BYTES: u64 = 128 * 1024 * 1024;
 
 #[derive(Clone)]
 pub struct Covers {

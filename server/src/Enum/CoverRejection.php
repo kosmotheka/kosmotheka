@@ -18,12 +18,17 @@ enum CoverRejection: string
     case TooLarge = 'cover_too_large';
     /** The library has no room left for covers. */
     case LibraryFull = 'covers_library_full';
+    /** The libraries of its owner, together, have no room left. */
+    case AccountFull = 'covers_account_full';
+    /** The server keeps no more covers, whoever sends them. */
+    case ServerFull = 'covers_server_full';
 
     public function status(): int
     {
         return match ($this) {
             self::NotFound => Response::HTTP_NOT_FOUND,
-            self::TooLarge, self::LibraryFull => Response::HTTP_REQUEST_ENTITY_TOO_LARGE,
+            self::TooLarge, self::LibraryFull, self::AccountFull => Response::HTTP_REQUEST_ENTITY_TOO_LARGE,
+            self::ServerFull => Response::HTTP_INSUFFICIENT_STORAGE,
             self::NotTheCover, self::NotAnImage => Response::HTTP_UNPROCESSABLE_ENTITY,
         };
     }

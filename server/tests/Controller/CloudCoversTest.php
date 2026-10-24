@@ -175,6 +175,43 @@ final class CloudCoversTest extends WebTestCase
         self::assertSame(Response::HTTP_REQUEST_ENTITY_TOO_LARGE, $this->put($this->family, $cloud, $name, $bytes));
     }
 
+    /** Creating libraries has no limit: the room for covers is also counted per owner, across all their libraries. */
+    public function testAnAccountDoesNotFillTheDiskWithManyLibraries(): void
+    {
+        [$name, $bytes] = $this->webp('catan');
+        $cloud = $this->libraryWithCover($name);
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $library = $em->find(CloudLibrary::class, Uuid::fromString($cloud)) ?? self::fail('No library.');
+        // Another library of the same account, nearly full of the account's room.
+        $other = new CloudLibrary($library->getOwner());
+        $em->persist($other);
+        $em->persist(new CloudCover($other, str_repeat('c', 64).'.webp', CloudCovers::MAX_PER_OWNER - 10, new \DateTimeImmutable()));
+        $em->flush();
+
+        self::assertSame(Response::HTTP_REQUEST_ENTITY_TOO_LARGE, $this->put($this->family, $cloud, $name, $bytes));
+        self::assertSame('{"code":"covers_account_full"}', $this->client->getResponse()->getContent());
+    }
+
+    /** And the whole server has a ceiling, whoever fills it: the database and its backups keep their room. */
+    public function testTheServerKeepsNoMoreCoversThanItsCeiling(): void
+    {
+        [$name, $bytes] = $this->webp('catan');
+        $cloud = $this->libraryWithCover($name);
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $jhonny = $em->getRepository(User::class)->findOneBy(['email' => 'jhonny@example.com']) ?? self::fail('No Jhonny.');
+        $ceiling = (int) self::getContainer()->getParameter('app.covers_server_max_bytes');
+        $elsewhere = new CloudLibrary($jhonny);
+        $em->persist($elsewhere);
+        // In thirds: one row is one cover, and its size column holds far less than the ceiling.
+        foreach (['d', 'e', 'f'] as $letter) {
+            $em->persist(new CloudCover($elsewhere, str_repeat($letter, 64).'.webp', intdiv($ceiling - 10, 3), new \DateTimeImmutable()));
+        }
+        $em->flush();
+
+        self::assertSame(Response::HTTP_INSUFFICIENT_STORAGE, $this->put($this->family, $cloud, $name, $bytes));
+        self::assertSame('{"code":"covers_server_full"}', $this->client->getResponse()->getContent());
+    }
+
     // ----------------------------------------------------------- cleanup ---
 
     public function testACoverNobodyUsesIsRemovedADayLater(): void

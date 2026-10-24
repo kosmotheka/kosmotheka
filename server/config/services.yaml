@@ -13,6 +13,8 @@ parameters:
     app.mercure_issuer: 'urn:kosmotheka:server'
     # The cover files of the cloud libraries (D82), one folder per library. A working copy: outside the daily backup.
     app.covers_dir: '%kernel.project_dir%/var/covers'
+    # The most cover bytes the whole server keeps, whoever sends them (D82): the database and its backups keep their room.
+    app.covers_server_max_bytes: '%env(int:COVERS_SERVER_MAX_BYTES)%'
 
 services:
     # default configuration for services in *this* file

@@ -29,7 +29,7 @@ Subir una biblioteca a la nube es una decisión aparte de tener cuenta. Cuando s
 
 También guarda, por cada biblioteca, una clave propia con la que el servidor firma como «la nube», cifrada con `CLOUD_KEY_SECRET`.
 
-**Las portadas** de las obras de cada biblioteca subida, como ficheros en `server/var/covers/`, una carpeta por biblioteca: las suben los dispositivos que las tienen y las bajan los que no. Solo las que usa alguna obra de esa biblioteca, como mucho **200 MB por biblioteca** (unos 40 KB cada una, porque la app las reduce). Las que ya no usa ninguna obra se borran al día siguiente, con la purga.
+**Las portadas** de las obras de cada biblioteca subida, como ficheros en `server/var/covers/`, una carpeta por biblioteca: las suben los dispositivos que las tienen y las bajan los que no. Solo las que usa alguna obra de esa biblioteca, como mucho **200 MB por biblioteca**, 300 MB por cuenta entre todas sus bibliotecas y lo que diga `COVERS_SERVER_MAX_BYTES` para todo el servidor (unos 40 KB cada una, porque la app las reduce). Las que ya no usa ninguna obra se borran al día siguiente, con la purga.
 
 ### Las invitaciones
 
