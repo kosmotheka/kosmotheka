@@ -2,7 +2,7 @@
 
 > 24/10/2026. Decisión en [D82](../DECISIONS.md) (aceptada ese día). Va **antes de la próxima versión**: la prueba cerrada no debe encontrarse con obras sin portada en un dispositivo y con ella en otro.
 
-**Estado (24/10/2026): las cinco partes hechas en código, con sus tests; falta la prueba en dispositivos reales.**
+**Estado (24/10/2026): las cinco partes hechas, con sus tests, y probadas en dispositivos con la 0.5.0.** Probado: ordenador y móvil por wifi en los dos sentidos, y por la nube con el móvil solo con datos.
 
 | Parte | Commit | Qué quedó |
 |---|---|---|
@@ -13,7 +13,7 @@
 | 4 · App con la nube | `f2cf8009` | |
 | 5 · Cerrar | este | Limpieza en el dispositivo (contando las portadas de peticiones pendientes), política, guías y arquitectura |
 
-**Para probar en dispositivos:** emparejar por wifi un ordenador y el móvil con portadas en los dos sentidos (el caso de Catán), y dos dispositivos que solo se ven por la nube (el móvil con datos). El servidor necesita el despliegue con la migración nueva antes de la parte de la nube.
+**Probado en dispositivos (24/10/2026, 0.5.0):** un ordenador y el móvil emparejados por wifi, con portadas en los dos sentidos (el caso de Catán), y por la nube con el móvil solo con datos.
 
 ## Lo que pasa hoy
 

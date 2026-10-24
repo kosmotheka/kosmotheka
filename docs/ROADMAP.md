@@ -124,7 +124,7 @@ Deja de estar centrado en libros.
 - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
 - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
 - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
-- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (foto con la cámara o imagen del dispositivo) está desactivada porque el motor no la guarda ni la transmite todavía: ver D82 (abierta), propuesta para un hito propio después de la 7.2.
+- El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia (foto con la cámara o imagen del dispositivo) está desactivada porque el motor no la guarda ni la transmite todavía: con el transporte de D82 ya hecho, queda activarla («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)).
 - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
 - Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
 - Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
@@ -160,7 +160,7 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 ## Fase 8 — Publicación
 
 - **Plan de la fase:** [plans/fase-8.md](plans/fase-8.md), con hitos, orden y preguntas (16/10/2026).
-- **Portadas que viajan entre dispositivos (D82, aceptada el 24/10/2026), antes de la próxima versión:** hoy ninguna portada pasa a otro dispositivo, ni por la red local ni por la nube. Las imágenes viajan como ficheros por su hash, reducidas a ~800 px en WebP, primero por la red local y después por la nube (200 MB por biblioteca). Plan por partes en [plans/d82-portadas.md](plans/d82-portadas.md). **Hecho en código el 24/10/2026**; falta probarlo en dispositivos.
+- **Portadas que viajan entre dispositivos (D82, aceptada el 24/10/2026), antes de la próxima versión:** hoy ninguna portada pasa a otro dispositivo, ni por la red local ni por la nube. Las imágenes viajan como ficheros por su hash, reducidas a ~800 px en WebP, primero por la red local y después por la nube (200 MB por biblioteca). Plan por partes en [plans/d82-portadas.md](plans/d82-portadas.md). **Hecho el 24/10/2026 y probado en dispositivos con la 0.5.0**: por wifi y por la nube (el móvil solo con datos).
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad.
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
 - **Notificaciones push en Android** con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
