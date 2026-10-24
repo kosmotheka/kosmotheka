@@ -271,6 +271,65 @@ fn record_reductions(conn: &mut Connection, reductions: &[Reduction]) -> Result<
     Ok(recorded)
 }
 
+/// A cover file no edition points to is removed only after this long: one may be saved right now, its edition a
+/// moment behind.
+const UNUSED_GRACE: std::time::Duration = std::time::Duration::from_secs(24 * 60 * 60);
+
+/// Removes the cover files no edition of any library points to any more, nor any pending request, such as the
+/// originals left behind by `reduce_stored`, once they are a day old (pending since D27). Returns how many were
+/// removed.
+pub fn remove_unused(database: &Database, covers: &Covers) -> Result<usize> {
+    let used = covers_in_use(&*database.lock()?)?;
+    remove_unused_except(covers, &used, UNUSED_GRACE)
+}
+
+/// An edition's cover, or one a request asks to put on an edition (D73): it is used once accepted.
+fn covers_in_use(conn: &Connection) -> Result<std::collections::HashSet<String>> {
+    let mut statement = conn.prepare(
+        "SELECT cover FROM editions WHERE cover IS NOT NULL
+         UNION
+         SELECT json_extract(change.value, '$.fields.cover')
+           FROM operations, json_each(operations.changes) AS change
+          WHERE operations.status = 'request'
+            AND json_extract(change.value, '$.entity') = 'edition'
+            AND json_extract(change.value, '$.fields.cover') IS NOT NULL",
+    )?;
+    Ok(statement
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+#[cfg(test)]
+pub(crate) fn covers_in_use_for_tests(conn: &Connection) -> std::collections::HashSet<String> {
+    covers_in_use(conn).unwrap()
+}
+
+fn remove_unused_except(
+    covers: &Covers,
+    used: &std::collections::HashSet<String>,
+    grace: std::time::Duration,
+) -> Result<usize> {
+    let mut removed = 0;
+    for entry in std::fs::read_dir(covers.dir())? {
+        let entry = entry?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        // Only what `store` names: never anything else that may be in the folder.
+        if !is_cover_name(&name) || used.contains(&name) {
+            continue;
+        }
+        let old_enough = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .is_some_and(|age| age >= grace);
+        if old_enough && std::fs::remove_file(entry.path()).is_ok() {
+            removed += 1;
+        }
+    }
+    Ok(removed)
+}
+
 /// For tests elsewhere (sync.rs): `reduce_stored` on a bare connection.
 #[cfg(test)]
 pub(crate) fn reduce_stored_in(conn: &mut Connection, covers: &Covers) -> usize {
@@ -654,6 +713,69 @@ mod tests {
             Some(bytes),
             "kept as it came, never re-encoded"
         );
+    }
+
+    #[test]
+    fn only_old_cover_files_no_edition_uses_are_removed() {
+        let covers = Covers::new(temp_dir("unused")).unwrap();
+        let used = covers
+            .store_cover(&encoded(100, 150, image::ImageFormat::Png))
+            .unwrap();
+        let unused = covers
+            .store_cover(&encoded(120, 180, image::ImageFormat::Png))
+            .unwrap();
+        std::fs::write(covers.dir().join("notes.txt"), b"not a cover").unwrap();
+        let in_use = std::collections::HashSet::from([used.clone()]);
+
+        assert_eq!(
+            remove_unused_except(&covers, &in_use, UNUSED_GRACE).unwrap(),
+            0,
+            "too recent: its edition may be on its way"
+        );
+        assert_eq!(
+            remove_unused_except(&covers, &in_use, std::time::Duration::ZERO).unwrap(),
+            1
+        );
+
+        assert!(covers.has(&used));
+        assert!(!covers.has(&unused));
+        assert!(
+            covers.dir().join("notes.txt").exists(),
+            "never anything but covers"
+        );
+    }
+
+    #[test]
+    fn a_cover_a_pending_request_asks_for_is_in_use() {
+        let mut reader = crate::db::open_in_memory().unwrap();
+        let mut owner = crate::db::open_in_memory().unwrap();
+        let games = crate::libraries::create_library(&mut owner, "Juegos").unwrap();
+        let edition = crate::catalog::create_book(&mut owner, &games, &book("Catan"), None)
+            .unwrap()
+            .edition_id;
+        crate::sync::share_as(&owner, &games, &mut reader, "Hugo", "reader");
+        let asked = format!("{}.webp", "c".repeat(64));
+
+        let tx = reader.transaction().unwrap();
+        let ((), requested) = ops::as_request(None, || {
+            ops::record(
+                &tx,
+                &games,
+                "edition.update",
+                vec![Change::update(
+                    Entity::Edition,
+                    &edition,
+                    json!({ "cover": asked }),
+                )],
+            )
+            .map(|_| ())
+        })
+        .unwrap();
+        tx.commit().unwrap();
+
+        assert!(requested, "a reader asks, it does not change");
+        assert_eq!(cover_of(&reader, &edition), None);
+        assert!(covers_in_use_for_tests(&reader).contains(&asked));
     }
 
     #[test]

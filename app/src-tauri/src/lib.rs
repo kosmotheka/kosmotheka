@@ -86,6 +86,8 @@ pub fn run() {
                 if covers::reduce_stored(&reduce_database, &reduce_covers).is_ok_and(|n| n > 0) {
                     let _ = reduce_handle.emit("library-changed", ());
                 }
+                // Then the files no edition uses any more, the originals reduced a day before among them.
+                let _ = covers::remove_unused(&reduce_database, &reduce_covers);
             });
             app.manage(database.clone());
             app.manage(covers.clone());
