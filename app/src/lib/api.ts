@@ -971,13 +971,15 @@ export function pairingOwners(device: string): Promise<PairingOwners> {
   return invoke<PairingOwners>("pairing_owners", { device });
 }
 
+/** `libraries`: the ones the step showed (`PairingOwners.libraries`); no other is touched. */
 export function giveAccess(
   device: string,
   person: PersonPick,
   roles: Record<string, Role>,
   canShare: boolean,
+  libraries: string[],
 ): Promise<void> {
-  return invoke("give_access", { device, person, roles, canShare });
+  return invoke("give_access", { device, person, roles, canShare, libraries });
 }
 
 /** The i18n key that explains a refusal by the roles, or null for other errors. */

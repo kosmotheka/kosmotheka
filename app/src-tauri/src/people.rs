@@ -475,22 +475,26 @@ pub fn pairing_owners(conn: &Connection, device: &str) -> Result<PairingOwners> 
     Ok(PairingOwners { libraries, people })
 }
 
-/// Says whose a newly paired device is (D73): `person` joins each of `libraries`
-/// with the role given for it where they have none yet (a role is never inherited),
-/// and the device becomes theirs in each one. The device may not have registered
-/// there yet, since only it can create its row: then the assignment waits until
-/// its registration arrives (`apply_pending_owners`).
+/// Says whose a newly paired device is (D73): `person` joins each of the libraries the step showed (`shown`, from
+/// `pairing_owners`) with the role given for it where they have none yet (a role is never inherited), and the device
+/// becomes theirs in each one. Only those: a library that arrived while the step was on screen was never asked
+/// about. The device may not have registered there yet, since only it can create its row: then the assignment waits
+/// until its registration arrives (`apply_pending_owners`).
 pub fn give_access(
     conn: &mut Connection,
     device: &str,
     person: &PersonPick,
     roles: &std::collections::BTreeMap<String, String>,
     can_share: bool,
+    shown: &[String],
 ) -> Result<()> {
     let libraries: Vec<String> = conn
         .prepare("SELECT library_id FROM library_peers WHERE device_id = ?1")?
         .query_map([device], |row| row.get(0))?
-        .collect::<rusqlite::Result<_>>()?;
+        .collect::<rusqlite::Result<Vec<String>>>()?
+        .into_iter()
+        .filter(|library| shown.contains(library))
+        .collect();
     let mut member_id = person.id.clone();
     let tx = conn.transaction()?;
     for library in &libraries {
@@ -1207,7 +1211,15 @@ mod tests {
             name: "Laura".into(),
         };
         let roles = std::collections::BTreeMap::from([(lib.clone(), "editor".to_owned())]);
-        give_access(&mut laptop, &phone_id, &laura, &roles, false).unwrap();
+        give_access(
+            &mut laptop,
+            &phone_id,
+            &laura,
+            &roles,
+            false,
+            std::slice::from_ref(&lib),
+        )
+        .unwrap();
         pull(&mut phone, &laptop, &lib);
         assert!(
             !may_share(&phone, &lib).unwrap(),
@@ -1248,7 +1260,68 @@ mod tests {
             id: None,
             name: "Hugo".into(),
         };
-        give_access(&mut laptop, &phone_id, &hugo, &roles, false).unwrap();
+        give_access(
+            &mut laptop,
+            &phone_id,
+            &hugo,
+            &roles,
+            false,
+            &owners.libraries,
+        )
+        .unwrap();
+    }
+
+    /// Seen pairing a computer and a phone, 24/10/2026: while the computer asked whose the phone is, the phone's
+    /// own library arrived, and the phone had made the computer an administrator in it. Giving access then reached
+    /// that library too, where the chosen person did not exist and no role had been asked for: «not allowed», and
+    /// the whole assignment was undone, also in the library on screen.
+    #[test]
+    fn giving_access_touches_only_the_libraries_the_step_showed() {
+        let mut laptop = db::open_in_memory().unwrap();
+        let mut phone = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&laptop).unwrap();
+        start_roles(&mut laptop, &lib, "Sergio", &[]).unwrap();
+        let phone_id = ops::device_id(&phone).unwrap();
+        lan::share_library(&laptop, &lib, &phone_id).unwrap();
+        let owners = pairing_owners(&laptop, &phone_id).unwrap();
+        assert_eq!(owners.libraries, vec![lib.clone()]);
+        let me = owners.people.iter().find(|p| p.me).unwrap().id.clone();
+
+        let rol = crate::libraries::create_library(&mut phone, "Rol").unwrap();
+        sync::share_as(&phone, &rol, &mut laptop, "Sergio", "admin");
+        lan::share_library(&laptop, &rol, &phone_id).unwrap();
+        let people_in_rol = list_people(&laptop, &rol).unwrap().people.len();
+
+        give_access(
+            &mut laptop,
+            &phone_id,
+            &PersonPick {
+                id: Some(me.clone()),
+                name: "Sergio".into(),
+            },
+            &std::collections::BTreeMap::new(),
+            false,
+            &owners.libraries,
+        )
+        .unwrap();
+
+        let waiting: Vec<(String, String)> = laptop
+            .prepare("SELECT library_id, member_id FROM pending_owners WHERE device_id = ?1")
+            .unwrap()
+            .query_map([&phone_id], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(
+            waiting,
+            vec![(lib.clone(), me)],
+            "the phone is mine where I was asked"
+        );
+        assert_eq!(
+            list_people(&laptop, &rol).unwrap().people.len(),
+            people_in_rol,
+            "nobody is added to a library the step did not show"
+        );
     }
 
     #[test]
@@ -1270,6 +1343,7 @@ mod tests {
             },
             &roles,
             false,
+            std::slice::from_ref(&lib),
         )
         .unwrap();
         assert!(

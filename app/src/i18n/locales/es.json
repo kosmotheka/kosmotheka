@@ -896,6 +896,7 @@
       "needName": "Escribe su nombre para continuar.",
       "give": "Dar acceso a {{person}}",
       "giveNobody": "Dar acceso",
+      "failedHint": "El dispositivo ya está emparejado. Puedes cerrar y decir de quién es más tarde, en «Compartir y dispositivos», columna «De quién es».",
       "next": "Siguiente",
       "connected": "Conectado con {{device}}.",
       "step": "Paso 2 de 2: dinos de quién es.",

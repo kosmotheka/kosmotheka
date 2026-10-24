@@ -805,8 +805,16 @@ pub fn give_access(
     person: people::PersonPick,
     roles: std::collections::BTreeMap<String, String>,
     can_share: bool,
+    libraries: Vec<String>,
 ) -> Result<()> {
-    people::give_access(&mut *database.lock()?, &device, &person, &roles, can_share)
+    people::give_access(
+        &mut *database.lock()?,
+        &device,
+        &person,
+        &roles,
+        can_share,
+        &libraries,
+    )
 }
 
 #[tauri::command]

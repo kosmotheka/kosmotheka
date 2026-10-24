@@ -62,7 +62,13 @@ export function OwnerStep({
     setError(null);
     try {
       const roles = Object.fromEntries(missing.map((id) => [id, roleIn(id)] as const));
-      await giveAccess(deviceId, { id: isNew ? null : pick, name }, roles, canShare);
+      await giveAccess(
+        deviceId,
+        { id: isNew ? null : pick, name },
+        roles,
+        canShare,
+        owners.libraries,
+      );
       onDone(t("pair.owner.done", { device: deviceName, person: name }));
     } catch (e) {
       const key = permissionErrorKey(e);
@@ -230,7 +236,11 @@ export function OwnerStep({
           {who}
           {pick !== null ? rolesSection : <div />}
         </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <p className="text-sm text-destructive">
+            {error} {t("pair.owner.failedHint")}
+          </p>
+        )}
         <div className="flex justify-end gap-2 border-t pt-4">{giveButton}</div>
       </div>
     );
@@ -246,7 +256,11 @@ export function OwnerStep({
       )}
       {intro}
       {page === "who" ? who : rolesSection}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="text-sm text-destructive">
+          {error} {t("pair.owner.failedHint")}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         {page === "who" && needsRoles ? (
           <Button className="h-12" disabled={pick === null} onClick={() => setPage("roles")}>

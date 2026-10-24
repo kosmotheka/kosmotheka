@@ -882,6 +882,7 @@
       "needName": "Type their name to continue.",
       "give": "Give {{person}} access",
       "giveNobody": "Give access",
+      "failedHint": "The device is already paired. You can close this and say whose it is later, in “Sharing and devices”, under “Whose it is”.",
       "next": "Next",
       "connected": "Connected with {{device}}.",
       "step": "Step 2 of 2: tell us whose it is.",

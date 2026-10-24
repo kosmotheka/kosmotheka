@@ -1,6 +1,10 @@
 {
   "next": [
     {
+      "es": "Al emparejar dos dispositivos que ya tenían bibliotecas, decir de quién es el otro ya no da un error de permisos ni lo deja sin dueño.",
+      "en": "When pairing two devices that already had libraries, saying whose the other one is no longer fails with a permissions error or leaves it with no owner."
+    },
+    {
       "es": "Emparejar con el ordenador es más fácil: el código QR sale más grande y, en ordenadores con Docker o máquinas virtuales, mucho más sencillo, así que el móvil lo lee a la primera.",
       "en": "Pairing with a computer is easier: the QR code is bigger and, on computers with Docker or virtual machines, much simpler, so the phone reads it first time."
     }

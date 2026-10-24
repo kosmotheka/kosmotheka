@@ -830,6 +830,7 @@ mod tests {
                 },
                 &std::collections::BTreeMap::from([(club.clone(), "editor".to_owned())]),
                 false,
+                std::slice::from_ref(&club),
             )
             .unwrap();
             assert!(!crate::people::is_registered(&conn, &club, &phone_id).unwrap());
