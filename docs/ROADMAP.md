@@ -19,106 +19,21 @@
 | 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | ✅ |
 | 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | En producción desde el 18/10/2026; falta cerrarla |
 | 8 | Publicación | La app en la tienda de Android y una landing | En curso: repositorio abierto, versiones automáticas y prueba cerrada en marcha |
-| 9 | Vida de la biblioteca | Préstamos, regalos, estadísticas | |
-| 10 | Herramientas de estantería | Inventario, foto de balda, IA | |
-| 11 | Servicio | Organizaciones, panel, web para el personal | |
 
-**Transversal:** el diseño de la interfaz. La Fase 3 fija la base, y después se trabaja con Claude Design fase a fase. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
+Las fases terminan en la 8, el lanzamiento (decidido el 24/10/2026). Lo que viene después son **temas en orden de prioridad**, sin número; cada uno dice qué fase era, para que las decisiones y notas antiguas que la citan se sigan encontrando:
+
+| Tema | Qué trae | Era |
+|---|---|---|
+| Tras el lanzamiento | Foto propia de portada, lo que digan los testers, avisos, seguridad del servidor, emparejar más fácil | — |
+| Vida de la biblioteca | Préstamos, regalos, estadísticas | Fase 9 |
+| Herramientas de estantería | Inventario, etiquetas QR, IA | Fase 10 |
+| Servicio | Organizaciones, panel, web para el personal | Fase 11 |
+
+Las fases cerradas están en el [anexo](#anexo-fases-completadas).
+
+**Transversal:** el diseño de la interfaz. La Fase 3 fija la base, y después se trabaja con Claude Design fase a fase y tema a tema. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
 
 ---
-
-## Fase 3 — Diseño del nuevo modelo ✅
-
-Cerrada el 26/09/2026.
-
-
-Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la app va a cambiar mucho en las fases 4 a 6 y probar ahora sería trabajo perdido. Se probará la app rehecha, en Android y en Windows (`testing/`).
-
-- **Rehacer el brief de diseño** con el nuevo modelo: bibliotecas, personas y roles, peticiones, tipos de catálogo, series, «lo tengo / me falta / lo deseo», cuenta y nube, ayuda, y los patrones de Android.
-- Trabajarlo con Claude Design: pantallas del móvil y del escritorio que guíen las fases 4 a 7.
-- **Hecho cuando:** hay un diseño aprobado de la navegación y de las pantallas principales del nuevo modelo.
-
-**Estado:**
-- [x] Brief nuevo y pantallas de Claude Design descargadas en `design/screens/` (25/09/2026).
-- [x] La app sigue el diseño con los datos de hoy (26/09/2026): tokens, navegación (barra inferior, menú lateral, selector de biblioteca, barra lateral y superior en escritorio, botón atrás de Android), catálogo, «¿Lo tengo?» como sección, «Me falta», ficha a pantalla completa en el móvil y en panel en escritorio, y alta a pantalla completa en el móvil. Se puede ver en el navegador con datos de ejemplo: `npm run dev` y abrir `http://localhost:1420/?mock` (añade `&mobile` para simular el móvil).
-- [x] Ajustes, Compartir, Alta rápida y Copias de seguridad con el mismo patrón; Copias con su propia entrada en el menú; sección de Ayuda con sus primeros temas.
-- Lo que depende del modelo nuevo se hace en su fase, y sus pantallas se piden a Claude Design al empezarla: varias bibliotecas (fase 4); compartir con persona y rol, personas y permisos, peticiones y la campanita (fase 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6); cuenta y nube (fase 7).
-
-## Fase 4 — Bibliotecas ✅
-
-La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza y tiene permisos.
-
-- Entidad **biblioteca** en la misma base de datos, con `library_id` en todas las tablas y clave `(library_id, id)`, como en el servidor.
-- Cada biblioteca tiene lo suyo (obras, ediciones, ejemplares, miembros), aunque el mismo libro esté en varias.
-- **Las operaciones pertenecen a una biblioteca**: cambia el formato en `spec/` y en `crates/domain`, con casos de conformidad nuevos.
-- **Vector de versiones por biblioteca.**
-- **Compartir biblioteca a biblioteca:** al emparejar, se elige qué bibliotecas van a cada dispositivo; nada sale sin decirlo.
-- **Interfaz:** una biblioteca a la vez con selector; el buscador y «¿Lo tengo?» miran en todas.
-- **Mover un libro** a otra biblioteca (ids nuevos, la app recuerda de dónde vino).
-- **Copias:** completas y por biblioteca; exportar a Google Drive muy fácil y a la vista.
-- **Migración con continuidad** (D46): los datos pasan a una biblioteca con el mismo id en todos los dispositivos, y los ya emparejados siguen sincronizando.
-- **Rust que aprendes:** migraciones de datos, rediseño de un protocolo con tests que simulan dispositivos.
-- **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
-
-**Estado:**
-- [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 13 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Revisado el 26/09/2026: el campo `library` y la biblioteca con solo nombre, aceptados; borrar y abandonar en [D65](DECISIONS.md). Queda por valorar mostrar quién creó cada biblioteca.
-- [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [historico/plan-fase-4.md](historico/plan-fase-4.md).
-- [x] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos de validación pasan de `draft/` a `conformance/` (26/09/2026). Los de fusión siguen en `draft/` hasta el hito 4.3.
-- [x] Tablas con `library_id`, migración y vector de versiones por biblioteca (26/09/2026). La migración deja antes una copia de la base de datos.
-- [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
-- [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
-- [x] Copias completas y por biblioteca (formato versión 3, D30).
-- [x] Fase cerrada por el maintainer el 01/10/2026. Las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md) se hacen junto con las de las fases 5 y 6.
-- Guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30): aplazado el 28/09/2026, puede llevar trabajo.
-
-## Fase 5 — Personas, roles y peticiones
-
-Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios dispositivos.
-
-- **El miembro es la persona:** los dispositivos se asocian a un miembro al compartir («el móvil de Hugo» es de Hugo).
-- **Roles:** administrador, editor y lector. Nadie da más de lo que tiene; **compartir es un permiso aparte**; puede haber varios administradores.
-- **Peticiones:** el lector pide añadir o borrar; los administradores aceptan o rechazan.
-- **Marcas por persona** (D68, adelantadas de la Fase 6): estado (pendiente, en curso, terminado o abandonado, con fecha y sin progreso), valoración y favorito. Cada persona marca lo suyo, también quien solo lee.
-- **Firmas:** cada dispositivo firma sus operaciones (Ed25519) y los demás las comprueban.
-- **Cada dispositivo comprueba lo que recibe:** lo que no está permitido pasa a petición, y todos llegan al mismo resultado aunque les lleguen las cosas en distinto orden. Casos de conformidad compartidos en `spec/`.
-- **Recuperación:** revocar un dispositivo perdido desde otro administrador; para el administrador único, una salida por decidir (código de recuperación u otra).
-- **Rust que aprendes:** criptografía con claves públicas, diseño de un motor que converge.
-- **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
-
-**Estado:**
-- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [historico/plan-fase-5.md](historico/plan-fase-5.md) (27/09/2026).
-- [x] 5.1 Firmas: cada dispositivo firma sus operaciones y los demás las comprueban, también a través de otro dispositivo (27/09/2026).
-- [x] 5.2 a 5.4, sin interfaz: roles y de quién es cada dispositivo; cada dispositivo comprueba lo que recibe y lo que escribe, y lo no permitido queda como petición (D73, 27/09/2026).
-- [x] 5.5 Peticiones, sin interfaz: pedir, aceptar y rechazar, también desde otro dispositivo (27/09/2026).
-- [x] 5.6 Dispositivo perdido, sin interfaz: quitarlo de todas las bibliotecas, aviso de administrador único y duplicar como nueva (D58, 27/09/2026).
-- [x] 5.7 Interfaz: personas y permisos, peticiones con campanita, pedir en lugar de hacer, de quién es cada dispositivo y emparejar con persona y rol (27/09/2026). Lista de pruebas en pantalla: [testing/fase-5.md](testing/fase-5.md).
-- [x] 5.8 Marcas por persona (D68, adelantadas de la Fase 6): estado con fecha, valoración y favorito; cada persona marca lo suyo y ve lo de los demás (28/09/2026).
-- [x] Fase cerrada por el maintainer el 28/09/2026. El plan pasa a [historico/plan-fase-5.md](historico/plan-fase-5.md).
-
-## Fase 6 — Catálogo general ✅
-
-Deja de estar centrado en libros.
-
-- **Tipos:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos, música (vinilo, CD, casete y digital), y **«Otro»** para todo lo demás (sellos, monedas, Playmobil) con los campos comunes y sin proveedores. Orden propuesto: libros y «Otro» primero, después juegos de mesa y música (tienen proveedores sin clave que buscan por código de barras), películas y series, videojuegos y cómics.
-- **Formatos por tipo**, físicos y digitales (DVD, Blu-ray, cartucho, Steam, Epic, Kindle…); lo digital no tiene estantería.
-- **El alta empieza por buscar o escanear, no por el ISBN.** Búsqueda por título en los proveedores; alta a mano siempre posible, sin buscar nada.
-- **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).
-- **Series:** agrupan obras con orden o sin él; una obra puede estar en varias; relación «necesita» (expansiones, suplementos).
-- **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
-- **Marcas por persona** (D68): llegan en la Fase 5 (hito 5.8); aquí, «en curso» pasa a llamarse leyendo, jugando o viendo según el tipo, y los filtros por tipo.
-- **Géneros, temáticas y etiquetas.**
-- **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
-
-**Estado:** hecha el 01/10/2026. Plan, decisiones y detalle de cada hito en [historico/plan-fase-6.md](historico/plan-fase-6.md); pruebas en pantalla en [testing/fase-6.md](testing/fase-6.md).
-- [x] 6.1 Tipos y formatos: ocho tipos, formatos de cada uno, papeles de las personas, datos propios por tipo, código de barras y notas.
-- [x] 6.2 Tipos en la interfaz: «¿Qué es?», un formulario por tipo, ficha de cada tipo, portadas con su forma, estados según el tipo y cambio de tipo con aviso. La plataforma del videojuego y las temporadas de una serie van en el ejemplar (D60, cambio del 29/09).
-- [x] 6.3 El alta empieza por buscar: título o código escaneado, resultados con su fuente, «¿Qué es?» para un código sin tipo y «Añadir a mano» siempre a la vista.
-- [x] 6.4 Proveedores sin clave (Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive), Ajustes › Proveedores de datos con fuentes que se apagan y clave propia para cualquiera que la pida (Google Books, GameUPC).
-- [x] 6.5 Me falta (una obra sin ejemplares) y «Lo deseo» (una marca de cada persona); fuera la lista de deseos de D36.
-- [x] 6.6 Series con orden o sin él, huecos, y la relación «necesita».
-- [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
-
-Lo que quedó por pulir, en «Tras el lanzamiento» desde el 24/10/2026.
 
 ## Fase 7 — La nube
 
@@ -177,38 +92,11 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
   - **Foto de balda** para la carga inicial: OCR local y, si no basta, IA (D19, D20). Primera prueba con fotos reales, el 12/10/2026: [notas](research/foto-estanteria.md). **Orden decidido el 17/10/2026:** primero sin salir del dispositivo (vía 3 de D19, con el plugin); la IA sigue en la Fase 10, con la app ya en producción ([Symfony AI y lo que haría falta](research/ia-reconocer-imagenes.md)).
 - **Hecho cuando:** cualquiera puede instalarla desde la tienda.
 
-## Fase 9 — Vida de la biblioteca
-
-- **Préstamos** salientes y entrantes, con historial y avisos. Basta con que lo apunte quien presta: el otro no necesita la app.
-- **Red de préstamo entre amigos:** los dos ven el mismo préstamo y el amigo puede pedir algo prestado. Sin nube, solo dentro del círculo de confianza; con amigos a distancia, a través de la nube ([referentes §3.1](research/referentes.md)).
-- **Lecturas sin ejemplar:** libros que te han prestado.
-- **Reserva de regalos**, oculta para quien los recibe. **Oculta solo en pantalla** (D69): el deseo lo ve toda la familia; la reserva («lo compro yo»), todos menos quien recibe el regalo. Igual con nube y sin ella.
-- **Enlaces para compartir un ejemplar u ofrecerlo en préstamo** a quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
-- Ejemplar firmado o dedicado, con foto.
-- **Estadísticas** de lectura por año y por persona.
-- **Copia automática periódica** (D58, cambiado el 03/10/2026): la app guarda su propia copia sin claves cada cierto tiempo y, al reinstalar, ofrece restaurarla. Un ajuste para activarla o desactivarla. Por decidir en detalle: dónde se guarda (solo en el dispositivo, Google Drive u otro servicio), cada cuánto y qué hacer con las portadas si no caben.
-- ¿**Papelera** para deshacer borrados? (abierto; antes también en «Queda abierto»).
-
-## Fase 10 — Herramientas de estantería
-
-- **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
-- La foto de balda sin IA y el ISBN impreso pasan a la Fase 8 (24/10/2026); aquí queda la IA para reconocer lo que el texto no basta.
-- **Etiquetas QR imprimibles** para pegar en los ejemplares (D67), útiles en el modo inventario y en ludotecas: código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
-- **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla. Referencias: Google Lens, bookidentifier.com; probar antes el OCR local con el título y la autoría de la portada ([notas](testing/ux-escanear-y-editar.md)).
-
-## Fase 11 — Servicio
-
-Solo si llega el escenario de ludotecas, clubes o colegios.
-
-- **Organizaciones** por encima de las bibliotecas (la biblioteca ya tiene un propietario que lo permite).
-- **Panel del superadministrador** con EasyAdmin y KPI (D51, D52).
-- Inicio de sesión corporativo (Google, Microsoft).
-- **Web para el personal** (D53).
-- Licencias comerciales de los proveedores que las exigen; protección de datos con menores.
+---
 
 ## Tras el lanzamiento
 
-Ordenado en el repaso del 24/10/2026: va después de la Fase 8 y antes de la Fase 9. Primero la lista numerada, en este orden; después, lo que no tiene orden y se hace cuando toque.
+Ordenado en el repaso del 24/10/2026: va después de la Fase 8, antes que los demás temas. Primero la lista numerada, en este orden; después, lo que no tiene orden y se hace cuando toque.
 
 1. **Foto propia de portada** (24/10/2026, prioridad alta): con la cámara o una imagen del dispositivo; hoy el botón está desactivado en el formulario. Con el transporte de D82 hecho, pasa por la misma reducción y viaja igual («Después, aparte» en [plans/d82-portadas.md](plans/d82-portadas.md)). Entra antes si lo piden los testers.
 2. **Pulir lo que digan los testers**, un punto que no se cierra: se va cogiendo de la lista. Lo que quedó de la Fase 6, no urgente:
@@ -234,6 +122,35 @@ Ordenado en el repaso del 24/10/2026: va después de la Fase 8 y antes de la Fas
 - **Firmar Windows** (D74): SignPath Foundation lo rechazó el 24/10/2026 («todavía no»); se vuelve a pedir cuando el proyecto tenga uso público. Mientras, sale sin firma y la guía explica el aviso de SmartScreen. Certum Open Source, como alternativa sin decidir.
 - **El resto de la documentación pública** (sale de la Fase 8 el 24/10/2026; [índice](plans/documentacion-publica.md)): primer índice, con qué material hay para cada página, en [plans/documentacion-publica.md](plans/documentacion-publica.md) (13/10/2026). Antes de escribirla, revisar la de proyectos open source famosos y bien estructurados para inspirarse. Dos públicos: quien usa la app y quien quiere colaborar. Entre otras cosas, explicar bien el motor de sincronización local-first (operaciones, reloj, fusión campo a campo, firmas y permisos) y compararlo con otros enfoques (WebRTC con relé, sincronizar ficheros, servidor central).
 - **El método de auditoría, público y repetible** (D90; sale de la Fase 8 el 24/10/2026): se publica qué se audita y cómo (temas, preguntas, reglas, scripts, gravedad, lo que aún no cubre), no los informes ni los hallazgos de nuestro proceso. Una página en la documentación pública separa la parte determinista (cualquiera la ejecuta con Docker; cada salida explicada y cómo interpretarla) de la de juicio (un procedimiento que sigue una persona o cualquier asistente, no solo Claude), y explica cómo avisar de un fallo. El método se revisa cada cierto tiempo con lo que llegue de fuera.
+
+## Vida de la biblioteca (era la Fase 9)
+
+- **Préstamos** salientes y entrantes, con historial y avisos. Basta con que lo apunte quien presta: el otro no necesita la app.
+- **Red de préstamo entre amigos:** los dos ven el mismo préstamo y el amigo puede pedir algo prestado. Sin nube, solo dentro del círculo de confianza; con amigos a distancia, a través de la nube ([referentes §3.1](research/referentes.md)).
+- **Lecturas sin ejemplar:** libros que te han prestado.
+- **Reserva de regalos**, oculta para quien los recibe. **Oculta solo en pantalla** (D69): el deseo lo ve toda la familia; la reserva («lo compro yo»), todos menos quien recibe el regalo. Igual con nube y sin ella.
+- **Enlaces para compartir un ejemplar u ofrecerlo en préstamo** a quien no es miembro (D67): un permiso de la biblioteca con token aleatorio, revocable y con caducidad, que muere si el ejemplar se mueve o se borra. Necesita la nube (Fase 7), porque quien lo abre no tiene la app.
+- Ejemplar firmado o dedicado, con foto.
+- **Estadísticas** de lectura por año y por persona.
+- **Copia automática periódica** (D58, cambiado el 03/10/2026): la app guarda su propia copia sin claves cada cierto tiempo y, al reinstalar, ofrece restaurarla. Un ajuste para activarla o desactivarla. Por decidir en detalle: dónde se guarda (solo en el dispositivo, Google Drive u otro servicio), cada cuánto y qué hacer con las portadas si no caben.
+- ¿**Papelera** para deshacer borrados? (abierto; antes también en «Queda abierto»).
+
+## Herramientas de estantería (era la Fase 10)
+
+- **Modo inventario** balda a balda, y ubicaciones con jerarquía (salón → estantería → balda).
+- La foto de balda sin IA y el ISBN impreso pasan a la Fase 8 (24/10/2026); aquí queda la IA para reconocer lo que el texto no basta.
+- **Etiquetas QR imprimibles** para pegar en los ejemplares (D67), útiles en el modo inventario y en ludotecas: código corto aleatorio de la biblioteca, no el UUID; al mover el ejemplar se imprime otra.
+- **IA como complemento de cualquier catálogo:** reconocer una portada o una caja y buscarla. Referencias: Google Lens, bookidentifier.com; probar antes el OCR local con el título y la autoría de la portada ([notas](testing/ux-escanear-y-editar.md)).
+
+## Servicio (era la Fase 11)
+
+Solo si llega el escenario de ludotecas, clubes o colegios.
+
+- **Organizaciones** por encima de las bibliotecas (la biblioteca ya tiene un propietario que lo permite).
+- **Panel del superadministrador** con EasyAdmin y KPI (D51, D52).
+- Inicio de sesión corporativo (Google, Microsoft).
+- **Web para el personal** (D53).
+- Licencias comerciales de los proveedores que las exigen; protección de datos con menores.
 
 ## Queda abierto
 
@@ -369,3 +286,96 @@ El objetivo es eliminar riesgos técnicos antes de escribir funcionalidad: ver q
 - [x] 2.1 Sincronización por la red local. Servidor HTTPS (axum, rustls con ring) que escucha solo cuando hace falta; certificado propio fijado por la huella del código; emparejamiento con secreto de un solo uso; sincronización en los dos sentidos; diálogo «Dispositivos» con código en texto y QR; sincronización automática al abrir la app. Los tests emparejan y sincronizan por TLS real.
 - [x] 2.2 Interfaz móvil y escáner. «¿Lo tengo ya?» consultando solo la base de datos local (funciona sin cobertura), con escáner de cámara en el móvil (D35) y búsqueda online opcional; lista de deseos sincronizada (D36) con «Comprado: añadir al catálogo»; vista en tarjetas y cabecera compacta en pantallas estrechas. Compila para Android con permiso de cámara; falta probarlo en el móvil.
 - [x] 2.3 Móvil emparejado. Emparejar escaneando el QR con la cámara; sincronización al abrir la app y al volver a ella; reencontrar al otro dispositivo en la subred si cambió de dirección (D37, en lugar de mDNS). **Fase 2 completa en código**; pendiente de probar en el móvil (`docs/testing/fase-2.md`).
+
+### Fase 3 — Diseño del nuevo modelo ✅
+
+Cerrada el 26/09/2026.
+
+
+Las pruebas a mano de las fases 1 y 2 se aplazan (decisión del 25/09/2026): la app va a cambiar mucho en las fases 4 a 6 y probar ahora sería trabajo perdido. Se probará la app rehecha, en Android y en Windows (`testing/`).
+
+- **Rehacer el brief de diseño** con el nuevo modelo: bibliotecas, personas y roles, peticiones, tipos de catálogo, series, «lo tengo / me falta / lo deseo», cuenta y nube, ayuda, y los patrones de Android.
+- Trabajarlo con Claude Design: pantallas del móvil y del escritorio que guíen las fases 4 a 7.
+- **Hecho cuando:** hay un diseño aprobado de la navegación y de las pantallas principales del nuevo modelo.
+
+**Estado:**
+- [x] Brief nuevo y pantallas de Claude Design descargadas en `design/screens/` (25/09/2026).
+- [x] La app sigue el diseño con los datos de hoy (26/09/2026): tokens, navegación (barra inferior, menú lateral, selector de biblioteca, barra lateral y superior en escritorio, botón atrás de Android), catálogo, «¿Lo tengo?» como sección, «Me falta», ficha a pantalla completa en el móvil y en panel en escritorio, y alta a pantalla completa en el móvil. Se puede ver en el navegador con datos de ejemplo: `npm run dev` y abrir `http://localhost:1420/?mock` (añade `&mobile` para simular el móvil).
+- [x] Ajustes, Compartir, Alta rápida y Copias de seguridad con el mismo patrón; Copias con su propia entrada en el menú; sección de Ayuda con sus primeros temas.
+- Lo que depende del modelo nuevo se hace en su fase, y sus pantallas se piden a Claude Design al empezarla: varias bibliotecas (fase 4); compartir con persona y rol, personas y permisos, peticiones y la campanita (fase 5); tipos, series, «lo deseo» y el alta con búsqueda por título (fase 6); cuenta y nube (fase 7).
+
+### Fase 4 — Bibliotecas ✅
+
+La pieza que se nos escapó: la biblioteca es lo que se comparte, se sincroniza y tiene permisos.
+
+- Entidad **biblioteca** en la misma base de datos, con `library_id` en todas las tablas y clave `(library_id, id)`, como en el servidor.
+- Cada biblioteca tiene lo suyo (obras, ediciones, ejemplares, miembros), aunque el mismo libro esté en varias.
+- **Las operaciones pertenecen a una biblioteca**: cambia el formato en `spec/` y en `crates/domain`, con casos de conformidad nuevos.
+- **Vector de versiones por biblioteca.**
+- **Compartir biblioteca a biblioteca:** al emparejar, se elige qué bibliotecas van a cada dispositivo; nada sale sin decirlo.
+- **Interfaz:** una biblioteca a la vez con selector; el buscador y «¿Lo tengo?» miran en todas.
+- **Mover un libro** a otra biblioteca (ids nuevos, la app recuerda de dónde vino).
+- **Copias:** completas y por biblioteca; exportar a Google Drive muy fácil y a la vista.
+- **Migración con continuidad** (D46): los datos pasan a una biblioteca con el mismo id en todos los dispositivos, y los ya emparejados siguen sincronizando.
+- **Rust que aprendes:** migraciones de datos, rediseño de un protocolo con tests que simulan dispositivos.
+- **Hecho cuando:** tengo en el portátil mi biblioteca de rol y la familiar, y el móvil de mi pareja recibe solo la familiar.
+
+**Estado:**
+- [x] Borrador de los casos de conformidad de las operaciones con biblioteca: 13 casos en `spec/conformance/draft/library-scope.json` y las reglas en `spec/README.md` (sobre `library`, entidad `library`, códigos `invalid_library` y `other_library`). Revisado el 26/09/2026: el campo `library` y la biblioteca con solo nombre, aceptados; borrar y abandonar en [D65](DECISIONS.md). Queda por valorar mostrar quién creó cada biblioteca.
+- [x] Casos de fusión por biblioteca: 8 casos en `spec/conformance/library-merge.json` (misma id en dos bibliotecas, lápidas y versiones que no cruzan, borrar la biblioteca). Plan de la fase en [historico/plan-fase-4.md](historico/plan-fase-4.md).
+- [x] Esquema JSON, Rust (`crates/domain`) y PHP con el nuevo formato; los casos de validación pasan de `draft/` a `conformance/` (26/09/2026). Los de fusión siguen en `draft/` hasta el hito 4.3.
+- [x] Tablas con `library_id`, migración y vector de versiones por biblioteca (26/09/2026). La migración deja antes una copia de la base de datos.
+- [x] Compartir por biblioteca al emparejar, cambiarlo después y retirar el acceso (D71).
+- [x] Interfaz: selector, nueva biblioteca, ajustes, borrar con copia, salir, «en todas», mover un libro.
+- [x] Copias completas y por biblioteca (formato versión 3, D30).
+- [x] Fase cerrada por el maintainer el 01/10/2026. Las pruebas en pantalla de [testing/fase-4.md](testing/fase-4.md) se hacen junto con las de las fases 5 y 6.
+- Guardar la copia en Google Drive desde el móvil (en Android el diálogo de ficheros devuelve rutas `content://`, ver D30): aplazado el 28/09/2026, puede llevar trabajo.
+
+### Fase 5 — Personas, roles y peticiones
+
+Los mismos roles con cuenta y sin ella; sin servidor, los garantizan los propios dispositivos.
+
+- **El miembro es la persona:** los dispositivos se asocian a un miembro al compartir («el móvil de Hugo» es de Hugo).
+- **Roles:** administrador, editor y lector. Nadie da más de lo que tiene; **compartir es un permiso aparte**; puede haber varios administradores.
+- **Peticiones:** el lector pide añadir o borrar; los administradores aceptan o rechazan.
+- **Marcas por persona** (D68, adelantadas de la Fase 6): estado (pendiente, en curso, terminado o abandonado, con fecha y sin progreso), valoración y favorito. Cada persona marca lo suyo, también quien solo lee.
+- **Firmas:** cada dispositivo firma sus operaciones (Ed25519) y los demás las comprueban.
+- **Cada dispositivo comprueba lo que recibe:** lo que no está permitido pasa a petición, y todos llegan al mismo resultado aunque les lleguen las cosas en distinto orden. Casos de conformidad compartidos en `spec/`.
+- **Recuperación:** revocar un dispositivo perdido desde otro administrador; para el administrador único, una salida por decidir (código de recuperación u otra).
+- **Rust que aprendes:** criptografía con claves públicas, diseño de un motor que converge.
+- **Hecho cuando:** mi hijo ve la biblioteca familiar y pide añadir un libro; yo lo apruebo desde el portátil; mi pareja edita sin pedir nada.
+
+**Estado:**
+- [x] Plan de la fase con hitos, propuestas técnicas y preguntas: [historico/plan-fase-5.md](historico/plan-fase-5.md) (27/09/2026).
+- [x] 5.1 Firmas: cada dispositivo firma sus operaciones y los demás las comprueban, también a través de otro dispositivo (27/09/2026).
+- [x] 5.2 a 5.4, sin interfaz: roles y de quién es cada dispositivo; cada dispositivo comprueba lo que recibe y lo que escribe, y lo no permitido queda como petición (D73, 27/09/2026).
+- [x] 5.5 Peticiones, sin interfaz: pedir, aceptar y rechazar, también desde otro dispositivo (27/09/2026).
+- [x] 5.6 Dispositivo perdido, sin interfaz: quitarlo de todas las bibliotecas, aviso de administrador único y duplicar como nueva (D58, 27/09/2026).
+- [x] 5.7 Interfaz: personas y permisos, peticiones con campanita, pedir en lugar de hacer, de quién es cada dispositivo y emparejar con persona y rol (27/09/2026). Lista de pruebas en pantalla: [testing/fase-5.md](testing/fase-5.md).
+- [x] 5.8 Marcas por persona (D68, adelantadas de la Fase 6): estado con fecha, valoración y favorito; cada persona marca lo suyo y ve lo de los demás (28/09/2026).
+- [x] Fase cerrada por el maintainer el 28/09/2026. El plan pasa a [historico/plan-fase-5.md](historico/plan-fase-5.md).
+
+### Fase 6 — Catálogo general ✅
+
+Deja de estar centrado en libros.
+
+- **Tipos:** libros (incluidos rol, PDF y ebooks), cómics, juegos de mesa, películas y series, videojuegos, música (vinilo, CD, casete y digital), y **«Otro»** para todo lo demás (sellos, monedas, Playmobil) con los campos comunes y sin proveedores. Orden propuesto: libros y «Otro» primero, después juegos de mesa y música (tienen proveedores sin clave que buscan por código de barras), películas y series, videojuegos y cómics.
+- **Formatos por tipo**, físicos y digitales (DVD, Blu-ray, cartucho, Steam, Epic, Kindle…); lo digital no tiene estantería.
+- **El alta empieza por buscar o escanear, no por el ISBN.** Búsqueda por título en los proveedores; alta a mano siempre posible, sin buscar nada.
+- **Proveedores sin clave** para la app sin nube: Open Library, Inventaire, Wikidata, GameUPC; Google Books con clave propia opcional. Aviso y ayuda cuando un proveedor necesita la nube ([proveedores](research/proveedores.md)).
+- **Series:** agrupan obras con orden o sin él; una obra puede estar en varias; relación «necesita» (expansiones, suplementos).
+- **Tres estados:** lo tengo (por defecto), me falta (su propia vista, y los huecos en cada serie) y lo deseo (marca para regalos). Sustituye a la lista de deseos actual.
+- **Marcas por persona** (D68): llegan en la Fase 5 (hito 5.8); aquí, «en curso» pasa a llamarse leyendo, jugando o viendo según el tipo, y los filtros por tipo.
+- **Géneros, temáticas y etiquetas.**
+- **Hecho cuando:** tengo mis juegos de rol en papel y en PDF, una saga con los tomos que me faltan, y los juegos de mesa y las películas de la familia.
+
+**Estado:** hecha el 01/10/2026. Plan, decisiones y detalle de cada hito en [historico/plan-fase-6.md](historico/plan-fase-6.md); pruebas en pantalla en [testing/fase-6.md](testing/fase-6.md).
+- [x] 6.1 Tipos y formatos: ocho tipos, formatos de cada uno, papeles de las personas, datos propios por tipo, código de barras y notas.
+- [x] 6.2 Tipos en la interfaz: «¿Qué es?», un formulario por tipo, ficha de cada tipo, portadas con su forma, estados según el tipo y cambio de tipo con aviso. La plataforma del videojuego y las temporadas de una serie van en el ejemplar (D60, cambio del 29/09).
+- [x] 6.3 El alta empieza por buscar: título o código escaneado, resultados con su fuente, «¿Qué es?» para un código sin tipo y «Añadir a mano» siempre a la vista.
+- [x] 6.4 Proveedores sin clave (Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive), Ajustes › Proveedores de datos con fuentes que se apagan y clave propia para cualquiera que la pida (Google Books, GameUPC).
+- [x] 6.5 Me falta (una obra sin ejemplares) y «Lo deseo» (una marca de cada persona); fuera la lista de deseos de D36.
+- [x] 6.6 Series con orden o sin él, huecos, y la relación «necesita».
+- [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
+
+Lo que quedó por pulir, en «Tras el lanzamiento» desde el 24/10/2026.

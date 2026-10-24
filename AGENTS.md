@@ -13,7 +13,7 @@ A shared catalog for a household library (books first; board games, comics, vide
 The full rationale lives in `docs/` (in Spanish):
 - `docs/VISION.md` — original vision (historical).
 - `docs/DECISIONS.md` — architecture decision log (D01, D02…), each with a status. **Read the relevant decisions before proposing or changing architecture.**
-- `docs/ROADMAP.md` — execution phases.
+- `docs/ROADMAP.md` — execution phases up to the launch (Phase 8), then themes in priority order.
 - `docs/research/` — research notes.
 - `docs/plans/` — plans for the phase in progress, while they are active.
 - `docs/historico/` — superseded plans and debates. Never edited; they explain where the current decisions come from.
