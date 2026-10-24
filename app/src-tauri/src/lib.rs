@@ -77,6 +77,15 @@ pub fn run() {
             // KOSMOTHEKA_DATA_DIR keeps its covers elsewhere, and they must show too.
             app.asset_protocol_scope()
                 .allow_directory(covers.dir(), false)?;
+            // Covers stored before D82 are reduced to WebP once, in the background; the UI reloads if any changed.
+            let reduce_database = database.clone();
+            let reduce_covers = covers.clone();
+            let reduce_handle = app.handle().clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                if covers::reduce_stored(&reduce_database, &reduce_covers).is_ok_and(|n| n > 0) {
+                    let _ = reduce_handle.emit("library-changed", ());
+                }
+            });
             app.manage(database.clone());
             app.manage(covers.clone());
             app.manage(Lookup::new()?);

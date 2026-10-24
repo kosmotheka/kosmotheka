@@ -1,6 +1,10 @@
 {
   "next": [
     {
+      "es": "Las portadas ocupan mucho menos: se guardan más pequeñas y en un formato más ligero, también las que ya tenías. Se ven igual de bien.",
+      "en": "Covers take up much less space: they are stored smaller and in a lighter format, including the ones you already had. They look just as good."
+    },
+    {
       "es": "Al emparejar dos dispositivos que ya tenían bibliotecas, decir de quién es el otro ya no da un error de permisos ni lo deja sin dueño.",
       "en": "When pairing two devices that already had libraries, saying whose the other one is no longer fails with a permissions error or leaves it with no owner."
     },

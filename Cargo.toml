@@ -36,3 +36,17 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.hmac]
 opt-level = 3
+
+# Reducing a cover unoptimized takes seconds (D82): decoding, resizing and encoding always run optimized.
+[profile.dev.package.image]
+opt-level = 3
+[profile.dev.package.zune-jpeg]
+opt-level = 3
+[profile.dev.package.png]
+opt-level = 3
+[profile.dev.package.fdeflate]
+opt-level = 3
+[profile.dev.package.image-webp]
+opt-level = 3
+[profile.dev.package.libwebp-sys]
+opt-level = 3

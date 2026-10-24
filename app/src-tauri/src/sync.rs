@@ -1077,6 +1077,61 @@ mod tests {
         assert!(phone.titles().is_empty());
     }
 
+    /// D82, part 1: two devices that both had the old cover reduce it at the same time, each on its own start. They
+    /// make the same file, and the edition ends the same everywhere.
+    #[test]
+    fn two_devices_reducing_the_same_cover_at_once_converge() {
+        let dir = |name: &str| {
+            let dir = std::env::temp_dir()
+                .join(format!("kosmotheka-reduce-{name}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            crate::covers::Covers::new(dir).unwrap()
+        };
+        let (here, there) = (dir("a"), dir("b"));
+        let picture = image::RgbImage::from_fn(1000, 1500, |x, y| {
+            image::Rgb([
+                u8::try_from(x % 256).unwrap(),
+                u8::try_from(y % 256).unwrap(),
+                90,
+            ])
+        });
+        let mut jpeg = std::io::Cursor::new(Vec::new());
+        picture
+            .write_to(&mut jpeg, image::ImageFormat::Jpeg)
+            .unwrap();
+        let old = here.store(jpeg.get_ref(), "jpg").unwrap();
+        there.store(jpeg.get_ref(), "jpg").unwrap();
+
+        let mut a = Device::new();
+        let edition =
+            catalog::create_book(&mut a.0, &a.1, &book("Tehanu", None, "Ana"), Some(&old))
+                .unwrap()
+                .edition_id;
+        let mut b = Device::sharing(&a);
+        b.pull_from(&a);
+
+        assert_eq!(crate::covers::reduce_stored_in(&mut a.0, &here), 1);
+        assert_eq!(crate::covers::reduce_stored_in(&mut b.0, &there), 1);
+        a.sync_with(&mut b);
+
+        assert_converged(&[&a, &b]);
+        let cover: String =
+            a.0.query_row(
+                "SELECT cover FROM editions WHERE id = ?1",
+                [&edition],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            cover.rsplit_once('.').map(|(_, extension)| extension),
+            Some("webp")
+        );
+        assert!(
+            here.is_reduced(&cover) && there.is_reduced(&cover),
+            "the same file on both"
+        );
+    }
+
     #[test]
     fn books_added_offline_on_two_devices_end_up_on_both() {
         let mut laptop = Device::new();

@@ -154,6 +154,9 @@ if (apache < 0) problems.push("no Apache-2.0 text to use for the Android librari
 for (const entry of extra.notices) {
   packages.push({ ...entry, source: "android", texts: [apache] });
 }
+for (const { text, ...entry } of extra.bundled) {
+  packages.push({ ...entry, source: "other", texts: [textIndex(entry.license, text)] });
+}
 for (const entry of extra.public_domain) {
   packages.push({ ...entry, source: "other", license: "Public domain", texts: [] });
 }
