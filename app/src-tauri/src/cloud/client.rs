@@ -11,6 +11,8 @@ use crate::account::{
     self,
     client::{Auth, build_client, send, send_empty, send_json},
 };
+use crate::cover_exchange::{Inventory, Swap};
+use crate::covers::MAX_COVER_BYTES;
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::metadata::Candidate;
@@ -113,6 +115,22 @@ impl HttpCloud {
     fn url(&self, path: &str) -> String {
         format!("{}/v1/cloud/libraries{path}", self.base)
     }
+}
+
+/// A cover's bytes, up to the size a cover can have: a server that sends more is not sending a cover.
+async fn read_capped_bytes(response: &mut reqwest::Response, max: usize) -> Result<Vec<u8>> {
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| Error::account("server_unavailable"))?
+    {
+        if body.len() + chunk.len() > max {
+            return Err(Error::account("server_unavailable"));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
 }
 
 /// The server's own codes for this API; the rest keep the account client's mapping
@@ -404,6 +422,54 @@ impl CloudApi for HttpCloud {
         // The fixed shape is small: a server that sends more than this is not sending that.
         let answer = read_capped_json(&mut response, MAX_BOOK_ANSWER).await?;
         parse_answer(&answer).map_err(|()| Error::account("server_unavailable"))
+    }
+
+    async fn covers_inventory(&self, cloud: &str, inventory: &Inventory) -> Result<Swap> {
+        let body = serde_json::to_value(inventory)?;
+        send_json(
+            &self.client,
+            Method::POST,
+            &self.url(&format!("/{cloud}/covers/inventory")),
+            self.auth(),
+            Some(&body),
+        )
+        .await
+        .map_err(cloud_error)
+    }
+
+    async fn download_cover(&self, cloud: &str, name: &str) -> Result<Vec<u8>> {
+        let mut response = send(
+            &self.client,
+            Method::GET,
+            &self.url(&format!("/{cloud}/covers/{name}")),
+            self.auth(),
+            None,
+        )
+        .await
+        .map_err(cloud_error)?;
+        read_capped_bytes(&mut response, MAX_COVER_BYTES).await
+    }
+
+    async fn upload_cover(&self, cloud: &str, name: &str, bytes: Vec<u8>) -> Result<()> {
+        let mut request = self
+            .client
+            .put(self.url(&format!("/{cloud}/covers/{name}")))
+            .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
+            .body(bytes);
+        if let Some(auth) = self.auth() {
+            request = request
+                .header("X-Device-Id", auth.device_id)
+                .bearer_auth(auth.token);
+        }
+        let response = request
+            .send()
+            .await
+            .map_err(|_| Error::account("server_unavailable"))?;
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(Error::Cloud("cover_refused"))
+        }
     }
 
     async fn create_invitation(

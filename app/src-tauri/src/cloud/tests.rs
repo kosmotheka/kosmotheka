@@ -47,6 +47,8 @@ struct FakeLibrary {
     identity: Option<FakeIdentity>,
     /// Whether the cloud has registered itself in the log.
     registered: bool,
+    /// The cover files the server keeps for this library, by name (D82).
+    covers: BTreeMap<String, Vec<u8>>,
 }
 
 #[derive(Default)]
@@ -69,6 +71,8 @@ struct CloudState {
     failing_pulls: BTreeMap<String, &'static str>,
     /// A server that makes no invitations (it has no address for their links).
     without_invitations: bool,
+    /// Every call to a cover route, whichever it is.
+    cover_calls: usize,
     /// Where the links of this server live.
     link_base: String,
     /// What `GET /v1/server` says the links start with, if the server says (an older one does not).
@@ -208,6 +212,30 @@ impl FakeCloud {
         let mut state = self.0.lock().unwrap();
         state.metadata.push("gameupc".to_owned());
         state.gameupc_answers = answers.into();
+    }
+
+    /// The bytes the server keeps for a cover of a cloud library, if any.
+    fn cover_in(&self, cloud: &str, name: &str) -> Option<Vec<u8>> {
+        self.0.lock().unwrap().libraries[cloud]
+            .covers
+            .get(name)
+            .cloned()
+    }
+
+    /// Puts a cover on the server as another device would have uploaded it.
+    fn put_cover(&self, cloud: &str, name: &str, bytes: Vec<u8>) {
+        self.0
+            .lock()
+            .unwrap()
+            .libraries
+            .get_mut(cloud)
+            .unwrap()
+            .covers
+            .insert(name.to_owned(), bytes);
+    }
+
+    fn cover_calls(&self) -> usize {
+        self.0.lock().unwrap().cover_calls
     }
 
     fn gameupc_asks(&self) -> Vec<String> {
@@ -411,6 +439,17 @@ impl FakeApi {
 impl FakeLibrary {
     fn has_access(&self, account: &str) -> bool {
         self.owner == account || self.members.iter().any(|member| member == account)
+    }
+
+    /// The covers the editions of this library point to, as the server reads them from its catalog (D82).
+    fn cover_names(&self) -> std::collections::BTreeSet<String> {
+        self.operations
+            .values()
+            .flat_map(|synced| &synced.operation.changes)
+            .filter(|change| change.entity == Entity::Edition)
+            .filter_map(|change| change.fields.get("cover").and_then(Value::as_str))
+            .map(str::to_owned)
+            .collect()
     }
 
     /// The small version of the server's two cuts (D98, D71): a revocation in the log names the device, or the
@@ -679,6 +718,7 @@ impl CloudApi for FakeApi {
                 operations: BTreeMap::new(),
                 identity,
                 registered: false,
+                covers: BTreeMap::new(),
             },
         );
         Ok(listed)
@@ -931,6 +971,60 @@ impl CloudApi for FakeApi {
             Some(Err(code)) => Err(Error::account(code)),
             None => Err(Error::account("server_unavailable")),
         }
+    }
+
+    async fn covers_inventory(&self, cloud: &str, inventory: &Inventory) -> Result<Swap> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.cover_calls += 1;
+        let library = state
+            .libraries
+            .get(cloud)
+            .filter(|library| library.has_access(&self.account))
+            .ok_or(Error::Cloud("not_found"))?;
+        let referenced = library.cover_names();
+        let send = referenced
+            .iter()
+            .filter(|name| library.covers.contains_key(*name) && !inventory.have.contains(name))
+            .cloned()
+            .collect();
+        let want = referenced
+            .iter()
+            .filter(|name| !library.covers.contains_key(*name) && inventory.have.contains(name))
+            .cloned()
+            .collect();
+        Ok(Swap { send, want })
+    }
+
+    async fn download_cover(&self, cloud: &str, name: &str) -> Result<Vec<u8>> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.cover_calls += 1;
+        let library = state
+            .libraries
+            .get(cloud)
+            .filter(|library| library.has_access(&self.account))
+            .ok_or(Error::Cloud("not_found"))?;
+        library
+            .covers
+            .get(name)
+            .filter(|_| library.cover_names().contains(name))
+            .cloned()
+            .ok_or(Error::Cloud("not_found"))
+    }
+
+    async fn upload_cover(&self, cloud: &str, name: &str, bytes: Vec<u8>) -> Result<()> {
+        let mut state = self.cloud.0.lock().unwrap();
+        state.cover_calls += 1;
+        let account = self.account.clone();
+        let library = state
+            .libraries
+            .get_mut(cloud)
+            .filter(|library| library.has_access(&account))
+            .ok_or(Error::Cloud("not_found"))?;
+        if !library.cover_names().contains(name) {
+            return Err(Error::Cloud("not_found"));
+        }
+        library.covers.insert(name.to_owned(), bytes);
+        Ok(())
     }
 
     async fn gameupc_choice(&self, code: &str, external_id: u64) -> Result<()> {
@@ -1259,6 +1353,7 @@ async fn upload_settled<A: CloudApi>(device: &Database, api: &A, library: &str) 
 
 mod bgg_tests;
 mod comic_vine_tests;
+mod covers_tests;
 mod gameupc_tests;
 mod invitations_tests;
 mod links_tests;

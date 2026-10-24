@@ -1532,11 +1532,13 @@ pub fn answer_other_owner(database: State<'_, Database>, library_id: String) -> 
     cloud::other_owner::answer(&*database.lock()?, &library_id)
 }
 
-/// Syncs every library of the account with the cloud, one report per library.
+/// Syncs every library of the account with the cloud, one report per library. Then, in the background, the covers
+/// their editions point to (D82); `covers-arrived` tells the UI to show the ones that came.
 #[tauri::command]
 pub async fn sync_cloud(
     app: AppHandle,
     database: State<'_, Database>,
+    covers: State<'_, Covers>,
     reset: State<'_, ResetDeps>,
 ) -> Result<Vec<LibraryReport>> {
     let result = match HttpCloud::connect(&database) {
@@ -1545,6 +1547,24 @@ pub async fn sync_cloud(
     };
     let result = account::react_to_account_error(&database, reset.context(), result).await;
     emit_if_reset(&app, &result);
+    if result.is_ok() {
+        let (database, covers, app) = (
+            database.inner().clone(),
+            covers.inner().clone(),
+            app.clone(),
+        );
+        tauri::async_runtime::spawn(async move {
+            let Ok(api) = HttpCloud::connect(&database) else {
+                return;
+            };
+            if cloud::exchange_covers(&database, &api, &covers)
+                .await
+                .is_ok_and(|received| received > 0)
+            {
+                let _ = app.emit("covers-arrived", ());
+            }
+        });
+    }
     result
 }
 

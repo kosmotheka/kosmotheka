@@ -19,6 +19,8 @@ use serde_json::json;
 
 use kosmotheka_domain::{Change, Entity, Isbn};
 
+use crate::cover_exchange::{self, Inventory, Swap};
+use crate::covers::Covers;
 use crate::db::Database;
 use crate::error::{Error, Result};
 use crate::lan;
@@ -107,6 +109,12 @@ pub trait CloudApi {
     /// One ISBN in Google Books through the server (7.8, D83): `Ok(None)` is the server saying it is not found.
     /// Only the ISBN leaves the app.
     async fn google_books_isbn(&self, isbn: &Isbn) -> Result<Option<Metadata>>;
+    /// What this device has of a cloud library's covers, and the server's answer: what it sends and what it wants
+    /// (D82).
+    async fn covers_inventory(&self, cloud: &str, inventory: &Inventory) -> Result<Swap>;
+    /// One cover file of a cloud library, read up to the size a cover can have.
+    async fn download_cover(&self, cloud: &str, name: &str) -> Result<Vec<u8>>;
+    async fn upload_cover(&self, cloud: &str, name: &str, bytes: Vec<u8>) -> Result<()>;
 }
 
 /// The answer to «what do I have?»: the libraries, and apart the ids of those the account had and was cut from.
@@ -661,6 +669,58 @@ fn or_failed(result: Result<LibraryReport>, library: &str, cloud: &str) -> Resul
 /// Syncs every library of the account: the ones linked here, and the ones this
 /// device does not have yet, which come down. A library that fails for its own reasons is reported as
 /// failed and the rest go on; the session stops only for what concerns all of them (`stops_the_session`).
+/// Swaps the cover files of every library linked to this server, after the operations (D82): as on the local
+/// network, this device says what it has, the server says what it sends and what it wants, and each cover is checked
+/// when it arrives. Only covers of editions of that library are fetched or sent, whatever the server lists. One at a
+/// time, in the background; a library or a cover that fails is left for the next sync. Returns how many arrived.
+pub async fn exchange_covers<A: CloudApi>(
+    database: &Database,
+    api: &A,
+    covers: &Covers,
+) -> Result<usize> {
+    let wanted: Vec<(String, std::collections::BTreeSet<String>)> = {
+        let conn = database.lock()?;
+        let mut wanted = Vec::new();
+        for (library, link) in linked_libraries(&conn)? {
+            let Some(cloud) = link.cloud_library.clone() else {
+                continue;
+            };
+            if !link.is(&cloud, api.server()) {
+                continue;
+            }
+            let referenced = cover_exchange::referenced(&conn, std::slice::from_ref(&library))?;
+            if !referenced.is_empty() {
+                wanted.push((cloud, referenced));
+            }
+        }
+        wanted
+    };
+    let mut received = 0;
+    for (cloud, referenced) in wanted {
+        let inventory = cover_exchange::inventory(covers, &referenced);
+        let Ok(swap) = api.covers_inventory(&cloud, &inventory).await else {
+            continue;
+        };
+        for name in swap
+            .send
+            .iter()
+            .filter(|name| referenced.contains(*name) && !covers.has(name))
+        {
+            if let Ok(bytes) = api.download_cover(&cloud, name).await
+                && covers.store_arrived(name, &bytes).is_ok()
+            {
+                received += 1;
+            }
+        }
+        for name in swap.want.iter().filter(|name| referenced.contains(*name)) {
+            if let Some(bytes) = covers.read(name) {
+                let _ = api.upload_cover(&cloud, name, bytes).await;
+            }
+        }
+    }
+    Ok(received)
+}
+
 pub async fn sync_all<A: CloudApi>(database: &Database, api: &A) -> Result<Vec<LibraryReport>> {
     // Before listing, so a library this account was just given access to is in the list. A server that
     // does not know the route, or a network that fails here, must not stop the session: the list says
