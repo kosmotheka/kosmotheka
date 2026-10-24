@@ -154,10 +154,9 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - Límites de peticiones y cuentas sin confirmar que caducan.
 - **Dar un dispositivo a otra persona** (D81): «Dejar este dispositivo a otra persona» borra sus bibliotecas y crea una identidad nueva, también sin cuenta; un dispositivo quitado desde otro hace lo mismo y pierde el acceso a las bibliotecas.
 - **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad. *Servidor hecho en 7.7 (11/10/2026, pendiente de revisión): tabla `activity_log`, purga al año, consulta por consola; ver [cloud.md](architecture/cloud.md#el-registro-de-actividad-77-d66).*
-- **Seguridad del servidor antes de producción:** una sesión con el maintainer para revisarla, proporcionada a un VPS pequeño y compartido; ahí se decide cómo hacer las copias de PostgreSQL sin gastar o gastando lo mínimo.
 - **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
 - Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
-- **Para cerrarla (17/10/2026), lo que falta** (lista completa en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7)): las pruebas en pantalla de 7.1, 7.3, 7.5.5 y 7.6; la sesión de seguridad de 7.9; si se quiere, Mercure en producción; probar en un móvil que el enlace de invitación abre la app sola (`assetlinks.json` ya publicado); probar GameUPC en el móvil; la segunda pasada del maintainer por el servidor; y la prueba que la cierra. *Puesto al día el 24/10/2026: las copias automáticas y GameUPC ya están hechos.* El resto está hecho y revisado.
+- **Para cerrarla** (repasado con el maintainer el 24/10/2026): solo **la prueba que la cierra**, compartir una biblioteca por la nube con alguien de otra ciudad (con uno de los testers). Las pruebas en pantalla y la segunda revisión del servidor son trabajo atrasado del maintainer y se siguen en su lista, no aquí; la sesión de seguridad y Mercure en producción salen de la fase (ver «Por colocar»). Lista original en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7).
 - **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación
@@ -166,7 +165,6 @@ La nube es un dispositivo más, siempre encendido, con los mismos roles.
 - **Portadas que viajan entre dispositivos (D82, aceptada el 24/10/2026), antes de la próxima versión:** hoy ninguna portada pasa a otro dispositivo, ni por la red local ni por la nube. Las imágenes viajan como ficheros por su hash, reducidas a ~800 px en WebP, primero por la red local y después por la nube (200 MB por biblioteca). Plan por partes en [plans/d82-portadas.md](plans/d82-portadas.md). **Hecho el 24/10/2026 y probado en dispositivos con la 0.5.0**: por wifi y por la nube (el móvil solo con datos).
 - **Google Play:** cuenta de desarrollador (25 $, una vez), prueba cerrada con al menos 12 personas durante 14 días, y verificación de identidad. *En marcha (24/10/2026): la prueba cerrada funciona con la 0.4.0 (una persona ya la instaló desde ella) y la 0.5.0 está en revisión; los testers se apuntan con un grupo de Google. Faltan las 12 personas y sus 14 días.*
 - Mientras tanto, distribución a familia y amigos con la cuenta de público reducido (hasta 20 dispositivos, gratis).
-- **Notificaciones push en Android** con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
 - ~~**F-Droid**~~ — descartado por el maintainer (16/10/2026): con la verificación de desarrolladores de Google y la app ya en Google Play, no compensa. De paso, el escáner (`tauri-plugin-barcode-scanner`) puede seguir con ML Kit a través de Google Play Services, que es lo que F-Droid no admitía.
 - ✅ **Landing pública** (02/10/2026): web estática de Claude Design en `web/`, publicada en kosmotheka.com con inicio, cómo funciona, descargas, el proyecto y privacidad, en español e inglés ([web.md](publicacion/web.md)). Con enlace al código desde el 22/10/2026.
 - **Experiencia de uso del alta y la ficha** (prueba del 05/10/2026): hecho lo urgente (escáner, BNE, editar en su propia pantalla, idioma, portadas); lo que falta, en [ux-escanear-y-editar.md](testing/ux-escanear-y-editar.md#pendiente).
@@ -222,6 +220,13 @@ Solo si llega el escenario de ludotecas, clubes o colegios.
 - Inicio de sesión corporativo (Google, Microsoft).
 - **Web para el personal** (D53).
 - Licencias comerciales de los proveedores que las exigen; protección de datos con menores.
+
+## Por colocar
+
+Salido del repaso del 24/10/2026; se les da sitio al decidir el orden después del lanzamiento.
+
+- **Seguridad del servidor** (sale de la Fase 7 el 24/10/2026: no es urgente, hoy no hay carga y el servidor admite muchas bibliotecas): una sesión con el maintainer, proporcionada a un VPS pequeño y compartido. Lleva, entre otras cosas, un tope de bibliotecas por cuenta y de operaciones por biblioteca (visto al revisar D82: con el registro abierto, una cuenta podría hacer crecer la base de datos sin freno). Las copias de PostgreSQL, que también iban en esta sesión, ya están hechas (18/10/2026).
+- **Avisos: Mercure en producción y notificaciones push** (juntados el 24/10/2026, «avisar de los cambios»). Mercure, los avisos al momento con la app abierta, ya está hecho en código (7.3) y apagado en producción: la app se pone al día al abrirse. Las push, con la app cerrada (D75), **cuando la app esté en producción** (decidido el 17/10/2026): FCM; UnifiedPush quitado el 16/10/2026. Para empezar: petición nueva, petición aceptada o rechazada, invitación aceptada. Con el permiso de notificaciones y Ajustes de avisos.
 
 ## Queda abierto
 

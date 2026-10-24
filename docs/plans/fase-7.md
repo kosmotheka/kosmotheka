@@ -435,6 +435,8 @@ Lo demás quedó decidido al preparar la fase (01/10/2026); queda una, para una 
 
 Lo que de verdad falta (17/10/2026). Todo lo demás de la lista de arriba está hecho y revisado.
 
+**Repasado con el maintainer el 24/10/2026:** la fase se cierra solo con la prueba de otra ciudad. Las copias automáticas, `assetlinks.json` y GameUPC están hechos. Las pruebas en pantalla (con el enlace que abre la app y GameUPC en el móvil) y la segunda pasada por el servidor son trabajo atrasado del maintainer, en su lista privada. La sesión de seguridad y Mercure en producción salen de la fase, a «Por colocar» del [ROADMAP](../ROADMAP.md).
+
 - [ ] **Pruebas en pantalla** (el maintainer): 7.3 en local (`docs/testing/fase-7.md`), 7.5.5a, b y c, 7.6 (invitar, pegar y aceptar) y las pantallas de cuenta de 7.1 en el móvil.
 - [ ] **La prueba que cierra la fase:** compartir una biblioteca por la nube con alguien de otra ciudad («Hecho cuando» en el [ROADMAP](../ROADMAP.md)).
 - [ ] **La sesión de seguridad de 7.9** con el maintainer («Seguridad del servidor antes de producción»).
