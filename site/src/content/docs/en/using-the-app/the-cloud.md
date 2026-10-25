@@ -85,7 +85,7 @@ Only the ones you removed yourself show up. If your access to a library was with
 
 To invite someone, the library has to be in the cloud, you have to administer it, and you have to be signed in. If something is missing, the app tells you what ("Upload it first and then you can invite").
 
-1. Open the menu, go to "People and permissions" and tap "Invite".
+1. Open the menu, go to "People and permissions" and tap "Invite" (on a phone, at the end of the page). It is also in "Share and devices", next to each library in the cloud that you administer.
 2. Write the person's name (they will appear under "People" until they come in).
 3. Choose:
    - **"By email":** they get an email with a link (an address that opens when tapped). They can only open it with that email address. The app does not keep that address.

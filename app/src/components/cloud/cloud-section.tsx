@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cloud, CloudDownload, CloudOff, RefreshCw, TriangleAlert } from "lucide-react";
+import { Cloud, CloudDownload, CloudOff, MailPlus, RefreshCw, TriangleAlert } from "lucide-react";
 
-import { CloudStateLine, useCloudRows } from "@/components/cloud/cloud-state";
+import { type CloudRow, CloudStateLine, useCloudRows } from "@/components/cloud/cloud-state";
 import { NotOfficialNote } from "@/components/cloud/not-official-note";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
+import { InviteDialog } from "@/components/people/invite-dialog";
 import { Button } from "@/components/ui/button";
 import { type LeftLibrary, cloudErrorKey, leftLibraries, redownloadLibrary } from "@/lib/api";
 import { cloudNotices, refreshCloudStatus, runCloudSync, useCloud } from "@/lib/cloud";
@@ -102,9 +103,11 @@ function LeftLibraries({
  * state, next to the paired devices. Hidden when signed out.
  */
 export function CloudSharingSection({
+  desktop,
   onChanged,
   onNotice,
 }: {
+  desktop: boolean;
   /** Something arrived from the cloud, so the lists reload. */
   onChanged: () => void;
   onNotice: (message: string) => void;
@@ -116,6 +119,8 @@ export function CloudSharingSection({
   const libraries = useLibraries();
   const nameOf = useLibraryName();
   const [busy, setBusy] = useState(false);
+  // Invite from here too: this is where people look for sharing (People and permissions has it as well).
+  const [inviting, setInviting] = useState<CloudRow | null>(null);
 
   if (rows.length === 0) return null;
 
@@ -190,10 +195,30 @@ export function CloudSharingSection({
                   {t(row.kind === "unsigned" ? "cloud.row.fix" : "cloud.row.upload")}
                 </Button>
               )}
+              {row.status.linkedHere && row.status.administers && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setInviting(row)}
+                >
+                  <MailPlus /> {t("invitations.invite.button")}
+                </Button>
+              )}
             </div>
           ))}
         </div>
       </section>
+      {inviting && (
+        <InviteDialog
+          libraryId={inviting.library.id}
+          library={nameOf(inviting.library)}
+          person={null}
+          desktop={desktop}
+          onClose={() => setInviting(null)}
+          onInvited={() => {}}
+        />
+      )}
       <LeftLibraries onChanged={onChanged} onNotice={onNotice} />
     </>
   );

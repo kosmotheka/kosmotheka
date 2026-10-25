@@ -85,7 +85,7 @@ Solo aparecen las que quitaste tú. Si te retiraron el acceso a una biblioteca (
 
 Para invitar, la biblioteca tiene que estar en la nube, tienes que administrarla y tienes que haber iniciado sesión. Si falta algo, la app te dice qué («Súbela primero y entonces podrás invitar»).
 
-1. Abre el menú, entra en «Personas y permisos» y pulsa «Invitar».
+1. Abre el menú, entra en «Personas y permisos» y pulsa «Invitar» (en el móvil, al final de la página). También está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras.
 2. Escribe el nombre de la persona (saldrá en «Personas» hasta que entre).
 3. Elige:
    - **«Por correo»:** le llega un correo con un enlace (una dirección que se abre al pulsarla). Solo lo podrá abrir con ese correo. La app no guarda esa dirección.

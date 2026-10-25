@@ -1,4 +1,10 @@
 {
+  "next": [
+    {
+      "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras.",
+      "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer."
+    }
+  ],
   "0.6.0": [
     {
       "es": "En el móvil, si el código de barras de un libro es una etiqueta de la tienda, pulsa «Foto del número» en el escáner: la app lee el ISBN impreso en la foto, en el propio móvil, sin enviarla a ningún sitio. En «Añadir», «Escribir el número» saca el teclado numérico y ya no busca títulos mientras lo escribes.",

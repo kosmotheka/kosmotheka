@@ -1699,6 +1699,8 @@ mockIPC((cmd, args) => {
           unsignedHistory: unsigned,
           // Only whoever administers it uploads (D76); `?reader` is Hugo, who does not.
           canUpload: mockAccount.signedIn && !params.has("reader") && !unsigned && !linked,
+          administers: !params.has("reader"),
+          cloudPower: linked,
         };
       });
     case "upload_to_cloud": {

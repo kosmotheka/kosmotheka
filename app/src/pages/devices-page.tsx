@@ -380,7 +380,7 @@ export function DevicesPage({
       {header}
       <div className="flex w-full max-w-4xl flex-col gap-4">
         {locked.length > 0 && <CannotShare libraries={locked} />}
-        <CloudSharingSection onChanged={onChanged} onNotice={onNotice} />
+        <CloudSharingSection desktop={desktop} onChanged={onChanged} onNotice={onNotice} />
         {body}
         {devices && devices.length > 0 && (
           <p className="flex items-start gap-2 text-[13px] text-pretty text-muted-foreground">

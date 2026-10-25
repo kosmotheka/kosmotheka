@@ -710,7 +710,7 @@
           "To upload a library, tap your name in «Settings» and, in «Libraries in the cloud», tick which ones and tap «Upload». Only someone who administers it can upload it.",
           "What you upload is kept on the server, and whoever runs it could read it. What you do not upload stays only on your devices and on your home Wi-Fi.",
           "On a new phone, sign in with the same account: it brings down your libraries, with your permission in each one.",
-          "To invite someone, tap «Invite» in «People and permissions»: by email, or by copying a link that only that person should open."
+          "To invite someone, tap «Invite» next to the library in «Share and devices», or in «People and permissions»: by email, or by copying a link that only that person should open."
         ]
       },
       "people": {
