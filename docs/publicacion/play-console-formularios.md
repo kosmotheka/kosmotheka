@@ -1,6 +1,6 @@
 # Formularios de Play Console, respondidos
 
-> Preparado el 17/10/2026 para la app 0.2.1 (cuenta y nube opcionales, por invitación). Parte de [ficha-google-play.md](ficha-google-play.md) y de la política publicada ([web/es/privacidad.html](../../web/es/privacidad.html)), y de lo comprobado en el código ese día. Los nombres de los botones son los de Play Console en español y pueden variar un poco. **«Decides tú»** marca lo que solo sabe el maintainer, con una recomendación. Si la app cambia lo que sale del dispositivo, hay que repasar las secciones 2, 4 y 8.
+> Preparado el 17/10/2026 para la app 0.2.1; repasado el 24/10/2026 (GameUPC, 0.4.0) y el 25/10/2026 (portadas en la nube, 0.5.0, y lo que hay en `main` para la próxima: sin cambios en el formulario) (cuenta y nube opcionales, por invitación). Parte de [ficha-google-play.md](ficha-google-play.md) y de la política publicada ([web/es/privacidad.html](../../web/es/privacidad.html)), y de lo comprobado en el código ese día. Los nombres de los botones son los de Play Console en español y pueden variar un poco. **«Decides tú»** marca lo que solo sabe el maintainer, con una recomendación. Si la app cambia lo que sale del dispositivo, hay que repasar las secciones 2, 4 y 8.
 
 Todo está en **Play Console › la app › Contenido de la aplicación** (en el menú, «Política y programas»), salvo las secciones 9 a 11.
 
@@ -149,7 +149,7 @@ La cuenta desde los 14 es una tercera cosa: la edad para dar el consentimiento p
 | Información personal › **Dirección de correo** | Sí | No | No | Opcional | Gestión de la cuenta · Funcionalidad de la app | El de la cuenta (códigos, recuperar la contraseña). La dirección de alguien a quien invitas no se guarda: solo su huella |
 | Información personal › **ID de usuario** | Sí | **Sí** (desde la 0.4.0) | No | Opcional | Recogido: gestión de la cuenta · Prevención de fraudes, seguridad y cumplimiento. Compartido: funcionalidad de la app | El identificador de la cuenta y, si entras con Google, el de Google. Se comparte con GameUPC una huella de la cuenta (ver abajo) |
 | Actividad en la app › **Historial de búsqueda en la app** | Sí | No | **Sí** | Opcional | Funcionalidad de la app | Con cuenta, lo que buscas por título pasa por el servidor, que no lo guarda (Ajustes › Proveedores lo apaga) |
-| Actividad en la app › **Otro contenido generado por el usuario** | Sí | No | No | Opcional | Funcionalidad de la app | Las bibliotecas que subes a la nube: obras, ejemplares, personas, notas |
+| Actividad en la app › **Otro contenido generado por el usuario** | Sí | No | No | Opcional | Funcionalidad de la app | Las bibliotecas que subes a la nube: obras, ejemplares, personas, notas, y sus portadas (desde la 0.5.0, D82) |
 | Actividad en la app › **Otras acciones** | Sí | No | No | Opcional | Prevención de fraudes, seguridad y cumplimiento | El registro de actividad de la cuenta: entradas, cambios de contraseña, quién quitó a quién. Un año |
 | Información y rendimiento de la app › **Diagnóstico** | Sí | No | No | Opcional | Analíticas | ML Kit al escanear: modelo, versiones, tiempos y errores (los recibe Google, no nosotros) |
 | Dispositivo u otros identificadores › **Dispositivo u otros identificadores** | Sí | No | No | Opcional | Gestión de la cuenta · Prevención de fraudes, seguridad y cumplimiento · Analíticas | El identificador y la clave pública de cada dispositivo con cuenta, y el de la sesión de escaneo de ML Kit |
@@ -160,6 +160,11 @@ Por qué es así:
 - **«Opcional» en todo.** La app funciona entera sin cuenta y sin escanear: se puede escribir el ISBN o el título.
 - **La IP no es un tipo de dato del formulario.** Solo habría que declararla como «Ubicación aproximada» si se usara para saber dónde estás, y no se usa para eso. La guarda el registro de actividad, por seguridad, y ya lo dice la política.
 - **Sin cuenta, la app no nos envía nada.** Las búsquedas van directas a los catálogos, sin nada que diga quién eres.
+
+**Repaso del 25/10/2026 (0.5.0 y lo que hay en `main`):** nada cambia en Play Console.
+- **Las portadas en la nube** van en «Otro contenido generado por el usuario», que ya está marcado: son parte de la biblioteca que se sube. Son las de los catálogos públicos, no fotos de la persona, así que **«Fotos y vídeos» sigue sin marcar**. Cuando la app deje hacer una foto propia de la portada (D82, pendiente), habrá que marcar «Fotos y vídeos › Fotos» (recogido, opcional, funcionalidad de la app).
+- **La pantalla de los servicios del servidor** solo cuenta lo que ya se declaraba (las búsquedas por el servidor) y deja apagarlo.
+- **Lo que hay que mirar con el plugin de la cámara:** el reconocimiento de texto de ML Kit es otra API de ML Kit y manda a Google los mismos datos técnicos que el escáner, ya declarados en «Diagnóstico». Si la foto de la estantería no sale del dispositivo, no cambia nada más; si algún día va a una IA (D19), sí.
 
 ML Kit con «Analíticas» es lo que Google indica para su biblioteca. La ficha sigue diciendo «Sin publicidad ni seguimiento»: esos datos los recibe Google, no nosotros, y la política ya lo cuenta (sección 1).
 

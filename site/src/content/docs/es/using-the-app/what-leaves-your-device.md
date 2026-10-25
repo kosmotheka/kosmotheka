@@ -32,7 +32,7 @@ Otros servicios piden una **contraseña propia**, gratuita, que te da su web par
 
 ## Las portadas
 
-La imagen de la portada se baja de internet desde el servicio que la tiene y se guarda en tu móvil u ordenador. Ese servicio sabe que la has pedido.
+La imagen de la portada se baja de internet desde el servicio que la tiene y se guarda en tu móvil u ordenador. Ese servicio sabe que la has pedido. Tus otros dispositivos la reciben del tuyo por la wifi de casa o, si la biblioteca está en la nube, del servidor de tu cuenta, que la guarda con la biblioteca.
 
 ## La cámara
 

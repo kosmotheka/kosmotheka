@@ -32,7 +32,7 @@ Other services ask for a **key of your own**, free, which their website gives yo
 
 ## Covers
 
-The cover image is downloaded from the service that has it and saved on your phone or computer. That service knows you asked for it.
+The cover image is downloaded from the service that has it and saved on your phone or computer. That service knows you asked for it. Your other devices get it from yours over your home Wi-Fi or, if the library is in the cloud, from your account's server, which keeps it with the library.
 
 ## The camera
 
