@@ -21,16 +21,21 @@ Solo en el móvil.
 2. Si el móvil pide permiso para usar la cámara, acéptalo.
 3. Pon la cámara delante del código de barras del libro. En los libros, es el que empieza por 978 o 979.
 
-Si la tienda ha puesto una pegatina encima del código de barras, la app leerá la pegatina y no encontrará nada. Apunta al código del propio libro. Si no se deja leer, pulsa «Escribir el número» (abajo, en la pantalla de la cámara) y escribe el número pequeño que va debajo del código. Con la cruz de arriba a la izquierda cierras la cámara.
+Si la tienda ha puesto una pegatina encima del código de barras, la app leerá la pegatina y no encontrará nada. Apunta al código del propio libro. Si no se deja leer, tienes dos botones abajo, en la pantalla de la cámara:
 
-Para leer el código con la cámara necesitas un móvil Android con la tienda de Google (Google Play). Si no lo tienes, escribe el número a mano.
+- **«Foto del número»** abre la cámara de tu móvil. Haz una foto de la contraportada donde se vea el ISBN impreso («ISBN 978-…» o el número bajo el código de barras) y acéptala: la app lee el número en la foto, en tu móvil, sin enviarla a ningún sitio, y lo busca. Funciona mejor de cerca, con buena luz y sin que la foto salga movida. Si encuentra varios ISBN (el de otra edición, el del libro electrónico), te pregunta cuál es el tuyo; si no encuentra ninguno, te lo dice y puedes escribirlo.
+- **«Escribir el número»** te deja escribir el número pequeño que va debajo del código, con el teclado numérico.
+
+Con la cruz de arriba a la izquierda cierras la cámara.
+
+Para leer el código o el número con la cámara necesitas un móvil Android con la tienda de Google (Google Play). Si no lo tienes, escribe el número a mano. En el ordenador no hay cámara ni «Foto del número».
 
 ## Escribiendo el número
 
 En el ordenador no se escanea con cámara. Escribe o pega el número en el cuadro de búsqueda. Si tienes un lector de códigos de barras que se conecta al ordenador, también sirve, pero no es necesario.
 
 - Escribe el número tal como está impreso, con guiones o sin ellos. La app lo reconoce cuando está completo y cambia la lupa por un código de barras pequeño.
-- Los libros antiguos tienen un ISBN más corto, de 10 cifras, que a veces acaba en una X. También vale.
+- Los libros antiguos tienen un ISBN más corto, de 10 cifras, que a veces acaba en una X. También vale. Solo una cosa: si llegas aquí con «Escribir el número» desde la cámara, el teclado es solo de números y no tiene la X. Para esos libros, usa «Foto del número», o escríbelo en «¿Lo tengo?» o en el cuadro de búsqueda sin pasar por la cámara.
 - Si el código no dice de qué tipo es (una película, un juego, un disco…), la app te pide que elijas el tipo y lo busca ahí.
 
 ## Buscando por título

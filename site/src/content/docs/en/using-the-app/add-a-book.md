@@ -21,16 +21,21 @@ On a phone only.
 2. If the phone asks for permission to use the camera, allow it.
 3. Point the camera at the barcode of the book. On books, it is the one that starts with 978 or 979.
 
-If the shop has put a sticker over the barcode, the app will read the sticker and find nothing. Aim at the code on the book itself. If it will not read, tap "Type the number" (at the bottom of the camera screen) and type the small number printed under the code. The cross at the top left closes the camera.
+If the shop has put a sticker over the barcode, the app will read the sticker and find nothing. Aim at the code on the book itself. If it will not read, there are two buttons at the bottom of the camera screen:
 
-To read the code with the camera you need an Android phone with Google's store (Google Play). If you do not have it, type the number by hand.
+- **"Photo of the number"** opens your phone's camera. Take a photo of the back cover where the printed ISBN shows ("ISBN 978-…" or the number under the barcode) and accept it: the app reads the number in the photo, on your phone, without sending it anywhere, and looks it up. It works best close up, in good light and without blur. If it finds several ISBNs (another edition's, the ebook's), it asks which one is yours; if it finds none, it says so and you can type it.
+- **"Type the number"** lets you type the small number printed under the code, with the number keyboard.
+
+The cross at the top left closes the camera.
+
+To read the code or the number with the camera you need an Android phone with Google's store (Google Play). If you do not have it, type the number by hand. On a computer there is no camera and no "Photo of the number".
 
 ## Typing the number
 
 On a computer you cannot scan with a camera. Type or paste the number in the search box. If you have a barcode reader that plugs into your computer, that works too, but you do not need one.
 
 - Type the number as it is printed, with hyphens or without. The app recognizes it when it is complete and changes the magnifying glass into a small barcode.
-- Older books have a shorter ISBN, of 10 digits, which sometimes ends in an X. That works too.
+- Older books have a shorter ISBN, of 10 digits, which sometimes ends in an X. That works too. One thing: if you get here with "Type the number" from the camera, the keyboard only has numbers, with no X. For those books, use "Photo of the number", or type it in "Do I have it?" or in the search box without going through the camera.
 - If the code does not say what kind of thing it is (a film, a game, a record…), the app asks you to pick the type and searches there.
 
 ## Searching by title
