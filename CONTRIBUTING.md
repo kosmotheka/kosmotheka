@@ -14,6 +14,14 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 One pull request per topic. Write commit messages in English, in the imperative or descriptive style of the existing history.
 
+### Branches and pull requests
+
+- **Branch names** take the type of change from [Conventional Commits](https://www.conventionalcommits.org/) and a few words in English, lowercase with hyphens: `feat/printed-isbn`, `fix/invitation-twice`, `docs/shelf-photo`. Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`.
+- **The pull request title** has the same form, with the part it touches: `feat(app): read the ISBN printed on a back cover`. Parts: `app`, `ui`, `domain`, `spec`, `server`, `site`, `web`, `ci`.
+- **Everything about one change goes in its branch**, its documentation included: the guide, `docs/`, the decision log. Nothing about a change lands in `main` apart from it.
+- The [template](.github/pull_request_template.md) lists what to check for each part of the repository. Tick what applies and delete what does not.
+- Pull requests are merged with **«Rebase and merge»**, so each commit reaches `main` as it is: write commits that read well on their own.
+
 ## Set up your machine
 
 **The app** (`app/`, `crates/`) needs:

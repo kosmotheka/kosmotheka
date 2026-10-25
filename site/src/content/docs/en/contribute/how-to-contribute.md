@@ -15,7 +15,17 @@ This page gathers what you need to know so that a change is accepted the first t
 4. **Open the *pull request*** and explain **why** it is needed, not only what it does.
 5. **Go through the review.** We may ask for changes.
 
-One *pull request* per topic. Whoever takes part accepts the [code of conduct](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md). For a security problem **do not open a public issue**: follow [`SECURITY.md`](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md).
+One *pull request* per topic.
+
+**Branches and *pull requests*:**
+
+- **The branch name** takes the type of change from [Conventional Commits](https://www.conventionalcommits.org/) and a few English words, lowercase with hyphens: `feat/printed-isbn`, `fix/invitation-twice`, `docs/shelf-photo`. Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`.
+- **The *pull request* title** has the same form, with the part it touches: `feat(app): read the ISBN printed on a back cover`. Parts: `app`, `ui`, `domain`, `spec`, `server`, `site`, `web`, `ci`.
+- **Everything about a change goes in its branch**, its documentation included: the guide, `docs/` and the decision log.
+- The [*pull request* template](https://github.com/kosmotheka/kosmotheka/blob/main/.github/pull_request_template.md) lists what to check for each part you touch: tick what applies and delete the rest.
+- *Pull requests* are merged with «Rebase and merge»: each commit reaches `main` as it is, so each one has to make sense on its own.
+
+Whoever takes part accepts the [code of conduct](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md). For a security problem **do not open a public issue**: follow [`SECURITY.md`](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md).
 
 If you work with an AI assistant, the result is accepted if whoever opens the *pull request* understands the change and answers for it. `AGENTS.md` has the instructions for the assistant.
 

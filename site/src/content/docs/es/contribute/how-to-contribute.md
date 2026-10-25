@@ -15,7 +15,17 @@ Esta página ordena lo que hace falta saber para que un cambio se acepte a la pr
 4. **Abre el *pull request*** y explica **por qué** hace falta, no solo qué hace.
 5. **Pasa la revisión.** Es posible que pidamos cambios.
 
-Un *pull request* por tema. Quien participa acepta el [código de conducta](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md). Para un fallo de seguridad **no abras un issue público**: sigue [`SECURITY.md`](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md).
+Un *pull request* por tema.
+
+**Ramas y *pull requests*:**
+
+- **El nombre de la rama** lleva el tipo de cambio de [Conventional Commits](https://www.conventionalcommits.org/) y unas palabras en inglés, en minúsculas y con guiones: `feat/printed-isbn`, `fix/invitation-twice`, `docs/shelf-photo`. Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`.
+- **El título del *pull request*** tiene la misma forma, con la parte que toca: `feat(app): read the ISBN printed on a back cover`. Partes: `app`, `ui`, `domain`, `spec`, `server`, `site`, `web`, `ci`.
+- **Todo lo de un cambio va en su rama**, también su documentación: la guía, `docs/` y el registro de decisiones.
+- La [plantilla del *pull request*](https://github.com/kosmotheka/kosmotheka/blob/main/.github/pull_request_template.md) tiene la lista de lo que hay que comprobar según la parte que tocas: marca lo que aplica y borra lo demás.
+- Los *pull requests* se fusionan con «Rebase and merge»: cada commit llega a `main` tal cual, así que cada uno tiene que entenderse solo.
+
+Quien participa acepta el [código de conducta](https://github.com/kosmotheka/kosmotheka/blob/main/CODE_OF_CONDUCT.md). Para un fallo de seguridad **no abras un issue público**: sigue [`SECURITY.md`](https://github.com/kosmotheka/kosmotheka/blob/main/SECURITY.md).
 
 Si trabajas con un asistente de IA, se acepta el resultado si quien abre el *pull request* entiende el cambio y responde de él. `AGENTS.md` lleva las instrucciones para el asistente.
 

@@ -112,6 +112,13 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | retirada de acceso | `revocation` | A device that may no longer receive a library (D71). Synced with the library |
 | solicitud | `change_request` / `ChangeRequest` | Not `request`, which collides with the HTTP request (milestone 3.4) |
 
+## Branches and pull requests
+
+- **Work on a branch, never on `main`.** One branch per task, named `type/topic` with a [Conventional Commits](https://www.conventionalcommits.org/) type and a few English words in kebab-case: `feat/printed-isbn`, `fix/invitation-twice`, `docs/pr-template`.
+- **The documentation of a change goes in the same branch** as the change: `docs/`, the guide in `site/`, `DECISIONS.md`, the ROADMAP. Never commit documentation about work that lives in a branch to `main` or to another branch.
+- The maintainer pushes the branch and opens the pull request, and the CI runs on it. When the work is ready, give them the command to do both, with the branch name. Pull requests are merged with «Rebase and merge».
+- The pull request follows `.github/pull_request_template.md`: title `type(scope): summary`, and the checklist of the parts touched.
+
 ## Documentation is part of the work
 
 A change is not finished until the docs affected by it are updated:
