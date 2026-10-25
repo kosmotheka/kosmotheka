@@ -17,7 +17,7 @@
 | 4 | Bibliotecas | Varias bibliotecas por dispositivo, compartidas una a una | ✅ |
 | 5 | Personas, roles y peticiones | Mi hijo ve la familiar, marca lo leído y pide; yo apruebo | ✅ |
 | 6 | Catálogo general | Cualquier tipo de cosa, series, lo que falta y lo que deseo | ✅ |
-| 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | En producción desde el 18/10/2026; falta cerrarla |
+| 7 | La nube | Registro con email, sincronizar a distancia, todos los proveedores | ✅ (cerrada el 25/10/2026) |
 | 8 | Publicación | La app en la tienda de Android y una landing | En curso: repositorio abierto, versiones automáticas y prueba cerrada en marcha |
 
 Las fases terminan en la 8, el lanzamiento (decidido el 24/10/2026). Lo que viene después son **temas en orden de prioridad**, sin número; cada uno dice qué fase era, para que las decisiones y notas antiguas que la citan se sigan encontrando:
@@ -34,34 +34,6 @@ Las fases cerradas están en el [anexo](#anexo-fases-completadas).
 **Transversal:** el diseño de la interfaz. La Fase 3 fija la base, y después se trabaja con Claude Design fase a fase y tema a tema. La app tiene que seguir los patrones de Android (navegación inferior, menú lateral…), con una sección de ayuda ([brief](design/brief.md)).
 
 ---
-
-## Fase 7 — La nube
-
-La nube es un dispositivo más, siempre encendido, con los mismos roles.
-
-- **Plan de la fase:** [plans/fase-7.md](plans/fase-7.md), con hitos, propuestas y preguntas (01/10/2026).
-- **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
-- **Hecho: 7.2 Sincronizar con la nube** (04/10/2026): bibliotecas de la nube con id propio y tabla de acceso (D84), `pull` y `push`, subir una biblioteca con su historial, cadena de operaciones (D87) y copias cifradas sin `age` (D86).
-- **Hecho: 7.4 El servidor aplica y juzga** (10/10/2026): catálogo de cada biblioteca en PostgreSQL (D92), fusión y permisos en PHP con los mismos casos de `spec/` que la app, `push` que juzga lo que guarda, enlazar como paso propio (D93) y el sello, que impide antedatar operaciones a antes de la activación de los roles (D94).
-- **Hecho: roles obligatorios desde que se crea la biblioteca (D97, 16/10/2026):** cada biblioteca nace fundada por una clave, con su administrador; el sello de D94 desaparece; la bienvenida pide el nombre. Detalle en [fase-7.md](plans/fase-7.md).
-- **Hecho: en producción (18/10/2026)** en api.kosmotheka.app, con copias automáticas diarias y la restauración probada; registro abierto a todos desde el 23/10/2026.
-- **Hecho: GameUPC (7.8, 23/10/2026)**: juegos de mesa por su código de barras a través del servidor, con la clave del servidor; en producción.
-- **Hecho: las portadas también viajan por la nube (D82, 24/10/2026)**, con límites por biblioteca, por cuenta y para todo el servidor.
-- **Registro con email** y código en la app, o con Google (D77); recuperación con código. Segundo factor opcional y desbloqueo con biometría (D78). La app entra en el servidor oficial o en otro.
-- **La cuenta en la biblioteca** (D76): se sube biblioteca a biblioteca; la cuenta se enlaza sola con su persona, y un móvil nuevo recibe sus bibliotecas con su rol.
-- Subir una biblioteca a la nube sin perder nada, historial incluido.
-- **Enlace para invitar a una biblioteca**, además del QR (D43, D67).
-- **Acceso seguro antes de sincronizar** (hito 7.A, auditoría del 03/10/2026): arreglar dos fallos de la red local (SEG-010, SEG-011) y una batería de tests de casos hostiles, que es la primera línea de defensa.
-- **Sincronizar a distancia** con los mismos roles y peticiones; la nube juzga como un dispositivo más (D73) y la red local sigue funcionando a la vez (D39). La nube decide quién recibe qué con su propio id de biblioteca y una tabla de acceso, nunca con un id que llegue del cliente (D84).
-- **Avisos al momento** con la app abierta (Mercure, D75), en lugar de preguntar cada cierto tiempo.
-- **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse. *Sexta parte (17/10/2026): juegos de mesa con BoardGameGeek y libros de rol con RPGGeek, solo por el servidor; probado con el servicio real, sin ver en pantalla.* *Tercera parte (11/10/2026): videojuegos con RAWG.* *Primera parte hecha en 7.8 (11/10/2026): Google Books por ISBN a través del servidor, con caché sin saber quién preguntó y límites; ver [cloud.md](architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83). Segunda parte hecha el mismo día: TMDB (películas y series) por título, con la atribución en Proveedores. Tercera parte el mismo día: RAWG (videojuegos) por título, con atribución con enlace. Quedan BoardGameGeek e IGDB. Cuarta parte: clave propia para TMDB y RAWG (la app llama directo al proveedor), «Todas» en Proveedores y «Créditos». Quinta parte (12/10/2026): Comic Vine (cómics), por el servidor y con clave propia.*
-- Límites de peticiones y cuentas sin confirmar que caducan.
-- **Dar un dispositivo a otra persona** (D81): «Dejar este dispositivo a otra persona» borra sus bibliotecas y crea una identidad nueva, también sin cuenta; un dispositivo quitado desde otro hace lo mismo y pierde el acceso a las bibliotecas.
-- **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad. *Servidor hecho en 7.7 (11/10/2026, pendiente de revisión): tabla `activity_log`, purga al año, consulta por consola; ver [cloud.md](architecture/cloud.md#el-registro-de-actividad-77-d66).*
-- **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
-- Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
-- **Para cerrarla** (repasado con el maintainer el 24/10/2026): solo **la prueba que la cierra**, compartir una biblioteca por la nube con alguien de otra ciudad (con uno de los testers). Las pruebas en pantalla y la segunda revisión del servidor son trabajo atrasado del maintainer y se siguen en su lista, no aquí; la sesión de seguridad y Mercure en producción salen de la fase (ver «Tras el lanzamiento»). Lista original en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7).
-- **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
 
 ## Fase 8 — Publicación
 
@@ -383,3 +355,32 @@ Deja de estar centrado en libros.
 - [x] 6.7 Géneros (la lista de Design, cerrada por tipo) y etiquetas de cada biblioteca, con filtros y gestión.
 
 Lo que quedó por pulir, en «Tras el lanzamiento» desde el 24/10/2026.
+
+### Fase 7 — La nube ✅
+
+La nube es un dispositivo más, siempre encendido, con los mismos roles.
+
+- **Plan de la fase:** [plans/fase-7.md](plans/fase-7.md), con hitos, propuestas y preguntas (01/10/2026).
+- **Hecho: 7.0 Esqueleto del servidor** (Symfony 8.1, PHP 8.5, PostgreSQL 18, Docker propio, calidad, validación de operaciones en PHP con los casos de `spec/`, CI). Guía: [development/server.md](development/server.md).
+- **Hecho: 7.2 Sincronizar con la nube** (04/10/2026): bibliotecas de la nube con id propio y tabla de acceso (D84), `pull` y `push`, subir una biblioteca con su historial, cadena de operaciones (D87) y copias cifradas sin `age` (D86).
+- **Hecho: 7.4 El servidor aplica y juzga** (10/10/2026): catálogo de cada biblioteca en PostgreSQL (D92), fusión y permisos en PHP con los mismos casos de `spec/` que la app, `push` que juzga lo que guarda, enlazar como paso propio (D93) y el sello, que impide antedatar operaciones a antes de la activación de los roles (D94).
+- **Hecho: roles obligatorios desde que se crea la biblioteca (D97, 16/10/2026):** cada biblioteca nace fundada por una clave, con su administrador; el sello de D94 desaparece; la bienvenida pide el nombre. Detalle en [fase-7.md](plans/fase-7.md).
+- **Hecho: en producción (18/10/2026)** en api.kosmotheka.app, con copias automáticas diarias y la restauración probada; registro abierto a todos desde el 23/10/2026.
+- **Hecho: GameUPC (7.8, 23/10/2026)**: juegos de mesa por su código de barras a través del servidor, con la clave del servidor; en producción.
+- **Hecho: las portadas también viajan por la nube (D82, 24/10/2026)**, con límites por biblioteca, por cuenta y para todo el servidor.
+- **Registro con email** y código en la app, o con Google (D77); recuperación con código. Segundo factor opcional y desbloqueo con biometría (D78). La app entra en el servidor oficial o en otro.
+- **La cuenta en la biblioteca** (D76): se sube biblioteca a biblioteca; la cuenta se enlaza sola con su persona, y un móvil nuevo recibe sus bibliotecas con su rol.
+- Subir una biblioteca a la nube sin perder nada, historial incluido.
+- **Enlace para invitar a una biblioteca**, además del QR (D43, D67).
+- **Acceso seguro antes de sincronizar** (hito 7.A, auditoría del 03/10/2026): arreglar dos fallos de la red local (SEG-010, SEG-011) y una batería de tests de casos hostiles, que es la primera línea de defensa.
+- **Sincronizar a distancia** con los mismos roles y peticiones; la nube juzga como un dispositivo más (D73) y la red local sigue funcionando a la vez (D39). La nube decide quién recibe qué con su propio id de biblioteca y una tabla de acceso, nunca con un id que llegue del cliente (D84).
+- **Avisos al momento** con la app abierta (Mercure, D75), en lugar de preguntar cada cierto tiempo.
+- **Proveedores con clave** (BoardGameGeek, TMDB, IGDB o RAWG, Comic Vine) a través del servidor, que pone las claves; se activan solos al conectarse. *Sexta parte (17/10/2026): juegos de mesa con BoardGameGeek y libros de rol con RPGGeek, solo por el servidor; probado con el servicio real, sin ver en pantalla.* *Tercera parte (11/10/2026): videojuegos con RAWG.* *Primera parte hecha en 7.8 (11/10/2026): Google Books por ISBN a través del servidor, con caché sin saber quién preguntó y límites; ver [cloud.md](architecture/cloud.md#buscar-libros-a-través-del-servidor-78-d83). Segunda parte hecha el mismo día: TMDB (películas y series) por título, con la atribución en Proveedores. Tercera parte el mismo día: RAWG (videojuegos) por título, con atribución con enlace. Quedan BoardGameGeek e IGDB. Cuarta parte: clave propia para TMDB y RAWG (la app llama directo al proveedor), «Todas» en Proveedores y «Créditos». Quinta parte (12/10/2026): Comic Vine (cómics), por el servidor y con clave propia.*
+- Límites de peticiones y cuentas sin confirmar que caducan.
+- **Dar un dispositivo a otra persona** (D81): «Dejar este dispositivo a otra persona» borra sus bibliotecas y crea una identidad nueva, también sin cuenta; un dispositivo quitado desde otro hace lo mismo y pierde el acceso a las bibliotecas.
+- **Registro de actividad** (D66): quién borró o creó una biblioteca, echó a alguien o cambió un rol, cuándo (hora del servidor) y desde dónde (IP y app), que sobrevive a lo borrado; con su plazo de conservación en la política de privacidad. *Servidor hecho en 7.7 (11/10/2026, pendiente de revisión): tabla `activity_log`, purga al año, consulta por consola; ver [cloud.md](architecture/cloud.md#el-registro-de-actividad-77-d66).*
+- **Producción:** nginx + PHP-FPM + PostgreSQL en el VPS; guía para quien monte el suyo, con dos caminos (D48, 16/10/2026): sin Docker, como el servidor oficial, con sus requisitos; y con Docker, con el `Dockerfile` y un `docker-compose` de producción.
+- Se reutiliza del [plan anterior del servidor](historico/plan-servidor-2026-09.md) lo que sigue valiendo: D41, D42, D43, D48, D49 y D50 (D47 quedó reemplazada por D73).
+- **Para cerrarla** (repasado con el maintainer el 24/10/2026): solo **la prueba que la cierra**, compartir una biblioteca por la nube con alguien de otra ciudad (con uno de los testers). Las pruebas en pantalla y la segunda revisión del servidor son trabajo atrasado del maintainer y se siguen en su lista, no aquí; la sesión de seguridad y Mercure en producción salen de la fase (ver «Tras el lanzamiento»). Lista original en [fase-7.md](plans/fase-7.md#para-cerrar-la-fase-7).
+- **Hecho cuando:** un amigo de otra ciudad y yo compartimos una biblioteca a través de la nube.
+- **Cerrada el 25/10/2026** con la 0.6.0: una biblioteca compartida por la nube con una invitación a una persona sin cuenta (creó la cuenta y aceptó en cuatro toques; el enlace del correo abrió la app solo, lo que pedía 7.6.4), simulada con un segundo móvil del maintainer con otra cuenta; los libros y su portada llegaron en unos segundos. Las pruebas en pantalla que quedan y la segunda revisión del servidor siguen en las notas del maintainer.
