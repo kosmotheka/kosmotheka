@@ -29,7 +29,7 @@ Todo está en **Play Console › la app › Contenido de la aplicación** (en el
 
 > «¿Hay partes de la app que solo están disponibles con acceso restringido?»
 
-- **Respuesta:** **«Algunas funciones o todas están restringidas».** El catálogo funciona sin cuenta, pero la cuenta y la nube piden iniciar sesión, y el servidor es por invitación. Si los revisores no pueden entrar, Google suele rechazar la versión o pedir acceso.
+- **Respuesta:** **«Algunas funciones o todas están restringidas».** El catálogo funciona sin cuenta, pero la cuenta y la nube piden iniciar sesión (desde el 25/10/2026 el servidor admite cualquier correo; la cuenta de prueba ahorra al revisor registrarse). Si los revisores no pueden entrar, Google suele rechazar la versión o pedir acceso.
 - **Hay que darles una cuenta de prueba** (decidido el 17/10/2026):
   1. Crea un buzón o alias tuyo, por ejemplo `review@kosmotheka.com`, que reenvíe a tu correo.
   2. Añádelo a `REGISTRATION_ALLOWED_EMAILS` en producción y regístrate con él desde la app. Confirma el código.
@@ -40,7 +40,7 @@ Todo está en **Play Console › la app › Contenido de la aplicación** (en el
 
   ```
   The whole catalog works without an account: open the app, add a book by ISBN or title.
-  The optional account and cloud (Settings › Account) are invitation-only on our server.
+  The optional account and cloud are in Settings › Account.
   Sign in with "Sign in or create account" › email and password, using the credentials above.
   The account has one cloud library ("Review library") to see sync and sharing.
   ```

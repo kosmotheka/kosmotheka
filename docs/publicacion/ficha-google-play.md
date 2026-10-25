@@ -1,6 +1,6 @@
 # Ficha de Google Play
 
-> Redactada el 29/09/2026 para la primera publicación (prueba cerrada) y puesta al día el 17/10/2026 con la cuenta y la nube (por invitación). Solo cuenta lo que ya tiene interfaz.
+> Redactada el 29/09/2026 para la primera publicación (prueba cerrada) y puesta al día el 17/10/2026 con la cuenta y la nube; el 25/10/2026 deja de decir «por invitación», porque el servidor ya admite cualquier correo. Solo cuenta lo que ya tiene interfaz.
 
 ## Descripción corta (máximo 80 caracteres; esta tiene 78)
 
@@ -8,7 +8,7 @@
 Cataloga en casa libros, juegos, películas y música. Cuenta y nube opcionales.
 ```
 
-## Descripción larga (máximo 4.000 caracteres; esta tiene 1776)
+## Descripción larga (máximo 4.000 caracteres; esta tiene 1.738)
 
 ```
 ¿Ese libro lo tenemos? ¿Dónde está el Catán? ¿Qué nos falta de esa serie?
@@ -33,7 +33,7 @@ LO DE CADA UNO
 LA NUBE, SI LA QUIERES
 • Una cuenta opcional (con correo o con Google) para tener tus bibliotecas en todos tus dispositivos sin compartir wifi.
 • Invita a alguien de otra ciudad con un enlace.
-• Por ahora, la nube es por invitación. Sin cuenta, todo sigue funcionando igual.
+• Sin cuenta, todo sigue funcionando igual.
 • Lo que subes se guarda en un servidor, y quien lo mantiene puede leerlo. Tú decides qué bibliotecas subir.
 
 TUS DATOS SON TUYOS
@@ -50,7 +50,7 @@ TUS DATOS SON TUYOS
 Catalog books, games, films and music at home. Account and cloud are optional.
 ```
 
-### Descripción larga (máximo 4.000 caracteres; esta tiene 1.755)
+### Descripción larga (máximo 4.000 caracteres; esta tiene 1.718)
 
 ```
 Do we have that book? Where is Catan? What are we missing from that series?
@@ -75,7 +75,7 @@ EVERYONE'S OWN
 THE CLOUD, IF YOU WANT IT
 • An optional account (with email or with Google) to have your libraries on all your devices without sharing a wifi.
 • Invite someone in another city with a link.
-• For now, the cloud is by invitation. Without an account, everything works just the same.
+• Without an account, everything works just the same.
 • What you upload is stored on a server, and whoever runs it can read it. You choose which libraries to upload.
 
 YOUR DATA IS YOURS
