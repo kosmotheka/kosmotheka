@@ -1576,6 +1576,8 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 
 Antes de programarla: los casos hostiles de la [batería de acceso](architecture/bateria-de-acceso.md), vistos fallar antes del arreglo. mDNS pide permisos nuevos en Android y en la snap.
 
+**Precisado el 25/10/2026, al empezarla, con el maintainer** ([plan](plans/d88-emparejar.md)): primero solo el **código corto**, porque el QR funciona y lo molesto es el código manual. Y no se comparan las cifras en las dos pantallas: **se escriben**, como con una tele o el «screencast». El que enseña el código muestra 6 cifras; el que se une busca en la wifi quién tiene el emparejamiento abierto (un puerto fijo mientras la ventana está abierta, sin mDNS ni permisos nuevos), elige por el nombre y escribe el número. Las cifras no viajan: con ellas los dos hacen un intercambio SPAKE2 que confirma también la huella del certificado, y a los tres fallos la ventana se cierra. Reconocerse por biblioteca queda para después, con dos respuestas ya dadas: las casillas de «Compartir y dispositivos» pasan a ser la puerta, y el descubrimiento será con `mdns-sd`. Y una precisión del punto 1: una valla sola no excluye (también la lleva quien bajan de editor a lector); lo que corta el acceso ya deja al dispositivo «de nadie».
+
 **Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3). Se programa en el punto 5 de «Tras el lanzamiento» del [ROADMAP](ROADMAP.md), «Emparejar más fácil».
 
 ## D89 · Al borrar, el borrado gana: lo que depende de lo borrado se borra o se queda sin ese dato — `aceptada`

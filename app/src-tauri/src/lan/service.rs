@@ -111,6 +111,7 @@ impl LanService {
             pairing: self.pairing.clone(),
             arrival: self.arrival.clone(),
             covers: self.covers.clone(),
+            fingerprint: self.identity()?.fingerprint().to_owned(),
         };
         let running = server::start(listener, self.identity()?.server_config()?, state)?;
         let port = running.address.port();

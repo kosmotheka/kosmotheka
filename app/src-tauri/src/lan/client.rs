@@ -17,7 +17,7 @@ use std::net::Ipv4Addr;
 use super::identity::fingerprint;
 use super::pairing::PairingCode;
 use super::{
-    Hello, KnownServer, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest,
+    Hello, KnownServer, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest, PullResponse, PushRequest,
     SyncReport, device_name, find_server, notices_for, only_shared, only_shared_operations,
     reconcile, record_server_sync, register_in_shared, save_server, share_library,
     shared_libraries,
@@ -90,6 +90,86 @@ impl ServerCertVerifier for PinnedCertificate {
             .signature_verification_algorithms
             .supported_schemes()
     }
+}
+
+/// Accepts any certificate and notes its fingerprint: only to pair by number (D88), where the exchange confirms the
+/// fingerprint before anything is sent, and the next connection pins it.
+#[derive(Debug)]
+struct NotedCertificate {
+    seen: Arc<std::sync::Mutex<Option<String>>>,
+    provider: Arc<CryptoProvider>,
+}
+
+impl ServerCertVerifier for NotedCertificate {
+    fn verify_server_cert(
+        &self,
+        end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
+        _ocsp_response: &[u8],
+        _now: UnixTime,
+    ) -> std::result::Result<ServerCertVerified, rustls::Error> {
+        if let Ok(mut seen) = self.seen.lock() {
+            *seen = Some(fingerprint(end_entity.as_ref()));
+        }
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, rustls::Error> {
+        verify_tls12_signature(
+            message,
+            cert,
+            dss,
+            &self.provider.signature_verification_algorithms,
+        )
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &DigitallySignedStruct,
+    ) -> std::result::Result<HandshakeSignatureValid, rustls::Error> {
+        verify_tls13_signature(
+            message,
+            cert,
+            dss,
+            &self.provider.signature_verification_algorithms,
+        )
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        self.provider
+            .signature_verification_algorithms
+            .supported_schemes()
+    }
+}
+
+/// A client for one exchange with an unknown device, and where it notes the certificate it saw.
+fn noting_client() -> Result<(reqwest::Client, Arc<std::sync::Mutex<Option<String>>>)> {
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let seen = Arc::new(std::sync::Mutex::new(None));
+    let tls = rustls::ClientConfig::builder_with_provider(provider.clone())
+        .with_safe_default_protocol_versions()
+        .map_err(|_| Error::Tls("protocol versions"))?
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(NotedCertificate {
+            seen: seen.clone(),
+            provider,
+        }))
+        .with_no_client_auth();
+    let client = reqwest::Client::builder()
+        .use_preconfigured_tls(tls)
+        .no_proxy()
+        .connect_timeout(Duration::from_secs(4))
+        .timeout(Duration::from_secs(20))
+        .build()?;
+    Ok((client, seen))
 }
 
 fn pinned_client(fingerprint: &str) -> Result<reqwest::Client> {
@@ -191,21 +271,108 @@ pub async fn pair(
     let mut addresses = code.addresses.clone();
     addresses.retain(|a| *a != address);
     addresses.insert(0, address);
+    remember(database, response, addresses, code.fingerprint, libraries)
+}
+
+/// Pairs by hand with the device at `address`, which shows `pin` (D88): the number never travels, the exchange
+/// confirms the certificate the device serves with, and that certificate is pinned from then on, as with the code.
+pub async fn pair_with_pin(
+    database: &Database,
+    address: &str,
+    pin: &str,
+    libraries: &[String],
+) -> Result<KnownServer> {
+    let (device_id, name) = {
+        let conn = database.lock()?;
+        crate::people::ensure_may_share(&conn, libraries)?;
+        (ops::device_id(&conn)?, device_name(&conn)?)
+    };
+    let (state, message) = super::pin::join(pin);
+    let (client, seen) = noting_client()?;
+    let (answer, _): (PinAnswer, String) = post(
+        &client,
+        &[address.to_owned()],
+        "/v1/pair/pin/start",
+        None,
+        &PinStart {
+            message: encode(&message),
+        },
+    )
+    .await?;
+    let fingerprint = seen
+        .lock()
+        .map_err(|_| Error::LockPoisoned)?
+        .clone()
+        .ok_or(Error::Lan("unreachable"))?;
+    let key = state
+        .finish(&decode(&answer.message)?)
+        .map_err(|_| Error::Lan("wrong_pin"))?;
+    // The device must have reached the same key, and be the one this connection's certificate belongs to: one in the
+    // middle passing on another device's answer would confirm another certificate. A wrong number looks the same,
+    // and either way nothing more is sent.
+    let expected = super::pin::showing_confirmation(&key, &fingerprint);
+    if !super::pin::confirms(&expected, &decode(&answer.confirmation)?) {
+        return Err(Error::Lan("wrong_pin"));
+    }
+
+    // The second request pins the certificate the exchange was about.
+    let (response, _): (PairResponse, String) = post(
+        &pinned_client(&fingerprint)?,
+        &[address.to_owned()],
+        "/v1/pair/pin/finish",
+        None,
+        &PinFinish {
+            session: answer.session,
+            confirmation: encode(&super::pin::joining_confirmation(
+                &key,
+                &fingerprint,
+                &device_id,
+            )),
+            device_id,
+            device_name: name,
+        },
+    )
+    .await
+    .map_err(|error| match error {
+        Error::Lan("rejected") => Error::Lan("wrong_pin"),
+        other => other,
+    })?;
+    remember(database, response, vec![address.to_owned()], fingerprint, libraries)
+}
+
+/// The paired device, remembered with what this one shares with it.
+fn remember(
+    database: &Database,
+    response: PairResponse,
+    addresses: Vec<String>,
+    fingerprint: String,
+    libraries: &[String],
+) -> Result<KnownServer> {
     let server = KnownServer {
         device_id: response.device_id,
         name: response.device_name,
         addresses,
-        fingerprint: code.fingerprint,
+        fingerprint,
         secret: response.secret,
     };
-    {
-        let conn = database.lock()?;
-        save_server(&conn, &server)?;
-        for library in libraries {
-            share_library(&conn, library, &server.device_id)?;
-        }
+    let conn = database.lock()?;
+    save_server(&conn, &server)?;
+    for library in libraries {
+        share_library(&conn, library, &server.device_id)?;
     }
     Ok(server)
+}
+
+fn encode(bytes: &[u8]) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
+}
+
+fn decode(text: &str) -> Result<Vec<u8>> {
+    use base64::Engine;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(text)
+        .map_err(|_| Error::Lan("peer_error"))
 }
 
 /// Pulls what the peer has, then pushes what it lacks. A library the peer has just
@@ -592,6 +759,7 @@ mod tests {
             pairing: Arc::new(Mutex::new(None)),
             arrival: Arc::new(std::sync::OnceLock::new()),
             covers: Arc::new(std::sync::OnceLock::new()),
+            fingerprint: identity.fingerprint().to_owned(),
         };
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let server =
@@ -621,6 +789,123 @@ mod tests {
             }
             .encode()
         }
+    }
+
+    impl Serving {
+        /// Opens a window and returns where the desk is and the number it shows (D88).
+        fn open_pin(&self) -> (String, String) {
+            self.open_pairing();
+            let pin = self.state.pairing.lock().unwrap().as_ref().unwrap().pin.clone();
+            (self.server.address.to_string(), pin)
+        }
+
+        fn window(&self) -> Option<PairingWindow> {
+            self.state.pairing.lock().unwrap().clone()
+        }
+    }
+
+    fn other_pin(pin: &str) -> String {
+        format!("{:06}", (pin.parse::<u32>().unwrap() + 1) % 1_000_000)
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn pair_with_the_number_then_sync() {
+        let desk = serve().await;
+        add(&desk.database, "On the desk");
+        let phone = Database::in_memory();
+        let (address, pin) = desk.open_pin();
+
+        let server = pair_with_pin(&phone, &address, &pin, &[]).await.unwrap();
+
+        assert_eq!(server.fingerprint, desk.identity.fingerprint());
+        sync(&phone, &server.device_id).await.unwrap();
+        assert!(titles_in(&phone, &home(&desk.database)).contains(&"On the desk".to_owned()));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_wrong_number_pairs_nothing() {
+        let desk = serve().await;
+        let phone = Database::in_memory();
+        let (address, pin) = desk.open_pin();
+
+        let wrong = pair_with_pin(&phone, &address, &other_pin(&pin), &[]).await;
+
+        assert!(matches!(wrong, Err(Error::Lan("wrong_pin"))));
+        assert!(list_devices(&desk.database.lock().unwrap(), "known_clients").unwrap().is_empty());
+        assert!(list_devices(&phone.lock().unwrap(), "known_servers").unwrap().is_empty());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn three_wrong_numbers_close_the_window() {
+        let desk = serve().await;
+        let phone = Database::in_memory();
+        let (address, pin) = desk.open_pin();
+        for _ in 0..crate::lan::pin::PIN_ATTEMPTS {
+            assert!(pair_with_pin(&phone, &address, &other_pin(&pin), &[]).await.is_err());
+        }
+
+        // Even the right number comes too late: the window is closed.
+        assert!(pair_with_pin(&phone, &address, &pin, &[]).await.is_err());
+        assert!(desk.window().is_none());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_device_in_the_middle_gets_nothing_from_the_joining_one() {
+        let desk = serve().await;
+        let (_, pin) = desk.open_pin();
+        // Someone in the middle passes on the desk's answer, number and all, but serves with a certificate of its
+        // own: its confirmation speaks of the desk's certificate, not of the one the phone sees.
+        let middle = serve().await;
+        let middle = Serving {
+            state: ServerState {
+                fingerprint: desk.identity.fingerprint().to_owned(),
+                ..middle.state.clone()
+            },
+            ..middle
+        };
+        let relay_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let relay = server::start(
+            relay_listener,
+            middle.identity.server_config().unwrap(),
+            middle.state.clone(),
+        )
+        .unwrap();
+        *middle.state.pairing.lock().unwrap() = Some(PairingWindow {
+            pin: pin.clone(),
+            ..PairingWindow::open(random_secret(), Vec::new())
+        });
+        let phone = Database::in_memory();
+
+        let joined = pair_with_pin(&phone, &relay.address.to_string(), &pin, &[]).await;
+
+        assert!(joined.is_err());
+        // The phone never sent its confirmation: the exchange in the middle is still waiting for it.
+        assert!(middle.window().unwrap().pin_session.is_some());
+        assert!(list_devices(&phone.lock().unwrap(), "known_servers").unwrap().is_empty());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_number_pairs_one_device_only() {
+        let desk = serve().await;
+        let (address, pin) = desk.open_pin();
+        pair_with_pin(&Database::in_memory(), &address, &pin, &[]).await.unwrap();
+
+        let second = pair_with_pin(&Database::in_memory(), &address, &pin, &[]).await;
+
+        assert!(second.is_err());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_number_does_not_take_the_place_of_a_paired_device() {
+        let desk = serve().await;
+        let phone = Database::in_memory();
+        let (address, pin) = desk.open_pin();
+        pair_with_pin(&phone, &address, &pin, &[]).await.unwrap();
+
+        let (address, pin) = desk.open_pin();
+        let again = pair_with_pin(&phone, &address, &pin, &[]).await;
+
+        assert!(matches!(again, Err(Error::Lan("already_paired"))));
     }
 
     #[tokio::test(flavor = "multi_thread")]

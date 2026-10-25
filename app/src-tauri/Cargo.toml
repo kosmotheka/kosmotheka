@@ -48,6 +48,8 @@ tauri-plugin-deep-link = "2"
 # Covers are read in pure Rust and written as WebP by libwebp, the reference encoder, built from source (D82).
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp", "gif"] }
 libwebp-sys = "0.14.4"
+spake2 = "0.4.0"
+hmac = "0.13.0"
 
 # Camera barcode scanning, biometric unlock and reading printed text exist only on phones (D35, D78).
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]

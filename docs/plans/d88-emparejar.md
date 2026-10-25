@@ -1,92 +1,56 @@
-# Plan: emparejar una vez y el código corto (D88)
+# Plan: emparejar con un número de 6 cifras (D88, primera parte)
 
-> 25/10/2026. Decisión en [D88](../DECISIONS.md) (aceptada en la noche del 24 al 25/10/2026). Rama `feat/pair-without-qr`, sacada de la última rama de la versión 0.7.0 para no estorbar a sus pull requests. **Es seguridad pura:** cada regla nueva sobre quién recibe una biblioteca entra en la [batería de acceso](../architecture/bateria-de-acceso.md) con su test, escrito antes y visto fallar.
+> 25/10/2026. Decisión en [D88](../DECISIONS.md). Rama `feat/pair-without-qr`, sacada de la última rama de la versión 0.7.0 para no estorbar a sus pull requests. **Es seguridad:** sus casos hostiles entran en la [batería de acceso](../architecture/bateria-de-acceso.md), cada uno con su test escrito antes y visto fallar.
 
-**Estado:** plan escrito; falta que el maintainer lo apruebe y resuelva las tres preguntas del final.
+**Alcance, recortado con el maintainer el 25/10/2026:** «no tocamos lo que funciona y mejoramos lo que no funciona». El QR se queda como está (la mayoría emparejará así). Lo que se arregla es el **código manual**, que hoy mide unos 350 caracteres y obliga a copiarlo, mandarlo por WhatsApp y pegarlo. La otra parte de D88, que los dispositivos de una biblioteca se encuentren solos sin emparejarse de dos en dos, queda para más adelante (abajo, con lo ya pensado).
 
-## Lo que pasa hoy
+## Cómo se ve
 
-- **Emparejar es de dos en dos (D13, D34).** Un dispositivo abre una ventana de 10 minutos y enseña un código de unos 350 caracteres (QR o texto) con su id, sus direcciones, la huella de su certificado TLS y un token de un solo uso. El otro se conecta con ese certificado fijado, gasta el token y recibe un secreto de cliente. Desde entonces uno hace de servidor y el otro de cliente.
-- **Qué viaja lo marca cada pareja** (`share_library`, «Marca qué va a cada uno»).
-- **Si el otro cambia de dirección**, se le busca en la propia subred, en los puertos que usó (D37), y solo vale quien presenta el certificado fijado y el mismo id.
-- **Cada dispositivo tiene su clave** (D56), registrada en cada biblioteca, y la biblioteca sabe de quién es (D96), si está retirado (D71) y si tiene valla (D84, D87). Es lo que decide si sus operaciones cuentan.
+- **En el dispositivo que enseña el código** (el ordenador, normalmente): el QR de siempre y debajo, en grande, «¿Sin cámara? Número: **482 913**».
+- **En el que se une** (el móvil): junto a «Escanear con la cámara», **«Escribir el número»**. Enseña los dispositivos de la wifi con el emparejamiento abierto, por su nombre; eliges el tuyo, escribes las 6 cifras y sigue como con el QR (de quién es, qué bibliotecas).
 
-Los dos dolores: el código no se puede teclear en un móvil, y con cuatro dispositivos hay que emparejar varias veces o dejar una cadena que se corta cuando el que hace de puente se va de casa.
+Como el «screencast» o una tele: el número prueba que estás viendo esa pantalla.
 
-## Lo decidido (resumen de D88)
+## Por qué hacen falta dos piezas
 
-1. **Quién entra:** solo un dispositivo de esa biblioteca con su persona asignada y su clave avalada (D96), que no esté retirado (D71) ni con valla (D84, D87). La misma regla que decide si sus operaciones cuentan.
-2. **Autenticación sin secreto compartido:** cada uno firma un reto con su clave de dispositivo (D56) y el otro la compara con la registrada en la biblioteca.
-3. **Encontrarse:** anuncio por mDNS con un identificador aleatorio que cambia, nunca el nombre del dispositivo ni el de la biblioteca. Si no llega (redes de invitados), las últimas direcciones conocidas; si tampoco, el QR.
-4. **Retirado o con valla:** quien contesta lo comprueba en cada conexión, aunque el otro no se haya enterado.
-5. **Inicia cualquiera**; escucha quien tenga la app abierta.
-6. **La primera vez:** el QR, o un **número de 6 cifras comparado en las dos pantallas**, como con Bluetooth.
+El código largo lleva tres cosas: **dónde** está el otro (sus direcciones), **cómo reconocerlo** (la huella de su certificado) y **el permiso de un solo uso**. Con 6 cifras no caben, así que:
 
-## Modelo de amenazas
+1. **Dónde:** el que se une busca en su propia subred quién tiene el emparejamiento abierto. Para encontrarlo rápido, mientras la ventana está abierta el dispositivo escucha también en un **puerto fijo de emparejar**. Es lo que ya se hace para reencontrar a un dispositivo que cambió de dirección (D37), sin mDNS ni permisos nuevos.
+2. **Reconocerlo y el permiso:** las 6 cifras no se mandan nunca. Los dos hacen un intercambio **SPAKE2** (un PAKE, *password-authenticated key exchange*): solo quien conoce el número llega a la misma clave, y con ella cada uno confirma al otro, el que enseña el número incluida **la huella del certificado TLS** con el que habla. Así:
+   - quien se ponga en medio sin el número no consigue la clave ni puede hacerse pasar por el otro;
+   - quien escuche no puede probar números en su casa: cada intento es una conversación con el dispositivo, y **a los tres fallos la ventana se cierra**;
+   - acertar al azar es una entre un millón por intento.
 
-Quién puede estar en la red de casa o en una red ajena (un hotel, la wifi de un club):
-
-- **El curioso:** escucha los anuncios y se conecta a lo que encuentra. No debe saber qué bibliotecas hay ni de quién son; como mucho, que hay una app de Kosmotheka.
-- **El que conoce ids:** sabe el id de un dispositivo de la familia y el de la biblioteca (los ids viajan en operaciones, en copias de seguridad…). Sin la clave privada de ese dispositivo no entra.
-- **El retirado o echado:** tuvo acceso legítimo y aún tiene la clave. Debe quedar fuera aunque su app no se haya enterado.
-- **El impostor que escucha:** finge ser un dispositivo de la familia para que otro le **mande** la biblioteca. Por eso la comprobación va en los dos sentidos: nadie envía nada a quien no ha probado ser de la biblioteca.
-- **El intermediario en el emparejamiento por código corto:** se pone en medio de los dos para quedarse con el emparejamiento. Lo para la comparación de las 6 cifras con compromiso previo (abajo).
-- **El que repite:** graba una conexión buena y la repite. Lo para un reto nuevo en cada conexión, ligado a esa sesión TLS.
-
-Fuera de alcance: alguien con el móvil desbloqueado en la mano (ya lo cubre el bloqueo de la app, D78) y la red de casa comprometida a nivel del router más allá de lo anterior.
-
-## Cómo funciona (propuesta)
-
-### A. Reconocerse por biblioteca
-
-1. **Anuncio (mDNS):** `_kosmotheka._tcp` con un identificador aleatorio que cambia en cada arranque y cada cierto tiempo. Nada más en el anuncio.
-2. **Conexión TLS sin fijar** (aún no hay huella que fijar) y **prueba mutua:** cada lado manda un reto aleatorio; cada uno responde firmando con su clave de dispositivo `reto del otro + huella del certificado TLS del servidor + su id`. Ligar la firma al certificado impide que un intermediario la reenvíe por otra conexión.
-3. **Solo después de la prueba** se habla de bibliotecas: cada lado calcula, con lo que **él** sabe, las bibliotecas en las que el otro es de confianza (punto 1 de lo decidido) y en las que él también está. Esas, y solo esas, se sincronizan. Antes de la prueba no sale ningún id de biblioteca ni nombre.
-4. Lo que hoy es «servidor» y «cliente» se queda: escucha quien tiene la app abierta y se conecta cualquiera de los dos.
-
-### B. El código corto, la primera vez
-
-Para un dispositivo que aún no está en ninguna biblioteca común (el móvil nuevo de casa):
-
-1. En el que ya tiene la biblioteca, «Emparejar un dispositivo» abre la ventana de siempre y anuncia que está abierta.
-2. En el nuevo, «Emparejar sin cámara» busca dispositivos con la ventana abierta y enseña sus nombres (solo los de ventana abierta, y solo durante esos 10 minutos).
-3. Al elegir uno se hace un **intercambio con compromiso**: el que tiene la ventana manda primero un compromiso (el hash de su número aleatorio y su clave), el nuevo manda su número, y entonces el primero revela el suyo. Con las dos claves y los dos números, los dos calculan el mismo **número de 6 cifras**. Un intermediario tendría que acertar a la primera, con una probabilidad de uno entre un millón, porque se comprometió antes de ver el número del otro.
-4. La persona comprueba que el número es el mismo en las dos pantallas y pulsa «Coinciden» en las dos. A partir de ahí sigue como con el QR: de quién es el dispositivo, qué bibliotecas, con qué rol.
+Después de esto se fija la huella completa, como con el QR, y todo sigue igual: secreto de cliente, qué se comparte, de quién es.
 
 ## Casos hostiles (a la batería, antes que su arreglo)
 
-Reconocerse por biblioteca:
-
-1. Un dispositivo del registro **sin persona asignada** no recibe nada.
-2. Uno con **clave avalada que no es la suya** (D96) no recibe nada.
-3. Uno **retirado** (D71), aunque no lo sepa, no recibe nada y lo que manda no entra.
-4. Uno con **valla** o de una persona **echada** (D98): lo mismo.
-5. Quien **conoce el id** de un dispositivo de la familia pero firma con otra clave: fuera.
-6. **Repetir** una respuesta grabada de otra conexión: fuera (el reto es nuevo y va ligado al certificado).
-7. **El impostor que escucha:** quien presenta un id de la familia sin su clave no recibe ni un byte de la biblioteca, aunque sea él quien escucha.
-8. Solo viajan las bibliotecas en las que **los dos** son de confianza: una que solo tiene uno de ellos, o en la que el otro está retirado, no sale.
-9. **El curioso:** el anuncio no lleva nombres ni ids, el identificador cambia, y antes de la prueba la conexión no dice qué bibliotecas hay.
-
-Código corto:
-
-10. Sin pulsar «Coinciden» en los dos, no hay emparejamiento.
-11. Un **intermediario** que cambia una clave o un número hace que las 6 cifras no coincidan; y un compromiso que no cuadra con lo revelado corta el emparejamiento.
-12. Con la ventana cerrada o caducada no se puede, y cada ventana empareja un solo dispositivo, como hoy.
+1. **Número equivocado:** no empareja, y el que enseña el número no guarda nada.
+2. **Tres intentos fallidos** cierran la ventana, también el correcto después.
+3. **Intermediario:** un servidor con otro certificado (aunque reenvíe todo) no consigue que el que se une acepte, porque la confirmación no cuadra con la huella que ve; y el que se une no le manda nada.
+4. **Un solo uso:** con la ventana ya usada, caducada o cerrada, el número no vale.
+5. **Antes del número no sale nada:** buscar dispositivos solo dice quién tiene la ventana abierta y su nombre; ni bibliotecas ni ids de biblioteca.
+6. El emparejamiento por número **no ocupa el sitio** de un dispositivo ya emparejado, como hoy con el QR (`a_paired_device_cannot_pair_again_until_forgotten`).
 
 ## Orden de trabajo
 
 | Parte | Qué | Prueba |
 |---|---|---|
-| 1 · Prueba mutua | El intercambio de retos y firmas sobre TLS, y la regla de confianza por biblioteca, sin descubrimiento todavía (dirección escrita a mano en los tests) | Casos 1 a 8 con TLS de verdad, como los de `lan/client.rs` |
-| 2 · Sincronizar por biblioteca | Dos dispositivos de la misma biblioteca, sin haberse emparejado, se sincronizan solo lo común | `assert_converged` y los casos 3, 4 y 8 de punta a punta |
-| 3 · Encontrarse | mDNS con identificador que cambia; el permiso de multicast en Android y en la snap; las últimas direcciones como respaldo | Caso 9; prueba en casa con el móvil y el ordenador |
-| 4 · Código corto | El intercambio con compromiso, las 6 cifras y las pantallas | Casos 10 a 12 |
-| 5 · Cerrar | «Compartir y dispositivos» enseña quién está en casa; guía, privacidad, arquitectura (`sync.md`), D13 actualizada, novedades | Prueba en el móvil |
+| 1 · El intercambio | SPAKE2 con el número, confirmaciones (con la huella), tres intentos por ventana, en el servidor y en el cliente | Casos 1 a 4 y 6 con TLS de verdad, como los de `lan/client.rs` |
+| 2 · Encontrarse | El puerto fijo de emparejar mientras la ventana está abierta y la búsqueda en la subred | Caso 5; prueba con el portátil y el móvil |
+| 3 · Pantallas | El número bajo el QR; «Escribir el número» con la lista y las 6 cifras | Capturas y prueba en el móvil |
+| 4 · Cerrar | Guía, arquitectura (`sync.md`), D13 y D88, novedades | |
 
-Calculo varios días. Cada parte va en su commit, en esta rama, y se puede parar entre parte y parte.
+**Dependencias nuevas:** `spake2` (RustCrypto, MIT o Apache-2.0) y, si no está ya, `hmac`, de la misma familia que `sha2`.
 
-## Preguntas para el maintainer
+**Límite, el mismo que con el QR:** en las wifi que aíslan los dispositivos entre sí (algunas de invitados) no se encuentran.
 
-1. **Las casillas de «Compartir y dispositivos».** Con D88, dos dispositivos de una biblioteca se sincronizan solos, así que «marca qué va a cada uno» deja de tener sentido entre ellos. Propuesta: las casillas siguen siendo **la puerta** (dar a un dispositivo una biblioteca que aún no tiene, con el QR o el código), y entre los que ya la tienen la sincronización es automática.
-2. **Una dependencia nueva:** `mdns-sd`, en Rust puro, con licencia MIT o Apache-2.0, para anunciarse y encontrarse. Hacerlo a mano sería más código delicado que mantener.
-3. **El orden:** propuesta, reconocerse por biblioteca primero (partes 1 a 3), que es lo que quita emparejar varias veces, y el código corto después (parte 4). Si te molesta más teclear el código, se puede invertir.
+## Para más adelante: reconocerse por biblioteca
+
+La otra parte de D88: los dispositivos de una biblioteca se encuentran solos en casa y se sincronizan sin haberse emparejado entre ellos. Pensado el 25/10/2026 y aparcado con el maintainer (no hace falta para lo de arriba):
+
+- **Quién entra:** un dispositivo de esa biblioteca con su persona asignada, su clave avalada (D96) y sin retirada (D71). Una valla sola (D84) no lo excluye: también se le pone a quien bajan de editor a lector, que sigue recibiendo la biblioteca; lo que corta el acceso (quitarle la persona o echarla, D98) ya lo deja «de nadie».
+- **Prueba mutua:** cada lado firma con su clave de dispositivo (D56) el reto del otro y la huella del certificado de la conexión; solo después se habla de bibliotecas, y viajan las que los dos comparten con confianza.
+- **Encontrarse:** mDNS con un identificador aleatorio que cambia (decidido: `mdns-sd`), las últimas direcciones como respaldo.
+- **Las casillas de «Compartir y dispositivos»** pasan a ser la puerta: dar a un dispositivo una biblioteca que aún no tiene; entre los que ya la tienen, todo es automático (decidido el 25/10/2026).
+- **Modelo de amenazas y casos hostiles:** el curioso de una red ajena, el que conoce ids, el retirado que no se ha enterado, el impostor que escucha y quiere que le manden la biblioteca, y el que repite una conexión grabada.

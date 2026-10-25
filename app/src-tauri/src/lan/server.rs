@@ -17,9 +17,10 @@ use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 use tokio_rustls::TlsAcceptor;
 
-use super::pairing::PairingWindow;
+use super::pairing::{PairingWindow, PinSession};
+use super::pin;
 use super::{
-    Hello, PairRequest, PairResponse, PullRequest, PullResponse, PushRequest, client_is_authorized,
+    Hello, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest, PullResponse, PushRequest, client_is_authorized,
     device_name, is_known_client, notices_for, only_shared, only_shared_operations, random_secret,
     reconcile, record_client_sync, register_in_shared, save_client, share_library,
     shared_libraries,
@@ -45,6 +46,8 @@ pub struct ServerState {
     pub arrival: Arc<OnceLock<ArrivalHook>>,
     /// Set once by the app, like `arrival`: without it no cover is served or taken (D82).
     pub covers: Arc<OnceLock<Covers>>,
+    /// The fingerprint of the certificate this device serves with, which pairing by number confirms (D88).
+    pub fingerprint: String,
 }
 
 pub struct RunningServer {
@@ -91,6 +94,8 @@ fn router(state: ServerState) -> Router {
     Router::new()
         .route("/v1/hello", get(hello))
         .route("/v1/pair", post(pair))
+        .route("/v1/pair/pin/start", post(pin_start))
+        .route("/v1/pair/pin/finish", post(pin_finish))
         .route("/v1/sync/pull", post(pull))
         .route("/v1/sync/push", post(push))
         .route("/v1/covers/inventory", post(cover_inventory))
@@ -170,17 +175,96 @@ async fn pair(
             }
         }
     };
+    accept(state, libraries, request.device_id, request.device_name).await
+}
+
+/// The first half of pairing by number (D88): this device answers the exchange with the number it shows, and
+/// confirms the key bound to its certificate. Every exchange is one try of the window's few.
+async fn pin_start(
+    State(state): State<ServerState>,
+    Json(request): Json<PinStart>,
+) -> std::result::Result<Json<PinAnswer>, ApiError> {
+    let message = decode(&request.message)?;
+    let mut window = state.pairing.lock().map_err(|_| ApiError::Internal)?;
+    let open = window
+        .as_mut()
+        .filter(|open| open.is_open())
+        .ok_or(ApiError::Unauthorized)?;
+    // A few tries per window, each a whole exchange: guessing the number means talking to this device each time.
+    if open.pin_attempts >= pin::PIN_ATTEMPTS {
+        *window = None;
+        return Err(ApiError::Unauthorized);
+    }
+    open.pin_attempts += 1;
+    let (key, answer) = pin::answer(&open.pin, &message).ok_or(ApiError::Rejected)?;
+    let session = random_secret();
+    let confirmation = encode(&pin::showing_confirmation(&key, &state.fingerprint));
+    open.pin_session = Some(PinSession {
+        id: session.clone(),
+        key,
+    });
+    Ok(Json(PinAnswer {
+        session,
+        message: encode(&answer),
+        confirmation,
+    }))
+}
+
+/// The second half: the joining device proves it reached the same key, so it knew the number, and pairs.
+async fn pin_finish(
+    State(state): State<ServerState>,
+    Json(request): Json<PinFinish>,
+) -> std::result::Result<Json<PairResponse>, ApiError> {
+    let given = decode(&request.confirmation)?;
+    let libraries = {
+        let mut window = state.pairing.lock().map_err(|_| ApiError::Internal)?;
+        let open = window.take().ok_or(ApiError::Unauthorized)?;
+        let confirmed = open.is_open()
+            && open.pin_session.as_ref().is_some_and(|session| {
+                session.id == request.session
+                    && pin::confirms(
+                        &pin::joining_confirmation(
+                            &session.key,
+                            &state.fingerprint,
+                            &request.device_id,
+                        ),
+                        &given,
+                    )
+            });
+        if !confirmed {
+            // The last try spent closes the window; otherwise it stays open for the next.
+            if open.pin_attempts < pin::PIN_ATTEMPTS {
+                *window = Some(PairingWindow {
+                    pin_session: None,
+                    ..open
+                });
+            }
+            return Err(ApiError::Unauthorized);
+        }
+        open.libraries
+    };
+    accept(state, libraries, request.device_id, request.device_name).await
+}
+
+/// What both ways of pairing end in: the new device is remembered with a secret of its own, and gets what the window
+/// shares.
+async fn accept(
+    state: ServerState,
+    libraries: Vec<String>,
+    device_id: String,
+    name: String,
+) -> std::result::Result<Json<PairResponse>, ApiError> {
     blocking(move || {
         let conn = state.database.lock()?;
         // The id is the client's word: taking over a paired one would cut that device
         // off and hand over what was shared with it. It has to be forgotten first.
-        if is_known_client(&conn, &request.device_id)? {
+        if is_known_client(&conn, &device_id)? {
             return Err(ApiError::AlreadyPaired);
         }
         let secret = random_secret();
-        save_client(&conn, &request.device_id, &request.device_name, &secret)?;
+        save_client(&conn, &device_id, &name, &secret)?;
         for library in &libraries {
-            share_library(&conn, library, &request.device_id)?;
+            share_library(&conn, library, &device_id)?;
         }
         Ok(Json(PairResponse {
             device_id: ops::device_id(&conn)?,
@@ -189,6 +273,18 @@ async fn pair(
         }))
     })
     .await
+}
+
+fn encode(bytes: &[u8]) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
+}
+
+fn decode(text: &str) -> std::result::Result<Vec<u8>, ApiError> {
+    use base64::Engine;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(text)
+        .map_err(|_| ApiError::Rejected)
 }
 
 async fn pull(

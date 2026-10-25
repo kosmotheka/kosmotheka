@@ -38,22 +38,41 @@ impl PairingCode {
 #[derive(Debug, Clone)]
 pub struct PairingWindow {
     pub token: String,
+    /// The six-digit number shown for pairing by hand (D88), an alternative to the token.
+    pub pin: String,
+    /// Exchanges with the number tried so far in this window.
+    pub pin_attempts: u8,
+    /// The key of the last exchange with the number, waiting for the joining device's confirmation.
+    pub pin_session: Option<PinSession>,
     pub expires: Instant,
     /// What this device shares with whoever pairs through this window.
     pub libraries: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PinSession {
+    pub id: String,
+    pub key: Vec<u8>,
 }
 
 impl PairingWindow {
     pub fn open(token: String, libraries: Vec<String>) -> Self {
         Self {
             token,
+            pin: super::pin::new_pin(),
+            pin_attempts: 0,
+            pin_session: None,
             expires: Instant::now() + PAIRING_WINDOW,
             libraries,
         }
     }
 
+    pub fn is_open(&self) -> bool {
+        Instant::now() < self.expires
+    }
+
     pub fn accepts(&self, token: &str) -> bool {
-        Instant::now() < self.expires && self.token == token
+        self.is_open() && self.token == token
     }
 }
 

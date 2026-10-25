@@ -4,6 +4,7 @@
 pub mod client;
 pub mod identity;
 pub mod pairing;
+pub mod pin;
 pub mod server;
 pub mod service;
 
@@ -48,6 +49,34 @@ pub struct PairResponse {
     pub device_name: String,
     /// The client presents this on every later sync.
     pub secret: String,
+}
+
+/// Pairing with the six-digit number (D88): the joining device's half of the exchange.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PinStart {
+    /// Its SPAKE2 message, base64url.
+    pub message: String,
+}
+
+/// The showing device's half: its message and its confirmation, bound to its certificate.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PinAnswer {
+    /// Names this exchange in `PinFinish`.
+    pub session: String,
+    pub message: String,
+    pub confirmation: String,
+}
+
+/// The joining device's confirmation, and who it is: with it, pairing goes on as with the code.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PinFinish {
+    pub session: String,
+    pub confirmation: String,
+    pub device_id: String,
+    pub device_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
