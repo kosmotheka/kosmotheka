@@ -895,6 +895,9 @@
     "cannotShare_other": "En {{libraries}} no puedes compartir; pídeselo a quien las administra."
   },
   "pair": {
+    "noApp": "¿El otro dispositivo aún no tiene la app?",
+    "backToCode": "Volver al código de emparejar",
+    "noAppHint": "Escanea este código con la cámara del otro dispositivo para ir a la página de descargas. Cuando tenga la app, vuelve al código de emparejar y escanéalo desde ella.",
     "title": "Emparejar un dispositivo",
     "step1": "1 · Qué bibliotecas se comparten",
     "step2": "2 · Escanéalo desde el otro dispositivo",

@@ -1,8 +1,8 @@
 {
   "next": [
     {
-      "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras.",
-      "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer."
+      "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras. Y al emparejar, si el otro dispositivo aún no tiene la app, «¿El otro dispositivo aún no tiene la app?» cambia el código por otro que lleva a la página de descargas.",
+      "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer. And when pairing, if the other device does not have the app yet, “The other device does not have the app yet?” swaps the code for one that leads to the downloads page."
     },
     {
       "es": "Puedes poner una portada tuya: en la ficha, el botón de la portada deja hacer una foto (en el móvil) o elegir una imagen. Se guarda reducida y sin los datos de la foto, y si la biblioteca está en la nube, llega al servidor con las demás portadas.",

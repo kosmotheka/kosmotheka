@@ -26,7 +26,7 @@ Llama «A» al dispositivo que ya tiene la biblioteca y «B» al que la va a rec
 1. Abre el menú (en el móvil, las tres rayitas de arriba a la izquierda) y entra en «Compartir y dispositivos».
 2. Pulsa «Emparejar otro dispositivo». En el ordenador se llama «Emparejar un dispositivo».
 3. Marca qué bibliotecas quieres compartir. Solo se envían las que marques.
-4. Aparece un código QR. Debajo está el mismo código escrito con letras y números. Sirve una sola vez, durante 10 minutos.
+4. Aparece un código QR. Debajo está el mismo código escrito con letras y números. Sirve una sola vez, durante 10 minutos. Si el otro dispositivo aún no tiene la app, toca «¿El otro dispositivo aún no tiene la app?»: en lugar del código de emparejar sale otro, que lleva a la página de descargas con su cámara. Cuando tenga la app, pulsa «Volver al código de emparejar».
 
 ![El diálogo de emparejar en el ordenador, con el código QR.](./share-at-home-show-code.webp)
 

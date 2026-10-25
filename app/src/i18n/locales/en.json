@@ -881,6 +881,9 @@
     "cannotShare_other": "You may not share {{libraries}}; ask whoever administers them."
   },
   "pair": {
+    "noApp": "The other device does not have the app yet?",
+    "backToCode": "Back to the pairing code",
+    "noAppHint": "Scan this code with the other device's camera to go to the downloads page. Once it has the app, go back to the pairing code and scan it from the app.",
     "title": "Pair a device",
     "step1": "1 · Which libraries are shared",
     "step2": "2 · Scan it from the other device",

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
 import { ClipboardPaste, Copy, QrCode, ScanLine } from "lucide-react";
 
+import { GetTheApp, GetTheAppButton } from "@/components/get-the-app";
 import { LibraryChecklist, SendSummary } from "@/components/libraries/library-checklist";
 import { useLibraries } from "@/components/libraries-context";
 import { OwnerStep } from "@/components/people/owner-step";
@@ -57,6 +58,8 @@ export function PairDialog({
   const [now, setNow] = useState(() => Date.now());
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  // The download page's code replaces the pairing one while it is shown.
+  const [gettingApp, setGettingApp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canScan, setCanScan] = useState(false);
   // Paired: now whose it is, where this device administers a library with roles.
@@ -221,7 +224,9 @@ export function PairDialog({
         {left > 0 ? t("pair.validFor", { time }) : t("pair.sameWifi")}
       </p>
       <div className="flex flex-col items-center gap-4 rounded-xl border p-4">
-        {shown && left > 0 ? (
+        {gettingApp ? (
+          <GetTheApp onBack={() => setGettingApp(false)} />
+        ) : shown && left > 0 ? (
           <>
             <div
               className="w-full max-w-72 rounded-xl border bg-white p-2"
@@ -237,6 +242,7 @@ export function PairDialog({
                 <Copy /> {t("pair.copy")}
               </Button>
             </div>
+            <GetTheAppButton onClick={() => setGettingApp(true)} />
           </>
         ) : shown ? (
           <Button variant="outline" onClick={() => setSelected([...selected])}>

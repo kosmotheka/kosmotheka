@@ -26,7 +26,7 @@ Call "A" the device that already has the library and "B" the one that will recei
 1. Open the menu (on a phone, the three bars at the top left) and go to "Sharing and devices".
 2. Tap "Pair another device". On a computer it is called "Pair a device".
 3. Tick which libraries you want to share. Only the ones you tick are sent.
-4. A QR code appears. Under it is the same code written in letters and numbers. It works only once, for 10 minutes.
+4. A QR code appears. Under it is the same code written in letters and numbers. It works only once, for 10 minutes. If the other device does not have the app yet, tap "The other device does not have the app yet?": in place of the pairing code another one shows up, which takes its camera to the downloads page. Once it has the app, tap "Back to the pairing code".
 
 ![The pairing dialog on a computer, with the QR code. (Screenshot from the Spanish app.)](../../es/using-the-app/share-at-home-show-code.webp)
 
