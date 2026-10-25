@@ -479,6 +479,16 @@ export function searchWorks(kind: Kind, query: string, language?: string): Promi
   return invoke<SearchResult>("search_works", { kind, query, language });
 }
 
+/** The shelf photo: the texts read on its spines worth searching for. Only on a phone, like the scanner. */
+export function shelfQueries(photo: string): Promise<string[]> {
+  return invoke<string[]>("shelf_queries", { photo });
+}
+
+/** One text read on a shelf, searched as if typed: the work whose title is what was read, or null. */
+export function shelfMatch(kind: Kind, read: string, language?: string): Promise<Candidate | null> {
+  return invoke<Candidate | null>("shelf_match", { kind, read, language });
+}
+
 export interface CodeResult {
   kind: Kind | null;
   candidates: Candidate[];

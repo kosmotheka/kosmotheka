@@ -66,6 +66,20 @@ En el ordenador, el botón «Alta rápida» (arriba, junto a «Añadir») sirve 
 
 Si ya tienes tu lista en una hoja de cálculo, mira [Copias de seguridad, exportar e importar](../backups/).
 
+## Una balda entera de golpe
+
+Solo en el móvil, para la primera carga de tu biblioteca. En «Añadir», antes de buscar nada, pulsa **«Foto de una balda»**. No sale al apuntar en «Me falta», ni donde solo puedes consultar, porque añade directamente.
+
+1. Elige qué hay en la balda: libros, cómics, películas… Viene marcado lo que tenías elegido en «Añadir».
+2. Pulsa «Hacer la foto» y fotografía **una sola balda**, de frente y de cerca, con buena luz. Salen mejor entre 15 y 20 lomos por foto.
+3. La app lee los lomos en tu móvil y busca cada texto en los catálogos. Verás cómo avanza y lo que va encontrando.
+4. Te enseña **solo lo que encuentra** como una obra de verdad, ya marcado. Lo que ya tienes sale sin marcar: si lo marcas, se añade otro ejemplar.
+5. Pon el propietario, el formato y la ubicación, que valen para todas, y pulsa «Añadir».
+
+**No lo leerá todo.** Lee bien los lomos con letra normal; los de letra estrecha, adornada o muy pequeña, y los que están en bolsas o con brillos, se le escapan. Lo que no encuentra queda en «textos sin encontrar»: unos son el autor o la editorial, otros un título mal leído. Toca uno para buscarlo tú. Lo que falte, lo añades como siempre.
+
+La foto no sale de tu móvil, pero los textos leídos se buscan en los catálogos, como si los escribieras tú (más en [Qué sale de tu dispositivo](../what-leaves-your-device/)).
+
 ## Si en una biblioteca solo puedes consultar
 
 En una biblioteca compartida donde solo puedes consultar (eres «lector»), en vez de «Añadir» verás «Pedir que se añada». Quien administra la biblioteca decide si lo acepta.

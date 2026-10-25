@@ -648,6 +648,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
               missing={overlay.missing}
               onOpenChange={(open) => !open && closeOverlay()}
               onCreated={handleCreated}
+              onChanged={reload}
               onRequested={(requested) => {
                 setNotice(t(requested ? "ask.sent" : "ask.done"));
                 reload();

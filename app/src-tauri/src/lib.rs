@@ -21,7 +21,7 @@ mod metadata;
 pub mod ops;
 mod people;
 mod permissions;
-mod printed_isbn;
+mod photo_text;
 mod requests;
 mod search;
 mod series;
@@ -190,6 +190,8 @@ pub fn run() {
             commands::check_isbn,
             commands::is_mobile,
             commands::isbns_in_photo,
+            commands::shelf_queries,
+            commands::shelf_match,
             commands::person_name,
             commands::begin_with_name,
             commands::set_person_name,

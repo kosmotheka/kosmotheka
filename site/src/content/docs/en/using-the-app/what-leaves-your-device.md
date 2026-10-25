@@ -11,6 +11,8 @@ sidebar:
 
 When you search for a title or a code number, the app asks public online services, such as the catalog of the Spanish National Library. They only receive **what you search for**: the title you type, or the number of the code (for example, the ISBN). Never your list of books, your name or what you own.
 
+With "Photo of a shelf", the app searches for you each text it read on the spines, one after another, as if you typed it. So those services also receive the texts that are not titles: the author's name, the publisher's or a misread spine. The photo does not leave your phone.
+
 The search runs as you type, after a very short pause. Like any web page, each service sees which internet address you are asking from (the one at your home). It also sees that the question comes from Kosmotheka and from which version of the app.
 
 These services are on from the start. Each one can be turned off.
@@ -38,9 +40,9 @@ If you set a cover of your own (a photo or an image), it travels the same way: t
 
 ## The camera
 
-The camera only turns on when you tap the scan button, or "Photo of the number" to read the ISBN printed in a photo (when the barcode is a shop label). Images are read on your own device: they are not saved or sent anywhere.
+The camera only turns on when you tap the scan button, "Photo of the number" to read the ISBN printed in a photo (when the barcode is a shop label) or "Photo of a shelf" to read the spines. Images are read on your own device: they are not saved or sent anywhere.
 
-The scanner and the number reading are Google's (it is called ML Kit and comes with the phone's Google Play services). To know whether it works well, it sends Google technical data: the phone model, the system and app versions, and how long it takes or whether it fails. Never the images. None of that reaches us.
+The scanner and the text reading are Google's (it is called ML Kit and comes with the phone's Google Play services). To know whether it works well, it sends Google technical data: the phone model, the system and app versions, and how long it takes or whether it fails. Never the images. None of that reaches us.
 
 On Android, to read the barcode the app uses a piece of Google software that comes with the Google Play store. You can read its terms in the menu, under "About" and "Licences".
 

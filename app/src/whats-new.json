@@ -7,6 +7,10 @@
     {
       "es": "Puedes poner una portada tuya: en la ficha, el botón de la portada deja hacer una foto (en el móvil) o elegir una imagen. Se guarda reducida y sin los datos de la foto, y si la biblioteca está en la nube, llega al servidor con las demás portadas.",
       "en": "You can set a cover of your own: in the form, the cover's button lets you take a photo (on a phone) or choose an image. It is kept smaller and without the photo's data, and if the library is in the cloud, it reaches the server with the other covers."
+    },
+    {
+      "es": "En el móvil, para la primera carga: en «Añadir», «Foto de una balda» lee los lomos de una balda en el propio móvil, busca cada título en los catálogos y te enseña lo que encuentra para que marques qué añadir, todo de una vez. No lo lee todo, pero ahorra mucho escribir.",
+      "en": "On a phone, for the first load: in Add, “Photo of a shelf” reads the spines of a shelf on the phone itself, searches each title in the catalogues and shows you what it finds so you can tick what to add, all at once. It does not read everything, but it saves a lot of typing."
     }
   ],
   "0.6.0": [

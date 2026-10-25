@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { languageOf } from "@/i18n";
-import { Globe, Info, Loader2, PencilLine, ScanBarcode, Search, X } from "lucide-react";
+import {
+  Camera,
+  ChevronRight,
+  Globe,
+  Info,
+  Loader2,
+  PencilLine,
+  ScanBarcode,
+  Search,
+  X,
+} from "lucide-react";
 
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { KindGrid } from "@/components/book-form";
 import { Cover } from "@/components/cover";
 import { ResultsCredits } from "@/components/source-credits";
+import { useRequests } from "@/components/requests-context";
+import { ShelfPhoto } from "@/components/shelf-photo";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +34,7 @@ import {
   lookupCode,
   searchWorks,
 } from "@/lib/api";
+import { newBookFromCandidate } from "@/lib/candidates";
 import { KIND_FORMATS, KIND_ICONS } from "@/lib/kinds";
 import { IsbnChoice } from "@/components/isbn-choice";
 import {
@@ -103,49 +116,14 @@ function emptyNewBook(kind: Kind, barcode: string | null = null): NewBook {
   };
 }
 
-function newBookFromCandidate(candidate: Candidate): NewBook {
-  const format =
-    candidate.format && KIND_FORMATS[candidate.kind].includes(candidate.format)
-      ? candidate.format
-      : KIND_FORMATS[candidate.kind][0];
-  return {
-    kind: candidate.kind,
-    title: candidate.title,
-    subtitle: candidate.subtitle,
-    authors: candidate.authors,
-    contributors: candidate.contributors,
-    publisher: candidate.publisher,
-    publishedYear: candidate.publishedYear,
-    language: candidate.language,
-    isbn: candidate.isbn,
-    barcode: candidate.barcode,
-    number: candidate.number,
-    playersMin: candidate.playersMin,
-    playersMax: candidate.playersMax,
-    durationMinutes: candidate.durationMinutes,
-    minAge: candidate.minAge,
-    seasons: candidate.seasons,
-    coverUrl: candidate.coverUrl,
-    googleBooksId: candidate.source === "google_books" ? candidate.externalId : null,
-    openLibraryId: candidate.source === "open_library" ? candidate.externalId : null,
-    copy: {
-      owner: null,
-      format,
-      quantity: 1,
-      location: null,
-      acquiredOn: null,
-      platform: candidate.platform,
-      seasons: null,
-    },
-  };
-}
-
 interface Props {
   open: boolean;
   desktop: boolean;
   library: string;
   onOpenChange: (open: boolean) => void;
   onCreated: (result: CreatedBook, title: string) => void;
+  /** Works were added without leaving «Añadir» (the shelf photo): the catalogue behind refreshes. */
+  onChanged?: () => void;
   /** A reader's book went to the administrators, or was simply added if allowed now. */
   onRequested?: (requested: boolean) => void;
   /** «Me falta» (D61): the form it leads to has no copy section, and saves with `addMissing`. */
@@ -159,6 +137,7 @@ export function AddSearch({
   library,
   onOpenChange,
   onCreated,
+  onChanged,
   onRequested,
   missing,
 }: Props) {
@@ -190,6 +169,10 @@ export function AddSearch({
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isbnChoices, setIsbnChoices] = useState<string[] | null>(null);
+  const [shelfOpen, setShelfOpen] = useState(false);
+  // The shelf photo adds straight away: not for «Me falta», nor for readers, who ask instead (D73).
+  const { myRole } = useRequests();
+  const canShelf = !desktop && !missing && myRole !== "reader";
   const requestId = useRef(0);
   const queryRef = useRef<HTMLInputElement>(null);
 
@@ -627,6 +610,42 @@ export function AddSearch({
     </Button>
   );
 
+  // Before anything is searched: the way to load a whole shelf at once.
+  const shelfEntry = canShelf &&
+    query.trim() === "" &&
+    candidates.length === 0 &&
+    askCode === null && (
+      <>
+        <button
+          type="button"
+          onClick={() => setShelfOpen(true)}
+          className="flex w-full items-center gap-3.5 rounded-xl p-3 text-left"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+            <Camera className="size-5" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-semibold">{t("shelf.title")}</span>
+            <span className="text-[13.5px] text-pretty text-muted-foreground">
+              {t("shelf.entry")}
+            </span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+        <ShelfPhoto
+          open={shelfOpen}
+          kind={kind}
+          library={library}
+          onOpenChange={setShelfOpen}
+          onChanged={() => onChanged?.()}
+          onSearch={(text) => {
+            setTypingCode(false);
+            setQuery(text);
+          }}
+        />
+      </>
+    );
+
   if (!desktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -655,6 +674,7 @@ export function AddSearch({
               {scanNote}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
+              {shelfEntry}
               {askStep}
               {gameUpcNote}
               {resultsList}

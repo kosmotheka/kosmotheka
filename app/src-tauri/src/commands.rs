@@ -32,7 +32,7 @@ use crate::marks;
 use crate::metadata::bgg::BGG;
 use crate::metadata::gameupc::{self, GAMEUPC};
 use crate::metadata::via_server::{COMIC_VINE, GOOGLE_BOOKS, RAWG, TMDB, choose_access};
-use crate::metadata::{CodeResult, Lookup, LookupResult, SearchResult, Source};
+use crate::metadata::{Candidate, CodeResult, Lookup, LookupResult, SearchResult, Source};
 use crate::ops;
 use crate::people::{self, People};
 use crate::requests::{self, Request};
@@ -339,6 +339,33 @@ pub async fn search_works(
     query: String,
     language: Option<String>,
 ) -> Result<SearchResult> {
+    search(&database, &lookup, kind, &query, language.as_deref()).await
+}
+
+/// The shelf photo: one text read on a shelf, searched as if typed, and the first result whose title is what was
+/// read (`shelf::first_match`), or none. The catalogues' warnings are left out: a shelf is many searches, and one
+/// that fails is one book less, not a message each time.
+#[tauri::command]
+pub async fn shelf_match(
+    database: State<'_, Database>,
+    lookup: State<'_, Lookup>,
+    kind: Kind,
+    read: String,
+    language: Option<String>,
+) -> Result<Option<Candidate>> {
+    let mut found = search(&database, &lookup, kind, &read, language.as_deref()).await?;
+    let titles = found.candidates.iter().map(|c| c.title.as_str());
+    let matched = kosmotheka_domain::shelf::first_match(&read, titles);
+    Ok(matched.map(|i| found.candidates.swap_remove(i)))
+}
+
+async fn search(
+    database: &Database,
+    lookup: &Lookup,
+    kind: Kind,
+    query: &str,
+    language: Option<&str>,
+) -> Result<SearchResult> {
     let settings = {
         let conn = database.lock()?;
         settings::load(&conn)?
@@ -361,16 +388,12 @@ pub async fn search_works(
     let cloud = source
         .filter(|source| !settings.disabled_sources.contains(source.id()))
         .filter(|_| own_key.as_deref().is_none_or(|key| key.trim().is_empty()))
-        .and_then(|_| HttpCloud::connect(&database).ok());
-    let language = if language.as_deref() == Some("es") {
-        "es"
-    } else {
-        "en"
-    };
+        .and_then(|_| HttpCloud::connect(database).ok());
+    let language = if language == Some("es") { "es" } else { "en" };
     let mut result = lookup
         .search(
             kind,
-            &query,
+            query,
             &disabled_sources,
             own_key.as_deref(),
             cloud.as_ref(),
@@ -1060,7 +1083,18 @@ pub async fn isbns_in_photo(app: tauri::AppHandle, photo: String) -> Result<Vec<
     let photo = base64::engine::general_purpose::STANDARD
         .decode(photo)
         .map_err(|_| Error::TextRecognition("the photo is not base64".into()))?;
-    crate::printed_isbn::isbns_in_photo(&app, &photo).await
+    crate::photo_text::isbns_in_photo(&app, &photo).await
+}
+
+/// The shelf photo: the lines read on its spines that are worth searching for (`shelf::queries`), read on the device
+/// like the printed ISBN; the photo comes in base64 for the same reason.
+#[tauri::command]
+pub async fn shelf_queries(app: tauri::AppHandle, photo: String) -> Result<Vec<String>> {
+    use base64::Engine;
+    let photo = base64::engine::general_purpose::STANDARD
+        .decode(photo)
+        .map_err(|_| Error::TextRecognition("the photo is not base64".into()))?;
+    crate::photo_text::shelf_queries(&app, &photo).await
 }
 
 /// The UI shows the camera scanner only where the plugin exists (D35).

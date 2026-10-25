@@ -40,7 +40,7 @@
       "intro": "These are not licences you receive a copy of: they are services with terms of their own, which you accept by using the part of the app that needs them.",
       "purpose": {
         "scanner": "Used by the barcode scanner on phones.",
-        "textRecognition": "Used by “Photo of the number” to read the printed ISBN, on the phone itself."
+        "textRecognition": "Used by “Photo of the number” and “Photo of a shelf” to read printed text, on the phone itself."
       }
     }
   },
@@ -703,6 +703,7 @@
         "steps": [
           "Tap \"Add\" and type the title or the barcode number (ISBN), or scan it with the camera button. Results appear as you type.",
           "If the barcode is a shop label, tap “Photo of the number” in the camera and take a photo of the printed ISBN: the app reads it on the phone. Android only.",
+          "For the first load, “Photo of a shelf” reads the spines of a shelf and searches each title; you tick what to add. It does not read everything: add what is missing as usual. Android only.",
           "The details come from public catalogues, such as Spain's National Library, Open Library or Wikidata. Check them before saving.",
           "Offline, tap \"Add manually\" and complete it later.",
           "Some catalogues, such as Google Books, need your own key: set it in \"Settings\", \"Data providers\"."
@@ -1165,6 +1166,36 @@
     "alreadyHere": "Already in {{library}} · add a copy",
     "gameUpcChoose": "GameUPC is not sure which game this code is. Pick yours or search for it by name: once you save it, we tell GameUPC which one it is, so it learns.",
     "gameUpcSearch": "Search for the game by name. Once you save it, we tell GameUPC which game this code is, so it learns."
+  },
+  "shelf": {
+    "title": "Photo of a shelf",
+    "entry": "For the first load: reads the spines and searches each title in the catalogues.",
+    "intro": "The app reads the spines on the phone itself and searches each title in the catalogues. It only shows you what it finds, for you to tick what to add. It will not read everything: add what is missing as usual.",
+    "tipOneShelf": "One shelf per photo, from the front and up close.",
+    "tipLight": "With good light and no glare on the spines.",
+    "tipSpines": "Make the spines easy to read: 15 to 20 per photo.",
+    "whatIsThere": "What is on this shelf?",
+    "privacy": "The photo does not leave the phone. The texts read are searched in the catalogues, as if you typed them.",
+    "takePhoto": "Take the photo",
+    "tryAgain": "Another photo",
+    "another": "Another shelf",
+    "nothingRead": "I could not read any spine. Try closer, with a single shelf and good light.",
+    "reading": "Reading the spines…",
+    "searching": "Searching the catalogues… {{done}} of {{total}}",
+    "summary_one": "I read {{read}} texts and found {{count}} work. Tick it to add it.",
+    "summary_other": "I read {{read}} texts and found {{count}} works. Tick the ones you want to add.",
+    "addedSummary_one": "{{count}} work added.",
+    "addedSummary_other": "{{count}} works added.",
+    "read": "Read: “{{text}}”",
+    "alreadyHere": "Already in {{library}}: ticking it adds another copy",
+    "copyDetails": "For every one you add",
+    "add_one": "Add {{count}}",
+    "add_other": "Add {{count}}",
+    "added": "Added",
+    "failed": "Could not be added",
+    "notFound_one": "{{count}} text not found",
+    "notFound_other": "{{count}} texts not found",
+    "notFoundHint": "Some are the publisher or the author; others, titles misread. Tap one to search for it yourself in Add."
   },
   "notices": {
     "title_one": "A change of yours became a request",

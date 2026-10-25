@@ -12,6 +12,7 @@ pub mod mark;
 pub mod operation;
 pub mod permission;
 pub mod schema;
+pub mod shelf;
 pub mod signature;
 
 pub use book::{

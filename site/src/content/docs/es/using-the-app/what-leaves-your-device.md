@@ -11,6 +11,8 @@ sidebar:
 
 Al buscar un título o un número de código, la app pregunta a servicios públicos de internet, como el catálogo de la Biblioteca Nacional. A ellos solo les llega **lo que buscas**: el título que escribes, o el número del código (por ejemplo, el ISBN). Nunca tu lista de libros, tu nombre ni lo que tienes.
 
+Con «Foto de una balda», la app busca por ti cada texto que ha leído en los lomos, uno tras otro, como si lo escribieras. Así que a esos servicios les llegan también los textos que no son títulos: el nombre del autor, el de la editorial o un lomo mal leído. La foto no sale de tu móvil.
+
 La búsqueda sale mientras escribes, tras una pausa muy corta. Como cualquier página web, cada servicio ve desde qué dirección de internet le preguntas (la de tu casa). También ve que la pregunta viene de Kosmotheka y de qué versión de la app.
 
 Estos servicios vienen encendidos desde el principio. Cada uno se puede apagar.
@@ -38,9 +40,9 @@ Si pones una portada tuya (una foto o una imagen), viaja igual: a tus otros disp
 
 ## La cámara
 
-La cámara solo se enciende cuando tú pulsas el botón de escanear, o «Foto del número» para leer el ISBN impreso en una foto (si el código de barras es una etiqueta de la tienda). Las imágenes se leen en tu propio dispositivo: no se guardan ni se envían a ningún sitio.
+La cámara solo se enciende cuando tú pulsas el botón de escanear, «Foto del número» para leer el ISBN impreso en una foto (si el código de barras es una etiqueta de la tienda) o «Foto de una balda» para leer los lomos. Las imágenes se leen en tu propio dispositivo: no se guardan ni se envían a ningún sitio.
 
-El escáner y la lectura del número son de Google (se llama ML Kit y viene con los servicios de Google Play del móvil). Para saber si funciona bien, le manda a Google datos técnicos: el modelo del móvil, las versiones del sistema y de la app, y cuánto tarda o si falla. Nunca las imágenes. A nosotros no nos llega nada de eso.
+El escáner y la lectura del texto son de Google (se llama ML Kit y viene con los servicios de Google Play del móvil). Para saber si funciona bien, le manda a Google datos técnicos: el modelo del móvil, las versiones del sistema y de la app, y cuánto tarda o si falla. Nunca las imágenes. A nosotros no nos llega nada de eso.
 
 En Android, para leer el código de barras la app usa una pieza de software de Google, que viene con la tienda Google Play. Puedes leer sus condiciones en el menú, en «Acerca de» y «Licencias».
 

@@ -40,7 +40,7 @@
       "intro": "No son licencias de las que recibas una copia: son servicios con términos propios, que aceptas al usar la parte de la app que los necesita.",
       "purpose": {
         "scanner": "Los usa el escáner de códigos de barras en el móvil.",
-        "textRecognition": "Lo usa «Foto del número» para leer el ISBN impreso, en el propio móvil."
+        "textRecognition": "Lo usan «Foto del número» y «Foto de una balda» para leer el texto impreso, en el propio móvil."
       }
     }
   },
@@ -717,6 +717,7 @@
         "steps": [
           "Pulsa «Añadir» y escribe el título o el número del código de barras (ISBN), o escanéalo con el botón de la cámara. Los resultados salen solos mientras escribes.",
           "Si el código de barras es una etiqueta de la tienda, en la cámara pulsa «Foto del número» y haz una foto del ISBN impreso: la app lo lee en el móvil. Solo en Android.",
+          "Para la primera carga, «Foto de una balda» lee los lomos de una balda y busca cada título; tú marcas qué añadir. No lo lee todo: lo que falte, lo añades como siempre. Solo en Android.",
           "Los datos llegan de catálogos públicos, como la Biblioteca Nacional de España, Open Library o Wikidata. Revísalos antes de guardar.",
           "Sin conexión, pulsa «Añadir a mano» y complétalo después.",
           "Algunos catálogos, como Google Books, piden una clave propia: se pone en «Ajustes», «Proveedores de datos»."
@@ -1179,6 +1180,36 @@
     "alreadyHere": "Ya está en {{library}} · añadir un ejemplar",
     "gameUpcChoose": "GameUPC no está seguro de qué juego es este código. Elige el tuyo o búscalo por su nombre: al guardarlo le diremos cuál es, para que aprenda.",
     "gameUpcSearch": "Busca el juego por su nombre. Al guardarlo le diremos a GameUPC qué juego es este código, para que aprenda."
+  },
+  "shelf": {
+    "title": "Foto de una balda",
+    "entry": "Para la carga inicial: lee los lomos y busca cada título en los catálogos.",
+    "intro": "La app lee los lomos en el propio móvil y busca cada título en los catálogos. Solo te enseña lo que encuentra, para que marques qué añadir. No lo leerá todo: lo que falte, lo añades como siempre.",
+    "tipOneShelf": "Una sola balda por foto, de frente y de cerca.",
+    "tipLight": "Con buena luz y sin brillos en los lomos.",
+    "tipSpines": "Que se lean bien los lomos: entre 15 y 20 por foto.",
+    "whatIsThere": "¿Qué hay en esta balda?",
+    "privacy": "La foto no sale del móvil. Los textos leídos se buscan en los catálogos, como si los escribieras tú.",
+    "takePhoto": "Hacer la foto",
+    "tryAgain": "Otra foto",
+    "another": "Otra balda",
+    "nothingRead": "No he podido leer ningún lomo. Prueba más cerca, con una sola balda y buena luz.",
+    "reading": "Leyendo los lomos…",
+    "searching": "Buscando en los catálogos… {{done}} de {{total}}",
+    "summary_one": "He leído {{read}} textos y encontrado {{count}} obra. Márcala para añadirla.",
+    "summary_other": "He leído {{read}} textos y encontrado {{count}} obras. Marca las que quieras añadir.",
+    "addedSummary_one": "Añadida {{count}} obra.",
+    "addedSummary_other": "Añadidas {{count}} obras.",
+    "read": "Leído: «{{text}}»",
+    "alreadyHere": "Ya está en {{library}}: marcarla añade otro ejemplar",
+    "copyDetails": "Para todas las que añadas",
+    "add_one": "Añadir {{count}}",
+    "add_other": "Añadir {{count}}",
+    "added": "Añadida",
+    "failed": "No se ha podido añadir",
+    "notFound_one": "{{count}} texto sin encontrar",
+    "notFound_other": "{{count}} textos sin encontrar",
+    "notFoundHint": "Algunos son la editorial o el autor; otros, títulos mal leídos. Toca uno para buscarlo tú en «Añadir»."
   },
   "notices": {
     "title_one": "Un cambio tuyo ha pasado a petición",

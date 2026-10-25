@@ -1094,6 +1094,37 @@ mockIPC((cmd, args) => {
       };
     case "isbns_in_photo":
       return ["9788469767016"];
+    // A shelf as ML Kit read the maintainer's: some titles, a publisher, an author and a misread spine.
+    case "shelf_queries":
+      return [
+        "La sombra del viento",
+        "Carlos Ruiz Zafón",
+        "Ragnarok",
+        "Dune",
+        "Planeta",
+        "O9AINC I0 YINGKUSIS",
+        "El imperio final",
+        "Liminal Pax Londinium",
+      ];
+    case "shelf_match": {
+      const { kind, read } = args as { kind: Kind; read: string };
+      const works: Record<string, Partial<Candidate>> = {
+        "La sombra del viento": { authors: ["Carlos Ruiz Zafón"], publishedYear: 2001 },
+        Ragnarok: { authors: ["Neil Gaiman"], publishedYear: 2017 },
+        Dune: {
+          authors: ["Frank Herbert"],
+          publishedYear: 1965,
+          existingEditionId: bookAt(0).editionId,
+        },
+        "El imperio final": { authors: ["Brandon Sanderson"], publishedYear: 2006 },
+      };
+      const work = works[read];
+      const match = work
+        ? { ...mockCandidates(kind, read)[1], title: read, externalId: `shelf:${read}`, ...work }
+        : null;
+      // A search takes a moment, to see the progress.
+      return new Promise((resolve) => setTimeout(() => resolve(match), 250));
+    }
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
     case "plugin:app|version":

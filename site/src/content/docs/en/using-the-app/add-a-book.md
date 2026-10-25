@@ -66,6 +66,20 @@ On a computer, the "Quick add" button (at the top, next to "Add") lets you enter
 
 If you already have your list in a spreadsheet, see [Backups, export and import](../backups/).
 
+## A whole shelf at once
+
+Only on a phone, for the first load of your library. In Add, before searching anything, tap **"Photo of a shelf"**. It is not there when adding to "Missing", nor where you can only look, because it adds straight away.
+
+1. Choose what is on the shelf: books, comics, films… It starts with what you had chosen in Add.
+2. Tap "Take the photo" and photograph **a single shelf**, from the front and up close, in good light. 15 to 20 spines per photo work best.
+3. The app reads the spines on your phone and searches each text in the catalogues. You see how it goes and what it finds.
+4. It shows you **only what it finds** as a real work, already ticked. What you already have comes unticked: if you tick it, another copy is added.
+5. Set the owner, the format and the location, which apply to all of them, and tap "Add".
+
+**It will not read everything.** It reads spines in plain type well; those in narrow, ornate or very small type, and those in bags or with glare, escape it. What it does not find stays under "texts not found": some are the author or the publisher, others a misread title. Tap one to search for it yourself. Add what is missing as usual.
+
+The photo does not leave your phone, but the texts read are searched in the catalogues, as if you typed them (more in [What leaves your device](../what-leaves-your-device/)).
+
 ## If in a library you can only look
 
 In a shared library where you can only look (you are a "Reader"), instead of "Add" you will see "Ask to add". Whoever administers the library decides whether to accept it.
