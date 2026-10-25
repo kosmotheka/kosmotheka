@@ -20,8 +20,8 @@ The project's working documents are in Spanish and the code is in English. This 
 | editorial | `publisher` | |
 | género | `genre` | A key from the app's closed list for each kind; it is not a row |
 | etiqueta | `tag` | A free word of a library, linked to works |
-| serie (agrupación de obras) | `series` | Not the TV kind, which is `tv_series` |
-| obra en una serie | `series_entry` | |
+| saga o colección (agrupación de obras) | `series` | In the app, «Sagas y colecciones»: a saga is `ordered`, a collection is not. Not the TV kind, which is `tv_series` |
+| obra en una saga o colección | `series_entry` | |
 | «necesita» | `work_relation` with `requires` | An expansion requires its base game |
 
 ## People and what they note

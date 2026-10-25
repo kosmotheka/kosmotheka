@@ -18,7 +18,7 @@ These are the guides for people who use the app. Each page answers one concrete 
 4. [Copies, locations and whose each thing is](./copies-and-places/)
 5. [Books, comics, games, films, music: what changes with each kind](./kinds/)
 6. [Your own: to read, reading, read, stars, favorites and "I want it"](./marks/)
-7. [Series and gaps](./series/)
+7. [Sagas and collections](./series/)
 8. [Several libraries](./several-libraries/)
 
 ## Sharing and keeping safe

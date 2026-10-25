@@ -285,16 +285,26 @@ const relatedWork = (b: BookSummary): RelatedWork => ({
 });
 
 const seriesOfEdition: Record<string, WorkSeries[]> = {
-  [bookAt(0).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 1 }],
-  [bookAt(1).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 2 }],
-  [bookAt(14).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 3 }],
-  [bookAt(13).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 4 }],
-  [bookAt(17).editionId]: [{ seriesId: DUNE_SERIES, name: "Dune", ordered: true, position: 6 }],
+  [bookAt(0).editionId]: [
+    { seriesId: DUNE_SERIES, name: "Dune", ordered: true, total: 6, position: 1 },
+  ],
+  [bookAt(1).editionId]: [
+    { seriesId: DUNE_SERIES, name: "Dune", ordered: true, total: 6, position: 2 },
+  ],
+  [bookAt(14).editionId]: [
+    { seriesId: DUNE_SERIES, name: "Dune", ordered: true, total: 6, position: 3 },
+  ],
+  [bookAt(13).editionId]: [
+    { seriesId: DUNE_SERIES, name: "Dune", ordered: true, total: 6, position: 4 },
+  ],
+  [bookAt(17).editionId]: [
+    { seriesId: DUNE_SERIES, name: "Dune", ordered: true, total: 6, position: 6 },
+  ],
   [bookAt(8).editionId]: [
-    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null },
+    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, total: 2, position: null },
   ],
   [bookAt(15).editionId]: [
-    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, position: null },
+    { seriesId: CATAN_SERIES, name: "Catán", ordered: false, total: 2, position: null },
   ],
 };
 
@@ -1412,6 +1422,10 @@ mockIPC((cmd, args) => {
         missing: s.entries.filter((e) => e.copies === 0).length,
         have: s.have,
         total: s.total,
+        covers: s.entries
+          .filter((e) => e.cover !== null)
+          .slice(0, 3)
+          .map((e) => ({ file: e.cover, kind: e.kind })),
       }));
     case "get_series": {
       const id = (args as { id: string }).id;

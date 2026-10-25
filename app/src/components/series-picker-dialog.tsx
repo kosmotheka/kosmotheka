@@ -193,7 +193,7 @@ export function SeriesPickerDialog({
             </button>
           ))}
           {matches.length === 0 && !query.trim() && (
-            <p className="px-2.5 py-2 text-sm text-muted-foreground">{t("series.empty")}</p>
+            <p className="px-2.5 py-2 text-sm text-muted-foreground">{t("series.emptyTitle")}</p>
           )}
         </div>
         <div className="flex justify-end">

@@ -620,7 +620,7 @@
     "requestsAdmin": "Requests",
     "share": "Sharing and devices",
     "people": "People and permissions",
-    "series": "Series",
+    "series": "Sagas and collections",
     "backups": "Backups",
     "settings": "Settings",
     "help": "Help",
@@ -1419,17 +1419,16 @@
     "bggNotice": "Board game and role-playing data from <link>BoardGameGeek</link>. This application is not affiliated with BoardGameGeek."
   },
   "series": {
-    "new": "New series",
-    "empty": "No series yet.",
-    "newSeriesTitle": "New series",
+    "new": "New saga or collection",
+    "newSeriesTitle": "New saga or collection",
     "name": "Name",
-    "type": "Series type",
-    "ordered": "Ordered",
-    "unordered": "Unordered",
-    "orderedHint": "A saga: 1, 2, 3…",
-    "unorderedHint": "A line, like Catan",
-    "orderedKind": "Ordered saga",
-    "unorderedKind": "Unordered line",
+    "type": "What is it?",
+    "ordered": "Saga",
+    "unordered": "Collection",
+    "orderedHint": "In order: 1, 2, 3…, like Dune",
+    "unorderedHint": "No order, like Catan and its expansions",
+    "orderedKind": "Saga",
+    "unorderedKind": "Collection",
     "haveOf": "you have {{have}} of {{total}}",
     "missing_one": "{{count}} missing",
     "missing_other": "{{count}} missing",
@@ -1438,26 +1437,26 @@
     "rename": "Rename",
     "done": "Done",
     "addWork": "Add a work",
-    "delete": "Delete series",
+    "delete": "Delete",
     "deleteConfirm": {
       "title": "Delete “{{name}}”?",
-      "body": "Its works stay in the catalog; only the series is removed."
+      "body": "Its works stay in the catalogue; only the grouping goes."
     },
     "gap": "Not logged",
     "gapHint": "Number {{n}} is missing here",
     "addHere": "Add one here",
     "position": "Number",
-    "positionOf": "No. {{position}}",
+    "positionOf": "{{position}} of {{total}}",
     "positionBetween": "Between “{{prevTitle}}” ({{prevPos}}) and “{{nextTitle}}” ({{nextPos}})",
     "positionAfter": "After “{{title}}” ({{pos}})",
     "positionBefore": "Before “{{title}}” ({{pos}})",
-    "pickSeries": "Series",
-    "addToSeries": "Add to a series",
+    "pickSeries": "Saga or collection",
+    "addToSeries": "Add to a saga or collection",
     "createSeries": "Create “{{name}}”",
     "addToNamed": "Add to {{name}}",
     "createAndAdd": "Create and add",
     "status": {
-      "owned": "I have it",
+      "owned": "You have it",
       "missing": "Missing"
     },
     "needs": "Needs",
@@ -1467,23 +1466,31 @@
       "workCount_other": "{{count}} works"
     },
     "picker": {
-      "searchPlaceholder": "Search a series"
+      "searchPlaceholder": "Search a saga or collection"
     },
     "workPicker": {
       "title": "Add a work",
       "placeholder": "Search the catalog",
-      "alreadyIn": "Already in this series"
+      "alreadyIn": "Already here"
     },
     "edit": "Edit",
     "editHint": "Type each work's number; you can leave gaps",
     "editHintUnordered": "Take out the works that do not belong here",
     "positionInvalid": "Every work needs a whole number from 1 up.",
-    "removeWork": "Take {{title}} out of the series",
+    "removeWork": "Take {{title}} out",
     "removeConfirm": {
       "title": "Take {{title}} out?",
       "body": "It leaves {{name}} but stays in the catalogue.",
       "action": "Take out"
-    }
+    },
+    "intro": "Group the works that go together, to see at a glance which you have, which you are missing and whether there are gaps.",
+    "orderedExplain": "Works in order: Dune 1, 2, 3… It points out the numbers you do not have.",
+    "unorderedExplain": "Works that go together with no order: Catan and its expansions, a comics collection.",
+    "emptyTitle": "No sagas or collections yet",
+    "emptyHow": "Create one here, or from a work's page with “Add to a saga or collection”. Then add its works, those you have and those you are missing.",
+    "whatAreThey": "What are they for?",
+    "positionAlone": "No. {{position}}",
+    "iHaveIt": "I have it"
   },
   "account": {
     "settings": {

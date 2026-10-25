@@ -634,7 +634,7 @@
     "requestsAdmin": "Peticiones",
     "share": "Compartir y dispositivos",
     "people": "Personas y permisos",
-    "series": "Series",
+    "series": "Sagas y colecciones",
     "backups": "Copias de seguridad",
     "settings": "Ajustes",
     "help": "Ayuda",
@@ -1433,17 +1433,16 @@
     "bggNotice": "Datos de juegos de mesa y de rol de <link>BoardGameGeek</link>. Esta aplicación no tiene relación con BoardGameGeek."
   },
   "series": {
-    "new": "Nueva serie",
-    "empty": "Todavía no hay series.",
-    "newSeriesTitle": "Nueva serie",
+    "new": "Nueva saga o colección",
+    "newSeriesTitle": "Nueva saga o colección",
     "name": "Nombre",
-    "type": "Tipo de serie",
-    "ordered": "Con orden",
-    "unordered": "Sin orden",
-    "orderedHint": "Una saga: 1, 2, 3…",
-    "unorderedHint": "Una línea, como Catán",
-    "orderedKind": "Saga con orden",
-    "unorderedKind": "Línea sin orden",
+    "type": "¿Qué es?",
+    "ordered": "Saga",
+    "unordered": "Colección",
+    "orderedHint": "Con orden: 1, 2, 3…, como Dune",
+    "unorderedHint": "Sin orden, como Catán y sus expansiones",
+    "orderedKind": "Saga",
+    "unorderedKind": "Colección",
     "haveOf": "tienes {{have}} de {{total}}",
     "missing_one": "{{count}} te falta",
     "missing_other": "{{count}} te faltan",
@@ -1452,27 +1451,27 @@
     "rename": "Renombrar",
     "done": "Hecho",
     "addWork": "Añadir obra",
-    "delete": "Eliminar serie",
+    "delete": "Eliminar",
     "deleteConfirm": {
       "title": "¿Eliminar «{{name}}»?",
-      "body": "Sus obras se quedan en el catálogo; solo se elimina la serie."
+      "body": "Sus obras se quedan en el catálogo; solo se deshace la agrupación."
     },
     "gap": "Sin apuntar",
     "gapHint": "Aquí falta el número {{n}}",
     "addHere": "Apuntar aquí",
     "position": "Número",
-    "positionOf": "Nº {{position}}",
+    "positionOf": "{{position}} de {{total}}",
     "positionBetween": "Entre «{{prevTitle}}» ({{prevPos}}) y «{{nextTitle}}» ({{nextPos}})",
     "positionAfter": "Después de «{{title}}» ({{pos}})",
     "positionBefore": "Antes de «{{title}}» ({{pos}})",
-    "pickSeries": "Serie",
-    "addToSeries": "Añadir a una serie",
-    "createSeries": "Crear la serie «{{name}}»",
+    "pickSeries": "Saga o colección",
+    "addToSeries": "Añadir a una saga o colección",
+    "createSeries": "Crear «{{name}}»",
     "addToNamed": "Añadir a {{name}}",
     "createAndAdd": "Crear y añadir",
     "status": {
-      "owned": "Lo tengo",
-      "missing": "Me falta"
+      "owned": "La tienes",
+      "missing": "Te falta"
     },
     "needs": "Necesita",
     "neededBy": "Lo necesitan",
@@ -1481,23 +1480,31 @@
       "workCount_other": "{{count}} obras"
     },
     "picker": {
-      "searchPlaceholder": "Busca una serie"
+      "searchPlaceholder": "Busca una saga o colección"
     },
     "workPicker": {
       "title": "Añadir obra",
       "placeholder": "Busca en el catálogo",
-      "alreadyIn": "Ya está en esta serie"
+      "alreadyIn": "Ya está aquí"
     },
     "edit": "Editar",
     "editHint": "Escribe el número de cada obra; puedes dejar huecos",
-    "editHintUnordered": "Quita las obras que no son de esta serie",
+    "editHintUnordered": "Quita las obras que no son de aquí",
     "positionInvalid": "Cada obra necesita un número entero, desde el 1.",
-    "removeWork": "Quitar {{title}} de la serie",
+    "removeWork": "Quitar {{title}} de aquí",
     "removeConfirm": {
       "title": "¿Quitar {{title}}?",
       "body": "Sale de {{name}}, pero sigue en el catálogo.",
       "action": "Quitar"
-    }
+    },
+    "intro": "Agrupa las obras que van juntas para ver de un vistazo cuáles tienes, cuáles te faltan y si hay huecos.",
+    "orderedExplain": "Obras con orden: Dune 1, 2, 3… Avisa de los números que no tienes.",
+    "unorderedExplain": "Obras que van juntas sin orden: Catán y sus expansiones, una colección de cómics.",
+    "emptyTitle": "Aún no hay sagas ni colecciones",
+    "emptyHow": "Crea una aquí, o desde la ficha de una obra con «Añadir a una saga o colección». Después añade sus obras, las que tienes y las que te faltan.",
+    "whatAreThey": "¿Para qué sirven?",
+    "positionAlone": "Nº {{position}}",
+    "iHaveIt": "Lo tengo"
   },
   "account": {
     "settings": {

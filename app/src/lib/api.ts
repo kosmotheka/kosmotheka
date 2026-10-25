@@ -295,6 +295,8 @@ export interface WorkSeries {
   name: string;
   ordered: boolean;
   position: number | null;
+  /** What the series holds counting its gaps, for «2 de 6». */
+  total: number;
 }
 
 /** A work related to another (D61): its first edition and how many copies it has,
@@ -1146,6 +1148,8 @@ export interface SeriesSummary {
   /** Works you have a copy of, out of `total`, which counts the gaps of an ordered series. */
   have: number;
   total: number;
+  /** The first covers in the series' order, at most three. */
+  covers: { file: string; kind: Kind }[];
 }
 
 export interface SeriesEntry {

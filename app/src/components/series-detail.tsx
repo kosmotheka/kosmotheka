@@ -223,7 +223,7 @@ export function SeriesDetailView({
         </span>
         {!reorder && !owned && (
           <Button variant="outline" size="sm" onClick={() => openWork(row)}>
-            {t("series.status.owned")}
+            {t("series.iHaveIt")}
           </Button>
         )}
         {reorder && (

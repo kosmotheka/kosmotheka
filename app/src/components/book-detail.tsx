@@ -653,7 +653,7 @@ function GenreTagChips({
   );
 }
 
-/** «Series» (D61): which series this work belongs to and its number, plus adding to one. */
+/** «Sagas y colecciones» (D61): which ones this work belongs to and its number («2 de 6»), plus adding to one. */
 function SeriesSection({ book }: { book: BookDetail }) {
   const { t } = useTranslation();
   return (
@@ -687,7 +687,9 @@ function SeriesSection({ book }: { book: BookDetail }) {
           <span className="flex-1 font-medium">{s.name}</span>
           <span className="text-muted-foreground">
             {s.ordered && s.position !== null
-              ? t("series.positionOf", { position: s.position })
+              ? s.total >= s.position
+                ? t("series.positionOf", { position: s.position, total: s.total })
+                : t("series.positionAlone", { position: s.position })
               : t("series.unordered")}
           </span>
         </button>

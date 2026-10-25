@@ -105,6 +105,8 @@ pub struct WorkSeries {
     pub name: String,
     pub ordered: bool,
     pub position: Option<i64>,
+    /// What the series holds counting its gaps, for «2 of 6».
+    pub total: i64,
 }
 
 /// A work related to another (D61), with enough to show "you have the expansion
@@ -1459,9 +1461,13 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                 name: row.get(1)?,
                 ordered: row.get::<_, i64>(2)? != 0,
                 position: row.get(3)?,
+                total: 0,
             })
         })?
         .collect::<rusqlite::Result<_>>()?;
+    for series in &mut book.series {
+        series.total = crate::series::get_series(conn, library, &series.series_id)?.total;
+    }
 
     let requires_ids = ids(
         conn,

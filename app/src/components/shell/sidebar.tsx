@@ -41,7 +41,12 @@ export function Sidebar({
         <ChevronsUpDown className="size-4" />
       </button>
       <div className="mt-4">
-        <MenuList items={mainNav} activeId={section} counts={counts} />
+        {/* The sagas are a view of the catalogue. */}
+        <MenuList
+          items={mainNav}
+          activeId={section === "series" ? "catalog" : section}
+          counts={counts}
+        />
       </div>
       <div className="truncate px-2.5 pt-4.5 pb-1.5 text-xs font-medium text-muted-foreground">
         {library}

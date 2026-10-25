@@ -26,7 +26,19 @@ pub struct SeriesSummary {
     pub have: i64,
     /// What the series holds counting its gaps: the same number the series page shows.
     pub total: i64,
+    /// The first covers in the series' order, at most three, so the list shows what it is.
+    pub covers: Vec<SeriesCover>,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SeriesCover {
+    pub file: String,
+    pub kind: Kind,
+}
+
+/// Covers shown for a series in the list.
+const LIST_COVERS: usize = 3;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -348,6 +360,7 @@ pub fn list_series(conn: &Connection, library: &str) -> Result<Vec<SeriesSummary
             missing: row.get(4)?,
             have: 0,
             total: 0,
+            covers: Vec::new(),
         })
     })?;
     let mut summaries: Vec<SeriesSummary> = rows.collect::<rusqlite::Result<_>>()?;
@@ -355,6 +368,17 @@ pub fn list_series(conn: &Connection, library: &str) -> Result<Vec<SeriesSummary
         let detail = get_series(conn, library, &summary.id)?;
         summary.have = detail.have;
         summary.total = detail.total;
+        summary.covers = detail
+            .entries
+            .into_iter()
+            .filter_map(|entry| {
+                entry.cover.map(|file| SeriesCover {
+                    file,
+                    kind: entry.kind,
+                })
+            })
+            .take(LIST_COVERS)
+            .collect();
     }
     Ok(summaries)
 }
@@ -743,6 +767,56 @@ mod tests {
         let summary = list_series(&conn, &lib).unwrap().remove(0);
 
         assert_eq!((summary.have, summary.total), (1, 1));
+    }
+
+    #[test]
+    fn a_work_knows_how_long_its_series_is() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
+        let messiah = add_work(&mut conn, "Dune Messiah");
+        let chapterhouse = add_work(&mut conn, "Chapterhouse: Dune");
+        add_to_series(&mut conn, &lib, &series_id, &messiah, Some(2)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &chapterhouse, Some(6)).unwrap();
+        let edition = get_series(&conn, &lib, &series_id).unwrap().entries[0]
+            .edition_id
+            .clone()
+            .unwrap();
+
+        let series = catalog::get_book(&conn, &lib, &edition).unwrap().series;
+
+        assert_eq!((series[0].position, series[0].total), (Some(2), 6));
+    }
+
+    #[test]
+    fn the_list_shows_the_first_covers_in_the_series_order() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
+        for (position, title) in [
+            (3, "Children of Dune"),
+            (1, "Dune"),
+            (2, "Dune Messiah"),
+            (4, "God Emperor"),
+        ] {
+            let cover = format!("{position}.webp");
+            let edition_id = catalog::create_book(&mut conn, &lib, &book(title), Some(&cover))
+                .unwrap()
+                .edition_id;
+            let work = catalog::get_book(&conn, &lib, &edition_id).unwrap().work_id;
+            add_to_series(&mut conn, &lib, &series_id, &work, Some(position)).unwrap();
+        }
+        add_work(&mut conn, "No cover");
+
+        let covers: Vec<String> = list_series(&conn, &lib)
+            .unwrap()
+            .remove(0)
+            .covers
+            .into_iter()
+            .map(|c| c.file)
+            .collect();
+
+        assert_eq!(covers, ["1.webp", "2.webp", "3.webp"]);
     }
 
     #[test]

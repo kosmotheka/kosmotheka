@@ -10,7 +10,8 @@ export function BottomNav({ section }: { section: Section }) {
   const [catalog, check, missing] = mainNav;
 
   const tab = (item: typeof catalog) => {
-    const active = item.section === section;
+    // The sagas are a view of the catalogue.
+    const active = item.section === (section === "series" ? "catalog" : section);
     const Icon = item.icon;
     return (
       <button

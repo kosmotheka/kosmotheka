@@ -18,7 +18,7 @@ Aquí están las guías para quien usa la app. Cada página responde a una pregu
 4. [Ejemplares, ubicaciones y de quién es cada cosa](./copies-and-places/)
 5. [Libros, cómics, juegos, películas, música: qué cambia en cada tipo](./kinds/)
 6. [Lo de cada uno: por leer, leído, estrellas, favoritos y «Lo deseo»](./marks/)
-7. [Series y huecos](./series/)
+7. [Sagas y colecciones](./series/)
 8. [Varias bibliotecas](./several-libraries/)
 
 ## Compartir y guardar

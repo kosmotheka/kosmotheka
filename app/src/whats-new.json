@@ -13,12 +13,12 @@
       "en": "On a phone, for the first load: in Add, “Photo of a shelf” reads the spines of a shelf on the phone itself, searches each title in the catalogues and shows you what it finds so you can tick what to add, all at once. It does not read everything, but it saves a lot of typing."
     },
     {
-      "es": "Al filtrar el catálogo por género o por etiqueta, lo elegido ya no sale dos veces en la barra: se ve en su botón, que dice cuántos hay si eliges varios.",
-      "en": "When you filter the catalogue by genre or tag, the choice no longer shows twice in the bar: it is on its own button, which says how many if you pick several."
+      "es": "Si un catálogo no responde o se le ha acabado el cupo, el aviso se queda junto a los resultados, también en «¿Lo tengo?», y te lleva a Proveedores de datos cuando una clave lo arregla. Y al filtrar por género o etiqueta, lo elegido ya no sale dos veces en la barra.",
+      "en": "If a catalogue does not answer or has run out of quota, the warning stays next to the results, in Do I have it? too, and takes you to Data providers when a key fixes it. And when you filter by genre or tag, the choice no longer shows twice in the bar."
     },
     {
-      "es": "Si un catálogo no responde o se le ha acabado el cupo, el aviso se queda junto a los resultados, también en «¿Lo tengo?», y te lleva a Proveedores de datos cuando una clave lo arregla.",
-      "en": "If a catalogue does not answer or has run out of quota, the warning stays next to the results, in Do I have it? too, and takes you to Data providers when a key fixes it."
+      "es": "Las «Series» pasan a llamarse «Sagas y colecciones», para no confundirlas con las series de televisión, y ya no están en el menú: son otra forma de ver el Catálogo. La pantalla explica para qué sirven y enseña cuánto tienes de cada una, y la ficha de una obra dice «2 de 6» en lugar de «Nº 2».",
+      "en": "“Series” are now “Sagas and collections”, so they are not mixed up with TV series, and they are no longer in the menu: they are another way of looking at the Catalog. The screen explains what they are for and shows how much of each you have, and a work's page says “2 of 6” instead of “No. 2”."
     }
   ],
   "0.6.0": [

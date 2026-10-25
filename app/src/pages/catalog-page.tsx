@@ -1,18 +1,27 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Gift, LibraryBig, Plus, Search, SearchX, X } from "lucide-react";
+import {
+  ChevronRight,
+  Gift,
+  LibraryBig,
+  ListOrdered,
+  Plus,
+  Search,
+  SearchX,
+  X,
+} from "lucide-react";
 
 import { BookList } from "@/components/book-list";
 import { BookTable } from "@/components/book-table";
 import { FilterBar } from "@/components/catalog-filters";
+import { type CatalogView, CatalogViews } from "@/components/catalog-views";
 import { useLibraries } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
 import { SearchScope } from "@/components/search-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type BookFilter, type BookSummary, type Holding, listBooks } from "@/lib/api";
-import { openOverlay } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
+import { navigate, openOverlay } from "@/lib/navigation";
 
 export type LoadState =
   | { status: "loading" }
@@ -53,8 +62,8 @@ export function CatalogPage({
   onOpenBook: (libraryId: string, editionId: string) => void;
   /** «Lo tengo · Me falta · Todo» (D61); undefined is «Todo». */
   holding: Holding | undefined;
-  /** Desktop segmented control: picking «Me falta» moves to that section. */
-  onViewChange: (holding: Holding | undefined) => void;
+  /** Desktop segmented control: picking «Me falta» or the sagas moves to that section. */
+  onViewChange: (view: CatalogView) => void;
 }) {
   const { t } = useTranslation();
   const reader = useRequests().myRole === "reader";
@@ -111,11 +120,6 @@ export function CatalogPage({
       : t(filtering ? "filters.results" : "nav.works", { count: books.length });
 
   const heading = missing ? t("nav.missing") : t("nav.catalog");
-  const views: { key: Holding | undefined; label: string }[] = [
-    { key: "owned", label: t("catalog.views.owned") },
-    { key: "missing", label: t("nav.missing") },
-    { key: undefined, label: t("catalog.views.all") },
-  ];
 
   return (
     <div className="flex min-h-full flex-col gap-3">
@@ -125,32 +129,7 @@ export function CatalogPage({
           {state.status === "ready" && (
             <span className="flex-1 text-[13px] text-muted-foreground">{count}</span>
           )}
-          <div
-            role="radiogroup"
-            aria-label={t("nav.catalog")}
-            className="flex gap-0.5 rounded-[9px] bg-muted p-[3px]"
-          >
-            {views.map((view) => {
-              const on = view.key === holding;
-              return (
-                <button
-                  key={view.key ?? "all"}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => onViewChange(view.key)}
-                  className={cn(
-                    "h-7 rounded-[6px] px-3 text-[13px]",
-                    on
-                      ? "bg-background font-semibold text-foreground shadow-[0_1px_2px_oklch(0_0_0/12%)]"
-                      : "font-medium text-muted-foreground",
-                  )}
-                >
-                  {view.label}
-                </button>
-              );
-            })}
-          </div>
+          <CatalogViews active={holding ?? "all"} onChange={onViewChange} />
         </div>
       )}
       {!desktop && missing && (
@@ -193,7 +172,17 @@ export function CatalogPage({
       )}
       {!catalogIsEmpty && <FilterBar filter={filter} onChange={onFilterChange} desktop={desktop} />}
       {!desktop && !missing && state.status === "ready" && !catalogIsEmpty && (
-        <p className="text-xs text-muted-foreground">{count}</p>
+        <div className="flex items-center gap-2">
+          <p className="flex-1 text-xs text-muted-foreground">{count}</p>
+          <button
+            type="button"
+            className="flex items-center gap-1 text-[13px] font-medium text-primary"
+            onClick={() => navigate("series")}
+          >
+            <ListOrdered className="size-4" /> {t("nav.series")}
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
       )}
 
       {state.status === "loading" && (

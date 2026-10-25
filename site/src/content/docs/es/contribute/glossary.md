@@ -20,8 +20,8 @@ La documentación de trabajo del proyecto está en español y el código en ingl
 | editorial | `publisher` | |
 | género | `genre` | Una clave de la lista cerrada de la app para cada tipo; no es una fila |
 | etiqueta | `tag` | Palabra libre de una biblioteca, enlazada a obras |
-| serie (agrupación de obras) | `series` | No es la de televisión, que es `tv_series` |
-| obra en una serie | `series_entry` | |
+| saga o colección (agrupación de obras) | `series` | En la app, «Sagas y colecciones»: la saga es `ordered`, la colección no. No es la de televisión, que es `tv_series` |
+| obra en una saga o colección | `series_entry` | |
 | «necesita» | `work_relation` con `requires` | Una expansión necesita su juego base |
 
 ## Las personas y lo que apuntan

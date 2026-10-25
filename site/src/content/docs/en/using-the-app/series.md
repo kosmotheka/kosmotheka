@@ -1,79 +1,86 @@
 ---
-title: Series and gaps
-description: How to group works into a series, number them and see which numbers you are missing.
+title: Sagas and collections
+description: How to group books, games and other things into a saga or a collection, number them and see what you are missing.
 sidebar:
   order: 7
 ---
 
-A **series** groups things that go together: the volumes of a saga, the games of one line. The app tells you how many you have. If the series has numbers, it also tells you which ones are missing.
+A **saga** or a **collection** groups things that go together, to see at a glance which you have, which you are missing and whether there are gaps.
 
-A series on this page is not a TV series. TV series are another kind of thing, explained in [Books, comics, games, films, music](../kinds/). A series groups things of any kind.
+- **Saga**: things in order, numbered 1, 2, 3…, like the *Dune* books. It is the only one that tells you which numbers you are missing. Those missing numbers are called **gaps**.
+- **Collection**: things that go together with no order, like *Catan* and its expansions, or a comics collection. It only groups them.
+
+You can group things of any kind, including the ones you are missing.
 
 The words *work*, *details* and *copy* are used here. They are explained in [Three words the app uses](../kinds/#three-words-the-app-uses).
 
-## Two kinds of series
+## Where they are
 
-- **Ordered** ("Ordered saga"): a saga, with numbers 1, 2, 3… It is the only one that tells you which numbers you are missing. Those missing numbers are called **gaps**.
-- **Unordered** ("Unordered line"): a line of products with no order, such as a game's expansions. It only groups them.
+They are another way of looking at your catalog:
 
-You choose the kind when you create the series. After that, the app does not let you change it.
+- **On a phone**, in the Catalog, tap "Sagas and collections", to the right of the number of works.
+- **On a computer**, at the top right of the Catalog, next to "I have it", "Missing" and "Everything".
 
-Two series in the same library cannot have the same name.
+On a work's page, the "Sagas and collections" section says which one it is in and its number ("2 of 6"). Tap it to open it.
 
-## Create a series
+In the list, each one says whether it is a saga or a collection, how many you have out of how many ("you have 3 of 6"), how many you are missing, and has a bar with how far you are.
 
-1. In the menu, go to "Series".
-2. Tap "New series".
+## Create one
+
+1. Go to "Sagas and collections".
+2. Tap "New saga or collection".
 3. Type the name.
-4. Choose "Ordered" or "Unordered".
-5. Tap the "New series" button at the bottom.
+4. Choose "Saga" or "Collection".
+5. Tap the "New saga or collection" button at the bottom.
 
-In the list, each series says how many things it has and how many you have ("you have 3 of 5"). As inside the series, the total counts the gaps of an ordered series.
+You choose whether it is a saga or a collection when you create it. After that, the app does not let you change it. Two in the same library cannot have the same name.
 
-Inside a series, "Rename" changes its name and "Delete series" deletes it. When you delete it, **the things stay in your catalog** (the list of everything you have noted). Only the grouping disappears.
+Inside, "Rename" changes its name and "Delete" deletes it. When you delete it, **the things stay in your catalog** (the list of everything you have noted). Only the grouping disappears.
 
-## Put things in a series
+## Put things in
 
 There are two ways.
 
-**From the series:**
+**From the saga or collection:**
 
-1. Open the series and tap "Add a work".
+1. Open it and tap "Add a work".
 2. Search for the thing in your catalog.
-3. If the series is ordered, type the number that goes to it.
+3. If it is a saga, type the number it takes.
 
 **From the thing:**
 
 1. Open its details (its page).
-2. Choose "Add to a series".
-3. Choose the series and, if it is ordered, the number. You can also create a new series at that moment with "Create and add".
-
-You can add anything from the catalog, whatever its kind, including the things you are missing.
+2. Choose "Add to a saga or collection".
+3. Choose which one and, if it is a saga, the number. You can also create a new one right there with "Create and add".
 
 ## Gaps
 
-![The "Dune" series: number 5 is a gap, "Not logged", and numbers 3 and 4 are works you are missing.](../../es/using-the-app/series-gaps.webp)
+![The “Dune” saga: number 5 is a gap, “Not logged”, and numbers 3 and 4 are works you are missing.](../../es/using-the-app/series-gaps.webp)
 
-In an ordered series, the app shows **every number from 1 up to the highest one** you have entered. A number with nothing noted for it is a gap. It shows as "Not logged", with the notice "Number 5 is missing here".
+In a saga, the app shows **every number, from 1 to the highest** you have set. A number with nothing noted is a gap. It shows as "Not logged", with "Number 5 is missing here".
 
-Tap **"Add one here"**. "Add" opens already on "Missing", with that number set. This way you note the volume you do not have yet. "Missing" is explained in [Your own: to read, reading, read, stars, favorites and "I want it"](../marks/).
+Tap **"Add one here"**. Add opens already on "Missing", with that number set. This way you note the volume you do not have yet. "Missing" is explained in [Your own: to read, reading, read, stars, favorites and "I want it"](../marks/).
 
-Above the series there is a line that sums up your progress. For example: "Ordered saga · you have 3 of 6 · 2 missing · 1 gap not logged yet".
+At the top, a line sums up how you are doing. For example: "Saga · you have 3 of 6 · 2 missing · 1 gap not logged yet".
 
 The total (here, 6) also counts the gaps. They are numbers the saga should have.
 
 A gap and something "missing" are not the same:
 
 - **A gap** is a number you have noted nothing for.
-- **Something "missing"** is something you have noted, but of which you have no copies. It shows with a dotted border and an "I have it" button. Tapping it opens its details, so you can note the copy.
+- **Something "missing"** is something you did note, but with no copy. It shows with a dashed border and an "I have it" button. Tapping it opens its page to note the copy.
 
-## Change numbers or remove things
+## Change the numbers or take things out
 
-Inside the series, tap "Edit".
+Inside, tap "Edit".
 
-- **In an ordered series**, type the number of each thing. You can leave gaps (1, 2, 5). Each number must be 1, 2, 3… with no decimals or letters.
-- **In an unordered series**, "Edit" only serves to remove things.
+- **In a saga**, type the number of each thing. You can leave gaps (1, 2, 5). Each number must be 1, 2, 3… with no decimals or letters.
+- **In a collection**, "Edit" is only for taking things out.
 
-With the × on each row, you take a thing out of the series. It stays in your catalog.
+The cross on each row takes a thing out. It stays in your catalog.
 
-When you finish, tap "Done".
+When you are done, tap "Done".
+
+## They are not TV series
+
+TV series are another kind of thing, like books or films, explained in [Books, comics, games, films, music](../kinds/). A saga or a collection groups things of any kind, TV series included.

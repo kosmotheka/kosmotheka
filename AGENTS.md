@@ -84,8 +84,8 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | etiqueta | `tag` | Free word of one library, linked to works |
 | miembro de la familia | `member` | A catalog row that owns copies; **not** an account, though it may be linked to one (D46) |
 | marca (de una persona sobre una obra) | `mark` | Status, rating and favorite of one person for one work (D68) |
-| serie (agrupación de obras) | `series` | Not the TV kind, which is `tv_series` |
-| obra en una serie | `series_entry` | |
+| saga o colección (agrupación de obras) | `series` | In the app, «Sagas y colecciones»: a saga is `ordered`, a collection is not. Not the TV kind, which is `tv_series` |
+| obra en una saga o colección | `series_entry` | |
 | «necesita» | `work_relation` with `requires` | An expansion requires its base game |
 | estado · valoración · favorito | `status` · `rating` · `favorite` | Fields of a `mark` |
 | lo deseo (marca de una persona) | `wished` | Field of a `mark` (D61) |

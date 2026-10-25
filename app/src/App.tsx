@@ -88,6 +88,7 @@ import { LibraryPage } from "@/pages/library-page";
 import { PeoplePage } from "@/pages/people-page";
 import { RequestsPage } from "@/pages/requests-page";
 import { SeriesPage } from "@/pages/series-page";
+import type { CatalogView } from "@/components/catalog-views";
 import { TagsPage } from "@/pages/tags-page";
 
 /** Waits until typing pauses before searching. */
@@ -445,14 +446,14 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     navigate("catalog");
   };
 
-  /** The desktop segmented control («Lo tengo · Me falta · Todo», D61). */
-  const onViewChange = (next: Holding | undefined) => {
-    if (next === "missing") {
-      navigate("missing");
+  /** The desktop segmented control («Lo tengo · Me falta · Todo · Sagas y colecciones», D61). */
+  const onViewChange = (next: CatalogView) => {
+    if (next === "missing" || next === "series") {
+      navigate(next);
       return;
     }
     navigate("catalog");
-    setFilter((f) => ({ ...f, holding: next }));
+    setFilter((f) => ({ ...f, holding: next === "all" ? undefined : next }));
   };
 
   const page =
@@ -474,7 +475,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     ) : section === "requests" ? (
       <RequestsPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
     ) : section === "series" ? (
-      <SeriesPage desktop={desktop} version={version} />
+      <SeriesPage desktop={desktop} version={version} onViewChange={onViewChange} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} onShowWelcome={() => setWelcome(true)} />
     ) : (
