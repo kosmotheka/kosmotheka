@@ -50,7 +50,7 @@ With "Other" nothing is searched anywhere: you add it by hand.
 
 A page opens with the details filled in. **Check them before you save:** online services sometimes get things wrong or leave gaps. Change whatever you need and tap "Save".
 
-**The cover:** if it has none or it is not your edition's, tap the small button on the cover in the form. On a phone you can "Take a photo" or "Choose an image"; on a computer, choose an image. It is kept smaller and without the data a phone adds to a photo (such as where it was taken), and it reaches your other devices like any cover: over your home Wi-Fi or, if the library is in the cloud, through your account's server. The same goes when you edit a work you already have.
+**The cover:** if it has none or it is not your edition's, tap the cover in the form. On a phone you can "Take a photo" or "Choose an image"; on a computer, choose an image. And with "Search the catalogues" the app searches again with the ISBN, title and author the form has at that moment: useful if you added or corrected them. Tap the one you want and it is saved with the form. It is kept smaller and without the data a phone adds to a photo (such as where it was taken), and it reaches your other devices like any cover: over your home Wi-Fi or, if the library is in the cloud, through your account's server. The same goes when you edit a work you already have.
 
 If the result says "Already in My library", you already have it. Tapping it opens its page, and from there you can add another copy (another one you have of it, on paper or digital).
 

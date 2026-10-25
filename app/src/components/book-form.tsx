@@ -4,9 +4,7 @@ import {
   Check,
   ChevronDown,
   Cloud,
-  Camera,
   ImagePlus,
-  Images,
   Info,
   Link as LinkIcon,
   Loader2,
@@ -19,6 +17,7 @@ import {
 
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
+import { CoverChooser } from "@/components/cover-chooser";
 import { useDesktop } from "@/components/shell/use-desktop";
 import { Button } from "@/components/ui/button";
 import { ProviderWarnings } from "@/components/provider-warnings";
@@ -26,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -67,7 +65,6 @@ import {
   genreLabel,
 } from "@/lib/kinds";
 import { LANGUAGE_CODES, languageName } from "@/lib/languages";
-import { takePhoto } from "@/lib/photo";
 import { cn } from "@/lib/utils";
 
 // Form state keeps every value as typed text; conversion happens on submit.
@@ -720,6 +717,7 @@ export function EditionFields({
   const [phone, setPhone] = useState(false);
   const [coverBusy, setCoverBusy] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
+  const [choosingCover, setChoosingCover] = useState(false);
   useEffect(() => {
     void isMobile().then(setPhone);
   }, []);
@@ -996,41 +994,40 @@ export function EditionFields({
       )}
       <div className="flex gap-4">
         <div className="relative shrink-0">
-          <Cover
-            file={value.cover}
-            url={value.coverUrl || null}
-            alt={value.title}
-            kind={value.kind}
-            className="h-36"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon-sm"
-                disabled={coverBusy}
-                aria-label={t("form.fields.changeCover")}
-                className="absolute right-1 bottom-1 rounded-full shadow"
-              >
-                {coverBusy ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <ImagePlus className="size-4" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {phone && (
-                <DropdownMenuItem onSelect={() => void ownCover(takePhoto({ camera: true }))}>
-                  <Camera /> {t("form.cover.photo")}
-                </DropdownMenuItem>
+          {/* The whole cover opens the choices: its small button alone was hard to hit on a phone. */}
+          <button
+            type="button"
+            disabled={coverBusy}
+            aria-label={t("form.fields.changeCover")}
+            className="relative block rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            onClick={() => setChoosingCover(true)}
+          >
+            <Cover
+              file={value.cover}
+              url={value.coverUrl || null}
+              alt={value.title}
+              kind={value.kind}
+              className="h-36"
+            />
+            <span className="absolute right-1 bottom-1 flex size-8 items-center justify-center rounded-full bg-secondary shadow">
+              {coverBusy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ImagePlus className="size-4" />
               )}
-              <DropdownMenuItem onSelect={() => void ownCover(takePhoto({ camera: false }))}>
-                <Images /> {t("form.cover.image")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </span>
+          </button>
+          <CoverChooser
+            open={choosingCover}
+            onClose={() => setChoosingCover(false)}
+            phone={phone}
+            kind={value.kind}
+            isbn={value.isbn}
+            title={value.title}
+            author={value.people.author?.[0] ?? null}
+            onOwn={(taking) => void ownCover(taking)}
+            onFound={(url) => onChange({ ...value, coverUrl: url, ownCover: null })}
+          />
           {coverFailed && (
             <p className="absolute top-full mt-1 w-36 text-xs text-destructive">
               {t("form.cover.failed")}

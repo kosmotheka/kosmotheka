@@ -276,7 +276,11 @@
     "cover": {
       "photo": "Hacer una foto",
       "image": "Elegir una imagen",
-      "failed": "No se ha podido usar esa imagen."
+      "failed": "No se ha podido usar esa imagen.",
+      "title": "Portada",
+      "search": "Buscar en los catálogos",
+      "searchHint": "Busca otra vez con el ISBN, el título y la autoría que tiene ahora la ficha: sirve si los has añadido o corregido.",
+      "noneFound": "No he encontrado portadas. Revisa el ISBN o el título, o pon una foto tuya."
     }
   },
   "errors": {

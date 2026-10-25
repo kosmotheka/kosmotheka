@@ -50,7 +50,7 @@ Con «Otro» no se busca en ningún sitio: se añade a mano.
 
 Se abre la ficha con los datos rellenados. **Revísalos antes de guardar:** los servicios de internet a veces se equivocan o dejan huecos. Cámbialo todo lo que haga falta y pulsa «Guardar».
 
-**La portada:** si no trae ninguna o no es la de tu edición, pulsa el botón pequeño sobre la portada de la ficha. En el móvil puedes «Hacer una foto» o «Elegir una imagen»; en el ordenador, elegir una imagen. Se guarda reducida y sin los datos que añade el móvil a la foto (como el lugar donde se hizo), y pasa a tus otros dispositivos como cualquier portada: por la wifi de casa o, si la biblioteca está en la nube, a través del servidor de tu cuenta. Lo mismo vale al editar una obra que ya tienes.
+**La portada:** si no trae ninguna o no es la de tu edición, toca la portada en la ficha. En el móvil puedes «Hacer una foto» o «Elegir una imagen»; en el ordenador, elegir una imagen. Y con «Buscar en los catálogos» la app busca otra vez con el ISBN, el título y la autoría que tiene la ficha en ese momento: sirve si los has añadido o corregido. Tocas la que sea y se guarda con la ficha. Se guarda reducida y sin los datos que añade el móvil a la foto (como el lugar donde se hizo), y pasa a tus otros dispositivos como cualquier portada: por la wifi de casa o, si la biblioteca está en la nube, a través del servidor de tu cuenta. Lo mismo vale al editar una obra que ya tienes.
 
 Si el resultado dice «Ya está en Mi biblioteca», ya lo tienes. Al tocarlo se abre su ficha, y desde ahí puedes añadir otro ejemplar (otro que tengas de él, en papel o en digital).
 

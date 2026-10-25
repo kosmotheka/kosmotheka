@@ -262,7 +262,11 @@
     "cover": {
       "photo": "Take a photo",
       "image": "Choose an image",
-      "failed": "That image could not be used."
+      "failed": "That image could not be used.",
+      "title": "Cover",
+      "search": "Search the catalogues",
+      "searchHint": "Searches again with the ISBN, title and author the form has now: useful if you added or corrected them.",
+      "noneFound": "I found no covers. Check the ISBN or the title, or use a photo of your own."
     }
   },
   "errors": {
