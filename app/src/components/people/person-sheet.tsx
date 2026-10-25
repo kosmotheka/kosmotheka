@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { InvitationNote } from "@/components/people/invitation-note";
-import { Avatar, Switch, linkNote } from "@/components/people/role-parts";
+import { Avatar, Switch, deviceNote } from "@/components/people/role-parts";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,7 +50,7 @@ export function PersonSheet({
   onWithdraw: () => void;
   onRestore: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [role, setRole] = useState<Role>(person.role ?? "reader");
   const [canShare, setCanShare] = useState(person.canShare);
   const lastAdmin = person.lastAdmin;
@@ -169,9 +169,9 @@ export function PersonSheet({
                       · {t("people.thisDevice")}
                     </span>
                   )}
-                  {linkNote(device, t) && (
+                  {deviceNote(device, t, i18n.resolvedLanguage) && (
                     <span className="block text-[13px] font-normal text-muted-foreground">
-                      {linkNote(device, t)}
+                      {deviceNote(device, t, i18n.resolvedLanguage)}
                     </span>
                   )}
                 </span>

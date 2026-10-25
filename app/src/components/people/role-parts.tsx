@@ -28,14 +28,33 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
 
 /** A device's name with an icon: a laptop for desktops, a phone otherwise. */
 /** «By the cloud» or «Linked by Ana»: who said whose the device is, when Rust knows. */
-export function linkNote(device: PersonDevice, t: TFunction): string | null {
+function linkNote(device: PersonDevice, t: TFunction): string | null {
   if (device.linkedByCloud) return t("people.viaCloud");
   return device.linkedBy ? t("people.linkedBy", { person: device.linkedBy }) : null;
 }
 
+/** «Last change 9 days ago»: when another device last signed anything here, to tell old installs from live ones. */
+function changeNote(
+  device: PersonDevice,
+  t: TFunction,
+  language: string | undefined,
+): string | null {
+  if (device.thisDevice || device.lastChange === null) return null;
+  const hours = Math.max(0, Math.round((Date.now() - device.lastChange) / 3_600_000));
+  const rtf = new Intl.RelativeTimeFormat(language, { numeric: "auto" });
+  const when = hours < 24 ? rtf.format(-hours, "hour") : rtf.format(-Math.round(hours / 24), "day");
+  return t("people.lastChange", { when });
+}
+
+/** What is known of a device besides its name: who linked it and when it last changed anything. */
+export function deviceNote(device: PersonDevice, t: TFunction, language: string | undefined) {
+  return [linkNote(device, t), changeNote(device, t, language)].filter(Boolean).join(" · ") || null;
+}
+
 export function DeviceChip({ device }: { device: PersonDevice }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const Icon = /port|lap|desk|pc|mac/i.test(device.name) ? Laptop : Smartphone;
+  const note = deviceNote(device, t, i18n.resolvedLanguage);
   return (
     <span className="inline-flex h-[26px] items-center gap-1.5 rounded-md bg-secondary px-2 text-[12.5px] whitespace-nowrap">
       <Icon className="size-3.5" />
@@ -43,9 +62,7 @@ export function DeviceChip({ device }: { device: PersonDevice }) {
       {device.thisDevice && (
         <span className="text-muted-foreground">· {t("people.thisDevice")}</span>
       )}
-      {linkNote(device, t) && (
-        <span className="text-muted-foreground">· {linkNote(device, t)}</span>
-      )}
+      {note && <span className="text-muted-foreground">· {note}</span>}
     </span>
   );
 }

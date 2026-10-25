@@ -902,6 +902,8 @@ export interface PersonDevice {
   linkedByCloud: boolean;
   /** The person whose device linked it, when it was neither the cloud nor the device itself. */
   linkedBy: string | null;
+  /** When it last signed anything in this library (ms since 1970): its own registration at least. */
+  lastChange: number | null;
 }
 
 export interface Person {
@@ -929,6 +931,8 @@ export interface People {
   unassigned: PersonDevice[];
   /** Only one person administers the library (D58). */
   loneAdmin: boolean;
+  /** This device's earlier installs: same person, same name, nothing signed since this one came (D81). */
+  earlierInstalls: PersonDevice[];
 }
 
 /** A person picked on screen: an existing one (`id`) or somebody new (`name`). */
@@ -962,6 +966,11 @@ export function restorePerson(member: string): Promise<void> {
 /** A lost device: out of every library, wherever it is. Returns how many. */
 export function removeDevice(device: string): Promise<number> {
   return invoke<number>("remove_device", { device });
+}
+
+/** Removes this device's earlier installs from every library; returns how many. */
+export function removeEarlierInstalls(library: string): Promise<number> {
+  return invoke<number>("remove_earlier_installs", { library });
 }
 
 /** Who a newly paired device may belong to, in the libraries it receives (D73). */

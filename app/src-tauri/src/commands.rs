@@ -908,6 +908,12 @@ pub fn remove_device(database: State<'_, Database>, device: String) -> Result<us
     people::remove_device(&mut *database.lock()?, &device)
 }
 
+/// What reinstalling left behind: this device's earlier installs, out of every library (D81).
+#[tauri::command]
+pub fn remove_earlier_installs(database: State<'_, Database>, library: String) -> Result<usize> {
+    people::remove_earlier_installs(&mut *database.lock()?, &library)
+}
+
 #[tauri::command]
 pub fn duplicate_library(
     database: State<'_, Database>,

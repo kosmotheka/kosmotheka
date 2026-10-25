@@ -26,6 +26,8 @@ pub struct PersonDevice {
     pub linked_by_cloud: bool,
     /// The person whose device signed that operation, when it was not the cloud, nor the device itself.
     pub linked_by: Option<String>,
+    /// When it last signed anything in this library, in milliseconds since 1970: its own registration at least.
+    pub last_change: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -76,6 +78,8 @@ pub struct People {
     /// Only one person administers the library: losing their devices would leave
     /// nobody who can change permissions (D58).
     pub lone_admin: bool,
+    /// What reinstalling the app left behind: see [`earlier_installs`].
+    pub earlier_installs: Vec<PersonDevice>,
 }
 
 pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
@@ -119,6 +123,7 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
             last_device_of_last_admin: false,
             linked_by_cloud,
             linked_by,
+            last_change: last_change(conn, library, id).ok().flatten(),
         }
     };
     let mut people: Vec<Person> = conn
@@ -180,12 +185,63 @@ pub fn list_people(conn: &Connection, library: &str) -> Result<People> {
         .iter()
         .find(|p| p.devices.iter().any(|d| d.this_device))
         .and_then(|p| p.role.clone());
+    let earlier_installs = earlier_installs(conn, library)?
+        .iter()
+        .filter_map(|id| people.iter().flat_map(|p| &p.devices).find(|d| &d.id == id))
+        .cloned()
+        .collect();
     Ok(People {
         my_role,
         people,
         unassigned,
         lone_admin,
+        earlier_installs,
     })
+}
+
+/// The time of the last operation `device` signed in `library`.
+fn last_change(conn: &Connection, library: &str, device: &str) -> Result<Option<i64>> {
+    let hlc: Option<String> = conn.query_row(
+        "SELECT max(hlc) FROM operations WHERE library_id = ?1 AND device_id = ?2",
+        [library, device],
+        |row| row.get(0),
+    )?;
+    Ok(hlc
+        .and_then(|hlc| hlc.parse::<kosmotheka_domain::Hlc>().ok())
+        .and_then(|hlc| i64::try_from(hlc.millis).ok()))
+}
+
+/// The devices that look like earlier installs of this one: reinstalling the app makes a new device (D81), and the
+/// old one stays with its person for good. Only devices of this device's own person, with its name, that have signed
+/// nothing since this one first did: an install that is gone can sign nothing more, while a second device with the
+/// same name that is still in use soon does.
+pub fn earlier_installs(conn: &Connection, library: &str) -> Result<Vec<String>> {
+    let me = ops::device_id(conn)?;
+    let Some(person) = permissions::person_of_device(conn, library, &me)? else {
+        return Ok(Vec::new());
+    };
+    Ok(conn
+        .prepare(&format!(
+            "SELECT d.id FROM devices d JOIN devices mine
+                 ON mine.library_id = d.library_id AND mine.id = ?2
+              WHERE d.library_id = ?1 AND d.id <> ?2 AND {person} = ?3
+                AND lower(trim(d.name)) = lower(trim(mine.name))
+                AND (SELECT max(hlc) FROM operations WHERE library_id = ?1 AND device_id = d.id)
+                  < (SELECT min(hlc) FROM operations WHERE library_id = ?1 AND device_id = ?2)
+              ORDER BY d.id",
+            person = permissions::person_of("d")
+        ))?
+        .query_map([library, &me, &person], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?)
+}
+
+/// Removes, in every library, the earlier installs of this device that `library` shows (see [`remove_device`]).
+pub fn remove_earlier_installs(conn: &mut Connection, library: &str) -> Result<usize> {
+    let devices = earlier_installs(conn, library)?;
+    for device in &devices {
+        remove_device(conn, device)?;
+    }
+    Ok(devices.len())
 }
 
 /// The names of the libraries, other than `except`, where `member` is.
@@ -1025,6 +1081,185 @@ mod tests {
             permissions::person_of_device(&laptop, &lib, &cloud).unwrap(),
             None
         );
+    }
+
+    const LAPTOP: &str = "sergio-PROX-AMD5";
+
+    /// A new install of the app that joins `lib` and is given to `member` by `admin`, the way the cloud links a
+    /// device that signs in with its person's account (D76): the same `member_id` and `vouched_key`.
+    fn new_install(admin: &mut Connection, lib: &str, name: &str, member: &str) -> Connection {
+        let mut install = db::open_in_memory().unwrap();
+        lan::set_device_name(&mut install, name).unwrap();
+        pull(&mut install, admin, lib);
+        let tx = install.transaction().unwrap();
+        ops::ensure_registered(&tx, lib).unwrap();
+        tx.commit().unwrap();
+        pull(admin, &install, lib);
+        let id = ops::device_id(&install).unwrap();
+        assign_device(admin, lib, &id, Some(member)).unwrap();
+        pull(&mut install, admin, lib);
+        install
+    }
+
+    /// The maintainer's case (25/10/2026): Sergio founds the library on his laptop, adds his phone, and installs
+    /// the app on the same laptop twice more. Each install is a new device (D81). Returns the phone, the third
+    /// install, the library, Sergio and the two earlier installs.
+    fn a_laptop_installed_three_times() -> (Connection, Connection, String, String, [String; 2]) {
+        let mut first = db::open_in_memory().unwrap();
+        lan::set_device_name(&mut first, LAPTOP).unwrap();
+        let lib = ops::active_library(&first).unwrap();
+        let sergio = name_founder(&mut first, &lib, "Sergio").unwrap();
+        let mut phone = new_install(&mut first, &lib, "Sergio android", &sergio);
+        catalog::create_book(&mut first, &lib, &book("Dune"), None).unwrap();
+        pull(&mut phone, &first, &lib);
+        let first_id = ops::device_id(&first).unwrap();
+        drop(first);
+
+        let mut second = new_install(&mut phone, &lib, LAPTOP, &sergio);
+        catalog::create_book(&mut second, &lib, &book("Tehanu"), None).unwrap();
+        pull(&mut phone, &second, &lib);
+        let second_id = ops::device_id(&second).unwrap();
+        drop(second);
+
+        let third = new_install(&mut phone, &lib, LAPTOP, &sergio);
+        (phone, third, lib, sergio, [first_id, second_id])
+    }
+
+    #[test]
+    fn reinstalling_leaves_the_earlier_installs_with_their_person() {
+        let (_phone, third, lib, sergio, _) = a_laptop_installed_three_times();
+
+        let people = list_people(&third, &lib).unwrap();
+
+        let sergio = people.people.iter().find(|p| p.id == sergio).unwrap();
+        let names: Vec<&str> = sergio.devices.iter().map(|d| d.name.as_str()).collect();
+        assert_eq!(
+            names.iter().filter(|n| **n == LAPTOP).count(),
+            3,
+            "{names:?}"
+        );
+        assert_eq!(sergio.devices.len(), 4, "three installs and the phone");
+    }
+
+    #[test]
+    fn the_new_install_is_offered_its_earlier_ones_with_their_last_change() {
+        let (_phone, third, lib, _, earlier) = a_laptop_installed_three_times();
+
+        let people = list_people(&third, &lib).unwrap();
+
+        let mut offered: Vec<&str> = people
+            .earlier_installs
+            .iter()
+            .map(|d| d.id.as_str())
+            .collect();
+        offered.sort_unstable();
+        let mut expected: Vec<&str> = earlier.iter().map(String::as_str).collect();
+        expected.sort_unstable();
+        assert_eq!(offered, expected);
+        let me = ops::device_id(&third).unwrap();
+        let mine = people
+            .people
+            .iter()
+            .flat_map(|p| &p.devices)
+            .find(|d| d.id == me)
+            .unwrap();
+        for device in &people.earlier_installs {
+            assert!(device.last_change.unwrap() <= mine.last_change.unwrap());
+        }
+    }
+
+    #[test]
+    fn a_device_of_someone_else_with_the_same_name_is_never_offered() {
+        // Hostile: Laura names her laptop like Sergio's so that he removes it.
+        let (mut phone, mut third, lib, _, _) = a_laptop_installed_three_times();
+        let mut changes = Vec::new();
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let laura =
+            member_changes(&phone, &lib, &laura, Some("editor"), None, &mut changes).unwrap();
+        let tx = phone.transaction().unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+        let lauras = new_install(&mut phone, &lib, LAPTOP, &laura);
+        // And a device of nobody, with that name too.
+        let mut nobodys = db::open_in_memory().unwrap();
+        lan::set_device_name(&mut nobodys, LAPTOP).unwrap();
+        pull(&mut nobodys, &phone, &lib);
+        let tx = nobodys.transaction().unwrap();
+        ops::ensure_registered(&tx, &lib).unwrap();
+        tx.commit().unwrap();
+        pull(&mut phone, &nobodys, &lib);
+        pull(&mut third, &phone, &lib);
+
+        let offered = earlier_installs(&third, &lib).unwrap();
+
+        assert!(!offered.contains(&ops::device_id(&lauras).unwrap()));
+        assert!(!offered.contains(&ops::device_id(&nobodys).unwrap()));
+        assert!(!offered.contains(&ops::device_id(&third).unwrap()));
+    }
+
+    #[test]
+    fn a_second_device_of_mine_still_in_use_is_never_offered() {
+        // Two laptops of Sergio's with the same name: the older one keeps working after the newer came.
+        let (mut phone, _, lib, sergio, _) = a_laptop_installed_three_times();
+        let mut older = new_install(&mut phone, &lib, LAPTOP, &sergio);
+        let mut newer = new_install(&mut phone, &lib, LAPTOP, &sergio);
+        pull(&mut older, &phone, &lib);
+        catalog::create_book(&mut older, &lib, &book("Still here"), None).unwrap();
+        pull(&mut phone, &older, &lib);
+        pull(&mut newer, &phone, &lib);
+
+        let offered = earlier_installs(&newer, &lib).unwrap();
+
+        assert!(!offered.contains(&ops::device_id(&older).unwrap()));
+    }
+
+    #[test]
+    fn removing_the_earlier_installs_leaves_this_one_and_the_phone() {
+        let (mut phone, mut third, lib, sergio, earlier) = a_laptop_installed_three_times();
+
+        assert_eq!(remove_earlier_installs(&mut third, &lib).unwrap(), 2);
+        pull(&mut phone, &third, &lib);
+
+        for conn in [&third, &phone] {
+            let people = list_people(conn, &lib).unwrap();
+            let sergio = people.people.iter().find(|p| p.id == sergio).unwrap();
+            assert_eq!(sergio.devices.len(), 2, "this install and the phone");
+            assert!(people.earlier_installs.is_empty());
+            for device in &earlier {
+                assert_eq!(lan::revocations_of(conn, &lib, device).unwrap().len(), 1);
+            }
+        }
+    }
+
+    #[test]
+    fn only_an_administrator_removes_her_earlier_installs_today() {
+        // Removing a device is an administrator's (D58): an editor is shown hers, and the rule that would let her
+        // remove them is still to decide.
+        let (mut phone, _, lib, _, _) = a_laptop_installed_three_times();
+        let mut changes = Vec::new();
+        let laura = PersonPick {
+            id: None,
+            name: "Laura".into(),
+        };
+        let laura =
+            member_changes(&phone, &lib, &laura, Some("editor"), None, &mut changes).unwrap();
+        let tx = phone.transaction().unwrap();
+        ops::record(&tx, &lib, "member.add", changes).unwrap();
+        tx.commit().unwrap();
+        let old = new_install(&mut phone, &lib, "Laura laptop", &laura);
+        let old_id = ops::device_id(&old).unwrap();
+        drop(old);
+        let mut new = new_install(&mut phone, &lib, "Laura laptop", &laura);
+
+        assert_eq!(earlier_installs(&new, &lib).unwrap(), vec![old_id.clone()]);
+        assert!(matches!(
+            remove_earlier_installs(&mut new, &lib),
+            Err(Error::NotAllowed)
+        ));
+        assert!(lan::revocations_of(&new, &lib, &old_id).unwrap().is_empty());
     }
 
     fn write_account(conn: &mut Connection, lib: &str, member: &str) -> String {

@@ -228,6 +228,7 @@ pub fn run() {
             commands::set_role,
             commands::assign_device,
             commands::remove_device,
+            commands::remove_earlier_installs,
             commands::withdraw_person,
             commands::leave_library_for_good,
             commands::restore_person,

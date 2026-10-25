@@ -1,6 +1,10 @@
 {
   "next": [
     {
+      "es": "En «Personas y permisos», cada dispositivo dice cuándo hizo su último cambio. Si has reinstalado la app, te ofrece quitar de una vez las instalaciones anteriores, que se quedaban en tu lista para siempre.",
+      "en": "In People and permissions, each device says when it last changed anything. If you reinstalled the app, it offers to remove the earlier installs at once, which used to stay in your list for good."
+    },
+    {
       "es": "Al entrar con tu cuenta, una pantalla te cuenta qué catálogos consulta tu servidor por ti, qué se envía a cada uno y te deja apagar el que quieras. Vuelve a salir si tu servidor añade uno nuevo.",
       "en": "When you sign in, a screen tells you which catalogues your server asks for you, what is sent to each one, and lets you turn off any of them. It shows again if your server adds a new one."
     },

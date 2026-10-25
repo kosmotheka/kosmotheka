@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ChevronRight,
+  History,
   Cloud,
   Ellipsis,
   Lock,
@@ -25,7 +26,7 @@ import {
   RoleLegend,
   RoleMenu,
   Switch,
-  linkNote,
+  deviceNote,
 } from "@/components/people/role-parts";
 import { RevokeDialog } from "@/components/people/revoke-dialog";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ import {
   invitationErrorKey,
   listInvitations,
   listPeople,
+  removeEarlierInstalls,
   permissionErrorKey,
   revokeInvitation,
   setRole,
@@ -68,7 +70,7 @@ export function PeoplePage({
   version: number;
   onNotice: (message: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const libraries = useLibraries();
   const library = useLibraryName()(libraries.active);
   const [people, setPeople] = useState<People | null>(null);
@@ -81,6 +83,7 @@ export function PeoplePage({
   // `null` person: a new one. Someone invited by email who is already here carries their row.
   const [inviting, setInviting] = useState<{ person: Person | null } | null>(null);
   const [invitations, setInvitations] = useState<InvitationItem[]>([]);
+  const [confirmEarlier, setConfirmEarlier] = useState(false);
   const [invitationReloads, setInvitationReloads] = useState(0);
   const cloudStatus = useCloud().status.find((s) => s.library === libraries.active?.id);
   // Signed in and the library is in the cloud: being someone here also opens it through the cloud.
@@ -223,6 +226,65 @@ export function PeoplePage({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+    </div>
+  );
+
+  // Reinstalling the app makes a new device (D81): the earlier installs of this one are offered once, together.
+  const earlier = people.earlierInstalls;
+  const lastUsed = Math.max(...earlier.map((d) => d.lastChange ?? 0));
+  const reinstalled = earlier.length > 0 && (
+    <div role="note" className="flex flex-col gap-3 rounded-2xl border p-3.5">
+      <div className="flex gap-3">
+        <History className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        <p className="text-sm leading-snug text-pretty">
+          <strong className="font-semibold">{t("people.earlier.title")}</strong>{" "}
+          {t("people.earlier.body", {
+            count: earlier.length,
+            device: earlier[0]?.name ?? "",
+            when: new Date(lastUsed).toLocaleDateString(i18n.resolvedLanguage, {
+              day: "numeric",
+              month: "long",
+            }),
+          })}{" "}
+          {!isAdmin && adminName && t("people.earlier.askAdmin", { admin: adminName })}
+        </p>
+      </div>
+      {isAdmin &&
+        (confirmEarlier ? (
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[13px] text-pretty text-muted-foreground">
+              {t("people.earlier.confirm", { count: earlier.length })}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() =>
+                  void act(async () => {
+                    setConfirmEarlier(false);
+                    if (!activeId) return;
+                    const removed = await removeEarlierInstalls(activeId);
+                    onNotice(t("people.earlier.done", { count: removed }));
+                  })
+                }
+              >
+                {t("people.earlier.action", { count: earlier.length })}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmEarlier(false)}>
+                {t("people.earlier.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => setConfirmEarlier(true)}
+          >
+            {t("people.earlier.action", { count: earlier.length })}
+          </Button>
+        ))}
     </div>
   );
 
@@ -405,7 +467,8 @@ export function PeoplePage({
                   <Smartphone className="size-3.5" />
                   {device.name}
                   {device.thisDevice && ` · ${t("people.thisDevice")}`}
-                  {linkNote(device, t) && ` · ${linkNote(device, t)}`}
+                  {deviceNote(device, t, i18n.resolvedLanguage) &&
+                    ` · ${deviceNote(device, t, i18n.resolvedLanguage)}`}
                 </span>
               ))}
             </span>
@@ -466,6 +529,7 @@ export function PeoplePage({
             {t("people.count", { library, count: people.people.length })}
           </span>
         )}
+        {reinstalled}
         {warning}
         {readOnlyNote}
         {people.people.some((p) => p.hasAccount) && (

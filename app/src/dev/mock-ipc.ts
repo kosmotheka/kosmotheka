@@ -647,14 +647,27 @@ let mockDevices: AccountDevice[] = [
   },
 ];
 
-const dev = (id: string, name: string, thisDevice = false) => ({
+const daysAgo = (days: number) => Date.now() - days * 24 * 3600_000;
+const dev = (id: string, name: string, thisDevice = false, lastChange = daysAgo(1)) => ({
   id,
   name,
   thisDevice,
   lastDeviceOfLastAdmin: false,
-  linkedByCloud: id === "pixel",
+  linkedByCloud: id === "pixel" || id.startsWith("install"),
   linkedBy: null,
+  lastChange,
 });
+// `?reinstalled`: whoever uses this device (Ana, or Hugo with `?reader`) installed the app four times (D81), so the
+// three earlier installs are theirs too.
+const reinstalled = params.has("reinstalled");
+const LAPTOP = params.has("reader") ? "Móvil de Hugo" : "sergio-PROX-AMD5";
+const earlierInstalls = reinstalled
+  ? [
+      dev("install-1", LAPTOP, false, daysAgo(24)),
+      dev("install-2", LAPTOP, false, daysAgo(9)),
+      dev("install-3", LAPTOP, false, daysAgo(2)),
+    ]
+  : [];
 const people: People = {
   myRole: params.has("reader") ? "reader" : "admin",
   loneAdmin: true,
@@ -668,7 +681,10 @@ const people: People = {
       lastAdmin: true,
       hasAccount: true,
       invitable: "none",
-      devices: [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
+      devices:
+        reinstalled && !params.has("reader")
+          ? [dev("dev", LAPTOP, true, daysAgo(0)), ...earlierInstalls, dev("pixel", "Pixel 8")]
+          : [dev("dev", "Portátil", !params.has("reader")), dev("pixel", "Pixel 8")],
       elsewhere: ["Club de rol"],
     },
     {
@@ -694,12 +710,14 @@ const people: People = {
       invitable: params.has("withdrawn") ? "none" : "email",
       devices: [
         dev("hugo-phone", "Móvil de Hugo", params.has("reader")),
+        ...(reinstalled && params.has("reader") ? earlierInstalls : []),
         dev("tablet", "Tablet Lenovo"),
       ],
       elsewhere: ["Club de rol"],
     },
   ],
   unassigned: [dev("kitchen", "Tablet de la cocina")],
+  earlierInstalls,
 };
 // `?withdrawn` sends Hugo away (D98): no access, no devices, still in the catalog.
 if (params.has("withdrawn"))
@@ -1407,6 +1425,15 @@ mockIPC((cmd, args) => {
       return [];
     case "list_people":
       return people;
+    case "remove_earlier_installs": {
+      const gone = new Set(people.earlierInstalls.map((d) => d.id));
+      people.people = people.people.map((p) => ({
+        ...p,
+        devices: p.devices.filter((d) => !gone.has(d.id)),
+      }));
+      people.earlierInstalls = [];
+      return gone.size;
+    }
     case "list_requests":
       return requests.map((r) => ({ ...r, summary: { ...r.summary } }));
     case "accept_request":

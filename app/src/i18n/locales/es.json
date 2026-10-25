@@ -1037,6 +1037,20 @@
       "last_admin": "Eres la única persona que administra esta biblioteca: nombra antes a otra.",
       "request_resolved": "Esta petición ya estaba resuelta.",
       "cannot_share": "No puedes compartir esta biblioteca; pídeselo a quien la administra."
+    },
+    "lastChange": "último cambio {{when}}",
+    "earlier": {
+      "title": "Parece que has reinstalado Kosmotheka.",
+      "body_one": "Hay {{count}} instalación anterior de «{{device}}» a tu nombre que no ha hecho nada desde que llegó esta (la última vez, el {{when}}). Ya no existe.",
+      "body_other": "Hay {{count}} instalaciones anteriores de «{{device}}» a tu nombre que no han hecho nada desde que llegó esta (la última vez, el {{when}}). Ya no existen.",
+      "askAdmin": "Puedes pedirle a {{admin}}, que administra, que las quite.",
+      "action_one": "Quitar la anterior",
+      "action_other": "Quitar las {{count}} anteriores",
+      "confirm_one": "Se le retira el acceso en todas tus bibliotecas. Si en realidad es otro dispositivo que aún usas, tendrás que volver a emparejarlo o a entrar con tu cuenta en él.",
+      "confirm_other": "Se les retira el acceso en todas tus bibliotecas. Si alguno es en realidad otro dispositivo que aún usas, tendrás que volver a emparejarlo o a entrar con tu cuenta en él.",
+      "cancel": "Cancelar",
+      "done_one": "Quitada {{count}} instalación anterior.",
+      "done_other": "Quitadas {{count}} instalaciones anteriores."
     }
   },
   "requests": {

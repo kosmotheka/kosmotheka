@@ -1023,6 +1023,20 @@
       "last_admin": "You are the only administrator of this library: name someone else first.",
       "request_resolved": "This request was already resolved.",
       "cannot_share": "You may not share this library; ask whoever administers it."
+    },
+    "lastChange": "last change {{when}}",
+    "earlier": {
+      "title": "It looks like you reinstalled Kosmotheka.",
+      "body_one": "There is {{count}} earlier install of “{{device}}” in your name that has done nothing since this one came (last time on {{when}}). It no longer exists.",
+      "body_other": "There are {{count}} earlier installs of “{{device}}” in your name that have done nothing since this one came (last time on {{when}}). They no longer exist.",
+      "askAdmin": "You can ask {{admin}}, who administers, to remove them.",
+      "action_one": "Remove the earlier one",
+      "action_other": "Remove the {{count}} earlier ones",
+      "confirm_one": "Its access is withdrawn in all your libraries. If it is actually another device you still use, you will have to pair it or sign in on it again.",
+      "confirm_other": "Their access is withdrawn in all your libraries. If one is actually another device you still use, you will have to pair it or sign in on it again.",
+      "cancel": "Cancel",
+      "done_one": "{{count}} earlier install removed.",
+      "done_other": "{{count}} earlier installs removed."
     }
   },
   "requests": {
