@@ -378,7 +378,7 @@ export function DevicesPage({
   return (
     <div className="flex min-h-full flex-col gap-5">
       {header}
-      <div className="flex w-full max-w-4xl flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         {locked.length > 0 && <CannotShare libraries={locked} />}
         <CloudSharingSection desktop={desktop} onChanged={onChanged} onNotice={onNotice} />
         {body}

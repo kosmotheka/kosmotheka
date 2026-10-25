@@ -523,7 +523,7 @@ export function PeoplePage({
   return (
     <div className="flex min-h-full flex-col gap-4">
       {header}
-      <div className="flex w-full max-w-[980px] flex-col gap-4">
+      <div className="flex w-full flex-col gap-4">
         {!desktop && (
           <span className="-mb-1 px-0.5 text-[13px] text-muted-foreground">
             {t("people.count", { library, count: people.people.length })}

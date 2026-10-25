@@ -107,7 +107,7 @@ export function ServerServicesDialog({ blocked }: { blocked: boolean }) {
       className="fixed inset-0 z-[150] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
-        <div className="flex my-auto w-full max-w-md flex-col gap-4">
+        <div className="my-auto flex w-full max-w-md flex-col gap-4 lg:max-w-lg">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-secondary">
             <Server className="size-7" />
           </span>
@@ -141,9 +141,13 @@ export function ServerServicesDialog({ blocked }: { blocked: boolean }) {
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">{t("serverServices.later")}</p>
+          <div className="mt-4 hidden justify-end border-t pt-5 lg:flex">
+            <Button onClick={done}>{t("serverServices.done")}</Button>
+          </div>
         </div>
       </div>
-      <div className="flex w-full justify-end px-6 pb-6">
+      {/* On a phone the button sits at the bottom, under the thumb; on a computer, right under the text. */}
+      <div className="flex w-full justify-end px-6 pb-6 lg:hidden">
         <Button onClick={done}>{t("serverServices.done")}</Button>
       </div>
     </div>

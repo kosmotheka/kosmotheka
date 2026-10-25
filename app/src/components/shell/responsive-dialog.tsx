@@ -38,7 +38,7 @@ export function ResponsiveDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className={cn("flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-xl", className)}
+          className={cn("flex max-h-[90vh] flex-col overflow-hidden sm:max-w-xl", className)}
         >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -46,7 +46,10 @@ export function ResponsiveDialog({
               {description ?? title}
             </DialogDescription>
           </DialogHeader>
-          {children}
+          {/* The title stays; the body scrolls when it does not fit. */}
+          <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-0.5">
+            {children}
+          </div>
         </DialogContent>
       </Dialog>
     );
