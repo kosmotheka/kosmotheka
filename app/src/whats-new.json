@@ -1,5 +1,5 @@
 {
-  "next": [
+  "0.7.0": [
     {
       "es": "Fotos: en la ficha, toca la portada para poner una tuya, con una foto (en el móvil) o una imagen, o para buscarla otra vez en los catálogos después de añadir el ISBN o corregir el título. La tuya se guarda reducida y sin los datos de la foto, y llega a la nube con las demás portadas. Y para la primera carga, en el móvil, «Foto de una balda» en «Añadir» lee los lomos en el propio móvil, busca cada título en los catálogos y te deja marcar qué añadir de una vez. No lo lee todo, pero ahorra mucho escribir.",
       "en": "Photos: in the form, tap the cover to set one of your own, with a photo (on a phone) or an image, or to search for it again in the catalogues after adding the ISBN or correcting the title. Yours is kept smaller and without the photo's data, and reaches the cloud with the other covers. And for the first load, on a phone, “Photo of a shelf” in Add reads the spines on the phone itself, searches each title in the catalogues and lets you tick what to add at once. It does not read everything, but it saves a lot of typing."

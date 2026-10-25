@@ -2,6 +2,15 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 0.7.0 (preparada el 25/10/2026, para la prueba cerrada)
+
+Solo la app: el servidor no cambia. **Antes de enviarla a revisión**, en Play Console, «Seguridad de los datos»: marcar «Fotos y vídeos › Fotos» (la portada propia llega al servidor con una biblioteca en la nube; la foto de la balda no sale del móvil). **Con ella, desplegar la web**: las páginas de privacidad dicen ya lo de la portada propia y la foto de la balda.
+
+**Texto para Google Play** (459 y 446 caracteres):
+
+- es-ES: Toca la portada en la ficha para poner una foto tuya o buscarla otra vez en los catálogos. Para la primera carga, «Foto de una balda» en «Añadir» lee los lomos y te deja marcar qué añadir. Las series pasan a ser «Sagas y colecciones», y meter una obra en un número ocupado corre las siguientes. El aviso de un catálogo que falla se queda junto a los resultados. Al emparejar, otro código lleva a la descarga a quien aún no tiene la app. El menú, más ordenado.
+- en-US: Tap the cover in the form to set a photo of your own or search for it again in the catalogues. For the first load, “Photo of a shelf” in Add reads the spines and lets you tick what to add. Series are now “Sagas and collections”, and putting a work on a taken number moves the following ones up. The warning of a failing catalogue stays next to the results. When pairing, another code takes a device without the app to the download. A tidier menu.
+
 ## 0.6.0 (25/10/2026, para la prueba cerrada)
 
 Solo la app: el servidor no cambia. **Con ella, desplegar la web**: las páginas de privacidad dicen ya que la cámara también lee el ISBN impreso en una foto, en el móvil. En la ficha de Play, quitar «Por ahora, la nube es por invitación».
