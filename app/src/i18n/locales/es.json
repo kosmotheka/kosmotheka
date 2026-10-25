@@ -659,7 +659,12 @@
     "live": "En directo",
     "notLive": "Sin conexión en directo",
     "liveHint": "Los cambios de la nube llegan al momento",
-    "notLiveHint": "Los cambios de la nube llegan al sincronizar"
+    "notLiveHint": "Los cambios de la nube llegan al sincronizar",
+    "short": {
+      "local": "Solo aquí",
+      "offline": "Sin conexión",
+      "never": "Sin sincronizar"
+    }
   },
   "help": {
     "title": "Ayuda",

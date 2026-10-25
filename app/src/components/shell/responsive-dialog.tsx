@@ -37,7 +37,9 @@ export function ResponsiveDialog({
   if (desktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={cn("flex max-h-[90vh] flex-col overflow-y-auto", className)}>
+        <DialogContent
+          className={cn("flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-xl", className)}
+        >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription className={description ? undefined : "sr-only"}>

@@ -49,7 +49,7 @@ export function AboutDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={t("about.title")}
-      className="sm:max-w-md"
+      className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-4 text-sm">
         <div>

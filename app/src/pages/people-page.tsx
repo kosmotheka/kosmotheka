@@ -367,7 +367,7 @@ export function PeoplePage({
 
   const table = (
     <div className="rounded-2xl border">
-      <div className="grid grid-cols-[minmax(0,1fr)_200px_130px_minmax(0,1.5fr)_44px] gap-3 rounded-t-2xl border-b bg-muted/60 px-4 py-2.5 text-xs font-medium text-muted-foreground">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(130px,200px)_110px_minmax(0,1.5fr)_44px] gap-3 rounded-t-2xl border-b bg-muted/60 px-4 py-2.5 text-xs font-medium text-muted-foreground">
         <span>{t("people.person")}</span>
         <span>{t("people.roleIn", { library })}</span>
         <span>{t("people.canShare")}</span>
@@ -377,7 +377,7 @@ export function PeoplePage({
       {people.people.map((person) => (
         <div
           key={person.id}
-          className="grid min-h-16 grid-cols-[minmax(0,1fr)_200px_130px_minmax(0,1.5fr)_44px] items-center gap-3 border-b px-4 last:border-b-0"
+          className="grid min-h-16 grid-cols-[minmax(0,1fr)_minmax(130px,200px)_110px_minmax(0,1.5fr)_44px] items-center gap-3 border-b px-4 last:border-b-0"
         >
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={person.name} />

@@ -559,7 +559,10 @@ const lan: LanStatus = {
       deviceId: "phone",
       name: "Móvil de Laura",
       pairedAt: "2026-09-24T10:00:00Z",
-      lastSyncAt: new Date(Date.now() - 2 * 60000).toISOString(),
+      // `?syncold`: last synced hours ago, the longest text the sync button shows.
+      lastSyncAt: new Date(
+        Date.now() - (new URLSearchParams(window.location.search).has("syncold") ? 180 : 2) * 60000,
+      ).toISOString(),
     },
     {
       deviceId: "tablet",

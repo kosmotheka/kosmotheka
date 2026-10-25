@@ -101,6 +101,7 @@ export function SettingsDialog({
         onOpenChange={onOpenChange}
         title={t("settings.title")}
         description={t("settings.description")}
+        className="sm:max-w-2xl"
       >
         <div className="space-y-6">
           <div className="space-y-2">

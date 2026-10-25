@@ -56,13 +56,25 @@ export function DeviceChip({ device }: { device: PersonDevice }) {
   const Icon = /port|lap|desk|pc|mac/i.test(device.name) ? Laptop : Smartphone;
   const note = deviceNote(device, t, i18n.resolvedLanguage);
   return (
-    <span className="inline-flex h-[26px] items-center gap-1.5 rounded-md bg-secondary px-2 text-[12.5px] whitespace-nowrap">
-      <Icon className="size-3.5" />
-      {device.name}
+    // Never wider than its cell: below 1280 px the note is only in the tooltip, and a long name is cut.
+    <span
+      className="inline-flex h-[26px] max-w-full min-w-0 items-center gap-1.5 rounded-md bg-secondary px-2 text-[12.5px] whitespace-nowrap"
+      title={[device.name, device.thisDevice ? t("people.thisDevice") : null, note]
+        .filter(Boolean)
+        .join(" · ")}
+    >
+      <Icon className="size-3.5 shrink-0" />
+      <span className="min-w-[8ch] truncate">{device.name}</span>
       {device.thisDevice && (
-        <span className="text-muted-foreground">· {t("people.thisDevice")}</span>
+        <span className="min-w-0 shrink-[10] truncate text-muted-foreground">
+          · {t("people.thisDevice")}
+        </span>
       )}
-      {note && <span className="text-muted-foreground">· {note}</span>}
+      {note && (
+        <span className="hidden min-w-0 shrink-[100] truncate text-muted-foreground xl:inline">
+          · {note}
+        </span>
+      )}
     </span>
   );
 }

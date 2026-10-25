@@ -36,7 +36,7 @@ export function SheetOrDialog({
   if (desktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={cn("gap-4 sm:max-w-lg", className)}>
+        <DialogContent className={cn("gap-4 sm:max-w-xl", className)}>
           <DialogTitle asChild>{heading}</DialogTitle>
           <DialogDescription className="sr-only">{description}</DialogDescription>
           {children}

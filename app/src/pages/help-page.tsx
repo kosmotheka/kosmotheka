@@ -45,7 +45,7 @@ export function HelpPage({
   const { t, i18n } = useTranslation();
   const guide = GUIDE[languageOf(i18n.language)] ?? GUIDE.en;
   return (
-    <div className="flex max-w-2xl flex-col gap-3">
+    <div className="flex max-w-3xl flex-col gap-3">
       {desktop && <h1 className="text-[22px] font-semibold tracking-tight">{t("help.title")}</h1>}
       <p className="text-sm text-muted-foreground">{t("help.intro")}</p>
       <div className="-mx-4 flex flex-col md:mx-0">

@@ -61,23 +61,38 @@ export function useSyncStatus(version: number): Status | null {
     : { kind: "never" };
 }
 
+/** `short` is what fits in the desktop top bar: a word or two, the full text in its tooltip. */
 function useLabel(status: Status | null) {
   const { t, i18n } = useTranslation();
   if (!status) return null;
-  if (status.kind === "local") return { text: t("sync.local"), tone: "muted" as const };
-  if (status.kind === "offline") return { text: t("sync.offline"), tone: "warning" as const };
-  if (status.kind === "never") return { text: t("sync.never"), tone: "warning" as const };
+  if (status.kind === "local")
+    return { text: t("sync.local"), short: t("sync.short.local"), tone: "muted" as const };
+  if (status.kind === "offline")
+    return { text: t("sync.offline"), short: t("sync.short.offline"), tone: "warning" as const };
+  if (status.kind === "never")
+    return { text: t("sync.never"), short: t("sync.short.never"), tone: "warning" as const };
   const age = status.now - status.at.getTime();
-  if (age < FRESH_MS) return { text: t("sync.upToDate"), tone: "success" as const };
+  if (age < FRESH_MS) {
+    const text = t("sync.upToDate");
+    return { text, short: text, tone: "success" as const };
+  }
   const minutes = Math.round(age / 60000);
   const rtf = new Intl.RelativeTimeFormat(i18n.resolvedLanguage, { numeric: "auto" });
-  const when =
+  const narrow = new Intl.RelativeTimeFormat(i18n.resolvedLanguage, {
+    numeric: "auto",
+    style: "narrow",
+  });
+  const ago = (format: Intl.RelativeTimeFormat) =>
     minutes < 60
-      ? rtf.format(-minutes, "minute")
+      ? format.format(-minutes, "minute")
       : minutes < 60 * 48
-        ? rtf.format(-Math.round(minutes / 60), "hour")
-        : rtf.format(-Math.round(minutes / 1440), "day");
-  return { text: t("sync.lastSync", { when }), tone: "warning" as const };
+        ? format.format(-Math.round(minutes / 60), "hour")
+        : format.format(-Math.round(minutes / 1440), "day");
+  return {
+    text: t("sync.lastSync", { when: ago(rtf) }),
+    short: ago(narrow),
+    tone: "warning" as const,
+  };
 }
 
 const DOT = { muted: "bg-muted-foreground/60", success: "bg-success", warning: "bg-warning" };
@@ -108,10 +123,13 @@ function LiveMark() {
 export function SyncStatus({
   status,
   asButton = false,
+  compact = false,
   className,
 }: {
   status: Status | null;
   asButton?: boolean;
+  /** One line, a word or two: the desktop top bar. */
+  compact?: boolean;
   className?: string;
 }) {
   const { t } = useTranslation();
@@ -120,17 +138,22 @@ export function SyncStatus({
   const content = (
     <>
       <span className={cn("size-1.5 shrink-0 rounded-full", DOT[label.tone])} aria-hidden />
-      {label.text}
+      {compact ? label.short : label.text}
       <LiveMark />
     </>
   );
-  const classes = cn("flex items-center gap-1.5 text-xs text-muted-foreground", className);
+  const classes = cn(
+    "flex items-center gap-1.5 text-xs text-muted-foreground",
+    compact && "shrink-0 whitespace-nowrap",
+    className,
+  );
   if (!asButton) return <span className={classes}>{content}</span>;
   return (
     <button
       type="button"
       className={cn(classes, "h-8 rounded-md px-2.5 text-[13px] hover:bg-muted")}
       aria-label={t("sync.label", { status: label.text })}
+      title={label.text}
       onClick={() => navigate("devices")}
     >
       {content}

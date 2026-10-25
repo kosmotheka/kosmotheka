@@ -124,6 +124,29 @@ export function WelcomeDialog({
     else setIndex(index + 1);
   };
 
+  const footer = (
+    <>
+      <div className="flex gap-1.5" aria-hidden>
+        {steps.map((s, i) => (
+          <span
+            key={s}
+            className={cn("size-2 rounded-full", i === index ? "bg-foreground" : "bg-border")}
+          />
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {!last && step !== "name" && (
+          <Button variant="ghost" onClick={onDone}>
+            {t("welcome.skip")}
+          </Button>
+        )}
+        <Button disabled={busy || (step === "name" && !draft.trim())} onClick={() => void next()}>
+          {t(last ? "welcome.start" : "welcome.next")}
+        </Button>
+      </div>
+    </>
+  );
+
   return (
     <div
       role="dialog"
@@ -132,7 +155,7 @@ export function WelcomeDialog({
       className="fixed inset-0 z-[150] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
-        <div className="flex my-auto w-full max-w-md flex-col gap-4">
+        <div className="my-auto flex w-full max-w-md flex-col gap-4 lg:max-w-lg">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-secondary">
             <Icon className="size-7" />
           </span>
@@ -183,27 +206,14 @@ export function WelcomeDialog({
           {step === "search" && (
             <p className="text-xs text-muted-foreground">{t("welcome.search.later")}</p>
           )}
+          <div className="mt-4 hidden items-center justify-between gap-3 border-t pt-5 lg:flex">
+            {footer}
+          </div>
         </div>
       </div>
-      <div className="flex w-full items-center justify-between gap-3 px-6 pb-6">
-        <div className="flex gap-1.5" aria-hidden>
-          {steps.map((s, i) => (
-            <span
-              key={s}
-              className={cn("size-2 rounded-full", i === index ? "bg-foreground" : "bg-border")}
-            />
-          ))}
-        </div>
-        <div className="flex gap-2">
-          {!last && step !== "name" && (
-            <Button variant="ghost" onClick={onDone}>
-              {t("welcome.skip")}
-            </Button>
-          )}
-          <Button disabled={busy || (step === "name" && !draft.trim())} onClick={() => void next()}>
-            {t(last ? "welcome.start" : "welcome.next")}
-          </Button>
-        </div>
+      {/* On a phone the buttons sit at the bottom, under the thumb; on a computer, right under the text. */}
+      <div className="flex w-full items-center justify-between gap-3 px-6 pb-6 lg:hidden">
+        {footer}
       </div>
     </div>
   );

@@ -35,8 +35,8 @@ export function TopBar({
   const { t } = useTranslation();
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background pr-4 pl-5">
-      <div role="search" className="flex w-[520px] items-center gap-2">
-        <div className="relative w-[360px]">
+      <div role="search" className="flex max-w-[520px] min-w-0 flex-1 items-center gap-2">
+        <div className="relative max-w-[360px] min-w-0 flex-1">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="catalog-search"
@@ -58,11 +58,17 @@ export function TopBar({
         )}
       </div>
       <span className="flex-1" />
-      <SyncStatus status={sync} asButton />
+      <SyncStatus status={sync} asButton compact />
       <RequestsBell />
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <Button variant="outline" size="lg" onClick={() => navigate("check")}>
-        <BookCheck /> {t("nav.check")}
+      <Button
+        variant="outline"
+        size="lg"
+        aria-label={t("nav.check")}
+        title={t("nav.check")}
+        onClick={() => navigate("check")}
+      >
+        <BookCheck /> <span className="hidden xl:inline">{t("nav.check")}</span>
       </Button>
       {reader ? (
         <Button
@@ -74,8 +80,14 @@ export function TopBar({
       ) : (
         <>
           {!missing && (
-            <Button variant="outline" size="lg" onClick={() => openOverlay({ name: "burst" })}>
-              <Zap /> {t("nav.quickAdd")}
+            <Button
+              variant="outline"
+              size="lg"
+              aria-label={t("nav.quickAdd")}
+              title={t("nav.quickAdd")}
+              onClick={() => openOverlay({ name: "burst" })}
+            >
+              <Zap /> <span className="hidden xl:inline">{t("nav.quickAdd")}</span>
             </Button>
           )}
           <Button

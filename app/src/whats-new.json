@@ -1,24 +1,24 @@
 {
   "next": [
     {
+      "es": "Fotos: en la ficha, el botón de la portada deja poner una tuya, con una foto (en el móvil) o una imagen; se guarda reducida y sin los datos de la foto, y llega a la nube con las demás portadas. Y para la primera carga, en el móvil, «Foto de una balda» en «Añadir» lee los lomos en el propio móvil, busca cada título en los catálogos y te deja marcar qué añadir de una vez. No lo lee todo, pero ahorra mucho escribir.",
+      "en": "Photos: in the form, the cover's button lets you set one of your own, with a photo (on a phone) or an image; it is kept smaller and without the photo's data, and reaches the cloud with the other covers. And for the first load, on a phone, “Photo of a shelf” in Add reads the spines on the phone itself, searches each title in the catalogues and lets you tick what to add at once. It does not read everything, but it saves a lot of typing."
+    },
+    {
+      "es": "Las «Series» pasan a llamarse «Sagas y colecciones», para no confundirlas con las series de televisión, y ya no están en el menú: son otra forma de ver el Catálogo. La pantalla explica para qué sirven y enseña cuánto tienes de cada una, y la ficha de una obra dice «2 de 6» en lugar de «Nº 2».",
+      "en": "“Series” are now “Sagas and collections”, so they are not mixed up with TV series, and they are no longer in the menu: they are another way of looking at the Catalog. The screen explains what they are for and shows how much of each you have, and a work's page says “2 of 6” instead of “No. 2”."
+    },
+    {
       "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras. Y al emparejar, si el otro dispositivo aún no tiene la app, «¿El otro dispositivo aún no tiene la app?» cambia el código por otro que lleva a la página de descargas.",
       "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer. And when pairing, if the other device does not have the app yet, “The other device does not have the app yet?” swaps the code for one that leads to the downloads page."
-    },
-    {
-      "es": "Puedes poner una portada tuya: en la ficha, el botón de la portada deja hacer una foto (en el móvil) o elegir una imagen. Se guarda reducida y sin los datos de la foto, y si la biblioteca está en la nube, llega al servidor con las demás portadas.",
-      "en": "You can set a cover of your own: in the form, the cover's button lets you take a photo (on a phone) or choose an image. It is kept smaller and without the photo's data, and if the library is in the cloud, it reaches the server with the other covers."
-    },
-    {
-      "es": "En el móvil, para la primera carga: en «Añadir», «Foto de una balda» lee los lomos de una balda en el propio móvil, busca cada título en los catálogos y te enseña lo que encuentra para que marques qué añadir, todo de una vez. No lo lee todo, pero ahorra mucho escribir.",
-      "en": "On a phone, for the first load: in Add, “Photo of a shelf” reads the spines of a shelf on the phone itself, searches each title in the catalogues and shows you what it finds so you can tick what to add, all at once. It does not read everything, but it saves a lot of typing."
     },
     {
       "es": "Si un catálogo no responde o se le ha acabado el cupo, el aviso se queda junto a los resultados, también en «¿Lo tengo?», y te lleva a Proveedores de datos cuando una clave lo arregla. Y al filtrar por género o etiqueta, lo elegido ya no sale dos veces en la barra.",
       "en": "If a catalogue does not answer or has run out of quota, the warning stays next to the results, in Do I have it? too, and takes you to Data providers when a key fixes it. And when you filter by genre or tag, the choice no longer shows twice in the bar."
     },
     {
-      "es": "Las «Series» pasan a llamarse «Sagas y colecciones», para no confundirlas con las series de televisión, y ya no están en el menú: son otra forma de ver el Catálogo. La pantalla explica para qué sirven y enseña cuánto tienes de cada una, y la ficha de una obra dice «2 de 6» en lugar de «Nº 2».",
-      "en": "“Series” are now “Sagas and collections”, so they are not mixed up with TV series, and they are no longer in the menu: they are another way of looking at the Catalog. The screen explains what they are for and shows how much of each you have, and a work's page says “2 of 6” instead of “No. 2”."
+      "es": "En el ordenador, la barra de arriba ya no se parte ni se sale en ventanas estrechas: el estado de sincronización ocupa una línea («hace 3 h») y «¿Lo tengo?» y «Alta rápida» se quedan en su icono. Los ajustes y las novedades son más anchos, la bienvenida y «Búsquedas a través de tu servidor» tienen el botón junto al texto, y «Personas y permisos» y «Compartir y dispositivos» ocupan todo el ancho.",
+      "en": "On a computer, the top bar no longer wraps or overflows in narrow windows: the sync status takes one line (“3h ago”) and Do I have it? and Quick add keep only their icon. Settings and What’s new are wider, the welcome and “Searches through your server” have their button next to the text, and People and permissions and Sharing and devices use the whole width."
     }
   ],
   "0.6.0": [

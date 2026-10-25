@@ -38,7 +38,7 @@ export function WhatsNewDialog({
       open={open}
       onOpenChange={(next) => !next && onClose()}
       title={t("whatsNew.title")}
-      className="sm:max-w-md"
+      className="sm:max-w-lg"
     >
       <div className="flex flex-col gap-4 text-sm">
         {news.switches.length > 0 && (
