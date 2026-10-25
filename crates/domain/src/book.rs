@@ -279,6 +279,10 @@ pub struct EditionInput {
     /// Remote cover to download when saving; only known cover hosts are accepted.
     #[serde(default)]
     pub cover_url: Option<String>,
+    /// A cover of one's own that this device already stored, by its file name (a photo or an image of the device).
+    /// It wins over `cover_url`; the app checks that the file is one of its covers.
+    #[serde(default)]
+    pub own_cover: Option<String>,
     #[serde(default)]
     pub google_books_id: Option<String>,
     #[serde(default)]

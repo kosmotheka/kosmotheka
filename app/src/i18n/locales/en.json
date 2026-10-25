@@ -258,7 +258,12 @@
     },
     "cancel": "Cancel",
     "save": "Save",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "cover": {
+      "photo": "Take a photo",
+      "image": "Choose an image",
+      "failed": "That image could not be used."
+    }
   },
   "errors": {
     "required": "This field is required.",

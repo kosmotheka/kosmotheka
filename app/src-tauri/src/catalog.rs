@@ -419,6 +419,7 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
         language: book.language,
         isbn: book.isbn13,
         cover_url: None,
+        own_cover: None,
         google_books_id: book.google_books_id,
         open_library_id: book.open_library_id,
         kind: book.kind,

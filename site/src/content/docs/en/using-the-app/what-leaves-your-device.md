@@ -34,6 +34,8 @@ Other services ask for a **key of your own**, free, which their website gives yo
 
 The cover image is downloaded from the service that has it and saved on your phone or computer. That service knows you asked for it. Your other devices get it from yours over your home Wi-Fi or, if the library is in the cloud, from your account's server, which keeps it with the library.
 
+If you set a cover of your own (a photo or an image), it travels the same way: to your other devices and, if the library is in the cloud, to the server. Before keeping it, the app makes it smaller and removes the data a phone adds to a photo, such as where it was taken.
+
 ## The camera
 
 The camera only turns on when you tap the scan button, or "Photo of the number" to read the ISBN printed in a photo (when the barcode is a shop label). Images are read on your own device: they are not saved or sent anywhere.

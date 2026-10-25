@@ -9,7 +9,8 @@
 import type { Format } from "@tauri-apps/plugin-barcode-scanner";
 import { useSyncExternalStore } from "react";
 
-import { isbnsInPhoto, takePhoto } from "@/lib/printed-isbn";
+import { takePhoto } from "@/lib/photo";
+import { isbnsInPhoto } from "@/lib/printed-isbn";
 
 export class CameraDenied extends Error {}
 

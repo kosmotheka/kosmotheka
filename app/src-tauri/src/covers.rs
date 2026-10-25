@@ -16,6 +16,8 @@ use crate::error::{Error, Result};
 use crate::ops;
 
 pub const MAX_COVER_BYTES: usize = 5 * 1024 * 1024;
+/// A photo of one's own, as a phone's camera saves it: much bigger than a catalogue's cover before it is reduced.
+pub const MAX_OWN_PHOTO_BYTES: usize = 30 * 1024 * 1024;
 
 /// The longest side of a stored cover, and the WebP quality it is saved with (D82).
 pub const MAX_SIDE: u32 = 800;
@@ -62,6 +64,15 @@ impl Covers {
             return Err(Error::CoverRejected("too large"));
         }
         self.store_cover(&bytes)
+    }
+
+    /// A cover of one's own (a photo or an image of the device), reduced like any other (D82): what is kept is the
+    /// WebP, upright and without the photo's metadata. Returns its file name.
+    pub fn store_own(&self, bytes: &[u8]) -> Result<String> {
+        if bytes.len() > MAX_OWN_PHOTO_BYTES {
+            return Err(Error::CoverRejected("too large"));
+        }
+        self.store_cover(bytes)
     }
 
     /// Reduces `bytes` to the WebP that is kept (D82) and returns its file name.
@@ -337,10 +348,11 @@ pub(crate) fn reduce_stored_in(conn: &mut Connection, covers: &Covers) -> usize 
     record_reductions(conn, &reductions).unwrap()
 }
 
-/// Reads a cover in any of the accepted formats and returns it as WebP, at most `MAX_SIDE` on its longest side and
-/// never enlarged. Encoding it again leaves out whatever metadata the original carried, such as the place where a
-/// phone took a photo.
+/// Reads a cover in any of the accepted formats and returns it as WebP, upright, at most `MAX_SIDE` on its longest
+/// side and never enlarged. Encoding it again leaves out whatever metadata the original carried, such as the place
+/// where a phone took a photo.
 pub fn normalize(bytes: &[u8]) -> Result<Vec<u8>> {
+    use image::ImageDecoder;
     let not_an_image = || Error::CoverRejected("not an image");
     let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
         .with_guessed_format()
@@ -350,7 +362,14 @@ pub fn normalize(bytes: &[u8]) -> Result<Vec<u8>> {
     limits.max_image_height = Some(MAX_INPUT_SIDE);
     limits.max_alloc = Some(MAX_DECODE_BYTES);
     reader.limits(limits);
-    let image = reader.decode().map_err(|_| not_an_image())?;
+    // A phone stores a photo as the sensor saw it, with a tag saying how to turn it; the metadata is not kept, so
+    // the turn is applied here.
+    let mut decoder = reader.into_decoder().map_err(|_| not_an_image())?;
+    let orientation = decoder
+        .orientation()
+        .unwrap_or(image::metadata::Orientation::NoTransforms);
+    let mut image = image::DynamicImage::from_decoder(decoder).map_err(|_| not_an_image())?;
+    image.apply_orientation(orientation);
     let image = if image.width() > MAX_SIDE || image.height() > MAX_SIDE {
         image.resize(MAX_SIDE, MAX_SIDE, image::imageops::FilterType::Lanczos3)
     } else {
@@ -479,6 +498,48 @@ mod tests {
 
         assert_eq!(&webp[8..12], b"WEBP");
         assert_eq!(webp_size(&webp), (533, 800));
+    }
+
+    /// A JPEG with an EXIF orientation tag, as a phone saves a photo taken sideways: the pixels are stored as the
+    /// sensor saw them and the tag says how to turn them.
+    fn with_orientation(jpeg: &[u8], orientation: u16) -> Vec<u8> {
+        // TIFF header (little-endian) and one IFD entry: tag 0x0112 (Orientation), type SHORT, one value.
+        let mut tiff = vec![
+            b'I', b'I', 42, 0, 8, 0, 0, 0, 1, 0, 0x12, 0x01, 3, 0, 1, 0, 0, 0,
+        ];
+        tiff.extend_from_slice(&orientation.to_le_bytes());
+        tiff.extend_from_slice(&[0, 0, 0, 0, 0, 0]);
+        let mut app1 = b"Exif\0\0".to_vec();
+        app1.extend_from_slice(&tiff);
+        let length = u16::try_from(app1.len() + 2).unwrap().to_be_bytes();
+        let mut out = jpeg[..2].to_vec();
+        out.extend_from_slice(&[0xFF, 0xE1, length[0], length[1]]);
+        out.extend_from_slice(&app1);
+        out.extend_from_slice(&jpeg[2..]);
+        out
+    }
+
+    #[test]
+    fn an_own_photo_is_kept_reduced_and_one_too_big_is_refused() {
+        let covers = Covers::new(temp_dir("own")).unwrap();
+
+        let name = covers
+            .store_own(&encoded(1600, 1200, image::ImageFormat::Jpeg))
+            .unwrap();
+
+        assert!(covers.has(&name) && covers.is_reduced(&name));
+        assert_eq!(webp_size(&covers.read(&name).unwrap()), (800, 600));
+        assert!(matches!(
+            covers.store_own(&vec![0; MAX_OWN_PHOTO_BYTES + 1]),
+            Err(Error::CoverRejected("too large"))
+        ));
+    }
+
+    #[test]
+    fn a_photo_taken_sideways_is_kept_upright() {
+        let sideways = with_orientation(&encoded(200, 100, image::ImageFormat::Jpeg), 6);
+
+        assert_eq!(webp_size(&normalize(&sideways).unwrap()), (100, 200));
     }
 
     #[test]

@@ -64,6 +64,8 @@ export interface EditionInput {
   isbn: string | null;
   /** Remote cover to download on save (must be on a known cover host). */
   coverUrl: string | null;
+  /** A cover of one's own already stored on this device (`storeOwnCover`); it wins over `coverUrl`. */
+  ownCover?: string | null;
   googleBooksId: string | null;
   openLibraryId: string | null;
   kind?: Kind;
@@ -1776,4 +1778,9 @@ export function invitationErrorKey(error: unknown): string {
       return invitationReasonKey(error.reason);
   }
   return "invitations.errors.unknown";
+}
+
+/** Keeps a cover of one's own (a photo or an image, in base64), reduced like any other (D82): its file name. */
+export function storeOwnCover(photo: string): Promise<string> {
+  return invoke<string>("store_own_cover", { photo });
 }

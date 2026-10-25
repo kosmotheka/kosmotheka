@@ -98,7 +98,7 @@ Solo la app; la sincronización aún no cambia.
 
 ## Después, aparte
 
-- **Fotos propias de portada** (pregunta 2 de D82): con el transporte hecho, activar «Cambiar portada» con la cámara o un fichero; pasan por la misma normalización.
+- ✅ **Fotos propias de portada** (pregunta 2 de D82; hecho el 25/10/2026): «Cambiar portada» con la cámara o un fichero; pasan por la misma normalización, que ahora además pone derecha la foto según la orientación que guarda el móvil.
 - **Portadas grandes de Google Books** (pregunta 4).
 - **«Solo con wifi»** (ROADMAP, ideas para el futuro).
 

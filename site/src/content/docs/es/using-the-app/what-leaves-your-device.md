@@ -34,6 +34,8 @@ Otros servicios piden una **contraseña propia**, gratuita, que te da su web par
 
 La imagen de la portada se baja de internet desde el servicio que la tiene y se guarda en tu móvil u ordenador. Ese servicio sabe que la has pedido. Tus otros dispositivos la reciben del tuyo por la wifi de casa o, si la biblioteca está en la nube, del servidor de tu cuenta, que la guarda con la biblioteca.
 
+Si pones una portada tuya (una foto o una imagen), viaja igual: a tus otros dispositivos y, si la biblioteca está en la nube, al servidor. Antes de guardarla, la app la reduce y le quita los datos que el móvil añade a una foto, como el lugar donde se hizo.
+
 ## La cámara
 
 La cámara solo se enciende cuando tú pulsas el botón de escanear, o «Foto del número» para leer el ISBN impreso en una foto (si el código de barras es una etiqueta de la tienda). Las imágenes se leen en tu propio dispositivo: no se guardan ni se envían a ningún sitio.

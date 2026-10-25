@@ -144,6 +144,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::create_book,
+            commands::store_own_cover,
             commands::list_books,
             commands::get_book,
             commands::update_edition,

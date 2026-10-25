@@ -272,7 +272,12 @@
     },
     "cancel": "Cancelar",
     "save": "Guardar",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "cover": {
+      "photo": "Hacer una foto",
+      "image": "Elegir una imagen",
+      "failed": "No se ha podido usar esa imagen."
+    }
   },
   "errors": {
     "required": "Este campo es obligatorio.",

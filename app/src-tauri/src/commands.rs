@@ -56,10 +56,16 @@ pub async fn create_book(
     lookup: State<'_, Lookup>,
     book: NewBook,
 ) -> Result<Saved<CreatedBook>> {
+    let own = book.edition.own_cover.clone();
     let book = book.validate().map_err(Error::Validation)?;
     // Download before locking: the database lock must never be held while waiting on the network.
-    let (cover, cover_failed) =
-        download_cover(&covers, &lookup, book.edition.cover_url.as_ref()).await;
+    let (cover, cover_failed) = cover_for(
+        &covers,
+        &lookup,
+        own.as_deref(),
+        book.edition.cover_url.as_ref(),
+    )
+    .await?;
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     let created = catalog::create_book(&mut conn, &library, &book, cover.as_deref())?;
@@ -103,9 +109,11 @@ pub async fn add_missing(
     lookup: State<'_, Lookup>,
     edition: EditionInput,
 ) -> Result<Saved<CreatedBook>> {
+    let own = edition.own_cover.clone();
     let edition = edition.validate().map_err(Error::Validation)?;
     // Download before locking: the database lock must never be held while waiting on the network.
-    let (cover, cover_failed) = download_cover(&covers, &lookup, edition.cover_url.as_ref()).await;
+    let (cover, cover_failed) =
+        cover_for(&covers, &lookup, own.as_deref(), edition.cover_url.as_ref()).await?;
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     let created = catalog::create_missing(&mut conn, &library, &edition, cover.as_deref())?;
@@ -188,8 +196,10 @@ pub async fn update_edition(
     edition_id: String,
     edition: EditionInput,
 ) -> Result<Saved<()>> {
+    let own = edition.own_cover.clone();
     let edition = edition.validate().map_err(Error::Validation)?;
-    let (cover, cover_failed) = download_cover(&covers, &lookup, edition.cover_url.as_ref()).await;
+    let (cover, cover_failed) =
+        cover_for(&covers, &lookup, own.as_deref(), edition.cover_url.as_ref()).await?;
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     catalog::update_edition(&mut conn, &library, &edition_id, &edition, cover.as_deref())?;
@@ -197,6 +207,33 @@ pub async fn update_edition(
         value: (),
         cover_failed,
     })
+}
+
+/// Stores a cover of one's own, sent by the interface in base64 (on Android, Tauri's calls carry JSON): a photo or an
+/// image of the device, reduced like any other (D82). Returns the file name to save the edition with.
+#[tauri::command]
+pub fn store_own_cover(covers: State<'_, Covers>, photo: String) -> Result<String> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(photo)
+        .map_err(|_| Error::CoverRejected("not an image"))?;
+    covers.store_own(&bytes)
+}
+
+/// The cover an edition is saved with: one of its own already stored here (`own_cover`), or the remote one,
+/// downloaded. Also whether a download was attempted and failed. An own cover that is not one of this device's covers
+/// is refused, not ignored.
+async fn cover_for(
+    covers: &Covers,
+    lookup: &Lookup,
+    own: Option<&str>,
+    url: Option<&Url>,
+) -> Result<(Option<String>, bool)> {
+    match own {
+        Some(name) if covers.has(name) => Ok((Some(name.to_owned()), false)),
+        Some(_) => Err(Error::CoverRejected("not one of this device's covers")),
+        None => Ok(download_cover(covers, lookup, url).await),
+    }
 }
 
 /// Returns the stored file name, or whether a download was attempted and failed.
@@ -962,9 +999,15 @@ pub async fn accept_request_edited(
     id: String,
     book: NewBook,
 ) -> Result<Saved<CreatedBook>> {
+    let own = book.edition.own_cover.clone();
     let book = book.validate().map_err(Error::Validation)?;
-    let (cover, cover_failed) =
-        download_cover(&covers, &lookup, book.edition.cover_url.as_ref()).await;
+    let (cover, cover_failed) = cover_for(
+        &covers,
+        &lookup,
+        own.as_deref(),
+        book.edition.cover_url.as_ref(),
+    )
+    .await?;
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     let created =

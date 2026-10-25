@@ -3,6 +3,10 @@
     {
       "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras.",
       "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer."
+    },
+    {
+      "es": "Puedes poner una portada tuya: en la ficha, el botón de la portada deja hacer una foto (en el móvil) o elegir una imagen. Se guarda reducida y sin los datos de la foto, y si la biblioteca está en la nube, llega al servidor con las demás portadas.",
+      "en": "You can set a cover of your own: in the form, the cover's button lets you take a photo (on a phone) or choose an image. It is kept smaller and without the photo's data, and if the library is in the cloud, it reaches the server with the other covers."
     }
   ],
   "0.6.0": [

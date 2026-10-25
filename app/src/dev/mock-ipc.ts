@@ -1136,6 +1136,8 @@ mockIPC((cmd, args) => {
         ? { isbn13: isbn, books: [], missing: [] }
         : { isbn13: isbn, books: [bookAt(0)], missing: [] };
     }
+    case "store_own_cover":
+      return `${"0".repeat(64)}.webp`;
     case "lookup_isbn":
       throw new Error("offline");
     case "search_works": {

@@ -4,7 +4,9 @@ import {
   Check,
   ChevronDown,
   Cloud,
+  Camera,
   ImagePlus,
+  Images,
   Info,
   Link as LinkIcon,
   Loader2,
@@ -23,6 +25,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -46,11 +49,13 @@ import {
   genresOfKind,
   getBook,
   isCommandError,
+  isMobile,
   kinds,
   listBooks,
   listTags,
   lookupIsbn,
   removeRequirement,
+  storeOwnCover,
 } from "@/lib/api";
 import {
   DIGITAL_FORMATS,
@@ -61,6 +66,7 @@ import {
   genreLabel,
 } from "@/lib/kinds";
 import { LANGUAGE_CODES, languageName } from "@/lib/languages";
+import { takePhoto } from "@/lib/photo";
 import { cn } from "@/lib/utils";
 
 // Form state keeps every value as typed text; conversion happens on submit.
@@ -95,6 +101,8 @@ export interface EditionForm {
   coverUrl: string;
   /** Cover already stored (file name), shown when there is no new one. */
   cover: string | null;
+  /** A cover of one's own just stored (a photo or an image): saved instead of `coverUrl`. */
+  ownCover?: string | null;
   googleBooksId: string | null;
   openLibraryId: string | null;
 }
@@ -179,6 +187,7 @@ export function toEditionInput(form: EditionForm): EditionInput {
     tags: form.tags,
     notes: orNull(form.notes),
     coverUrl: orNull(form.coverUrl),
+    ownCover: form.ownCover ?? null,
     googleBooksId: form.googleBooksId,
     openLibraryId: form.openLibraryId,
   };
@@ -706,6 +715,29 @@ export function EditionFields({
   const lookup = useIsbnLookup();
   const options = useCatalogOptions();
   const KindIcon = KIND_ICONS[value.kind];
+  // A cover of one's own: the camera only on a phone, an image of the device anywhere.
+  const [phone, setPhone] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false);
+  useEffect(() => {
+    void isMobile().then(setPhone);
+  }, []);
+
+  // `taking` is asked for in the tap itself (see `takePhoto`); the image is kept reduced right away.
+  const ownCover = async (taking: Promise<string | null>) => {
+    const photo = await taking;
+    if (photo === null) return;
+    setCoverBusy(true);
+    setCoverFailed(false);
+    try {
+      const name = await storeOwnCover(photo);
+      onChange({ ...value, cover: name, coverUrl: "", ownCover: name });
+    } catch {
+      setCoverFailed(true);
+    } finally {
+      setCoverBusy(false);
+    }
+  };
 
   const search = async () => {
     const found = await lookup.run(value.isbn);
@@ -970,16 +1002,39 @@ export function EditionFields({
             kind={value.kind}
             className="h-36"
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon-sm"
-            disabled
-            aria-label={t("form.fields.changeCover")}
-            className="absolute right-1 bottom-1 rounded-full shadow"
-          >
-            <ImagePlus className="size-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon-sm"
+                disabled={coverBusy}
+                aria-label={t("form.fields.changeCover")}
+                className="absolute right-1 bottom-1 rounded-full shadow"
+              >
+                {coverBusy ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="size-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {phone && (
+                <DropdownMenuItem onSelect={() => void ownCover(takePhoto({ camera: true }))}>
+                  <Camera /> {t("form.cover.photo")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={() => void ownCover(takePhoto({ camera: false }))}>
+                <Images /> {t("form.cover.image")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {coverFailed && (
+            <p className="absolute top-full mt-1 w-36 text-xs text-destructive">
+              {t("form.cover.failed")}
+            </p>
+          )}
         </div>
         <div className="flex-1 space-y-3">
           <Field id="title" label={t("form.fields.title")} error={errorFor("title")} required>
