@@ -189,6 +189,17 @@ mod tests {
     }
 
     #[test]
+    fn finds_the_isbn_of_a_whole_back_cover() {
+        // Ragnarok, read with the text recognition plugin on a moto g84 (25/10/2026): 121 lines; the only number is
+        // the one under the barcode, with quotes between its groups.
+        let text = "Ragnarok\nJuego de Rol de Horror Contemporáne0\nHace 65 millones de años, un enorme meteorito\n\
+                    chocó contra la Tierra, provocando un cataclismo\nLo que supondrá el fin del mundo\n\
+                    tal como lo conocemos.\nCOPIA DIGITAL INCLUIDA\n9\" 788469 \" 767016\nEDICIONES\nt&t\n\
+                    MKULTRA\nLOS ÚLTIMOS\nDÍAS\nHAN LLEGADO\nDagbladet\nSKANDIA\nTHULE";
+        assert_eq!(found(text), ["9788469767016"]);
+    }
+
+    #[test]
     fn finds_an_isbn_among_other_numbers_of_the_line() {
         assert_eq!(
             found("Depósito legal: M-12345-2020 ISBN 978-84-376-0494-7"),
