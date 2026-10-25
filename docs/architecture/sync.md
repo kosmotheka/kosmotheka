@@ -137,6 +137,14 @@ Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma ed
    - Si el identificador ya está emparejado, responde `403` (`already_paired`): el identificador lo declara el cliente, y aceptarlo dejaría a otro quitarle el sitio a ese dispositivo y quedarse con lo que se compartía con él. Para volver a emparejar, se olvida antes en el servidor.
 4. El cliente guarda al servidor: nombre, direcciones, huella y secreto.
 
+**Emparejar con el número** (D88), para no teclear el código largo. La ventana de emparejamiento lleva también un **número de 6 cifras**, que la pantalla enseña bajo el QR, y mientras está abierta el que sirve escucha además en el **puerto fijo de emparejar** (`PAIRING_PORT`, 47321), con el mismo servidor; su `GET /v1/hello` dice `pairingOpen`.
+1. El que se une recorre su propia subred en ese puerto (como D37, sin certificado fijado y sin mandar nada) y enseña por su nombre a los que tienen la ventana abierta, nunca a sí mismo.
+2. `POST /v1/pair/pin/start` con su mensaje SPAKE2 (`lan/pin.rs`, con el número como contraseña; el número no viaja). El que sirve contesta con el suyo y una **confirmación** de la clave ligada a la huella de su certificado. Cada intercambio gasta uno de los **tres intentos** de la ventana; al agotarlos, la ventana se cierra.
+3. El que se une calcula la clave y comprueba la confirmación **con la huella del certificado que ha visto**: si el número no es el mismo, o hay alguien en medio pasando la respuesta del otro, no cuadra y no se manda nada más (`wrong_pin`).
+4. `POST /v1/pair/pin/finish`, ya con esa huella fijada, con su confirmación (ligada también a su identificador), su identificador y su nombre. El que sirve la comprueba y sigue como con el código: secreto permanente, bibliotecas de la ventana, `already_paired` si el identificador ya estaba.
+
+Los casos hostiles están en la [batería de acceso](bateria-de-acceso.md). Límite, el mismo que con el QR: en las redes que aíslan los dispositivos entre sí no se encuentran.
+
 **Sincronizar** (autenticado con `X-Device-Id` y `Authorization: Bearer <secreto>`):
 1. `POST /v1/sync/pull` con la versión de esquema, los vectores del cliente (uno por biblioteca que comparte con el servidor) y sus avisos. El servidor concilia, responde con las operaciones que le faltan al cliente de las bibliotecas que ambos comparten, con sus propios vectores de las que él comparte y con sus avisos. Si las versiones de esquema difieren, responde `409` y no se sincroniza.
 2. El cliente concilia con la oferta y los avisos del servidor, aplica las operaciones (`merge`) y calcula las que le faltan al servidor.

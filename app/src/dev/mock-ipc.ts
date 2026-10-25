@@ -1063,7 +1063,27 @@ mockIPC((cmd, args) => {
         libraries: device.deviceId === "phone" ? [HOME, CLUB] : [HOME],
       }));
     case "open_pairing":
-      return { code: "KOSMOTHEKA1:eyJkZXZpY2VJZCI6ImRldiJ9", expiresInSeconds: 582 };
+      return {
+        code: "KOSMOTHEKA1:eyJkZXZpY2VJZCI6ImRldiJ9",
+        pin: "482913",
+        expiresInSeconds: 582,
+      };
+    // Pairing by number (D88): one device nearby, and any six digits but 000000 pair.
+    case "find_pairing_devices":
+      return new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve([
+              { deviceId: "laptop", name: "Portátil de Sergio", address: "192.168.1.20:47321" },
+            ]),
+          600,
+        ),
+      );
+    case "pair_with_pin": {
+      const { pin } = args as { pin: string };
+      if (pin === "000000") throw { kind: "sync", reason: "wrong_pin" };
+      return { deviceId: "pixel9", name: "Pixel 9" };
+    }
     case "catalog_options":
       return {
         authors: [],

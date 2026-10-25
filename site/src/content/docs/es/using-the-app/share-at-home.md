@@ -35,7 +35,8 @@ Llama «A» al dispositivo que ya tiene la biblioteca y «B» al que la va a rec
 1. Abre el mismo sitio: el menú, «Compartir y dispositivos» y el botón de emparejar.
 2. Pulsa la opción «Escanear el suyo».
 3. Pulsa «Escanear con la cámara» y pon la cámara delante del código de A.
-4. Si B es un ordenador, no tiene cámara. En A pulsa «Copiar», junto al código. En B pulsa «Pegar su código», pega el código en el cuadro (como cuando copias y pegas un texto) y pulsa «Emparejar». En un móvil, ese cuadro está justo debajo del botón de la cámara.
+4. **Sin cámara, con el número.** Debajo del QR, A enseña un número de 6 cifras. En B pulsa «Escribir el número»: salen los dispositivos de tu wifi que tienen el emparejamiento abierto. Elige A, escribe el número y pulsa «Emparejar». Si te equivocas, revísalo; a los tres intentos fallidos hay que volver a abrir el emparejamiento en A.
+5. También puedes copiar el código largo: en A pulsa «Copiar», junto al código, y en B pega el código en el cuadro y pulsa «Emparejar».
 
 ![En el móvil que recibe: escanear con la cámara o pegar el código.](./share-at-home-scan-code.webp)
 

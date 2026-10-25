@@ -668,7 +668,7 @@ export function setDeviceName(name: string): Promise<void> {
 /** Opens a pairing window; whoever pairs through it receives `libraries`. */
 export function openPairing(
   libraries: string[],
-): Promise<{ code: string; expiresInSeconds: number }> {
+): Promise<{ code: string; pin: string; expiresInSeconds: number }> {
   return invoke("open_pairing", { libraries });
 }
 
@@ -682,6 +682,26 @@ export function pairWith(
   libraries: string[],
 ): Promise<{ deviceId: string; name: string }> {
   return invoke("pair_with", { code, libraries });
+}
+
+/** A device nearby with a pairing window open (D88): before the number, all it says is its name. */
+export interface NearbyDevice {
+  deviceId: string;
+  name: string;
+  address: string;
+}
+
+export function findPairingDevices(): Promise<NearbyDevice[]> {
+  return invoke<NearbyDevice[]>("find_pairing_devices");
+}
+
+/** Pairs with the device at `address` with the six digits it shows (D88). */
+export function pairWithPin(
+  address: string,
+  pin: string,
+  libraries: string[],
+): Promise<{ deviceId: string; name: string }> {
+  return invoke("pair_with_pin", { address, pin, libraries });
 }
 
 export function sharingOverview(): Promise<DeviceSharing[]> {

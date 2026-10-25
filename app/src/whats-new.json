@@ -1,4 +1,10 @@
 {
+  "next": [
+    {
+      "es": "Emparejar sin cámara es mucho más fácil: debajo del QR sale un número de 6 cifras. En el otro dispositivo, «Escribir el número» enseña los de tu wifi que tienen el emparejamiento abierto; eliges el tuyo y escribes el número, en lugar de copiar y pegar un código larguísimo.",
+      "en": "Pairing without a camera is much easier: a 6-digit number shows under the QR. On the other device, “Type the number” lists the ones on your Wi-Fi with pairing open; pick yours and type the number, instead of copying and pasting a very long code."
+    }
+  ],
   "0.7.0": [
     {
       "es": "Fotos: en la ficha, toca la portada para poner una tuya, con una foto (en el móvil) o una imagen, o para buscarla otra vez en los catálogos después de añadir el ISBN o corregir el título. La tuya se guarda reducida y sin los datos de la foto, y llega a la nube con las demás portadas. Y para la primera carga, en el móvil, «Foto de una balda» en «Añadir» lee los lomos en el propio móvil, busca cada título en los catálogos y te deja marcar qué añadir de una vez. No lo lee todo, pero ahorra mucho escribir.",

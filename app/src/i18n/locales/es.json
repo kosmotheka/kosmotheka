@@ -567,7 +567,8 @@
       "other_version": "Los dos dispositivos tienen versiones distintas de la app. Actualiza ambos.",
       "peer_error": "El otro dispositivo ha tenido un problema. Inténtalo de nuevo.",
       "unknown_device": "Este dispositivo no está emparejado.",
-      "no_network": "Este dispositivo no está conectado a ninguna red."
+      "no_network": "Este dispositivo no está conectado a ninguna red.",
+      "wrong_pin": "El número no coincide con el del otro dispositivo. Revísalo; a los tres intentos fallidos hay que abrir el emparejamiento otra vez."
     },
     "pageDescription": "Cada biblioteca se comparte por separado con cada dispositivo. Marca qué va a cada uno.",
     "mobileDescription": "Emparejados con este dispositivo · qué bibliotecas van a cada uno",
@@ -949,7 +950,14 @@
       "stepLast": "Paso 2 de 2",
       "adminWarning": "Quien administra puede cambiarlo todo, también quién más pertenece y qué puede hacer. Dar ese rol es responsabilidad tuya.",
       "pickOne": "Sin rol todavía · editor"
-    }
+    },
+    "pinHint": "¿Sin cámara? Escribe este número en el otro dispositivo:",
+    "byNumber": "Escribir el número",
+    "searching": "Buscando dispositivos con el emparejamiento abierto en esta wifi…",
+    "noneNearby": "No encuentro ninguno. En el otro dispositivo, abre «Emparejar un dispositivo», en la misma wifi, y deja el número a la vista.",
+    "searchAgain": "Buscar otra vez",
+    "whichDevice": "¿Cuál es?",
+    "pinLabel": "Número de 6 cifras"
   },
   "people": {
     "title": "Personas y permisos",

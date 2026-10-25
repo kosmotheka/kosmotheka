@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
-import { ClipboardPaste, Copy, QrCode, ScanLine } from "lucide-react";
+import {
+  ClipboardPaste,
+  Copy,
+  KeyRound,
+  Loader2,
+  MonitorSmartphone,
+  QrCode,
+  ScanLine,
+} from "lucide-react";
 
 import { GetTheApp, GetTheAppButton } from "@/components/get-the-app";
 import { LibraryChecklist, SendSummary } from "@/components/libraries/library-checklist";
@@ -17,6 +25,9 @@ import {
   lanStatus,
   openPairing,
   pairWith,
+  pairWithPin,
+  findPairingDevices,
+  type NearbyDevice,
   pairingOwners,
   permissionErrorKey,
   syncErrorKey,
@@ -31,6 +42,8 @@ type Mode = "show" | "enter";
 
 interface Shown {
   code: string;
+  /** The six digits to pair by hand (D88). */
+  pin: string;
   qr: string;
   expires: number;
 }
@@ -112,7 +125,12 @@ export function PairDialog({
       .then(async (info) => {
         const qr = await QRCode.toString(info.code, { type: "svg", margin: 1 });
         if (!cancelled) {
-          setShown({ code: info.code, qr, expires: Date.now() + info.expiresInSeconds * 1000 });
+          setShown({
+            code: info.code,
+            pin: info.pin,
+            qr,
+            expires: Date.now() + info.expiresInSeconds * 1000,
+          });
           setError(null);
         }
       })
@@ -163,11 +181,14 @@ export function PairDialog({
     closeOverlay();
   };
 
-  const pair = async (text: string) => {
+  const pair = (text: string) => pairUsing(() => pairWith(text, selected));
+
+  // Whichever way it paired (the code, its QR or the number), the same steps follow.
+  const pairUsing = async (pairing: () => Promise<{ deviceId: string; name: string }>) => {
     setBusy(true);
     setError(null);
     try {
-      const device = await pairWith(text, selected);
+      const device = await pairing();
       const report = await syncDevice(device.deviceId);
       await finish.current(
         device.deviceId,
@@ -242,6 +263,15 @@ export function PairDialog({
                 <Copy /> {t("pair.copy")}
               </Button>
             </div>
+            <div className="flex w-full flex-col items-center gap-1 rounded-lg bg-muted px-3 py-2.5 text-center">
+              <span className="text-[13px] text-muted-foreground">{t("pair.pinHint")}</span>
+              <span
+                className="font-mono text-3xl font-semibold tracking-[0.2em] tabular-nums"
+                aria-label={shown.pin.split("").join(" ")}
+              >
+                {shown.pin.slice(0, 3)} {shown.pin.slice(3)}
+              </span>
+            </div>
             <GetTheAppButton onClick={() => setGettingApp(true)} />
           </>
         ) : shown ? (
@@ -263,6 +293,10 @@ export function PairDialog({
           <ScanLine /> {t("pair.scan")}
         </Button>
       )}
+      <ByNumber
+        busy={busy}
+        onPair={(device, pin) => void pairUsing(() => pairWithPin(device.address, pin, selected))}
+      />
       <p className="text-[13px] text-muted-foreground">
         {t(canScan ? "pair.pasteHint" : "pair.pasteOnly")}
       </p>
@@ -351,5 +385,113 @@ export function PairDialog({
         </>
       )}
     </ResponsiveDialog>
+  );
+}
+
+/**
+ * Pairing by number (D88): the devices nearby with their pairing open, by name; choose one and type the six digits
+ * it shows. Like a TV or screencasting: the number proves it is the screen in front of you.
+ */
+function ByNumber({
+  busy,
+  onPair,
+}: {
+  busy: boolean;
+  onPair: (device: NearbyDevice, pin: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [nearby, setNearby] = useState<NearbyDevice[] | null>(null);
+  const [chosen, setChosen] = useState<NearbyDevice | null>(null);
+  const [pin, setPin] = useState("");
+
+  const search = () => {
+    setNearby(null);
+    setChosen(null);
+    void findPairingDevices()
+      .catch(() => [])
+      .then((found) => {
+        setNearby(found);
+        if (found.length === 1) setChosen(found[0] ?? null);
+      });
+  };
+
+  if (!open) {
+    return (
+      <Button
+        variant="outline"
+        className="h-12"
+        disabled={busy}
+        onClick={() => {
+          setOpen(true);
+          search();
+        }}
+      >
+        <KeyRound /> {t("pair.byNumber")}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border p-3">
+      <p className="text-sm font-medium">{t("pair.byNumber")}</p>
+      {nearby === null ? (
+        <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> {t("pair.searching")}
+        </p>
+      ) : nearby.length === 0 ? (
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-[13px] text-pretty text-muted-foreground">{t("pair.noneNearby")}</p>
+          <Button variant="outline" size="sm" onClick={search}>
+            {t("pair.searchAgain")}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={t("pair.whichDevice")}>
+          <p className="text-[13px] text-muted-foreground">{t("pair.whichDevice")}</p>
+          {nearby.map((device) => (
+            <button
+              key={device.deviceId}
+              type="button"
+              role="radio"
+              aria-checked={chosen?.deviceId === device.deviceId}
+              className={cn(
+                "flex h-11 items-center gap-2.5 rounded-lg border px-3 text-left text-sm",
+                chosen?.deviceId === device.deviceId && "border-primary bg-primary/5 font-medium",
+              )}
+              onClick={() => setChosen(device)}
+            >
+              <MonitorSmartphone className="size-4 shrink-0" />
+              <span className="truncate">{device.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {chosen && (
+        <form
+          className="flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (pin.length === 6) onPair(chosen, pin);
+          }}
+        >
+          <Input
+            autoFocus
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            aria-label={t("pair.pinLabel")}
+            placeholder="000000"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            className="h-12 text-center font-mono text-2xl tracking-[0.3em]"
+          />
+          <Button type="submit" className="h-12" disabled={busy || pin.length !== 6}>
+            {busy ? <Loader2 className="animate-spin" /> : null}
+            {t("devices.pair")}
+          </Button>
+        </form>
+      )}
+    </div>
   );
 }

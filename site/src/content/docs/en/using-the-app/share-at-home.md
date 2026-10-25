@@ -35,7 +35,8 @@ Call "A" the device that already has the library and "B" the one that will recei
 1. Open the same place: the menu, "Sharing and devices" and the pairing button.
 2. Tap the option "Scan theirs".
 3. Tap "Scan with the camera" and point the camera at the code on A.
-4. If B is a computer, it has no camera. On A tap "Copy", next to the code. On B tap "Paste their code", paste the code into the box (the way you copy and paste a text) and tap "Pair". On a phone, that box is just under the camera button.
+4. **No camera? Use the number.** Under the QR, A shows a 6-digit number. On B tap "Type the number": the devices on your Wi-Fi with pairing open appear. Choose A, type the number and tap "Pair". If you get it wrong, check it; after three wrong tries, pairing has to be opened again on A.
+5. You can also copy the long code: on A tap "Copy", next to the code, and on B paste it into the box and tap "Pair".
 
 ![On the phone that receives: scan with the camera or paste the code. (Screenshot from the Spanish app.)](../../es/using-the-app/share-at-home-scan-code.webp)
 

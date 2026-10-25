@@ -553,7 +553,8 @@
       "other_version": "The two devices run different versions of the app. Update both.",
       "peer_error": "The other device had a problem. Try again.",
       "unknown_device": "This device is not paired.",
-      "no_network": "This device is not connected to any network."
+      "no_network": "This device is not connected to any network.",
+      "wrong_pin": "The number does not match the other device's. Check it; after three wrong tries pairing has to be opened again."
     },
     "pageDescription": "Each library is shared separately with each device. Tick what goes to each one.",
     "mobileDescription": "Paired with this device · which libraries go to each one",
@@ -935,7 +936,14 @@
       "stepLast": "Step 2 of 2",
       "adminWarning": "Administrators can change everything, including who else belongs and what they may do. Giving that role is your responsibility.",
       "pickOne": "No role yet · editor"
-    }
+    },
+    "pinHint": "No camera? Type this number on the other device:",
+    "byNumber": "Type the number",
+    "searching": "Looking for devices with pairing open on this Wi-Fi…",
+    "noneNearby": "None found. On the other device, open “Pair a device”, on the same Wi-Fi, and keep the number on screen.",
+    "searchAgain": "Search again",
+    "whichDevice": "Which one is it?",
+    "pinLabel": "6-digit number"
   },
   "people": {
     "title": "People and permissions",
