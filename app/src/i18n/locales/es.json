@@ -1182,6 +1182,8 @@
     "gameUpcSearch": "Busca el juego por su nombre. Al guardarlo le diremos a GameUPC qué juego es este código, para que aprenda."
   },
   "shelf": {
+    "onlyOnPhone": "En el ordenador no se pueden leer los lomos. Empareja un móvil Android con este dispositivo y haz la foto desde él: lo que añadas allí llega aquí solo.",
+    "choosePhoto": "Elegir una foto",
     "title": "Foto de una balda",
     "entry": "Para la carga inicial: lee los lomos y busca cada título en los catálogos.",
     "intro": "La app lee los lomos en el propio móvil y busca cada título en los catálogos. Solo te enseña lo que encuentra, para que marques qué añadir. No lo leerá todo: lo que falte, lo añades como siempre.",

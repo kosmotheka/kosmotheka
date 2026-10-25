@@ -30,6 +30,7 @@ import {
   type NewBook,
   type Source,
   gameUpcChoice,
+  isMobile,
   kinds,
   lookupCode,
   searchWorks,
@@ -172,7 +173,12 @@ export function AddSearch({
   const [shelfOpen, setShelfOpen] = useState(false);
   // The shelf photo adds straight away: not for «Me falta», nor for readers, who ask instead (D73).
   const { myRole } = useRequests();
-  const canShelf = !desktop && !missing && myRole !== "reader";
+  const canShelf = !missing && myRole !== "reader";
+  // Where the spines can be read: a phone, whatever the window's width. Elsewhere the entry says to use one.
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    void isMobile().then(setPhone);
+  }, []);
   const requestId = useRef(0);
   const queryRef = useRef<HTMLInputElement>(null);
 
@@ -618,7 +624,7 @@ export function AddSearch({
       <>
         <button
           type="button"
-          onClick={() => setShelfOpen(true)}
+          onClick={() => setShelfOpen(phone || !shelfOpen)}
           className="flex w-full items-center gap-3.5 rounded-xl p-3 text-left"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -632,8 +638,13 @@ export function AddSearch({
           </span>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </button>
+        {!phone && shelfOpen && (
+          <p role="status" className="mx-3 rounded-[14px] border p-3 text-sm text-pretty">
+            {t("shelf.onlyOnPhone")}
+          </p>
+        )}
         <ShelfPhoto
-          open={shelfOpen}
+          open={phone && shelfOpen}
           kind={kind}
           library={library}
           onOpenChange={setShelfOpen}
@@ -710,6 +721,7 @@ export function AddSearch({
           {scanNote}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3.5 pb-2">
+          {shelfEntry}
           {askStep}
           {gameUpcNote}
           {resultsList}

@@ -1168,6 +1168,8 @@
     "gameUpcSearch": "Search for the game by name. Once you save it, we tell GameUPC which game this code is, so it learns."
   },
   "shelf": {
+    "onlyOnPhone": "Spines cannot be read on a computer. Pair an Android phone with this device and take the photo from it: what you add there arrives here by itself.",
+    "choosePhoto": "Choose a photo",
     "title": "Photo of a shelf",
     "entry": "For the first load: reads the spines and searches each title in the catalogues.",
     "intro": "The app reads the spines on the phone itself and searches each title in the catalogues. It only shows you what it finds, for you to tick what to add. It will not read everything: add what is missing as usual.",

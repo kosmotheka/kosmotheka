@@ -68,10 +68,10 @@ If you already have your list in a spreadsheet, see [Backups, export and import]
 
 ## A whole shelf at once
 
-Only on a phone, for the first load of your library. In Add, before searching anything, tap **"Photo of a shelf"**. It is not there when adding to "Missing", nor where you can only look, because it adds straight away.
+For the first load of your library, on an Android phone. Spines cannot be read on a computer: pair a phone and do it from there, and what you add there reaches the computer by itself. In Add, before searching anything, tap **"Photo of a shelf"**. It is not there when adding to "Missing", nor where you can only look, because it adds straight away.
 
 1. Choose what is on the shelf: books, comics, films… It starts with what you had chosen in Add.
-2. Tap "Take the photo" and photograph **a single shelf**, from the front and up close, in good light. 15 to 20 spines per photo work best.
+2. Tap "Take the photo", or "Choose a photo" if you already have it on the phone. Photograph **a single shelf**, from the front and up close, in good light. 15 to 20 spines per photo work best.
 3. The app reads the spines on your phone and searches each text in the catalogues. You see how it goes and what it finds.
 4. It shows you **only what it finds** as a real work, already ticked. What you already have comes unticked: if you tick it, another copy is added.
 5. Set the owner, the format and the location, which apply to all of them, and tap "Add".

@@ -3,7 +3,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, CircleAlert, CircleCheck, Loader2, Search, X } from "lucide-react";
+import { Camera, CircleAlert, CircleCheck, ImageIcon, Loader2, Search, X } from "lucide-react";
 
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
@@ -108,8 +108,8 @@ export function ShelfPhoto({
   };
 
   // Called from the tap itself: the camera only opens while the tap lasts.
-  const shoot = () => {
-    const taking = takePhoto();
+  const shoot = (camera = true) => {
+    const taking = takePhoto({ camera });
     reset();
     const id = run.current;
     void (async () => {
@@ -383,16 +383,25 @@ export function ShelfPhoto({
 
   const footer =
     step === "guide" ? (
-      <Button className="h-12 w-full gap-2 rounded-full" onClick={shoot}>
-        <Camera className="size-4" /> {t(failed ? "shelf.tryAgain" : "shelf.takePhoto")}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button className="h-12 w-full gap-2 rounded-full" onClick={() => shoot()}>
+          <Camera className="size-4" /> {t(failed ? "shelf.tryAgain" : "shelf.takePhoto")}
+        </Button>
+        <Button
+          variant="outline"
+          className="h-12 w-full gap-2 rounded-full"
+          onClick={() => shoot(false)}
+        >
+          <ImageIcon className="size-4" /> {t("shelf.choosePhoto")}
+        </Button>
+      </div>
     ) : step === "review" ? (
       <div className="flex gap-2">
         <Button
           variant="outline"
           className="h-12 flex-1 gap-2 rounded-full"
           disabled={adding}
-          onClick={shoot}
+          onClick={() => shoot()}
         >
           <Camera className="size-4" /> {t("shelf.another")}
         </Button>
