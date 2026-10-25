@@ -35,6 +35,35 @@ impl Isbn {
         }
     }
 
+    /// The ISBNs printed in `text`, such as the text read from a photo of a back cover, in the order they appear.
+    /// Recognition adds noise between the digits (a stray quote, a dot, spaces), so within a line everything that
+    /// is not a letter is skipped; a letter other than a final X ends the number. Only what the check digit
+    /// confirms is kept: thirteen digits starting with 978 or 979 anywhere in a run of digits, or a run of exactly
+    /// ten (a shorter window of a longer run would match one time in eleven by chance).
+    pub fn find_in_text(text: &str) -> Vec<Self> {
+        let mut found: Vec<Self> = Vec::new();
+        for line in text.lines() {
+            for run in digit_runs(line) {
+                let mut candidates: Vec<Self> = run
+                    .as_bytes()
+                    .windows(13)
+                    .filter(|window| window.starts_with(b"978") || window.starts_with(b"979"))
+                    .filter_map(|window| std::str::from_utf8(window).ok())
+                    .filter_map(|window| Self::parse(window).ok())
+                    .collect();
+                if candidates.is_empty() && run.len() == 10 {
+                    candidates.extend(Self::parse(&run).ok());
+                }
+                for isbn in candidates {
+                    if !found.contains(&isbn) {
+                        found.push(isbn);
+                    }
+                }
+            }
+        }
+        found
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -49,6 +78,29 @@ impl Isbn {
         };
         Some(format!("{}{check}", &body[..9]))
     }
+}
+
+/// The runs of digits in a line, skipping anything that is not a letter between them; an X right after the digits
+/// stays (it is an ISBN-10's check value) and ends the run, as any other letter does.
+fn digit_runs(line: &str) -> Vec<String> {
+    let mut runs = Vec::new();
+    let mut run = String::new();
+    for c in line.chars() {
+        if c.is_ascii_digit() {
+            run.push(c);
+        } else if c.is_alphabetic() {
+            if matches!(c, 'X' | 'x') && !run.is_empty() {
+                run.push('X');
+            }
+            if !run.is_empty() {
+                runs.push(std::mem::take(&mut run));
+            }
+        }
+    }
+    if !run.is_empty() {
+        runs.push(run);
+    }
+    runs
 }
 
 fn parse_isbn13(cleaned: &str) -> Result<Isbn, IsbnError> {
@@ -120,6 +172,54 @@ impl Serialize for Isbn {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn found(text: &str) -> Vec<String> {
+        Isbn::find_in_text(text)
+            .into_iter()
+            .map(|isbn| isbn.as_str().to_owned())
+            .collect()
+    }
+
+    #[test]
+    fn finds_an_isbn_with_noise_from_recognition() {
+        // The maintainer's back cover (25/10/2026): a quote right after the first digit.
+        assert_eq!(found("ISBN 9\"78-84-376-0494-7"), ["9788437604947"]);
+        assert_eq!(found("I.S.B.N.: 978·84·376·0494·7."), ["9788437604947"]);
+        assert_eq!(found("9 788437 604947"), ["9788437604947"]);
+    }
+
+    #[test]
+    fn finds_an_isbn_among_other_numbers_of_the_line() {
+        assert_eq!(
+            found("Depósito legal: M-12345-2020 ISBN 978-84-376-0494-7"),
+            ["9788437604947"]
+        );
+        assert_eq!(found("12,90 € 9788437604947 (rústica)"), ["9788437604947"]);
+    }
+
+    #[test]
+    fn a_misread_digit_gives_nothing_rather_than_another_book() {
+        assert!(found("ISBN 978-84-376-0494-8").is_empty());
+        assert!(
+            found("ISBN 978-84-376-O494-7").is_empty(),
+            "a letter breaks the number"
+        );
+    }
+
+    #[test]
+    fn finds_an_isbn_10_only_when_it_stands_alone() {
+        assert_eq!(found("ISBN 84-376-0494-X"), ["9788437604947"]);
+        assert_eq!(found("ISBN 0-8044-2957-X"), ["9780804429573"]);
+        // Ten digits inside a longer number are not taken for one.
+        assert!(found("Tel. 34 84 376 0494 7 1").is_empty());
+    }
+
+    #[test]
+    fn finds_each_isbn_once_and_in_order() {
+        let text =
+            "Tapa dura ISBN 978-84-376-0494-7\nRústica ISBN 978-0-306-40615-7\n9788437604947";
+        assert_eq!(found(text), ["9788437604947", "9780306406157"]);
+    }
 
     #[test]
     fn accepts_isbn13_with_hyphens() {
