@@ -108,6 +108,7 @@
 | D100 | Cuentas: qué se pide en las acciones delicadas y respuestas que no delatan nada | aceptada |
 | D101 | Una retirada firmada se obedece, aunque después haya podido deshacerse | aceptada |
 | D102 | Dos formas de irse: quitar la biblioteca de un dispositivo, o salir de ella del todo (retirarse uno mismo el acceso) | aceptada |
+| D103 | Las instalaciones anteriores de un dispositivo: la fecha del último cambio y quitarlas de una vez | aceptada |
 
 ---
 
@@ -1972,3 +1973,42 @@ Aceptada el 18/10/2026 por el maintainer, para antes de la prueba cerrada. Concr
 - Test hostil primero: nadie que no administra puede retirar el acceso a otra persona, ni quitarse la marca a sí mismo.
 - Guía: `several-libraries.md`, `people-and-permissions.md` y `the-cloud.md`.
 
+## D103 · Las instalaciones anteriores de un dispositivo: la fecha del último cambio y quitarlas de una vez — `aceptada`
+
+Aceptada el 25/10/2026 por el maintainer, tras ver las dos opciones simuladas con tests y capturas. Concreta D81 y D58.
+
+**Contexto.** La identidad de un dispositivo es de la instalación (D81): reinstalar crea un dispositivo nuevo, y la nube lo asigna a su persona al entrar con la cuenta (D76). El anterior se queda asignado a esa persona para siempre; no es un riesgo (su clave ya no existe), pero llena «Personas y permisos» de dispositivos iguales que no se distinguen. Visto el 25/10/2026: el portátil del maintainer salía cinco veces. Le pasará a cualquiera, aunque con menos frecuencia:
+- en Android, cada vez que se desinstala y se vuelve a instalar (el sistema borra los datos y la app no usa la copia de Google, `allowBackup="false"`, para que la clave nunca pase a otro móvil);
+- con un móvil nuevo (el viejo existe de verdad);
+- con «Dejar este dispositivo a otra persona»;
+- al pasar de un paquete de Linux a otro (el `.deb` y la AppImage guardan los datos en `~/.local/share/app.kosmotheka`; la snap, en `~/snap/kosmotheka`).
+
+Ninguna app puede saber si dos instalaciones están en la misma máquina: el nombre no basta.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. Enseñar en cada dispositivo cuándo hizo su último cambio | Sencilla; sirve también para el móvil viejo; no decide nada | Hay que quitarlos uno a uno |
+| B. Ofrecer a la instalación nueva quitar sus anteriores de una vez | Resuelve el caso habitual con un botón | Puede ofrecer un dispositivo de verdad que solo consulta; hoy solo para quien administra |
+| Quitarlos solos, sin preguntar | Nadie tiene que hacer nada | Quitar un dispositivo es retirarle el acceso (D71): no se hace sin que la persona lo confirme |
+
+**Decisión: A y B, aceptando sus límites.**
+
+1. **Cada dispositivo dice cuándo hizo su último cambio** en esa biblioteca («último cambio hace 9 días»), salvo el propio. Sale de la operación más reciente que firmó, así que lo sabe cualquier dispositivo, sin servidor; como mínimo es su propio registro en la biblioteca.
+2. **La instalación nueva ve un aviso** («Parece que has reinstalado Kosmotheka») con sus instalaciones anteriores, que son las que cumplen las tres cosas a la vez:
+   - son de **su misma persona**;
+   - tienen **su mismo nombre** (sin distinguir mayúsculas);
+   - **no han firmado nada desde que llegó esta**: su último cambio es anterior al primero de esta instalación.
+3. **Quien administra las quita de una vez**, tras una confirmación, en todas las bibliotecas, con el mismo camino que un dispositivo perdido (`people::remove_device`, D58): se les quita la persona y se crea su retirada.
+4. **Quien no administra ve el aviso** y que puede pedírselo a quien administra.
+
+**Límites aceptados.**
+- Un segundo dispositivo de verdad, con el mismo nombre, que solo consulta y nunca cambia nada, se ofrecería. La confirmación lo avisa y quitarlo tiene arreglo (emparejarlo o entrar con la cuenta otra vez).
+- Para que alguien que no administra quite sus propios dispositivos haría falta una regla nueva en `spec/`. Queda en «Ideas para el futuro».
+- El móvil viejo con otro nombre no se ofrece: para él sirve la fecha del último cambio.
+
+**Consecuencias.**
+- Tests con el caso del maintainer (un portátil instalado tres veces) y los hostiles, vistos fallar antes: el dispositivo de otra persona o de nadie con el mismo nombre nunca se ofrece, ni un segundo dispositivo suyo que sigue haciendo cambios.
+- Queda pendiente la otra mitad de D81: quitar un dispositivo de la lista de la cuenta no le retira el acceso en las bibliotecas.
+- Guía: `people-and-permissions.md` y `lost-phone.md`.

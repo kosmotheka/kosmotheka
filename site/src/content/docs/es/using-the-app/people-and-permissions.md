@@ -25,6 +25,14 @@ Si eres administrador, al abrir a una persona puedes cambiar su rol, cambiar si 
 
 Un dispositivo al que nadie ha asignado una persona aparece en «Dispositivos sin persona», y la app le da los permisos de lector. Para arreglarlo, quien administra pulsa «Asignar» y elige la persona a la que pertenece.
 
+Cada dispositivo dice cuándo hizo su **último cambio** en la biblioteca («último cambio hace 9 días»). Así se distingue uno que ya no se usa de uno que sigue en marcha.
+
+### Si has reinstalado la app
+
+Cada instalación de la app es un dispositivo nuevo: al reinstalarla (en Android, siempre que la desinstalas), al cambiar de móvil o al pasar de un tipo de instalación a otro en Linux, el dispositivo anterior se queda en tu lista. La instalación nueva te lo avisa («Parece que has reinstalado Kosmotheka») cuando encuentra dispositivos tuyos con su mismo nombre que no han hecho nada desde que llegó. Si administras, «Quitar las anteriores» les retira el acceso en todas tus bibliotecas de una vez. Si no administras, pídeselo a quien administra.
+
+Si alguno era en realidad otro dispositivo que aún usas, tendrás que volver a emparejarlo o a entrar con tu cuenta en él.
+
 ## Pedir en lugar de hacer
 
 Un lector no cambia la biblioteca: **pide** que se cambie. Un editor también tiene que pedir una cosa: borrar algo que añadió otra persona.

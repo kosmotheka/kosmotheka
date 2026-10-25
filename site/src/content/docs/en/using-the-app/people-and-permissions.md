@@ -25,6 +25,14 @@ If you are an administrator, when you open a person you can change their role, c
 
 A device that nobody has assigned to a person appears in "Devices without a person", and the app gives it reader permissions. To fix it, whoever administers taps "Assign" and picks the person it belongs to.
 
+Each device says when it made its **last change** in the library ("last change 9 days ago"), so you can tell one nobody uses any more from one still in use.
+
+### If you reinstalled the app
+
+Each install of the app is a new device: when you reinstall it (on Android, whenever you uninstall it), change phones or move from one kind of install to another on Linux, the earlier device stays in your list. The new install tells you ("It looks like you reinstalled Kosmotheka") when it finds devices of yours with its same name that have done nothing since it came. If you administer, "Remove the earlier ones" withdraws their access in all your libraries at once. If you do not, ask whoever administers.
+
+If one was actually another device you still use, you will have to pair it or sign in on it again.
+
 ## Ask instead of doing
 
 A reader does not change the library: they **ask** for the change. An editor also has to ask for one thing: deleting something that another person added.

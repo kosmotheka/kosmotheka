@@ -33,6 +33,8 @@ Esa última fila es importante: si no tienes cuenta, no hay ninguna copia de tu 
 
 Cuando termines, en el móvil viejo usa «Dejar este dispositivo como nuevo» (en «Ajustes») antes de regalarlo o venderlo.
 
+El móvil viejo sigue en tu lista de «Personas y permisos». Si administras, quítale el acceso allí cuando ya no lo uses ([Personas y permisos](../people-and-permissions/#si-has-reinstalado-la-app)).
+
 ## Si lo han perdido o robado
 
 Haz estas tres cosas, por orden:

@@ -33,6 +33,8 @@ That last row matters: if you have no account, there is no copy of your library 
 
 When you finish, on the old phone use "Reset this device" (in "Settings") before giving it away or selling it.
 
+The old phone stays in your list in "People and permissions". If you administer, withdraw its access there once you no longer use it ([People and permissions](../people-and-permissions/#if-you-reinstalled-the-app)).
+
 ## If it was lost or stolen
 
 Do these three things, in this order:
