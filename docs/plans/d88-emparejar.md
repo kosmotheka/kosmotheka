@@ -2,7 +2,7 @@
 
 > 25/10/2026. Decisión en [D88](../DECISIONS.md). Rama `feat/pair-without-qr`, sacada de la última rama de la versión 0.7.0 para no estorbar a sus pull requests. **Es seguridad:** sus casos hostiles entran en la [batería de acceso](../architecture/bateria-de-acceso.md), cada uno con su test escrito antes y visto fallar.
 
-**Estado (25/10/2026):** partes 1 a 3 hechas, con sus tests; falta probarlo entre el portátil y el móvil del maintainer.
+**Estado (25/10/2026): hecho y probado.** Partes 1 a 4 con sus tests; el maintainer emparejó su portátil y su móvil con el número a la primera («esto es justo lo que yo quería»). Lo que queda de D88 es la parte de abajo, para más adelante.
 
 **Alcance, recortado con el maintainer el 25/10/2026:** «no tocamos lo que funciona y mejoramos lo que no funciona». El QR se queda como está (la mayoría emparejará así). Lo que se arregla es el **código manual**, que hoy mide unos 350 caracteres y obliga a copiarlo, mandarlo por WhatsApp y pegarlo. La otra parte de D88, que los dispositivos de una biblioteca se encuentren solos sin emparejarse de dos en dos, queda para más adelante (abajo, con lo ya pensado).
 
