@@ -20,10 +20,10 @@ use tokio_rustls::TlsAcceptor;
 use super::pairing::{PairingWindow, PinSession};
 use super::pin;
 use super::{
-    Hello, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest, PullResponse, PushRequest, client_is_authorized,
-    device_name, is_known_client, notices_for, only_shared, only_shared_operations, random_secret,
-    reconcile, record_client_sync, register_in_shared, save_client, share_library,
-    shared_libraries,
+    Hello, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest, PullResponse,
+    PushRequest, client_is_authorized, device_name, is_known_client, notices_for, only_shared,
+    only_shared_operations, random_secret, reconcile, record_client_sync, register_in_shared,
+    save_client, share_library, shared_libraries,
 };
 use crate::cover_exchange::{self, Inventory, Swap};
 use crate::covers::{Covers, MAX_COVER_BYTES};
@@ -155,6 +155,12 @@ async fn hello(State(state): State<ServerState>) -> std::result::Result<Json<Hel
             device_id: ops::device_id(&conn)?,
             device_name: device_name(&conn)?,
             schema_version: ops::schema_version(&conn)?,
+            pairing_open: state
+                .pairing
+                .lock()
+                .map_err(|_| ApiError::Internal)?
+                .as_ref()
+                .is_some_and(PairingWindow::is_open),
         }))
     })
     .await

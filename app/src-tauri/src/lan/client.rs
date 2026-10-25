@@ -17,10 +17,10 @@ use std::net::Ipv4Addr;
 use super::identity::fingerprint;
 use super::pairing::PairingCode;
 use super::{
-    Hello, KnownServer, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest, PullResponse, PushRequest,
-    SyncReport, device_name, find_server, notices_for, only_shared, only_shared_operations,
-    reconcile, record_server_sync, register_in_shared, save_server, share_library,
-    shared_libraries,
+    Hello, KnownServer, PairRequest, PairResponse, PinAnswer, PinFinish, PinStart, PullRequest,
+    PullResponse, PushRequest, SyncReport, device_name, find_server, notices_for, only_shared,
+    only_shared_operations, reconcile, record_server_sync, register_in_shared, save_server,
+    share_library, shared_libraries,
 };
 use crate::cover_exchange::{self, Swap};
 use crate::covers::{Covers, MAX_COVER_BYTES};
@@ -152,6 +152,13 @@ impl ServerCertVerifier for NotedCertificate {
 
 /// A client for one exchange with an unknown device, and where it notes the certificate it saw.
 fn noting_client() -> Result<(reqwest::Client, Arc<std::sync::Mutex<Option<String>>>)> {
+    noting_client_with(Duration::from_secs(4), Duration::from_secs(20))
+}
+
+fn noting_client_with(
+    connect: Duration,
+    total: Duration,
+) -> Result<(reqwest::Client, Arc<std::sync::Mutex<Option<String>>>)> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let seen = Arc::new(std::sync::Mutex::new(None));
     let tls = rustls::ClientConfig::builder_with_provider(provider.clone())
@@ -166,8 +173,8 @@ fn noting_client() -> Result<(reqwest::Client, Arc<std::sync::Mutex<Option<Strin
     let client = reqwest::Client::builder()
         .use_preconfigured_tls(tls)
         .no_proxy()
-        .connect_timeout(Duration::from_secs(4))
-        .timeout(Duration::from_secs(20))
+        .connect_timeout(connect)
+        .timeout(total)
         .build()?;
     Ok((client, seen))
 }
@@ -337,7 +344,13 @@ pub async fn pair_with_pin(
         Error::Lan("rejected") => Error::Lan("wrong_pin"),
         other => other,
     })?;
-    remember(database, response, vec![address.to_owned()], fingerprint, libraries)
+    remember(
+        database,
+        response,
+        vec![address.to_owned()],
+        fingerprint,
+        libraries,
+    )
 }
 
 /// The paired device, remembered with what this one shares with it.
@@ -617,6 +630,71 @@ pub async fn rediscover(server: &KnownServer) -> Option<String> {
     find_among(&server.fingerprint, &server.device_id, candidates).await
 }
 
+/// A device nearby with a pairing window open (D88): all it says before the number is its name.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NearbyDevice {
+    pub device_id: String,
+    pub name: String,
+    pub address: String,
+}
+
+/// The devices on this device's own networks with a pairing window open, found at the pairing port (D88).
+pub async fn find_pairing(own_id: &str) -> Vec<NearbyDevice> {
+    let candidates: Vec<String> = if_addrs::get_if_addrs()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|interface| !interface.is_loopback())
+        .filter_map(|interface| match interface.addr {
+            if_addrs::IfAddr::V4(v4) => Some(hosts_in(v4.ip, v4.prefixlen)),
+            if_addrs::IfAddr::V6(_) => None,
+        })
+        .flatten()
+        .map(|ip| format!("{ip}:{}", super::PAIRING_PORT))
+        .collect();
+    pairing_among(own_id, candidates).await
+}
+
+/// Which of `candidates` answer with a pairing window open. No certificate is pinned yet: nothing is sent, and only
+/// the name is read, which the number then confirms or not.
+async fn pairing_among(own_id: &str, candidates: Vec<String>) -> Vec<NearbyDevice> {
+    let Ok((client, _)) = noting_client_with(Duration::from_millis(700), Duration::from_secs(2))
+    else {
+        return Vec::new();
+    };
+    let mut found = Vec::new();
+    for batch in candidates.chunks(PROBES_AT_ONCE) {
+        let mut probes = tokio::task::JoinSet::new();
+        for candidate in batch {
+            let (client, candidate) = (client.clone(), candidate.clone());
+            probes.spawn(async move {
+                let hello: Hello = client
+                    .get(format!("https://{candidate}/v1/hello"))
+                    .send()
+                    .await
+                    .ok()?
+                    .json()
+                    .await
+                    .ok()?;
+                (hello.app == super::server::APP_ID && hello.pairing_open).then_some(NearbyDevice {
+                    device_id: hello.device_id,
+                    name: hello.device_name,
+                    address: candidate,
+                })
+            });
+        }
+        while let Some(probe) = probes.join_next().await {
+            if let Ok(Some(device)) = probe
+                && device.device_id != own_id
+            {
+                found.push(device);
+            }
+        }
+    }
+    found.sort_by(|a, b| a.name.cmp(&b.name));
+    found
+}
+
 /// Other hosts of the subnet of `ip`. Wide networks are narrowed to the /22 around
 /// `ip` (at most 1022 hosts), which covers any home network.
 fn hosts_in(ip: Ipv4Addr, prefix: u8) -> Vec<Ipv4Addr> {
@@ -795,7 +873,15 @@ mod tests {
         /// Opens a window and returns where the desk is and the number it shows (D88).
         fn open_pin(&self) -> (String, String) {
             self.open_pairing();
-            let pin = self.state.pairing.lock().unwrap().as_ref().unwrap().pin.clone();
+            let pin = self
+                .state
+                .pairing
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap()
+                .pin
+                .clone();
             (self.server.address.to_string(), pin)
         }
 
@@ -831,8 +917,16 @@ mod tests {
         let wrong = pair_with_pin(&phone, &address, &other_pin(&pin), &[]).await;
 
         assert!(matches!(wrong, Err(Error::Lan("wrong_pin"))));
-        assert!(list_devices(&desk.database.lock().unwrap(), "known_clients").unwrap().is_empty());
-        assert!(list_devices(&phone.lock().unwrap(), "known_servers").unwrap().is_empty());
+        assert!(
+            list_devices(&desk.database.lock().unwrap(), "known_clients")
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            list_devices(&phone.lock().unwrap(), "known_servers")
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -841,7 +935,11 @@ mod tests {
         let phone = Database::in_memory();
         let (address, pin) = desk.open_pin();
         for _ in 0..crate::lan::pin::PIN_ATTEMPTS {
-            assert!(pair_with_pin(&phone, &address, &other_pin(&pin), &[]).await.is_err());
+            assert!(
+                pair_with_pin(&phone, &address, &other_pin(&pin), &[])
+                    .await
+                    .is_err()
+            );
         }
 
         // Even the right number comes too late: the window is closed.
@@ -881,14 +979,43 @@ mod tests {
         assert!(joined.is_err());
         // The phone never sent its confirmation: the exchange in the middle is still waiting for it.
         assert!(middle.window().unwrap().pin_session.is_some());
-        assert!(list_devices(&phone.lock().unwrap(), "known_servers").unwrap().is_empty());
+        assert!(
+            list_devices(&phone.lock().unwrap(), "known_servers")
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn only_a_device_with_its_window_open_is_found_and_only_by_name() {
+        let desk = serve().await;
+        let closed = serve().await;
+        desk.open_pairing();
+        let candidates = vec![
+            desk.server.address.to_string(),
+            closed.server.address.to_string(),
+        ];
+
+        let found = pairing_among("phone", candidates).await;
+
+        let desk_id = ops::device_id(&desk.database.lock().unwrap()).unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].device_id, desk_id);
+        // Itself is never on its own list.
+        assert!(
+            pairing_among(&desk_id, vec![desk.server.address.to_string()])
+                .await
+                .is_empty()
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_number_pairs_one_device_only() {
         let desk = serve().await;
         let (address, pin) = desk.open_pin();
-        pair_with_pin(&Database::in_memory(), &address, &pin, &[]).await.unwrap();
+        pair_with_pin(&Database::in_memory(), &address, &pin, &[])
+            .await
+            .unwrap();
 
         let second = pair_with_pin(&Database::in_memory(), &address, &pin, &[]).await;
 

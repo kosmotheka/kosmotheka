@@ -32,7 +32,14 @@ pub struct Hello {
     pub device_id: String,
     pub device_name: String,
     pub schema_version: i64,
+    /// A pairing window is open, so a device nearby may pair by number (D88). Older versions do not say.
+    #[serde(default)]
+    pub pairing_open: bool,
 }
+
+/// Where a device with a pairing window open also listens (D88), so another one on the same network finds it by
+/// trying one port per address instead of every port. Its own port stays what it was.
+pub const PAIRING_PORT: u16 = 47321;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

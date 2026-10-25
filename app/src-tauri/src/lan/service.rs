@@ -11,8 +11,8 @@ use super::identity::Identity;
 use super::pairing::{PAIRING_WINDOW, PairingCode, PairingWindow};
 use super::server::{self, ArrivalHook, RunningServer, ServerState};
 use super::{
-    KnownDevice, device_name, has_clients, list_devices, local_addresses, random_secret,
-    store_port, stored_port,
+    KnownDevice, PAIRING_PORT, device_name, has_clients, list_devices, local_addresses,
+    random_secret, store_port, stored_port,
 };
 use crate::covers::Covers;
 use crate::db::Database;
@@ -27,6 +27,8 @@ pub struct LanService {
     identity: Arc<RwLock<Arc<Identity>>>,
     pairing: Arc<Mutex<Option<PairingWindow>>>,
     server: Arc<tokio::sync::Mutex<Option<RunningServer>>>,
+    /// While a pairing window is open: the same server on the pairing port too (D88), if its own port is another.
+    pairing_listener: Arc<Mutex<Option<RunningServer>>>,
     arrival: Arc<OnceLock<ArrivalHook>>,
     covers: Arc<OnceLock<Covers>>,
 }
@@ -50,6 +52,8 @@ pub struct LanStatus {
 #[serde(rename_all = "camelCase")]
 pub struct PairingInfo {
     pub code: String,
+    /// The six digits to pair by hand (D88).
+    pub pin: String,
     pub expires_in_seconds: u64,
 }
 
@@ -60,6 +64,7 @@ impl LanService {
             identity: Arc::new(RwLock::new(Arc::new(identity))),
             pairing: Arc::new(Mutex::new(None)),
             server: Arc::new(tokio::sync::Mutex::new(None)),
+            pairing_listener: Arc::new(Mutex::new(None)),
             arrival: Arc::new(OnceLock::new()),
             covers: Arc::new(OnceLock::new()),
         }
@@ -106,26 +111,55 @@ impl LanService {
             // The old port is taken by something else: take any free one.
             Err(_) => TcpListener::bind(("0.0.0.0", 0)).await?,
         };
-        let state = ServerState {
-            database: self.database.clone(),
-            pairing: self.pairing.clone(),
-            arrival: self.arrival.clone(),
-            covers: self.covers.clone(),
-            fingerprint: self.identity()?.fingerprint().to_owned(),
-        };
-        let running = server::start(listener, self.identity()?.server_config()?, state)?;
+        let running = server::start(listener, self.identity()?.server_config()?, self.state()?)?;
         let port = running.address.port();
         store_port(&*self.database.lock()?, port)?;
         *server = Some(running);
         Ok(port)
     }
 
+    fn state(&self) -> Result<ServerState> {
+        Ok(ServerState {
+            database: self.database.clone(),
+            pairing: self.pairing.clone(),
+            arrival: self.arrival.clone(),
+            covers: self.covers.clone(),
+            fingerprint: self.identity()?.fingerprint().to_owned(),
+        })
+    }
+
+    /// Listens on the pairing port too while the window is open, so a device nearby finds this one (D88). Taken by
+    /// something else, it is simply not there: the QR and the code still work.
+    async fn listen_for_pairing(&self, port: u16) -> Result<()> {
+        if port == PAIRING_PORT {
+            return Ok(());
+        }
+        let already = self
+            .pairing_listener
+            .lock()
+            .map_err(|_| Error::LockPoisoned)?
+            .is_some();
+        if already {
+            return Ok(());
+        }
+        if let Ok(listener) = TcpListener::bind(("0.0.0.0", PAIRING_PORT)).await {
+            let running =
+                server::start(listener, self.identity()?.server_config()?, self.state()?)?;
+            *self
+                .pairing_listener
+                .lock()
+                .map_err(|_| Error::LockPoisoned)? = Some(running);
+        }
+        Ok(())
+    }
+
     pub async fn open_pairing(&self, libraries: Vec<String>) -> Result<PairingInfo> {
         crate::people::ensure_may_share(&*self.database.lock()?, &libraries)?;
         let port = self.ensure_serving().await?;
-        let token = random_secret();
-        *self.pairing.lock().map_err(|_| Error::LockPoisoned)? =
-            Some(PairingWindow::open(token.clone(), libraries));
+        self.listen_for_pairing(port).await?;
+        let window = PairingWindow::open(random_secret(), libraries);
+        let (token, pin) = (window.token.clone(), window.pin.clone());
+        *self.pairing.lock().map_err(|_| Error::LockPoisoned)? = Some(window);
         let conn = self.database.lock()?;
         let addresses = local_addresses(port);
         if addresses.is_empty() {
@@ -140,12 +174,17 @@ impl LanService {
         };
         Ok(PairingInfo {
             code: code.encode(),
+            pin,
             expires_in_seconds: PAIRING_WINDOW.as_secs(),
         })
     }
 
     pub fn close_pairing(&self) -> Result<()> {
         *self.pairing.lock().map_err(|_| Error::LockPoisoned)? = None;
+        *self
+            .pairing_listener
+            .lock()
+            .map_err(|_| Error::LockPoisoned)? = None;
         Ok(())
     }
 

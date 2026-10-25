@@ -185,6 +185,8 @@ pub fn run() {
             commands::open_pairing,
             commands::close_pairing,
             commands::pair_with,
+            commands::find_pairing_devices,
+            commands::pair_with_pin,
             commands::sync_with,
             commands::forget_device,
             commands::check_isbn,

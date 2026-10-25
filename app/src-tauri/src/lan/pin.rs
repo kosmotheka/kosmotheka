@@ -46,17 +46,25 @@ pub fn showing_confirmation(key: &[u8], fingerprint: &str) -> Vec<u8> {
 
 /// What the joining device sends back: proof of the key, for this certificate and this device.
 pub fn joining_confirmation(key: &[u8], fingerprint: &str, device_id: &str) -> Vec<u8> {
-    tag(key, &[b"joining", fingerprint.as_bytes(), device_id.as_bytes()])
+    tag(
+        key,
+        &[b"joining", fingerprint.as_bytes(), device_id.as_bytes()],
+    )
 }
 
 /// Whether `given` is `expected`, compared without stopping at the first difference, so timing says nothing.
 pub fn confirms(expected: &[u8], given: &[u8]) -> bool {
     expected.len() == given.len()
-        && expected.iter().zip(given).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+        && expected
+            .iter()
+            .zip(given)
+            .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+            == 0
 }
 
 fn tag(key: &[u8], parts: &[&[u8]]) -> Vec<u8> {
-    let mut mac = <Hmac<Sha256> as KeyInit>::new_from_slice(key).expect("HMAC takes a key of any length");
+    let mut mac =
+        <Hmac<Sha256> as KeyInit>::new_from_slice(key).expect("HMAC takes a key of any length");
     for part in parts {
         mac.update(&(part.len() as u64).to_be_bytes());
         mac.update(part);

@@ -737,6 +737,30 @@ pub async fn pair_with(
     })
 }
 
+/// The devices nearby with a pairing window open, to pair by number (D88).
+#[tauri::command]
+pub async fn find_pairing_devices(
+    database: State<'_, Database>,
+) -> Result<Vec<lan::client::NearbyDevice>> {
+    let own = ops::device_id(&*database.lock()?)?;
+    Ok(lan::client::find_pairing(&own).await)
+}
+
+/// Pairs with the device at `address` with the six digits it shows (D88).
+#[tauri::command]
+pub async fn pair_with_pin(
+    database: State<'_, Database>,
+    address: String,
+    pin: String,
+    libraries: Vec<String>,
+) -> Result<Paired> {
+    let server = lan::client::pair_with_pin(&database, &address, pin.trim(), &libraries).await?;
+    Ok(Paired {
+        device_id: server.device_id,
+        name: server.name,
+    })
+}
+
 /// After the operations, the covers they point to are swapped in the background (D82): the library shows at once
 /// and its covers follow. `covers-arrived` tells the UI to show the ones that came.
 #[tauri::command]
