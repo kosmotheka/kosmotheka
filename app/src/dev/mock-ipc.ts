@@ -660,6 +660,10 @@ const dev = (id: string, name: string, thisDevice = false, lastChange = daysAgo(
 // `?reinstalled`: whoever uses this device (Ana, or Hugo with `?reader`) installed the app four times (D81), so the
 // three earlier installs are theirs too.
 const reinstalled = params.has("reinstalled");
+// `?quota`: Google Books out of quota, to see the warning a failed catalogue leaves next to the results (D83).
+const quotaWarnings = params.has("quota")
+  ? [{ source: "google_books" as const, kind: "quota" as const }]
+  : [];
 const LAPTOP = params.has("reader") ? "Móvil de Hugo" : "sergio-PROX-AMD5";
 const earlierInstalls = reinstalled
   ? [
@@ -1170,11 +1174,30 @@ mockIPC((cmd, args) => {
     case "store_own_cover":
       return `${"0".repeat(64)}.webp`;
     case "lookup_isbn":
+      if (quotaWarnings.length > 0) {
+        const { isbn } = args as { isbn: string };
+        return {
+          isbn13: isbn,
+          found: false,
+          title: null,
+          subtitle: null,
+          authors: [],
+          publisher: null,
+          publishedYear: null,
+          language: null,
+          coverUrl: null,
+          googleBooksId: null,
+          openLibraryId: null,
+          sources: [],
+          warnings: quotaWarnings,
+          existingEditionId: null,
+        };
+      }
       throw new Error("offline");
     case "search_works": {
       const { kind, query } = args as { kind: Kind; query: string };
       if (query.trim().length < 2) return { candidates: [], warnings: [] };
-      return { candidates: mockCandidates(kind, query), warnings: [] };
+      return { candidates: mockCandidates(kind, query), warnings: quotaWarnings };
     }
     case "lookup_code": {
       const { code } = args as { code: string };

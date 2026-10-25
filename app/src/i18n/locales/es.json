@@ -378,7 +378,8 @@
     "found": "Encontrado en {{sources}}. Revisa los datos antes de guardar.",
     "notFound": "No está en los catálogos online. Puedes rellenarlo a mano.",
     "alreadyInCatalog": "Esta edición ya está en el catálogo: al guardar se añadirá otro ejemplar.",
-    "googleQuota": "Google Books ha rechazado la consulta (cuota agotada). Pon tu propia clave gratuita en Ajustes para mejores resultados.",
+    "googleQuota": "Google Books ha rechazado la consulta (cuota agotada): puede que por eso no salga. Pon tu propia clave gratuita en Proveedores de datos.",
+    "openProviders": "Abrir Proveedores de datos",
     "unreachable": "No se pudo consultar {{source}}.",
     "failed": "La búsqueda ha fallado. Revisa la conexión.",
     "sources": {

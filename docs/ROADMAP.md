@@ -81,7 +81,7 @@ Ordenado en el repaso del 24/10/2026: va después de la Fase 8, antes que los de
    - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
    - El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia está desactivada (punto propio arriba, «Foto propia de portada»).
    - Revisar en la app real los desplegables que se abrían fuera de la pantalla (se arreglaron dos).
-   - Proveedores (D83): el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
+   - Proveedores (D83): ✅ el aviso de un proveedor que falla se va antes de leerlo; debe quedarse junto al resultado, con enlace a Proveedores. *Hecho el 25/10/2026: un aviso bajo el cuadro de búsqueda de «Añadir», en «¿Lo tengo?» (donde no salía nada) y en el formulario, que se queda hasta la siguiente búsqueda y, si una clave lo arregla, lleva a Proveedores de datos.* Botón de ayuda en cada clave, con enlace a la página donde se crea. Investigar la Biblioteca Nacional de España como fuente.
    - Emparejar con QR: un enlace a Kosmotheka en Google Play junto al código, para quien aún no tiene la app instalada.
    - Exportar e importar CSV: siguen siendo solo de libros.
    - Wikidata: muchos cómics no están clasificados como cómic allí, y los juegos de mesa casi nunca tienen autor; GameUPC no da jugadores ni duración.

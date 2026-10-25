@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 
+import { type ProviderWarning, ProviderWarnings } from "@/components/provider-warnings";
 import { Cover } from "@/components/cover";
 import { useLibraries, useLibraryName } from "@/components/libraries-context";
 import { useRequests } from "@/components/requests-context";
@@ -62,6 +63,8 @@ export function CheckPage({
   const [isbn, setIsbn] = useState("");
   const [check, setCheck] = useState<IsbnCheck | null>(null);
   const [online, setOnline] = useState<LookupResult | null>(null);
+  // Why it may not have been found: a catalogue that failed (D83).
+  const [warnings, setWarnings] = useState<ProviderWarning[]>([]);
   const [lookingUp, setLookingUp] = useState(false);
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +80,7 @@ export function CheckPage({
   const recheck = useRef<string | null>(null);
 
   const reset = () => {
+    setWarnings([]);
     recheck.current = null;
     setCheck(null);
     setOnline(null);
@@ -102,6 +106,7 @@ export function CheckPage({
         setLookingUp(true);
         lookupIsbn(result.isbn13)
           .then((found) => {
+            setWarnings(found.warnings);
             if (found.found) {
               setOnline(found);
               if (!missing) setWishTitle(found.title ?? "");
@@ -352,6 +357,7 @@ export function CheckPage({
                 <Loader2 className="size-4 animate-spin" /> {t("check.lookingUp")}
               </p>
             )}
+            {!online && <ProviderWarnings warnings={warnings} />}
             {offline && (
               <p className="flex gap-2.5 text-[13px] leading-snug">
                 <WifiOff className="mt-px size-[18px] shrink-0 text-muted-foreground" />

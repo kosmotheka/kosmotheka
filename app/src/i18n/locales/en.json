@@ -364,7 +364,8 @@
     "found": "Found in {{sources}}. Check the data before saving.",
     "notFound": "Not found in the online catalogues. You can fill it in by hand.",
     "alreadyInCatalog": "This edition is already in the catalog: saving will add another copy.",
-    "googleQuota": "Google Books refused the request (quota exhausted). Add your own free API key in Settings for better results.",
+    "googleQuota": "Google Books refused the request (quota exhausted): that may be why it is missing. Add your own free key in Data providers.",
+    "openProviders": "Open Data providers",
     "unreachable": "Could not reach {{source}}.",
     "failed": "The search failed. Check your connection.",
     "sources": {

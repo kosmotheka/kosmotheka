@@ -21,6 +21,7 @@ import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { useDesktop } from "@/components/shell/use-desktop";
 import { Button } from "@/components/ui/button";
+import { ProviderWarnings } from "@/components/provider-warnings";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -1334,9 +1335,6 @@ function LookupStatus({ lookup, currentEditionId }: { lookup: Lookup; currentEdi
   if (error) return <p className="text-sm text-destructive">{t(error)}</p>;
   if (!result) return null;
 
-  const quota = result.warnings.some((w) => w.source === "google_books" && w.kind === "quota");
-  const badKey = result.warnings.filter((w) => w.kind === "bad_key");
-  const unreachable = result.warnings.filter((w) => w.kind !== "quota" && w.kind !== "bad_key");
   const alreadyHere =
     result.existingEditionId !== null && result.existingEditionId !== currentEditionId;
 
@@ -1356,17 +1354,7 @@ function LookupStatus({ lookup, currentEditionId }: { lookup: Lookup; currentEdi
           {t("lookup.alreadyInCatalog")}
         </p>
       )}
-      {quota && <p className="text-muted-foreground">{t("lookup.googleQuota")}</p>}
-      {badKey.map((w) => (
-        <p key={w.source} className="text-muted-foreground">
-          {t("lookup.badKey", { source: t(`lookup.sources.${w.source}`) })}
-        </p>
-      ))}
-      {unreachable.map((w) => (
-        <p key={w.source} className="text-muted-foreground">
-          {t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
-        </p>
-      ))}
+      <ProviderWarnings warnings={result.warnings} />
     </div>
   );
 }
