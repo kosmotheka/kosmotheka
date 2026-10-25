@@ -76,7 +76,7 @@ Ordenado en el repaso del 24/10/2026: va después de la Fase 8, antes que los de
 2. **Pulir lo que digan los testers**, un punto que no se cierra: se va cogiendo de la lista. Lo que quedó de la Fase 6, no urgente:
    - Series en escritorio: la página de una serie se abre como diálogo y no como página; reordenar es solo con números (sin arrastrar); las filas no muestran año, formato ni el aviso «necesita».
    - La ficha dice «Nº 2» de una serie en lugar de «2 de 6».
-   - Filtros: el género y la etiqueta activos se ven dos veces en la barra.
+   - ✅ Filtros: el género y la etiqueta activos se ven dos veces en la barra. *Hecho el 25/10/2026: solo en su botón, que dice cuántos hay si son varios («Etiqueta · 2»).*
    - Móvil: elegir géneros y etiquetas usa menús, no las hojas que dibujó Design.
    - Proveedores en escritorio: es un diálogo, no la página de Ajustes que dibujó Design; «Cómo buscar mejor» no tiene página de ayuda aún.
    - El formulario: el código de barras no tiene botón de escanear (solo el ISBN), y la portada propia está desactivada (punto propio arriba, «Foto propia de portada»).

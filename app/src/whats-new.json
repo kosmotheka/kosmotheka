@@ -11,6 +11,10 @@
     {
       "es": "En el móvil, para la primera carga: en «Añadir», «Foto de una balda» lee los lomos de una balda en el propio móvil, busca cada título en los catálogos y te enseña lo que encuentra para que marques qué añadir, todo de una vez. No lo lee todo, pero ahorra mucho escribir.",
       "en": "On a phone, for the first load: in Add, “Photo of a shelf” reads the spines of a shelf on the phone itself, searches each title in the catalogues and shows you what it finds so you can tick what to add, all at once. It does not read everything, but it saves a lot of typing."
+    },
+    {
+      "es": "Al filtrar el catálogo por género o por etiqueta, lo elegido ya no sale dos veces en la barra: se ve en su botón, que dice cuántos hay si eliges varios.",
+      "en": "When you filter the catalogue by genre or tag, the choice no longer shows twice in the bar: it is on its own button, which says how many if you pick several."
     }
   ],
   "0.6.0": [

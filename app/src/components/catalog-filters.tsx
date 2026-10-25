@@ -64,7 +64,8 @@ const MINE_ICONS = { ...STATUS_ICONS, none: Circle };
 /** One kind chip, plus "Todo"/"All" (`k === null`). Single choice: picking the active one clears it. */
 const KIND_CHOICES: (Kind | null)[] = [null, ...kinds];
 
-/** The kind chips, the "Filters" button and one removable chip per active filter. */
+/** The kind chips, the "Filters" button and one removable chip per active filter. Wishes, genres and tags have
+ * no removable chip: their own chip already shows what is chosen, and is where it is changed. */
 export function FilterBar({
   filter,
   onChange,
@@ -111,21 +112,6 @@ export function FilterBar({
       remove: without("myFavorites"),
     });
   }
-  for (const genre of filter.genres ?? []) {
-    chips.push({
-      key: `genre-${genre}`,
-      label: filter.kind ? genreLabel(filter.kind, genre, t) : t(`genres.${genre}`),
-      remove: () => ({ ...filter, genres: filter.genres?.filter((g) => g !== genre) }),
-    });
-  }
-  for (const tagId of filter.tags ?? []) {
-    chips.push({
-      key: `tag-${tagId}`,
-      label: allTags.find((tag) => tag.id === tagId)?.name ?? tagId,
-      remove: () => ({ ...filter, tags: filter.tags?.filter((id) => id !== tagId) }),
-    });
-  }
-
   const filtersButton = (
     <Button
       variant="outline"
@@ -267,7 +253,9 @@ function GenreFilterChip({
       ? filter.kind
         ? genreLabel(filter.kind, selected[0], t)
         : t(`genres.${selected[0]}`)
-      : t("filters.genre.chip");
+      : selected.length > 1
+        ? `${t("filters.genre.chip")} · ${selected.length}`
+        : t("filters.genre.chip");
 
   return (
     <DropdownMenu>
@@ -328,7 +316,9 @@ function TagFilterChip({
   const label =
     selected.length === 1
       ? (allTags.find((tag) => tag.id === selected[0])?.name ?? t("filters.tag.chip"))
-      : t("filters.tag.chip");
+      : selected.length > 1
+        ? `${t("filters.tag.chip")} · ${selected.length}`
+        : t("filters.tag.chip");
 
   return (
     <DropdownMenu>
