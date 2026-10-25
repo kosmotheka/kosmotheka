@@ -106,8 +106,8 @@ export function ServerServicesDialog({ blocked }: { blocked: boolean }) {
       aria-labelledby="server-services-title"
       className="fixed inset-0 z-[150] flex flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-8">
-        <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
+        <div className="flex my-auto w-full max-w-md flex-col gap-4">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-secondary">
             <Server className="size-7" />
           </span>
