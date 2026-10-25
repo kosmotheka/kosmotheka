@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The invitations of milestone 7.6.1 (D43, docs/architecture/cloud.md) and their ten hostile cases
- * (docs/plans/fase-7.md, «Casos hostiles de las invitaciones»). The cast: a family whose administrator is Laura
+ * (docs/architecture/bateria-de-acceso.md, «Casos hostiles de las invitaciones»). The cast: a family whose administrator is Laura
  * (the `family` account, with the cloud's power in the library), an editor with an account (Hugo), another
  * administrator (Marta), a new reader (Nora), and Jhonny, hostile, with an account and a library of his own.
  */

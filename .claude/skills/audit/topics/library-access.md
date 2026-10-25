@@ -26,8 +26,8 @@ code:
   - server/src/Repository/MembershipRepository.php
 context:
   - docs/architecture/cloud.md
-  - docs/plans/fase-7.md#7.2 · Detalles cerrados al aceptar D84 (03/10/2026)
-  - docs/plans/fase-7.md#Batería de acceso
+  - docs/historico/fase-7.md#7.2 · Detalles cerrados al aceptar D84 (03/10/2026)
+  - docs/architecture/bateria-de-acceso.md
   - docs/audits/amenazas.md#Acceso a las bibliotecas
 decisions: D39 D56 D57 D58 D71 D73 D76 D81 D84 D85
 max_lines: 3000

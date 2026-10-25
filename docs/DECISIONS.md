@@ -520,7 +520,7 @@ En el servidor, todo dato pertenece a una **biblioteca**, y cada usuario es miem
 
 ## D39 · Biblioteca en la nube: sincroniza con la nube y por la red local — `aceptada`
 
-> **Cerrada el 01/10/2026**, al preparar la Fase 7 ([plans/fase-7.md](plans/fase-7.md)). Sustituye a la versión de abajo («sincroniza solo con él»), que se conserva para saber de dónde viene.
+> **Cerrada el 01/10/2026**, al preparar la Fase 7 ([historico/fase-7.md](historico/fase-7.md)). Sustituye a la versión de abajo («sincroniza solo con él»), que se conserva para saber de dónde viene.
 
 **Decisión:** una biblioteca que está en la nube **sigue sincronizándose también por la red local**, con los dispositivos con los que se comparte. La app tiene que funcionar sin cobertura y entre dispositivos, como siempre. Es lo que sale de no cambiar la forma de sincronizar (decisión del maintainer del mismo día): la nube es un sitio más que tiene la biblioteca (D57), y cada sitio juzga lo que recibe con las mismas reglas (D73).
 
@@ -1451,7 +1451,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
   4. **El servidor no se fía de ningún id del cliente.** El id local de la biblioteca, los ids de operación y los ids de dispositivo que llegan en una petición se comparan, nunca se usan para buscar ni para decidir.
 - **Lo que no cambia:** la red local (D34, D71), el modo sin cuenta (D57) y el id fijo de las instalaciones que ya lo tienen (D46). Las instalaciones nuevas pueden crear su primera biblioteca con id aleatorio, como mejora, pero ya no es una medida de seguridad.
 
-**Costuras de la nueva clave, cada una con su test del caso hostil** (lista completa en [plans/fase-7.md](plans/fase-7.md), «Batería de acceso»):
+**Costuras de la nueva clave, cada una con su test del caso hostil** (lista completa en la [batería de acceso](architecture/bateria-de-acceso.md)):
 1. Ids de operación únicos **dentro de cada biblioteca de la nube** (`(cloud_library_id, operation_id)`), nunca en toda la nube: si no, Jhonny sube antes operaciones con tus ids y las tuyas se descartan como «ya conocidas». También lo necesitan dos administradores que suben la misma biblioteca a la vez.
 2. Las peticiones de sincronización dicen `C`, no el id local; el servidor no traduce uno en otro.
 3. Cada `C` queda atada al id local de su operación de enlace; el servidor rechaza en `C` operaciones de otra biblioteca.
@@ -1574,7 +1574,7 @@ Un ejemplo para medir cualquier diseño: **Jhonny, en Nueva York, no conoce de n
 5. **Quién inicia:** cualquiera de los dos; escucha quien tenga la app abierta, como hoy.
 6. **Con el QR:** el QR sigue siendo la puerta de la primera vez, y el código corto es la otra forma de esa primera vez: **comparar un número de 6 cifras en las dos pantallas**, como con Bluetooth. El QR se queda.
 
-Antes de programarla: los casos hostiles de la [batería de acceso](plans/fase-7.md), vistos fallar antes del arreglo. mDNS pide permisos nuevos en Android y en la snap.
+Antes de programarla: los casos hostiles de la [batería de acceso](architecture/bateria-de-acceso.md), vistos fallar antes del arreglo. mDNS pide permisos nuevos en Android y en la snap.
 
 **Consecuencias:** cambia D13 y la sincronización local de [architecture/sync.md](architecture/sync.md). Hasta entonces, lo mitiga la sincronización cada 5 minutos con la app en primer plano y el reenvío de lo que llega por la red local (hito 7.3). Se programa en el punto 5 de «Tras el lanzamiento» del [ROADMAP](ROADMAP.md), «Emparejar más fácil».
 
@@ -1715,7 +1715,7 @@ Lo que se sabe que cambia: la tabla guardaba las versiones de las filas borradas
 **Consecuencias:**
 - Precisa [D41](#d41--filas-del-catálogo-en-el-servidor-clave-library_id-id--aceptada-precisada-por-d92): la pareja `(biblioteca, id)` sigue siendo única, pero no es la clave primaria ni va en las claves foráneas.
 - Encaja con D84: el servidor decide con sus propias claves, nunca con un id del cliente.
-- Se rehace la migración de 7.4.3 (nadie usa esas tablas) y cambia el plan de 7.4.4: ver [plans/fase-7.md](plans/fase-7.md) y el encargo en [historico/encargo-7.4-catalogo-orm.md](historico/encargo-7.4-catalogo-orm.md).
+- Se rehace la migración de 7.4.3 (nadie usa esas tablas) y cambia el plan de 7.4.4: ver [historico/fase-7.md](historico/fase-7.md) y el encargo en [historico/encargo-7.4-catalogo-orm.md](historico/encargo-7.4-catalogo-orm.md).
 - Los `CHECK` de `role`, `status` y `rating` no se llevan a las tablas nuevas: son reglas de `spec/` y una operación que las incumple no pasa la validación. Confirmado por el maintainer el 08/10/2026, igual que el nombre `key`.
 - La prueba de carga con una biblioteca grande inventada pasa a ser un test del servidor, que se repite antes de dar 7.4 por hecho.
 - `server/AGENTS.md` deja de decir «DBAL para las tablas del catálogo».
@@ -1798,7 +1798,7 @@ Aceptada el 10/10/2026, al preparar 7.5. Concreta D76 y cierra el diseño de la 
 - **Identidad en la nube: id y clave.** Cuando la nube enlaza una cuenta con una persona porque un dispositivo suyo «ya es de esa persona» (D76), compara el id del dispositivo **y** su clave con los que esa biblioteca tiene registrados. Un id solo no da nada. Va en 7.5.2, con su test hostil antes que el código.
 - **Se acepta por ahora que un miembro estorbe a otro** (SEG-019, segunda parte): quien ya tiene acceso a una biblioteca de la nube puede, con la app modificada, registrar antes que nadie el id de un dispositivo ajeno con una clave suya, u ocupar el id de una operación aún no subida. No gana acceso ni datos: deja fuera de la nube al dispositivo de verdad. Lo hace alguien de dentro, un administrador puede echarlo, y la red local sigue funcionando. No tiene arreglo solo en el servidor (quien sube el registro de un dispositivo sin cuenta es indistinguible de quien lo falsifica) y existe igual en la red local. **Se retoma con D88** («emparejar una vez»), que también toca cómo se reconocen los dispositivos.
 
-**Corrección del 10/10/2026, pendiente de decidir con el maintainer.** La frase «no gana acceso ni datos» deja de ser cierta en cuanto exista el enlace automático de D76. Un lector con acceso a la biblioteca de la nube registra allí, antes que nadie, el id del dispositivo nuevo de una administradora con una clave suya. La administradora dice después, desde su dispositivo, «ese id es de Laura» (ella se refiere al dispositivo de verdad). En la nube, ese id tiene la clave del lector: si el lector inicia sesión con un dispositivo de ese id y esa clave, comparar id y clave **no basta**, porque la clave registrada en la nube es la suya. Quedaría enlazado como Laura, y con el poder de la nube un dispositivo nuevo suyo recibiría el rol de Laura en todos los dispositivos de la familia. El diseño que lo evita está en `docs/plans/fase-7.md` («7.5.2b, diseño abierto»): que quien dice de quién es un dispositivo nombre también su clave. Hasta decidirlo, **7.5.2 no construye el enlace automático**.
+**Corrección del 10/10/2026, pendiente de decidir con el maintainer.** La frase «no gana acceso ni datos» deja de ser cierta en cuanto exista el enlace automático de D76. Un lector con acceso a la biblioteca de la nube registra allí, antes que nadie, el id del dispositivo nuevo de una administradora con una clave suya. La administradora dice después, desde su dispositivo, «ese id es de Laura» (ella se refiere al dispositivo de verdad). En la nube, ese id tiene la clave del lector: si el lector inicia sesión con un dispositivo de ese id y esa clave, comparar id y clave **no basta**, porque la clave registrada en la nube es la suya. Quedaría enlazado como Laura, y con el poder de la nube un dispositivo nuevo suyo recibiría el rol de Laura en todos los dispositivos de la familia. El diseño que lo evita está en `docs/historico/fase-7.md` («7.5.2b, diseño abierto»): que quien dice de quién es un dispositivo nombre también su clave. Hasta decidirlo, **7.5.2 no construye el enlace automático**.
 
 **Lo que concede la clave de la nube, dicho claro.** Quien la tenga puede decir que un dispositivo de nadie es de una persona con cuenta, también de una administradora. Es el poder que D76 da a la nube, y por eso es una casilla que se puede quitar: quien no se fíe de su servidor la desmarca y vincula cada dispositivo a mano.
 

@@ -1,6 +1,6 @@
 # Guía de lectura para revisar el servidor de la nube
 
-> Para el maintainer, que se comprometió a revisar el código del servidor de 7.2 **todo junto** antes de abrir la nube ([plan de la Fase 7](../plans/fase-7.md)). Escrita el 11/10/2026 por la sesión coordinadora. **No es una revisión: es una ruta.** Dice por dónde entrar, qué mirar en cada fichero y qué preguntarle, para no tener que orientarse en un código que no escribió. Lo que se encuentre se apunta y se decide después, como en una auditoría.
+> Para el maintainer, que se comprometió a revisar el código del servidor de 7.2 **todo junto** antes de abrir la nube ([plan de la Fase 7](../historico/fase-7.md)). Escrita el 11/10/2026 por la sesión coordinadora. **No es una revisión: es una ruta.** Dice por dónde entrar, qué mirar en cada fichero y qué preguntarle, para no tener que orientarse en un código que no escribió. Lo que se encuentre se apunta y se decide después, como en una auditoría.
 
 ## Antes de leer: verlo funcionar (20 minutos)
 

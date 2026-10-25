@@ -28,7 +28,7 @@ Parte de lo que sí sale en esas fotos se reconoce más por el diseño del lomo 
 
 - **La foto es de un tramo, no del mueble.** Entre 15 y 20 lomos por foto. La pantalla tiene que pedirlo así.
 - **Del lomo sale el título, y a veces la editorial y la autoría; nunca el ISBN.** Después hay que buscar cada título en los proveedores y elegir la edición. Es una carga asistida, con la cola de revisión de D19: foto, lista de títulos leídos, la persona confirma y elige candidato.
-- **Encaja con elegir varios resultados de una búsqueda a la vez**, idea apuntada en `docs/plans/fase-7.md`.
+- **Encaja con elegir varios resultados de una búsqueda a la vez**, idea apuntada en el [ROADMAP](../ROADMAP.md) («Ideas para el futuro»).
 - **Depende mucho de la colección.** La novela se encontrará casi toda en Google Books o la BNE. Los juegos de rol, módulos y revistas apenas están en esos catálogos: muchos se quedarían con el título leído y poco más.
 - **Con un modelo grande, la foto sale del dispositivo** y cada foto cuesta dinero. Sigue siendo lo que dice D19: opcional, con clave propia o la del servidor (D18, D20).
 

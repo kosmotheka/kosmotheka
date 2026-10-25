@@ -10,7 +10,7 @@
 |---|---|
 | [ROADMAP.md](ROADMAP.md) | El plan: fases, qué se construye y cuándo está hecho |
 | [DECISIONS.md](DECISIONS.md) | Registro de decisiones: contexto, opciones, decisión y estado |
-| [plans/](plans/) | El plan de la fase en curso: [Fase 7](plans/fase-7.md). Y el [índice de la documentación pública](plans/documentacion-publica.md) |
+| [plans/](plans/) | El plan de la fase en curso: [Fase 8](plans/fase-8.md). Y el [índice de la documentación pública](plans/documentacion-publica.md) |
 | [architecture/](architecture/) | Cómo está construido: [modelo de datos](architecture/data-model.md), [operaciones](architecture/operations.md), [sincronización](architecture/sync.md) |
 | [design/](design/) | [Brief de diseño](design/brief.md), [catálogo de errores](design/errors.md) y [pantallas de Claude Design](design/screens/README.md) |
 | [development/](development/) | Entorno de desarrollo: [app](development/setup.md), [servidor](development/server.md) y [servicios externos que hay que configurar](development/servicios-externos.md) |

@@ -1,6 +1,6 @@
 # Pruebas manuales de la Fase 7
 
-> Mismo formato que `hito-1.md`: pasos, resultado esperado, `[x]` al pasar. Lo que protege los datos tiene tests automáticos y hostiles (la «Batería de acceso» de `docs/plans/fase-7.md`: Jhonny en PHP, la nube de prueba y los dispositivos simulados en Rust). Aquí va lo que se comprueba con la app delante, contra el servidor de desarrollo.
+> Mismo formato que `hito-1.md`: pasos, resultado esperado, `[x]` al pasar. Lo que protege los datos tiene tests automáticos y hostiles (la [batería de acceso](../architecture/bateria-de-acceso.md): Jhonny en PHP, la nube de prueba y los dispositivos simulados en Rust). Aquí va lo que se comprueba con la app delante, contra el servidor de desarrollo.
 
 ## Antes de empezar
 

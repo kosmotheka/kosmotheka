@@ -22,7 +22,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * The cloud routes of milestone 7.2 (docs/architecture/cloud.md) and the
- * «Nube» battery of docs/plans/fase-7.md. Every hostile case has the same
+ * «Nube» battery of docs/architecture/bateria-de-acceso.md. Every hostile case has the same
  * cast: a family, and Jhonny, who is hostile, has an account of his own and
  * knows the family's library, operation and device ids (D84).
  */

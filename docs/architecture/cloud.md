@@ -516,7 +516,7 @@ Las cifras de las rutas de la nube las decidió el maintainer el 15/10/2026: son
 
 ### Qué test cubre cada caso hostil
 
-`tests/Controller/InvitationControllerTest.php` (el reparto y qué se vio fallar, en el informe del hito). Los diez casos de [`docs/plans/fase-7.md`](../plans/fase-7.md), sección 7.6:
+`tests/Controller/InvitationControllerTest.php` (el reparto y qué se vio fallar, en el informe del hito). Los diez casos de la [batería de acceso](bateria-de-acceso.md):
 
 | Caso | Tests |
 |---|---|
@@ -806,7 +806,7 @@ Los juegos de mesa solo se buscaban en Wikidata (y por código de barras en Game
 
 **La respuesta.** `candidates`, ocho como mucho, cada uno con `external_id`, `title`, `year`, `cover_url`, `publisher`, `designers`, `artists`, `players_min`, `players_max`, `duration_minutes`, `min_age` y `expands` (`{external_id, title}` del juego base si es una expansión, o `null`). Las portadas solo de `cf.geekdo-images.com`, sin `..`, sin `%`, sin otra dirección dentro y con extensión de imagen; el servidor las valida y la app otra vez.
 
-**En la app.** `Source::BoardGameGeek` (para `Boardgame`, primero, junto a Wikidata) y `Source::RpgGeek` (solo en la búsqueda de **libros por título**, nunca por ISBN, **al final** de la lista, apagable en Proveedores; lo que sale es un libro). Sin clave propia: solo con sesión y en un servidor que ofrezca `bgg`; sin eso no sale ninguna petición. Diseñadores → `Designer` (en rol, autores del libro), ilustradores → `Illustrator`, editorial → `publisher`, jugadores, duración y edad a su sitio. El candidato guarda el juego base de una expansión (`expands`), pero **nada crea todavía la relación «necesita»** (D61): hace falta que el juego base exista ya como obra en la biblioteca y el candidato aún no sabe emparejarlo (pendiente, ver [fase-7.md](../plans/fase-7.md)). El lector de la app es el segundo lector y sigue la misma regla: descarta, no corta (`metadata/bgg.rs`).
+**En la app.** `Source::BoardGameGeek` (para `Boardgame`, primero, junto a Wikidata) y `Source::RpgGeek` (solo en la búsqueda de **libros por título**, nunca por ISBN, **al final** de la lista, apagable en Proveedores; lo que sale es un libro). Sin clave propia: solo con sesión y en un servidor que ofrezca `bgg`; sin eso no sale ninguna petición. Diseñadores → `Designer` (en rol, autores del libro), ilustradores → `Illustrator`, editorial → `publisher`, jugadores, duración y edad a su sitio. El candidato guarda el juego base de una expansión (`expands`), pero **nada crea todavía la relación «necesita»** (D61): hace falta que el juego base exista ya como obra en la biblioteca y el candidato aún no sabe emparejarlo (pendiente, ver [fase-7.md](../historico/fase-7.md)). El lector de la app es el segundo lector y sigue la misma regla: descarta, no corta (`metadata/bgg.rs`).
 
 **Atribución.** En «Créditos» de Proveedores y en la pantalla de resultados (cuando sale algún resultado de BoardGameGeek o de RPGGeek): el logo «Powered by BGG» enlazado a `boardgamegeek.com` y la frase «Datos de BoardGameGeek»; en Créditos, además, que la aplicación no tiene relación con BoardGameGeek. El logo son los dos SVG en color que da BoardGameGeek, sin tocar (`app/src/assets/powered-by-bgg.svg` para el tema claro, `powered-by-bgg-reversed.svg` para el oscuro; origen en `THIRD-PARTY-NOTICES.md`). Nada en la ficha guardada, como con RAWG (decidido por el maintainer, 17/10/2026).
 

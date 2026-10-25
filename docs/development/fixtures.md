@@ -1,6 +1,6 @@
 # Fixtures del servidor: cada caso normal y cada costura, en la base de datos
 
-> Los escenarios del hito 7.2 (la nube, D84) cargados en la base de **desarrollo** de PostgreSQL para abrirla en un cliente (DBeaver, DataGrip, `psql`…) y ver con los ojos qué guarda el servidor y qué no. Los mismos escenarios corren en los tests (`server/tests/DataFixtures/ScenarioFixturesTest.php`), así que lo que lees aquí está comprobado. Contexto: [la nube](../architecture/cloud.md), [las cuentas](../architecture/accounts.md), D84 en [DECISIONS.md](../DECISIONS.md) y la «Batería de acceso» de [fase-7.md](../plans/fase-7.md).
+> Los escenarios del hito 7.2 (la nube, D84) cargados en la base de **desarrollo** de PostgreSQL para abrirla en un cliente (DBeaver, DataGrip, `psql`…) y ver con los ojos qué guarda el servidor y qué no. Los mismos escenarios corren en los tests (`server/tests/DataFixtures/ScenarioFixturesTest.php`), así que lo que lees aquí está comprobado. Contexto: [la nube](../architecture/cloud.md), [las cuentas](../architecture/accounts.md), D84 en [DECISIONS.md](../DECISIONS.md) y la [batería de acceso](../architecture/bateria-de-acceso.md).
 
 ## Cargar y conectar
 
