@@ -19,8 +19,8 @@ Responsable: Sergio Rebollo, España, que mantiene Kosmotheka como proyecto pers
 - Tu catálogo, las personas de cada biblioteca y los nombres de tus dispositivos se guardan **solo en tu dispositivo**.
 - Si emparejas dos dispositivos con un código QR, se sincronizan directamente entre ellos por tu red local, cifrados. No pasa nada por un servidor nuestro.
 - Para rellenar los datos de una obra, la app puede consultar catálogos públicos (Biblioteca Nacional de España, Library of Congress (Estados Unidos), Open Library, Inventaire, Wikidata, MusicBrainz y Cover Art Archive, y Google Books o GameUPC si pones tu propia clave). Solo se envía lo que buscas: un ISBN, un código de barras o un título. Como en cualquier conexión a internet, cada servicio ve además desde qué dirección IP le preguntas y el nombre y la versión de la app; lo mismo al descargar las portadas, que vienen de esos servicios.
-- El escáner de códigos de barras usa **ML Kit**, de Google, a través de los servicios de Google Play del móvil. Se rige por sus términos ([ML Kit](https://developers.google.com/ml-kit/terms)). Para medir y mejorar su funcionamiento, ML Kit envía a Google datos técnicos de uso (el modelo del dispositivo, la versión del sistema y de la app, los tiempos y los errores del escáner), sin las imágenes. Nosotros no recibimos nada de esto.
-- La cámara se usa solo para leer códigos de barras, cuando tú lo pides. Las imágenes no se guardan ni se envían.
+- El escáner de códigos de barras y la lectura del número impreso usan **ML Kit**, de Google, a través de los servicios de Google Play del móvil. Se rige por sus términos ([ML Kit](https://developers.google.com/ml-kit/terms)). Para medir y mejorar su funcionamiento, ML Kit envía a Google datos técnicos de uso (el modelo del dispositivo, la versión del sistema y de la app, los tiempos y los errores del escáner), sin las imágenes. Nosotros no recibimos nada de esto.
+- La cámara se usa solo cuando tú lo pides: para leer códigos de barras y, con «Foto del número», para leer el ISBN impreso en una foto. Las dos cosas se hacen en tu dispositivo: las imágenes no se guardan ni se envían.
 
 ## Si creas una cuenta
 

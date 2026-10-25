@@ -36,7 +36,7 @@ Para rellenar los datos de una obra, la aplicación puede consultar catálogos p
 
 ## Cámara
 
-La cámara se usa solo para leer códigos de barras cuando tú lo pides. Las imágenes se procesan en el dispositivo y no se guardan ni se envían.
+La cámara se usa solo cuando tú lo pides: para leer códigos de barras y, con «Foto del número», para leer el ISBN impreso en una foto. Las imágenes se procesan en el dispositivo y no se guardan ni se envían.
 
 ## Copias de seguridad y exportaciones
 
