@@ -711,6 +711,7 @@
         "title": "Buscar los datos de un libro",
         "steps": [
           "Pulsa «Añadir» y escribe el título o el número del código de barras (ISBN), o escanéalo con el botón de la cámara. Los resultados salen solos mientras escribes.",
+          "Si el código de barras es una etiqueta de la tienda, en la cámara pulsa «Foto del número» y haz una foto del ISBN impreso: la app lo lee en el móvil. Solo en Android.",
           "Los datos llegan de catálogos públicos, como la Biblioteca Nacional de España, Open Library o Wikidata. Revísalos antes de guardar.",
           "Sin conexión, pulsa «Añadir a mano» y complétalo después.",
           "Algunos catálogos, como Google Books, piden una clave propia: se pone en «Ajustes», «Proveedores de datos»."

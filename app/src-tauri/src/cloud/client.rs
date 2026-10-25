@@ -67,6 +67,13 @@ pub struct HttpCloud {
 }
 
 impl HttpCloud {
+    /// The search services this server offers its accounts, from one `GET /v1/server`.
+    pub async fn offered_metadata(&self) -> Result<Vec<String>> {
+        Ok(account::client::server_info(&self.client, &self.base)
+            .await?
+            .metadata)
+    }
+
     /// Fails with `not_signed_in` when this device has no account session.
     pub fn connect(database: &Database) -> Result<Self> {
         let (base, device_id, token) =
@@ -317,9 +324,9 @@ impl CloudApi for HttpCloud {
     }
 
     async fn offers_metadata(&self, provider: &str) -> Result<bool> {
-        Ok(account::client::server_info(&self.client, &self.base)
+        Ok(self
+            .offered_metadata()
             .await?
-            .metadata
             .iter()
             .any(|offered| offered == provider))
     }
@@ -927,6 +934,16 @@ mod tests {
         assert!(offering.offers_metadata("google_books").await.unwrap());
         assert!(!other.offers_metadata("google_books").await.unwrap());
         assert!(!none.offers_metadata("google_books").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn the_whole_list_of_offers_comes_in_one_answer() {
+        let (api, _) = book_server("ok", json!(["google_books", "tmdb", "gameupc"])).await;
+
+        assert_eq!(
+            api.offered_metadata().await.unwrap(),
+            ["google_books", "tmdb", "gameupc"]
+        );
     }
 
     #[tokio::test]

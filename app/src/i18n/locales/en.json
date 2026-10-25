@@ -697,6 +697,7 @@
         "title": "Look up a book's details",
         "steps": [
           "Tap \"Add\" and type the title or the barcode number (ISBN), or scan it with the camera button. Results appear as you type.",
+          "If the barcode is a shop label, tap “Photo of the number” in the camera and take a photo of the printed ISBN: the app reads it on the phone. Android only.",
           "The details come from public catalogues, such as Spain's National Library, Open Library or Wikidata. Check them before saving.",
           "Offline, tap \"Add manually\" and complete it later.",
           "Some catalogues, such as Google Books, need your own key: set it in \"Settings\", \"Data providers\"."

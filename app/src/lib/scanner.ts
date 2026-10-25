@@ -60,6 +60,16 @@ export async function photoInstead() {
   await cancelScan();
 }
 
+/** Set when that photo had more than one ISBN: the person picks theirs. */
+let isbnChoices: string[] | null = null;
+
+/** Once after a photo of the printed number had several ISBNs (another edition's, the ebook's): which one. */
+export function readIsbnChoices(): string[] | null {
+  const choices = isbnChoices;
+  isbnChoices = null;
+  return choices;
+}
+
 /** True once after a photo of the printed number gave no ISBN: the caller offers to type it. */
 export function readNoIsbnInPhoto(): boolean {
   const was = noIsbnInPhoto;
@@ -75,6 +85,10 @@ async function orFromPhoto(code: string | null): Promise<string | null> {
   const found = await isbnsInPhoto(taking);
   if (found === null) return null;
   if (found.length === 0) noIsbnInPhoto = true;
+  if (found.length > 1) {
+    isbnChoices = found;
+    return null;
+  }
   return found[0] ?? null;
 }
 
@@ -158,6 +172,7 @@ export async function scanIsbn(): Promise<string | null> {
   notIsbn = false;
   photo = null;
   noIsbnInPhoto = false;
+  isbnChoices = null;
   const code = await orFromPhoto(await scan((scanner) => [scanner.Format.EAN13], "barcode"));
   if (code === null || /^97[89]/.test(code)) return code;
   notIsbn = true;
@@ -179,6 +194,7 @@ export function readNotIsbn(): boolean {
 export async function scanCode(): Promise<string | null> {
   photo = null;
   noIsbnInPhoto = false;
+  isbnChoices = null;
   return orFromPhoto(
     await scan(
       (scanner) => [

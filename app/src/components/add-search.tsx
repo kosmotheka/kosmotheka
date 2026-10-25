@@ -23,7 +23,14 @@ import {
   searchWorks,
 } from "@/lib/api";
 import { KIND_FORMATS, KIND_ICONS } from "@/lib/kinds";
-import { CameraDenied, readNoIsbnInPhoto, scanCode, wantsToType } from "@/lib/scanner";
+import { IsbnChoice } from "@/components/isbn-choice";
+import {
+  CameraDenied,
+  readIsbnChoices,
+  readNoIsbnInPhoto,
+  scanCode,
+  wantsToType,
+} from "@/lib/scanner";
 import { openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -182,6 +189,7 @@ export function AddSearch({
   );
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isbnChoices, setIsbnChoices] = useState<string[] | null>(null);
   const requestId = useRef(0);
   const queryRef = useRef<HTMLInputElement>(null);
 
@@ -252,8 +260,11 @@ export function AddSearch({
     if (!desktop) {
       setScanning(true);
       try {
+        setIsbnChoices(null);
         const code = await scanCode();
+        const choices = readIsbnChoices();
         if (code) setQuery(code);
+        else if (choices) setIsbnChoices(choices);
         else if (readNoIsbnInPhoto()) {
           setScanError(t("scanner.noIsbnInPhoto"));
           queryRef.current?.focus();
@@ -587,7 +598,17 @@ export function AddSearch({
   );
 
   // Right under the field: a failed photo of the number asks to type it there.
-  const scanNote = scanError && <p className="rounded-[14px] border p-3 text-sm">{scanError}</p>;
+  const scanNote = isbnChoices ? (
+    <IsbnChoice
+      isbns={isbnChoices}
+      onPick={(isbn) => {
+        setIsbnChoices(null);
+        setQuery(isbn);
+      }}
+    />
+  ) : (
+    scanError && <p className="rounded-[14px] border p-3 text-sm">{scanError}</p>
+  );
 
   const footerHint = desktop && (
     <span className="flex-1 text-[13px] text-muted-foreground">

@@ -18,7 +18,7 @@ use crate::cloud::invitations::{
     self, Accepted, InvitationItem, InviteRequest, InviteResult, InviteStatus, OpenedInvitation,
     PendingInvitation,
 };
-use crate::cloud::{self, CloudApi, LibraryCloudStatus, LibraryReport, client::HttpCloud};
+use crate::cloud::{self, LibraryCloudStatus, LibraryReport, client::HttpCloud};
 use crate::covers::Covers;
 use crate::csv_io::{self, CsvImportSummary};
 use crate::db::Database;
@@ -235,13 +235,13 @@ pub async fn cloud_metadata_offers(database: State<'_, Database>) -> Result<Vec<
     let Ok(cloud) = HttpCloud::connect(&database) else {
         return Ok(Vec::new());
     };
-    let mut offered = Vec::new();
-    for provider in [GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE, BGG, GAMEUPC] {
-        if cloud.offers_metadata(provider).await.unwrap_or(false) {
-            offered.push(provider.to_owned());
-        }
-    }
-    Ok(offered)
+    // One request: the server lists them all. Only those this app knows are kept, in its order.
+    let listed = cloud.offered_metadata().await.unwrap_or_default();
+    Ok([GOOGLE_BOOKS, TMDB, RAWG, COMIC_VINE, BGG, GAMEUPC]
+        .into_iter()
+        .filter(|provider| listed.iter().any(|offered| offered == provider))
+        .map(str::to_owned)
+        .collect())
 }
 
 /// The search services the server of the session asks for its accounts, and those this device has not been told

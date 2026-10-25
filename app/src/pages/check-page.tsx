@@ -29,7 +29,15 @@ import {
   requestMissing,
 } from "@/lib/api";
 import { leaveSection, openOverlay } from "@/lib/navigation";
-import { CameraDenied, readNoIsbnInPhoto, readNotIsbn, scanIsbn, wantsToType } from "@/lib/scanner";
+import { IsbnChoice } from "@/components/isbn-choice";
+import {
+  CameraDenied,
+  readIsbnChoices,
+  readNoIsbnInPhoto,
+  readNotIsbn,
+  scanIsbn,
+  wantsToType,
+} from "@/lib/scanner";
 
 /** "Do I have it?": answered from the local catalog, so it works offline. */
 export function CheckPage({
@@ -62,6 +70,7 @@ export function CheckPage({
   const [wished, setWished] = useState(false);
   const [notIsbn, setNotIsbn] = useState(false);
   const [noIsbnInPhoto, setNoIsbnInPhoto] = useState(false);
+  const [isbnChoices, setIsbnChoices] = useState<string[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
   // Set by "I bought it" until the next scan, so the answer is checked
   // again once the catalog changes, instead of still saying "You don't have it".
@@ -112,8 +121,11 @@ export function CheckPage({
     try {
       setNotIsbn(false);
       setNoIsbnInPhoto(false);
+      setIsbnChoices(null);
       const scanned = await scanIsbn();
+      const choices = readIsbnChoices();
       if (scanned) await run(scanned);
+      else if (choices) setIsbnChoices(choices);
       else if (readNotIsbn()) {
         setNotIsbn(true);
         setTimeout(() => input.current?.focus(), 0);
@@ -224,7 +236,15 @@ export function CheckPage({
       <div className="flex w-full max-w-xl flex-col gap-4">
         {!check && (
           <>
-            {notIsbn || noIsbnInPhoto ? (
+            {isbnChoices ? (
+              <IsbnChoice
+                isbns={isbnChoices}
+                onPick={(isbn) => {
+                  setIsbnChoices(null);
+                  void run(isbn);
+                }}
+              />
+            ) : notIsbn || noIsbnInPhoto ? (
               <p className="rounded-[14px] border p-3 text-sm">
                 {t(notIsbn ? "scanner.notIsbn" : "scanner.noIsbnInPhoto")}
               </p>
