@@ -1,10 +1,4 @@
 {
-  "next": [
-    {
-      "es": "Emparejar sin cámara es mucho más fácil: debajo del QR sale un número de 6 cifras. En el otro dispositivo, «Escribir el número» enseña los de tu wifi que tienen el emparejamiento abierto; eliges el tuyo y escribes el número, en lugar de copiar y pegar un código larguísimo.",
-      "en": "Pairing without a camera is much easier: a 6-digit number shows under the QR. On the other device, “Type the number” lists the ones on your Wi-Fi with pairing open; pick yours and type the number, instead of copying and pasting a very long code."
-    }
-  ],
   "0.7.0": [
     {
       "es": "Fotos: en la ficha, toca la portada para poner una tuya, con una foto (en el móvil) o una imagen, o para buscarla otra vez en los catálogos después de añadir el ISBN o corregir el título. La tuya se guarda reducida y sin los datos de la foto, y llega a la nube con las demás portadas. Y para la primera carga, en el móvil, «Foto de una balda» en «Añadir» lee los lomos en el propio móvil, busca cada título en los catálogos y te deja marcar qué añadir de una vez. No lo lee todo, pero ahorra mucho escribir.",
@@ -15,8 +9,8 @@
       "en": "“Series” are now “Sagas and collections”, so they are not mixed up with TV series. They are in the menu, with the library's things, and you also reach them from the Catalog and Missing. The screen explains what they are for and shows how much of each you have, a work's page says “2 of 6” instead of “No. 2”, putting a work on a taken number moves the following ones up one, and “+ I have it” on a work you are missing goes straight to the copy to save it. On a phone, the menu is grouped as on a computer and shows your last three libraries, with “See all”."
     },
     {
-      "es": "«Invitar» también está en «Compartir y dispositivos», junto a cada biblioteca de la nube que administras. Y al emparejar, si el otro dispositivo aún no tiene la app, «¿El otro dispositivo aún no tiene la app?» cambia el código por otro que lleva a la página de descargas.",
-      "en": "“Invite” is also in Share and devices, next to each library in the cloud that you administer. And when pairing, if the other device does not have the app yet, “The other device does not have the app yet?” swaps the code for one that leads to the downloads page."
+      "es": "Emparejar sin cámara es mucho más fácil: debajo del QR sale un número de 6 cifras, y en el otro dispositivo «Escribir el número» enseña los de tu wifi con el emparejamiento abierto; eliges el tuyo y escribes el número. Si el otro aún no tiene la app, «¿El otro dispositivo aún no tiene la app?» lleva a la descarga. Y «Invitar» también está en «Compartir y dispositivos».",
+      "en": "Pairing without a camera is much easier: a 6-digit number shows under the QR, and on the other device “Type the number” lists the ones on your Wi-Fi with pairing open; pick yours and type the number. If the other one does not have the app yet, “The other device does not have the app yet?” leads to the download. And “Invite” is also in Share and devices."
     },
     {
       "es": "Si un catálogo no responde o se le ha acabado el cupo, el aviso se queda junto a los resultados, también en «¿Lo tengo?», y te lleva a Proveedores de datos cuando una clave lo arregla. Y al filtrar por género o etiqueta, lo elegido ya no sale dos veces en la barra.",
