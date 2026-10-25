@@ -1,7 +1,7 @@
 // Choosing a work's cover in its form: a photo or an image of one's own, or another one from the catalogues, searched
 // again with what the form says now (an ISBN added, a title corrected).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, Images, Loader2, Search } from "lucide-react";
 
@@ -50,9 +50,13 @@ export function CoverChooser({
   const desktop = useDesktop();
   const [found, setFound] = useState<Found[] | null>(null);
   const [searching, setSearching] = useState(false);
+  // Bumped on close: a search still running when the sheet closed does not fill it when it opens again.
+  const run = useRef(0);
 
   const close = () => {
+    run.current++;
     setFound(null);
+    setSearching(false);
     onClose();
   };
 
@@ -63,6 +67,7 @@ export function CoverChooser({
 
   // The ISBN first, the most exact; then the title (and author), as typed now.
   const search = async () => {
+    const id = ++run.current;
     setSearching(true);
     const covers: Found[] = [];
     const add = (url: string | null, workTitle: string, source: Source | null) => {
@@ -80,9 +85,9 @@ export function CoverChooser({
           add(candidate.coverUrl, candidate.title, candidate.source);
         }
       }
-      setFound(covers.slice(0, MAX_FOUND));
+      if (id === run.current) setFound(covers.slice(0, MAX_FOUND));
     } finally {
-      setSearching(false);
+      if (id === run.current) setSearching(false);
     }
   };
 
@@ -98,11 +103,11 @@ export function CoverChooser({
     >
       <div className="flex flex-col gap-2">
         {phone && (
-          <Button variant="outline" className={big} onClick={() => own(true)}>
+          <Button variant="outline" className={big} disabled={searching} onClick={() => own(true)}>
             <Camera className="size-5" /> {t("form.cover.photo")}
           </Button>
         )}
-        <Button variant="outline" className={big} onClick={() => own(false)}>
+        <Button variant="outline" className={big} disabled={searching} onClick={() => own(false)}>
           <Images className="size-5" /> {t("form.cover.image")}
         </Button>
         <Button
