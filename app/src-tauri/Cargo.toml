@@ -23,7 +23,7 @@ rusqlite_migration = "2.6.0"
 thiserror = "2.0.21"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 uuid = { version = "1.26.1", features = ["v7"] }
-kosmotheka-domain = { version = "0.5.0", path = "../../crates/domain" }
+kosmotheka-domain = { version = "0.6.0", path = "../../crates/domain" }
 tokio = { version = "1.53.1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 sha2 = "0.11.0"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

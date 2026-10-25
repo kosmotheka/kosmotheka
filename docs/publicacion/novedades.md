@@ -2,6 +2,15 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 0.6.0 (25/10/2026, para la prueba cerrada)
+
+Solo la app: el servidor no cambia. **Con ella, desplegar la web**: las páginas de privacidad dicen ya que la cámara también lee el ISBN impreso en una foto, en el móvil. En la ficha de Play, quitar «Por ahora, la nube es por invitación».
+
+**Texto para Google Play** (426 y 398 caracteres):
+
+- es-ES: Si el código de barras de un libro es una etiqueta de la tienda, pulsa «Foto del número» en el escáner: la app lee el ISBN impreso, en el propio móvil. Si reinstalas la app, te ofrece quitar de tu lista las instalaciones anteriores, y cada dispositivo dice cuándo hizo su último cambio. Al entrar con tu cuenta, una pantalla cuenta qué catálogos consulta tu servidor por ti. La Ayuda explica la nube y las personas y permisos.
+- en-US: If a book's barcode is a shop label, tap “Photo of the number” in the scanner: the app reads the printed ISBN, on the phone itself. If you reinstall the app, it offers to remove the earlier installs from your list, and each device says when it last changed anything. When you sign in, a screen tells you which catalogues your server asks for you. Help explains the cloud and people and permissions.
+
 ## 0.5.0 (24/10/2026, para la prueba cerrada)
 
 **Antes de subirla: el servidor de producción tiene que estar desplegado con este código** (la migración de `cloud_cover` y las rutas de portadas, D82). Sin él, las portadas no pasan por la nube; por la wifi de casa sí, y el resto funciona igual.
