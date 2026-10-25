@@ -651,7 +651,8 @@
     "works_one": "{{count}} obra",
     "works_other": "{{count}} obras",
     "languages": "Idioma",
-    "librarySettings": "Ajustes de la biblioteca"
+    "librarySettings": "Ajustes de la biblioteca",
+    "allLibraries": "Ver todas ({{count}})"
   },
   "sync": {
     "local": "Solo en este dispositivo",

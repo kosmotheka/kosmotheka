@@ -38,6 +38,8 @@ You will see how many things each one has. The one you are using has a check mar
 
 The gear icon on each row opens that library's "Library settings".
 
+The phone's menu shows three at most: the one you use and the last two you opened on that phone. If you have more, "See all" shows them all.
+
 ## Search all
 
 The search box has two options:

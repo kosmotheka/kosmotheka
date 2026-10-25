@@ -637,7 +637,8 @@
     "works_one": "{{count}} item",
     "works_other": "{{count}} items",
     "languages": "Language",
-    "librarySettings": "Library settings"
+    "librarySettings": "Library settings",
+    "allLibraries": "See all ({{count}})"
   },
   "sync": {
     "local": "Only on this device",

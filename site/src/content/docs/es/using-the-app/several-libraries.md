@@ -38,6 +38,8 @@ Verás cuántas cosas tiene cada una. La que estás usando lleva una marca de ve
 
 El icono de la rueda dentada de cada fila abre los «Ajustes de la biblioteca» de esa.
 
+En el menú del móvil salen como mucho tres: la que usas y las dos últimas que abriste en ese móvil. Si tienes más, «Ver todas» las enseña todas.
+
 ## Buscar en todas
 
 El cuadro de búsqueda tiene dos opciones:
