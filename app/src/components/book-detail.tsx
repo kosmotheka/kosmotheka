@@ -1,4 +1,4 @@
-import { type SubmitEvent, useCallback, useEffect, useState } from "react";
+import { type SubmitEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
@@ -97,6 +97,8 @@ interface Props {
   onNotice: (message: string) => void;
   /** A genre or tag chip: opens the catalog filtered by it (6.7). */
   onFilter: (patch: Partial<BookFilter>) => void;
+  /** Open straight on the new copy's form, if the work has no copy. */
+  addCopy?: boolean;
 }
 
 type Tab = "copies" | "details" | "history";
@@ -112,6 +114,7 @@ export function BookDetailView({
   onChanged,
   onNotice,
   onFilter,
+  addCopy = false,
 }: Props) {
   const { t } = useTranslation();
   const libraries = useLibraries();
@@ -131,15 +134,28 @@ export function BookDetailView({
   const [openNewCopy, setOpenNewCopy] = useState(false);
   const [copyFormKey, setCopyFormKey] = useState(0);
 
+  const startCopyForMissing = () => {
+    setTab("copies");
+    setOpenNewCopy(true);
+    setCopyFormKey((k) => k + 1);
+    setTimeout(() => setOpenNewCopy(false), 0);
+  };
+
+  // From a saga's «+ Lo tengo»: the new copy's form opens with the page, once per visit.
+  const addedCopyFor = useRef<string | null>(null);
   const reload = useCallback(() => {
     if (!editionId) return;
     getBook(editionId)
       .then((detail) => {
         setLoaded(detail);
         setLoadError(null);
+        if (addCopy && addedCopyFor.current !== editionId) {
+          addedCopyFor.current = editionId;
+          if (detail.copies.length === 0) startCopyForMissing();
+        }
       })
       .catch((e: unknown) => setLoadError(String(e)));
-  }, [editionId]);
+  }, [editionId, addCopy]);
 
   useEffect(reload, [reload]);
 
@@ -196,13 +212,6 @@ export function BookDetailView({
   /** «Lo tengo» / «Pedir que se añada» on a missing work (D61): straight to the copy form.
    * `openNewCopy` is read once, when `CopiesSection` mounts on the tab switch; resetting it
    * right after (outside React's render) keeps a later visit to the tab from reopening it. */
-  const startCopyForMissing = () => {
-    setTab("copies");
-    setOpenNewCopy(true);
-    setCopyFormKey((k) => k + 1);
-    setTimeout(() => setOpenNewCopy(false), 0);
-  };
-
   const removeBook = async () => {
     if (!editionId) return;
     try {
@@ -939,6 +948,12 @@ function CopiesSection({
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<CopyDetail | null>(null);
   const errors = useCommandErrors();
+  // From the missing-work CTA at the top, the form opens at the bottom of the page: bring it into view, or nothing
+  // seems to happen and the copy is never saved.
+  const editorRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (openNewCopy) editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [openNewCopy]);
 
   const start = (target: string, initial: CopyForm) => {
     errors.clear();
@@ -989,7 +1004,12 @@ function CopiesSection({
   };
 
   const editor = (
-    <form onSubmit={(e) => void save(e)} noValidate className="space-y-4 rounded-xl border p-4">
+    <form
+      ref={editorRef}
+      onSubmit={(e) => void save(e)}
+      noValidate
+      className="scroll-mt-4 space-y-4 rounded-xl border p-4"
+    >
       <CopyFields
         value={form}
         onChange={setForm}

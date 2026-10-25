@@ -544,6 +544,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
                   <main className="min-w-0 flex-1 overflow-y-auto px-6 pt-5 pb-8">{content}</main>
                   <BookDetailView
                     editionId={bookId}
+                    addCopy={overlay?.name === "book" && overlay.addCopy === true}
                     desktop
                     onClose={closeOverlay}
                     onChanged={reload}
@@ -741,6 +742,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
           {!desktop && (
             <BookDetailView
               editionId={bookId}
+              addCopy={overlay?.name === "book" && overlay.addCopy === true}
               desktop={false}
               onClose={closeOverlay}
               onChanged={reload}

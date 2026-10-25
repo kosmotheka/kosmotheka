@@ -45,7 +45,8 @@ export type Overlay =
        * position once created (D61). */
       intoSeries?: { seriesId: string; position: number };
     }
-  | { name: "book"; editionId: string }
+  /** `addCopy`: from a saga's «+ Lo tengo», the page opens with the new copy's form. */
+  | { name: "book"; editionId: string; addCopy?: boolean }
   | { name: "newLibrary" }
   | { name: "deleteLibrary" }
   | { name: "leaveLibrary" }

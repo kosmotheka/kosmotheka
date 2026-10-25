@@ -219,7 +219,15 @@ export function SeriesDetailView({
           className="flex min-w-0 flex-1 items-center gap-3.5 text-left"
         >
           <Cover file={entry.cover} alt={entry.title} kind={entry.kind} className="h-13" />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">{entry.title}</span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate text-sm font-semibold">{entry.title}</span>
+            {/* On a phone the status goes under the title, so the button beside it reads as what it is: an action. */}
+            {!owned && (
+              <span className="text-[12.5px] text-muted-foreground sm:hidden">
+                {t("series.status.missing")}
+              </span>
+            )}
+          </span>
         </button>
         <span
           className={cn(
@@ -232,8 +240,15 @@ export function SeriesDetailView({
           {t(owned ? "series.status.owned" : "series.status.missing")}
         </span>
         {!reorder && !owned && (
-          <Button variant="outline" size="sm" onClick={() => openWork(row)}>
-            {t("series.iHaveIt")}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              row.entry?.editionId &&
+              openOverlay({ name: "book", editionId: row.entry.editionId, addCopy: true })
+            }
+          >
+            <Plus /> {t("series.iHaveIt")}
           </Button>
         )}
         {reorder && (
