@@ -39,7 +39,8 @@
       "title": "Services with their own terms",
       "intro": "These are not licences you receive a copy of: they are services with terms of their own, which you accept by using the part of the app that needs them.",
       "purpose": {
-        "scanner": "Used by the barcode scanner on phones."
+        "scanner": "Used by the barcode scanner on phones.",
+        "textRecognition": "Used by “Photo of the number” to read the printed ISBN, on the phone itself."
       }
     }
   },
@@ -1142,6 +1143,7 @@
   },
   "addSearch": {
     "placeholder": "Search by title…",
+    "codePlaceholder": "ISBN or barcode…",
     "manual": "Add manually",
     "backToSearch": "Back to search",
     "cameraDenied": "No camera permission: type or paste it instead.",
@@ -2136,8 +2138,10 @@
     }
   },
   "scanner": {
-    "notIsbn": "That was a shop label, not the ISBN. Type the small number that starts with 978 or 979, or scan again aiming at its code.",
+    "notIsbn": "That was a shop label, not the ISBN. Type the small number that starts with 978 or 979, or scan again and tap “Photo of the number”.",
+    "noIsbnInPhoto": "No ISBN found in the photo. Type it, or try again with the photo closer to the number and in good light.",
     "type": "Type the number",
+    "photo": "Photo of the number",
     "close": "Close the camera",
     "barcodeHint": "Point at the barcode",
     "qrHint": "Point at the code on the other device"

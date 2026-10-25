@@ -1,6 +1,10 @@
 {
   "next": [
     {
+      "es": "En el móvil, si el código de barras de un libro es una etiqueta de la tienda, pulsa «Foto del número» en el escáner: la app lee el ISBN impreso en la foto, en el propio móvil, sin enviarla a ningún sitio. En «Añadir», «Escribir el número» saca el teclado numérico y ya no busca títulos mientras lo escribes.",
+      "en": "On a phone, if a book's barcode is a shop label, tap “Photo of the number” in the scanner: the app reads the printed ISBN in the photo, on the phone itself, without sending it anywhere. In Add, “Type the number” brings up the number keyboard and no longer searches titles while you type it."
+    },
+    {
       "es": "En «Personas y permisos», cada dispositivo dice cuándo hizo su último cambio. Si has reinstalado la app, te ofrece quitar de una vez las instalaciones anteriores, que se quedaban en tu lista para siempre.",
       "en": "In People and permissions, each device says when it last changed anything. If you reinstalled the app, it offers to remove the earlier installs at once, which used to stay in your list for good."
     },

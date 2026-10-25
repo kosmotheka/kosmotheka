@@ -21,6 +21,7 @@ mod metadata;
 pub mod ops;
 mod people;
 mod permissions;
+mod printed_isbn;
 mod requests;
 mod search;
 mod series;
@@ -64,7 +65,8 @@ pub fn run() {
     #[cfg(mobile)]
     let builder = builder
         .plugin(tauri_plugin_barcode_scanner::init())
-        .plugin(tauri_plugin_biometric::init());
+        .plugin(tauri_plugin_biometric::init())
+        .plugin(tauri_plugin_text_recognition::init());
     builder
         .setup(|app| {
             let data_dir = data_dir(app.path().app_data_dir()?)?;
@@ -186,6 +188,7 @@ pub fn run() {
             commands::forget_device,
             commands::check_isbn,
             commands::is_mobile,
+            commands::isbns_in_photo,
             commands::person_name,
             commands::begin_with_name,
             commands::set_person_name,

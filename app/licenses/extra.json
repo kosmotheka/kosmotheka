@@ -88,6 +88,21 @@
       ]
     },
     {
+      "name": "ML Kit text recognition (com.google.android.gms:play-services-mlkit-text-recognition)",
+      "version": "19.0.1",
+      "purpose": "textRecognition",
+      "links": [
+        {
+          "label": "ML Kit Terms of Service",
+          "url": "https://developers.google.com/ml-kit/terms"
+        },
+        {
+          "label": "Google APIs Terms of Service",
+          "url": "https://developers.google.com/terms"
+        }
+      ]
+    },
+    {
       "name": "Google Play services libraries (play-services-base, -basement, -tasks)",
       "version": "",
       "purpose": "scanner",

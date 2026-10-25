@@ -23,6 +23,10 @@ pub enum Error {
     Http(#[from] reqwest::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    /// Reading the text in a photo failed on the device: the image could not be opened, the model is not there yet,
+    /// or there is no text recognition here (desktop).
+    #[error("text recognition failed: {0}")]
+    TextRecognition(String),
     #[error("cover rejected: {0}")]
     CoverRejected(&'static str),
     /// The reason is a code the UI translates: not_a_backup, unreadable, other_version, not_empty,

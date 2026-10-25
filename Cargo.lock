@@ -2480,6 +2480,7 @@ dependencies = [
  "tauri-plugin-fs",
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
+ "tauri-plugin-text-recognition",
  "thiserror 2.0.21",
  "tokio",
  "tokio-rustls",
@@ -4756,6 +4757,18 @@ dependencies = [
  "tracing",
  "windows-sys 0.61.2",
  "zbus",
+]
+
+[[package]]
+name = "tauri-plugin-text-recognition"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ee65192d66a48f2164d86507dfda7c36f426ff41e065dfa0fe68c269dd19632"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

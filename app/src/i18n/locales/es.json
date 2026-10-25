@@ -39,7 +39,8 @@
       "title": "Servicios con sus propios términos",
       "intro": "No son licencias de las que recibas una copia: son servicios con términos propios, que aceptas al usar la parte de la app que los necesita.",
       "purpose": {
-        "scanner": "Los usa el escáner de códigos de barras en el móvil."
+        "scanner": "Los usa el escáner de códigos de barras en el móvil.",
+        "textRecognition": "Lo usa «Foto del número» para leer el ISBN impreso, en el propio móvil."
       }
     }
   },
@@ -1156,6 +1157,7 @@
   },
   "addSearch": {
     "placeholder": "Busca por título…",
+    "codePlaceholder": "ISBN o código de barras…",
     "manual": "Añadir a mano",
     "backToSearch": "Volver a buscar",
     "cameraDenied": "Sin permiso de cámara: escríbelo o pégalo.",
@@ -2150,8 +2152,10 @@
     }
   },
   "scanner": {
-    "notIsbn": "Eso era una etiqueta de la tienda, no el ISBN. Escribe el número pequeño que empieza por 978 o 979, o vuelve a escanear apuntando a su código.",
+    "notIsbn": "Eso era una etiqueta de la tienda, no el ISBN. Escribe el número pequeño que empieza por 978 o 979, o vuelve a escanear y pulsa «Foto del número».",
+    "noIsbnInPhoto": "No he encontrado el ISBN en la foto. Escríbelo, o vuelve a probar con la foto más cerca del número y con buena luz.",
     "type": "Escribir el número",
+    "photo": "Foto del número",
     "close": "Cerrar la cámara",
     "barcodeHint": "Apunta al código de barras",
     "qrHint": "Apunta al código del otro dispositivo"

@@ -1008,6 +1008,18 @@ pub fn move_book(database: State<'_, Database>, edition_id: String, to: String) 
     catalog::move_book(&mut conn, &from, &edition_id, &to)
 }
 
+/// The ISBNs printed in a photo, for a book whose barcode is a shop's label: the photo is read on the device with
+/// the text recognition plugin, and only what the check digit confirms comes back (`Isbn::find_in_text`). The photo
+/// comes in base64: on Android, Tauri's calls carry JSON, not raw bytes.
+#[tauri::command]
+pub async fn isbns_in_photo(app: tauri::AppHandle, photo: String) -> Result<Vec<String>> {
+    use base64::Engine;
+    let photo = base64::engine::general_purpose::STANDARD
+        .decode(photo)
+        .map_err(|_| Error::TextRecognition("the photo is not base64".into()))?;
+    crate::printed_isbn::isbns_in_photo(&app, &photo).await
+}
+
 /// The UI shows the camera scanner only where the plugin exists (D35).
 #[tauri::command]
 pub fn is_mobile() -> bool {

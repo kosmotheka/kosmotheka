@@ -1,8 +1,8 @@
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Keyboard, X } from "lucide-react";
+import { Camera, Keyboard, X } from "lucide-react";
 
-import { cancelScan, typeInstead, useScanTarget } from "@/lib/scanner";
+import { cancelScan, photoInstead, typeInstead, useScanTarget } from "@/lib/scanner";
 
 /**
  * Drawn over the camera while the barcode plugin scans windowed (see `lib/scanner.ts`).
@@ -17,7 +17,7 @@ export function ScannerOverlay() {
   return createPortal(
     <div
       id="scanner-overlay"
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center text-white"
+      className="pointer-events-auto fixed inset-0 z-[200] flex flex-col items-center justify-center text-white"
     >
       <button
         type="button"
@@ -34,13 +34,22 @@ export function ScannerOverlay() {
         {t(target === "qr" ? "scanner.qrHint" : "scanner.barcodeHint")}
       </p>
       {target === "barcode" && (
-        <button
-          type="button"
-          onClick={() => void typeInstead()}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] flex items-center gap-2 rounded-full bg-black/50 px-5 py-3 text-sm font-medium"
-        >
-          <Keyboard className="size-5" /> {t("scanner.type")}
-        </button>
+        <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] flex flex-wrap justify-center gap-2 px-4">
+          <button
+            type="button"
+            onClick={() => void photoInstead()}
+            className="flex items-center gap-2 rounded-full bg-black/50 px-5 py-3 text-sm font-medium"
+          >
+            <Camera className="size-5" /> {t("scanner.photo")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void typeInstead()}
+            className="flex items-center gap-2 rounded-full bg-black/50 px-5 py-3 text-sm font-medium"
+          >
+            <Keyboard className="size-5" /> {t("scanner.type")}
+          </button>
+        </div>
       )}
     </div>,
     document.body,

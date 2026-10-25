@@ -23,7 +23,7 @@ import {
   searchWorks,
 } from "@/lib/api";
 import { KIND_FORMATS, KIND_ICONS } from "@/lib/kinds";
-import { CameraDenied, scanCode } from "@/lib/scanner";
+import { CameraDenied, readNoIsbnInPhoto, scanCode, wantsToType } from "@/lib/scanner";
 import { openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -158,6 +158,9 @@ export function AddSearch({
   const { t, i18n } = useTranslation();
   const [kind, setKind] = useState<Kind>("book");
   const [query, setQuery] = useState("");
+  // Came from the scanner's «Type the number»: the field takes a code, with the number keyboard, and does not
+  // search titles with each part of the number.
+  const [typingCode, setTypingCode] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   type Warning = { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" };
   const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -220,7 +223,7 @@ export function AddSearch({
         setAskCode(null);
         setInvalidIsbn(false);
         setIsbnByCode(null);
-        if (trimmed.length < 2) {
+        if (trimmed.length < 2 || (typingCode && /^[\d\s-]*$/.test(trimmed))) {
           setCandidates([]);
           setWarnings([]);
         } else {
@@ -251,6 +254,14 @@ export function AddSearch({
       try {
         const code = await scanCode();
         if (code) setQuery(code);
+        else if (readNoIsbnInPhoto()) {
+          setScanError(t("scanner.noIsbnInPhoto"));
+          queryRef.current?.focus();
+        } else if (wantsToType()) {
+          setTypingCode(true);
+          setQuery("");
+          setTimeout(() => queryRef.current?.focus(), 0);
+        }
       } catch (error) {
         if (error instanceof CameraDenied) setScanError(t("addSearch.cameraDenied"));
       } finally {
@@ -401,11 +412,16 @@ export function AddSearch({
         )}
         <input
           ref={queryRef}
-          aria-label={t("addSearch.placeholder")}
-          placeholder={t("addSearch.placeholder")}
+          aria-label={t(typingCode ? "addSearch.codePlaceholder" : "addSearch.placeholder")}
+          placeholder={t(typingCode ? "addSearch.codePlaceholder" : "addSearch.placeholder")}
+          inputMode={typingCode ? "numeric" : undefined}
           className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            // Letters mean a title after all: back to searching as usual.
+            if (/[a-wyz]/i.test(e.target.value)) setTypingCode(false);
+            setQuery(e.target.value);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") void runSearch(kind, query);
           }}
@@ -567,9 +583,11 @@ export function AddSearch({
               : t("lookup.unreachable", { source: t(`lookup.sources.${w.source}`) })}
         </p>
       ))}
-      {scanError && <p className="text-destructive">{scanError}</p>}
     </div>
   );
+
+  // Right under the field: a failed photo of the number asks to type it there.
+  const scanNote = scanError && <p className="rounded-[14px] border p-3 text-sm">{scanError}</p>;
 
   const footerHint = desktop && (
     <span className="flex-1 text-[13px] text-muted-foreground">
@@ -613,6 +631,7 @@ export function AddSearch({
               {searchField}
               {kindChips}
               {limitedNotice}
+              {scanNote}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3">
               {askStep}
@@ -647,6 +666,7 @@ export function AddSearch({
           {kindChips}
           {searchField}
           {limitedNotice}
+          {scanNote}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3.5 pb-2">
           {askStep}

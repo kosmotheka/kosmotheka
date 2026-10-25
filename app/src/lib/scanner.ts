@@ -9,6 +9,8 @@
 import type { Format } from "@tauri-apps/plugin-barcode-scanner";
 import { useSyncExternalStore } from "react";
 
+import { isbnsInPhoto, takePhoto } from "@/lib/printed-isbn";
+
 export class CameraDenied extends Error {}
 
 /** What the overlay shows while the camera is open; null when it is closed. */
@@ -44,6 +46,38 @@ export async function typeInstead() {
   await cancelScan();
 }
 
+/** The photo of the printed number the person is taking instead of scanning, if so. */
+let photo: Promise<string | null> | null = null;
+/** Set when that photo had no ISBN that could be read. */
+let noIsbnInPhoto = false;
+
+/**
+ * Opens the camera app for a photo of the number printed on the book, and closes the scanner. Called from the tap:
+ * the camera app has to be asked for before anything is awaited (see `takePhoto`).
+ */
+export async function photoInstead() {
+  photo = takePhoto();
+  await cancelScan();
+}
+
+/** True once after a photo of the printed number gave no ISBN: the caller offers to type it. */
+export function readNoIsbnInPhoto(): boolean {
+  const was = noIsbnInPhoto;
+  noIsbnInPhoto = false;
+  return was;
+}
+
+/** The scanned code or, when the person asked for a photo instead, the first ISBN read in it. */
+async function orFromPhoto(code: string | null): Promise<string | null> {
+  const taking = photo;
+  photo = null;
+  if (code !== null || !taking) return code;
+  const found = await isbnsInPhoto(taking);
+  if (found === null) return null;
+  if (found.length === 0) noIsbnInPhoto = true;
+  return found[0] ?? null;
+}
+
 /** True once after the person chose to type instead of scanning. */
 export function wantsToType(): boolean {
   const wanted = typing;
@@ -55,14 +89,14 @@ export function wantsToType(): boolean {
 // its saved call before rejecting it, so the plugin's `scan` never settles.
 let settlePending: (() => void) | null = null;
 
-/** Closes the camera; the pending scan resolves to null. */
+/**
+ * Closes the camera; the pending scan resolves to null. The scan is settled first, so nothing waits on the
+ * plugin's `cancel` while the camera app is in front (`photoInstead`).
+ */
 export async function cancelScan() {
+  settlePending?.();
   const scanner = await import("@tauri-apps/plugin-barcode-scanner");
-  try {
-    await scanner.cancel();
-  } finally {
-    settlePending?.();
-  }
+  await scanner.cancel();
 }
 
 async function scan(
@@ -122,7 +156,9 @@ let notIsbn = false;
 export async function scanIsbn(): Promise<string | null> {
   typing = false;
   notIsbn = false;
-  const code = await scan((scanner) => [scanner.Format.EAN13], "barcode");
+  photo = null;
+  noIsbnInPhoto = false;
+  const code = await orFromPhoto(await scan((scanner) => [scanner.Format.EAN13], "barcode"));
   if (code === null || /^97[89]/.test(code)) return code;
   notIsbn = true;
   return null;
@@ -140,15 +176,19 @@ export function readNotIsbn(): boolean {
  * UPC-E), or null if the user cancelled. Used by the add-search step, which
  * looks up whatever code comes back with `lookupCode` (D60).
  */
-export function scanCode(): Promise<string | null> {
-  return scan(
-    (scanner) => [
-      scanner.Format.EAN13,
-      scanner.Format.EAN8,
-      scanner.Format.UPC_A,
-      scanner.Format.UPC_E,
-    ],
-    "barcode",
+export async function scanCode(): Promise<string | null> {
+  photo = null;
+  noIsbnInPhoto = false;
+  return orFromPhoto(
+    await scan(
+      (scanner) => [
+        scanner.Format.EAN13,
+        scanner.Format.EAN8,
+        scanner.Format.UPC_A,
+        scanner.Format.UPC_E,
+      ],
+      "barcode",
+    ),
   );
 }
 

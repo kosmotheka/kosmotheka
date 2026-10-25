@@ -1092,6 +1092,8 @@ mockIPC((cmd, args) => {
         removed: [],
         foreignClouds: [],
       };
+    case "isbns_in_photo":
+      return ["9788469767016"];
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
     case "plugin:app|version":
