@@ -16,10 +16,8 @@ The words *work*, *details* and *copy* are used here. They are explained in [Thr
 
 ## Where they are
 
-They are another way of looking at your catalog:
-
-- **On a phone**, in the Catalog, tap "Sagas and collections", to the right of the number of works.
-- **On a computer**, at the top right of the Catalog, next to "I have it", "Missing" and "Everything".
+- **In the menu**, with the library's things (Requests, People and permissions…).
+- **From the Catalog and Missing**: on a phone, tap "Sagas and collections" above the list; on a computer, at the top right, next to "I have it", "Missing" and "Everything".
 
 On a work's page, the "Sagas and collections" section says which one it is in and its number ("2 of 6"). Tap it to open it.
 
@@ -58,6 +56,8 @@ There are two ways.
 ![The “Dune” saga: number 5 is a gap, “Not logged”, and numbers 3 and 4 are works you are missing.](../../es/using-the-app/series-gaps.webp)
 
 In a saga, the app shows **every number, from 1 to the highest** you have set. A number with nothing noted is a gap. It shows as "Not logged", with "Number 5 is missing here".
+
+If you put a work on a number another one already has, that one moves to the next number, and those after it move up one, as far as the first gap. The app tells you when you type the number.
 
 Tap **"Add one here"**. Add opens already on "Missing", with that number set. This way you note the volume you do not have yet. "Missing" is explained in [Your own: to read, reading, read, stars, favorites and "I want it"](../marks/).
 

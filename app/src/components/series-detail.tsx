@@ -24,14 +24,24 @@ import { cn } from "@/lib/utils";
 
 type Row = { position: number | null; entry: SeriesEntry | null };
 
-/** Every number from 1 to the highest position, a missing one becoming a gap row (D61). */
+/**
+ * Every number from 1 to the highest position, a missing one becoming a gap row (D61). No work is ever hidden: two on
+ * one number (from before numbers made room, or from two devices) both show, and one with no number comes last.
+ */
 function rowsOf(detail: SeriesDetail): Row[] {
   if (!detail.ordered) return detail.entries.map((entry) => ({ position: null, entry }));
   const max = Math.max(0, ...detail.entries.map((e) => e.position ?? 0));
-  return Array.from({ length: max }, (_, i) => {
+  const numbered = Array.from({ length: max }, (_, i): Row[] => {
     const position = i + 1;
-    return { position, entry: detail.entries.find((e) => e.position === position) ?? null };
-  });
+    const here = detail.entries.filter((e) => e.position === position);
+    return here.length > 0
+      ? here.map((entry) => ({ position, entry }))
+      : [{ position, entry: null }];
+  }).flat();
+  const unnumbered = detail.entries
+    .filter((e) => e.position === null)
+    .map((entry) => ({ position: null, entry }));
+  return [...numbered, ...unnumbered];
 }
 
 /**

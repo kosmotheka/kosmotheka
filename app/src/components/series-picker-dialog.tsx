@@ -125,6 +125,9 @@ export function SeriesPickerDialog({
     if (step.kind !== "position" || !detail) return null;
     const n = Number(position);
     if (!Number.isFinite(n)) return null;
+    // A taken number makes room: say so, so nobody is surprised that numbers moved.
+    const taken = detail.entries.find((e) => e.position === n);
+    if (taken) return t("series.positionTaken", { title: taken.title, n, next: n + 1 });
     const before = detail.entries
       .filter((e) => e.position !== null && e.position < n)
       .sort((a, b) => (b.position ?? 0) - (a.position ?? 0))[0];

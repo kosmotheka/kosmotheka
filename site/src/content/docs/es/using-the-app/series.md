@@ -16,10 +16,8 @@ Aquí se usan las palabras «obra», «ficha» y «ejemplar». Están explicadas
 
 ## Dónde están
 
-Son otra forma de ver tu Catálogo:
-
-- **En el móvil**, en el Catálogo, toca «Sagas y colecciones», a la derecha del número de obras.
-- **En el ordenador**, arriba a la derecha del Catálogo, junto a «Lo tengo», «Me falta» y «Todo».
+- **En el menú**, con lo de la biblioteca (Peticiones, Personas y permisos…).
+- **Desde el Catálogo y «Me falta»**: en el móvil, toca «Sagas y colecciones» encima de la lista; en el ordenador, arriba a la derecha, junto a «Lo tengo», «Me falta» y «Todo».
 
 En la ficha de una obra, el apartado «Sagas y colecciones» dice en cuál está y qué número tiene («2 de 6»). Tócalo para abrirla.
 
@@ -58,6 +56,8 @@ Hay dos caminos.
 ![La saga «Dune»: el número 5 es un hueco, «Sin apuntar», y los números 3 y 4 son obras que faltan.](./series-gaps.webp)
 
 En una saga, la app enseña **todos los números, del 1 al más alto** que hayas puesto. Un número sin nada apuntado es un hueco. Sale como «Sin apuntar», con el aviso «Aquí falta el número 5».
+
+Si metes una obra en un número que ya tiene otra, la que estaba pasa al siguiente, y las de después corren un puesto hasta el primer hueco. La app te lo avisa al escribir el número.
 
 Pulsa **«Apuntar aquí»**. Se abre «Añadir» ya en «Me falta», con ese número puesto. Así apuntas el tomo que aún no tienes. «Me falta» está explicado en [Lo de cada uno](../marks/).
 

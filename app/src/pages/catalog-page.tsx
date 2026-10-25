@@ -171,9 +171,9 @@ export function CatalogPage({
         <SearchScope library={library} everywhere={everywhere} onChange={onEverywhereChange} />
       )}
       {!catalogIsEmpty && <FilterBar filter={filter} onChange={onFilterChange} desktop={desktop} />}
-      {!desktop && !missing && state.status === "ready" && !catalogIsEmpty && (
+      {!desktop && state.status === "ready" && !catalogIsEmpty && (
         <div className="flex items-center gap-2">
-          <p className="flex-1 text-xs text-muted-foreground">{count}</p>
+          <p className="flex-1 text-xs text-muted-foreground">{missing ? null : count}</p>
           <button
             type="button"
             className="flex items-center gap-1 text-[13px] font-medium text-primary"

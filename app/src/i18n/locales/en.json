@@ -1495,7 +1495,8 @@
     "emptyHow": "Create one here, or from a work's page with “Add to a saga or collection”. Then add its works, those you have and those you are missing.",
     "whatAreThey": "What are they for?",
     "positionAlone": "No. {{position}}",
-    "iHaveIt": "I have it"
+    "iHaveIt": "I have it",
+    "positionTaken": "No. {{n}} is already “{{title}}”: it will become {{next}}, and the following ones move up one, as far as the first gap."
   },
   "account": {
     "settings": {

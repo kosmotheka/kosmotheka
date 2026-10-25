@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { navigate, closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-/** Mobile side menu: the user's libraries, then what belongs to the current one. */
+/** Mobile side menu: the user's libraries, what belongs to the current one, and at the bottom what is general. */
 export function NavDrawer({
   open,
   count,
@@ -67,8 +67,15 @@ export function NavDrawer({
           {t("nav.newLibrary")}
         </button>
         <div className="mx-4 my-2 h-px bg-border" />
-        <div className="flex-1 overflow-y-auto">
-          <MenuList items={[...libraryNav, ...appNav]} size="large" />
+        {/* As in the desktop sidebar: what belongs to this library under its name, what is general at the bottom. */}
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <div className="truncate px-4 py-1.5 text-xs font-medium text-muted-foreground">
+            {libraries.active ? nameOf(libraries.active) : null}
+          </div>
+          <MenuList items={libraryNav} size="large" />
+          <span className="min-h-4 flex-1" />
+          <div className="mx-4 mb-2 h-px shrink-0 bg-border" />
+          <MenuList items={appNav} size="large" />
         </div>
         <SyncStatus status={sync} className="px-4 pt-3" />
       </SheetContent>

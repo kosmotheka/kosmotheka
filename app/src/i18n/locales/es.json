@@ -1509,7 +1509,8 @@
     "emptyHow": "Crea una aquí, o desde la ficha de una obra con «Añadir a una saga o colección». Después añade sus obras, las que tienes y las que te faltan.",
     "whatAreThey": "¿Para qué sirven?",
     "positionAlone": "Nº {{position}}",
-    "iHaveIt": "Lo tengo"
+    "iHaveIt": "Lo tengo",
+    "positionTaken": "El {{n}} ya es «{{title}}»: pasará al {{next}}, y las siguientes correrán un puesto hasta el primer hueco."
   },
   "account": {
     "settings": {

@@ -234,19 +234,56 @@ pub fn add_to_series(
         None => None,
     };
 
+    let mut changes = match position {
+        Some(position) if ordered => make_room(&tx, library, series_id, position)?,
+        _ => Vec::new(),
+    };
     let id = new_id();
-    ops::record(
-        &tx,
-        library,
-        "series.entry_add",
-        vec![Change::create(
-            Entity::SeriesEntry,
-            &id,
-            json!({ "series_id": series_id, "work_id": work_id, "position": position }),
-        )],
-    )?;
+    changes.push(Change::create(
+        Entity::SeriesEntry,
+        &id,
+        json!({ "series_id": series_id, "work_id": work_id, "position": position }),
+    ));
+    ops::record(&tx, library, "series.entry_add", changes)?;
     tx.commit()?;
     Ok(id)
+}
+
+/// A number already taken makes room for a new work (decided with the maintainer, 25/10/2026): the works from that
+/// number on move up one, as far as the first gap, so a later work keeps the number it already had.
+fn make_room(
+    tx: &Connection,
+    library: &str,
+    series_id: &str,
+    position: i64,
+) -> Result<Vec<Change>> {
+    let taken: Vec<(String, i64)> = tx
+        .prepare(
+            "SELECT id, position FROM series_entries
+              WHERE library_id = ?1 AND series_id = ?2 AND position >= ?3
+              ORDER BY position, id",
+        )?
+        .query_map(rusqlite::params![library, series_id, position], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut changes = Vec::new();
+    let mut next = position;
+    for (entry_id, current) in taken {
+        // Two works on one number (from before, or from two devices) both move.
+        if current > next {
+            break;
+        }
+        if current == next || current + 1 == next {
+            next = current + 1;
+            changes.push(Change::update(
+                Entity::SeriesEntry,
+                entry_id,
+                json!({ "position": current + 1 }),
+            ));
+        }
+    }
+    Ok(changes)
 }
 
 /// Deletes every entry of the pair (no unique constraint: two devices may have
@@ -767,6 +804,65 @@ mod tests {
         let summary = list_series(&conn, &lib).unwrap().remove(0);
 
         assert_eq!((summary.have, summary.total), (1, 1));
+    }
+
+    #[test]
+    fn a_work_put_on_a_taken_number_moves_the_following_ones_up_to_the_first_gap() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Mistborn", true).unwrap();
+        let [first, second, third, inserted, after_gap] = [
+            "The Final Empire",
+            "The Well of Ascension",
+            "The Hero of Ages",
+            "The Alloy of Law",
+            "Secret History",
+        ]
+        .map(|title| add_work(&mut conn, title));
+        add_to_series(&mut conn, &lib, &series_id, &first, Some(1)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &second, Some(2)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &third, Some(3)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &after_gap, Some(6)).unwrap();
+
+        add_to_series(&mut conn, &lib, &series_id, &inserted, Some(2)).unwrap();
+
+        let positions: Vec<(String, Option<i64>)> = get_series(&conn, &lib, &series_id)
+            .unwrap()
+            .entries
+            .into_iter()
+            .map(|e| (e.work_id, e.position))
+            .collect();
+        assert_eq!(
+            positions,
+            [
+                (first, Some(1)),
+                (inserted, Some(2)),
+                (second, Some(3)),
+                (third, Some(4)),
+                (after_gap, Some(6)),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_work_put_in_a_gap_moves_nothing() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune", true).unwrap();
+        let [first, third, second] =
+            ["Dune", "Children of Dune", "Dune Messiah"].map(|title| add_work(&mut conn, title));
+        add_to_series(&mut conn, &lib, &series_id, &first, Some(1)).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &third, Some(3)).unwrap();
+
+        add_to_series(&mut conn, &lib, &series_id, &second, Some(2)).unwrap();
+
+        let positions: Vec<Option<i64>> = get_series(&conn, &lib, &series_id)
+            .unwrap()
+            .entries
+            .iter()
+            .map(|e| e.position)
+            .collect();
+        assert_eq!(positions, [Some(1), Some(2), Some(3)]);
     }
 
     #[test]
