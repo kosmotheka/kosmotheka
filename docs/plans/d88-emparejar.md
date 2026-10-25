@@ -2,9 +2,9 @@
 
 > 25/10/2026. Decisión en [D88](../DECISIONS.md). Rama `feat/pair-without-qr`, sacada de la última rama de la versión 0.7.0 para no estorbar a sus pull requests. **Es seguridad:** sus casos hostiles entran en la [batería de acceso](../architecture/bateria-de-acceso.md), cada uno con su test escrito antes y visto fallar.
 
-**Estado (25/10/2026): hecho y probado.** Partes 1 a 4 con sus tests; el maintainer emparejó su portátil y su móvil con el número a la primera («esto es justo lo que yo quería»). Lo que queda de D88 es la parte de abajo, para más adelante.
+**Estado (25/10/2026): hecho y probado.** Partes 1 a 4 con sus tests; el maintainer emparejó su portátil y su móvil con el número a la primera («esto es justo lo que yo quería»). La parte de abajo, reconocerse por biblioteca, **se descartó** ese mismo día (razones en D88).
 
-**Alcance, recortado con el maintainer el 25/10/2026:** «no tocamos lo que funciona y mejoramos lo que no funciona». El QR se queda como está (la mayoría emparejará así). Lo que se arregla es el **código manual**, que hoy mide unos 350 caracteres y obliga a copiarlo, mandarlo por WhatsApp y pegarlo. La otra parte de D88, que los dispositivos de una biblioteca se encuentren solos sin emparejarse de dos en dos, queda para más adelante (abajo, con lo ya pensado).
+**Alcance, recortado con el maintainer el 25/10/2026:** «no tocamos lo que funciona y mejoramos lo que no funciona». El QR se queda como está (la mayoría emparejará así). Lo que se arregla es el **código manual**, que hoy mide unos 350 caracteres y obliga a copiarlo, mandarlo por WhatsApp y pegarlo. La otra parte de D88, que los dispositivos de una biblioteca se encuentren solos sin emparejarse de dos en dos, quedó para más adelante y después se descartó (abajo, con lo que se había pensado).
 
 ## Cómo se ve
 
@@ -47,9 +47,11 @@ Después de esto se fija la huella completa, como con el QR, y todo sigue igual:
 
 **Límite, el mismo que con el QR:** en las wifi que aíslan los dispositivos entre sí (algunas de invitados) no se encuentran.
 
-## Para más adelante: reconocerse por biblioteca
+## Descartado: reconocerse por biblioteca
 
-La otra parte de D88: los dispositivos de una biblioteca se encuentran solos en casa y se sincronizan sin haberse emparejado entre ellos. Pensado el 25/10/2026 y aparcado con el maintainer (no hace falta para lo de arriba):
+**Descartado el 25/10/2026 con el maintainer:** en una familia gana poco (pocos dispositivos, el número ya cuesta poco y lo que llega por la red local se reenvía) y en una biblioteca grande, como un club, haría que el móvil de cada uno aceptara conexiones de socios desconocidos. Las razones completas están en D88. Se guarda lo que se había pensado, por si algún día se vuelve a plantear.
+
+La otra parte de D88: los dispositivos de una biblioteca se encuentran solos en casa y se sincronizan sin haberse emparejado entre ellos. Pensado el 25/10/2026:
 
 - **Quién entra:** un dispositivo de esa biblioteca con su persona asignada, su clave avalada (D96) y sin retirada (D71). Una valla sola (D84) no lo excluye: también se le pone a quien bajan de editor a lector, que sigue recibiendo la biblioteca; lo que corta el acceso (quitarle la persona o echarla, D98) ya lo deja «de nadie».
 - **Prueba mutua:** cada lado firma con su clave de dispositivo (D56) el reto del otro y la huella del certificado de la conexión; solo después se habla de bibliotecas, y viajan las que los dos comparten con confianza.

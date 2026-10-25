@@ -154,7 +154,7 @@ Dicho claro, para que nadie lo dé por supuesto:
 - **Un móvil desbloqueado en manos de otro actúa como su dueño**, hasta que alguien de la familia lo quite o se cambie la contraseña de la cuenta.
 - **El registro de actividad es tan fiable como el servidor.** Quien administra el servidor puede leerlo y, con acceso a la base de datos, cambiarlo: no está firmado ni cifrado, y sirve para responder a una reclamación, no para una pericia.
 - **Un familiar con una app modificada puede estorbar**: por ejemplo, impedir que un dispositivo nuevo entre en la nube. No gana acceso ni rol, y quien administra puede echarlo.
-- **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. **Sigue pendiente en el código:** D96 lo deja dicho en «Lo que queda» y lo remite a D88 (emparejar una vez), que sigue abierta.
+- **Emparejar un dispositivo nuevo a través de alguien que quiere engañar** (pieza 7): si la clave falsa llega al propio dispositivo de quien administra antes que la de verdad, la daría por buena. Se nota, porque el dispositivo de verdad no funciona con nadie. **Aceptado como riesgo conocido** el 25/10/2026 (D96, «Lo que queda»): hace falta alguien de dentro con una app modificada, no gana nada sin que un administrador asigne el dispositivo, y se arregla quitándole el acceso al falso.
 
 ## Cómo se comprueba
 
