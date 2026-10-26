@@ -19,6 +19,7 @@ import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { CoverChooser } from "@/components/cover-chooser";
 import { useDesktop } from "@/components/shell/use-desktop";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ProviderWarnings } from "@/components/provider-warnings";
 import {
@@ -65,6 +66,7 @@ import {
   genreLabel,
 } from "@/lib/kinds";
 import { LANGUAGE_CODES, languageName } from "@/lib/languages";
+import { useBackGuard } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 // Form state keeps every value as typed text; conversion happens on submit.
@@ -462,8 +464,9 @@ function PeopleField({
   );
 }
 
-/** Genres of the work's kind: a multi-select with removable chips over a two-column
- * checkbox list (Design's FormClassify). Hidden when the kind has none ("Otro"). */
+/** Genres of the work's kind: removable chips over a checkbox list, in a menu on the desktop and
+ * in a bottom sheet on the phone (Design's FormClassify and MClassify). Hidden when the kind has
+ * none ("Otro"). */
 function GenresField({
   kind,
   value,
@@ -474,7 +477,14 @@ function GenresField({
   onChange: (value: string[]) => void;
 }) {
   const { t } = useTranslation();
+  const desktop = useDesktop();
   const [options, setOptions] = useState<string[]>([]);
+  const [picking, setPicking] = useState(false);
+  // Back closes the sheet, not the form under it.
+  useBackGuard(picking, () => {
+    setPicking(false);
+    return false;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -503,6 +513,49 @@ function GenresField({
   const toggle = (genre: string) =>
     onChange(value.includes(genre) ? value.filter((g) => g !== genre) : [...value, genre]);
 
+  // On the phone the box opens the sheet; on the desktop the menu's trigger wires it.
+  const openSheet = desktop ? undefined : () => setPicking(true);
+  const chips = (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={openSheet}
+      onKeyDown={(e) => {
+        if (openSheet && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          openSheet();
+        }
+      }}
+      className="flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5 text-left"
+    >
+      {value.length === 0 && (
+        <span className="text-[15px] text-muted-foreground">
+          {t("form.fields.genresPlaceholder")}
+        </span>
+      )}
+      {value.map((genre) => (
+        <span
+          key={genre}
+          className="flex h-7 items-center gap-1 rounded-full bg-secondary py-0 pr-1 pl-2.5 text-sm"
+        >
+          {genreLabel(kind, genre, t)}
+          <button
+            type="button"
+            aria-label={t("form.fields.removeGenre", { genre: genreLabel(kind, genre, t) })}
+            className="flex size-5 items-center justify-center rounded-full hover:bg-foreground/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggle(genre);
+            }}
+          >
+            <X className="size-3" />
+          </button>
+        </span>
+      ))}
+      <ChevronDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+    </div>
+  );
+
   return (
     <div className="space-y-2">
       <Label>
@@ -511,53 +564,61 @@ function GenresField({
           {t("form.fields.genresHint", { kind: t(`typesPlural.${kind}`) })}
         </span>
       </Label>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div
-            role="button"
-            tabIndex={0}
-            className="flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5 text-left"
-          >
-            {value.length === 0 && (
-              <span className="text-[15px] text-muted-foreground">
-                {t("form.fields.genresPlaceholder")}
-              </span>
-            )}
-            {value.map((genre) => (
-              <span
+      {desktop ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>{chips}</DropdownMenuTrigger>
+          <DropdownMenuContent className="grid w-72 grid-cols-2 gap-x-1">
+            {options.map((genre) => (
+              <DropdownMenuCheckboxItem
                 key={genre}
-                className="flex h-7 items-center gap-1 rounded-full bg-secondary py-0 pr-1 pl-2.5 text-sm"
+                checked={value.includes(genre)}
+                onSelect={(e) => e.preventDefault()}
+                onCheckedChange={() => toggle(genre)}
               >
                 {genreLabel(kind, genre, t)}
-                <button
-                  type="button"
-                  aria-label={t("form.fields.removeGenre", { genre: genreLabel(kind, genre, t) })}
-                  className="flex size-5 items-center justify-center rounded-full hover:bg-foreground/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggle(genre);
-                  }}
-                >
-                  <X className="size-3" />
-                </button>
-              </span>
+              </DropdownMenuCheckboxItem>
             ))}
-            <ChevronDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
-          </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="grid w-72 grid-cols-2 gap-x-1">
-          {options.map((genre) => (
-            <DropdownMenuCheckboxItem
-              key={genre}
-              checked={value.includes(genre)}
-              onSelect={(e) => e.preventDefault()}
-              onCheckedChange={() => toggle(genre)}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <>
+          {chips}
+          <Sheet open={picking} onOpenChange={setPicking}>
+            <SheetContent
+              side="bottom"
+              showCloseButton={false}
+              className="max-h-[85dvh] gap-3 rounded-t-[28px] bg-popover px-5 pt-2.5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
             >
-              {genreLabel(kind, genre, t)}
-            </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <div className="mx-auto h-1 w-8 rounded-full bg-muted-foreground/40" aria-hidden />
+              <div className="flex items-baseline justify-between gap-3">
+                <SheetTitle className="text-lg font-semibold">{t("form.fields.genres")}</SheetTitle>
+                <SheetDescription className="text-right text-[13px]">
+                  {t("form.fields.genresPick", { kind: t(`typesPlural.${kind}`) })}
+                </SheetDescription>
+              </div>
+              <div className="-mx-2 flex flex-col overflow-y-auto">
+                {options.map((genre) => (
+                  <label
+                    key={genre}
+                    className="flex min-h-12 items-center gap-3.5 rounded-lg px-2 text-[15px] active:bg-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-5 shrink-0 accent-primary"
+                      checked={value.includes(genre)}
+                      onChange={() => toggle(genre)}
+                    />
+                    {genreLabel(kind, genre, t)}
+                  </label>
+                ))}
+              </div>
+              <Button type="button" className="h-12 rounded-full" onClick={() => setPicking(false)}>
+                {t("common.done")}
+              </Button>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
     </div>
   );
 }

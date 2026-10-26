@@ -221,6 +221,7 @@
       "genres": "Géneros",
       "genresHint": "· lista de {{kind}}",
       "genresPlaceholder": "Elige uno o varios",
+      "genresPick": "{{kind}} · elige varios",
       "removeGenre": "Quitar {{genre}}",
       "tags": "Etiquetas",
       "tagsHint": "· libres, de esta biblioteca",
@@ -786,7 +787,8 @@
     "edit": "Editar",
     "delete": "Borrar",
     "back": "Atrás",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "done": "Hecho"
   },
   "libraries": {
     "settingsOf": "Ajustes de {{name}}",

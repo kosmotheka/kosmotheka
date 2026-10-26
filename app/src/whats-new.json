@@ -9,16 +9,16 @@
       "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute."
     },
     {
-      "es": "En la ficha, toca un ejemplar para editarlo; la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
-      "en": "In an item, tap a copy to edit it; the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
+      "es": "En la ficha: la cabecera dice la editorial y el ISBN, tocar un ejemplar lo abre para editarlo, y la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
+      "en": "In an item: the top shows its publisher and ISBN, tapping a copy opens it to edit, and the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
     },
     {
       "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra.",
       "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work."
     },
     {
-      "es": "La cabecera de la ficha dice la editorial y el ISBN, sin tener que ir a «Datos».",
-      "en": "The top of an item shows its publisher and ISBN, without going to «Data»."
+      "es": "En el móvil, los géneros se eligen en una hoja con casillas grandes, en lugar de un menú pequeño.",
+      "en": "On the phone, genres are picked in a sheet with large checkboxes, instead of a small menu."
     }
   ],
   "0.7.0": [

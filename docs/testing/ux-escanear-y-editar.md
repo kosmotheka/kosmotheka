@@ -78,7 +78,7 @@ Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulari
 - ✅ **Open Library sin autoría** (hecho el 26/10/2026): cuando la edición no trae autores, se piden a su obra. Es lo normal en las ediciones españolas: de ocho buscadas, siete no los traían (entre ellas *El temor de un hombre sabio*, el «Sin autores» de la prueba del 05/10), y sus obras sí.
 - **Búsqueda a través del servidor** (D91), con límite por IP, y la **Library of Congress** para inglés (solo HTTP). Con la 7.4. Al añadirla, subir `WELCOME_VERSION` y añadirla a la bienvenida.
 - **La primera búsqueda de la sesión** falló una vez en todas las fuentes a la vez; vigilar si se repite.
-- **Selectores nativos en el móvil:** el de idioma ya usa el del sistema. Falta el de géneros (selección múltiple) y revisar los demás desplegables, que en Android se cierran solos la primera vez.
+- **Selectores nativos en el móvil:** el de idioma ya usa el del sistema; el de géneros, una hoja desde abajo con casillas (26/10/2026). Falta revisar los demás desplegables, que en Android se cierran solos la primera vez.
 - **Leer el ISBN impreso con la cámara:** plugin libre de Tauri en su propio repositorio (Fase 10).
 - **Validar el idioma en `spec/`:** hoy es texto libre en el formato de las operaciones; el formulario ya solo guarda códigos.
 

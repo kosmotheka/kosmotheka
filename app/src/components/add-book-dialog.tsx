@@ -129,18 +129,12 @@ export function AddBookDialog({
   const [discarding, setDiscarding] = useState<"close" | "search" | null>(null);
   const leaving = onBack ? "search" : "close";
 
-  // Back with something typed asks before losing it, instead of closing the form.
-  const release = useBackGuard(open && dirty, () => {
-    setDiscarding((asked) => (asked ? null : leaving));
-    return true;
-  });
-
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setEdition(emptyEditionForm);
       setCopy(emptyCopyFormFor(emptyEditionForm.kind));
       setNote("");
-      // Emptied, it is not «something typed»: no back entry while the overlay closes.
+      // Emptied, it is not «something typed».
       setStart(JSON.stringify([emptyEditionForm, emptyCopyFormFor(emptyEditionForm.kind), ""]));
       setPickingKind(!initial && !prefill);
       errors.clear();
@@ -152,9 +146,20 @@ export function AddBookDialog({
     if (to === "search") onBack?.();
     else handleOpenChange(false);
   };
+
+  // Back goes where the form's own arrow goes, asking first if something was typed. The guard
+  // is there from the start, so a sheet opened from the form (the genres) stacks over it.
+  const release = useBackGuard(open, () => {
+    if (discarding || dirty) {
+      setDiscarding(discarding ? null : leaving);
+      return true;
+    }
+    leave(leaving);
+    return false;
+  });
   const askToLeave = (to: "close" | "search") => {
     if (dirty) setDiscarding(to);
-    else leave(to);
+    else void release().then(() => leave(to));
   };
   const discard = async () => {
     const to = discarding;

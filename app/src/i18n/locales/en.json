@@ -207,6 +207,7 @@
       "genres": "Genres",
       "genresHint": "· list of {{kind}}",
       "genresPlaceholder": "Choose one or more",
+      "genresPick": "{{kind}} · pick several",
       "removeGenre": "Remove {{genre}}",
       "tags": "Tags",
       "tagsHint": "· free, from this library",
@@ -772,7 +773,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "back": "Back",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "done": "Done"
   },
   "libraries": {
     "settingsOf": "{{name}} settings",

@@ -150,7 +150,12 @@ export function closeOverlay() {
  * whether to discard changes. When `active` ends another way (saving, the screen's own
  * Cancel), the entry is dropped, so no step is left behind. Before closing the overlay or
  * opening another, await the returned `release`: otherwise that back would land on the entry.
+ * Guards stack: a sheet opened over a guarded form gets back first, and closing it leaves the
+ * form's guard in place.
  */
+let lastGuard = 0;
+const guardsIn = (state: unknown) => (state as { backGuards?: number[] } | null)?.backGuards ?? [];
+
 export function useBackGuard(active: boolean, onBack: () => boolean): () => Promise<void> {
   const onBackRef = useRef(onBack);
   useEffect(() => {
@@ -160,9 +165,16 @@ export function useBackGuard(active: boolean, onBack: () => boolean): () => Prom
 
   useEffect(() => {
     if (!active) return;
-    const guard = () => window.history.pushState({ ...window.history.state, backGuard: true }, "");
-    // The scanner keeps the state of the entry below it, so its own closing lands back on ours.
-    const ours = () => (window.history.state as { backGuard?: boolean } | null)?.backGuard;
+    const id = ++lastGuard;
+    const guard = () => {
+      const state: unknown = window.history.state;
+      window.history.pushState({ ...(state as object), backGuards: [...guardsIn(state), id] }, "");
+    };
+    // Still on our entry or one above it: the scanner keeps the state of the entry below it, so
+    // its own closing lands back here, as does closing a guard stacked on ours.
+    const ours = () => guardsIn(window.history.state).includes(id);
+    const onTop = () => guardsIn(window.history.state).at(-1) === id;
+    let pushed = false;
     let done = false;
     const onPop = () => {
       if (ours()) return;
@@ -175,7 +187,7 @@ export function useBackGuard(active: boolean, onBack: () => boolean): () => Prom
     };
     const release = () => {
       window.removeEventListener("popstate", onPop);
-      if (done || !ours()) {
+      if (!pushed || done || !onTop()) {
         done = true;
         return Promise.resolve();
       }
@@ -185,10 +197,16 @@ export function useBackGuard(active: boolean, onBack: () => boolean): () => Prom
         window.history.back();
       });
     };
-    guard();
-    window.addEventListener("popstate", onPop);
+    // A tick later, so that a mount undone at once (React's strict mode) pushes nothing: its
+    // back would land after the second mount's push and be taken for the person's.
+    const timer = setTimeout(() => {
+      guard();
+      pushed = true;
+      window.addEventListener("popstate", onPop);
+    }, 0);
     releaseRef.current = release;
     return () => {
+      clearTimeout(timer);
       releaseRef.current = () => Promise.resolve();
       void release();
     };
