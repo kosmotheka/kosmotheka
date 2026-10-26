@@ -73,7 +73,7 @@ Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulari
 ## Pendiente
 
 - ✅ **Botón atrás de Android mientras se edita** (hecho el 26/10/2026): cerraba la ficha entera y se perdía lo escrito. Ahora la edición tiene su propia entrada en el historial, como el escáner (`useBackGuard` en `lib/navigation.ts`): atrás sale de la edición y, si hay cambios, pregunta antes; con la pregunta abierta, atrás es «seguir editando». Lo mismo en el formulario de un ejemplar y en el de añadir (donde atrás, sin nada escrito, cierra como antes; con algo escrito, pregunta, y «Descartar» lleva a donde iba: cerrar o volver a buscar).
-- **Datos principales a la vista:** el ISBN y la editorial siguen en la pestaña «Datos». Valorar mostrarlos en la cabecera de la ficha.
+- ✅ **Datos principales a la vista** (hecho el 26/10/2026): la cabecera de la ficha dice la editorial junto al tipo y el año («Libro · Debolsillo · 1965») y, debajo, el ISBN. Siguen también en «Datos».
 - **Ordenar los resultados de búsqueda** por el idioma de la app y por cantidad de datos, y agrupar los de la misma obra (propuesta 4).
 - ✅ **Open Library sin autoría** (hecho el 26/10/2026): cuando la edición no trae autores, se piden a su obra. Es lo normal en las ediciones españolas: de ocho buscadas, siete no los traían (entre ellas *El temor de un hombre sabio*, el «Sin autores» de la prueba del 05/10), y sus obras sí.
 - **Búsqueda a través del servidor** (D91), con límite por IP, y la **Library of Congress** para inglés (solo HTTP). Con la 7.4. Al añadirla, subir `WELCOME_VERSION` y añadirla a la bienvenida.

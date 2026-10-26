@@ -538,7 +538,10 @@ function factChips(book: BookDetail, t: TFunction): { icon: typeof Users; text: 
 function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
   const { t } = useTranslation();
   const KindIcon = KIND_ICONS[book.kind];
-  const meta = [t(`types.${book.kind}`), book.publishedYear].filter(Boolean).join(" · ");
+  // The publisher and the ISBN at sight: they were only in the «Data» tab.
+  const meta = [t(`types.${book.kind}`), book.publisher, book.publishedYear]
+    .filter(Boolean)
+    .join(" · ");
   const by = mainPeopleLine(book);
   const chips = factChips(book, t);
   const copies = book.copies.reduce((sum, copy) => sum + copy.quantity, 0);
@@ -556,8 +559,13 @@ function Hero({ book, desktop }: { book: BookDetail; desktop: boolean }) {
         {(by || book.kind === "book") && <p className="text-[15px]">{by || t("book.noAuthors")}</p>}
         <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <KindIcon className="size-3.5" />
-          {meta}
+          <span className="min-w-0 truncate">{meta}</span>
         </p>
+        {book.isbn13 && (
+          <p className="text-[13px] text-muted-foreground tabular-nums">
+            {t("form.fields.isbn")} {book.isbn13}
+          </p>
+        )}
         {chips.length > 0 && (
           <div className="mt-0.5 flex flex-wrap gap-1.5">
             {chips.map((chip, i) => (

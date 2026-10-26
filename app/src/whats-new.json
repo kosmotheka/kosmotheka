@@ -15,6 +15,10 @@
     {
       "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra.",
       "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work."
+    },
+    {
+      "es": "La cabecera de la ficha dice la editorial y el ISBN, sin tener que ir a «Datos».",
+      "en": "The top of an item shows its publisher and ISBN, without going to «Data»."
     }
   ],
   "0.7.0": [
