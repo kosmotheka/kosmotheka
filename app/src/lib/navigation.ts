@@ -146,36 +146,53 @@ export function closeOverlay() {
 /**
  * While `active`, the back button asks the screen first instead of leaving it: an entry of
  * its own on top of the history, like the scanner's, so back runs `onBack` with the overlay
- * still open. `onBack` returns true to stay, keeping the entry, for example while it asks whether
- * to discard changes. When `active` ends another way (saving, the screen's own Cancel), the
- * entry is dropped, so no step is left behind.
+ * still open. `onBack` returns true to stay, keeping the entry, for example while it asks
+ * whether to discard changes. When `active` ends another way (saving, the screen's own
+ * Cancel), the entry is dropped, so no step is left behind. Before closing the overlay or
+ * opening another, await the returned `release`: otherwise that back would land on the entry.
  */
-export function useBackGuard(active: boolean, onBack: () => boolean) {
+export function useBackGuard(active: boolean, onBack: () => boolean): () => Promise<void> {
   const onBackRef = useRef(onBack);
   useEffect(() => {
     onBackRef.current = onBack;
   });
+  const releaseRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   useEffect(() => {
     if (!active) return;
     const guard = () => window.history.pushState({ ...window.history.state, backGuard: true }, "");
     // The scanner keeps the state of the entry below it, so its own closing lands back on ours.
     const ours = () => (window.history.state as { backGuard?: boolean } | null)?.backGuard;
-    let popped = false;
+    let done = false;
     const onPop = () => {
       if (ours()) return;
       if (onBackRef.current()) {
         guard();
         return;
       }
-      popped = true;
+      done = true;
       window.removeEventListener("popstate", onPop);
+    };
+    const release = () => {
+      window.removeEventListener("popstate", onPop);
+      if (done || !ours()) {
+        done = true;
+        return Promise.resolve();
+      }
+      done = true;
+      return new Promise<void>((resolve) => {
+        window.addEventListener("popstate", () => resolve(), { once: true });
+        window.history.back();
+      });
     };
     guard();
     window.addEventListener("popstate", onPop);
+    releaseRef.current = release;
     return () => {
-      window.removeEventListener("popstate", onPop);
-      if (!popped && ours()) window.history.back();
+      releaseRef.current = () => Promise.resolve();
+      void release();
     };
   }, [active]);
+
+  return () => releaseRef.current();
 }
