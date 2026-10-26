@@ -1,0 +1,77 @@
+{
+  "description": {
+    "type": "/type/text",
+    "value": "«Todo hombre sabio teme tres cosas: la tormenta en el mar, la noche sin luna y la ira de un hombre amable.»\r\n\r\nEl hombre había desaparecido. El mito no. Músico, mendigo, ladrón, estudiante, mago, trotamundos, héroe y asesino, Kvothe había borrado su rastro. Y ni siquiera ahora que le han encontrado, ni siquiera ni siquiera ahora que le han encontrado, ni siquiera ahora que las tinieblas invaden los rincones del mundo, está dispuesto a regresar. Pero su historia prosigue, la aventura continúa, y Kvothe seguirá contándola para revelar la verdad tras la leyenda.\r\n\r\n«Me llamo Kvothe. Quizá hayas oído hablar de mí...»\r\n\r\nSource: https://www.megustaleer.com/libro/el-temor-de-un-hombre-sabio-cronica-del-asesino-de-reyes-2/ES0092070"
+  },
+  "identifiers": {
+    "goodreads": [
+      "12877610"
+    ]
+  },
+  "title": "El temor de un hombre sabio",
+  "publish_date": "2011",
+  "publishers": [
+    "Plaza & Janés"
+  ],
+  "isbn_10": [
+    "8401339634"
+  ],
+  "series": [
+    "Crónica del Asesino de Reyes: segundo día"
+  ],
+  "covers": [
+    15096857,
+    8155425,
+    8146307
+  ],
+  "physical_format": "Paperback",
+  "publish_places": [
+    "Barcelona, Spain"
+  ],
+  "isbn_13": [
+    "9788401339639"
+  ],
+  "source_records": [
+    "marc:marc_openlibraries_sanfranciscopubliclibrary/sfpl_chq_2018_12_24_run04.mrc:242516459:2079",
+    "ia:eltemordelhombre0000roth",
+    "promise:bwb_daily_pallets_2022-03-17"
+  ],
+  "translation_of": "The Wise Man's Fear",
+  "languages": [
+    {
+      "key": "/languages/spa"
+    }
+  ],
+  "local_id": [
+    "urn:sfpl:31223100932889",
+    "urn:bwbsku:W7-AEA-544"
+  ],
+  "oclc_numbers": [
+    "1025855194",
+    "757488194"
+  ],
+  "type": {
+    "key": "/type/edition"
+  },
+  "key": "/books/OL26433923M",
+  "number_of_pages": 1200,
+  "works": [
+    {
+      "key": "/works/OL8479869W"
+    }
+  ],
+  "ocaid": "eltemordelhombre0000roth",
+  "lc_classifications": [
+    "PS3618.O8685 W5718 2011"
+  ],
+  "latest_revision": 12,
+  "revision": 12,
+  "created": {
+    "type": "/type/datetime",
+    "value": "2018-03-12T09:54:35.934612"
+  },
+  "last_modified": {
+    "type": "/type/datetime",
+    "value": "2025-06-25T05:53:39.309029"
+  }
+}

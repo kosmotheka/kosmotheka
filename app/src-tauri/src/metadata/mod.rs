@@ -1119,6 +1119,16 @@ mod live {
 
     #[tokio::test]
     #[ignore = "needs network"]
+    async fn live_open_library_edition_without_authors() {
+        let client = http_client().unwrap();
+        let isbn = Isbn::parse("9788401339639").unwrap();
+        let metadata = openlibrary::lookup(&client, &isbn).await.unwrap().unwrap();
+        println!("open library: {metadata:#?}");
+        assert_eq!(metadata.authors, vec!["Patrick Rothfuss"]);
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
     async fn live_search_open_library() {
         let client = http_client().unwrap();
         let candidates = openlibrary::search(&client, "dune").await.unwrap();

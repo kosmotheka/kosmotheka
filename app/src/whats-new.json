@@ -11,6 +11,10 @@
     {
       "es": "En la ficha, toca un ejemplar para editarlo; la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
       "en": "In an item, tap a copy to edit it; the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
+    },
+    {
+      "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra.",
+      "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work."
     }
   ],
   "0.7.0": [
