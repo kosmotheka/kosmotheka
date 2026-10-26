@@ -44,7 +44,7 @@ Al añadir un libro, la ficha termina con una sección «Tu ejemplar». Se relle
 
 ## Cambiar o borrar un ejemplar
 
-En la sección «Ejemplares», cada ejemplar tiene un botón con tres puntos («Opciones del ejemplar»). Ahí están «Editar» y «Borrar».
+En la sección «Ejemplares», toca un ejemplar para cambiarlo: se abre su formulario. Para borrarlo, la papelera que tiene al lado; si no puedes borrarlo tú (es de otra persona, o solo puedes pedir cambios), la papelera pide que lo borre quien administra.
 
 Si borras un ejemplar, el libro **sigue en tu biblioteca**: solo desaparece ese ejemplar. Para quitar el libro entero, usa «Borrar» en el menú de su ficha: se van el libro y todos sus ejemplares.
 

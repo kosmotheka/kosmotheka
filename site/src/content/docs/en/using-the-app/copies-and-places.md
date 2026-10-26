@@ -44,7 +44,7 @@ When you add a book, its page ends with a section called "Your copy". You fill i
 
 ## Changing or deleting a copy
 
-In the "Copies" section, each copy has a three-dot button ("Copy options"). That is where "Edit" and "Delete" are.
+In the "Copies" section, tap a copy to change it: its form opens. To delete it, use the bin next to it; if you cannot delete it yourself (it is someone else's, or you can only ask for changes), the bin asks whoever administers the library to delete it.
 
 If you delete a copy, the book **stays in your library**: only that copy goes. To remove the whole book, use "Delete" in the menu of its page: the book and all its copies go.
 
