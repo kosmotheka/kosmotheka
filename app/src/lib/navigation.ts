@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 import type { AddBookPrefill } from "@/components/add-book-dialog";
 
@@ -141,4 +141,41 @@ export function leaveSection() {
 /** Closes the open overlay, as the back button would. */
 export function closeOverlay() {
   if (snapshot.overlay) window.history.back();
+}
+
+/**
+ * While `active`, the back button asks the screen first instead of leaving it: an entry of
+ * its own on top of the history, like the scanner's, so back runs `onBack` with the overlay
+ * still open. `onBack` returns true to stay, keeping the entry, for example while it asks whether
+ * to discard changes. When `active` ends another way (saving, the screen's own Cancel), the
+ * entry is dropped, so no step is left behind.
+ */
+export function useBackGuard(active: boolean, onBack: () => boolean) {
+  const onBackRef = useRef(onBack);
+  useEffect(() => {
+    onBackRef.current = onBack;
+  });
+
+  useEffect(() => {
+    if (!active) return;
+    const guard = () => window.history.pushState({ ...window.history.state, backGuard: true }, "");
+    // The scanner keeps the state of the entry below it, so its own closing lands back on ours.
+    const ours = () => (window.history.state as { backGuard?: boolean } | null)?.backGuard;
+    let popped = false;
+    const onPop = () => {
+      if (ours()) return;
+      if (onBackRef.current()) {
+        guard();
+        return;
+      }
+      popped = true;
+      window.removeEventListener("popstate", onPop);
+    };
+    guard();
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (!popped && ours()) window.history.back();
+    };
+  }, [active]);
 }

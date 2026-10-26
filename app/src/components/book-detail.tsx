@@ -84,7 +84,7 @@ import {
   copyWhereText,
   genreLabel,
 } from "@/lib/kinds";
-import { openOverlay } from "@/lib/navigation";
+import { openOverlay, useBackGuard } from "@/lib/navigation";
 import { languageName } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 
@@ -208,6 +208,21 @@ export function BookDetailView({
     if (JSON.stringify(editing) !== JSON.stringify(editStart)) setConfirmDiscard(true);
     else stopEditing();
   };
+
+  // Back while editing cancels the edit, never the whole page with what was typed; with the
+  // question open, back answers «keep editing».
+  useBackGuard(editing !== null, () => {
+    if (confirmDiscard) {
+      setConfirmDiscard(false);
+      return true;
+    }
+    if (JSON.stringify(editing) !== JSON.stringify(editStart)) {
+      setConfirmDiscard(true);
+      return true;
+    }
+    stopEditing();
+    return false;
+  });
 
   /** «Lo tengo» / «Pedir que se añada» on a missing work (D61): straight to the copy form.
    * `openNewCopy` is read once, when `CopiesSection` mounts on the tab switch; resetting it
