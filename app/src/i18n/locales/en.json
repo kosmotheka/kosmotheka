@@ -358,7 +358,7 @@
       "title": "Delete this copy?",
       "body": "The edition stays in the catalog."
     },
-    "more": "Copy options",
+    "editThis": "Edit the copy: {{copy}}",
     "seasonsCount_one": "season {{range}}",
     "seasonsCount_other": "seasons {{range}}"
   },

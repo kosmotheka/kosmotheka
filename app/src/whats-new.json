@@ -7,6 +7,10 @@
     {
       "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto.",
       "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute."
+    },
+    {
+      "es": "En la ficha, toca un ejemplar para editarlo; la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
+      "en": "In an item, tap a copy to edit it; the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
     }
   ],
   "0.7.0": [

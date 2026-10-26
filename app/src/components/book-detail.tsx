@@ -1077,54 +1077,43 @@ function CopiesSection({
         if (editing === copy.id) return <div key={copy.id}>{editor}</div>;
         const Icon = copyIcon(book.kind, copy.format);
         return (
-          <div key={copy.id} className="flex items-center gap-3 rounded-xl border p-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-              <Icon className="size-[19px]" />
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[15px] font-medium">{copyWhatText(book.kind, copy, t)}</span>
-              <span className="truncate text-[13px] text-muted-foreground">
-                {copyWhereText(copy, t)}
+          <div key={copy.id} className="flex items-center gap-1 rounded-xl border pr-1.5">
+            {/* Tapping a copy opens its form; a reader, who only asks (D73), has nothing to open. */}
+            <button
+              type="button"
+              disabled={reader}
+              aria-label={
+                reader
+                  ? undefined
+                  : t("copies.editThis", { copy: copyWhatText(book.kind, copy, t) })
+              }
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-3 text-left enabled:hover:bg-muted/50 disabled:cursor-default"
+              onClick={() => start(copy.id, copyFormFrom(copy))}
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Icon className="size-[19px]" />
               </span>
-              {copy.acquiredOn && (
-                <span className="text-[13px] text-muted-foreground">
-                  {t("copies.acquired", { date: copy.acquiredOn })}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[15px] font-medium">{copyWhatText(book.kind, copy, t)}</span>
+                <span className="truncate text-[13px] text-muted-foreground">
+                  {copyWhereText(copy, t)}
                 </span>
-              )}
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full text-muted-foreground"
-                  aria-label={t("copies.more")}
-                >
-                  <EllipsisVertical />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-48">
-                {!reader && (
-                  <DropdownMenuItem onSelect={() => start(copy.id, copyFormFrom(copy))}>
-                    <Pencil /> {t("common.edit")}
-                  </DropdownMenuItem>
+                {copy.acquiredOn && (
+                  <span className="text-[13px] text-muted-foreground">
+                    {t("copies.acquired", { date: copy.acquiredOn })}
+                  </span>
                 )}
-                {copy.canDelete ? (
-                  <DropdownMenuItem variant="destructive" onSelect={() => setRemoving(copy)}>
-                    <Trash2 /> {t("common.delete")}
-                  </DropdownMenuItem>
-                ) : (
-                  <>
-                    <DropdownMenuItem variant="destructive" onSelect={() => setAsking(copy)}>
-                      <Trash2 /> {t("ask.delete")}
-                    </DropdownMenuItem>
-                    <p className="max-w-60 px-2 py-1.5 text-xs leading-snug text-muted-foreground">
-                      {t(reader ? "ask.whyDeleteReader" : "ask.whyDelete", { library })}
-                    </p>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </div>
+            </button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full text-muted-foreground hover:text-destructive"
+              aria-label={copy.canDelete ? t("common.delete") : t("ask.delete")}
+              onClick={() => (copy.canDelete ? setRemoving(copy) : setAsking(copy))}
+            >
+              <Trash2 />
+            </Button>
           </div>
         );
       })}

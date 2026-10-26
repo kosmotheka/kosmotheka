@@ -372,7 +372,7 @@
       "title": "¿Borrar este ejemplar?",
       "body": "La edición seguirá en el catálogo."
     },
-    "more": "Opciones del ejemplar",
+    "editThis": "Editar el ejemplar: {{copy}}",
     "seasonsCount_one": "temporada {{range}}",
     "seasonsCount_other": "temporadas {{range}}"
   },
