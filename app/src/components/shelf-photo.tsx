@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera, CircleAlert, CircleCheck, ImageIcon, Loader2, Search, X } from "lucide-react";
 
+import { ChoiceSelect } from "@/components/choice-select";
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
@@ -13,13 +14,6 @@ import { ResultsCredits } from "@/components/source-credits";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { languageOf } from "@/i18n";
 import {
   type Candidate,
@@ -207,20 +201,14 @@ export function ShelfPhoto({
         <li>{t("shelf.tipSpines")}</li>
       </ul>
       <Field id="shelf-kind" label={t("shelf.whatIsThere")}>
-        <Select value={kind} onValueChange={(v) => changeKind(v as Kind)}>
-          <SelectTrigger id="shelf-kind" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {kinds
-              .filter((k) => k !== "other")
-              .map((k) => (
-                <SelectItem key={k} value={k}>
-                  {t(`typesPlural.${k}`)}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
+        <ChoiceSelect
+          id="shelf-kind"
+          value={kind}
+          onChange={(v) => changeKind(v as Kind)}
+          choices={kinds
+            .filter((k) => k !== "other")
+            .map((k) => ({ value: k, label: t(`typesPlural.${k}`) }))}
+        />
       </Field>
       <p className="text-[13px] text-pretty text-muted-foreground">{t("shelf.privacy")}</p>
     </div>
@@ -314,18 +302,12 @@ export function ShelfPhoto({
         <Suggestions id="shelf-known-owners" values={options.owners} />
       </Field>
       <Field id="shelf-format" label={t("form.fields.format")}>
-        <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-          <SelectTrigger id="shelf-format" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {KIND_FORMATS[kind].map((f) => (
-              <SelectItem key={f} value={f}>
-                {t(`formats.${f}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ChoiceSelect
+          id="shelf-format"
+          value={format}
+          onChange={(v) => setFormat(v as Format)}
+          choices={KIND_FORMATS[kind].map((f) => ({ value: f, label: t(`formats.${f}`) }))}
+        />
       </Field>
       <Field id="shelf-location" label={t("form.fields.location")}>
         <Input

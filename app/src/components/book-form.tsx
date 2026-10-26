@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
+import { ChoiceSelect } from "@/components/choice-select";
 import { Cover } from "@/components/cover";
 import { CoverChooser } from "@/components/cover-chooser";
 import { useDesktop } from "@/components/shell/use-desktop";
@@ -1058,27 +1059,38 @@ export function EditionFields({
     <div className="space-y-4">
       {showKindSelect && (
         <Field id="kind" label={t("form.fields.kind")}>
-          <Select
-            value={value.kind}
-            onValueChange={(v) => (onKindChange ? onKindChange(v as Kind) : set("kind", v as Kind))}
-          >
-            <SelectTrigger id="kind" className="w-full justify-start">
-              <span className="flex flex-1 items-center gap-2 overflow-hidden">
-                <KindIcon className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{t(`types.${value.kind}`)}</span>
-              </span>
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {kinds.map((k) => {
-                const Icon = KIND_ICONS[k];
-                return (
-                  <SelectItem key={k} value={k}>
-                    <Icon className="size-4" /> {t(`types.${k}`)}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {phone ? (
+            <ChoiceSelect
+              id="kind"
+              value={value.kind}
+              onChange={(v) => (onKindChange ? onKindChange(v as Kind) : set("kind", v as Kind))}
+              choices={kinds.map((k) => ({ value: k, label: t(`types.${k}`) }))}
+            />
+          ) : (
+            <Select
+              value={value.kind}
+              onValueChange={(v) =>
+                onKindChange ? onKindChange(v as Kind) : set("kind", v as Kind)
+              }
+            >
+              <SelectTrigger id="kind" className="w-full justify-start">
+                <span className="flex flex-1 items-center gap-2 overflow-hidden">
+                  <KindIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{t(`types.${value.kind}`)}</span>
+                </span>
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {kinds.map((k) => {
+                  const Icon = KIND_ICONS[k];
+                  return (
+                    <SelectItem key={k} value={k}>
+                      <Icon className="size-4" /> {t(`types.${k}`)}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
         </Field>
       )}
       <div className="flex gap-4">

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Circle, Drama, Gift, Heart, SlidersHorizontal, Tag as TagIcon, X } from "lucide-react";
 
+import { ChoiceSelect } from "@/components/choice-select";
 import { useCatalogOptions } from "@/components/catalog-options";
 import { STATUS_ICONS } from "@/components/marks/marks-section";
 import { Switch } from "@/components/people/role-parts";
@@ -14,13 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import {
   type BookFilter,
@@ -417,61 +411,40 @@ export function FilterPanel({
         />
       </label>
       <Field id="filter-format" label={t("form.fields.format")}>
-        <Select
+        <ChoiceSelect
+          id="filter-format"
           value={filter.format ?? ALL}
-          onValueChange={(v) => set("format", v === ALL ? undefined : (v as Format))}
-        >
-          <SelectTrigger id="filter-format" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("filters.allFormats")}</SelectItem>
-            {formats.map((format) => (
-              <SelectItem key={format} value={format}>
-                {t(`formats.${format}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(v) => set("format", v === ALL ? undefined : (v as Format))}
+          choices={[
+            { value: ALL, label: t("filters.allFormats") },
+            ...formats.map((format) => ({ value: format, label: t(`formats.${format}`) })),
+          ]}
+        />
       </Field>
       {options.owners.length > 0 && (
         <Field id="filter-owner" label={t("form.fields.owner")}>
-          <Select
+          <ChoiceSelect
+            id="filter-owner"
             value={filter.owner ?? ALL}
-            onValueChange={(v) => set("owner", v === ALL ? undefined : v)}
-          >
-            <SelectTrigger id="filter-owner" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("filters.allOwners")}</SelectItem>
-              {options.owners.map((owner) => (
-                <SelectItem key={owner} value={owner}>
-                  {owner}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(v) => set("owner", v === ALL ? undefined : v)}
+            choices={[
+              { value: ALL, label: t("filters.allOwners") },
+              ...options.owners.map((owner) => ({ value: owner, label: owner })),
+            ]}
+          />
         </Field>
       )}
       {options.locations.length > 0 && (
         <Field id="filter-location" label={t("form.fields.location")}>
-          <Select
+          <ChoiceSelect
+            id="filter-location"
             value={filter.location ?? ALL}
-            onValueChange={(v) => set("location", v === ALL ? undefined : v)}
-          >
-            <SelectTrigger id="filter-location" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("filters.allLocations")}</SelectItem>
-              {options.locations.map((location) => (
-                <SelectItem key={location} value={location}>
-                  {location}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(v) => set("location", v === ALL ? undefined : v)}
+            choices={[
+              { value: ALL, label: t("filters.allLocations") },
+              ...options.locations.map((location) => ({ value: location, label: location })),
+            ]}
+          />
         </Field>
       )}
       <div className="mt-2 flex justify-end gap-2">

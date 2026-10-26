@@ -2,15 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Check, TriangleAlert } from "lucide-react";
 
+import { ChoiceSelect } from "@/components/choice-select";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { BookDetail, Format, Kind } from "@/lib/api";
 import type { ChangeKindItem, KindChangePlan } from "@/lib/change-kind";
 import { KIND_FORMATS, copyWhereText } from "@/lib/kinds";
@@ -156,25 +150,18 @@ export function ChangeKindDialog({
                   {t("formats.other")}
                 </span>
               ) : (
-                <Select
-                  value={selected ?? undefined}
-                  onValueChange={(v) =>
+                <ChoiceSelect
+                  value={selected ?? ""}
+                  onChange={(v) =>
                     setCopyFormats((prev) => ({ ...prev, [copyPlan.copyId]: v as Format }))
                   }
-                >
-                  <SelectTrigger
-                    className={selected ? "w-32 shrink-0" : "w-32 shrink-0 ring-2 ring-ring"}
-                  >
-                    <SelectValue placeholder={t("changeKind.choose")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    {KIND_FORMATS[plan.toKind].map((format) => (
-                      <SelectItem key={format} value={format}>
-                        {t(`formats.${format}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={t("changeKind.choose")}
+                  className={selected ? "w-32 shrink-0" : "w-32 shrink-0 ring-2 ring-ring"}
+                  choices={KIND_FORMATS[plan.toKind].map((format) => ({
+                    value: format,
+                    label: t(`formats.${format}`),
+                  }))}
+                />
               )}
             </div>
           );

@@ -2,19 +2,13 @@ import { type SubmitEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleAlert, CircleCheck, CircleHelp, Copy as CopyIcon, Loader2 } from "lucide-react";
 
+import { ChoiceSelect } from "@/components/choice-select";
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   type CopyInput,
   type Format,
@@ -187,18 +181,12 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
           <Suggestions id="burst-known-owners" values={options.owners} />
         </Field>
         <Field id="burst-format" label={t("form.fields.format")}>
-          <Select value={format} onValueChange={(v) => setFormat(v as Format)}>
-            <SelectTrigger id="burst-format" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {formats.map((f) => (
-                <SelectItem key={f} value={f}>
-                  {t(`formats.${f}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ChoiceSelect
+            id="burst-format"
+            value={format}
+            onChange={(v) => setFormat(v as Format)}
+            choices={formats.map((f) => ({ value: f, label: t(`formats.${f}`) }))}
+          />
         </Field>
         <Field id="burst-location" label={t("form.fields.location")}>
           <Input
