@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { CircleCheck } from "lucide-react";
 
 import { AccountDialog } from "@/components/account/account-dialog";
 import { useArrivedLink } from "@/lib/arrived-link";
@@ -9,6 +8,7 @@ import { InvitationDialog } from "@/components/cloud/invitation-dialog";
 import { OtherOwnerDialog } from "@/components/cloud/other-owner-dialog";
 import { DownloadWait } from "@/components/cloud/download-wait";
 import { AccountNotice } from "@/components/account/account-notice";
+import { FloatingNotice } from "@/components/shell/floating-notice";
 import { AuthDialog } from "@/components/account/auth-dialog";
 import { DevicesDialog as AccountDevicesDialog } from "@/components/account/devices-dialog";
 import { TwoFactorDialog } from "@/components/account/two-factor-dialog";
@@ -51,8 +51,6 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { useSyncStatus } from "@/components/shell/sync-status";
 import { TopBar } from "@/components/shell/top-bar";
 import { useDesktop } from "@/components/shell/use-desktop";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import {
   type BookFilter,
   type CatalogOptions,
@@ -151,6 +149,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
   const [filter, setFilter] = useState<BookFilter>({});
   const [notice, setNotice] = useState<string | null>(null);
   // What pressing a notice does, tied to its text: any other notice replaces it and the action goes with it.
+  const closeNotice = useCallback(() => setNotice(null), []);
   const [noticeAction, setNoticeAction] = useState<{ text: string; run: () => void } | null>(null);
   // `null` until it is known whether the welcome shows: the news wait for that.
   const [welcome, setWelcome] = useState<boolean | null>(null);
@@ -500,19 +499,6 @@ function AppShell({ news }: { news: WhatsNew | null }) {
 
   const content = (
     <>
-      {notice && (
-        <Alert className="mb-4">
-          <CircleCheck />
-          <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {notice}
-            {noticeAction?.text === notice && (
-              <Button variant="link" size="sm" className="h-auto p-0" onClick={noticeAction.run}>
-                {t("invitations.notice.see")}
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
       <DownloadWait />
       {page}
     </>
@@ -565,6 +551,18 @@ function AppShell({ news }: { news: WhatsNew | null }) {
             </div>
           )}
 
+          {notice && (
+            <FloatingNotice
+              text={notice}
+              action={
+                noticeAction?.text === notice
+                  ? { label: t("invitations.notice.see"), run: noticeAction.run }
+                  : undefined
+              }
+              desktop={desktop}
+              onClose={closeNotice}
+            />
+          )}
           <RequestNotices version={version} desktop={desktop} />
           <LibraryPicker open={overlay?.name === "libraries"} desktop={desktop} />
           <NewLibraryDialog

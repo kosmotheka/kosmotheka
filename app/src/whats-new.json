@@ -3,6 +3,10 @@
     {
       "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo, al editar una ficha, un ejemplar o al añadir algo nuevo: sale del formulario y, si has escrito algo, pregunta antes.",
       "en": "On the phone, the back button no longer loses what you are typing, when editing an item or a copy or adding something new: it leaves the form and, if you typed something, asks first."
+    },
+    {
+      "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto.",
+      "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute."
     }
   ],
   "0.7.0": [
