@@ -72,7 +72,7 @@ Hecho (propuesta 6): al pulsar el lápiz, la ficha se sustituye por el formulari
 
 ## Pendiente
 
-- **Botón atrás de Android mientras se edita:** hoy cierra la ficha entera y se pierde lo escrito. Debería cancelar la edición (y preguntar si hay cambios), con una entrada propia en el historial, como el escáner.
+- ✅ **Botón atrás de Android mientras se edita** (hecho el 26/10/2026): cerraba la ficha entera y se perdía lo escrito. Ahora la edición tiene su propia entrada en el historial, como el escáner (`useBackGuard` en `lib/navigation.ts`): atrás sale de la edición y, si hay cambios, pregunta antes; con la pregunta abierta, atrás es «seguir editando».
 - **Datos principales a la vista:** el ISBN y la editorial siguen en la pestaña «Datos». Valorar mostrarlos en la cabecera de la ficha.
 - **Ordenar los resultados de búsqueda** por el idioma de la app y por cantidad de datos, y agrupar los de la misma obra (propuesta 4).
 - **Open Library sin autoría:** pedir también la obra cuando la edición no trae autores.
