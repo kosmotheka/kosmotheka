@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, X } from "lucide-react";
 
 import { NoteField } from "@/components/ask-dialog";
+import { ConfirmButton } from "@/components/confirm-button";
 import {
   type CopyForm,
   type EditionForm,
@@ -27,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useBackGuard } from "@/lib/navigation";
 import {
   type ContributorRole,
   type CreatedBook,
@@ -119,15 +121,46 @@ export function AddBookDialog({
     setEdition(next);
   };
 
+  // What was typed, against what the form opened with: back or close only ask when they differ.
+  const typed = JSON.stringify([edition, copy, note.trim()]);
+  const [start, setStart] = useState(typed);
+  const dirty = typed !== start;
+  /** Where the person was going when asked whether to discard: closing, or back to the search. */
+  const [discarding, setDiscarding] = useState<"close" | "search" | null>(null);
+  const leaving = onBack ? "search" : "close";
+
+  // Back with something typed asks before losing it, instead of closing the form.
+  const release = useBackGuard(open && dirty, () => {
+    setDiscarding((asked) => (asked ? null : leaving));
+    return true;
+  });
+
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setEdition(emptyEditionForm);
       setCopy(emptyCopyFormFor(emptyEditionForm.kind));
       setNote("");
+      // Emptied, it is not «something typed»: no back entry while the overlay closes.
+      setStart(JSON.stringify([emptyEditionForm, emptyCopyFormFor(emptyEditionForm.kind), ""]));
       setPickingKind(!initial && !prefill);
       errors.clear();
     }
     onOpenChange(next);
+  };
+
+  const leave = (to: "close" | "search") => {
+    if (to === "search") onBack?.();
+    else handleOpenChange(false);
+  };
+  const askToLeave = (to: "close" | "search") => {
+    if (dirty) setDiscarding(to);
+    else leave(to);
+  };
+  const discard = async () => {
+    const to = discarding;
+    setDiscarding(null);
+    await release();
+    if (to) leave(to);
   };
 
   const submit = async (event: SubmitEvent) => {
@@ -139,18 +172,22 @@ export function AddBookDialog({
         const input = toEditionInput(edition);
         if (asking) {
           const { requested } = await requestMissing(input, note.trim() || null);
+          await release();
           onRequested?.(requested);
         } else {
           const result = await addMissing(input);
+          await release();
           onCreated(result, edition.title.trim());
         }
       } else {
         const book = { ...toEditionInput(edition), copy: toCopyInput(copy) };
         if (asking) {
           const { requested } = await requestBook(book, note.trim() || null);
+          await release();
           onRequested?.(requested);
         } else {
           const result = await (customSubmit ?? createBook)(book);
+          await release();
           onCreated(result, edition.title.trim());
         }
       }
@@ -211,7 +248,10 @@ export function AddBookDialog({
 
   if (!desktop) {
     return (
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => (next ? handleOpenChange(true) : askToLeave("close"))}
+      >
         <ScreenDialogContent>
           <div className="relative flex min-h-0 flex-1 flex-col">
             <form
@@ -226,7 +266,7 @@ export function AddBookDialog({
                   size="icon-lg"
                   className="size-12 rounded-full"
                   aria-label={onBack ? t("addSearch.backToSearch") : t("common.close")}
-                  onClick={onBack ?? (() => handleOpenChange(false))}
+                  onClick={() => askToLeave(leaving)}
                 >
                   {onBack ? <ArrowLeft className="size-[22px]" /> : <X className="size-[22px]" />}
                 </Button>
@@ -256,7 +296,13 @@ export function AddBookDialog({
                   <KindGrid
                     value={edition.kind}
                     onChange={(kind) => {
-                      pickKind(kind);
+                      // Choosing what it is starts the form; it is not a change to discard.
+                      const nextCopy = KIND_FORMATS[kind].includes(copy.format)
+                        ? copy
+                        : { ...copy, format: KIND_FORMATS[kind][0] };
+                      setEdition({ ...edition, kind });
+                      setCopy(nextCopy);
+                      setStart(JSON.stringify([{ ...edition, kind }, nextCopy, note.trim()]));
                       setPickingKind(false);
                     }}
                     columns={4}
@@ -267,12 +313,23 @@ export function AddBookDialog({
             )}
           </div>
         </ScreenDialogContent>
+        <ConfirmButton
+          open={discarding !== null}
+          onOpenChange={(asked) => !asked && setDiscarding(null)}
+          title={t("book.discard.title")}
+          description={t("book.discard.body")}
+          confirmLabel={t("book.discard.confirm")}
+          onConfirm={() => void discard()}
+        />
       </Dialog>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => (next ? handleOpenChange(true) : askToLeave("close"))}
+    >
       {/* The body scrolls; the title and the buttons stay in sight. */}
       <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
         <form
@@ -287,7 +344,7 @@ export function AddBookDialog({
                 variant="ghost"
                 size="sm"
                 className="-ml-2 w-fit gap-1.5 text-muted-foreground"
-                onClick={onBack}
+                onClick={() => askToLeave("search")}
               >
                 <ArrowLeft className="size-4" /> {t("addSearch.backToSearch")}
               </Button>
@@ -303,7 +360,7 @@ export function AddBookDialog({
             {fields}
           </div>
           <DialogFooter className="shrink-0">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => askToLeave("close")}>
               {t("form.cancel")}
             </Button>
             <Button type="submit" disabled={saving}>
@@ -312,6 +369,14 @@ export function AddBookDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <ConfirmButton
+        open={discarding !== null}
+        onOpenChange={(asked) => !asked && setDiscarding(null)}
+        title={t("book.discard.title")}
+        description={t("book.discard.body")}
+        confirmLabel={t("book.discard.confirm")}
+        onConfirm={() => void discard()}
+      />
     </Dialog>
   );
 }

@@ -959,7 +959,9 @@ function CopiesSection({
   /** Id of the copy being edited, or "new" while adding one. */
   const [editing, setEditing] = useState<string | null>(() => (openNewCopy ? "new" : null));
   const [form, setForm] = useState<CopyForm>(() => emptyCopyFormFor(book.kind));
+  const [formStart, setFormStart] = useState<CopyForm>(form);
   const [note, setNote] = useState("");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<CopyDetail | null>(null);
   const errors = useCommandErrors();
@@ -974,8 +976,23 @@ function CopiesSection({
     errors.clear();
     setNote("");
     setForm(initial);
+    setFormStart(initial);
     setEditing(target);
   };
+
+  // Back with the copy's form open closes the form, not the page; with changes, it asks first.
+  useBackGuard(editing !== null, () => {
+    if (confirmDiscard) {
+      setConfirmDiscard(false);
+      return true;
+    }
+    if (JSON.stringify(form) !== JSON.stringify(formStart) || note.trim()) {
+      setConfirmDiscard(true);
+      return true;
+    }
+    setEditing(null);
+    return false;
+  });
 
   // A reader has no other way to add a copy (D73): the "new copy" form always asks.
   const askingNew = editing === "new" && reader;
@@ -1153,6 +1170,14 @@ function CopiesSection({
           onNotice(requested ? t("ask.sent") : t("ask.done"));
           onChanged();
         }}
+      />
+      <ConfirmButton
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title={t("book.discard.title")}
+        description={t("book.discard.body")}
+        confirmLabel={t("book.discard.confirm")}
+        onConfirm={() => setEditing(null)}
       />
     </div>
   );
