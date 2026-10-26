@@ -10,6 +10,7 @@ import {
   Loader2,
   MapPin,
   Plus,
+  ScanBarcode,
   Search,
   Tag as TagIcon,
   X,
@@ -66,6 +67,7 @@ import {
   genreLabel,
 } from "@/lib/kinds";
 import { LANGUAGE_CODES, languageName } from "@/lib/languages";
+import { CameraDenied, scanCode } from "@/lib/scanner";
 import { useBackGuard } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -804,14 +806,40 @@ export function EditionFields({
     if (found?.found) onChange(applyLookup(value, found));
   };
 
+  // The barcode on the box, read with the camera on a phone instead of typing its digits.
+  const [scanDenied, setScanDenied] = useState(false);
+  const scanBarcode = async () => {
+    setScanDenied(false);
+    try {
+      const code = await scanCode();
+      if (code) set("barcode", code);
+    } catch (error) {
+      if (error instanceof CameraDenied) setScanDenied(true);
+    }
+  };
   const barcodeField = (hint: string) => (
     <Field id="barcode" label={t("form.fields.barcode")} error={errorFor("barcode")}>
-      <Input
-        id="barcode"
-        inputMode="numeric"
-        value={value.barcode}
-        onChange={(e) => set("barcode", e.target.value)}
-      />
+      <div className="flex gap-2">
+        <Input
+          id="barcode"
+          inputMode="numeric"
+          value={value.barcode}
+          onChange={(e) => set("barcode", e.target.value)}
+        />
+        {phone && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="size-10 shrink-0"
+            aria-label={t("check.scan")}
+            onClick={() => void scanBarcode()}
+          >
+            <ScanBarcode />
+          </Button>
+        )}
+      </div>
+      {scanDenied && <p className="text-xs text-destructive">{t("addSearch.cameraDenied")}</p>}
       <p className="text-xs text-muted-foreground">{hint}</p>
     </Field>
   );

@@ -1,8 +1,8 @@
 {
   "next": [
     {
-      "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo (al editar una ficha, un ejemplar o al añadir algo): sale del formulario y, si has escrito algo, pregunta antes. Y los géneros se eligen en una hoja con casillas grandes.",
-      "en": "On the phone, the back button no longer loses what you are typing (editing an item or a copy, or adding something): it leaves the form and, if you typed something, asks first. And genres are picked in a sheet with large checkboxes."
+      "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo (al editar una ficha, un ejemplar o al añadir algo): sale del formulario y, si has escrito algo, pregunta antes. Los géneros se eligen en una hoja con casillas grandes, y el código de barras de un juego, una película o un disco se puede escanear en el formulario.",
+      "en": "On the phone, the back button no longer loses what you are typing (editing an item or a copy, or adding something): it leaves the form and, if you typed something, asks first. Genres are picked in a sheet with large checkboxes, and the barcode of a game, film or record can be scanned in the form."
     },
     {
       "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto.",
