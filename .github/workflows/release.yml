@@ -286,5 +286,5 @@ jobs:
           packageName: app.kosmotheka
           releaseFiles: ${{ steps.bundle.outputs.path }}
           # `internal` by default; `alpha` is the closed test. Set PLAY_TRACK in the `release` environment.
-          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          tracks: ${{ vars.PLAY_TRACK || 'internal' }}
           status: draft
