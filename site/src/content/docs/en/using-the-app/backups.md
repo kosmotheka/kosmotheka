@@ -54,46 +54,76 @@ On the same screen, the "Spreadsheet" part lets you move your list to Excel, Lib
 
 ### Export
 
-Tap "Export CSV" and choose where to save it. A CSV is a file that Excel and other programs can open, with one line for each copy (each one you have of something, on paper or digital). The app says how many lines it wrote.
+Tap "Export CSV" and choose where to save it. A CSV is a file that Excel and other programs can open, with one line for each copy (each one you have of something, on paper or digital). It carries every kind together, books, games, films…, each with its kind in the first column. The app says how many lines it wrote.
 
-The CSV **has no password**: anyone who finds it can read it. It also does not carry everything: it does not save the type (book, film…), nor the covers, nor series, nor what you marked as read, nor the stars.
+The CSV **has no password**: anyone who finds it can read it. It also does not carry everything: it does not save the covers, nor sagas and collections, nor what you marked as read, nor the stars. To keep everything, use the backup.
 
 ### Import
 
-Tap "Import CSV" and choose the file. The first line of the file must be the names of the columns. **These names are in English**, written exactly like this:
+Tap "Import CSV" and choose the file. The first line of the file must be the names of the columns, written exactly like this. Only `title` is needed; the other columns may be missing, and one that does not apply to that line's kind stays empty:
 
 | Column | What it holds |
 |---|---|
+| `kind` | The kind, with one of the words in the table below. Empty, it is a book |
 | `title` | The title. **It is the only required one.** |
 | `subtitle` | The subtitle |
 | `authors` | Who wrote it. If there are several people, separate them with a semicolon: `Margaret Weis; Tracy Hickman` |
-| `publisher` | The publisher |
+| `writers`, `illustrators` | Writing and art, for comics |
+| `designers` | Design, for board games |
+| `directors` | Direction, for films and series |
+| `artists` | Artist, for music |
+| `studios` | Studio, for video games |
+| `publisher` | The publisher (or the label, the distributor…) |
 | `published_year` | The year, in digits |
 | `language` | The language, with its two-letter code: `es` for Spanish, `en` for English… |
 | `isbn13` | The ISBN, the number every book has next to its barcode |
+| `barcode` | The barcode of what has no ISBN (EAN or UPC) |
+| `number` | The issue number, for comics |
+| `players_min`, `players_max`, `min_age` | Players and minimum age, for board games |
+| `duration_minutes` | The length in minutes, for board games and films |
+| `seasons` | How many seasons a series has |
+| `genres` | The genres, separated by semicolons, with the app's codes (export a CSV to see them) |
+| `tags` | The tags, separated by semicolons |
 | `format` | The format, with one of the words in the table below |
 | `owner` | Whose it is |
 | `quantity` | How many items. If you put nothing, one |
 | `location` | Where it is |
 | `acquired_on` | The purchase date, like `2026-10-16` |
+| `platform` | A video game's platform |
+| `copy_seasons` | Which seasons that copy of a series holds, like `1-3` |
 
-In the `format` column you must use these words:
+In the `kind` column, these words:
 
 | In the app | In the CSV |
 |---|---|
-| Hardcover | `hardcover` |
-| Paperback | `paperback` |
-| Pocket | `pocket` |
-| Ebook | `ebook` |
-| PDF | `pdf` |
-| Audiobook | `audiobook` |
+| Book | `book`, or leave it empty |
+| Comic | `comic` |
+| Board game | `boardgame` |
+| Film | `film` |
+| Series | `tv_series` |
+| Video game | `videogame` |
+| Music | `music` |
+| Other | `other` |
+
+In the `format` column, one of that kind's formats:
+
+| In the app | In the CSV |
+|---|---|
+| Hardcover · Paperback · Pocket | `hardcover` · `paperback` · `pocket` |
+| Ebook · PDF · Audiobook | `ebook` · `pdf` · `audiobook` |
+| Single issue (comic) | `single_issue` |
+| Box (board game) | `box` |
+| DVD · Blu-ray · 4K | `dvd` · `bluray` · `uhd` |
+| Physical (video game) | `physical` |
+| Vinyl · CD · Cassette | `vinyl` · `cd` · `cassette` |
+| Digital | `digital` |
 | Other, or no format | `other`, or leave it empty |
 
 What happens when you import:
 
-- Everything comes in as a book. You can change the type of each one afterwards from its page.
-- If the ISBN on a line is already in your library, the book is not repeated: a copy is added to it.
-- Lines with errors are skipped and the rest is imported. When it finishes, the app says how many new books there are, to how many books you already had a copy was added, and how many lines were rejected, with the number of each.
+- Each line comes in with its kind; without the `kind` column (as in the CSV files the app exported before), everything comes in as a book, and you can change the kind afterwards from its page.
+- If the ISBN on a line is already in your library, it is not repeated: a copy is added to it. What has no ISBN (a game, a film…) always comes in as new, so importing the same file twice duplicates it.
+- Lines with errors are skipped and the rest is imported. When it finishes, the app says how many new things there are, to how many you already had a copy was added, and how many lines were rejected, with the number of each.
 - If there is a column the app does not know, it ignores it.
 
 You can try first with a new library, to see how it turns out before you mix it with yours.

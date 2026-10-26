@@ -55,7 +55,7 @@ Libros, cómics, juegos de mesa, películas, series, videojuegos y música, cada
 
 ## ¿Puedo traer lo que ya tengo apuntado?
 
-Sí: importa tu hoja de cálculo (un archivo CSV, el que guardan Excel y otros programas) y la app lo convierte en tu lista de cosas. Todo entra como libro, y después puedes cambiar el tipo de cada cosa desde su ficha. También puedes exportarlo cuando quieras. Está en [Copias de seguridad, exportar e importar](../backups/).
+Sí: importa tu hoja de cálculo (un archivo CSV, el que guardan Excel y otros programas) y la app lo convierte en tu lista de cosas. Si tu hoja tiene una columna con el tipo (libro, juego, película…), cada cosa entra con el suyo; si no, todo entra como libro, y después puedes cambiar el tipo desde su ficha. También puedes exportarlo cuando quieras. Está en [Copias de seguridad, exportar e importar](../backups/).
 
 ## ¿Cómo borro mi cuenta?
 

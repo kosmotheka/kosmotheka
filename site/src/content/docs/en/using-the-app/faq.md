@@ -55,7 +55,7 @@ Books, comics, board games, films, series, video games and music, each one with 
 
 ## Can I bring in what I already have noted?
 
-Yes: import your spreadsheet (a CSV file, the kind Excel and other programs save), and the app turns it into your list. Everything comes in as a book, and afterwards you can change the kind of each thing from its details page. You can also export it whenever you like. It is explained in [Backups, export and import](../backups/).
+Yes: import your spreadsheet (a CSV file, the kind Excel and other programs save), and the app turns it into your list. If your sheet has a column with the kind (book, game, film…), each thing comes in as its own; if not, everything comes in as a book, and afterwards you can change the kind from its details page. You can also export it whenever you like. It is explained in [Backups, export and import](../backups/).
 
 ## How do I delete my account?
 

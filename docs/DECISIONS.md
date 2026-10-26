@@ -454,6 +454,7 @@ El modo ráfaga (hito 1.4) prioriza la velocidad sin sacrificar el control:
 
 **CSV:**
 - Una fila por ejemplar (una edición sin ejemplares ocupa una fila con las columnas del ejemplar vacías). Varios autores en una celda, separados por `;`. Cabeceras en inglés, estables, para que otras herramientas lo puedan leer: `title, subtitle, authors, publisher, published_year, language, isbn13, format, owner, quantity, location, acquired_on`.
+- **Todos los tipos, en el mismo fichero (26/10/2026, con el maintainer):** una columna `kind` y una columna por cada dato propio de un tipo (`writers`, `illustrators`, `designers`, `directors`, `artists`, `studios`, `barcode`, `number`, `players_min`, `players_max`, `duration_minutes`, `min_age`, `seasons`, `platform`, `copy_seasons`), más `genres` y `tags`; lo que no sirve para un tipo queda vacío. Un CSV sin esas columnas (los de antes) se importa como siempre: todo como libro.
 - UTF-8 con BOM, para que las hojas de cálculo reconozcan tildes y eñes.
 - **Importar añade**: cada fila válida es un alta, y si el ISBN ya existe, añade un ejemplar. Las filas con errores se informan con su número de línea y no detienen el resto. Sin formato, se usa `other`. Las portadas no viajan en el CSV.
 

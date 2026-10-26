@@ -1,39 +1,65 @@
-//! CSV export and import, one row per copy, for spreadsheets and other apps (D30).
-//! Several authors share one cell, separated by semicolons.
+//! CSV export and import, one row per copy, for spreadsheets and other apps (D30): every kind
+//! in one file, with a `kind` column. Several names (or genres, or tags) share one cell,
+//! separated by semicolons.
 
-use kosmotheka_domain::{CopyInput, EditionInput, ErrorCode, FieldError, Format, NewBook};
+use kosmotheka_domain::{
+    ContributorInput, ContributorRole, CopyInput, EditionInput, ErrorCode, FieldError, Format,
+    Kind, NewBook,
+};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
 use crate::catalog;
 use crate::error::{Error, Result};
 
-#[derive(Debug, Serialize, Deserialize)]
+/// One copy per row; a column that does not apply to the row's kind stays empty. A file from
+/// before the kinds (only the book's columns) still imports: every missing column is empty, and
+/// an empty kind is a book.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
 struct Row {
+    kind: String,
     title: String,
-    #[serde(default)]
     subtitle: String,
-    #[serde(default)]
     authors: String,
-    #[serde(default)]
+    writers: String,
+    illustrators: String,
+    designers: String,
+    directors: String,
+    artists: String,
+    studios: String,
     publisher: String,
-    #[serde(default)]
     published_year: String,
-    #[serde(default)]
     language: String,
-    #[serde(default)]
     isbn13: String,
-    #[serde(default)]
+    barcode: String,
+    number: String,
+    players_min: String,
+    players_max: String,
+    duration_minutes: String,
+    min_age: String,
+    seasons: String,
+    genres: String,
+    tags: String,
     format: String,
-    #[serde(default)]
     owner: String,
-    #[serde(default)]
     quantity: String,
-    #[serde(default)]
     location: String,
-    #[serde(default)]
     acquired_on: String,
+    platform: String,
+    copy_seasons: String,
 }
+
+/// The roles in their columns, `authors` first as it always was.
+const ROLES: [(ContributorRole, &str); 7] = [
+    (ContributorRole::Author, "author"),
+    (ContributorRole::Writer, "writer"),
+    (ContributorRole::Illustrator, "illustrator"),
+    (ContributorRole::Designer, "designer"),
+    (ContributorRole::Director, "director"),
+    (ContributorRole::Artist, "artist"),
+    (ContributorRole::Studio, "studio"),
+];
 
 #[derive(Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,27 +80,50 @@ pub struct RejectedRow {
 /// Returns the number of data rows written. Editions without copies get one row
 /// with the copy columns empty.
 pub fn export(conn: &Connection, library: &str, mut out: impl std::io::Write) -> Result<usize> {
-    let mut statement = conn.prepare(
-        "SELECT e.title, coalesce(e.subtitle, ''),
-                coalesce((SELECT group_concat(p.name, '; ' ORDER BY wc.position)
-                            FROM work_contributors wc
-                            JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
-                           WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id
-                             AND wc.role = 'author'), ''),
+    let people = |role: &str| {
+        format!(
+            "coalesce((SELECT group_concat(p.name, '; ' ORDER BY wc.position)
+                         FROM work_contributors wc
+                         JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
+                        WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id
+                          AND wc.role = '{role}'), '')"
+        )
+    };
+    let roles = ROLES.map(|(_, role)| people(role)).join(", ");
+    let mut statement = conn.prepare(&format!(
+        "SELECT w.kind, e.title, coalesce(e.subtitle, ''), {roles},
                 coalesce(pu.name, ''), coalesce(e.published_year, ''), coalesce(e.language, ''),
-                coalesce(bd.isbn13, ''), coalesce(c.format, ''), coalesce(m.name, ''),
-                coalesce(c.quantity, ''), coalesce(c.location, ''), coalesce(c.acquired_on, '')
+                coalesce(bd.isbn13, ''), coalesce(e.barcode, ''), coalesce(cd.number, ''),
+                coalesce(gd.players_min, ''), coalesce(gd.players_max, ''),
+                coalesce(gd.duration_minutes, fd.duration_minutes, ''), coalesce(gd.min_age, ''),
+                coalesce(td.seasons, ''),
+                coalesce((SELECT group_concat(genre, '; ' ORDER BY genre) FROM work_genres
+                           WHERE library_id = e.library_id AND work_id = e.work_id), ''),
+                coalesce((SELECT group_concat(t.name, '; ' ORDER BY t.name COLLATE NOCASE)
+                            FROM work_tags wt
+                            JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                           WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id), ''),
+                coalesce(c.format, ''), coalesce(m.name, ''), coalesce(c.quantity, ''),
+                coalesce(c.location, ''), coalesce(c.acquired_on, ''), coalesce(c.platform, ''),
+                coalesce(c.seasons, '')
            FROM editions e
+           JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
            LEFT JOIN publishers pu ON pu.library_id = e.library_id AND pu.id = e.publisher_id
            LEFT JOIN book_details bd ON bd.library_id = e.library_id AND bd.edition_id = e.id
+           LEFT JOIN comic_details cd ON cd.library_id = e.library_id AND cd.edition_id = e.id
+           LEFT JOIN boardgame_details gd ON gd.library_id = e.library_id AND gd.edition_id = e.id
+           LEFT JOIN film_details fd ON fd.library_id = e.library_id AND fd.edition_id = e.id
+           LEFT JOIN tv_series_details td ON td.library_id = e.library_id AND td.edition_id = e.id
            LEFT JOIN copies c ON c.library_id = e.library_id AND c.edition_id = e.id
            LEFT JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
           WHERE e.library_id = ?1
-          ORDER BY e.title COLLATE NOCASE, e.id, c.created_at",
-    )?;
+          ORDER BY e.title COLLATE NOCASE, e.id, c.created_at"
+    ))?;
     let rows = statement.query_map([library], |row| {
-        let text = |i: usize| -> rusqlite::Result<String> {
-            let value: rusqlite::types::Value = row.get(i)?;
+        let mut column = 0;
+        let mut next = || -> rusqlite::Result<String> {
+            let value: rusqlite::types::Value = row.get(column)?;
+            column += 1;
             Ok(match value {
                 rusqlite::types::Value::Integer(n) => n.to_string(),
                 rusqlite::types::Value::Text(s) => s,
@@ -82,18 +131,36 @@ pub fn export(conn: &Connection, library: &str, mut out: impl std::io::Write) ->
             })
         };
         Ok(Row {
-            title: text(0)?,
-            subtitle: text(1)?,
-            authors: text(2)?,
-            publisher: text(3)?,
-            published_year: text(4)?,
-            language: text(5)?,
-            isbn13: text(6)?,
-            format: text(7)?,
-            owner: text(8)?,
-            quantity: text(9)?,
-            location: text(10)?,
-            acquired_on: text(11)?,
+            kind: next()?,
+            title: next()?,
+            subtitle: next()?,
+            authors: next()?,
+            writers: next()?,
+            illustrators: next()?,
+            designers: next()?,
+            directors: next()?,
+            artists: next()?,
+            studios: next()?,
+            publisher: next()?,
+            published_year: next()?,
+            language: next()?,
+            isbn13: next()?,
+            barcode: next()?,
+            number: next()?,
+            players_min: next()?,
+            players_max: next()?,
+            duration_minutes: next()?,
+            min_age: next()?,
+            seasons: next()?,
+            genres: next()?,
+            tags: next()?,
+            format: next()?,
+            owner: next()?,
+            quantity: next()?,
+            location: next()?,
+            acquired_on: next()?,
+            platform: next()?,
+            copy_seasons: next()?,
         })
     })?;
 
@@ -156,22 +223,41 @@ pub fn import(
 fn to_book(row: Row) -> std::result::Result<NewBook, Vec<FieldError>> {
     let mut errors = Vec::new();
     let optional = |value: String| Some(value).filter(|v| !v.is_empty());
+    let list = |value: &str| -> Vec<String> {
+        value
+            .split(';')
+            .map(|item| item.trim().to_owned())
+            .filter(|item| !item.is_empty())
+            .collect()
+    };
+    let mut number = |field: &str, value: &str| -> Option<i64> {
+        match value {
+            "" => None,
+            text => text.parse().map(Some).unwrap_or_else(|_| {
+                errors.push(FieldError::new(field, ErrorCode::OutOfRange));
+                None
+            }),
+        }
+    };
 
-    let published_year = match row.published_year.as_str() {
-        "" => None,
-        year => year.parse().map(Some).unwrap_or_else(|_| {
-            errors.push(FieldError::new("publishedYear", ErrorCode::OutOfRange));
-            None
+    let published_year =
+        number("publishedYear", &row.published_year).and_then(|year| i32::try_from(year).ok());
+    let players_min = number("playersMin", &row.players_min);
+    let players_max = number("playersMax", &row.players_max);
+    let duration_minutes = number("durationMinutes", &row.duration_minutes);
+    let min_age = number("minAge", &row.min_age);
+    let seasons = number("seasons", &row.seasons);
+    let quantity = number("copy.quantity", &row.quantity)
+        .map(|n| u32::try_from(n).unwrap_or(0))
+        .unwrap_or(1);
+    let kind = match row.kind.to_lowercase().as_str() {
+        "" => Kind::Book,
+        name => name.parse().unwrap_or_else(|_| {
+            errors.push(FieldError::new("kind", ErrorCode::InvalidFormat));
+            Kind::Book
         }),
     };
-    let quantity = match row.quantity.as_str() {
-        "" => 1,
-        quantity => quantity.parse().unwrap_or_else(|_| {
-            errors.push(FieldError::new("copy.quantity", ErrorCode::OutOfRange));
-            1
-        }),
-    };
-    // Copies need a format; a row without one is still a book worth keeping.
+    // Copies need a format; a row without one is still a work worth keeping.
     let format = match row.format.to_lowercase().as_str() {
         "" => Format::Other,
         name => name.parse().unwrap_or_else(|_| {
@@ -183,19 +269,46 @@ fn to_book(row: Row) -> std::result::Result<NewBook, Vec<FieldError>> {
         return Err(errors);
     }
 
+    let columns = [
+        &row.authors,
+        &row.writers,
+        &row.illustrators,
+        &row.designers,
+        &row.directors,
+        &row.artists,
+        &row.studios,
+    ];
+    let contributors = ROLES
+        .iter()
+        .zip(columns)
+        .skip(1)
+        .flat_map(|((role, _), names)| {
+            list(names)
+                .into_iter()
+                .map(|name| ContributorInput { name, role: *role })
+        })
+        .collect();
+
     Ok(NewBook {
         edition: EditionInput {
+            kind,
             title: row.title,
             subtitle: optional(row.subtitle),
-            authors: row
-                .authors
-                .split(';')
-                .map(|a| a.trim().to_owned())
-                .collect(),
+            authors: list(&row.authors),
+            contributors,
             publisher: optional(row.publisher),
             published_year,
             language: optional(row.language),
             isbn: optional(row.isbn13),
+            barcode: optional(row.barcode),
+            number: optional(row.number),
+            players_min,
+            players_max,
+            duration_minutes,
+            min_age,
+            seasons,
+            genres: list(&row.genres),
+            tags: list(&row.tags),
             ..EditionInput::default()
         },
         copy: CopyInput {
@@ -204,8 +317,8 @@ fn to_book(row: Row) -> std::result::Result<NewBook, Vec<FieldError>> {
             quantity,
             location: optional(row.location),
             acquired_on: optional(row.acquired_on),
-            platform: None,
-            seasons: None,
+            platform: optional(row.platform),
+            seasons: optional(row.copy_seasons),
         },
     })
 }
@@ -258,6 +371,55 @@ mod tests {
         assert_eq!(books[1].authors, vec!["Terry Pratchett", "Neil Gaiman"]);
         assert_eq!(books[0].copy_count, 2);
         assert_eq!(books[0].formats, vec![Format::Hardcover, Format::Ebook]);
+    }
+
+    #[test]
+    fn every_kind_goes_out_and_comes_back_with_its_own_columns() {
+        let mut source = db::open_in_memory().unwrap();
+        let from = ops::active_library(&source).unwrap();
+        let path = temp_file("kinds");
+        std::fs::write(
+            &path,
+            "kind,title,designers,publisher,barcode,players_min,players_max,duration_minutes,min_age,genres,tags,format,platform,copy_seasons,seasons,directors\n\
+             boardgame,Catan,Klaus Teuber,Devir,4006381333931,3,4,75,10,strategy; family,para jugar en casa,box,,,,\n\
+             videogame,Zelda,,Nintendo,,,,,,,,physical,Switch,,,\n\
+             tv_series,Twin Peaks,,,,,,,,,,dvd,,1-2,3,David Lynch\n",
+        )
+        .unwrap();
+        let imported = import(&mut source, &from, std::fs::File::open(&path).unwrap()).unwrap();
+        assert_eq!(imported.rejected, vec![]);
+        assert_eq!(imported.books_created, 3);
+
+        export(&source, &from, std::fs::File::create(&path).unwrap()).unwrap();
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let reimported = import(&mut target, &to, std::fs::File::open(&path).unwrap()).unwrap();
+        assert_eq!(reimported, imported);
+
+        let books = catalog::list_books(&target, &to, &BookFilter::default()).unwrap();
+        let detail = |title: &str| {
+            let summary = books.iter().find(|b| b.title == title).unwrap();
+            catalog::get_book(&target, &to, &summary.edition_id).unwrap()
+        };
+        let catan = detail("Catan");
+        assert_eq!(catan.kind, Kind::Boardgame);
+        assert_eq!(catan.barcode.as_deref(), Some("4006381333931"));
+        assert_eq!((catan.players_min, catan.players_max), (Some(3), Some(4)));
+        assert_eq!(
+            (catan.duration_minutes, catan.min_age),
+            (Some(75), Some(10))
+        );
+        assert_eq!(catan.genres, ["family", "strategy"]);
+        assert_eq!(catan.contributors[0].name, "Klaus Teuber");
+        assert_eq!(catan.copies[0].format, Format::Box);
+        assert_eq!(
+            detail("Zelda").copies[0].platform.as_deref(),
+            Some("Switch")
+        );
+        let peaks = detail("Twin Peaks");
+        assert_eq!(peaks.seasons, Some(3));
+        assert_eq!(peaks.copies[0].seasons.as_deref(), Some("1-2"));
+        assert_eq!(peaks.contributors[0].name, "David Lynch");
     }
 
     #[test]

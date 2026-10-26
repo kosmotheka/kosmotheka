@@ -13,8 +13,8 @@
       "en": "In an item: the top shows its publisher and ISBN, tapping a copy opens it to edit, and the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
     },
     {
-      "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra.",
-      "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work."
+      "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra. Y la hoja de cálculo (CSV) lleva ya todos los tipos, no solo libros, con sus géneros y etiquetas, para exportar e importar.",
+      "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work. And the spreadsheet (CSV) now carries every kind, not only books, with their genres and tags, to export and import."
     },
     {
       "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión).",

@@ -492,7 +492,7 @@
     "backupDone": "Backup saved: {{books}} books, {{copies}} copies, {{covers}} covers.",
     "csvExported_one": "Exported {{count}} row.",
     "csvExported_other": "Exported {{count}} rows.",
-    "csvImported": "Imported: {{books}} new books, {{copies}} copies added to existing books, {{rejected}} rows rejected.",
+    "csvImported": "Imported: {{books}} new things, {{copies}} copies added to what you already had, {{rejected}} rows rejected.",
     "rejectedLine": "Line {{line}}:",
     "backupErrors": {
       "not_a_backup": "This file is not a backup of this app.",

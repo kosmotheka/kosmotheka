@@ -506,7 +506,7 @@
     "backupDone": "Copia guardada: {{books}} libros, {{copies}} ejemplares, {{covers}} portadas.",
     "csvExported_one": "Exportada {{count}} fila.",
     "csvExported_other": "Exportadas {{count}} filas.",
-    "csvImported": "Importado: {{books}} libros nuevos, {{copies}} ejemplares añadidos a libros existentes, {{rejected}} filas rechazadas.",
+    "csvImported": "Importado: {{books}} cosas nuevas, {{copies}} ejemplares añadidos a lo que ya tenías, {{rejected}} filas rechazadas.",
     "rejectedLine": "Línea {{line}}:",
     "backupErrors": {
       "not_a_backup": "Este archivo no es una copia de seguridad de esta app.",
