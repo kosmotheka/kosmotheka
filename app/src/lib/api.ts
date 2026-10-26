@@ -1182,6 +1182,11 @@ export interface SeriesEntry {
   cover: string | null;
   position: number | null;
   copies: number;
+  publishedYear: number | null;
+  /** The formats of its copies, each once. */
+  formats: Format[];
+  /** A work it requires and nobody owns (an expansion's base game). */
+  needs: string | null;
 }
 
 export interface SeriesDetail {

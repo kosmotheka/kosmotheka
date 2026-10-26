@@ -1,8 +1,8 @@
 {
   "next": [
     {
-      "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo, al editar una ficha, un ejemplar o al añadir algo nuevo: sale del formulario y, si has escrito algo, pregunta antes.",
-      "en": "On the phone, the back button no longer loses what you are typing, when editing an item or a copy or adding something new: it leaves the form and, if you typed something, asks first."
+      "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo (al editar una ficha, un ejemplar o al añadir algo): sale del formulario y, si has escrito algo, pregunta antes. Y los géneros se eligen en una hoja con casillas grandes.",
+      "en": "On the phone, the back button no longer loses what you are typing (editing an item or a copy, or adding something): it leaves the form and, if you typed something, asks first. And genres are picked in a sheet with large checkboxes."
     },
     {
       "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto.",
@@ -17,8 +17,8 @@
       "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work."
     },
     {
-      "es": "En el móvil, los géneros se eligen en una hoja con casillas grandes, en lugar de un menú pequeño.",
-      "en": "On the phone, genres are picked in a sheet with large checkboxes, instead of a small menu."
+      "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión).",
+      "en": "In a saga or collection, each work shows its year and formats, and warns when it needs another that nobody has (such as an expansion's base game)."
     }
   ],
   "0.7.0": [

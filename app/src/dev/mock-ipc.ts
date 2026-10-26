@@ -513,6 +513,9 @@ function seriesEntryOf(b: BookSummary, entryId: string, position: number | null)
     cover: b.cover,
     position,
     copies: b.copyCount,
+    publishedYear: b.publishedYear,
+    formats: b.formats,
+    needs: null,
   };
 }
 

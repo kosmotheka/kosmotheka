@@ -63,6 +63,12 @@ pub struct SeriesEntry {
     pub cover: Option<String>,
     pub position: Option<i64>,
     pub copies: i64,
+    /// Of the edition shown, like the cover.
+    pub published_year: Option<i32>,
+    /// The formats of its copies, each once (`paperback`, `ebook`…), for the row's second line.
+    pub formats: Vec<String>,
+    /// A work it requires and nobody owns (an expansion's base game), for the «needs» notice.
+    pub needs: Option<String>,
 }
 
 fn validate_name(name: &str) -> Result<String> {
@@ -459,15 +465,15 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
             [library, work_id],
             |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
-        let (edition_id, cover): (Option<String>, Option<String>) = conn
+        let (edition_id, cover, published_year) = conn
             .query_row(
-                "SELECT id, cover FROM editions WHERE library_id = ?1 AND work_id = ?2
+                "SELECT id, cover, published_year FROM editions WHERE library_id = ?1 AND work_id = ?2
                   ORDER BY title COLLATE NOCASE, id LIMIT 1",
                 [library, work_id],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .optional()?
-            .unwrap_or((None, None));
+            .unwrap_or((None, None, None));
         let copies: i64 = conn.query_row(
             "SELECT coalesce(sum(c.quantity), 0) FROM copies c
                JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
@@ -475,6 +481,29 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
             [library, work_id],
             |row| row.get(0),
         )?;
+        let formats = conn
+            .prepare(
+                "SELECT DISTINCT c.format FROM copies c
+                   JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+                  WHERE e.library_id = ?1 AND e.work_id = ?2
+                  ORDER BY c.format",
+            )?
+            .query_map([library, work_id], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        let needs = conn
+            .query_row(
+                "SELECT w.title FROM work_relations r
+                   JOIN works w ON w.library_id = r.library_id AND w.id = r.related_work_id
+                  WHERE r.library_id = ?1 AND r.work_id = ?2 AND r.relation = 'requires'
+                    AND NOT EXISTS (
+                      SELECT 1 FROM copies c
+                        JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+                       WHERE e.library_id = w.library_id AND e.work_id = w.id)
+                  ORDER BY w.title COLLATE NOCASE LIMIT 1",
+                [library, work_id],
+                |row| row.get(0),
+            )
+            .optional()?;
         entries.push(SeriesEntry {
             entry_id,
             work_id: work_id.clone(),
@@ -484,6 +513,9 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
             cover,
             position,
             copies,
+            published_year,
+            formats,
+            needs,
         });
     }
     if ordered {
@@ -913,6 +945,37 @@ mod tests {
             .collect();
 
         assert_eq!(covers, ["1.webp", "2.webp", "3.webp"]);
+    }
+
+    #[test]
+    fn a_row_says_its_year_its_formats_and_a_base_game_nobody_owns() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let series_id = create_series(&mut conn, &lib, "Dune: Imperium", false).unwrap();
+        let mut dated = book("Dune: Imperium");
+        dated.edition.published_year = Some(2020);
+        let edition = catalog::create_book(&mut conn, &lib, &dated, None)
+            .unwrap()
+            .edition_id;
+        let base = catalog::get_book(&conn, &lib, &edition).unwrap().work_id;
+        let expansion = add_work(&mut conn, "Rise of Ix");
+        let missing = catalog::create_missing(&mut conn, &lib, &book("Uprising").edition, None)
+            .unwrap()
+            .edition_id;
+        let missing = catalog::get_book(&conn, &lib, &missing).unwrap().work_id;
+        add_requirement(&mut conn, &lib, &expansion, &missing).unwrap();
+        add_requirement(&mut conn, &lib, &base, &expansion).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &base, None).unwrap();
+        add_to_series(&mut conn, &lib, &series_id, &expansion, None).unwrap();
+
+        let detail = get_series(&conn, &lib, &series_id).unwrap();
+        let row = |title: &str| detail.entries.iter().find(|e| e.title == title).unwrap();
+
+        assert_eq!(row("Dune: Imperium").published_year, Some(2020));
+        assert_eq!(row("Dune: Imperium").formats, ["paperback"]);
+        // Its requirement is owned: no notice.
+        assert_eq!(row("Dune: Imperium").needs, None);
+        assert_eq!(row("Rise of Ix").needs.as_deref(), Some("Uprising"));
     }
 
     #[test]

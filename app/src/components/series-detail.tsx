@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ListChecks, Pencil, Plus, Trash2, TriangleAlert, X } from "lucide-react";
 
 import { AddToSeriesWorkDialog } from "@/components/series-work-picker";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -189,6 +189,9 @@ export function SeriesDetailView({
     }
     const entry = row.entry;
     const owned = entry.copies > 0;
+    const meta = [entry.publishedYear, entry.formats.map((f) => t(`formats.${f}`)).join(", ")]
+      .filter(Boolean)
+      .join(" · ");
     return (
       <div
         key={entry.entryId}
@@ -221,6 +224,13 @@ export function SeriesDetailView({
           <Cover file={entry.cover} alt={entry.title} kind={entry.kind} className="h-13" />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate text-sm font-semibold">{entry.title}</span>
+            {meta && <span className="truncate text-[12.5px] text-muted-foreground">{meta}</span>}
+            {entry.needs && (
+              <span className="flex items-center gap-1 text-[12.5px] text-amber-700 dark:text-amber-400">
+                <TriangleAlert className="size-3.5 shrink-0" />
+                <span className="truncate">{t("series.needsWork", { title: entry.needs })}</span>
+              </span>
+            )}
             {/* On a phone the status goes under the title, so the button beside it reads as what it is: an action. */}
             {!owned && (
               <span className="text-[12.5px] text-muted-foreground sm:hidden">

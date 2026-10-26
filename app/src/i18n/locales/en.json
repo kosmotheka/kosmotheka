@@ -1480,6 +1480,7 @@
       "missing": "Missing"
     },
     "needs": "Needs",
+    "needsWork": "Needs {{title}}, which nobody has",
     "neededBy": "Needed by",
     "list": {
       "workCount_one": "{{count}} work",

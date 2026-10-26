@@ -1494,6 +1494,7 @@
       "missing": "Te falta"
     },
     "needs": "Necesita",
+    "needsWork": "Necesita {{title}}, que no tenéis",
     "neededBy": "Lo necesitan",
     "list": {
       "workCount_one": "{{count}} obra",
