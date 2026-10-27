@@ -10,6 +10,8 @@ enum FieldType
     case Integer;
     /** `YYYY-MM-DD`, and it must exist on the calendar. */
     case Date;
+    /** A moment in UTC written one way only, `YYYY-MM-DDTHH:MM:SS.mmmZ`, that exists (D105). */
+    case Timestamp;
     /** One of a fixed list of strings (FieldSpec::$allowed). */
     case OneOf;
     /** Id of another entity; the database enforces that it exists. */

@@ -184,6 +184,12 @@ enum CatalogEntity: string
         };
     }
 
+    /** What goes to the trash (D105): the four things a person deletes from the app. */
+    public function isTrashable(): bool
+    {
+        return \in_array($this, [self::Edition, self::Copy, self::Tag, self::Series], true);
+    }
+
     /**
      * @return array<string, FieldSpec>
      */
@@ -193,11 +199,14 @@ enum CatalogEntity: string
         $ref = static fn (self $target, bool $required = false): FieldSpec => new FieldSpec(FieldType::Ref, $required, [], $target);
         $integer = static fn (bool $required = false): FieldSpec => new FieldSpec(FieldType::Integer, $required);
         $oneOf = static fn (string ...$allowed): FieldSpec => new FieldSpec(FieldType::OneOf, true, array_values($allowed));
+        // In the trash since then, by that person (D105); both null when it is not.
+        $trash = ['trashed_at' => new FieldSpec(FieldType::Timestamp, false), 'trashed_by' => $ref(self::Member)];
 
         return match ($this) {
             self::Work => ['kind' => $oneOf(...self::KINDS), 'title' => $text(true)],
             self::Library => ['name' => $text(true), 'cloud_library_id' => $text(), 'cloud_server' => $text(), 'cloud_device_id' => new FieldSpec(FieldType::DeviceIdOrEmpty, false), 'founding_nonce' => $text()],
-            self::Person, self::Publisher, self::Tag => ['name' => $text(true)],
+            self::Person, self::Publisher => ['name' => $text(true)],
+            self::Tag => ['name' => $text(true), ...$trash],
             self::Member => [
                 'name' => $text(true),
                 'role' => new FieldSpec(FieldType::OneOf, false, self::ROLES),
@@ -221,6 +230,7 @@ enum CatalogEntity: string
                 'cover' => $text(),
                 'barcode' => $text(),
                 'notes' => $text(),
+                ...$trash,
             ],
             self::BookDetails => [
                 'isbn13' => new FieldSpec(FieldType::Isbn13, false),
@@ -247,6 +257,7 @@ enum CatalogEntity: string
                 'platform' => $text(),
                 // A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
                 'seasons' => $text(),
+                ...$trash,
             ],
             self::WorkTag => [
                 'work_id' => $ref(self::Work, true),
@@ -259,6 +270,7 @@ enum CatalogEntity: string
             self::Series => [
                 'name' => $text(true),
                 'ordered' => new FieldSpec(FieldType::Boolean, true),
+                ...$trash,
             ],
             self::SeriesEntry => [
                 'series_id' => $ref(self::Series, true),

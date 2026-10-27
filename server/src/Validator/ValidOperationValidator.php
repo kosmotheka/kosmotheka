@@ -127,6 +127,14 @@ final class ValidOperationValidator extends ConstraintValidator
             }
         }
 
+        // In the trash or not, never half: a date with nobody, or somebody with no date (D105).
+        if ($change->entity->isTrashable()
+            && (\array_key_exists('trashed_at', $fields) || \array_key_exists('trashed_by', $fields))
+            && (!\array_key_exists('trashed_at', $fields) || !\array_key_exists('trashed_by', $fields)
+                || (null === $fields['trashed_at']) !== (null === $fields['trashed_by']))) {
+            return $this->report(OperationErrorCode::TrashPair, "$path.fields");
+        }
+
         // A person's mark on a work has one id, derived from both (D68), so the same
         // person marking the same work on two devices writes the same row.
         if (CatalogEntity::Mark === $change->entity
@@ -157,6 +165,7 @@ final class ValidOperationValidator extends ConstraintValidator
             FieldType::Text => \is_string($value) && !str_contains($value, "\0"),
             FieldType::Integer => \is_int($value),
             FieldType::Date => \is_string($value) && $this->isDate($value),
+            FieldType::Timestamp => \is_string($value) && self::isTimestamp($value),
             FieldType::OneOf => \in_array($value, $spec->allowed, true),
             FieldType::Ref => \is_string($value) && $this->isUuid($value),
             FieldType::Boolean => \is_bool($value),
@@ -176,6 +185,32 @@ final class ValidOperationValidator extends ConstraintValidator
     private function isUuid(string $value): bool
     {
         return 1 === preg_match(self::UUID, $value);
+    }
+
+    /**
+     * `YYYY-MM-DDTHH:MM:SS.mmmZ`, on the calendar and the clock: one writing per moment, compared as text (D105).
+     */
+    public static function isTimestamp(string $value): bool
+    {
+        return null !== self::timestampMillis($value);
+    }
+
+    /**
+     * The milliseconds since 1970 of a timestamp written as the spec says, the scale of an `hlc`; null otherwise.
+     */
+    public static function timestampMillis(string $value): ?int
+    {
+        if (1 !== preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z$/D', $value, $parts)
+            || !checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])
+            || (int) $parts[4] > 23 || (int) $parts[5] > 59 || (int) $parts[6] > 59) {
+            return null;
+        }
+        $seconds = gmmktime((int) $parts[4], (int) $parts[5], (int) $parts[6], (int) $parts[2], (int) $parts[3], (int) $parts[1]);
+        if (false === $seconds || $seconds < 0) {
+            return null;
+        }
+
+        return $seconds * 1000 + (int) $parts[7];
     }
 
     private function isDate(string $value): bool

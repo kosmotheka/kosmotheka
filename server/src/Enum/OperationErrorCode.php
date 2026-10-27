@@ -26,4 +26,6 @@ enum OperationErrorCode: string
     case FieldsOnDelete = 'fields_on_delete';
     case WrongId = 'wrong_id';
     case Undeletable = 'undeletable';
+    /** `trashed_at` and `trashed_by` go together: both set, or both null (D105). */
+    case TrashPair = 'trash_pair';
 }

@@ -14,8 +14,18 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_catalog_editions_cloud_library', columns: ['cloud_library_id'])]
 #[ORM\Index(name: 'idx_catalog_editions_work_key', columns: ['work_key'])]
 #[ORM\Index(name: 'idx_catalog_editions_publisher_key', columns: ['publisher_key'])]
+#[ORM\Index(name: 'idx_catalog_editions_trashed_by_key', columns: ['trashed_by_key'])]
 final class Edition extends CatalogRow
 {
+    /** In the trash since then (D105), written as the operation wrote it; null when it is not. */
+    #[ORM\Column(name: 'trashed_at', type: Types::TEXT, nullable: true)]
+    private ?string $trashedAt = null;
+
+    /** Who sent it to the trash; null when it is not in it, or when that person was deleted later. */
+    #[ORM\ManyToOne(targetEntity: Member::class)]
+    #[ORM\JoinColumn(name: 'trashed_by_key', referencedColumnName: 'key', nullable: true, onDelete: 'SET NULL', foreignKeyName: 'fk_catalog_editions_trashed_by_key')]
+    private ?Member $trashedBy = null;
+
     #[ORM\ManyToOne(targetEntity: Work::class)]
     #[ORM\JoinColumn(name: 'work_key', referencedColumnName: 'key', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_catalog_editions_work_key')]
     private Work $work;
@@ -133,5 +143,25 @@ final class Edition extends CatalogRow
     public function setNotes(?string $notes): void
     {
         $this->notes = $notes;
+    }
+
+    public function getTrashedAt(): ?string
+    {
+        return $this->trashedAt;
+    }
+
+    public function setTrashedAt(?string $trashedAt): void
+    {
+        $this->trashedAt = $trashedAt;
+    }
+
+    public function getTrashedBy(): ?Member
+    {
+        return $this->trashedBy;
+    }
+
+    public function setTrashedBy(?Member $trashedBy): void
+    {
+        $this->trashedBy = $trashedBy;
     }
 }

@@ -14,8 +14,18 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_catalog_copies_cloud_library', columns: ['cloud_library_id'])]
 #[ORM\Index(name: 'idx_catalog_copies_edition_key', columns: ['edition_key'])]
 #[ORM\Index(name: 'idx_catalog_copies_owner_key', columns: ['owner_key'])]
+#[ORM\Index(name: 'idx_catalog_copies_trashed_by_key', columns: ['trashed_by_key'])]
 final class Copy extends CatalogRow
 {
+    /** In the trash since then (D105), written as the operation wrote it; null when it is not. */
+    #[ORM\Column(name: 'trashed_at', type: Types::TEXT, nullable: true)]
+    private ?string $trashedAt = null;
+
+    /** Who sent it to the trash; null when it is not in it, or when that person was deleted later. */
+    #[ORM\ManyToOne(targetEntity: Member::class)]
+    #[ORM\JoinColumn(name: 'trashed_by_key', referencedColumnName: 'key', nullable: true, onDelete: 'SET NULL', foreignKeyName: 'fk_catalog_copies_trashed_by_key')]
+    private ?Member $trashedBy = null;
+
     #[ORM\ManyToOne(targetEntity: Edition::class)]
     #[ORM\JoinColumn(name: 'edition_key', referencedColumnName: 'key', nullable: false, onDelete: 'CASCADE', foreignKeyName: 'fk_catalog_copies_edition_key')]
     private Edition $edition;
@@ -120,5 +130,25 @@ final class Copy extends CatalogRow
     public function setSeasons(?string $seasons): void
     {
         $this->seasons = $seasons;
+    }
+
+    public function getTrashedAt(): ?string
+    {
+        return $this->trashedAt;
+    }
+
+    public function setTrashedAt(?string $trashedAt): void
+    {
+        $this->trashedAt = $trashedAt;
+    }
+
+    public function getTrashedBy(): ?Member
+    {
+        return $this->trashedBy;
+    }
+
+    public function setTrashedBy(?Member $trashedBy): void
+    {
+        $this->trashedBy = $trashedBy;
     }
 }

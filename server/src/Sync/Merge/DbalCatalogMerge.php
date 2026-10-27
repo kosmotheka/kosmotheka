@@ -372,10 +372,10 @@ final class DbalCatalogMerge implements CatalogMerge
         }
     }
 
-    /** `work_id` is the property `work` and `published_year` is `publishedYear`. */
+    /** `work_id` is the property `work`, `trashed_by` is `trashedBy` and `published_year` is `publishedYear`. */
     private function property(string $name, FieldSpec $spec): string
     {
-        $base = FieldType::Ref === $spec->type ? substr($name, 0, -3) : $name;
+        $base = FieldType::Ref === $spec->type && str_ends_with($name, '_id') ? substr($name, 0, -3) : $name;
 
         return lcfirst(str_replace('_', '', ucwords($base, '_')));
     }
@@ -389,7 +389,7 @@ final class DbalCatalogMerge implements CatalogMerge
     {
         return match ($type) {
             // PostgreSQL text cannot hold U+0000 or invalid UTF-8.
-            FieldType::Text, FieldType::Date, FieldType::OneOf, FieldType::Isbn13, FieldType::DeviceId, FieldType::DeviceIdOrEmpty => \is_string($value) && !str_contains($value, "\0") && mb_check_encoding($value, 'UTF-8'),
+            FieldType::Text, FieldType::Date, FieldType::Timestamp, FieldType::OneOf, FieldType::Isbn13, FieldType::DeviceId, FieldType::DeviceIdOrEmpty => \is_string($value) && !str_contains($value, "\0") && mb_check_encoding($value, 'UTF-8'),
             FieldType::Integer, FieldType::Count => \is_int($value),
             // The column is an INTEGER and the spec says 1 to 5.
             FieldType::Rating => \is_int($value) && $value >= 1 && $value <= 5,
