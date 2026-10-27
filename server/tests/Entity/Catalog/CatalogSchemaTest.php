@@ -64,7 +64,8 @@ final class CatalogSchemaTest extends KernelTestCase
         $references = [];
         foreach ($entity->fields() as $name => $spec) {
             if (null !== $spec->references) {
-                $references[substr($name, 0, -3).'_key'] = [$spec->references, $spec->required];
+                // `owner_id` is the column `owner_key`; `trashed_by` (D105), `trashed_by_key`.
+                $references[(str_ends_with($name, '_id') ? substr($name, 0, -3) : $name).'_key'] = [$spec->references, $spec->required];
             }
         }
         if (str_ends_with($entity->value, '_details')) {

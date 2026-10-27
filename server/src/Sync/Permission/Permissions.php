@@ -17,6 +17,12 @@ use App\Sync\NoLibraryIdException;
  */
 final class Permissions
 {
+    private const int DAY_MILLIS = 24 * 60 * 60 * 1000;
+    /** How long something stays in the trash before an editor may delete it for good (D105, rule 16). */
+    public const int TRASH_DAYS = 30;
+    /** How long before the cloud does it, as a safety net when no device has (D105, rule 16). */
+    public const int CLOUD_TRASH_DAYS = 60;
+
     /**
      * Whether the author of `$operation` may make all of its changes. All or nothing:
      * one change not allowed makes the whole operation a request.
@@ -41,13 +47,14 @@ final class Permissions
         }
         $role = $fenced ? null : $view->roleOfDevice($author);
         // The cloud's power (D76, D95) is the named device's, unless a fence makes it nobody's.
-        // Asked only when a change could use it.
+        // Asked only when a change could use it: its fields, or deleting from the trash (D105).
         $cloud = !$fenced
-            && array_any($operation->changes, self::touchesCloudField(...))
+            && array_any($operation->changes, static fn (ChangePayload $change): bool => self::touchesCloudField($change) || ChangeAction::Delete === $change->action)
             && null !== ($named = $view->cloudDevice())
             && $named === $author;
+        $at = (int) substr($operation->hlc, 0, 16);
 
-        return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $view));
+        return array_all($operation->changes, static fn (ChangePayload $change): bool => self::changeAllowed($change, $author, $role, $cloud, $at, $view));
     }
 
     /**
@@ -143,8 +150,12 @@ final class Permissions
      * person with an account, which touches exactly `member_id` and `vouched_key`, both set. The cloud vouches for what
      * it links; whether that key is the registered one is rule 13's business.
      */
-    private static function cloudAllowed(ChangePayload $change, string $author, LibraryView $view): bool
+    private static function cloudAllowed(ChangePayload $change, string $author, int $at, LibraryView $view): bool
     {
+        // Its one power over the catalog: deleting for good what has been 60 days in the trash (D105).
+        if (ChangeAction::Delete === $change->action) {
+            return self::inTrashFor($change, $at, self::CLOUD_TRASH_DAYS, $view);
+        }
         if (ChangeAction::Update !== $change->action) {
             return false;
         }
@@ -162,7 +173,32 @@ final class Permissions
         };
     }
 
-    private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, bool $cloud, LibraryView $view): bool
+    /** Whether the row, or what it hangs from, has been in the trash at least `$days` at the moment `$at` (D105). */
+    private static function inTrashFor(ChangePayload $change, int $at, int $days, LibraryView $view): bool
+    {
+        $since = $view->trashedSince($change->entity, $change->id);
+
+        return null !== $since && $at >= $since + $days * self::DAY_MILLIS;
+    }
+
+    /**
+     * What a change does with the trash fields (D105): null when it does not touch them, false when it restores
+     * (both null), and otherwise the person it names in `trashed_by` ('' when it names none).
+     */
+    private static function trashMove(ChangePayload $change): string|false|null
+    {
+        if (!$change->entity->isTrashable() || !\array_key_exists('trashed_at', $change->fields)) {
+            return null;
+        }
+        if (null === $change->fields['trashed_at']) {
+            return false;
+        }
+        $by = $change->fields['trashed_by'] ?? null;
+
+        return \is_string($by) ? $by : '';
+    }
+
+    private static function changeAllowed(ChangePayload $change, string $author, ?Role $role, bool $cloud, int $at, LibraryView $view): bool
     {
         // `founding_nonce` is written once, by the founding (judged before this is asked): nobody writes it
         // afterwards, an administrator included (D97).
@@ -171,10 +207,17 @@ final class Permissions
         }
         // `account_id` is written by the cloud device alone: not by an administrator, not when the member is created.
         if (CatalogEntity::Member === $change->entity && \array_key_exists('account_id', $change->fields)) {
-            return $cloud && self::cloudAllowed($change, $author, $view);
+            return $cloud && self::cloudAllowed($change, $author, $at, $view);
         }
-        if ($cloud && self::cloudAllowed($change, $author, $view)) {
+        if ($cloud && self::cloudAllowed($change, $author, $at, $view)) {
             return true;
+        }
+        // Who sent something to the trash is the signer's person, an administrator's included: the date and the name
+        // in the trash are compared, never taken as said (D84, D105).
+        $move = self::trashMove($change);
+        if (ChangeAction::Update === $change->action && \is_string($move)
+            && (null === ($me = $view->memberOfDevice($author)) || 0 !== strcasecmp($me, $move))) {
+            return false;
         }
         $someone = $role instanceof Role;
         $role ??= Role::Reader;
@@ -229,6 +272,17 @@ final class Permissions
             return false;
         }
 
-        return ChangeAction::Delete !== $change->action || $view->createdBySamePerson($change->entity, $change->id, $author);
+        return match ($change->action) {
+            // Sending to the trash is deleting as it was before the trash (D105, rule 16): her person's rows only.
+            // Restoring is any editor's, whoever sent it.
+            ChangeAction::Update => !\is_string($move) || $view->createdBySamePerson($change->entity, $change->id, $author),
+            // A row created already in the trash (restoring a backup) names a person of the library. An
+            // administrator's restore creates the people in the same operation, so it is not asked.
+            ChangeAction::Create => !\is_string($move) || ('' !== $move && $view->memberExists($move)),
+            // For good: anything that has been 30 days in the trash, or hangs from something that has, whoever created
+            // it. The four things of the trash never go straight; the other rows, as before (rule 3).
+            ChangeAction::Delete => self::inTrashFor($change, $at, self::TRASH_DAYS, $view)
+                || (!$change->entity->isTrashable() && $view->createdBySamePerson($change->entity, $change->id, $author)),
+        };
     }
 }

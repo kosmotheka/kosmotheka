@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Sync\Permission;
 
 use App\Dto\OperationPayload;
+use App\Entity\Catalog\Copy;
 use App\Entity\Catalog\Device;
+use App\Entity\Catalog\Edition;
 use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
 use App\Entity\Catalog\Library;
@@ -13,11 +15,14 @@ use App\Entity\Catalog\Mark;
 use App\Entity\Catalog\Member;
 use App\Entity\Catalog\Revocation;
 use App\Entity\Catalog\RowAuthor;
+use App\Entity\Catalog\Series;
+use App\Entity\Catalog\Tag;
 use App\Entity\CloudLibrary;
 use App\Entity\CloudOperation;
 use App\Enum\CatalogEntity;
 use App\Enum\Role;
 use App\Sync\CloudDeviceId;
+use App\Validator\ValidOperationValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -200,6 +205,72 @@ final readonly class CatalogLibraryView implements LibraryView
     {
         return [] !== $this->entityManager->createQuery(\sprintf("SELECT 1 FROM %s m WHERE m.cloudLibrary = :library AND m.id = :member AND m.accountId IS NOT NULL AND m.accountId <> ''", Member::class))
             ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('member', $member)->setMaxResults(1)->getResult();
+    }
+
+    public function trashedSince(CatalogEntity $entity, string $id): ?int
+    {
+        $work = fn (?string $work): ?int => null === $work ? null : $this->workTrashed($work);
+        $through = fn (CatalogEntity $from, string $association): ?string => $this->linked($from, $id, $association);
+
+        return match (true) {
+            CatalogEntity::Edition === $entity, $entity->isDetails() => $this->ownTrashed(Edition::class, $id),
+            CatalogEntity::Copy === $entity => $this->oldest($this->ownTrashed(Copy::class, $id), null === ($edition = $through($entity, 'edition')) ? null : $this->ownTrashed(Edition::class, $edition)),
+            CatalogEntity::Tag === $entity => $this->ownTrashed(Tag::class, $id),
+            CatalogEntity::Series === $entity => $this->ownTrashed(Series::class, $id),
+            CatalogEntity::Work === $entity => $this->workTrashed($id),
+            CatalogEntity::WorkContributor === $entity, CatalogEntity::WorkGenre === $entity => $work($through($entity, 'work')),
+            CatalogEntity::WorkTag === $entity => $this->oldest($work($through($entity, 'work')), null === ($tag = $through($entity, 'tag')) ? null : $this->ownTrashed(Tag::class, $tag)),
+            CatalogEntity::SeriesEntry === $entity => $this->oldest($work($through($entity, 'work')), null === ($series = $through($entity, 'series')) ? null : $this->ownTrashed(Series::class, $series)),
+            CatalogEntity::WorkRelation === $entity => $this->oldest($work($through($entity, 'work')), $work($through($entity, 'relatedWork'))),
+            default => null,
+        };
+    }
+
+    /**
+     * Since when a row of `$class` is in the trash, by its own `trashed_at`.
+     *
+     * @param class-string $class
+     */
+    private function ownTrashed(string $class, string $id): ?int
+    {
+        $row = $this->entityManager->createQuery(\sprintf('SELECT r.trashedAt FROM %s r WHERE r.cloudLibrary = :library AND r.id = :id', $class))
+            ->setParameter('library', $this->library->getId(), 'uuid')->setParameter('id', $id)->setMaxResults(1)->getOneOrNullResult();
+
+        return \is_array($row) && \is_string($row['trashedAt']) ? ValidOperationValidator::timestampMillis($row['trashedAt']) : null;
+    }
+
+    /** A work is in the trash once all its editions are, since the last of them went (D105). */
+    private function workTrashed(string $work): ?int
+    {
+        $row = $this->entityManager->createQuery(\sprintf(
+            'SELECT COUNT(e.key) AS editions, COUNT(e.trashedAt) AS trashed, MAX(e.trashedAt) AS latest
+               FROM %s e JOIN e.work w WHERE e.cloudLibrary = :library AND w.cloudLibrary = :library AND w.id = :work',
+            Edition::class,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('work', $work)->getSingleResult();
+        $count = static fn (mixed $value): int => is_numeric($value) ? (int) $value : 0;
+        if (!\is_array($row) || 0 === $count($row['editions']) || $count($row['editions']) !== $count($row['trashed']) || !\is_string($row['latest'])) {
+            return null;
+        }
+
+        return ValidOperationValidator::timestampMillis($row['latest']);
+    }
+
+    /** The app id of the row `$id` of `$entity` points to through `$association`, if both exist. */
+    private function linked(CatalogEntity $entity, string $id, string $association): ?string
+    {
+        $row = $this->entityManager->createQuery(\sprintf(
+            'SELECT x.id FROM %s r JOIN r.%s x WHERE r.cloudLibrary = :library AND r.id = :id',
+            $entity->entityClass(),
+            $association,
+        ))->setParameter('library', $this->library->getId(), 'uuid')->setParameter('id', $id)->setMaxResults(1)->getOneOrNullResult();
+
+        return \is_array($row) && \is_string($row['id']) ? $row['id'] : null;
+    }
+
+    /** The oldest of two moments in the trash: a row that hangs from two things goes with whichever went first. */
+    private function oldest(?int $one, ?int $other): ?int
+    {
+        return null === $one || null === $other ? $one ?? $other : min($one, $other);
     }
 
     /** The same device, or two devices of the same person. */

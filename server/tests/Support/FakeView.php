@@ -64,6 +64,11 @@ final readonly class FakeView implements LibraryView
         return false;
     }
 
+    public function trashedSince(CatalogEntity $entity, string $id): ?int
+    {
+        return null;
+    }
+
     public function markMember(string $id): string
     {
         return $this->samePerson ? self::MY_MEMBER : self::OTHER_MEMBER;

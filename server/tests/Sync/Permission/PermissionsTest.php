@@ -108,11 +108,13 @@ final class PermissionsTest extends TestCase
         self::assertTrue(Permissions::isAllowed($this->op([Ops::create(CatalogEntity::Device, self::ME, ['public_key' => self::FOUNDER_KEY, 'name' => 'laptop'])]), $unfounded));
     }
 
-    public function testAnEditorDeletesWhatHerPersonCreated(): void
+    public function testAnEditorDeletesWhatHerPersonCreatedButTheTrashThingsOnlyThroughTheTrash(): void
     {
-        $delete = $this->op([Ops::delete(CatalogEntity::Tag, self::TAG)]);
+        $mine = $this->view(Role::Editor, samePerson: true);
 
-        self::assertTrue(Permissions::isAllowed($delete, $this->view(Role::Editor, samePerson: true)));
+        // A link is deleted straight, as before the trash; a tag goes to the trash first (D105).
+        self::assertTrue(Permissions::isAllowed($this->op([Ops::delete(CatalogEntity::WorkTag, self::TAG)]), $mine));
+        self::assertFalse(Permissions::isAllowed($this->op([Ops::delete(CatalogEntity::Tag, self::TAG)]), $mine));
     }
 
     public function testADeviceRegistersItselfButDoesNotSayWhoseItIs(): void

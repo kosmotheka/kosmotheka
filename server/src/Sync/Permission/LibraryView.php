@@ -68,4 +68,11 @@ interface LibraryView
 
     /** Whether the person `$member` has had their access withdrawn (D98). */
     public function memberAccessWithdrawn(string $member): bool;
+
+    /**
+     * Since when the row is in the trash (D105), in milliseconds since 1970, counting what it hangs from: the copies,
+     * details, links and work of an edition in the trash (a work only once all its editions are), the links of a tag
+     * and the entries of a series. The oldest when it hangs from several; null when nothing is.
+     */
+    public function trashedSince(CatalogEntity $entity, string $id): ?int;
 }
