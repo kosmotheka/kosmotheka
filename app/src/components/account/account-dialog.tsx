@@ -150,9 +150,12 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
   const openDevices = () => openOverlay({ name: "accountDevices" });
   const openTwoFactorSetup = () => openOverlay({ name: "twoFactor" });
 
+  // The confirmation is not part of the account screen: closing the screen leaves it open on top, so it is closed
+  // too. Otherwise it stays, and pressing it again does nothing anyone can see.
   const doSignOut = async () => {
     await signOut();
     await refreshAccount();
+    setSigningOut(false);
     closeOverlay();
   };
 
@@ -163,6 +166,7 @@ export function AccountDialog({ open, desktop }: { open: boolean; desktop: boole
   const doDelete = async (proof: ActionProof) => {
     await deleteAccount(proof);
     await refreshAccount();
+    setDeleting(false);
     closeOverlay();
   };
 
