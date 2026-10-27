@@ -1,6 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, ListChecks, Pencil, Plus, Trash2, TriangleAlert, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  GripVertical,
+  ListChecks,
+  Pencil,
+  Plus,
+  Trash2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 
 import { AddToSeriesWorkDialog } from "@/components/series-work-picker";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -44,6 +54,27 @@ function rowsOf(detail: SeriesDetail): Row[] {
   return [...numbered, ...unnumbered];
 }
 
+/** Whether a drag moves the row at `index`: the rows between where it was taken and where it lands. */
+function shifted(drag: { from: number; to: number }, index: number): boolean {
+  return index >= Math.min(drag.from, drag.to) && index <= Math.max(drag.from, drag.to);
+}
+
+/** The number a row stands for, as the number field writes it. */
+function numberOf(row: Row): string {
+  return row.position === null ? "" : String(row.position);
+}
+
+/**
+ * Moves what is in the row at `from` to `to`, as in a list: the numbers stay where they are and the works and gaps
+ * under them shift, so dragging volume 5 onto 2 makes it 2 and moves 2, 3 and 4 one number down.
+ */
+function moveRow(rows: Row[], from: number, to: number): Row[] {
+  const contents = rows.map((row) => row.entry);
+  const [moved] = contents.splice(from, 1);
+  contents.splice(to, 0, moved ?? null);
+  return rows.map((row, i) => ({ position: row.position, entry: contents[i] ?? null }));
+}
+
 /**
  * A series' page (Design's SeriesPage): full screen on mobile, a wide dialog on desktop
  * standing in for the main-area page Design drew (D61).
@@ -64,6 +95,12 @@ export function SeriesDetailView({
   const [reorder, setReorder] = useState(false);
   const [positions, setPositions] = useState<Record<string, string>>({});
   const [positionError, setPositionError] = useState<string | null>(null);
+  // While editing an ordered series: the rows in the order the drags left them. Typing a number never moves a row,
+  // so the list does not jump under the finger; the numbers decide when it is saved.
+  const [editRows, setEditRows] = useState<Row[]>([]);
+  // A drag in progress: the row taken, where it would land, and the middle of every row when it started.
+  const [drag, setDrag] = useState<{ from: number; to: number; middles: number[] } | null>(null);
+  const rowElements = useRef<(HTMLDivElement | null)[]>([]);
   const [renaming, setRenaming] = useState(false);
   const [addingWork, setAddingWork] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -86,6 +123,9 @@ export function SeriesDetailView({
 
   const shown = detail?.id === seriesId ? detail : null;
   const rows = shown ? rowsOf(shown) : [];
+  const draggable = reorder && (shown?.ordered ?? false);
+  // While dragging, the list shows where the row would land.
+  const shownRows = draggable ? (drag ? moveRow(editRows, drag.from, drag.to) : editRows) : rows;
   const missing = shown ? shown.entries.filter((e) => e.copies === 0).length : 0;
   const gaps = rows.filter((r) => r.entry === null).length;
 
@@ -110,7 +150,39 @@ export function SeriesDetailView({
     const map: Record<string, string> = {};
     for (const entry of shown.entries) map[entry.entryId] = String(entry.position ?? "");
     setPositions(map);
+    setEditRows(rowsOf(shown));
+    setDrag(null);
     setReorder(true);
+  };
+
+  const startDrag = (event: PointerEvent<HTMLButtonElement>, from: number) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const middles = rowElements.current.slice(0, editRows.length).map((element) => {
+      const box = element?.getBoundingClientRect();
+      return box ? box.top + box.height / 2 : 0;
+    });
+    setDrag({ from, to: from, middles });
+  };
+
+  const moveDrag = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!drag) return;
+    // Where it lands: after every other row whose middle it has passed.
+    const to = drag.middles.filter((middle, i) => i !== drag.from && middle < event.clientY).length;
+    if (to !== drag.to) setDrag({ ...drag, to });
+  };
+
+  const endDrag = () => {
+    if (!drag) return;
+    setDrag(null);
+    if (drag.to === drag.from) return;
+    const moved = moveRow(editRows, drag.from, drag.to);
+    setEditRows(moved);
+    const next = { ...positions };
+    moved.forEach((row, index) => {
+      if (row.entry && shifted(drag, index)) next[row.entry.entryId] = numberOf(row);
+    });
+    setPositions(next);
   };
 
   // The numbers are kept as typed: a gap (1, 2, 5) is volumes not catalogued yet (D61).
@@ -138,6 +210,10 @@ export function SeriesDetailView({
   const removeWork = async (workId: string) => {
     if (!shown) return;
     await removeFromSeries(shown.id, workId);
+    // Its row empties in the list being edited, which keeps what was dragged or typed for the others.
+    setEditRows((current) =>
+      current.map((row) => (row.entry?.workId === workId ? { ...row, entry: null } : row)),
+    );
     changed();
   };
 
@@ -159,17 +235,30 @@ export function SeriesDetailView({
     openOverlay({ name: "add", missing: true, intoSeries: { seriesId: shown.id, position } });
   };
 
-  const rowView = (row: Row) => {
+  const rowView = (row: Row, index: number) => {
+    const ref = (element: HTMLDivElement | null) => {
+      rowElements.current[index] = element;
+    };
+    const dragging = drag !== null && drag.to === index;
     if (!row.entry) {
       // A gap: nothing catalogued for this number yet.
       const gapPosition = row.position;
       return (
         <div
-          key={`gap-${row.position}`}
+          key={`gap-${row.position}-${index}`}
+          ref={ref}
           className="flex items-center gap-3.5 rounded-xl border border-dashed bg-muted px-3 py-2"
         >
+          {/* Lined up with the handles of the works around it. */}
+          {draggable && <span className="w-6 shrink-0" />}
           {shown?.ordered && (
-            <span className="flex h-[30px] w-[34px] shrink-0 items-center justify-center rounded-md border font-mono text-sm font-semibold">
+            <span
+              className={cn(
+                "flex h-[30px] shrink-0 items-center justify-center rounded-md border font-mono text-sm font-semibold",
+                // As wide as the number fields of the works around it while editing.
+                reorder ? "w-[52px]" : "w-[34px]",
+              )}
+            >
               {row.position}
             </span>
           )}
@@ -195,11 +284,26 @@ export function SeriesDetailView({
     return (
       <div
         key={entry.entryId}
+        ref={ref}
         className={cn(
           "flex items-center gap-3.5 rounded-xl border px-3 py-2",
           !owned && "border-dashed bg-muted",
+          dragging && "relative z-10 bg-background shadow-lg ring-2 ring-primary",
         )}
       >
+        {draggable && (
+          <button
+            type="button"
+            aria-label={t("series.drag", { title: entry.title })}
+            className="-mx-1 flex h-10 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+            onPointerDown={(event) => startDrag(event, index)}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={() => setDrag(null)}
+          >
+            <GripVertical className="size-4" />
+          </button>
+        )}
         {shown?.ordered &&
           (reorder ? (
             <Input
@@ -207,7 +311,9 @@ export function SeriesDetailView({
               type="number"
               min={1}
               className="h-[30px] w-[52px] px-1.5 text-center font-mono"
-              value={positions[entry.entryId] ?? ""}
+              value={
+                drag && shifted(drag, index) ? numberOf(row) : (positions[entry.entryId] ?? "")
+              }
               onChange={(e) => setPositions({ ...positions, [entry.entryId]: e.target.value })}
             />
           ) : (
@@ -327,7 +433,7 @@ export function SeriesDetailView({
     <div className="flex flex-col gap-4">
       {header}
       {reorder && positionError && <p className="text-[13px] text-destructive">{positionError}</p>}
-      <div className="flex flex-col gap-1.5">{rows.map(rowView)}</div>
+      <div className="flex flex-col gap-1.5">{shownRows.map(rowView)}</div>
       {shown && !reorder && (
         <button
           type="button"

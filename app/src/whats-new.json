@@ -18,8 +18,8 @@
       "en": "More books arrive with their authors: many Spanish editions on Open Library did not have them, and now they are looked up in their work. When you search for a book by title, the ones with that title and in your language come first, with their editions together. And the spreadsheet (CSV) now carries every kind, not only books, with their genres and tags, to export and import."
     },
     {
-      "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión).",
-      "en": "In a saga or collection, each work shows its year and formats, and warns when it needs another that nobody has (such as an expansion's base game)."
+      "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión). En una saga, «Editar» deja ordenarlas arrastrándolas por su asa, con el ratón o con el dedo.",
+      "en": "In a saga or collection, each work shows its year and formats, and warns when it needs another that nobody has (such as an expansion's base game). In a saga, «Edit» lets you put them in order by dragging them by their handle, with the mouse or your finger."
     }
   ],
   "0.7.0": [

@@ -1509,7 +1509,7 @@
       "alreadyIn": "Ya está aquí"
     },
     "edit": "Editar",
-    "editHint": "Escribe el número de cada obra; puedes dejar huecos",
+    "editHint": "Arrastra cada obra por el asa o escribe su número; puedes dejar huecos",
     "editHintUnordered": "Quita las obras que no son de aquí",
     "positionInvalid": "Cada obra necesita un número entero, desde el 1.",
     "removeWork": "Quitar {{title}} de aquí",
@@ -1526,7 +1526,8 @@
     "whatAreThey": "¿Para qué sirven?",
     "positionAlone": "Nº {{position}}",
     "iHaveIt": "Lo tengo",
-    "positionTaken": "El {{n}} ya es «{{title}}»: pasará al {{next}}, y las siguientes correrán un puesto hasta el primer hueco."
+    "positionTaken": "El {{n}} ya es «{{title}}»: pasará al {{next}}, y las siguientes correrán un puesto hasta el primer hueco.",
+    "drag": "Mover {{title}}"
   },
   "account": {
     "settings": {

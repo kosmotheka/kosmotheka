@@ -74,7 +74,7 @@ Un hueco y algo que «te falta» no son lo mismo:
 
 Dentro, pulsa «Editar».
 
-- **En una saga**, escribe el número de cada cosa. Puedes dejar huecos (1, 2, 5). Cada número tiene que ser 1, 2, 3… sin decimales ni letras.
+- **En una saga**, arrastra cada cosa por el asa de la izquierda (⋮⋮) hasta su sitio, con el ratón o con el dedo: los números se quedan donde están y lo que hay debajo se corre uno. También puedes escribir el número de cada cosa. Puedes dejar huecos (1, 2, 5). Cada número tiene que ser 1, 2, 3… sin decimales ni letras.
 - **En una colección**, «Editar» solo sirve para quitar cosas.
 
 Con la cruz de cada fila sacas una cosa. Sigue en tu Catálogo.

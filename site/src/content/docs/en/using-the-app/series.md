@@ -74,7 +74,7 @@ A gap and something "missing" are not the same:
 
 Inside, tap "Edit".
 
-- **In a saga**, type the number of each thing. You can leave gaps (1, 2, 5). Each number must be 1, 2, 3… with no decimals or letters.
+- **In a saga**, drag each thing by the handle on its left (⋮⋮) to its place, with the mouse or your finger: the numbers stay where they are and what is below moves along by one. You can also type the number of each thing. You can leave gaps (1, 2, 5). Each number must be 1, 2, 3… with no decimals or letters.
 - **In a collection**, "Edit" is only for taking things out.
 
 The cross on each row takes a thing out. It stays in your catalog.

@@ -1469,10 +1469,24 @@ mockIPC((cmd, args) => {
     }
     case "create_series":
       return "series-new";
+    // Keeps the numbers, so a drag can be seen saved.
+    case "reorder_series": {
+      const { seriesId, positions } = args as {
+        seriesId: string;
+        positions: { workId: string; position: number | null }[];
+      };
+      const series = seriesById[seriesId];
+      if (series) {
+        series.entries = series.entries.map((entry) => ({
+          ...entry,
+          position: positions.find((p) => p.workId === entry.workId)?.position ?? entry.position,
+        }));
+      }
+      return null;
+    }
     case "update_series":
     case "delete_series":
     case "remove_from_series":
-    case "reorder_series":
     case "add_requirement":
     case "remove_requirement":
       return null;

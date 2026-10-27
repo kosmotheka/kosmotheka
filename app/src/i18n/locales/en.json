@@ -1495,7 +1495,7 @@
       "alreadyIn": "Already here"
     },
     "edit": "Edit",
-    "editHint": "Type each work's number; you can leave gaps",
+    "editHint": "Drag each work by its handle or type its number; you can leave gaps",
     "editHintUnordered": "Take out the works that do not belong here",
     "positionInvalid": "Every work needs a whole number from 1 up.",
     "removeWork": "Take {{title}} out",
@@ -1512,7 +1512,8 @@
     "whatAreThey": "What are they for?",
     "positionAlone": "No. {{position}}",
     "iHaveIt": "I have it",
-    "positionTaken": "No. {{n}} is already “{{title}}”: it will become {{next}}, and the following ones move up one, as far as the first gap."
+    "positionTaken": "No. {{n}} is already “{{title}}”: it will become {{next}}, and the following ones move up one, as far as the first gap.",
+    "drag": "Move {{title}}"
   },
   "account": {
     "settings": {
