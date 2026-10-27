@@ -544,6 +544,9 @@ pub fn delete_row(conn: &Connection, entity: Entity, library: &str, id: &str) ->
 /// like `delete_row`. The operation log stays: it is the record of what happened (D66).
 pub fn delete_library(conn: &Connection, library: &str) -> Result<usize> {
     clear_library(conn, library)?;
+    // When this device saw things in its trash (D105): a library that comes back counts its 30 days anew. Not in
+    // `clear_library`, which rebuilds a library from its log too: that must not give the trash more time.
+    conn.execute("DELETE FROM trash_seen WHERE library_id = ?1", [library])?;
     delete_row(conn, Entity::Library, library, library)
 }
 

@@ -3427,6 +3427,110 @@ mod tests {
         assert_converged(&[&laptop, &phone]);
     }
 
+    // The trash (D105): sending, restoring and deleting for good converge like any other change.
+
+    fn trashed(kind: crate::trash::TrashKind, id: &str) -> crate::trash::TrashRef {
+        crate::trash::TrashRef {
+            kind,
+            id: id.to_owned(),
+        }
+    }
+
+    #[test]
+    fn an_edit_made_offline_on_a_book_another_device_sent_to_the_trash_comes_back_with_it() {
+        use crate::trash::TrashKind::Edition;
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
+        let dune = laptop.add("Dune", None, "Ana");
+        phone.pull_from(&laptop);
+        let copy = catalog::get_book(&phone.0, &lib, &dune).unwrap().copies[0]
+            .id
+            .clone();
+
+        catalog::delete_book(&mut laptop.0, &lib, &dune).unwrap();
+        let mut moved = book("Dune", None, "Ana").copy;
+        moved.location = Some("Salón".into());
+        catalog::update_copy(&mut phone.0, &lib, &copy, &moved).unwrap();
+        laptop.sync_with(&mut phone);
+        assert!(laptop.titles().is_empty() && phone.titles().is_empty());
+        assert_converged(&[&laptop, &phone]);
+
+        crate::trash::restore(&mut phone.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        laptop.sync_with(&mut phone);
+        let back = catalog::get_book(&laptop.0, &lib, &dune).unwrap();
+        assert_eq!(back.copies[0].location.as_deref(), Some("Salón"));
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn restoring_on_one_device_while_another_deletes_for_good_ends_deleted_on_both() {
+        use crate::trash::TrashKind::Edition;
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
+        let dune = laptop.add("Dune", None, "Ana");
+        catalog::delete_book(&mut laptop.0, &lib, &dune).unwrap();
+        phone.pull_from(&laptop);
+
+        crate::trash::restore(&mut phone.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        crate::trash::purge(&mut laptop.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        laptop.sync_with(&mut phone);
+
+        // The delete wins (D89): nothing to restore any more.
+        assert!(laptop.titles().is_empty() && phone.titles().is_empty());
+        assert!(crate::trash::list(&phone.0, &lib).unwrap().is_empty());
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn two_devices_deleting_the_same_thing_for_good_at_once_converge() {
+        use crate::trash::TrashKind::Edition;
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
+        let dune = laptop.add("Dune", None, "Ana");
+        catalog::delete_book(&mut laptop.0, &lib, &dune).unwrap();
+        phone.pull_from(&laptop);
+
+        crate::trash::purge(&mut laptop.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        crate::trash::purge(&mut phone.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        laptop.sync_with(&mut phone);
+        assert!(crate::trash::list(&laptop.0, &lib).unwrap().is_empty());
+        assert_converged(&[&laptop, &phone]);
+    }
+
+    #[test]
+    fn a_book_restored_after_its_tag_went_for_good_comes_back_without_it() {
+        use crate::trash::TrashKind::{Edition, Tag};
+        let mut laptop = Device::new();
+        let lib = laptop.1.clone();
+        let mut phone = Device::sharing(&laptop);
+        let mut tagged = book("Dune", None, "Ana");
+        tagged.edition.tags = vec!["regalos".into()];
+        let dune = catalog::create_book(&mut laptop.0, &lib, &tagged, None)
+            .unwrap()
+            .edition_id;
+        let tag = catalog::list_tags(&laptop.0, &lib).unwrap()[0].id.clone();
+        catalog::delete_book(&mut laptop.0, &lib, &dune).unwrap();
+        catalog::delete_tag(&mut laptop.0, &lib, &tag).unwrap();
+        phone.pull_from(&laptop);
+
+        // The tag goes for good on one device; the book comes back on the other.
+        crate::trash::purge(&mut laptop.0, &lib, &[trashed(Tag, &tag)]).unwrap();
+        crate::trash::restore(&mut phone.0, &lib, &[trashed(Edition, &dune)]).unwrap();
+        laptop.sync_with(&mut phone);
+
+        for device in [&laptop, &phone] {
+            let back = catalog::get_book(&device.0, &lib, &dune).unwrap();
+            assert!(
+                back.tags.is_empty(),
+                "what went for good does not come back"
+            );
+        }
+        assert_converged(&[&laptop, &phone]);
+    }
+
     // Tests that pin merge rules found by mutation testing (docs/audits/mutaciones-2026-10-04.md).
 
     #[test]
