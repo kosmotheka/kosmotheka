@@ -50,6 +50,8 @@ pub struct Candidate {
     pub expands: Option<CandidateExpands>,
     /// Set when this candidate's ISBN or barcode already exists in the active library.
     pub existing_edition_id: Option<String>,
+    /// Set when it does not, but it is in the trash of the active library (D105).
+    pub trashed_edition_id: Option<String>,
 }
 
 impl Candidate {
@@ -80,6 +82,7 @@ impl Candidate {
             format: None,
             expands: None,
             existing_edition_id: None,
+            trashed_edition_id: None,
         }
     }
 }

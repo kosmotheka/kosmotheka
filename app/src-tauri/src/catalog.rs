@@ -915,13 +915,41 @@ fn book_details_fields(edition: &ValidEdition) -> Value {
     })
 }
 
+/// Whether a lookup wants the editions in the catalog or the ones in the trash (D105).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Where {
+    Catalog,
+    Trash,
+}
+
+impl Where {
+    fn condition(self) -> &'static str {
+        match self {
+            Where::Catalog => "e.trashed_at IS NULL",
+            Where::Trash => "e.trashed_at IS NOT NULL",
+        }
+    }
+}
+
 pub fn edition_with_isbn(conn: &Connection, library: &str, isbn13: &str) -> Result<Option<String>> {
+    edition_with_isbn_in(conn, library, isbn13, Where::Catalog)
+}
+
+pub fn edition_with_isbn_in(
+    conn: &Connection,
+    library: &str,
+    isbn13: &str,
+    place: Where,
+) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT bd.edition_id FROM book_details bd
-               JOIN editions e ON e.library_id = bd.library_id AND e.id = bd.edition_id
-              WHERE bd.library_id = ?1 AND bd.isbn13 = ?2 AND e.trashed_at IS NULL
-              ORDER BY bd.edition_id LIMIT 1",
+            &format!(
+                "SELECT bd.edition_id FROM book_details bd
+                   JOIN editions e ON e.library_id = bd.library_id AND e.id = bd.edition_id
+                  WHERE bd.library_id = ?1 AND bd.isbn13 = ?2 AND {}
+                  ORDER BY bd.edition_id LIMIT 1",
+                place.condition()
+            ),
             [library, isbn13],
             |row| row.get(0),
         )
@@ -933,10 +961,22 @@ pub fn edition_with_barcode(
     library: &str,
     barcode: &str,
 ) -> Result<Option<String>> {
+    edition_with_barcode_in(conn, library, barcode, Where::Catalog)
+}
+
+pub fn edition_with_barcode_in(
+    conn: &Connection,
+    library: &str,
+    barcode: &str,
+    place: Where,
+) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT id FROM editions WHERE library_id = ?1 AND barcode = ?2 AND trashed_at IS NULL
-              ORDER BY id LIMIT 1",
+            &format!(
+                "SELECT e.id FROM editions e WHERE e.library_id = ?1 AND e.barcode = ?2 AND {}
+                  ORDER BY e.id LIMIT 1",
+                place.condition()
+            ),
             [library, barcode],
             |row| row.get(0),
         )
@@ -951,14 +991,24 @@ pub fn edition_matching_candidate(
     isbn: Option<&str>,
     barcode: Option<&str>,
 ) -> Result<Option<String>> {
+    edition_matching_candidate_in(conn, library, isbn, barcode, Where::Catalog)
+}
+
+pub fn edition_matching_candidate_in(
+    conn: &Connection,
+    library: &str,
+    isbn: Option<&str>,
+    barcode: Option<&str>,
+    place: Where,
+) -> Result<Option<String>> {
     if let Some(isbn) = isbn.and_then(|isbn| Isbn::parse(isbn).ok()) {
-        let found = edition_with_isbn(conn, library, isbn.as_str())?;
+        let found = edition_with_isbn_in(conn, library, isbn.as_str(), place)?;
         if found.is_some() {
             return Ok(found);
         }
     }
     match barcode {
-        Some(barcode) => edition_with_barcode(conn, library, barcode),
+        Some(barcode) => edition_with_barcode_in(conn, library, barcode, place),
         None => Ok(None),
     }
 }

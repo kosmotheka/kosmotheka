@@ -251,6 +251,8 @@ pub fn run() {
             commands::update_series,
             commands::delete_series,
             commands::list_trash,
+            commands::expire_trash,
+            commands::trashed_named,
             commands::restore_from_trash,
             commands::purge_from_trash,
             commands::add_to_series,

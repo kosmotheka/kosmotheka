@@ -10,3 +10,14 @@ ALTER TABLE tags ADD COLUMN trashed_at TEXT;
 ALTER TABLE tags ADD COLUMN trashed_by TEXT;
 ALTER TABLE series ADD COLUMN trashed_at TEXT;
 ALTER TABLE series ADD COLUMN trashed_by TEXT;
+
+-- When this device first saw each thing in the trash, in milliseconds (D105): it counts the 30 days from the later of
+-- that and `trashed_at`, so a wrong clock elsewhere or a backup restored months later deletes nothing early. Local:
+-- never synced, never in a backup.
+CREATE TABLE trash_seen (
+    library_id TEXT NOT NULL,
+    entity TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (library_id, entity, entity_id)
+);

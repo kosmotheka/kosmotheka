@@ -318,19 +318,15 @@ fn change_allowed(
         return true;
     }
     // Who sent something to the trash is the signer's person, an administrator's included: the date and the name
-    // in the trash are compared, never taken as said (D84, D105). A row created already in the trash (restoring a
-    // backup) keeps whoever had sent it, as long as that person is in the library.
-    if let Some(TrashMove::Send(by)) = trash_move(change) {
-        let Some(by) = by else { return false };
-        let honest = match change.action {
-            Action::Create => view.member_exists(by),
-            _ => view
-                .member_of_device(author)
-                .is_some_and(|me| me.eq_ignore_ascii_case(by)),
-        };
-        if !honest {
-            return false;
-        }
+    // in the trash are compared, never taken as said (D84, D105).
+    if change.action == Action::Update
+        && let Some(TrashMove::Send(by)) = trash_move(change)
+        && !by.is_some_and(|by| {
+            view.member_of_device(author)
+                .is_some_and(|me| me.eq_ignore_ascii_case(by))
+        })
+    {
+        return false;
     }
     let someone = role.is_some();
     let role = role.unwrap_or(Role::Reader);
@@ -391,7 +387,13 @@ fn change_allowed(
                 }
                 Some(TrashMove::Restore) | None => true,
             },
-            (_, Action::Create) => true,
+            // A row created already in the trash (restoring a backup) keeps whoever had sent it, as long as that
+            // person is in the library. An administrator's restore creates the people in the same operation, so
+            // it is not asked: she may do everything.
+            (_, Action::Create) => match trash_move(change) {
+                Some(TrashMove::Send(by)) => by.is_some_and(|by| view.member_exists(by)),
+                _ => true,
+            },
             // For good: anything that has been 30 days in the trash, or hangs from something that has, whoever
             // created it. The four things of the trash never go straight; the other rows, as before (rule 3).
             (_, Action::Delete) => {

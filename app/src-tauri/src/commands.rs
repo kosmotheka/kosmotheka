@@ -11,6 +11,7 @@ use crate::account::{
     TwoFactorSetup, client::ActionProof,
 };
 use crate::backup::{self, BackupSummary, RestoreSummary};
+use crate::catalog::Where;
 use crate::catalog::{
     self, BookDetail, BookFilter, BookSummary, CatalogOptions, CreatedBook, HistoryEntry,
     IsbnCheck, TagSummary,
@@ -40,7 +41,7 @@ use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
-use crate::trash::{self, TrashItem, TrashRef};
+use crate::trash::{self, TrashItem, TrashKind, TrashRef};
 use crate::updates;
 use crate::whats_new::{self, WhatsNew};
 
@@ -315,12 +316,15 @@ pub async fn lookup_isbn(
         .map_err(|error| Error::Validation(vec![FieldError::new("isbn", error.into())]))?;
     // The block ends before `.await`, releasing the lock. Holding a MutexGuard across
     // an await would not even compile here: the guard cannot move between threads.
-    let (settings, existing_edition_id) = {
+    let (settings, existing_edition_id, trashed_edition_id) = {
         let conn = database.lock()?;
-        (
-            settings::load(&conn)?,
-            catalog::edition_with_isbn(&conn, &ops::active_library(&conn)?, isbn.as_str())?,
-        )
+        let library = ops::active_library(&conn)?;
+        let existing = catalog::edition_with_isbn(&conn, &library, isbn.as_str())?;
+        let trashed = match existing {
+            Some(_) => None,
+            None => catalog::edition_with_isbn_in(&conn, &library, isbn.as_str(), Where::Trash)?,
+        };
+        (settings::load(&conn)?, existing, trashed)
     };
     let api_key = settings.api_keys.get("google_books").map(String::as_str);
     let cloud = books_cloud(&database, &settings);
@@ -332,6 +336,7 @@ pub async fn lookup_isbn(
         )
         .await;
     result.existing_edition_id = existing_edition_id;
+    result.trashed_edition_id = trashed_edition_id;
     Ok(result)
 }
 
@@ -415,6 +420,15 @@ async fn search(
             candidate.isbn.as_deref(),
             candidate.barcode.as_deref(),
         )?;
+        if candidate.existing_edition_id.is_none() {
+            candidate.trashed_edition_id = catalog::edition_matching_candidate_in(
+                &conn,
+                &library,
+                candidate.isbn.as_deref(),
+                candidate.barcode.as_deref(),
+                Where::Trash,
+            )?;
+        }
     }
     Ok(result)
 }
@@ -425,14 +439,19 @@ pub async fn lookup_code(
     lookup: State<'_, Lookup>,
     code: String,
 ) -> Result<CodeResult> {
-    let (settings, existing_edition_id) = {
+    let (settings, existing_edition_id, trashed_edition_id) = {
         let conn = database.lock()?;
         let library = ops::active_library(&conn)?;
-        let existing = match Isbn::parse(&code) {
-            Ok(isbn) => catalog::edition_with_isbn(&conn, &library, isbn.as_str())?,
-            Err(_) => catalog::edition_with_barcode(&conn, &library, &code)?,
+        let find = |place| match Isbn::parse(&code) {
+            Ok(isbn) => catalog::edition_with_isbn_in(&conn, &library, isbn.as_str(), place),
+            Err(_) => catalog::edition_with_barcode_in(&conn, &library, &code, place),
         };
-        (settings::load(&conn)?, existing)
+        let existing = find(Where::Catalog)?;
+        let trashed = match existing {
+            Some(_) => None,
+            None => find(Where::Trash)?,
+        };
+        (settings::load(&conn)?, existing, trashed)
     };
     let cloud = books_cloud(&database, &settings);
     // GameUPC only through the account's server, with no key of their own (D62).
@@ -452,6 +471,7 @@ pub async fn lookup_code(
         )
         .await;
     result.existing_edition_id = existing_edition_id;
+    result.trashed_edition_id = trashed_edition_id;
     Ok(result)
 }
 
@@ -1294,6 +1314,26 @@ pub fn list_trash(database: State<'_, Database>) -> Result<Vec<TrashItem>> {
     let conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     trash::list(&conn, &library)
+}
+
+/// Deletes for good, in every library, what has been 30 days in the trash, if this device's person may (D105).
+/// Called when the app opens and after it syncs.
+#[tauri::command]
+pub fn expire_trash(database: State<'_, Database>) -> Result<usize> {
+    let mut conn = database.lock()?;
+    trash::expire_all(&mut conn)
+}
+
+/// The tag or series of that name in the trash, to offer restoring it.
+#[tauri::command]
+pub fn trashed_named(
+    database: State<'_, Database>,
+    kind: TrashKind,
+    name: String,
+) -> Result<Option<TrashItem>> {
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    trash::named(&conn, &library, kind, &name)
 }
 
 #[tauri::command]

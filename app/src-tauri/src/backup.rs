@@ -143,6 +143,8 @@ pub struct RestoredLibrary {
     /// It came back with the id it had in the backup, so it merges with the original; false when this device
     /// could not found that id (D97) and the catalogue went into a new library.
     pub same_id: bool,
+    /// What came back in the trash (D105): it has 30 days from now, whenever it was sent there.
+    pub trashed: usize,
 }
 
 /// Every library on this device, for a whole-device backup.
@@ -492,10 +494,35 @@ fn restored(conn: &Connection, id: &str, name: String) -> Result<RestoredLibrary
     Ok(RestoredLibrary {
         id: id.to_owned(),
         name,
-        books: count(conn, id, Entity::Edition)?,
-        copies: count(conn, id, Entity::Copy)?,
+        books: count_live(conn, id, Entity::Edition)?,
+        copies: count_live(conn, id, Entity::Copy)?,
         same_id: false,
+        trashed: kosmotheka_domain::TRASHABLE
+            .into_iter()
+            .map(|entity| count_trashed(conn, id, entity))
+            .sum::<Result<usize>>()?,
     })
+}
+
+/// Rows of `entity` out of the trash.
+fn count_live(conn: &Connection, library: &str, entity: Entity) -> Result<usize> {
+    count_where(conn, library, entity, "trashed_at IS NULL")
+}
+
+fn count_trashed(conn: &Connection, library: &str, entity: Entity) -> Result<usize> {
+    count_where(conn, library, entity, "trashed_at IS NOT NULL")
+}
+
+fn count_where(conn: &Connection, library: &str, entity: Entity, condition: &str) -> Result<usize> {
+    let n: i64 = conn.query_row(
+        &format!(
+            "SELECT count(*) FROM {} WHERE library_id = ?1 AND {condition}",
+            entity.table()
+        ),
+        [library],
+        |r| r.get(0),
+    )?;
+    Ok(usize::try_from(n).unwrap_or_default())
 }
 
 /// Cover entries whose name is exactly `<sha256>.<known extension>`. Paths inside the
@@ -664,6 +691,54 @@ mod tests {
         .optional()
         .unwrap()
         .flatten()
+    }
+
+    #[test]
+    fn a_backup_brings_its_trash_back_with_30_more_days() {
+        let dir = temp("trash");
+        let covers = Covers::new(dir.join("covers")).unwrap();
+        let mut source = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&source).unwrap();
+        crate::people::name_founder(&mut source, &lib, "Tersoal").unwrap();
+        catalog::create_book(&mut source, &lib, &book("Kept", None), None).unwrap();
+        let gone = catalog::create_book(&mut source, &lib, &book("In the trash", None), None)
+            .unwrap()
+            .edition_id;
+        catalog::delete_book(&mut source, &lib, &gone).unwrap();
+        // Sent long ago: the backup keeps the moment as it was.
+        source
+            .execute(
+                "UPDATE editions SET trashed_at = '2020-01-01T00:00:00.000Z' WHERE id = ?1",
+                [&gone],
+            )
+            .unwrap();
+        let file = dir.join("backup.zip");
+        export(
+            &source,
+            std::slice::from_ref(&lib),
+            &covers,
+            File::create(&file).unwrap(),
+            None,
+        )
+        .unwrap();
+
+        let mut target = db::open_in_memory().unwrap();
+        let to = ops::active_library(&target).unwrap();
+        let restored =
+            restore(&mut target, &to, &covers, File::open(&file).unwrap(), None).unwrap();
+        let library = &restored.restored[0];
+        assert_eq!((library.books, library.trashed), (1, 1));
+        assert_eq!(titles(&target, &library.id), vec!["Kept"]);
+
+        // In the trash of the restored library, with 30 days from now, not from 2020 (D105).
+        let item = crate::trash::list(&target, &library.id).unwrap().remove(0);
+        assert_eq!(item.trashed_at, "2020-01-01T00:00:00.000Z");
+        let left = kosmotheka_domain::timestamp_millis(&item.purge_at).unwrap() - ops::now_millis();
+        assert!(left > 29 * 24 * 3600 * 1000, "{}", item.purge_at);
+        assert_eq!(
+            crate::trash::expire(&mut target, &library.id, ops::now_millis()).unwrap(),
+            0
+        );
     }
 
     #[test]

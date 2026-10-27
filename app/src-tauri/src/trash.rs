@@ -4,8 +4,8 @@
 
 use std::collections::HashSet;
 
-use kosmotheka_domain::{Change, Entity, timestamp_millis, timestamp_text};
-use rusqlite::{Connection, Transaction};
+use kosmotheka_domain::{Change, Entity, TRASHABLE, timestamp_millis, timestamp_text};
+use rusqlite::{Connection, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -14,6 +14,8 @@ use crate::error::{Error, Result};
 use crate::{marks, ops};
 
 const DAY_MILLIS: u64 = 24 * 60 * 60 * 1000;
+/// What the judge allows an editor (rule 16); this device waits as long, counted from when it saw it.
+const TRASH_MILLIS: u64 = kosmotheka_domain::permission::TRASH_DAYS * DAY_MILLIS;
 
 /// One of the four things the trash holds, as the screen names them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -59,7 +61,8 @@ pub struct TrashItem {
     pub trashed_at: String,
     /// The name of whoever sent it, if that person is still in the library.
     pub trashed_by: Option<String>,
-    /// When it goes for good, unless restored first (`trashed_at` and 30 days, for now).
+    /// When it goes for good, unless restored first: 30 days from the later of `trashed_at` and when this device
+    /// first saw it in the trash.
     pub purge_at: String,
 }
 
@@ -170,16 +173,145 @@ fn unique(items: &[TrashRef]) -> Vec<&TrashRef> {
     items.iter().filter(|item| seen.insert(*item)).collect()
 }
 
-/// When something sent at `trashed_at` goes for good.
-fn purge_at(trashed_at: &str) -> String {
-    timestamp_millis(trashed_at)
-        .map(|since| timestamp_text(since + 30 * DAY_MILLIS))
-        .unwrap_or_default()
+/// The moment from which something counts its 30 days: the later of when it was sent and when this device saw it.
+fn counted_from(trashed_at: &str, seen_at: Option<i64>) -> u64 {
+    let sent = timestamp_millis(trashed_at).unwrap_or(0);
+    let seen = seen_at
+        .and_then(|seen| u64::try_from(seen).ok())
+        .unwrap_or(0);
+    sent.max(seen)
+}
+
+/// Notes when this device first sees each thing in the trash of `library`, and forgets what is no longer there
+/// (restored or gone), so sending it again later counts from then.
+pub fn observe(conn: &Connection, library: &str, now: u64) -> Result<()> {
+    let now = i64::try_from(now).unwrap_or(i64::MAX);
+    for entity in TRASHABLE {
+        let table = entity.table();
+        conn.execute(
+            &format!(
+                "INSERT OR IGNORE INTO trash_seen (library_id, entity, entity_id, seen_at)
+                 SELECT library_id, ?2, id, ?3 FROM {table}
+                  WHERE library_id = ?1 AND trashed_at IS NOT NULL"
+            ),
+            rusqlite::params![library, table, now],
+        )?;
+        conn.execute(
+            &format!(
+                "DELETE FROM trash_seen WHERE library_id = ?1 AND entity = ?2
+                   AND NOT EXISTS (SELECT 1 FROM {table} t WHERE t.library_id = trash_seen.library_id
+                                     AND t.id = trash_seen.entity_id AND t.trashed_at IS NOT NULL)"
+            ),
+            [library, table],
+        )?;
+    }
+    Ok(())
+}
+
+/// What has been 30 days in the trash of `library`, by this device's count.
+fn due(conn: &Connection, library: &str, now: u64) -> Result<Vec<TrashRef>> {
+    let kinds = [
+        (TrashKind::Edition, Entity::Edition),
+        (TrashKind::Copy, Entity::Copy),
+        (TrashKind::Tag, Entity::Tag),
+        (TrashKind::Series, Entity::Series),
+    ];
+    let mut due = Vec::new();
+    for (kind, entity) in kinds {
+        let table = entity.table();
+        let mut statement = conn.prepare(&format!(
+            "SELECT t.id, t.trashed_at, s.seen_at FROM {table} t
+               LEFT JOIN trash_seen s ON s.library_id = t.library_id AND s.entity = ?2 AND s.entity_id = t.id
+              WHERE t.library_id = ?1 AND t.trashed_at IS NOT NULL"
+        ))?;
+        let rows = statement.query_map([library, table], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<i64>>(2)?,
+            ))
+        })?;
+        for row in rows {
+            let (id, trashed_at, seen_at) = row?;
+            if now >= counted_from(&trashed_at, seen_at).saturating_add(TRASH_MILLIS) {
+                due.push(TrashRef { kind, id });
+            }
+        }
+    }
+    Ok(due)
+}
+
+/// Deletes for good what has been 30 days in the trash of `library`, in one operation, if this device's person
+/// may (an editor or an administrator). Never as a request: a reader's device leaves it for others. Returns how
+/// many things went.
+pub fn expire(conn: &mut Connection, library: &str, now: u64) -> Result<usize> {
+    observe(conn, library, now)?;
+    let due = due(conn, library, now)?;
+    if due.is_empty() {
+        return Ok(0);
+    }
+    let tx = conn.transaction()?;
+    let changes = purge_changes(&tx, library, &due)?;
+    if changes.is_empty() || !ops::would_allow(&tx, library, changes.clone())? {
+        return Ok(0);
+    }
+    ops::record(&tx, library, "trash.expire", changes)?;
+    tx.commit()?;
+    observe(conn, library, now)?;
+    Ok(due.len())
+}
+
+/// `expire` in every library of this device; one that fails does not stop the others.
+pub fn expire_all(conn: &mut Connection) -> Result<usize> {
+    conn.execute(
+        "DELETE FROM trash_seen WHERE library_id NOT IN (SELECT id FROM libraries)",
+        [],
+    )?;
+    let libraries = catalog_libraries(conn)?;
+    let now = ops::now_millis();
+    Ok(libraries
+        .iter()
+        .filter_map(|library| expire(conn, library, now).ok())
+        .sum())
+}
+
+/// The tag or series of that name in the trash, if any, to offer restoring it instead of creating a second one (D105).
+pub fn named(
+    conn: &Connection,
+    library: &str,
+    kind: TrashKind,
+    name: &str,
+) -> Result<Option<TrashItem>> {
+    if !matches!(kind, TrashKind::Tag | TrashKind::Series) {
+        return Ok(None);
+    }
+    let id: Option<String> = conn
+        .query_row(
+            &format!(
+                "SELECT id FROM {} WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
+                   AND trashed_at IS NOT NULL ORDER BY trashed_at DESC LIMIT 1",
+                kind.entity().table()
+            ),
+            [library, name.trim()],
+            |row| row.get(0),
+        )
+        .optional()?;
+    let Some(id) = id else { return Ok(None) };
+    Ok(list(conn, library)?
+        .into_iter()
+        .find(|item| item.kind == kind && item.id == id))
+}
+
+fn catalog_libraries(conn: &Connection) -> Result<Vec<String>> {
+    let mut statement = conn.prepare("SELECT id FROM libraries")?;
+    let rows = statement.query_map([], |row| row.get(0))?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
 /// The trash of `library`, the latest first. A copy whose edition is in the trash too is not listed apart: it
 /// comes back with its edition.
 pub fn list(conn: &Connection, library: &str) -> Result<Vec<TrashItem>> {
+    observe(conn, library, ops::now_millis())?;
     let queries: [(TrashKind, &str); 4] = [
         (
             TrashKind::Edition,
@@ -220,21 +352,120 @@ pub fn list(conn: &Connection, library: &str) -> Result<Vec<TrashItem>> {
     let mut items = Vec::new();
     for (kind, sql) in queries {
         let mut statement = conn.prepare(sql)?;
+        let seen = |id: &str| -> rusqlite::Result<Option<i64>> {
+            conn.query_row(
+                "SELECT seen_at FROM trash_seen WHERE library_id = ?1 AND entity = ?2 AND entity_id = ?3",
+                [library, kind.entity().table(), id],
+                |row| row.get(0),
+            )
+            .optional()
+        };
         let rows = statement.query_map([library], |row| {
+            let id: String = row.get(0)?;
             let trashed_at: String = row.get(3)?;
+            let from = counted_from(&trashed_at, seen(&id)?);
             Ok(TrashItem {
                 kind,
-                id: row.get(0)?,
                 title: row.get(1)?,
                 detail: row.get(2)?,
                 count: row.get(5)?,
-                purge_at: purge_at(&trashed_at),
+                purge_at: timestamp_text(from.saturating_add(TRASH_MILLIS)),
                 trashed_at,
                 trashed_by: row.get(4)?,
+                id,
             })
         })?;
         items.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
     }
     items.sort_by(|a, b| b.trashed_at.cmp(&a.trashed_at));
     Ok(items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+
+    fn tag(conn: &mut Connection, library: &str, name: &str) -> String {
+        let id = ops::new_id();
+        let tx = conn.transaction().unwrap();
+        ops::record(
+            &tx,
+            library,
+            "tag.add",
+            vec![Change::create(Entity::Tag, &id, json!({ "name": name }))],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        id
+    }
+
+    #[test]
+    fn something_in_the_trash_goes_30_days_after_this_device_saw_it_whenever_it_was_sent() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        crate::people::name_founder(&mut conn, &lib, "Tersoal").unwrap();
+        let id = tag(&mut conn, &lib, "regalos");
+        send(&mut conn, &lib, TrashKind::Tag, &id, "tag.trash").unwrap();
+        let month = 31 * DAY_MILLIS;
+        let long_ago = timestamp_text(ops::now_millis() - month);
+        conn.execute(
+            "UPDATE tags SET trashed_at = ?1 WHERE id = ?2",
+            [&long_ago, &id],
+        )
+        .unwrap();
+        conn.execute("DELETE FROM trash_seen", []).unwrap();
+
+        // Sent 31 days ago, but this device sees it now: it waits (a wrong clock, a backup restored late).
+        assert_eq!(expire(&mut conn, &lib, ops::now_millis()).unwrap(), 0);
+
+        // Seen 31 days ago too: it goes, in an operation of its own.
+        conn.execute(
+            "UPDATE trash_seen SET seen_at = ?1",
+            [i64::try_from(ops::now_millis() - month).unwrap()],
+        )
+        .unwrap();
+        assert_eq!(expire(&mut conn, &lib, ops::now_millis()).unwrap(), 1);
+        let left: i64 = conn
+            .query_row("SELECT count(*) FROM tags WHERE id = ?1", [&id], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(left, 0);
+        let intent: String = conn
+            .query_row(
+                "SELECT intent FROM operations ORDER BY hlc DESC LIMIT 1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(intent, "trash.expire");
+        let seen: i64 = conn
+            .query_row("SELECT count(*) FROM trash_seen", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(seen, 0, "forgotten once gone");
+    }
+
+    #[test]
+    fn a_tag_or_series_of_that_name_in_the_trash_is_found_to_restore_it() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        crate::people::name_founder(&mut conn, &lib, "Tersoal").unwrap();
+        let id = tag(&mut conn, &lib, "Regalos");
+        assert!(
+            named(&conn, &lib, TrashKind::Tag, "regalos")
+                .unwrap()
+                .is_none()
+        );
+        send(&mut conn, &lib, TrashKind::Tag, &id, "tag.trash").unwrap();
+        let found = named(&conn, &lib, TrashKind::Tag, " regalos ")
+            .unwrap()
+            .unwrap();
+        assert_eq!((found.id, found.title), (id, "Regalos".to_owned()));
+        assert!(
+            named(&conn, &lib, TrashKind::Series, "regalos")
+                .unwrap()
+                .is_none()
+        );
+    }
 }

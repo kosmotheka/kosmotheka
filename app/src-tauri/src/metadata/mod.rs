@@ -153,6 +153,8 @@ pub struct LookupResult {
     pub warnings: Vec<ProviderWarning>,
     /// Set when this ISBN is already in the catalog.
     pub existing_edition_id: Option<String>,
+    /// Set when it is not, but an edition with it is in the trash: the UI offers to restore it (D105).
+    pub trashed_edition_id: Option<String>,
 }
 
 /// Candidates a person can pick from, and warnings from providers that failed.
@@ -200,6 +202,8 @@ pub struct CodeResult {
     pub warnings: Vec<ProviderWarning>,
     /// Set when this code is already in the catalog.
     pub existing_edition_id: Option<String>,
+    /// Set when it is not, but an edition with it is in the trash: the UI offers to restore it (D105).
+    pub trashed_edition_id: Option<String>,
     /// A number shaped like an ISBN whose check digit does not match: nothing was asked anywhere, and the UI says
     /// so instead of asking what it is.
     pub invalid_isbn: bool,
