@@ -55,6 +55,8 @@ pub enum FieldType {
     Integer,
     /// `YYYY-MM-DD`.
     Date,
+    /// A moment in UTC with milliseconds, written one way only: `YYYY-MM-DDTHH:MM:SS.mmmZ` (D105).
+    Timestamp,
     OneOf(&'static [&'static str]),
     /// `true` or `false`.
     Boolean,
@@ -129,6 +131,10 @@ pub const CONTRIBUTOR_ROLES: &[&str] = &[
     "studio",
 ];
 
+/// What goes to the trash (D105): the four things a person deletes from the app. Each carries `trashed_at` and
+/// `trashed_by`; everything that hangs from it stays as it is, so restoring brings it back whole.
+pub const TRASHABLE: [Entity; 4] = [Entity::Edition, Entity::Copy, Entity::Tag, Entity::Series];
+
 // Declared as constants so the slices live for the whole program ('static).
 const WORK_FIELDS: &[FieldSpec] = &[
     field("kind", FieldType::OneOf(KINDS), true),
@@ -159,6 +165,9 @@ const EDITION_FIELDS: &[FieldSpec] = &[
     field("cover", FieldType::Text, false),
     field("barcode", FieldType::Text, false),
     field("notes", FieldType::Text, false),
+    // In the trash since then, by that person (D105); both null when it is not.
+    field("trashed_at", FieldType::Timestamp, false),
+    field("trashed_by", FieldType::Ref(Entity::Member), false),
 ];
 const BOOK_DETAILS_FIELDS: &[FieldSpec] = &[
     field("isbn13", FieldType::Isbn13, false),
@@ -192,7 +201,12 @@ const MEMBER_FIELDS: &[FieldSpec] = &[
     field("access_withdrawn", FieldType::Boolean, false),
 ];
 const PUBLISHER_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
-const TAG_FIELDS: &[FieldSpec] = &[field("name", FieldType::Text, true)];
+const TAG_FIELDS: &[FieldSpec] = &[
+    field("name", FieldType::Text, true),
+    // In the trash since then, by that person (D105); both null when it is not.
+    field("trashed_at", FieldType::Timestamp, false),
+    field("trashed_by", FieldType::Ref(Entity::Member), false),
+];
 const WORK_TAG_FIELDS: &[FieldSpec] = &[
     field("work_id", FieldType::Ref(Entity::Work), true),
     field("tag_id", FieldType::Ref(Entity::Tag), true),
@@ -206,6 +220,9 @@ pub const WORK_RELATIONS: &[&str] = &["requires"];
 const SERIES_FIELDS: &[FieldSpec] = &[
     field("name", FieldType::Text, true),
     field("ordered", FieldType::Boolean, true),
+    // In the trash since then, by that person (D105); both null when it is not.
+    field("trashed_at", FieldType::Timestamp, false),
+    field("trashed_by", FieldType::Ref(Entity::Member), false),
 ];
 const SERIES_ENTRY_FIELDS: &[FieldSpec] = &[
     field("series_id", FieldType::Ref(Entity::Series), true),
@@ -257,6 +274,9 @@ const COPY_FIELDS: &[FieldSpec] = &[
     field("platform", FieldType::Text, false),
     // A TV series copy's held seasons, as free text ("1-2", "1-3, 5").
     field("seasons", FieldType::Text, false),
+    // In the trash since then, by that person (D105); both null when it is not.
+    field("trashed_at", FieldType::Timestamp, false),
+    field("trashed_by", FieldType::Ref(Entity::Member), false),
 ];
 
 impl Entity {

@@ -3188,5 +3188,309 @@
       "change": 0,
       "field": "cloud_device_id"
     }
+  },
+  {
+    "name": "an edition sent to the trash, with the moment and the person",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000171",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000Z",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a copy, a tag and a series restored: both trash fields null",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000172",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "trash.restore",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-0000000000c1",
+          "action": "update",
+          "fields": {
+            "trashed_at": null,
+            "trashed_by": null
+          }
+        },
+        {
+          "entity": "tag",
+          "id": "01997c7e-0000-7000-8000-0000000000a1",
+          "action": "update",
+          "fields": {
+            "trashed_at": null,
+            "trashed_by": null
+          }
+        },
+        {
+          "entity": "series",
+          "id": "01997c7e-0000-7000-8000-0000000000b1",
+          "action": "update",
+          "fields": {
+            "trashed_at": null,
+            "trashed_by": null
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "a copy created already in the trash, as restoring a backup does",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000173",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "backup.restore",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-0000000000c1",
+          "action": "create",
+          "fields": {
+            "edition_id": "01997c7e-0000-7000-8000-0000000000e1",
+            "format": "paperback",
+            "quantity": 1,
+            "trashed_at": "2026-10-27T18:30:00.000Z",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "valid"
+    }
+  },
+  {
+    "name": "the trash moment without the person",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000174",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000Z"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "trash_pair",
+      "change": 0
+    }
+  },
+  {
+    "name": "the person without the trash moment",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000175",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "tag.trash",
+      "changes": [
+        {
+          "entity": "tag",
+          "id": "01997c7e-0000-7000-8000-0000000000a1",
+          "action": "update",
+          "fields": {
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "trash_pair",
+      "change": 0
+    }
+  },
+  {
+    "name": "a trash moment with the person emptied: half in the trash",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000176",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "series.trash",
+      "changes": [
+        {
+          "entity": "series",
+          "id": "01997c7e-0000-7000-8000-0000000000b1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000Z",
+            "trashed_by": null
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "trash_pair",
+      "change": 0
+    }
+  },
+  {
+    "name": "a trash moment without milliseconds",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000177",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00Z",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "trashed_at"
+    }
+  },
+  {
+    "name": "a trash moment with an offset instead of Z",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000178",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000+01:00",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "trashed_at"
+    }
+  },
+  {
+    "name": "a trash moment that is not on the clock",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-000000000179",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "edition",
+          "id": "01997c7e-0000-7000-8000-0000000000e1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T25:30:00.000Z",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "trashed_at"
+    }
+  },
+  {
+    "name": "the trash person that is not an id",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000017a",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "copy.trash",
+      "changes": [
+        {
+          "entity": "copy",
+          "id": "01997c7e-0000-7000-8000-0000000000c1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000Z",
+            "trashed_by": "Ana"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "wrong_type",
+      "change": 0,
+      "field": "trashed_by"
+    }
+  },
+  {
+    "name": "a work has no trash: only the four things a person deletes",
+    "operation": {
+      "id": "01997c7e-0000-7000-8000-00000000017b",
+      "library": "01997c7e-0000-7000-8000-00000000aaaa",
+      "hlc": "0001727222222222-00000000-01997c7e-0000-7000-8000-0000000000ff",
+      "intent": "book.trash",
+      "changes": [
+        {
+          "entity": "work",
+          "id": "01997c7e-0000-7000-8000-0000000000d1",
+          "action": "update",
+          "fields": {
+            "trashed_at": "2026-10-27T18:30:00.000Z",
+            "trashed_by": "01997c7e-0000-7000-8000-000000000013"
+          }
+        }
+      ],
+      "previous": null
+    },
+    "expect": {
+      "result": "invalid",
+      "code": "unknown_field",
+      "change": 0,
+      "field": "trashed_at"
+    }
   }
 ]

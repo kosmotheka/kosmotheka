@@ -45,6 +45,7 @@ const MIGRATIONS_SLICE: &[M<'_>] = &[
     M::up(include_str!("../migrations/0033_vouched_key.sql")),
     M::up(include_str!("../migrations/0034_access_withdrawn.sql")),
     M::up(include_str!("../migrations/0035_founding.sql")),
+    M::up(include_str!("../migrations/0036_trash.sql")),
 ];
 const MIGRATIONS: Migrations<'_> = Migrations::from_slice(MIGRATIONS_SLICE);
 

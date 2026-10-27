@@ -77,6 +77,8 @@ pub enum OperationErrorCode {
     FieldsOnDelete,
     WrongId,
     Undeletable,
+    /// `trashed_at` and `trashed_by` go together: both set, or both null (D105).
+    TrashPair,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
@@ -187,6 +189,18 @@ impl Change {
             return Err(fail(MissingField, Some(missing.name)));
         }
 
+        // In the trash or not, never half: a date with nobody, or somebody with no date (D105).
+        if crate::schema::TRASHABLE.contains(&self.entity) {
+            let at = self.fields.get("trashed_at");
+            let by = self.fields.get("trashed_by");
+            if at.is_some() || by.is_some() {
+                let set = |value: Option<&Value>| value.is_some_and(|v| !v.is_null());
+                if at.is_none() || by.is_none() || set(at) != set(by) {
+                    return Err(fail(TrashPair, None));
+                }
+            }
+        }
+
         // A person's mark on a work has one id, derived from both (D68), so the same
         // person marking the same work on two devices writes the same row.
         if self.entity == Entity::Mark {
@@ -213,6 +227,7 @@ fn matches_type(spec: &FieldSpec, value: &Value) -> bool {
         FieldType::Date => value
             .as_str()
             .is_some_and(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok()),
+        FieldType::Timestamp => value.as_str().is_some_and(is_timestamp),
         FieldType::OneOf(allowed) => value.as_str().is_some_and(|s| allowed.contains(&s)),
         FieldType::Boolean => value.is_boolean(),
         FieldType::Rating => value.as_i64().is_some_and(|n| (1..=5).contains(&n)),
@@ -259,6 +274,14 @@ impl Operation {
         }
         Ok(())
     }
+}
+
+/// `YYYY-MM-DDTHH:MM:SS.mmmZ` and a moment that exists: one writing per moment, so two devices compare it as text.
+fn is_timestamp(text: &str) -> bool {
+    text.len() == 24
+        && text.is_ascii()
+        && text.ends_with('Z')
+        && chrono::NaiveDateTime::parse_from_str(&text[..23], "%Y-%m-%dT%H:%M:%S%.3f").is_ok()
 }
 
 /// Dot-separated lowercase words, such as `book.add` or `copy.lend`.

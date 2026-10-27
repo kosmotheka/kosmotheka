@@ -6,14 +6,19 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 const spec = fileURLToPath(new URL("../../spec/", import.meta.url));
 const schema = JSON.parse(readFileSync(`${spec}operation.schema.json`, "utf8"));
-const cases = JSON.parse(
-  readFileSync(`${spec}conformance/operation-validation.json`, "utf8"),
-);
+const cases = JSON.parse(readFileSync(`${spec}conformance/operation-validation.json`, "utf8"));
 const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 
 const beyondSchema = (expect, name) =>
-  ["missing_field", "null_required", "other_library", "other_device", "wrong_id"].includes(expect.code) ||
-  (expect.code === "wrong_type" && name.includes("date")) ||
+  [
+    "missing_field",
+    "null_required",
+    "other_library",
+    "other_device",
+    "wrong_id",
+    "trash_pair",
+  ].includes(expect.code) ||
+  (expect.code === "wrong_type" && (name.includes("date") || name.includes("on the clock"))) ||
   (expect.code === "invalid_previous" && name.includes("its own previous"));
 
 let mismatches = 0;
@@ -28,9 +33,7 @@ for (const { name, operation, expect } of cases) {
 // The operations of the merge and permission cases are valid operations too.
 let checked = 0;
 for (const file of ["library-merge", "merge", "permissions"]) {
-  const mergeCases = JSON.parse(
-    readFileSync(`${spec}conformance/${file}.json`, "utf8"),
-  );
+  const mergeCases = JSON.parse(readFileSync(`${spec}conformance/${file}.json`, "utf8"));
   for (const { name, operations, expect } of mergeCases) {
     for (const { unsigned, ...operation } of operations) {
       checked++;

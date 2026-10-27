@@ -28,13 +28,15 @@ Every write to the catalog is an **operation**: an atomic batch of entity change
 - **Create** must include every required field of the entity.
 - **Required fields** can never be set to `null`.
 - **Dates** must exist on the calendar (`2026-02-30` is invalid).
+- A **timestamp** (`trashed_at`) is a moment in UTC written one way only, `YYYY-MM-DDTHH:MM:SS.mmmZ`, with exactly three digits of milliseconds and a final `Z`, and it must exist on the calendar and the clock (`wrong_type` otherwise: `2026-10-27T18:30:00Z`, `2026-10-27T18:30:00.000+01:00` and `2026-10-27 18:30:00.000Z` are invalid). One writing per moment, so every implementation compares two of them as text.
+- **The trash (D105):** an `edition`, a `copy`, a `tag` and a `series` carry `trashed_at` and `trashed_by` (the `member` who sent it there). Both are set, or both are `null`: a change that writes one of them must write the other, both set or both null (`trash_pair` otherwise). Set means the row is in the trash; both `null`, that it is not (restoring it). Who may do each is rule 16.
 - **`previous`** (D87) is the id of the latest operation of the same device in the same library when the operation was made, or `null` for the first. The key is **required** even when it is null: an operation without it is not an operation (it does not deserialize). It must be a UUID and never the operation's own id (`invalid_previous`). It is part of what the signature covers. A receiver that does not have `previous` yet makes the operation **wait** (not stored, the rest of its author's with it) and one whose `previous` belongs to another device or library, or is not earlier in the clock, refuses it; a null `previous` from an author that already has operations, or two operations with the same `previous`, are accepted (forks are left to the fences). See `docs/architecture/sync.md`.
 - A device's **`trusted_through`** (D84, D87) is the id of the last operation of that device the administrator had when it lost power, or `""`. Of that device's operations dated before the one that sets it, only the marked one and its ancestors through `previous` count; any other is a request.
-- Errors are reported in this order: operation id, library, previous, intent, empty changes, then each change in order (id, other library, other device, action, fields in alphabetical order, missing required fields).
+- Errors are reported in this order: operation id, library, previous, intent, empty changes, then each change in order (id, other library, other device, action, fields in alphabetical order, missing required fields, then the trash pair and the mark's id).
 
 ## Error codes
 
-`invalid_id`, `invalid_library`, `invalid_previous`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`, `wrong_id`, `undeletable`.
+`invalid_id`, `invalid_library`, `invalid_previous`, `invalid_intent`, `no_changes`, `other_library`, `other_device`, `unknown_field`, `missing_field`, `null_required`, `wrong_type`, `empty_update`, `fields_on_delete`, `wrong_id`, `undeletable`, `trash_pair`.
 
 ## Signatures
 

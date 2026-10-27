@@ -19,8 +19,8 @@
 
 ## 1. Especificación y dominio (los casos hostiles primero, vistos fallar)
 
-- [ ] Tipo de campo nuevo de fecha y hora en UTC (hoy solo hay `Date`): en `crates/domain/src/schema.rs`, su validación y su forma en `spec/operation.schema.json`.
-- [ ] `trashed_at` y `trashed_by` en `editions`, `copies`, `tags` y `series`: `schema.rs`, `spec/operation.schema.json` y `schemaVersion` en `spec/sync.json` (un test lo mantiene igual a las migraciones).
+- [x] Tipo de campo nuevo de fecha y hora en UTC (hoy solo hay `Date`): en `crates/domain/src/schema.rs`, su validación y su forma en `spec/operation.schema.json`. *Hecho (1a): `FieldType::Timestamp`, una sola escritura `YYYY-MM-DDTHH:MM:SS.mmmZ`.*
+- [x] `trashed_at` y `trashed_by` en `editions`, `copies`, `tags` y `series`: `schema.rs`, `spec/operation.schema.json` y `schemaVersion` en `spec/sync.json` (un test lo mantiene igual a las migraciones). *Hecho (1a): `schema::TRASHABLE`, código `trash_pair` (los dos campos juntos), 11 casos en `operation-validation.json`, `schemaVersion` 36. `trashed_by` sin clave foránea, como `devices.member_id`.*
 - [ ] Reglas en `spec/` y casos en `spec/conformance/` (`permissions.json`, `operation-validation.json`), que corren Rust y PHP:
   - [ ] mandar a la papelera y restaurar: quien puede borrar esa cosa (editor, administrador);
   - [ ] restaurar pone los dos campos a `null` a la vez; poner uno sin el otro no vale;
@@ -32,7 +32,7 @@
 
 ## 2. App (Rust)
 
-- [ ] Migración SQLite: columnas e índices (`0036_trash.sql` o el número que toque).
+- [x] Migración SQLite: columnas (`0036_trash.sql`, hecha en 1a porque el test de `schemaVersion` la pide). Índices, si las consultas los piden, en el paso 2.
 - [ ] Operaciones: `*.trash`, `*.restore` y `*.purge` para ficha, ejemplar, etiqueta y saga (intenciones nuevas en `operations.md`); `*.purge` hace lo que hoy hace el borrado, con la misma cascada.
 - [ ] Ficha: mandarla esconde sus ejemplares, pero en la papelera sale solo la ficha; un ejemplar mandado antes por separado sigue aparte; la obra se esconde cuando todas sus ediciones están en la papelera.
 - [ ] Todas las consultas ignoran lo que está en la papelera, con un test cada una: catálogo, búsqueda, filtros, contadores, «¿Lo tengo?», «Me falta», sagas (barras y huecos), etiquetas de una obra y su lista, marcas, CSV, «Alta rápida», foto de balda, duplicados al añadir.
@@ -46,6 +46,8 @@
 - [ ] Listas fijas de `AGENTS.md` (`ORDER`, `CONTENTS`, `LIBRARY_CONTENTS_CHILDREN_FIRST`): comprobar que siguen bien.
 
 ## 3. Servidor
+
+> **Ojo:** desde el paso 1a, los casos nuevos de `spec/conformance/` fallan en los tests del servidor (no conoce los campos ni `trash_pair`) hasta que se haga este paso. Es esperado en esta rama; no se fusiona hasta tenerlo.
 
 - [ ] Migración de Doctrine con las columnas (`timestamptz` y el id de la persona); entidades `Edition`, `Copy`, `Tag` y `Series` en `src/Entity/Catalog/`; `CatalogEntity.php`.
 - [ ] `CatalogJudge` con las reglas nuevas; los mismos casos de `spec/conformance/`.

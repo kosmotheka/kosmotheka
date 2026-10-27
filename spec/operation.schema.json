@@ -91,6 +91,14 @@
       ],
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
     },
+    "timestamp": {
+      "description": "A moment in UTC with milliseconds, written one way only (D105).",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
     "ref": {
       "oneOf": [
         {
@@ -254,8 +262,7 @@
               "entity": {
                 "enum": [
                   "person",
-                  "publisher",
-                  "tag"
+                  "publisher"
                 ]
               }
             }
@@ -267,6 +274,35 @@
                 "properties": {
                   "name": {
                     "$ref": "#/$defs/requiredText"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "entity": {
+                "const": "tag"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "$ref": "#/$defs/requiredText"
+                  },
+                  "trashed_at": {
+                    "description": "In the trash since then (D105); null when it is not. Set together with trashed_by.",
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  "trashed_by": {
+                    "description": "The member who sent it to the trash; null when it is not in it.",
+                    "$ref": "#/$defs/ref"
                   }
                 }
               }
@@ -463,6 +499,14 @@
                   },
                   "notes": {
                     "$ref": "#/$defs/text"
+                  },
+                  "trashed_at": {
+                    "description": "In the trash since then (D105); null when it is not. Set together with trashed_by.",
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  "trashed_by": {
+                    "description": "The member who sent it to the trash; null when it is not in it.",
+                    "$ref": "#/$defs/ref"
                   }
                 }
               }
@@ -650,6 +694,14 @@
                   },
                   "seasons": {
                     "$ref": "#/$defs/text"
+                  },
+                  "trashed_at": {
+                    "description": "In the trash since then (D105); null when it is not. Set together with trashed_by.",
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  "trashed_by": {
+                    "description": "The member who sent it to the trash; null when it is not in it.",
+                    "$ref": "#/$defs/ref"
                   }
                 }
               }
@@ -787,6 +839,14 @@
                   },
                   "ordered": {
                     "type": "boolean"
+                  },
+                  "trashed_at": {
+                    "description": "In the trash since then (D105); null when it is not. Set together with trashed_by.",
+                    "$ref": "#/$defs/timestamp"
+                  },
+                  "trashed_by": {
+                    "description": "The member who sent it to the trash; null when it is not in it.",
+                    "$ref": "#/$defs/ref"
                   }
                 }
               }
