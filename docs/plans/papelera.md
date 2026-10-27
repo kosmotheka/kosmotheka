@@ -21,14 +21,14 @@
 
 - [x] Tipo de campo nuevo de fecha y hora en UTC (hoy solo hay `Date`): en `crates/domain/src/schema.rs`, su validación y su forma en `spec/operation.schema.json`. *Hecho (1a): `FieldType::Timestamp`, una sola escritura `YYYY-MM-DDTHH:MM:SS.mmmZ`.*
 - [x] `trashed_at` y `trashed_by` en `editions`, `copies`, `tags` y `series`: `schema.rs`, `spec/operation.schema.json` y `schemaVersion` en `spec/sync.json` (un test lo mantiene igual a las migraciones). *Hecho (1a): `schema::TRASHABLE`, código `trash_pair` (los dos campos juntos), 11 casos en `operation-validation.json`, `schemaVersion` 36. `trashed_by` sin clave foránea, como `devices.member_id`.*
-- [ ] Reglas en `spec/` y casos en `spec/conformance/` (`permissions.json`, `operation-validation.json`), que corren Rust y PHP:
-  - [ ] mandar a la papelera y restaurar: quien puede borrar esa cosa (editor, administrador);
-  - [ ] restaurar pone los dos campos a `null` a la vez; poner uno sin el otro no vale;
-  - [ ] al mandar a la papelera, `trashed_by` es la persona del dispositivo que firma; al crear una fila ya en la papelera (`backup.restore`), una persona de la biblioteca;
-  - [ ] eliminar una de las cuatro: administrador siempre; editor, solo si `trashed_at` tiene 30 días respecto a la marca de la operación; la nube, solo si tiene 60; sin papelera, nadie: queda como petición;
-  - [ ] casos hostiles: editor que elimina sin papelera o antes de tiempo; `trashed_by` de otra persona; quien solo lee y restaura; la nube que elimina antes de 60 días o algo que no está en la papelera, o que intenta mandar a la papelera o restaurar.
-- [ ] Juez en Rust con esas reglas.
-- [ ] `docs/architecture/bateria-de-acceso.md` con cada test hostil.
+- [x] Reglas en `spec/` y casos en `spec/conformance/` (`permissions.json`, `operation-validation.json`), que corren Rust y PHP:
+  - [x] mandar a la papelera y restaurar: quien puede borrar esa cosa (editor, administrador);
+  - [x] restaurar pone los dos campos a `null` a la vez; poner uno sin el otro no vale;
+  - [x] al mandar a la papelera, `trashed_by` es la persona del dispositivo que firma; al crear una fila ya en la papelera (`backup.restore`), una persona de la biblioteca;
+  - [x] eliminar una de las cuatro: administrador siempre; editor, solo si `trashed_at` tiene 30 días respecto a la marca de la operación; la nube, solo si tiene 60; sin papelera, nadie: queda como petición;
+  - [x] casos hostiles: editor que elimina sin papelera o antes de tiempo; `trashed_by` de otra persona; quien solo lee y restaura; la nube que elimina antes de 60 días o algo que no está en la papelera, o que intenta mandar a la papelera o restaurar.
+- [x] Juez en Rust con esas reglas. *Hecho (1b): regla 16 en `spec/README.md` (y excepciones en las reglas 3 y 12), `LibraryView::trashed_since` (lo que cuelga de qué, en `permissions.rs`), 10 casos «trash:» en `permissions.json`. Dos casos antiguos de D45 pasan de etiquetas a editoriales, que se siguen borrando directamente.*
+- [x] `docs/architecture/bateria-de-acceso.md` con cada test hostil.
 
 ## 2. App (Rust)
 

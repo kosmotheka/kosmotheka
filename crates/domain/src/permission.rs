@@ -3,7 +3,13 @@
 //! made, so every device and the server reach the same verdict.
 
 use crate::operation::{Action, Change, Operation};
-use crate::schema::Entity;
+use crate::schema::{Entity, TRASHABLE};
+
+const DAY_MILLIS: u64 = 24 * 60 * 60 * 1000;
+/// How long something stays in the trash before an editor may delete it for good (D105, rule 16).
+pub const TRASH_DAYS: u64 = 30;
+/// How long before the cloud does it, as a safety net when no device has (D105, rule 16).
+pub const CLOUD_TRASH_DAYS: u64 = 60;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
@@ -64,6 +70,10 @@ pub trait LibraryView {
     fn member_has_account(&self, member: &str) -> bool;
     /// Whether the person `member` has had their access withdrawn (D98).
     fn member_access_withdrawn(&self, member: &str) -> bool;
+    /// Since when the row is in the trash (D105), in milliseconds since 1970, counting what it hangs from: the
+    /// copies, details, links and work of an edition in the trash (a work only once all its editions are), the
+    /// links of a tag and the entries of a series. The oldest when it hangs from several; `None` when nothing is.
+    fn trashed_since(&self, entity: Entity, id: &str) -> Option<u64>;
 }
 
 /// Whether the author of `operation` may make all of its changes. All or nothing:
@@ -91,14 +101,18 @@ pub fn is_allowed(operation: &Operation, view: &impl LibraryView) -> bool {
         view.role_of_device(author)
     };
     // The cloud's power (D76, D95) is the named device's, unless a fence makes it
-    // nobody's. Asked only when a change could use it.
+    // nobody's. Asked only when a change could use it: its fields, or deleting from the trash (D105).
     let cloud = !fenced
-        && operation.changes.iter().any(touches_cloud_field)
+        && operation
+            .changes
+            .iter()
+            .any(|change| touches_cloud_field(change) || change.action == Action::Delete)
         && view.cloud_device().is_some_and(|cloud| cloud == author);
+    let at = operation.hlc.millis;
     operation
         .changes
         .iter()
-        .all(|change| change_allowed(change, author, role, cloud, view))
+        .all(|change| change_allowed(change, author, role, cloud, at, view))
 }
 
 /// A person leaving the library themself (D102, rule 15). The operation is signed by a device of that person
@@ -222,7 +236,11 @@ fn touches_cloud_field(change: &Change) -> bool {
 /// the link of another device that belongs to nobody to a person with an account, which
 /// touches exactly `member_id` and `vouched_key`, both set. The cloud vouches for what it
 /// links; whether that key is the one the device is registered with is rule 13's business.
-fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool {
+fn cloud_allowed(change: &Change, author: &str, at: u64, view: &impl LibraryView) -> bool {
+    // Its one power over the catalog: deleting for good what has been 60 days in the trash (D105).
+    if change.action == Action::Delete {
+        return in_trash_for(change, at, CLOUD_TRASH_DAYS, view);
+    }
     if change.action != Action::Update {
         return false;
     }
@@ -252,11 +270,38 @@ fn cloud_allowed(change: &Change, author: &str, view: &impl LibraryView) -> bool
     }
 }
 
+/// Whether the row, or what it hangs from, has been in the trash at least `days` at the moment `at` (D105).
+fn in_trash_for(change: &Change, at: u64, days: u64, view: &impl LibraryView) -> bool {
+    view.trashed_since(change.entity, &change.id)
+        .is_some_and(|since| at >= since.saturating_add(days * DAY_MILLIS))
+}
+
+/// What a change does with the trash fields (D105): `None` when it does not touch them.
+enum TrashMove<'a> {
+    /// `trashed_at` set, with the person it names in `trashed_by`.
+    Send(Option<&'a str>),
+    /// Both null.
+    Restore,
+}
+
+fn trash_move(change: &Change) -> Option<TrashMove<'_>> {
+    if !TRASHABLE.contains(&change.entity) {
+        return None;
+    }
+    let at = change.fields.get("trashed_at")?;
+    Some(if at.is_null() {
+        TrashMove::Restore
+    } else {
+        TrashMove::Send(change.fields.get("trashed_by").and_then(|v| v.as_str()))
+    })
+}
+
 fn change_allowed(
     change: &Change,
     author: &str,
     role: Option<Role>,
     cloud: bool,
+    at: u64,
     view: &impl LibraryView,
 ) -> bool {
     // `founding_nonce` is written once, by the founding (judged before this is asked): nobody writes it
@@ -267,10 +312,25 @@ fn change_allowed(
     // `account_id` is written by the cloud device alone: not by an administrator, not
     // when the member is created.
     if change.entity == Entity::Member && change.fields.contains_key("account_id") {
-        return cloud && cloud_allowed(change, author, view);
+        return cloud && cloud_allowed(change, author, at, view);
     }
-    if cloud && cloud_allowed(change, author, view) {
+    if cloud && cloud_allowed(change, author, at, view) {
         return true;
+    }
+    // Who sent something to the trash is the signer's person, an administrator's included: the date and the name
+    // in the trash are compared, never taken as said (D84, D105). A row created already in the trash (restoring a
+    // backup) keeps whoever had sent it, as long as that person is in the library.
+    if let Some(TrashMove::Send(by)) = trash_move(change) {
+        let Some(by) = by else { return false };
+        let honest = match change.action {
+            Action::Create => view.member_exists(by),
+            _ => view
+                .member_of_device(author)
+                .is_some_and(|me| me.eq_ignore_ascii_case(by)),
+        };
+        if !honest {
+            return false;
+        }
     }
     let someone = role.is_some();
     let role = role.unwrap_or(Role::Reader);
@@ -323,8 +383,22 @@ fn change_allowed(
         }
         _ => match (role, change.action) {
             (Role::Reader, _) => false,
-            (_, Action::Create | Action::Update) => true,
-            (_, Action::Delete) => view.created_by_same_person(change.entity, &change.id, author),
+            // Sending to the trash is deleting as it was before the trash (D105, rule 16): her person's rows only.
+            // Restoring is any editor's, whoever sent it.
+            (_, Action::Update) => match trash_move(change) {
+                Some(TrashMove::Send(_)) => {
+                    view.created_by_same_person(change.entity, &change.id, author)
+                }
+                Some(TrashMove::Restore) | None => true,
+            },
+            (_, Action::Create) => true,
+            // For good: anything that has been 30 days in the trash, or hangs from something that has, whoever
+            // created it. The four things of the trash never go straight; the other rows, as before (rule 3).
+            (_, Action::Delete) => {
+                in_trash_for(change, at, TRASH_DAYS, view)
+                    || (!TRASHABLE.contains(&change.entity)
+                        && view.created_by_same_person(change.entity, &change.id, author))
+            }
         },
     }
 }
@@ -379,6 +453,9 @@ mod tests {
         }
         fn member_access_withdrawn(&self, _: &str) -> bool {
             false
+        }
+        fn trashed_since(&self, _: Entity, _: &str) -> Option<u64> {
+            None
         }
         fn mark_member(&self, _: &str) -> Option<String> {
             Some(
@@ -577,13 +654,20 @@ mod tests {
     }
 
     #[test]
-    fn an_editor_deletes_what_her_person_created() {
-        let delete = op(vec![Change::delete(Entity::Tag, TAG)]);
+    fn an_editor_deletes_what_her_person_created_but_the_trash_things_only_through_the_trash() {
         let mine = View {
             same_person: true,
             ..view(Some(Role::Editor))
         };
-        assert!(is_allowed(&delete, &mine));
+        // A link is deleted straight, as before the trash; a tag goes to the trash first (D105).
+        assert!(is_allowed(
+            &op(vec![Change::delete(Entity::WorkTag, TAG)]),
+            &mine
+        ));
+        assert!(!is_allowed(
+            &op(vec![Change::delete(Entity::Tag, TAG)]),
+            &mine
+        ));
     }
 
     #[test]

@@ -4,7 +4,9 @@
 
 use std::collections::BTreeSet;
 
-use kosmotheka_domain::{Action, Change, Entity, LibraryView, Operation, Role, is_allowed};
+use kosmotheka_domain::{
+    Action, Change, DETAILS, Entity, LibraryView, Operation, Role, is_allowed, timestamp_millis,
+};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 use crate::error::Result;
@@ -28,6 +30,71 @@ impl<'a> SqlView<'a> {
         person_of_device(self.conn, self.library, device)
             .ok()
             .flatten()
+    }
+
+    /// One column of one row of this library, if both exist and it is set.
+    fn column(&self, entity: Entity, column: &str, id: &str) -> Option<String> {
+        self.conn
+            .query_row(
+                &format!(
+                    "SELECT {column} FROM {} WHERE library_id = ?1 AND {} = ?2",
+                    entity.table(),
+                    entity.id_column()
+                ),
+                [self.library, id],
+                |row| row.get::<_, Option<String>>(0),
+            )
+            .optional()
+            .ok()
+            .flatten()
+            .flatten()
+    }
+
+    /// Since when an edition is in the trash.
+    fn edition_trashed(&self, edition: &str) -> Option<u64> {
+        self.column(Entity::Edition, "trashed_at", edition)
+            .as_deref()
+            .and_then(timestamp_millis)
+    }
+
+    /// A work is in the trash once all its editions are, since the last of them went (D105).
+    fn work_trashed(&self, work: &str) -> Option<u64> {
+        let latest: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT CASE WHEN count(*) > 0 AND count(*) = count(trashed_at) THEN max(trashed_at) END
+                   FROM editions WHERE library_id = ?1 AND work_id = ?2",
+                [self.library, work],
+                |row| row.get(0),
+            )
+            .ok()
+            .flatten();
+        latest.as_deref().and_then(timestamp_millis)
+    }
+
+    /// Since when the row this one points to through `column` is in the trash, by `of`.
+    fn through(
+        &self,
+        entity: Entity,
+        column: &str,
+        id: &str,
+        of: impl Fn(&str) -> Option<u64>,
+    ) -> Option<u64> {
+        self.column(entity, column, id).as_deref().and_then(of)
+    }
+
+    fn own_trashed(&self, entity: Entity, id: &str) -> Option<u64> {
+        self.column(entity, "trashed_at", id)
+            .as_deref()
+            .and_then(timestamp_millis)
+    }
+}
+
+/// The oldest of two moments in the trash: a row that hangs from two things goes with whichever went first.
+fn oldest(a: Option<u64>, b: Option<u64>) -> Option<u64> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, b) => a.or(b),
     }
 }
 
@@ -253,6 +320,38 @@ impl LibraryView for SqlView<'_> {
                 |row| row.get(0),
             )
             .unwrap_or(true)
+    }
+
+    fn trashed_since(&self, entity: Entity, id: &str) -> Option<u64> {
+        let work = |id: &str| self.work_trashed(id);
+        match entity {
+            Entity::Edition => self.edition_trashed(id),
+            details if DETAILS.contains(&details) => self.edition_trashed(id),
+            Entity::Copy => oldest(
+                self.own_trashed(entity, id),
+                self.through(entity, "edition_id", id, |e| self.edition_trashed(e)),
+            ),
+            Entity::Tag | Entity::Series => self.own_trashed(entity, id),
+            Entity::Work => self.work_trashed(id),
+            Entity::WorkContributor | Entity::WorkGenre => {
+                self.through(entity, "work_id", id, work)
+            }
+            Entity::WorkTag => oldest(
+                self.through(entity, "work_id", id, work),
+                self.through(entity, "tag_id", id, |t| self.own_trashed(Entity::Tag, t)),
+            ),
+            Entity::SeriesEntry => oldest(
+                self.through(entity, "work_id", id, work),
+                self.through(entity, "series_id", id, |s| {
+                    self.own_trashed(Entity::Series, s)
+                }),
+            ),
+            Entity::WorkRelation => oldest(
+                self.through(entity, "work_id", id, work),
+                self.through(entity, "related_work_id", id, work),
+            ),
+            _ => None,
+        }
     }
 
     fn mark_member(&self, id: &str) -> Option<String> {

@@ -64,6 +64,23 @@ Añadida el 03/10/2026 (D84). La primera línea de defensa son estos tests; la a
 
 **Escenarios de la familia (Ana administra, Hugo lee):** Ana nunca conecta con la nube y Hugo inicia sesión (la subida de Hugo no conecta a nadie); Ana sube; Ana cierra sesión una semana mientras Hugo sigue (desde 7.5). Se escriben con 7.2 y 7.5.
 
+**La papelera (D105, regla 16 de `spec/README.md`)**, en `spec/conformance/permissions.json` (los casos que empiezan por «trash:»), que corren la app y el servidor. No es quién recibe una biblioteca, pero da a la nube un poder nuevo sobre el catálogo, y por eso está aquí. Escritos antes que la regla el 27/10/2026; los marcados se vieron fallar con el juez de entonces, que dejaba mandar a la papelera lo ajeno, falsear quién lo mandó y borrar sin papelera:
+
+| Caso | Qué comprueba | Estado |
+|---|---|---|
+| `an editor sends to the trash what she may delete; restoring is for any editor` | Mandar a la papelera sigue la regla de borrar (lo de su persona); restaurar, cualquier editor | ✅ visto en rojo y arreglado |
+| `the person who sends to the trash is the signer's, an administrator's included` | `trashed_by` se compara con la persona de quien firma, también si administra (D84) | ✅ visto en rojo y arreglado |
+| `a reader neither sends to the trash nor restores` | Quien solo lee, nada: petición | ✅ |
+| `an editor deletes for good only after 30 days in the trash, whoever created it; never without the trash` | Un editor no destruye nada antes de 30 días, ni lo suyo sin pasar por la papelera | ✅ visto en rojo y arreglado |
+| `an administrator deletes for good at any moment, in the trash or not` | Quien administra, como siempre | ✅ |
+| `what hangs from a book in the trash goes with it after 30 days, whoever created it` | Ejemplares, detalles, obra y enlaces se van con la ficha, no antes | ✅ visto en rojo y arreglado |
+| `a series in the trash takes its entries along after 30 days; the works stay` | Las entradas cuelgan también de su saga; la obra no se va con ella | ✅ |
+| `restoring a copy brings it back from the trash; one restored is not deleted for good by an editor` | Lo restaurado ya no cuenta los 30 días | ✅ |
+| `a row created already in the trash, as restoring a backup does, names a person of the library` | Al restaurar una copia de seguridad, `trashed_by` puede ser otra persona, pero de la biblioteca | ✅ |
+| `the cloud deletes for good what has been 60 days in the trash, and nothing else` | El único poder de la nube sobre el catálogo: antes de 60 días, fuera de la papelera, mandar o restaurar, petición | ✅ |
+
+Riesgo aceptado (D105): una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo lo que ya estaba en la papelera. El servidor todavía no corre estos casos: es el paso 3 del [plan](../plans/papelera.md).
+
 **Casos hostiles de las invitaciones** (7.6, en `server/tests/Controller/InvitationControllerTest.php`; cada uno con su test antes de la defensa, visto fallar):
 
 1. Un enlace usado, caducado o anulado no da nada, y dos cuentas que lo aceptan a la vez: entra una.

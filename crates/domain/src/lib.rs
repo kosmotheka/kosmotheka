@@ -27,7 +27,9 @@ pub use hlc::{Hlc, HlcClock, is_device_id};
 pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;
 pub use mark::mark_id;
-pub use operation::{Action, Change, Operation, OperationError, OperationErrorCode};
+pub use operation::{
+    Action, Change, Operation, OperationError, OperationErrorCode, timestamp_millis,
+};
 pub use permission::{LibraryView, Role, is_allowed};
-pub use schema::{DETAILS, Entity, FieldSpec, FieldType, WORK_RELATIONS};
+pub use schema::{DETAILS, Entity, FieldSpec, FieldType, TRASHABLE, WORK_RELATIONS};
 pub use signature::{DeviceKey, SignatureError, canonical_bytes, verify};

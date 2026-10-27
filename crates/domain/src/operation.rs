@@ -278,10 +278,18 @@ impl Operation {
 
 /// `YYYY-MM-DDTHH:MM:SS.mmmZ` and a moment that exists: one writing per moment, so two devices compare it as text.
 fn is_timestamp(text: &str) -> bool {
-    text.len() == 24
-        && text.is_ascii()
-        && text.ends_with('Z')
-        && chrono::NaiveDateTime::parse_from_str(&text[..23], "%Y-%m-%dT%H:%M:%S%.3f").is_ok()
+    timestamp_millis(text).is_some()
+}
+
+/// The milliseconds since 1970 of a timestamp written as the spec says (D105), the scale of an `hlc`; `None` for
+/// any other writing, or a moment before 1970.
+pub fn timestamp_millis(text: &str) -> Option<u64> {
+    if text.len() != 24 || !text.is_ascii() || !text.ends_with('Z') {
+        return None;
+    }
+    let moment =
+        chrono::NaiveDateTime::parse_from_str(&text[..23], "%Y-%m-%dT%H:%M:%S%.3f").ok()?;
+    u64::try_from(moment.and_utc().timestamp_millis()).ok()
 }
 
 /// Dot-separated lowercase words, such as `book.add` or `copy.lend`.
