@@ -280,6 +280,12 @@ Resultado de la primera comprobación (04/10/2026): anónimo `401`; Ana recibió
 
 Las pasadas iguales siguen saliendo en dos tandas, como en las medidas anteriores, sin causa identificada (ver «Revisión periódica de la carga»); `ANALYZE` no mejora nada medible. Antes de enchufar el juez, el `push` de la prueba (2 operaciones) tardaba 44–47 ms sin roles.
 
+## La papelera en la nube (D105)
+
+- **Columnas:** `trashed_at` (texto, tal cual lo escribe la operación) y `trashed_by_key` (la persona, a `NULL` si se borra) en `catalog_editions`, `catalog_copies`, `catalog_tags` y `catalog_series`. **Ningún filtro de borrado lógico** (ni Gedmo, ni Knp, ni un filtro de Doctrine): lo que está en la papelera se sigue sincronizando, y solo la app lo esconde (`server/AGENTS.md`).
+- **El juez:** la regla 16 en `Permissions` (editores a los 30 días, la nube a los 60, `trashed_by` comparado con quien firma) y `CatalogLibraryView::trashedSince`, que mira lo que cuelga de qué igual que la app.
+- **La red de seguridad de la nube:** `TrashExpirer`, una vez al día desde el Scheduler (`ExpireTrashMessage`) o a mano con `app:trash:expire`. En cada biblioteca donde la nube tiene poder, apunta en `catalog_trash_seen` cuándo vio el servidor cada fila en la papelera y elimina, firmando con `CloudAuthor`, lo que lleva 60 días desde la más tardía de esa fecha y `trashed_at`, con lo que cuelga de ello, hijos primero, como la app (`trash.expire`). Solo firma lo que el juez le permite, así que no deja peticiones en el registro. Riesgo aceptado (D105): una nube comprometida podría fechar su operación a su favor y eliminar antes lo que ya estaba en la papelera.
+
 ## La identidad de la nube (7.5.2a, D76, D95)
 
 Cada biblioteca de la nube tiene un dispositivo propio, «la nube»: un id, un par de claves Ed25519 y la capacidad de firmar operaciones en esa biblioteca. En 7.5.2a el servidor aprende a tenerlo y a firmar; en 7.5.2b y 7.5.3 se le pide que firme: escribir `member.account_id` (`member.link_account`) y vincular dispositivos (`device.link_account`), más abajo.

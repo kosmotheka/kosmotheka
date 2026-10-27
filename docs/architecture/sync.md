@@ -115,6 +115,16 @@ El borrado gana siempre, también sobre lo que otro dispositivo añade a la vez.
 
 Los borrados locales (`ops::record`) y los recibidos pasan por las mismas reglas de la base de datos, así que dan el mismo resultado. Ninguna operación se pierde: siguen en el registro.
 
+### La papelera (D105)
+
+Desde D105, borrar una ficha, un ejemplar, una etiqueta o una saga **no es un borrado**: es un cambio de dos campos, `trashed_at` (el momento, en UTC y escrito de una sola forma) y `trashed_by` (la persona), que viaja y se fusiona campo a campo como cualquier otro. Restaurar es ponerlos a `null`. Lo que cuelga de la fila no se toca, así que vuelve tal cual. Lo que está en la papelera se esconde en la app (listas, búsquedas, contadores, duplicados), pero **sigue sincronizándose**: por eso el servidor no usa ningún filtro de borrado lógico (`server/AGENTS.md`).
+
+- **Eliminar definitivamente** es el borrado de siempre (`trash.purge`, `trash.expire`): se borra con lápida, hijos primero, y **gana** sobre todo lo demás. Si alguien restaura a la vez que otro elimina, gana eliminar.
+- **Los 30 días.** Cada dispositivo los cuenta desde la más tardía de `trashed_at` y el momento en que él vio la fila en la papelera por primera vez (tabla local `trash_seen`, nunca sincronizada ni en las copias). Así un dispositivo con el reloj mal no hace que otro borre antes de tiempo, y una copia de seguridad restaurada meses después da 30 días más a lo que trae en la papelera. `trash_seen` se borra al quitar la biblioteca del dispositivo, pero no al reconstruirla desde su registro: eso no debe dar más tiempo.
+- **Quién y cuándo** lo decide el juez (regla 16 de `spec/README.md`): un editor elimina lo que lleva 30 días en la papelera, o cuelga de algo que lo lleva, sea de quien sea; la nube, a los 60, con su comando diario (`TrashExpirer`), y solo eso. El dispositivo de quien solo lee nunca lo intenta: la app solo elimina lo caducado si el juez se lo permitiría, para no dejar peticiones.
+- **Qué cuelga de qué** (`LibraryView::trashed_since`): de una edición, sus ejemplares y detalles; su obra, cuando todas sus ediciones están en la papelera; y de esa obra, sus autorías, géneros, etiquetas, entradas de saga y «necesita». De una etiqueta, sus enlaces con obras; de una saga, sus entradas. Lo que cuelga de dos cosas cuenta desde la que se fue antes.
+- **Las fusiones de siempre siguen valiendo:** una edición hecha sin conexión sobre algo que otro mandó a la papelera se aplica y vuelve con ello; una etiqueta eliminada del todo mientras su libro está en la papelera ya no vuelve con el libro (sus enlaces se borraron con ella). Están en los tests de `sync.rs`.
+
 ## Duplicados (D33)
 
 Si en dos dispositivos, sin conexión, se da de alta el mismo autor, la misma editorial, el mismo propietario o el mismo ISBN, al sincronizar **se conservan los dos**. Rechazar uno perdería datos; fusionarlos automáticamente podría fusionar cosas distintas. Por eso:

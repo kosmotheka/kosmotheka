@@ -53,16 +53,19 @@ Sacadas del código de la app (`app/src-tauri/src`) y del servidor. La intenció
 | `copy.add` | Alta con un ISBN ya catalogado: solo el ejemplar (y el propietario, si es nuevo) |
 | `edition.edit` | Cambios en la ficha: solo los campos que cambian, más personas, géneros y etiquetas añadidos o quitados |
 | `copy.edit` | Cambios en un ejemplar: solo los campos que cambian |
-| `copy.remove` | Borrado de un ejemplar |
-| `book.remove` | Borrado de una edición con sus ejemplares y detalles y, si no quedan más ediciones, su obra y lo que cuelga de ella |
-| `book.move_in` · `book.move_out` | Mover una obra a otra biblioteca (D46): la primera crea la obra en el destino, con ids nuevos; la segunda la quita del origen. Son dos operaciones, cada una en su biblioteca |
+| `copy.trash` | Mandar un ejemplar a la papelera (D105). `copy.remove`, el borrado directo, es de antes de la papelera |
+| `book.trash` | Mandar una edición a la papelera (D105): solo su fila; lo que cuelga de ella se queda y se esconde. `book.remove`, el borrado directo, es de antes de la papelera |
+| `book.move_in` · `book.move_out` | Mover una obra a otra biblioteca (D46): la primera crea la obra en el destino, con ids nuevos; la segunda la manda a la papelera del origen (D105), donde se puede deshacer 30 días. Son dos operaciones, cada una en su biblioteca |
 | `work.add_missing` | Apuntar una obra sin ejemplar («Me falta», D61) |
 | `work.require` · `work.unrequire` | Apuntar o quitar que una obra «necesita» otra (una expansión y su juego base) |
 | `mark.set` | Lo que una persona apunta de una obra: estado, valoración, favorito, «lo deseo» (D68). Solo viajan los campos que cambian |
-| `tag.rename` · `tag.remove` | Renombrar una etiqueta (o unirla con otra que ya existe) y borrarla |
-| `series.add` · `series.update` · `series.remove` | Crear, renombrar y borrar una serie |
+| `tag.rename` · `tag.trash` | Renombrar una etiqueta (o unirla con otra que ya existe, y la vaciada va a la papelera) y mandarla a la papelera (antes, `tag.remove`) |
+| `series.add` · `series.update` · `series.trash` | Crear, renombrar y mandar a la papelera una serie (antes, `series.remove`) |
 | `series.entry_add` · `series.entry_remove` · `series.reorder` | Meter una obra en una serie, sacarla, y cambiar los números de varias a la vez |
-| `backup.restore` | Restaurar una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30) |
+| `backup.restore` | Restaurar una copia de seguridad: crea todas las filas del catálogo en una sola operación (D30), con lo que estaba en la papelera tal cual |
+| `trash.restore` | Sacar de la papelera una o varias cosas: `trashed_at` y `trashed_by` a `null` (D105) |
+| `trash.purge` | Eliminar definitivamente una o varias cosas de la papelera, con lo que cuelga de cada una, hijos primero: lo que hacía el borrado antes de la papelera |
+| `trash.expire` | Lo mismo, hecho solo por un dispositivo a los 30 días de verlo en la papelera, o por la nube a los 60 (D105) |
 | `sync.baseline` | Una vez por dispositivo: registra todo lo que ya había, sin tocar las filas, para que pueda viajar a otros dispositivos (D31) |
 
 **Bibliotecas**

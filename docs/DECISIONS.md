@@ -2076,7 +2076,7 @@ Aceptada el 27/10/2026 por el maintainer, punto por punto. Cierra la pregunta ab
    - **No van:** quitar una obra de una saga y quitar un «necesita» (deshacen un enlace, no borran una cosa, y se rehacen en dos toques); las personas y los dispositivos (D71); y **las bibliotecas**, cuyo borrado ya es un camino propio (D65: para todos, o solo de este dispositivo) que ofrece guardar una copia antes. Al borrar una biblioteca, su papelera se va con ella.
    - Los autores y las editoriales nunca se borran desde la app, así que una ficha restaurada siempre los encuentra.
 2. **Los campos: `trashed_at` y `trashed_by`**, en las cuatro tablas.
-   - `trashed_at`: fecha y hora en UTC (texto ISO 8601 en la operación; `timestamptz` en PostgreSQL). Con valor, está en la papelera desde entonces; `null`, no lo está.
+   - `trashed_at`: fecha y hora en UTC, escrita de una sola forma (`YYYY-MM-DDTHH:MM:SS.mmmZ`). Con valor, está en la papelera desde entonces; `null`, no lo está. *Al construirlo (27/10/2026): en PostgreSQL es texto, como las demás fechas del catálogo (`acquired_on`), para guardar el valor tal cual lo escribió la operación; las cuentas se hacen en milisegundos en el código, no en la base de datos.*
    - `trashed_by`: el id de la **persona de la biblioteca** (`member`) que la mandó, nunca de la cuenta ni del dispositivo. `null` cuando no está.
    - **Restaurar** es poner los dos a `null` en la misma operación.
    - **No se llaman `deleted_*`**: en el código, «delete» es el borrado de verdad (`Change::delete`, `tombstones`, `library.delete`), y llamar así a lo que aún no está borrado los confundiría para siempre.

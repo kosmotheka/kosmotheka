@@ -103,6 +103,18 @@ Borra, en una pasada:
 
 **No hace falta lanzarla a mano**: la lanza cada hora el proceso programado (el servicio `worker` de Docker, o `kosmotheka-worker` de systemd, que montaste en la guía de instalación). Sin ese proceso corriendo, no se borra nada. Cada paso va por separado: si uno falla, los demás se hacen igual y la orden termina con un aviso de cuáles fallaron.
 
+### `app:trash:expire` · vaciar lo viejo de la papelera
+
+Lo que alguien borra en la app va a la papelera de su biblioteca y se puede restaurar durante 30 días. Pasado ese plazo lo eliminan los propios dispositivos. Por si en una biblioteca de la nube no se abre ningún dispositivo en mucho tiempo, el servidor elimina lo que lleva **60 días** en la papelera, firmando como el dispositivo de la nube de esa biblioteca. Los 60 días se cuentan desde que la fila llegó al servidor, así que un dispositivo con la hora mal puesta no adelanta nada.
+
+Lo lanza el mismo `worker` de las tareas programadas, una vez al día. Para lanzarlo a mano:
+
+```bash
+bin/console app:trash:expire
+```
+
+Dice cuántas cosas ha eliminado. Solo actúa en las bibliotecas que tienen su nube con poder; en las demás no hace nada.
+
 ### `app:catalog:rebuild` · reconstruir el catálogo
 
 ```bash

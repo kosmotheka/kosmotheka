@@ -9,6 +9,7 @@ use App\Entity\Catalog\Fence;
 use App\Entity\Catalog\FenceChain;
 use App\Entity\Catalog\RowAuthor;
 use App\Entity\Catalog\Tombstone;
+use App\Entity\Catalog\TrashSeen;
 use App\Enum\CatalogEntity;
 use App\Enum\FieldType;
 use Doctrine\DBAL\Connection;
@@ -29,6 +30,8 @@ final class CatalogSchemaTest extends KernelTestCase
         RowAuthor::class => 'catalog_row_authors',
         Fence::class => 'catalog_device_fences',
         FenceChain::class => 'catalog_device_fence_chains',
+        // When the server first saw each row in the trash, for its 60 days (D105).
+        TrashSeen::class => 'catalog_trash_seen',
     ];
 
     /** D84: the link of a library is the cloud library itself, so these two have no column. */

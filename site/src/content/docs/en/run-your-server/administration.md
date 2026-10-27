@@ -103,6 +103,18 @@ In one pass, it deletes:
 
 **You do not need to run it by hand**: the scheduled process runs it every hour (the `worker` service of Docker, or `kosmotheka-worker` of systemd, which you set up in the installation guide). Without that process running, nothing is deleted. Each step runs separately: if one fails, the others still happen and the command ends with a warning listing which ones failed.
 
+### `app:trash:expire` · empty what is old in the trash
+
+What somebody deletes in the app goes to the trash of their library and can be restored for 30 days. After that, the devices themselves delete it. In case no device of a cloud library is opened for a long time, the server deletes what has been **60 days** in the trash, signing as the cloud device of that library. The 60 days count from when the row reached the server, so a device with its clock wrong brings nothing forward.
+
+The same scheduled-tasks `worker` runs it once a day. To run it by hand:
+
+```bash
+bin/console app:trash:expire
+```
+
+It says how many things it deleted. It only acts in libraries whose cloud has its power; in the others it does nothing.
+
 ### `app:catalog:rebuild` · rebuild the catalogue
 
 ```bash

@@ -47,12 +47,12 @@
 
 ## 3. Servidor
 
-> **Ojo:** desde el paso 1a, los casos nuevos de `spec/conformance/` fallan en los tests del servidor (no conoce los campos ni `trash_pair`) hasta que se haga este paso. Es esperado en esta rama; no se fusiona hasta tenerlo.
+> *Hecho el 27/10/2026 (`4b6bf607`, `429eebfc` y el 3c): columnas `trashed_at` (texto) y `trashed_by_key` con su disparador de la misma biblioteca; el motor de fusión ya acepta una referencia sin `_id`; la regla 16 en `Permissions` y `CatalogLibraryView::trashedSince`; `TrashExpirer` con `catalog_trash_seen`, diario desde `PurgeSchedule` y a mano con `app:trash:expire`. Todos los casos compartidos pasan en el servidor.*
 
-- [ ] Migración de Doctrine con las columnas (`timestamptz` y el id de la persona); entidades `Edition`, `Copy`, `Tag` y `Series` en `src/Entity/Catalog/`; `CatalogEntity.php`.
-- [ ] `CatalogJudge` con las reglas nuevas; los mismos casos de `spec/conformance/`.
-- [ ] Cron de los 60 días: un comando (`#[AsCommand]`) que firma las eliminaciones con `CloudAuthor`; guarda cuándo le llegó cada fila a la papelera.
-- [ ] `make check` en verde.
+- [x] Migración de Doctrine con las columnas (`timestamptz` y el id de la persona); entidades `Edition`, `Copy`, `Tag` y `Series` en `src/Entity/Catalog/`; `CatalogEntity.php`.
+- [x] `CatalogJudge` con las reglas nuevas; los mismos casos de `spec/conformance/`.
+- [x] Cron de los 60 días: un comando (`#[AsCommand]`) que firma las eliminaciones con `CloudAuthor`; guarda cuándo le llegó cada fila a la papelera.
+- [x] `make check` en verde.
 
 ## 4. Interfaz
 
@@ -65,7 +65,7 @@
 
 ## 5. Documentación
 
-- [ ] Arquitectura: `operations.md` (intenciones), `sync.md` (la papelera frente al borrado de verdad, los relojes, la nube), `data-model.md` (los campos y la tabla local).
+- [x] Arquitectura: `operations.md` (intenciones), `sync.md` (la papelera frente al borrado de verdad, los relojes, la nube), `data-model.md` (los campos y la tabla local).
 - [ ] Guía (es, en): página nueva «La papelera» (qué entra y qué no, 30 días, quién la ve, restaurar y eliminar, lo que no vuelve igual, las copias de seguridad que dan 30 días más, la nube a los 60) y las páginas que borran (añadir un libro, ejemplares, etiquetas, sagas, personas y permisos, copias de seguridad), más preguntas frecuentes.
 - [ ] Guía para colaborar: `contribute/sync-engine.md` y `contribute/security.md`.
 - [ ] La Ayuda de la app, si merece tema propio.

@@ -28,12 +28,12 @@ works ──< work_contributors >── people
 | `works` | Obra: el libro en abstracto | `id`, `kind` (`book`, `comic`, `boardgame`, `film`, `tv_series`, `videogame`, `music`, `other`; D60), `title` |
 | `people` | Autores y otros participantes | `id`, `name` |
 | `work_contributors` | Quién participó en una obra y en qué orden | `id`, `work_id`, `person_id`, `role` (`author`, `writer`, `illustrator`, `designer`, `director`, `artist`, `studio`), `position` |
-| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN), `notes` (texto libre) |
+| `editions` | Edición: una publicación concreta | `id`, `work_id`, `title`, `subtitle`, `publisher_id`, `published_year`, `language`, `cover` (fichero, D27), `barcode` (EAN o UPC de lo que no tiene ISBN), `notes` (texto libre), `trashed_at`, `trashed_by` (en la papelera desde entonces, y quién; D105) |
 | `publishers` | Editoriales (D29) | `id`, `name` (no único desde D33; la app reutiliza el existente) |
-| `tags` | Etiquetas: palabras libres que cada biblioteca crea para sí misma | `id`, `name` |
+| `tags` | Etiquetas: palabras libres que cada biblioteca crea para sí misma | `id`, `name`, `trashed_at`, `trashed_by` (en la papelera desde entonces, y quién; D105) |
 | `work_tags` | Qué etiquetas tiene cada obra. Sin restricción de unicidad a propósito: dos dispositivos pueden añadir la misma etiqueta sin conexión, y las dos filas deben sobrevivir para que converjan; quien lee, deduplica | `id`, `work_id`, `tag_id` |
 | `work_genres` | Qué géneros tiene cada obra, de la lista cerrada por tipo (`crates/domain/src/genre.rs`). Misma regla de no unicidad que `work_tags` | `id`, `work_id`, `genre` |
-| `series` | Series (D61): una saga (ordenada) o una línea de producto (no). Una obra puede estar en varias, y una serie puede mezclar autores | `id`, `name`, `ordered` |
+| `series` | Series (D61): una saga (ordenada) o una línea de producto (no). Una obra puede estar en varias, y una serie puede mezclar autores | `id`, `name`, `ordered`, `trashed_at`, `trashed_by` (en la papelera desde entonces, y quién; D105) |
 | `series_entries` | Qué obras tiene cada serie y en qué posición. Sin restricción de unicidad a propósito (misma regla que `work_tags`) | `id`, `series_id`, `work_id`, `position` (empieza en 1, opcional) |
 | `work_relations` | Qué obra necesita a cuál (D61): p. ej. una expansión necesita su juego base. Sin restricción de unicidad a propósito (misma regla que `work_tags`) | `id`, `work_id`, `related_work_id`, `relation` (`requires`) |
 | `book_details` | Datos propios de un libro | `edition_id`, `isbn13` (no único desde D33), `google_books_id`, `open_library_id` |
@@ -42,13 +42,14 @@ works ──< work_contributors >── people
 | `film_details` | Datos propios de una película | `edition_id`, `duration_minutes` |
 | `tv_series_details` | Datos propios de una serie | `edition_id`, `seasons` |
 | `members` | Personas de la biblioteca: dueñas de ejemplares y, con roles, de permisos (D55). En modo local son solo nombres, no cuentas | `id`, `name` (no único desde D33; la app reutiliza el existente), `role` (`admin`, `editor`, `reader` o vacío), `can_share` (D73), `account_id` (la cuenta enlazada, D76: solo la escribe la nube), `access_withdrawn` (la persona ya no llega a la biblioteca, D98) |
-| `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location` (en lo digital, la plataforma: «Kindle», «Steam»), `acquired_on`, `platform` (videojuegos: «Switch»), `seasons` (series: qué temporadas tiene, texto libre) |
+| `copies` | Ejemplar: lo que hay en casa | `id`, `edition_id`, `owner_id`, `format`, `quantity`, `location` (en lo digital, la plataforma: «Kindle», «Steam»), `acquired_on`, `platform` (videojuegos: «Switch»), `seasons` (series: qué temporadas tiene, texto libre), `trashed_at`, `trashed_by` (en la papelera desde entonces, y quién; D105) |
 | `marks` | Lo que cada persona apunta de cada obra (D68): estado, valoración, favorito y «lo deseo» (D61) | `id` (derivado de persona y obra), `member_id`, `work_id`, `status`, `status_on`, `rating`, `favorite`, `wished` |
 | `revocations` | Dispositivos a los que se retiró el acceso a la biblioteca, sincronizada (D71) | `device_id`, `device_name` |
 | `devices` | Dispositivos que escriben en la biblioteca, con la clave pública con la que firman, sincronizada (D56) | `id` (el del dispositivo), `public_key`, `name`, `member_id` (de quién es, D73), `vouched_key` (la clave que quien lo asignó tenía de él: solo cuenta como de esa persona si coincide con `public_key`, D96), `trusted_through` (la valla: hasta qué operación del dispositivo se cree lo anterior a una bajada de poder, D84, D87) |
 | `row_authors` | Qué dispositivo creó cada fila, para que un editor borre lo que creó su persona (D45); local, se recalcula desde el registro | `library_id`, `entity`, `entity_id`, `device_id` |
 | `change_requests` | Cómo se resolvió cada petición, sincronizada (D73); su id es el de la operación pedida | `status` (`accepted`, `rejected` o `withdrawn`, la que retira quien pidió), `note` (la nota de quien pidió) |
 | `operations` | Registro de todas las escrituras, propias y recibidas ([operations.md](operations.md)) | `id`, `library_id`, `hlc`, `device_id`, `intent`, `changes` (JSON), `schema_version`, `replicable`, `signature`, `status` (`applied` o `request`, D73) |
+| `trash_seen` | Cuándo vio este dispositivo cada cosa en la papelera, para contar los 30 días desde la más tardía de esa fecha y `trashed_at` (D105); local: ni se sincroniza ni va en las copias, y se borra al quitar la biblioteca del dispositivo | `library_id`, `entity`, `entity_id`, `seen_at` (milisegundos) |
 | `field_versions` | Última marca HLC que escribió cada campo de cada fila ([sync.md](sync.md)) | `library_id`, `entity`, `entity_id`, `field`, `hlc` |
 | `tombstones` | Filas borradas: el borrado gana ([sync.md](sync.md)). Borrar una biblioteca deja una lápida de la biblioteca entera | `library_id`, `entity`, `entity_id`, `hlc` |
 | `search_index` | Índice de texto completo FTS5, mantenido por `ops::record` (D29) | `library_id`, `edition_id`, `content` |
