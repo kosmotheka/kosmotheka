@@ -19,7 +19,7 @@ En Windows y en macOS las dependencias de sistema las trae Tauri de otra manera 
 
 ## Con o sin contenedor
 
-El maintainer trabaja dentro de un contenedor **Distrobox** llamado `library-dev`, con Ubuntu 24.04. *Por qué:* Tauri 2 necesita WebKitGTK 4.1, que no existe en Ubuntu 20.04, que es el sistema de su máquina; el contenedor evita actualizar el sistema entero. Distrobox comparte la carpeta personal, la red y la pantalla, así que el código se edita con el editor de siempre y las ventanas de Tauri salen como apps normales.
+El maintainer trabaja dentro de un contenedor **Distrobox** llamado `library-dev`, con Ubuntu 24.04. *Por qué:* Tauri 2 necesita WebKitGTK 4.1, que los sistemas más antiguos no tienen (Ubuntu 20.04, por ejemplo); un contenedor evita actualizar el sistema entero. Distrobox comparte la carpeta personal, la red y la pantalla, así que el código se edita con el editor de siempre y las ventanas de Tauri salen como apps normales.
 
 **No es la única forma, ni hace falta.** En una distribución reciente (Ubuntu 22.04 o posterior, Fedora, Arch…) instala los mismos paquetes directamente y salta el contenedor. Si quieres reproducir el entorno del maintainer, [`docs/development/setup.md`](https://github.com/kosmotheka/kosmotheka/blob/main/docs/development/setup.md) tiene cada paso (en español): crear el contenedor, instalar paquetes, activar Rust y Android **solo dentro del contenedor** y conectar un móvil por depuración inalámbrica.
 

@@ -19,7 +19,7 @@ On Windows and macOS, Tauri brings its system dependencies in another way (WebVi
 
 ## With or without a container
 
-The maintainer works inside a **Distrobox** container called `library-dev`, running Ubuntu 24.04. *Why:* Tauri 2 needs WebKitGTK 4.1, which does not exist on Ubuntu 20.04, the system on his machine; the container avoids upgrading the whole system. Distrobox shares the home folder, the network and the screen, so the code is edited with your usual editor and Tauri's windows open as normal apps.
+The maintainer works inside a **Distrobox** container called `library-dev`, running Ubuntu 24.04. *Why:* Tauri 2 needs WebKitGTK 4.1, which older systems do not have (Ubuntu 20.04, for example); a container avoids upgrading the whole system. Distrobox shares the home folder, the network and the screen, so the code is edited with your usual editor and Tauri's windows open as normal apps.
 
 **It is not the only way, and you do not need it.** On a recent distribution (Ubuntu 22.04 or later, Fedora, Arch…) install the same packages directly and skip the container. If you want to reproduce the maintainer's environment, [`docs/development/setup.md`](https://github.com/kosmotheka/kosmotheka/blob/main/docs/development/setup.md) has every step (in Spanish): creating the container, installing packages, enabling Rust and Android **only inside the container**, and connecting a phone over wireless debugging.
 
