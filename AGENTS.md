@@ -100,6 +100,9 @@ The docs are in Spanish and the code in English. **Check this table before namin
 | dispositivo de la nube | `cloud_device_id` | Field of the `library` row: the device that is the cloud in this library, and the only one with the cloud's power (D76, D95) |
 | cuenta de una persona | `account_id` | Field of a `member`: a random id of the account linked to that person; only the cloud writes it (D76) |
 | lápida | `tombstone` | Marks a deleted row so it cannot come back |
+| papelera · en la papelera | `trash` · `trashed_at`, `trashed_by` | What was deleted and can still be restored, for 30 days (D105). Not `deleted_*`: «delete» is always the real, final deletion |
+| restaurar (de la papelera) | `restore` | Sets `trashed_at` and `trashed_by` back to `null`. Not `backup.restore`, which restores a backup |
+| eliminar definitivamente | `purge` | The real deletion of something in the trash, the same as deleting before D105 |
 | fundación (de una biblioteca) | `founding` | Its first operation: the `library` row, its first person as `admin` and the author's device assigned to that person. The only one allowed without a role; valid only if the library's id derives from the author's key and `founding_nonce` (D97) |
 | reloj lógico híbrido | `hlc` | |
 | dispositivo | `device` | |

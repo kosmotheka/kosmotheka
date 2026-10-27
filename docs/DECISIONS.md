@@ -110,6 +110,7 @@
 | D102 | Dos formas de irse: quitar la biblioteca de un dispositivo, o salir de ella del todo (retirarse uno mismo el acceso) | aceptada |
 | D103 | Las instalaciones anteriores de un dispositivo: la fecha del último cambio y quitarlas de una vez | aceptada |
 | D104 | Versiones nuevas en el ordenador: primero avisar, después instalar sola en Windows y la AppImage | aceptada |
+| D105 | La papelera: lo borrado se guarda 30 días y se puede restaurar | aceptada |
 
 ---
 
@@ -2054,3 +2055,51 @@ Aceptada el 27/10/2026 por el maintainer, tras el estudio [research/actualizacio
 - `updates.rs` (versión de la respuesta, comparación, una vez al día), el ajuste `check_updates` y la hora de la última pregunta en `local_state`, nunca sincronizados.
 - La política de privacidad de la web cambia: hay que subirla con la versión que lo lleve. Google Play no cambia: en Android no se pregunta.
 - El paso 2 queda en el ROADMAP con lo que necesita del maintainer (la clave).
+
+## D105 · La papelera: lo borrado se guarda 30 días y se puede restaurar — `aceptada`
+
+Aceptada el 27/10/2026 por el maintainer, punto por punto. Cierra la pregunta abierta «¿Papelera para deshacer borrados?» del ROADMAP. Toca D65 (borrar una biblioteca), D73 (peticiones), D84 (no fiarse de un id del cliente), D55 (relojes), D58 y D30 (copias de seguridad), D92 (el catálogo del servidor) y D95 (el dispositivo de la nube). Plan: [plans/papelera.md](plans/papelera.md).
+
+**Contexto.** Borrar es definitivo: cada dispositivo recuerda que una fila se borró (`tombstones`) para que otro que aún no se había enterado no la devuelva. En una biblioteca compartida, un toque equivocado borra la ficha en todos los dispositivos, y solo una copia de seguridad la trae de vuelta, con la biblioteca entera tal como estaba. Un «Deshacer» de unos segundos no basta solo: la ficha tiene que desaparecer de las listas mientras tanto, y eso ya es guardarla sin borrar.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Solo «Deshacer» unos segundos, retrasando el borrado | Poco trabajo | Cubre el toque equivocado, no «¿quién borró mi libro la semana pasada?»; y la ficha seguiría visible o habría que esconderla igual |
+| Recuperar volviendo a crear la ficha desde el historial | No cambia el formato de los datos | Vuelve como otra ficha: pierde historial, marcas, sagas; los demás dispositivos la ven como nueva. **Descartada** |
+| **Papelera: borrado lógico durante 30 días, después el borrado de siempre** | Restaurar devuelve todo tal cual, con sus relaciones; el «Deshacer» sale gratis | Cambia el formato de cuatro entidades y sus reglas, en la app y en el servidor |
+
+**Decisión.**
+
+1. **Qué va a la papelera: las cuatro «cosas» que se borran desde la app:** la ficha (`editions`), el ejemplar (`copies`), la etiqueta (`tags`) y la saga o colección (`series`). Solo se marca la fila principal; lo que cuelga de ella (autorías, géneros, etiquetas de la obra, marcas, entradas de saga, «necesita», ejemplares de una ficha) no se toca, y por eso vuelve igual.
+   - **No van:** quitar una obra de una saga y quitar un «necesita» (deshacen un enlace, no borran una cosa, y se rehacen en dos toques); las personas y los dispositivos (D71); y **las bibliotecas**, cuyo borrado ya es un camino propio (D65: para todos, o solo de este dispositivo) que ofrece guardar una copia antes. Al borrar una biblioteca, su papelera se va con ella.
+   - Los autores y las editoriales nunca se borran desde la app, así que una ficha restaurada siempre los encuentra.
+2. **Los campos: `trashed_at` y `trashed_by`**, en las cuatro tablas.
+   - `trashed_at`: fecha y hora en UTC (texto ISO 8601 en la operación; `timestamptz` en PostgreSQL). Con valor, está en la papelera desde entonces; `null`, no lo está.
+   - `trashed_by`: el id de la **persona de la biblioteca** (`member`) que la mandó, nunca de la cuenta ni del dispositivo. `null` cuando no está.
+   - **Restaurar** es poner los dos a `null` en la misma operación.
+   - **No se llaman `deleted_*`**: en el código, «delete» es el borrado de verdad (`Change::delete`, `tombstones`, `library.delete`), y llamar así a lo que aún no está borrado los confundiría para siempre.
+3. **En el servidor, a mano, nunca con un filtro de borrado lógico (Gedmo SoftDeleteable, Knp o un filtro de Doctrine). Para siempre.** Esos paquetes esconden lo borrado de todas las consultas; aquí lo que está en la papelera **tiene que seguir sincronizándose** a todos los dispositivos, o nadie podría restaurarlo. Para el servidor son dos columnas más del catálogo; quien esconde y muestra es la app. Está también en `server/AGENTS.md`. No es un riesgo, solo algo más de trabajo.
+4. **Permisos.**
+   - **Ver la papelera, mandar a ella y restaurar:** editores y administradores (quien puede borrar esa cosa hoy). Quien solo lee no la ve; su «borrar» sigue siendo una petición (D73) y, aceptada, va a la papelera.
+   - **Eliminar definitivamente:** quien administra, siempre; un editor, solo lo que lleva **30 días** en la papelera (contados con la marca de la operación). Hoy un editor puede destruir algo de forma irrecuperable; con esta regla ya no.
+   - Borrar directamente una de esas cuatro cosas sin pasar por la papelera queda como petición, igual que cualquier cambio sin permiso.
+   - `trashed_by` tiene que ser la persona del dispositivo que firma la operación **al mandar algo a la papelera** (D84: el dato se compara, nunca se usa para decidir). Al **crear** una fila que ya viene en la papelera (restaurar una copia de seguridad, `backup.restore`), basta con que sea una persona de esa biblioteca.
+5. **Una papelera por biblioteca**, en el menú de cada una: lo borrado es de una biblioteca, viaja con ella y tiene sus permisos. Apartados: Fichas · Ejemplares · Etiquetas · Sagas. Cada fila dice qué es, cuándo y quién la borró, y cuántos días le quedan. Botones **«Restaurar»** y **«Eliminar definitivamente»** (este, con confirmación), una a una o con **selección múltiple** (casilla en el ordenador, pulsación larga en el móvil; deslizar a los lados se descarta: choca con el gesto de atrás de Android y no es casi gratis). La selección es una pieza reutilizable: servirá para añadir varios resultados de una búsqueda («Ideas para el futuro»).
+6. **Al borrar,** el aviso flotante dice «Movido a la papelera · Deshacer», que restaura al momento. Las confirmaciones de borrar dejan de decir «No se puede deshacer».
+7. **El borrado de verdad, pasados los días:**
+   - **Los dispositivos, a los 30 días.** Lo hace cualquiera con permiso al abrirse o al sincronizar; si lo hacen dos, da igual. Cada dispositivo cuenta desde **la más tardía de dos fechas: `trashed_at` y cuándo vio esa cosa en la papelera por primera vez** (guardado en local, nunca sincronizado). Así un dispositivo con el reloj mal (D55) no hace que otro borre antes de tiempo.
+   - **La nube, a los 60 días**, como red de seguridad para que nada se quede para siempre si ningún dispositivo se conecta: un comando programado (cron) firma la operación de eliminar con el dispositivo de la nube (D95). Una regla nueva le da **ese permiso y ningún otro**: eliminar lo que lleva 60 días en la papelera (desde la más tardía de `trashed_at` y cuándo le llegó la fila). Hoy la nube nunca cambia el contenido del catálogo: es un poder nuevo, con su caso hostil probado antes (una nube que borra antes de tiempo, o algo que no está en la papelera, queda rechazada).
+   - **Riesgo aceptado:** una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo lo que ya estaba en la papelera. Solo toca lo que una persona ya había borrado, y un servidor así ya puede hacer cosas peores (no repartir los datos).
+   - Si recupera una persona justo cuando otra elimina, gana el borrado.
+8. **Duplicados.** Escanear o escribir el código de algo que está en la papelera, o crear una etiqueta o una saga con el nombre de una que está en ella, ofrece **restaurarla**, diciendo qué trae («vuelve con sus 12 obras», «con sus 2 ejemplares»). Si no se quiere restaurar, lo de la papelera se elimina definitivamente, con confirmación: dos iguales confundirían. Como eliminar antes de los 30 días es de quien administra, a un editor solo se le ofrece «Restaurar» o «Cancelar», con «si quieres empezar de cero, pide a quien administra que la elimine».
+9. **Copias de seguridad.** Guardan la papelera. Restaurar una copia la trae tal cual, sin tocar ninguna fecha: es la regla del punto 7 (cuándo la vio el dispositivo por primera vez) la que da **30 días más** a lo que traiga en la papelera, aunque la copia sea de hace meses. El resumen de la restauración lo dice («trae 5 cosas en la papelera; tienes 30 días para restaurarlas») y la guía lo explica.
+10. **Lo demás que ignora la papelera:** catálogo, búsquedas, filtros, contadores, «¿Lo tengo?», «Me falta», las sagas, el CSV, «Alta rápida», la foto de balda y los avisos de duplicado (salvo el del punto 8). El historial dice «Movido a la papelera por Ana» y «Restaurado».
+
+**Consecuencias.**
+- Formato: dos campos en cuatro entidades, en la app (migración, `schema.rs`), `spec/` (esquema, `schemaVersion` y casos de prueba compartidos) y el servidor (migración, entidades, `CatalogEntity.php`), con un tipo de campo nuevo de fecha y hora. **Todos los dispositivos de una biblioteca necesitan la versión nueva**; va en una versión propia y las novedades lo avisan.
+- Reglas nuevas en el juez (Rust y PHP), con los casos hostiles escritos antes y vistos fallar ([bateria-de-acceso.md](architecture/bateria-de-acceso.md)): un editor que elimina sin papelera o antes de tiempo, un `trashed_by` falso, quien solo lee y restaura, y la nube fuera de su permiso.
+- Tests de sincronización que convergen: restaurar frente a editar, restaurar frente a eliminar, dos que eliminan a la vez, sin conexión, y una etiqueta eliminada del todo mientras su libro sigue en la papelera.
+- Lo que sale del dispositivo no cambia; la política de privacidad, tampoco.
+- Documentación: arquitectura (`operations.md`, `sync.md`, `data-model.md`), guía (una página «La papelera» y las páginas que borran), guía para colaborar (`sync-engine.md`, `security.md`) y el glosario de `AGENTS.md`.
