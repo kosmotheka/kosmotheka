@@ -12,6 +12,7 @@ pub mod loc;
 mod marc;
 pub mod musicbrainz;
 pub mod openlibrary;
+mod ranking;
 pub mod rawg;
 pub mod tmdb;
 pub mod via_server;
@@ -450,7 +451,7 @@ impl Lookup {
                         search_bgg(cloud, BggScope::Rpg, query),
                     ),
                 );
-                collect_candidates(vec![
+                let mut result = collect_candidates(vec![
                     (Source::Bne, bne),
                     (Source::LibraryOfCongress, loc),
                     (Source::OpenLibrary, open_library),
@@ -460,7 +461,9 @@ impl Lookup {
                     (Source::Wikidata, wikidata),
                     // After everything else: a «Dune» must not fill the list with role-playing supplements.
                     (Source::RpgGeek, rpg),
-                ])
+                ]);
+                ranking::rank_books(&mut result.candidates, query, language);
+                result
             }
             Kind::Music => {
                 if disabled.contains(Source::MusicBrainz.id()) {
@@ -1125,6 +1128,29 @@ mod live {
         let metadata = openlibrary::lookup(&client, &isbn).await.unwrap().unwrap();
         println!("open library: {metadata:#?}");
         assert_eq!(metadata.authors, vec!["Patrick Rothfuss"]);
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_book_search_puts_the_apps_language_first() {
+        let lookup = Lookup::new().unwrap();
+        let result = lookup
+            .search::<HttpCloud>(
+                Kind::Book,
+                "el nombre del viento",
+                &BTreeSet::new(),
+                None,
+                None,
+                "es",
+            )
+            .await;
+        for candidate in &result.candidates {
+            println!(
+                "{:?} · {} · {:?} · {:?}",
+                candidate.source, candidate.title, candidate.language, candidate.authors
+            );
+        }
+        assert_eq!(result.candidates[0].language.as_deref(), Some("es"));
     }
 
     #[tokio::test]

@@ -42,7 +42,7 @@ On a computer you cannot scan with a camera. Type or paste the number in the sea
 
 1. Pick the type of what you are looking for: Book, Comic, Board game, Film, TV series, Video game, Music or Other. "Book" is already selected.
 2. Type the title, from two letters on. Results appear as you type.
-3. Each result says which online service it comes from. Tap the one that is yours.
+3. Each result says which online service it comes from. Tap the one that is yours. For books, the ones with exactly that title and in the app's language come first, and the editions of one work are together.
 
 With "Other" nothing is searched anywhere: you add it by hand.
 
