@@ -2,7 +2,7 @@
 title: Quitar a una persona o un dispositivo de una biblioteca
 description: Cómo dejar sin acceso a una persona, devolvérselo, retirar el acceso a un dispositivo perdido, dejar de emparejar y dejar tu móvil como nuevo.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 Hay cinco cosas que se parecen y no son lo mismo. Esta tabla te dice cuál es cuál; debajo, cada una con sus pasos. Para llegar a ellas, abre el menú de la app (en el móvil, las tres rayitas de arriba a la izquierda).

@@ -2,7 +2,7 @@
 title: "Books, comics, games, films, music: what changes with each kind"
 description: The eight kinds of things you can note down, what details each one has, in which formats and with which genres.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Each thing you note down is of one **kind**, and depending on the kind, the details page asks for different information. A board game has players and duration; a TV series, its seasons; a book, its author and its ISBN.

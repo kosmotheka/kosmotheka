@@ -2,7 +2,7 @@
 title: Mensajes de error y qué hacer
 description: "Los avisos que puede enseñar Kosmotheka cuando algo no sale, qué significan y qué hacer en cada caso."
 sidebar:
-  order: 20
+  order: 21
 ---
 
 Casi todos los avisos de la app se arreglan en un minuto. Aquí están los que de verdad te puedes encontrar, escritos tal como salen en pantalla, con lo que significan y lo que puedes hacer. Si buscas uno, pulsa Ctrl+F (en el ordenador, la búsqueda de la página) y escribe las primeras palabras.

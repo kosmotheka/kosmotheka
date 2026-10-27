@@ -2,7 +2,7 @@
 title: Remove a person or a device from a library
 description: How to take away a person's access, give it back, remove access from a lost device, unpair devices, and reset your phone as new.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 There are five things that look alike but are not the same. This table tells you which is which; below it, each one with its steps. To get to them, open the app menu (on a phone, the three bars at the top left).

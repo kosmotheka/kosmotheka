@@ -2,7 +2,7 @@
 title: Sagas y colecciones
 description: Cómo agrupar libros, juegos y otras cosas en una saga o una colección, numerarlas y ver qué te falta.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 Una **saga** o una **colección** agrupa cosas que van juntas, para ver de un vistazo cuáles tienes, cuáles te faltan y si hay huecos.

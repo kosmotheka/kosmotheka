@@ -2,7 +2,7 @@
 title: "Personas y permisos: quién puede hacer qué"
 description: Qué puede hacer un administrador, un editor y un lector en una biblioteca compartida, y cómo se piden y se aceptan los cambios.
 sidebar:
-  order: 13
+  order: 14
 ---
 
 Cuando compartes una biblioteca con otras personas, no todas tienen por qué poder hacerlo todo. Cada persona tiene un **rol** en cada biblioteca: el papel que se le da, que decide qué puede hacer. Esta página explica los tres roles, cómo se pide un cambio que no puedes hacer tú, y cómo lo acepta quien administra.

@@ -2,7 +2,7 @@
 title: "Where the details come from: public catalogs, your own keys and how to turn them off"
 description: Which internet services the app asks when you add something, what it sends them, how to put in your own key and how to turn one off.
 sidebar:
-  order: 11
+  order: 12
 ---
 
 The app does not keep the details of books, films or games saved. When you add something, it **looks them up for you** on internet services. They are public databases, such as the catalog of the Spanish National Library.

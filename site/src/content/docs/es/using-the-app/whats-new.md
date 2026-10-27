@@ -2,7 +2,7 @@
 title: Novedades de cada versión
 description: "Lo que ha cambiado en cada versión de Kosmotheka, de la más nueva a la más antigua."
 sidebar:
-  order: 21
+  order: 22
 ---
 
 La app te enseña estas novedades al actualizarse, una sola vez. Si quieres volver a verlas, abre **Ajustes › Acerca de › Novedades**.

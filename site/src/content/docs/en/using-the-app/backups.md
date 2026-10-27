@@ -2,7 +2,7 @@
 title: Backups, export and import
 description: How to save a backup of your library, restore it, and move your list to or from a spreadsheet.
 sidebar:
-  order: 10
+  order: 11
 ---
 
 Your libraries live on your phone or computer. If you lose it, it breaks or you delete things by mistake, you only get back what you have in a backup. It is a good idea to make them from time to time.

@@ -2,7 +2,7 @@
 title: Several libraries
 description: What they are for, how to create one, switch from one to another, search all of them, move a work and delete a library.
 sidebar:
-  order: 8
+  order: 9
 ---
 
 You can have as many libraries as you like on the same device. Each one is **a separate list**, with its own books, its own people and its own devices. It is useful for not mixing things that do not go together:

@@ -2,7 +2,7 @@
 title: "Lo de cada uno: por leer, leyendo, leído, estrellas, favoritos y «Lo deseo»"
 description: Cómo apunta cada persona lo suyo sobre una obra, y en qué se diferencian «Lo deseo» y «Me falta».
 sidebar:
-  order: 6
+  order: 7
 ---
 
 Dos personas de casa pueden tener opiniones distintas sobre el mismo libro: Ana lo ha leído y le ha encantado, Hugo lo tiene pendiente. Por eso lo que apuntas sobre un libro, una película o cualquier cosa (si la has leído, cuántas estrellas le das, si es tu favorita) es **solo tuyo**. Si no recuerdas qué es una obra, una ficha o un ejemplar, mira [Tres palabras de la app](../kinds/#tres-palabras-de-la-app). No cambia lo que apuntan los demás.

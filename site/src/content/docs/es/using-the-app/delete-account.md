@@ -2,7 +2,7 @@
 title: Borrar mi cuenta y mis datos
 description: Cómo borrar tu cuenta de Kosmotheka desde la app o escribiendo, qué se borra y qué se queda.
 sidebar:
-  order: 18
+  order: 19
 ---
 
 Borrar tu cuenta es **para siempre**. Si solo quieres dejar de usarla un rato, «Cerrar sesión» no borra nada. Y si no tienes cuenta, tus datos solo están en tus dispositivos: se borran al borrar la biblioteca o al quitar la app del móvil.

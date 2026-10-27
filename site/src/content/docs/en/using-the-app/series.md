@@ -2,7 +2,7 @@
 title: Sagas and collections
 description: How to group books, games and other things into a saga or a collection, number them and see what you are missing.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 A **saga** or a **collection** groups things that go together, to see at a glance which you have, which you are missing and whether there are gaps.

@@ -2,7 +2,7 @@
 title: Frequently asked questions
 description: Short answers to the most common questions, with a link to the page that explains each one in full.
 sidebar:
-  order: 19
+  order: 20
 ---
 
 Short answers, with no fine print. Each one takes you to the page that explains it in full.

@@ -2,7 +2,7 @@
 title: "Libros, cómics, juegos, películas, música: qué cambia en cada tipo"
 description: Los ocho tipos de cosas que puedes apuntar, qué datos lleva cada uno, en qué formatos y con qué géneros.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Cada cosa que apuntas es de un **tipo**, y según el tipo la ficha te pide unos datos u otros. Un juego de mesa lleva jugadores y duración; una serie, sus temporadas; un libro, su autoría y su ISBN.

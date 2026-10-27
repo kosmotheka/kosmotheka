@@ -2,7 +2,7 @@
 title: "Your own: to read, reading, read, stars, favorites and \"I want it\""
 description: How each person notes their own about a work, and how "I want it" differs from "Missing".
 sidebar:
-  order: 6
+  order: 7
 ---
 
 Two people at home can have different opinions about the same book: Ana has read it and loved it, Hugo has it pending. That is why what you note about a work (whether you have read it, how many stars you give it, whether it is your favorite) is **yours alone**. If you do not remember what a work, a details page or a copy is, see [Three words the app uses](../kinds/#three-words-the-app-uses). It does not change what the others note.

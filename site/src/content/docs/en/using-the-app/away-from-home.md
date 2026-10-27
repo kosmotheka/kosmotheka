@@ -2,7 +2,7 @@
 title: "Away from home and offline: what works"
 description: What you can do with the app without internet, without the Wi-Fi at home or while travelling, with and without an account.
 sidebar:
-  order: 16
+  order: 17
 ---
 
 The app keeps your libraries **on the device itself**. That is why almost everything works without internet. What changes depending on where you are is **when your changes reach the other devices**.

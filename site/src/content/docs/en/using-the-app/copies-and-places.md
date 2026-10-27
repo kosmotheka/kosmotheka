@@ -2,7 +2,7 @@
 title: Copies, locations and whose each thing is
 description: How to note how many you have of something, in what format, where it is and whose it is.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 The same book can be at home more than once: on paper, as an ebook, one for each person. Each one you have is a **copy**. A copy says what format you have it in, whose it is and where it is.

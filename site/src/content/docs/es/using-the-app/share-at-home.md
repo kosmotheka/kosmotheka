@@ -2,7 +2,7 @@
 title: "Compartir en casa: emparejar dispositivos por wifi"
 description: Cómo ver tu biblioteca en otro móvil u ordenador de casa, sin cuentas ni internet.
 sidebar:
-  order: 9
+  order: 10
 ---
 
 Puedes tener la misma biblioteca en varios dispositivos de casa: tu móvil, el de tu pareja, un portátil. Para eso hay que **emparejarlos**. Emparejar es conectar dos dispositivos para que se pasen los cambios.

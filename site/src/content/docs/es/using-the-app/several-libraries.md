@@ -2,7 +2,7 @@
 title: Varias bibliotecas
 description: Para qué sirven, cómo crear una, cambiar de una a otra, buscar en todas, mover una cosa y borrar una biblioteca.
 sidebar:
-  order: 8
+  order: 9
 ---
 
 Puedes tener todas las bibliotecas que quieras en el mismo dispositivo. Cada una es **una lista aparte**: tiene sus propios libros, sus propias personas y sus propios dispositivos. Sirve para no mezclar cosas que no van juntas:

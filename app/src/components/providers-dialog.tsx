@@ -20,6 +20,7 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "@/components/external-link";
+import { guidePage } from "@/lib/guide";
 import { BGG_URL, BggLogo, SOURCES_WITH_A_LINK } from "@/components/source-credits";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
@@ -139,7 +140,7 @@ export function ProvidersDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const desktop = useDesktop();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedKind, setSelectedKind] = useState<Selection>(null);
@@ -505,6 +506,11 @@ export function ProvidersDialog({
           </span>
         </div>
         {body}
+        <p className="text-sm">
+          <ExternalLink url={guidePage(i18n.language, "search-better/")}>
+            {t("providers.searchBetter")}
+          </ExternalLink>
+        </p>
         {credits}
         <Button className="self-end" onClick={() => onOpenChange(false)}>
           {t("whatsNew.close")}

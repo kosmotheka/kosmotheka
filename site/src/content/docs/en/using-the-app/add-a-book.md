@@ -46,6 +46,8 @@ On a computer you cannot scan with a camera. Type or paste the number in the sea
 
 With "Other" nothing is searched anywhere: you add it by hand.
 
+If what you are looking for does not show up, see [How to search better](../search-better/): what to type and what to do when it does not appear.
+
 ## When what you were looking for appears
 
 A page opens with the details filled in. **Check them before you save:** online services sometimes get things wrong or leave gaps. Change whatever you need and tap "Save".

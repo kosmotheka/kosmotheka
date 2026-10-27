@@ -46,6 +46,8 @@ En el ordenador no se escanea con cámara. Escribe o pega el número en el cuadr
 
 Con «Otro» no se busca en ningún sitio: se añade a mano.
 
+Si no sale lo que buscas, mira [Cómo buscar mejor](../search-better/): qué escribir y qué hacer cuando no aparece.
+
 ## Cuando aparece lo que buscabas
 
 Se abre la ficha con los datos rellenados. **Revísalos antes de guardar:** los servicios de internet a veces se equivocan o dejan huecos. Cámbialo todo lo que haga falta y pulsa «Guardar».

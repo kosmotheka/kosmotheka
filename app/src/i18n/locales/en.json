@@ -1436,7 +1436,8 @@
     "board_game_geekSends": "Sends what you type to your account's server, which asks BoardGameGeek. Nothing else.",
     "rpg_geekWithAccount": "Needs an account on a server that offers it. It is only asked when you search for books by title; without one, nothing changes.",
     "rpg_geekSends": "When you search for books by title, sends what you type to your account's server, which asks RPGGeek. Nothing else.",
-    "bggNotice": "Board game and role-playing data from <link>BoardGameGeek</link>. This application is not affiliated with BoardGameGeek."
+    "bggNotice": "Board game and role-playing data from <link>BoardGameGeek</link>. This application is not affiliated with BoardGameGeek.",
+    "searchBetter": "How to search better"
   },
   "series": {
     "new": "New saga or collection",

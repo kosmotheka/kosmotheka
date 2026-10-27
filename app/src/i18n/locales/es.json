@@ -1450,7 +1450,8 @@
     "board_game_geekSends": "Envía lo que escribes al servidor de tu cuenta, que pregunta a BoardGameGeek. Nada más.",
     "rpg_geekWithAccount": "Pide una cuenta en un servidor que lo ofrezca. Solo se consulta al buscar libros por título; sin cuenta, todo sigue igual.",
     "rpg_geekSends": "Al buscar libros por título, envía lo que escribes al servidor de tu cuenta, que pregunta a RPGGeek. Nada más.",
-    "bggNotice": "Datos de juegos de mesa y de rol de <link>BoardGameGeek</link>. Esta aplicación no tiene relación con BoardGameGeek."
+    "bggNotice": "Datos de juegos de mesa y de rol de <link>BoardGameGeek</link>. Esta aplicación no tiene relación con BoardGameGeek.",
+    "searchBetter": "Cómo buscar mejor"
   },
   "series": {
     "new": "Nueva saga o colección",

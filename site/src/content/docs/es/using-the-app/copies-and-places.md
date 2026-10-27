@@ -2,7 +2,7 @@
 title: Ejemplares, ubicaciones y de quién es cada cosa
 description: Cómo apuntar cuántos tienes de algo, en qué formato, dónde está y de quién es.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 Un mismo libro puede estar en casa más de una vez: en papel, en ebook, uno de cada persona. Cada uno de los que tienes es un **ejemplar**. Un ejemplar dice en qué formato lo tienes, de quién es y dónde está.

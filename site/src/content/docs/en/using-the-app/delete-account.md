@@ -2,7 +2,7 @@
 title: Delete my account and my data
 description: How to delete your Kosmotheka account from the app or by writing, what is deleted and what stays.
 sidebar:
-  order: 18
+  order: 19
 ---
 
 Deleting your account is **forever**. If you only want to stop using it for a while, "Sign out" deletes nothing. And if you have no account, your data is only on your devices: it is deleted when you delete the library or remove the app from the phone.

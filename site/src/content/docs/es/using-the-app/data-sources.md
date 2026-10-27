@@ -2,7 +2,7 @@
 title: "De dónde salen los datos: catálogos públicos, claves propias y cómo apagarlos"
 description: Qué servicios de internet consulta la app cuando añades algo, qué les envía, cómo poner una clave propia y cómo apagar uno.
 sidebar:
-  order: 11
+  order: 12
 ---
 
 La app no lleva guardados los datos de los libros, las películas o los juegos. Cuando añades algo, **los busca por ti** en servicios de internet. Son bases de datos públicas, como el catálogo de la Biblioteca Nacional de España.

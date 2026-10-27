@@ -2,7 +2,7 @@
 title: "La nube: tener tus bibliotecas en todos tus dispositivos"
 description: Cómo crear una cuenta, subir una biblioteca, entrar con un móvil nuevo e invitar a otras personas.
 sidebar:
-  order: 15
+  order: 16
 ---
 
 La nube es guardar tus bibliotecas también en internet, en un ordenador al que se llama **servidor**, y no solo en tus dispositivos. Es **opcional**. Sin cuenta, la app funciona entera: tus bibliotecas están en tus dispositivos y se comparten con los de casa por la wifi ([Compartir en casa](../share-at-home/)). Con una cuenta, además, tus bibliotecas se ponen al día **desde cualquier sitio**, sin que los dispositivos estén en la misma wifi, y puedes invitar a otras personas.

@@ -2,7 +2,7 @@
 title: Preguntas frecuentes
 description: Respuestas cortas a lo que más se pregunta, con enlace a la página donde está explicado con calma.
 sidebar:
-  order: 19
+  order: 20
 ---
 
 Respuestas cortas, sin letra pequeña. Cada una te lleva a la página que la explica entera.
