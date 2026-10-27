@@ -97,7 +97,7 @@ fn ensure_name_free(
 ) -> Result<()> {
     let taken: bool = conn.query_row(
         "SELECT EXISTS (SELECT 1 FROM series WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
-                           AND id <> ?3)",
+                           AND id <> ?3 AND trashed_at IS NULL)",
         [library, name, exclude_id.unwrap_or("")],
         |row| row.get(0),
     )?;
@@ -174,23 +174,15 @@ pub fn update_series(
     Ok(())
 }
 
-/// Deletes the series and every entry it has, in one operation.
+/// Sends the series to the trash; its entries stay, hidden until it comes back (D105).
 pub fn delete_series(conn: &mut Connection, library: &str, id: &str) -> Result<()> {
-    let tx = conn.transaction()?;
-    catalog::ensure_exists(&tx, library, Entity::Series, id)?;
-    let mut changes: Vec<Change> = catalog::ids(
-        &tx,
-        "SELECT id FROM series_entries WHERE library_id = ?1 AND series_id = ?2",
+    crate::trash::send(
+        conn,
         library,
+        crate::trash::TrashKind::Series,
         id,
-    )?
-    .into_iter()
-    .map(|entry_id| Change::delete(Entity::SeriesEntry, entry_id))
-    .collect();
-    changes.push(Change::delete(Entity::Series, id));
-    ops::record(&tx, library, "series.remove", changes)?;
-    tx.commit()?;
-    Ok(())
+        "series.trash",
+    )
 }
 
 /// Adding a work already in the series returns the existing entry and changes
@@ -379,21 +371,28 @@ fn tally(ordered: bool, entries: &[SeriesEntry]) -> (i64, i64) {
     (have, total)
 }
 
+/// SQL for an entry `se` whose work is shown: one of its editions is out of the trash, or it has none (D105).
+const SHOWN_ENTRY: &str = "(EXISTS (SELECT 1 FROM editions e WHERE e.library_id = se.library_id
+                                AND e.work_id = se.work_id AND e.trashed_at IS NULL)
+                      OR NOT EXISTS (SELECT 1 FROM editions e WHERE e.library_id = se.library_id
+                                       AND e.work_id = se.work_id))";
+
 pub fn list_series(conn: &Connection, library: &str) -> Result<Vec<SeriesSummary>> {
-    let mut statement = conn.prepare(
+    let mut statement = conn.prepare(&format!(
         "SELECT s.id, s.name, s.ordered,
                 (SELECT count(DISTINCT se.work_id) FROM series_entries se
-                  WHERE se.library_id = s.library_id AND se.series_id = s.id),
+                  WHERE se.library_id = s.library_id AND se.series_id = s.id AND {shown}),
                 (SELECT count(DISTINCT se.work_id) FROM series_entries se
-                  WHERE se.library_id = s.library_id AND se.series_id = s.id
+                  WHERE se.library_id = s.library_id AND se.series_id = s.id AND {shown}
                     AND coalesce(
                           (SELECT sum(c.quantity) FROM copies c
-                             JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+                             JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id AND e.trashed_at IS NULL AND c.trashed_at IS NULL
                             WHERE e.library_id = se.library_id AND e.work_id = se.work_id),
                           0) = 0)
-           FROM series s WHERE s.library_id = ?1
+           FROM series s WHERE s.library_id = ?1 AND s.trashed_at IS NULL
           ORDER BY s.name COLLATE NOCASE, s.id",
-    )?;
+        shown = SHOWN_ENTRY
+    ))?;
     let rows = statement.query_map([library], |row| {
         Ok(SeriesSummary {
             id: row.get(0)?,
@@ -439,9 +438,10 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
         .ok_or_else(|| catalog::missing(Entity::Series, id))?;
 
     let work_ids: Vec<String> = conn
-        .prepare(
-            "SELECT DISTINCT work_id FROM series_entries WHERE library_id = ?1 AND series_id = ?2",
-        )?
+        .prepare(&format!(
+            "SELECT DISTINCT se.work_id FROM series_entries se
+                  WHERE se.library_id = ?1 AND se.series_id = ?2 AND {SHOWN_ENTRY}"
+        ))?
         .query_map([library, id], |row| row.get(0))?
         .collect::<rusqlite::Result<_>>()?;
 
@@ -467,7 +467,8 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
         )?;
         let (edition_id, cover, published_year) = conn
             .query_row(
-                "SELECT id, cover, published_year FROM editions WHERE library_id = ?1 AND work_id = ?2
+                "SELECT id, cover, published_year FROM editions
+                  WHERE library_id = ?1 AND work_id = ?2 AND trashed_at IS NULL
                   ORDER BY title COLLATE NOCASE, id LIMIT 1",
                 [library, work_id],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
@@ -476,7 +477,7 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
             .unwrap_or((None, None, None));
         let copies: i64 = conn.query_row(
             "SELECT coalesce(sum(c.quantity), 0) FROM copies c
-               JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+               JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id AND e.trashed_at IS NULL AND c.trashed_at IS NULL
               WHERE e.library_id = ?1 AND e.work_id = ?2",
             [library, work_id],
             |row| row.get(0),
@@ -484,7 +485,7 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
         let formats = conn
             .prepare(
                 "SELECT DISTINCT c.format FROM copies c
-                   JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+                   JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id AND e.trashed_at IS NULL AND c.trashed_at IS NULL
                   WHERE e.library_id = ?1 AND e.work_id = ?2
                   ORDER BY c.format",
             )?
@@ -497,7 +498,7 @@ pub fn get_series(conn: &Connection, library: &str, id: &str) -> Result<SeriesDe
                   WHERE r.library_id = ?1 AND r.work_id = ?2 AND r.relation = 'requires'
                     AND NOT EXISTS (
                       SELECT 1 FROM copies c
-                        JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+                        JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id AND e.trashed_at IS NULL AND c.trashed_at IS NULL
                        WHERE e.library_id = w.library_id AND e.work_id = w.id)
                   ORDER BY w.title COLLATE NOCASE LIMIT 1",
                 [library, work_id],
@@ -757,13 +758,23 @@ mod tests {
         let w1 = add_work(&mut conn, "Dune");
         add_to_series(&mut conn, &lib, &series_id, &w1, None).unwrap();
 
+        // To the trash (D105): out of the list, the work untouched, and back with its entry when restored.
         delete_series(&mut conn, &lib, &series_id).unwrap();
 
-        assert!(get_series(&conn, &lib, &series_id).is_err());
+        assert!(list_series(&conn, &lib).unwrap().is_empty());
         let title: String = conn
             .query_row("SELECT title FROM works WHERE id = ?1", [&w1], |r| r.get(0))
             .unwrap();
         assert_eq!(title, "Dune");
+        let item = crate::trash::TrashRef {
+            kind: crate::trash::TrashKind::Series,
+            id: series_id.clone(),
+        };
+        crate::trash::restore(&mut conn, &lib, &[item]).unwrap();
+        assert_eq!(
+            get_series(&conn, &lib, &series_id).unwrap().entries.len(),
+            1
+        );
     }
 
     #[test]

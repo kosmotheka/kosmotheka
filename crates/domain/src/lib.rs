@@ -28,7 +28,7 @@ pub use isbn::{Isbn, IsbnError};
 pub use library::validate_library_name;
 pub use mark::mark_id;
 pub use operation::{
-    Action, Change, Operation, OperationError, OperationErrorCode, timestamp_millis,
+    Action, Change, Operation, OperationError, OperationErrorCode, timestamp_millis, timestamp_text,
 };
 pub use permission::{LibraryView, Role, is_allowed};
 pub use schema::{DETAILS, Entity, FieldSpec, FieldType, TRASHABLE, WORK_RELATIONS};

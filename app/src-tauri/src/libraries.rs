@@ -40,7 +40,7 @@ pub struct Creation {
 pub fn list_libraries(conn: &Connection) -> Result<Vec<LibrarySummary>> {
     let active = ops::current_library(conn)?;
     let mut statement = conn.prepare(
-        "SELECT l.id, l.name, (SELECT count(*) FROM editions e WHERE e.library_id = l.id)
+        "SELECT l.id, l.name, (SELECT count(*) FROM editions e WHERE e.library_id = l.id AND e.trashed_at IS NULL)
            FROM libraries l ORDER BY l.name COLLATE NOCASE, l.id",
     )?;
     let rows = statement

@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use kosmotheka_domain::{
     Change, ContributorInput, ContributorRole, CopyInput, DETAILS, EditionInput, Entity, ErrorCode,
-    FieldError, Format, Hlc, Isbn, Kind, MAX_TAG_LENGTH, ValidBook, ValidCopy, ValidEdition,
+    FieldError, Format, Hlc, Isbn, Kind, MAX_TAG_LENGTH, TRASHABLE, ValidBook, ValidCopy,
+    ValidEdition,
 };
 use rusqlite::params_from_iter;
 use rusqlite::types::{Value as SqlValue, ValueRef};
@@ -13,6 +14,7 @@ use serde_json::{Map, Value, json};
 use crate::error::{Error, Result};
 use crate::ops::{self, new_id};
 use crate::search;
+use crate::trash::{self, TrashKind};
 
 // group_concat separator that cannot appear in names typed by users.
 const LIST_SEPARATOR: char = '\u{1f}';
@@ -384,26 +386,16 @@ pub fn update_copy(
     Ok(())
 }
 
+/// Sends the copy to the trash (D105).
 pub fn delete_copy(conn: &mut Connection, library: &str, copy_id: &str) -> Result<()> {
-    let tx = conn.transaction()?;
-    ensure_exists(&tx, library, Entity::Copy, copy_id)?;
-    ops::record(
-        &tx,
-        library,
-        "copy.remove",
-        vec![Change::delete(Entity::Copy, copy_id)],
-    )?;
-    tx.commit()?;
-    Ok(())
+    trash::send(conn, library, TrashKind::Copy, copy_id, "copy.trash")
 }
 
 /// Removes the edition with its copies, and the work too if no other edition remains.
 /// People and members stay: they are catalogues of their own.
+/// Sends the edition to the trash with everything hanging from it (D105).
 pub fn delete_book(conn: &mut Connection, library: &str, edition_id: &str) -> Result<()> {
-    let tx = conn.transaction()?;
-    delete_book_in(&tx, library, edition_id, "book.remove")?;
-    tx.commit()?;
-    Ok(())
+    trash::send(conn, library, TrashKind::Edition, edition_id, "book.trash")
 }
 
 /// Moves a book to another library (D46): it is created there with new ids, since
@@ -478,25 +470,20 @@ pub fn move_book(conn: &mut Connection, from: &str, edition_id: &str, to: &str) 
         plan.add_copy(&new_edition, copy)?;
     }
     plan.record("book.move_in")?;
-    delete_book_in(&tx, from, edition_id, "book.move_out")?;
+    // In the origin it goes to the trash (D105): a move by mistake can be undone there for 30 days.
+    let out = trash::send_change(&tx, from, Entity::Edition, edition_id)?;
+    ops::record(&tx, from, "book.move_out", vec![out])?;
     tx.commit()?;
     Ok(new_edition)
 }
 
-fn delete_book_in(
-    tx: &Transaction<'_>,
+/// The changes that remove an edition with its copies, and its work if no other
+/// edition remains: deleting it for good from the trash (D105).
+pub(crate) fn book_removal(
+    conn: &Connection,
     library: &str,
     edition_id: &str,
-    intent: &str,
-) -> Result<()> {
-    let changes = book_removal(tx, library, edition_id)?;
-    ops::record(tx, library, intent, changes)?;
-    Ok(())
-}
-
-/// The changes that remove an edition with its copies, and its work if no other
-/// edition remains.
-fn book_removal(conn: &Connection, library: &str, edition_id: &str) -> Result<Vec<Change>> {
+) -> Result<Vec<Change>> {
     let work_id = work_of(conn, library, edition_id)?;
 
     // Children before parents, so every change finds its row.
@@ -825,11 +812,17 @@ impl<'a> Plan<'a> {
             return Ok(id.clone());
         }
         let table = entity.table();
+        // A tag in the trash is not found by its name: the work would get a link nobody sees (D105).
+        let live = if TRASHABLE.contains(&entity) {
+            "AND trashed_at IS NULL"
+        } else {
+            ""
+        };
         let existing: Option<String> = self
             .tx
             .query_row(
                 &format!(
-                    "SELECT id FROM {table} WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
+                    "SELECT id FROM {table} WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE {live}
                       ORDER BY id LIMIT 1"
                 ),
                 [self.library, name],
@@ -925,8 +918,10 @@ fn book_details_fields(edition: &ValidEdition) -> Value {
 pub fn edition_with_isbn(conn: &Connection, library: &str, isbn13: &str) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT edition_id FROM book_details WHERE library_id = ?1 AND isbn13 = ?2
-              ORDER BY edition_id LIMIT 1",
+            "SELECT bd.edition_id FROM book_details bd
+               JOIN editions e ON e.library_id = bd.library_id AND e.id = bd.edition_id
+              WHERE bd.library_id = ?1 AND bd.isbn13 = ?2 AND e.trashed_at IS NULL
+              ORDER BY bd.edition_id LIMIT 1",
             [library, isbn13],
             |row| row.get(0),
         )
@@ -940,7 +935,8 @@ pub fn edition_with_barcode(
 ) -> Result<Option<String>> {
     Ok(conn
         .query_row(
-            "SELECT id FROM editions WHERE library_id = ?1 AND barcode = ?2 ORDER BY id LIMIT 1",
+            "SELECT id FROM editions WHERE library_id = ?1 AND barcode = ?2 AND trashed_at IS NULL
+              ORDER BY id LIMIT 1",
             [library, barcode],
             |row| row.get(0),
         )
@@ -1062,7 +1058,11 @@ pub fn list_books(
     // The first argument is this device, whose person's marks come with each work.
     let device = ops::device_id(conn)?;
     let my_member = crate::permissions::person_of_device(conn, library, &device)?;
-    let mut conditions: Vec<String> = vec!["e.library_id = ?".to_owned()];
+    // What is in the trash is not in the catalog (D105).
+    let mut conditions: Vec<String> = vec![
+        "e.library_id = ?".to_owned(),
+        "e.trashed_at IS NULL".to_owned(),
+    ];
     let mut args: Vec<SqlValue> = vec![
         my_member.clone().map_or(SqlValue::Null, SqlValue::Text),
         my_member.clone().map_or(SqlValue::Null, SqlValue::Text),
@@ -1089,13 +1089,13 @@ pub fn list_books(
         };
         conditions.push(format!(
             "(SELECT coalesce(sum(c.quantity), 0) FROM copies c
-               WHERE c.library_id = e.library_id AND c.edition_id = e.id) {cmp} 0"
+               WHERE c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL) {cmp} 0"
         ));
     }
     // One copy must match every copy filter at once.
     if filter.format.is_some() || filter.owner.is_some() || filter.location.is_some() {
         conditions.push(
-            "EXISTS (SELECT 1 FROM copies c WHERE c.library_id = e.library_id AND c.edition_id = e.id
+            "EXISTS (SELECT 1 FROM copies c WHERE c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL
                       AND (? IS NULL OR c.format = ?)
                       AND (? IS NULL OR c.owner_id IN (SELECT id FROM members
                                                          WHERE library_id = e.library_id
@@ -1171,18 +1171,18 @@ pub fn list_books(
                JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
               WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id AND wc.role = 'author'),
             (SELECT coalesce(sum(c.quantity), 0) FROM copies c
-              WHERE c.library_id = e.library_id AND c.edition_id = e.id),
+              WHERE c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL),
             (SELECT group_concat(format, char(31))
                FROM (SELECT DISTINCT c.format FROM copies c
-                      WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
+                      WHERE c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL)),
             (SELECT group_concat(name, char(31) ORDER BY name COLLATE NOCASE)
                FROM (SELECT DISTINCT m.name FROM copies c
                        JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
-                      WHERE c.library_id = e.library_id AND c.edition_id = e.id)),
+                      WHERE c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL)),
             mk.status, mk.favorite, mk.wished, w.kind,
             (SELECT group_concat(name, char(31) ORDER BY name COLLATE NOCASE)
                FROM (SELECT DISTINCT t.name AS name FROM work_tags wt
-                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id AND t.trashed_at IS NULL
                       WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id)),
             (SELECT group_concat(
                       CASE WHEN wm.member_id = ? THEN 'me' ELSE wmem.name END,
@@ -1299,8 +1299,11 @@ pub fn catalog_options(conn: &Connection, library: &str) -> Result<CatalogOption
         publishers: unique("publishers")?,
         owners: unique("members")?,
         locations: names(
-            "SELECT DISTINCT location FROM copies WHERE library_id = ?1 AND location IS NOT NULL
-              ORDER BY location COLLATE NOCASE",
+            "SELECT DISTINCT c.location FROM copies c
+               JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
+              WHERE c.library_id = ?1 AND c.location IS NOT NULL
+                AND c.trashed_at IS NULL AND e.trashed_at IS NULL
+              ORDER BY c.location COLLATE NOCASE",
         )?,
     })
 }
@@ -1389,7 +1392,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
     let mut statement = conn.prepare(
         "SELECT c.id, m.name, c.format, c.quantity, c.location, c.acquired_on, c.platform, c.seasons
            FROM copies c LEFT JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
-          WHERE c.library_id = ?1 AND c.edition_id = ?2
+          WHERE c.library_id = ?1 AND c.edition_id = ?2 AND c.trashed_at IS NULL
           ORDER BY c.created_at, c.id",
     )?;
     let rows = statement.query_map([library, edition_id], |row| {
@@ -1407,11 +1410,18 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
         })
     })?;
     book.copies = rows.collect::<rusqlite::Result<_>>()?;
+    // Whether this person may send them to the trash; a device of nobody may not (D105).
+    let may_send = |entity: Entity, id: &str| -> Result<bool> {
+        match trash::send_change(conn, library, entity, id) {
+            Ok(change) => ops::would_allow(conn, library, vec![change]),
+            Err(Error::NotAllowed) => Ok(false),
+            Err(other) => Err(other),
+        }
+    };
     for copy in &mut book.copies {
-        copy.can_delete =
-            ops::would_allow(conn, library, vec![Change::delete(Entity::Copy, &copy.id)])?;
+        copy.can_delete = may_send(Entity::Copy, &copy.id)?;
     }
-    book.can_delete = ops::would_allow(conn, library, book_removal(conn, library, edition_id)?)?;
+    book.can_delete = may_send(Entity::Edition, edition_id)?;
 
     book.genres = conn
         .prepare(
@@ -1423,7 +1433,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
     book.tags = conn
         .prepare(
             "SELECT DISTINCT t.name FROM work_tags wt
-               JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+               JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id AND t.trashed_at IS NULL
               WHERE wt.library_id = ?1 AND wt.work_id = ?2
               ORDER BY t.name COLLATE NOCASE",
         )?
@@ -1451,7 +1461,7 @@ pub fn get_book(conn: &Connection, library: &str, edition_id: &str) -> Result<Bo
                         AND se2.work_id = ?2
                       ORDER BY se2.position IS NULL, se2.position LIMIT 1)
                FROM series_entries se
-               JOIN series s ON s.library_id = se.library_id AND s.id = se.series_id
+               JOIN series s ON s.library_id = se.library_id AND s.id = se.series_id AND s.trashed_at IS NULL
               WHERE se.library_id = ?1 AND se.work_id = ?2
               ORDER BY s.name COLLATE NOCASE, s.id",
         )?
@@ -1504,7 +1514,7 @@ fn related_works(
         )?;
         let edition_id: Option<String> = conn
             .query_row(
-                "SELECT id FROM editions WHERE library_id = ?1 AND work_id = ?2
+                "SELECT id FROM editions WHERE library_id = ?1 AND work_id = ?2 AND trashed_at IS NULL
                   ORDER BY title COLLATE NOCASE, id LIMIT 1",
                 [library, work_id],
                 |row| row.get(0),
@@ -1513,7 +1523,8 @@ fn related_works(
         let copies: i64 = conn.query_row(
             "SELECT coalesce(sum(c.quantity), 0) FROM copies c
                JOIN editions e ON e.library_id = c.library_id AND e.id = c.edition_id
-              WHERE e.library_id = ?1 AND e.work_id = ?2",
+              WHERE e.library_id = ?1 AND e.work_id = ?2
+                AND c.trashed_at IS NULL AND e.trashed_at IS NULL",
             [library, work_id],
             |row| row.get(0),
         )?;
@@ -1570,7 +1581,8 @@ pub fn list_tags(conn: &Connection, library: &str) -> Result<Vec<TagSummary>> {
     let mut statement = conn.prepare(
         "SELECT t.id, t.name, (SELECT count(DISTINCT wt.work_id) FROM work_tags wt
                                  WHERE wt.library_id = t.library_id AND wt.tag_id = t.id)
-           FROM tags t WHERE t.library_id = ?1 ORDER BY t.name COLLATE NOCASE, t.id",
+           FROM tags t WHERE t.library_id = ?1 AND t.trashed_at IS NULL
+          ORDER BY t.name COLLATE NOCASE, t.id",
     )?;
     let rows = statement.query_map([library], |row| {
         Ok(TagSummary {
@@ -1602,7 +1614,7 @@ pub fn rename_tag(conn: &mut Connection, library: &str, id: &str, name: &str) ->
     let existing_id: Option<String> = tx
         .query_row(
             "SELECT id FROM tags WHERE library_id = ?1 AND name = ?2 COLLATE NOCASE
-               AND id <> ?3",
+               AND id <> ?3 AND trashed_at IS NULL",
             [library, trimmed, id],
             |row| row.get(0),
         )
@@ -1639,7 +1651,9 @@ pub fn rename_tag(conn: &mut Connection, library: &str, id: &str, name: &str) ->
                     ));
                 }
             }
-            plan.changes.push(Change::delete(Entity::Tag, id));
+            // The emptied tag goes to the trash, as any deleted one (D105).
+            plan.changes
+                .push(trash::send_change(&tx, library, Entity::Tag, id)?);
         }
         None => {
             plan.update_if_changed(Entity::Tag, id, json!({ "name": trimmed }))?;
@@ -1650,22 +1664,9 @@ pub fn rename_tag(conn: &mut Connection, library: &str, id: &str, name: &str) ->
     Ok(())
 }
 
+/// Sends the tag to the trash; its works keep their link to it, hidden until it comes back (D105).
 pub fn delete_tag(conn: &mut Connection, library: &str, id: &str) -> Result<()> {
-    let tx = conn.transaction()?;
-    ensure_exists(&tx, library, Entity::Tag, id)?;
-    let mut changes: Vec<Change> = ids(
-        &tx,
-        "SELECT id FROM work_tags WHERE library_id = ?1 AND tag_id = ?2",
-        library,
-        id,
-    )?
-    .into_iter()
-    .map(|row_id| Change::delete(Entity::WorkTag, row_id))
-    .collect();
-    changes.push(Change::delete(Entity::Tag, id));
-    ops::record(&tx, library, "tag.remove", changes)?;
-    tx.commit()?;
-    Ok(())
+    trash::send(conn, library, TrashKind::Tag, id, "tag.trash")
 }
 
 fn split_list(joined: Option<String>) -> Vec<String> {
@@ -1680,6 +1681,7 @@ mod tests {
 
     use super::*;
     use crate::db;
+    use crate::trash::TrashRef;
 
     fn edition(title: &str, isbn: Option<&str>, authors: &[&str]) -> ValidEdition {
         EditionInput {
@@ -2452,11 +2454,11 @@ mod tests {
                 .copies
                 .is_empty()
         );
-        assert_eq!(intents(&conn), vec!["book.add", "copy.edit", "copy.remove"]);
+        assert_eq!(intents(&conn), vec!["book.add", "copy.edit", "copy.trash"]);
     }
 
     #[test]
-    fn deleting_a_book_removes_everything_but_people_and_members() {
+    fn a_deleted_book_goes_to_the_trash_and_comes_back_whole_or_goes_for_good() {
         let mut conn = db::open_in_memory().unwrap();
         let lib = ops::active_library(&conn).unwrap();
         let created = create_book(
@@ -2474,12 +2476,36 @@ mod tests {
         )
         .unwrap();
 
+        // Deleting sends it to the trash (D105): out of the catalog, every row still there.
         delete_book(&mut conn, &lib, &created.edition_id).unwrap();
-
-        let count = |table: &str| -> i64 {
+        let count = |conn: &Connection, table: &str| -> i64 {
             conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
                 .unwrap()
         };
+        assert!(
+            list_books(&conn, &lib, &BookFilter::default())
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(count(&conn, "copies"), 2);
+        let item = TrashRef {
+            kind: TrashKind::Edition,
+            id: created.edition_id.clone(),
+        };
+
+        // Restoring brings it back with both copies.
+        trash::restore(&mut conn, &lib, std::slice::from_ref(&item)).unwrap();
+        assert_eq!(
+            get_book(&conn, &lib, &created.edition_id)
+                .unwrap()
+                .copies
+                .len(),
+            2
+        );
+
+        // For good, from the trash: everything goes but people and members.
+        delete_book(&mut conn, &lib, &created.edition_id).unwrap();
+        trash::purge(&mut conn, &lib, &[item]).unwrap();
         for table in [
             "works",
             "work_contributors",
@@ -2487,10 +2513,10 @@ mod tests {
             "book_details",
             "copies",
         ] {
-            assert_eq!(count(table), 0, "{table} should be empty");
+            assert_eq!(count(&conn, table), 0, "{table} should be empty");
         }
-        assert_eq!(count("people"), 1);
-        assert_eq!(count("members"), 3, "the founder and the two owners");
+        assert_eq!(count(&conn, "people"), 1);
+        assert_eq!(count(&conn, "members"), 3, "the founder and the two owners");
         // The same ISBN can be catalogued again.
         create_book(
             &mut conn,
@@ -2499,6 +2525,102 @@ mod tests {
             None,
         )
         .unwrap();
+    }
+
+    #[test]
+    fn the_trash_lists_each_thing_once_and_restores_a_tag_with_its_works() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let mut tagged = new_book("A", None, "Ana", Format::Hardcover);
+        tagged.edition.tags = vec!["regalos".into()];
+        let a = create_book(&mut conn, &lib, &tagged, None).unwrap();
+        add_copy(&mut conn, &lib, &a.edition_id, &copy("Ana", Format::Ebook)).unwrap();
+        let b = create_book(
+            &mut conn,
+            &lib,
+            &new_book("B", None, "Ana", Format::Paperback),
+            None,
+        )
+        .unwrap();
+        let b_copy = get_book(&conn, &lib, &b.edition_id).unwrap().copies[0]
+            .id
+            .clone();
+        let a_copy = get_book(&conn, &lib, &a.edition_id).unwrap().copies[0]
+            .id
+            .clone();
+        let tag = list_tags(&conn, &lib).unwrap()[0].id.clone();
+
+        // A copy sent alone is listed; a copy of an edition in the trash comes back with it, so it is not.
+        delete_copy(&mut conn, &lib, &b_copy).unwrap();
+        delete_copy(&mut conn, &lib, &a_copy).unwrap();
+        delete_book(&mut conn, &lib, &a.edition_id).unwrap();
+        delete_tag(&mut conn, &lib, &tag).unwrap();
+        let listed: Vec<(TrashKind, String, i64)> = trash::list(&conn, &lib)
+            .unwrap()
+            .into_iter()
+            .map(|item| (item.kind, item.title, item.count))
+            .collect();
+        assert_eq!(listed.len(), 3, "{listed:?}");
+        assert!(listed.contains(&(TrashKind::Edition, "A".into(), 2)));
+        assert!(listed.contains(&(TrashKind::Copy, "B".into(), 1)));
+        assert!(listed.contains(&(TrashKind::Tag, "regalos".into(), 1)));
+        assert!(list_tags(&conn, &lib).unwrap().is_empty());
+
+        // The tag comes back with its work; the edition, with the copy that was in the trash with it.
+        let restore = |kind, id: &str| TrashRef {
+            kind,
+            id: id.to_owned(),
+        };
+        trash::restore(
+            &mut conn,
+            &lib,
+            &[
+                restore(TrashKind::Tag, &tag),
+                restore(TrashKind::Edition, &a.edition_id),
+            ],
+        )
+        .unwrap();
+        let back = get_book(&conn, &lib, &a.edition_id).unwrap();
+        assert_eq!(back.tags, vec!["regalos".to_owned()]);
+        assert_eq!(
+            back.copies.len(),
+            1,
+            "the copy sent alone before stays in the trash"
+        );
+    }
+
+    #[test]
+    fn deleting_for_good_an_edition_and_its_copy_picked_together_deletes_the_copy_once() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let a = create_book(
+            &mut conn,
+            &lib,
+            &new_book("A", None, "Ana", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        let a_copy = get_book(&conn, &lib, &a.edition_id).unwrap().copies[0]
+            .id
+            .clone();
+        delete_copy(&mut conn, &lib, &a_copy).unwrap();
+        delete_book(&mut conn, &lib, &a.edition_id).unwrap();
+        let picked = [
+            TrashRef {
+                kind: TrashKind::Copy,
+                id: a_copy,
+            },
+            TrashRef {
+                kind: TrashKind::Edition,
+                id: a.edition_id.clone(),
+            },
+        ];
+        trash::purge(&mut conn, &lib, &picked).unwrap();
+        assert!(trash::list(&conn, &lib).unwrap().is_empty());
+        assert_eq!(
+            intents(&conn).last().map(String::as_str),
+            Some("trash.purge")
+        );
     }
 
     #[test]
@@ -2681,12 +2803,20 @@ mod tests {
         tx.commit().unwrap();
         assert_eq!(search(&conn, "guin"), vec!["New title"]);
 
+        // In the trash the search does not find it, but its index row stays for when it comes back (D105).
         delete_book(&mut conn, &lib, &created.edition_id).unwrap();
         assert!(search(&conn, "new").is_empty());
-        let rows: i64 = conn
-            .query_row("SELECT count(*) FROM search_index", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(rows, 0);
+        let rows = |conn: &Connection| -> i64 {
+            conn.query_row("SELECT count(*) FROM search_index", [], |r| r.get(0))
+                .unwrap()
+        };
+        assert_eq!(rows(&conn), 1);
+        let item = TrashRef {
+            kind: TrashKind::Edition,
+            id: created.edition_id.clone(),
+        };
+        trash::purge(&mut conn, &lib, &[item]).unwrap();
+        assert_eq!(rows(&conn), 0);
     }
 
     #[test]

@@ -27,6 +27,7 @@ mod search;
 mod series;
 mod settings;
 mod sync;
+mod trash;
 mod updates;
 mod whats_new;
 
@@ -249,6 +250,9 @@ pub fn run() {
             commands::create_series,
             commands::update_series,
             commands::delete_series,
+            commands::list_trash,
+            commands::restore_from_trash,
+            commands::purge_from_trash,
             commands::add_to_series,
             commands::remove_from_series,
             commands::reorder_series,

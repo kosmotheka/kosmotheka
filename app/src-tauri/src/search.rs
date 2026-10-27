@@ -186,11 +186,11 @@ fn document(conn: &Connection, library: &str, edition_id: &str) -> Result<Option
                       WHERE wc.library_id = e.library_id AND wc.work_id = e.work_id),
                     (SELECT group_concat(t.name, ' ')
                        FROM work_tags wt
-                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                       JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id AND t.trashed_at IS NULL
                       WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id),
                     (SELECT group_concat(s.name, ' ')
                        FROM series_entries se
-                       JOIN series s ON s.library_id = se.library_id AND s.id = se.series_id
+                       JOIN series s ON s.library_id = se.library_id AND s.id = se.series_id AND s.trashed_at IS NULL
                       WHERE se.library_id = e.library_id AND se.work_id = e.work_id))
                FROM editions e
                JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id

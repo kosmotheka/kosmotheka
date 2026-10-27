@@ -40,6 +40,7 @@ use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
+use crate::trash::{self, TrashItem, TrashRef};
 use crate::updates;
 use crate::whats_new::{self, WhatsNew};
 
@@ -1285,6 +1286,28 @@ pub fn update_series(
     let mut conn = database.lock()?;
     let library = ops::active_library(&conn)?;
     series::update_series(&mut conn, &library, &id, &name, ordered)
+}
+
+/// What is in the trash of the active library (D105).
+#[tauri::command]
+pub fn list_trash(database: State<'_, Database>) -> Result<Vec<TrashItem>> {
+    let conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    trash::list(&conn, &library)
+}
+
+#[tauri::command]
+pub fn restore_from_trash(database: State<'_, Database>, items: Vec<TrashRef>) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    trash::restore(&mut conn, &library, &items)
+}
+
+#[tauri::command]
+pub fn purge_from_trash(database: State<'_, Database>, items: Vec<TrashRef>) -> Result<()> {
+    let mut conn = database.lock()?;
+    let library = ops::active_library(&conn)?;
+    trash::purge(&mut conn, &library, &items)
 }
 
 #[tauri::command]

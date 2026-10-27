@@ -638,7 +638,7 @@ pub fn write_state(conn: &Connection, key: &str, value: Option<&str>) -> Result<
     Ok(())
 }
 
-fn now_millis() -> u64 {
+pub(crate) fn now_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| {

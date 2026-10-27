@@ -2772,7 +2772,20 @@ mod tests {
         let edition = catalog::list_books(&laptop.0, &lib, &BookFilter::default()).unwrap()[0]
             .edition_id
             .clone();
+        // In the trash the marks stay, to come back with it (D105); deleted for good, they go with the work.
         catalog::delete_book(&mut laptop.0, &lib, &edition).unwrap();
+        laptop.sync_with(&mut phone);
+        assert!(
+            marks::work_marks(&phone.0, &lib, &dune)
+                .unwrap()
+                .mine
+                .is_some()
+        );
+        let item = crate::trash::TrashRef {
+            kind: crate::trash::TrashKind::Edition,
+            id: edition.clone(),
+        };
+        crate::trash::purge(&mut laptop.0, &lib, &[item]).unwrap();
         laptop.sync_with(&mut phone);
         assert!(
             marks::work_marks(&phone.0, &lib, &dune)
@@ -3396,6 +3409,19 @@ mod tests {
         series::add_to_series(&mut phone.0, &lib, &series_id, &work_id, Some(1)).unwrap();
         laptop.sync_with(&mut phone);
 
+        // In the trash (D105) the entry the phone added survives, hidden, and would come back with the series.
+        for device in [&laptop, &phone] {
+            assert!(series::list_series(&device.0, &lib).unwrap().is_empty());
+        }
+        assert_converged(&[&laptop, &phone]);
+
+        // Deleted for good, the delete wins over everything (D89), on both.
+        let item = crate::trash::TrashRef {
+            kind: crate::trash::TrashKind::Series,
+            id: series_id.clone(),
+        };
+        crate::trash::purge(&mut laptop.0, &lib, &[item]).unwrap();
+        laptop.sync_with(&mut phone);
         assert!(series::get_series(&laptop.0, &lib, &series_id).is_err());
         assert!(series::get_series(&phone.0, &lib, &series_id).is_err());
         assert_converged(&[&laptop, &phone]);

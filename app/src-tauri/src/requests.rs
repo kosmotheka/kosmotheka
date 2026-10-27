@@ -305,11 +305,25 @@ fn name_of(
         .or_else(|| stored_text(conn, library, entity, id, "name"))
 }
 
+/// A change that sends its row to the trash (D105): deleting, as the person sees it.
+fn sends_to_trash(change: &Change) -> bool {
+    change.action == Action::Update
+        && change
+            .fields
+            .get("trashed_at")
+            .is_some_and(|value| !value.is_null())
+}
+
 fn summarize(conn: &Connection, library: &str, changes: &[Change]) -> Result<Summary> {
     let find = |entity: Entity, action: Action| {
-        changes
-            .iter()
-            .find(|c| c.entity == entity && c.action == action)
+        changes.iter().find(|c| {
+            c.entity == entity
+                && match action {
+                    // Deleting is sending to the trash since D105; a request from before deletes outright.
+                    Action::Delete => c.action == Action::Delete || sends_to_trash(c),
+                    other => c.action == other,
+                }
+        })
     };
     let edition_title = |id: &str| stored_text(conn, library, Entity::Edition, id, "title");
     let copy_details = |summary: &mut Summary, change: &Change| {
@@ -402,8 +416,25 @@ fn still_applies(conn: &Connection, library: &str, changes: &[Change]) -> Result
                 |row| row.get(0),
             )?)
     };
+    let in_trash = |entity: Entity, id: &str| -> Result<bool> {
+        Ok(conn
+            .query_row(
+                &format!(
+                    "SELECT trashed_at IS NOT NULL FROM {} WHERE library_id = ?1 AND id = ?2",
+                    entity.table()
+                ),
+                [library, id],
+                |row| row.get(0),
+            )
+            .optional()?
+            .unwrap_or(false))
+    };
     for change in changes {
         if change.action != Action::Create && !exists(change.entity, &change.id)? {
+            return Ok(false);
+        }
+        // Sending to the trash what somebody already sent there does nothing any more.
+        if sends_to_trash(change) && in_trash(change.entity, &change.id)? {
             return Ok(false);
         }
         for (name, value) in &change.fields {

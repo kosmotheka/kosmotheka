@@ -281,6 +281,15 @@ fn is_timestamp(text: &str) -> bool {
     timestamp_millis(text).is_some()
 }
 
+/// The one writing of a moment (D105), from milliseconds since 1970, the scale of an `hlc`.
+pub fn timestamp_text(millis: u64) -> String {
+    let millis = i64::try_from(millis).unwrap_or(i64::MAX);
+    chrono::DateTime::from_timestamp_millis(millis)
+        .unwrap_or_default()
+        .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+        .to_string()
+}
+
 /// The milliseconds since 1970 of a timestamp written as the spec says (D105), the scale of an `hlc`; `None` for
 /// any other writing, or a moment before 1970.
 pub fn timestamp_millis(text: &str) -> Option<u64> {
@@ -430,6 +439,14 @@ mod tests {
                 }]
             })
         );
+    }
+
+    #[test]
+    fn a_moment_is_written_one_way_and_read_back() {
+        let text = timestamp_text(1_727_222_200_010);
+        assert_eq!(text, "2024-09-24T23:56:40.010Z");
+        assert_eq!(timestamp_millis(&text), Some(1_727_222_200_010));
+        assert_eq!(timestamp_millis("2024-09-24T23:56:40Z"), None);
     }
 
     #[test]

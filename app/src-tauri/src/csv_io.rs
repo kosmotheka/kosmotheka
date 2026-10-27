@@ -101,7 +101,7 @@ pub fn export(conn: &Connection, library: &str, mut out: impl std::io::Write) ->
                            WHERE library_id = e.library_id AND work_id = e.work_id), ''),
                 coalesce((SELECT group_concat(t.name, '; ' ORDER BY t.name COLLATE NOCASE)
                             FROM work_tags wt
-                            JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id
+                            JOIN tags t ON t.library_id = wt.library_id AND t.id = wt.tag_id AND t.trashed_at IS NULL
                            WHERE wt.library_id = e.library_id AND wt.work_id = e.work_id), ''),
                 coalesce(c.format, ''), coalesce(m.name, ''), coalesce(c.quantity, ''),
                 coalesce(c.location, ''), coalesce(c.acquired_on, ''), coalesce(c.platform, ''),
@@ -114,9 +114,9 @@ pub fn export(conn: &Connection, library: &str, mut out: impl std::io::Write) ->
            LEFT JOIN boardgame_details gd ON gd.library_id = e.library_id AND gd.edition_id = e.id
            LEFT JOIN film_details fd ON fd.library_id = e.library_id AND fd.edition_id = e.id
            LEFT JOIN tv_series_details td ON td.library_id = e.library_id AND td.edition_id = e.id
-           LEFT JOIN copies c ON c.library_id = e.library_id AND c.edition_id = e.id
+           LEFT JOIN copies c ON c.library_id = e.library_id AND c.edition_id = e.id AND c.trashed_at IS NULL
            LEFT JOIN members m ON m.library_id = c.library_id AND m.id = c.owner_id
-          WHERE e.library_id = ?1
+          WHERE e.library_id = ?1 AND e.trashed_at IS NULL
           ORDER BY e.title COLLATE NOCASE, e.id, c.created_at"
     ))?;
     let rows = statement.query_map([library], |row| {
