@@ -1,6 +1,8 @@
 # Actualizaciones automáticas en el escritorio
 
-> 27/10/2026. Estudio para el punto 6 de «Tras el lanzamiento» del [ROADMAP](../ROADMAP.md). Sin código: es para decidir con el maintainer. Fuente principal: la documentación del plugin `updater` de Tauri 2 (v2.tauri.app/plugin/updater).
+> 27/10/2026. Estudio para el punto 6 de «Tras el lanzamiento» del [ROADMAP](../ROADMAP.md). Sin código: es para decidir con el maintainer.
+>
+> **Decidido el mismo día (D104):** B en dos pasos, el interruptor encendido por defecto, una vez al día al abrir, y la copia de la clave donde la de Android. El paso 1 está hecho; el estudio se queda como estaba, con las preguntas que se le hicieron al maintainer. Fuente principal: la documentación del plugin `updater` de Tauri 2 (v2.tauri.app/plugin/updater).
 
 ## El problema
 

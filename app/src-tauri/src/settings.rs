@@ -14,6 +14,7 @@ use kosmotheka_domain::{ErrorCode, FieldError};
 const LEGACY_GOOGLE_BOOKS_API_KEY: &str = "google_books_api_key";
 const DISABLED_SOURCES_KEY: &str = "disabled_sources";
 const GOOGLE_BOOKS_VIA_SERVER_KEY: &str = "google_books_via_server";
+const CHECK_UPDATES_KEY: &str = "check_updates";
 
 /// Provider ids that need a key (see `metadata::Source` for every source,
 /// keyless ones included).
@@ -32,6 +33,9 @@ pub struct Settings {
     /// it only matters with a session on a server that offers it.
     #[serde(default = "on")]
     pub google_books_via_server: bool,
+    /// Ask GitHub once a day whether a newer version was published, on the computer (D104). On by default.
+    #[serde(default = "on")]
+    pub check_updates: bool,
 }
 
 fn on() -> bool {
@@ -44,6 +48,7 @@ impl Default for Settings {
             api_keys: BTreeMap::new(),
             disabled_sources: BTreeSet::new(),
             google_books_via_server: true,
+            check_updates: true,
         }
     }
 }
@@ -66,10 +71,12 @@ pub fn load(conn: &Connection) -> Result<Settings> {
     // Absent means on; only an explicit «0» turns it off.
     let google_books_via_server =
         read_state(conn, GOOGLE_BOOKS_VIA_SERVER_KEY)?.is_none_or(|value| value != "0");
+    let check_updates = read_state(conn, CHECK_UPDATES_KEY)?.is_none_or(|value| value != "0");
     Ok(Settings {
         api_keys,
         disabled_sources,
         google_books_via_server,
+        check_updates,
     })
 }
 
@@ -110,7 +117,23 @@ pub fn save(conn: &Connection, settings: &Settings) -> Result<()> {
         conn,
         GOOGLE_BOOKS_VIA_SERVER_KEY,
         (!settings.google_books_via_server).then_some("0"),
+    )?;
+    write_state(
+        conn,
+        CHECK_UPDATES_KEY,
+        (!settings.check_updates).then_some("0"),
     )
+}
+
+const UPDATE_CHECKED_AT_KEY: &str = "update_checked_at";
+
+/// When this device last asked whether there is a newer version, in Unix seconds (D104); `None` when it never has.
+pub fn update_checked_at(conn: &Connection) -> Result<Option<u64>> {
+    Ok(read_state(conn, UPDATE_CHECKED_AT_KEY)?.and_then(|value| value.parse().ok()))
+}
+
+pub fn set_update_checked_at(conn: &Connection, seconds: u64) -> Result<()> {
+    write_state(conn, UPDATE_CHECKED_AT_KEY, Some(&seconds.to_string()))
 }
 
 const WELCOME_SEEN_KEY: &str = "welcome_seen";
@@ -323,6 +346,22 @@ mod tests {
 
         save(&conn, &Settings::default()).unwrap();
         assert!(load(&conn).unwrap().google_books_via_server);
+    }
+
+    #[test]
+    fn looking_for_updates_is_on_until_switched_off() {
+        let conn = db::open_in_memory().unwrap();
+        assert!(load(&conn).unwrap().check_updates);
+
+        let off = Settings {
+            check_updates: false,
+            ..Settings::default()
+        };
+        save(&conn, &off).unwrap();
+        assert!(!load(&conn).unwrap().check_updates);
+
+        save(&conn, &Settings::default()).unwrap();
+        assert!(load(&conn).unwrap().check_updates);
     }
 
     #[test]

@@ -33,7 +33,12 @@ import type {
 // Mutable so the Providers screen can save keys and toggles across calls,
 // preserved only for the life of this dev-server tab.
 const mockServicesSeen = new Set<string>();
-let mockSettings: Settings = { apiKeys: {}, disabledSources: [], googleBooksViaServer: true };
+let mockSettings: Settings = {
+  apiKeys: {},
+  disabledSources: [],
+  googleBooksViaServer: true,
+  checkUpdates: true,
+};
 
 // The biometric plugin itself cannot be mocked through IPC, so the switch always
 // shows as unavailable here; `?lock` renders the lock screen directly instead.
@@ -1165,6 +1170,11 @@ mockIPC((cmd, args) => {
       // A search takes a moment, to see the progress.
       return new Promise((resolve) => setTimeout(() => resolve(match), 250));
     }
+    // `?update` plays a computer with a newer version published.
+    case "check_for_update":
+      return params.has("update") && !params.has("mobile") ? "0.8.0" : null;
+    case "checks_for_updates":
+      return !params.has("mobile");
     case "is_mobile":
       return new URLSearchParams(window.location.search).has("mobile");
     case "plugin:app|version":

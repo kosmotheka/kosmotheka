@@ -9,6 +9,7 @@ import {
   type Settings,
   type Source,
   beginWithName,
+  checksForUpdates,
   getSettings,
   isMobile,
   personName,
@@ -32,7 +33,7 @@ const KEYLESS_SOURCES: Source[] = [
 type Step = "name" | "local" | "scan" | "search" | "share";
 
 /**
- * First-run welcome (D91): the person's name first (D97), then what stays on the device, scanning, and which
+ * First-run welcome (D91): the person's name first (D97), then what stays on the device (on a computer, with the switch for new versions, D104), scanning, and which
  * public catalogs the app asks, each one with its switch, so nothing happens unannounced. Until the name is
  * given there is no library, so it cannot be skipped. `onlyName`: the rest was seen before.
  */
@@ -47,6 +48,7 @@ export function WelcomeDialog({
 }) {
   const { t } = useTranslation();
   const [mobile, setMobile] = useState(false);
+  const [updates, setUpdates] = useState(false);
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings | null>(null);
   // `null`: still asking; empty or a name: what the person typed or already had.
@@ -62,6 +64,9 @@ export function WelcomeDialog({
     setSeeded(true);
     setIndex(0);
     void isMobile().then(setMobile);
+    void checksForUpdates()
+      .then(setUpdates)
+      .catch(() => setUpdates(false));
     void getSettings().then(setSettings);
     setError(null);
     void personName().then((name) => {
@@ -183,6 +188,25 @@ export function WelcomeDialog({
             <p className="text-xs text-muted-foreground">{t("welcome.name.hint")}</p>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
+          {step === "local" && updates && (
+            <div className="flex items-center gap-3 rounded-[14px] border px-3.5 py-3">
+              <label htmlFor="welcome-check-updates" className="flex flex-1 flex-col gap-0.5">
+                <span className="text-sm font-medium">{t("updates.switch")}</span>
+                <span className="text-xs text-muted-foreground">{t("updates.switchHint")}</span>
+              </label>
+              <Switch
+                id="welcome-check-updates"
+                disabled={!settings}
+                checked={settings?.checkUpdates ?? true}
+                onCheckedChange={(on) => {
+                  if (!settings) return;
+                  const next = { ...settings, checkUpdates: on };
+                  setSettings(next);
+                  void saveSettings(next);
+                }}
+              />
+            </div>
+          )}
           {step === "search" && (
             <ul className="flex flex-col divide-y rounded-[14px] border">
               {KEYLESS_SOURCES.map((source) => (

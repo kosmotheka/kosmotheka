@@ -2270,5 +2270,16 @@
       "rpg_geek": "Role-playing books, when you search for a book by its title. What you type is sent.",
       "game_upc": "Board games by their barcode. The code is sent and, when you save it, which game it was, with an identifier of your account that does not say who you are."
     }
+  },
+  "updates": {
+    "switch": "Tell me about new versions",
+    "switchHint": "Once a day, the app asks GitHub, where versions are published, which one is the latest. GitHub sees your internet address, nothing else.",
+    "checkNow": "Check now",
+    "checking": "Checking…",
+    "upToDate": "You have the latest version.",
+    "available": "A new version is out: {{version}}.",
+    "failed": "Could not check. Check your connection.",
+    "download": "Download",
+    "notice": "A new version of Kosmotheka is out: {{version}}."
   }
 }

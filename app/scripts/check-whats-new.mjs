@@ -30,7 +30,7 @@ if (!Array.isArray(file[appVersion])) {
 }
 
 // Keep in step with `Switch::parse` in src-tauri/src/whats_new.rs, which also checks the real keys exist.
-const switchKey = /^(source:[a-z_]+|google_books_via_server)$/;
+const switchKey = /^(source:[a-z_]+|google_books_via_server|check_updates)$/;
 for (const [version, lines] of Object.entries(file)) {
   if (version !== "next" && !/^\d+\.\d+\.\d+$/.test(version)) {
     problems.push(`"${version}" is not a version`);

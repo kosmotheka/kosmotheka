@@ -6,9 +6,20 @@ import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { LicensesDialog } from "@/components/licenses-dialog";
 import { ProvidersDialog } from "@/components/providers-dialog";
+import { Switch } from "@/components/ui/switch";
 import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { type Language, languageOf } from "@/i18n";
-import { type WhatsNew, appVersion, whatsNewRecent } from "@/lib/api";
+import {
+  type Settings,
+  type WhatsNew,
+  appVersion,
+  checkForUpdate,
+  checksForUpdates,
+  getSettings,
+  saveSettings,
+  whatsNewRecent,
+} from "@/lib/api";
+import { downloadsPage } from "@/lib/updates";
 
 const WEBSITE = "https://kosmotheka.com/";
 /** The privacy policy in each language that has one; the others get the fallback language's. */
@@ -32,6 +43,11 @@ export function AboutDialog({
   const [licenses, setLicenses] = useState(false);
   // Opened from here, not as an overlay of its own (an overlay would take the place of this one): closing it comes back.
   const [providers, setProviders] = useState(false);
+  // `null` where a store updates the app (a phone, a snap): there is nothing to show.
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [check, setCheck] = useState<
+    { state: "idle" | "checking" | "upToDate" | "failed" } | { state: "available"; version: string }
+  >({ state: "idle" });
 
   // Asked each time it opens, like ProvidersDialog.
   if (open && !seeded) {
@@ -39,10 +55,31 @@ export function AboutDialog({
     void appVersion()
       .then(setVersion)
       .catch(() => setVersion(null));
+    setCheck({ state: "idle" });
+    setSettings(null);
+    void checksForUpdates()
+      .then((here) => (here ? getSettings().then(setSettings) : undefined))
+      .catch(() => setSettings(null));
   }
   if (!open && seeded) setSeeded(false);
 
   const privacy = PRIVACY[languageOf(i18n.language)] ?? PRIVACY.en;
+
+  const switchUpdates = (on: boolean) => {
+    if (!settings) return;
+    const next = { ...settings, checkUpdates: on };
+    setSettings(next);
+    saveSettings(next).catch(() => setSettings(settings));
+  };
+
+  const checkNow = () => {
+    setCheck({ state: "checking" });
+    checkForUpdate(true)
+      .then((found) =>
+        setCheck(found ? { state: "available", version: found } : { state: "upToDate" }),
+      )
+      .catch(() => setCheck({ state: "failed" }));
+  };
 
   return (
     <ResponsiveDialog
@@ -68,6 +105,43 @@ export function AboutDialog({
             <ExternalLink url={privacy}>{t("about.privacy")}</ExternalLink>
           </li>
         </ul>
+        {settings && (
+          <section className="flex flex-col gap-3 rounded-lg border p-3">
+            <div className="flex items-start gap-3">
+              <label htmlFor="about-check-updates" className="flex flex-1 flex-col gap-0.5">
+                <span className="font-medium">{t("updates.switch")}</span>
+                <span className="text-xs text-muted-foreground">{t("updates.switchHint")}</span>
+              </label>
+              <Switch
+                id="about-check-updates"
+                checked={settings.checkUpdates}
+                onCheckedChange={switchUpdates}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={check.state === "checking"}
+                onClick={checkNow}
+              >
+                {t(check.state === "checking" ? "updates.checking" : "updates.checkNow")}
+              </Button>
+              <span role="status" className="text-muted-foreground">
+                {check.state === "upToDate" && t("updates.upToDate")}
+                {check.state === "failed" && t("updates.failed")}
+                {check.state === "available" && (
+                  <>
+                    {t("updates.available", { version: check.version })}{" "}
+                    <ExternalLink url={downloadsPage(i18n.language)}>
+                      {t("updates.download")}
+                    </ExternalLink>
+                  </>
+                )}
+              </span>
+            </div>
+          </section>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"

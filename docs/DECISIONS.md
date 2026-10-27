@@ -109,6 +109,7 @@
 | D101 | Una retirada firmada se obedece, aunque después haya podido deshacerse | aceptada |
 | D102 | Dos formas de irse: quitar la biblioteca de un dispositivo, o salir de ella del todo (retirarse uno mismo el acceso) | aceptada |
 | D103 | Las instalaciones anteriores de un dispositivo: la fecha del último cambio y quitarlas de una vez | aceptada |
+| D104 | Versiones nuevas en el ordenador: primero avisar, después instalar sola en Windows y la AppImage | aceptada |
 
 ---
 
@@ -2027,3 +2028,29 @@ Ninguna app puede saber si dos instalaciones están en la misma máquina: el nom
 - Tests con el caso del maintainer (un portátil instalado tres veces) y los hostiles, vistos fallar antes: el dispositivo de otra persona o de nadie con el mismo nombre nunca se ofrece, ni un segundo dispositivo suyo que sigue haciendo cambios.
 - Queda pendiente la otra mitad de D81: quitar un dispositivo de la lista de la cuenta no le retira el acceso en las bibliotecas.
 - Guía: `people-and-permissions.md` y `lost-phone.md`.
+
+## D104 · Versiones nuevas en el ordenador: primero avisar, después instalar sola en Windows y la AppImage — `aceptada`
+
+Aceptada el 27/10/2026 por el maintainer, tras el estudio [research/actualizaciones-escritorio.md](research/actualizaciones-escritorio.md). Concreta el punto 6 de «Tras el lanzamiento» del ROADMAP. Toca D74 (cómo se publica) y D91 (lo que sale del dispositivo, con su interruptor).
+
+**Contexto.** En el móvil, Google Play actualiza la app, y en Ubuntu, la Snap Store. Quien instala en el ordenador desde la web (Windows, AppImage, `.deb`, `.rpm`) se queda en esa versión y nadie le avisa. El plugin `updater` de Tauri sabe descargar, instalar y reiniciar solo en Windows y la AppImage; pide una clave de firma propia que, si se pierde, deja las instalaciones existentes sin poder actualizarse solas.
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| A. Solo avisar, con enlace a descargas | Vale para todas las formas de instalar; sin claves ni dependencias | Se descarga e instala a mano |
+| B. Avisar e instalar en Windows y la AppImage | Lo más cómodo para la mayoría | Una clave más para siempre, dos dependencias y más que probar en cada versión |
+| C. Nada por ahora | Cero trabajo | Ordenadores varias versiones por detrás |
+
+**Decisión: B, en dos pasos.**
+
+1. **Primero avisar (A), hecho el 27/10/2026.** La app pregunta a GitHub por la última versión publicada (`releases/latest`, que nunca es un borrador ni una prueba: nadie oye de una versión hasta que el maintainer la publica). Al abrir la app, **como mucho una vez al día**; si falla, en silencio, y lo intenta la siguiente vez. Si hay una mayor que la instalada, el aviso flotante dice cuál, con «Descargar», que abre la página de descargas de la web. En «Acerca de», «Buscar ahora» pregunta en el momento y dice si no ha podido.
+2. **Después, instalar sola en Windows y la AppImage**, con el plugin `updater`: la clave la genera y guarda el maintainer (en los secretos del entorno `release` y, de copia, donde la clave de subida de Android); nunca pasa por el asistente. El workflow firma, escribe el `latest.json` y lo sube al borrador. Antes de publicarlo, una prueba de verdad: instalar la N, publicar la N+1 y ver que se actualiza y se reinicia. Los `.deb` y `.rpm` siguen solo con el aviso: lo que instala el sistema lo actualiza el sistema.
+
+**Lo que sale del dispositivo (D91).** Una petición a GitHub al día: ve la IP y el nombre y la versión de la app, nada más. Lleva su interruptor, **encendido por defecto** (lo normal en el escritorio), en la bienvenida del ordenador, en «Acerca de» y en la línea de novedades. Contado en «Qué sale de tu dispositivo» y en la política de privacidad. Nunca se pregunta en el móvil ni en la snap (la variable `SNAP`), y allí el interruptor no sale.
+
+**Consecuencias.**
+- `updates.rs` (versión de la respuesta, comparación, una vez al día), el ajuste `check_updates` y la hora de la última pregunta en `local_state`, nunca sincronizados.
+- La política de privacidad de la web cambia: hay que subirla con la versión que lo lleve. Google Play no cambia: en Android no se pregunta.
+- El paso 2 queda en el ROADMAP con lo que necesita del maintainer (la clave).

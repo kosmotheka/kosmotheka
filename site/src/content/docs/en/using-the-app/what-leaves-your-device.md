@@ -5,7 +5,7 @@ sidebar:
   order: 12
 ---
 
-**Your books and everything else stay on your phone or computer.** Your notes, your stars, whose each thing is and your backups do not leave it on their own. Without an account, the app only uses the internet to look up the details of what you add.
+**Your books and everything else stay on your phone or computer.** Your notes, your stars, whose each thing is and your backups do not leave it on their own. Without an account, the app only uses the internet to look up the details of what you add and, on the computer, to know whether there is a new version.
 
 ## When you search for a book
 
@@ -55,6 +55,12 @@ The people you share a library with see everything in it, including the names of
 ## Backups and spreadsheets
 
 The files you create, you keep wherever you like. If you upload them to an online service (Google Drive, for example), that service's terms apply. The backup has a password; the spreadsheet list (CSV) does not. See [Backups](../backups/).
+
+## New version notices (on the computer)
+
+On the computer, the app tells you when a new version is out, with a link to the downloads page. To know, once a day, when you open it, it asks GitHub, where versions are published, which one is the latest. Nothing of yours is sent: GitHub sees the internet address you ask from and the app's version, like any website.
+
+It is on from the start. You turn it off in the welcome or in "About", where you can also check for a new version by hand whenever you like. It does not exist on the phone: Google Play updates it. If you installed the app from the Snap Store, neither: the store updates it by itself.
 
 ## If you create an account
 

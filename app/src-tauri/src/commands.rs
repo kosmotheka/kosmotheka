@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use kosmotheka_domain::{CopyInput, EditionInput, FieldError, Isbn, Kind, NewBook};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -38,6 +40,7 @@ use crate::people::{self, People};
 use crate::requests::{self, Request};
 use crate::series::{self, SeriesDetail, SeriesSummary};
 use crate::settings::{self, Settings};
+use crate::updates;
 use crate::whats_new::{self, WhatsNew};
 
 #[derive(Debug, Serialize)]
@@ -1119,6 +1122,44 @@ pub async fn shelf_queries(app: tauri::AppHandle, photo: String) -> Result<Vec<S
         .decode(photo)
         .map_err(|_| Error::TextRecognition("the photo is not base64".into()))?;
     crate::photo_text::shelf_queries(&app, &photo).await
+}
+
+/// A newer published version, if there is one (D104). On opening (`manual` false) it asks at most once a day and
+/// only with the switch on, and a failure is silent: the next opening tries again. From «About» it always asks and
+/// says why it could not. Never where a store keeps the app up to date.
+#[tauri::command]
+pub async fn check_for_update(
+    database: State<'_, Database>,
+    lookup: State<'_, Lookup>,
+    manual: bool,
+) -> Result<Option<String>> {
+    if updates::handled_by_a_store() {
+        return Ok(None);
+    }
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_secs());
+    if !manual {
+        // The block ends before the await below, so the lock is never held across it.
+        let conn = database.lock()?;
+        let on = settings::load(&conn)?.check_updates;
+        if !on || !updates::due(settings::update_checked_at(&conn)?, now) {
+            return Ok(None);
+        }
+    }
+    let latest = match updates::latest(lookup.client()).await {
+        Ok(latest) => latest,
+        Err(error) if manual => return Err(error),
+        Err(_) => return Ok(None),
+    };
+    settings::set_update_checked_at(&*database.lock()?, now)?;
+    Ok(latest.filter(|latest| updates::is_newer(latest, updates::CURRENT)))
+}
+
+/// Whether this device looks for updates at all (D104): not where a store keeps the app up to date.
+#[tauri::command]
+pub fn checks_for_updates() -> bool {
+    !updates::handled_by_a_store()
 }
 
 /// The UI shows the camera scanner only where the plugin exists (D35).

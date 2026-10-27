@@ -27,6 +27,7 @@ mod search;
 mod series;
 mod settings;
 mod sync;
+mod updates;
 mod whats_new;
 
 use tauri::{Emitter, Manager};
@@ -191,6 +192,8 @@ pub fn run() {
             commands::forget_device,
             commands::check_isbn,
             commands::is_mobile,
+            commands::check_for_update,
+            commands::checks_for_updates,
             commands::isbns_in_photo,
             commands::shelf_queries,
             commands::shelf_match,

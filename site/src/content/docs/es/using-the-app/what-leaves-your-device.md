@@ -5,7 +5,7 @@ sidebar:
   order: 12
 ---
 
-**Tus libros y demás cosas se quedan en tu móvil u ordenador.** Tus notas, tus estrellas, de quién es cada cosa y tus copias de seguridad no salen de ahí por su cuenta. Sin cuenta, la app solo usa internet para buscar los datos de lo que añades.
+**Tus libros y demás cosas se quedan en tu móvil u ordenador.** Tus notas, tus estrellas, de quién es cada cosa y tus copias de seguridad no salen de ahí por su cuenta. Sin cuenta, la app solo usa internet para buscar los datos de lo que añades y, en el ordenador, para saber si hay una versión nueva.
 
 ## Cuando buscas un libro
 
@@ -55,6 +55,12 @@ Las personas con las que compartes una biblioteca ven todo lo que hay en ella, i
 ## Copias de seguridad y hojas de cálculo
 
 Los archivos que creas los guardas tú, donde quieras. Si los subes a un servicio de internet (Google Drive, por ejemplo), se aplican las condiciones de ese servicio. La copia de seguridad va con contraseña; la lista en hoja de cálculo (CSV), no. Mira [Copias de seguridad](../backups/).
+
+## Avisos de versiones nuevas (en el ordenador)
+
+En el ordenador, la app te avisa cuando sale una versión nueva, con un enlace a la página de descargas. Para saberlo, una vez al día, al abrirla, pregunta a GitHub, donde se publican las versiones, cuál es la última. No se envía nada tuyo: GitHub ve desde qué dirección de internet le preguntas y la versión de la app, como cualquier página web.
+
+Viene encendido. Lo apagas en la bienvenida o en «Acerca de», donde también puedes buscar una versión nueva a mano cuando quieras. En el móvil no existe: lo actualiza Google Play. Si instalaste la app desde la Snap Store, tampoco: la tienda la actualiza sola.
 
 ## Si creas una cuenta
 

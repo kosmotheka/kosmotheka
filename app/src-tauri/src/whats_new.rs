@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::{Error, Result};
 use crate::metadata::Source;
 use crate::settings::{self, Settings};
+use crate::updates;
 use kosmotheka_domain::{ErrorCode, FieldError};
 
 const FILE: &str = include_str!("../../src/whats-new.json");
@@ -43,12 +44,16 @@ type Notes = BTreeMap<String, Vec<Entry>>;
 enum Switch {
     Source(Source),
     GoogleBooksViaServer,
+    CheckUpdates,
 }
 
 impl Switch {
     fn parse(key: &str) -> Option<Self> {
         if key == "google_books_via_server" {
             return Some(Self::GoogleBooksViaServer);
+        }
+        if key == "check_updates" {
+            return Some(Self::CheckUpdates);
         }
         let id = key.strip_prefix("source:")?;
         Source::ALL
@@ -61,7 +66,13 @@ impl Switch {
         match self {
             Self::Source(source) => !settings.disabled_sources.contains(source.id()),
             Self::GoogleBooksViaServer => settings.google_books_via_server,
+            Self::CheckUpdates => settings.check_updates,
         }
+    }
+
+    /// Where the setting does nothing, its line does not show: a phone or the snap never looks for updates.
+    fn applies_here(&self) -> bool {
+        !matches!(self, Self::CheckUpdates) || !updates::handled_by_a_store()
     }
 
     fn set(&self, settings: &mut Settings, on: bool) {
@@ -73,6 +84,7 @@ impl Switch {
                 settings.disabled_sources.insert(source.id().to_owned());
             }
             Self::GoogleBooksViaServer => settings.google_books_via_server = on,
+            Self::CheckUpdates => settings.check_updates = on,
         }
     }
 }
@@ -116,7 +128,7 @@ impl WhatsNew {
     }
 }
 
-fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
+pub(crate) fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
     let mut parts = version.split('.').map(|part| part.parse::<u64>().ok());
     let found = (parts.next()??, parts.next()??, parts.next()??);
     parts.next().is_none().then_some(found)
@@ -183,6 +195,9 @@ fn build(conn: &Connection, chosen: &[(&str, &[Entry])]) -> Result<WhatsNew> {
                 None => lines.push(line(None)),
                 Some(key) => {
                     let known = Switch::parse(key).ok_or_else(unknown_switch)?;
+                    if !known.applies_here() {
+                        continue;
+                    }
                     shown.switches.push(line(Some(SwitchState {
                         key: key.clone(),
                         on: known.is_on(&settings),

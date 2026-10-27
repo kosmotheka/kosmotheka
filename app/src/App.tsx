@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { AccountDialog } from "@/components/account/account-dialog";
 import { useArrivedLink } from "@/lib/arrived-link";
@@ -60,6 +61,7 @@ import {
   type LibrarySummary,
   addToSeries,
   catalogOptions,
+  checkForUpdate,
   cloudEventsWake,
   getBook,
   lanStatus,
@@ -78,6 +80,7 @@ import { refreshAccount, useAccount } from "@/lib/account";
 import { cloudNotices, refreshCloudStatus, runCloudSync, watchCloudConnection } from "@/lib/cloud";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
 import { syncDevice } from "@/lib/sync-errors";
+import { downloadsPage } from "@/lib/updates";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
 import { CheckPage } from "@/pages/check-page";
 import { DevicesPage } from "@/pages/devices-page";
@@ -101,6 +104,9 @@ function useDebounced<T>(value: T, delay: number): T {
 
 /** How often the LAN is asked while the app is in the foreground. */
 const LAN_POLL_MS = 5 * 60_000;
+
+/** The look for a newer version waits this long after opening, so it never competes with the first screen. */
+const UPDATE_CHECK_DELAY_MS = 5_000;
 
 /**
  * Before the welcome has the person's name there is no library (D97): nothing but the welcome is mounted, so no
@@ -140,7 +146,7 @@ export default function App() {
 }
 
 function AppShell({ news }: { news: WhatsNew | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { section, overlay } = useLocation();
   const desktop = useDesktop();
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -150,7 +156,29 @@ function AppShell({ news }: { news: WhatsNew | null }) {
   const [notice, setNotice] = useState<string | null>(null);
   // What pressing a notice does, tied to its text: any other notice replaces it and the action goes with it.
   const closeNotice = useCallback(() => setNotice(null), []);
-  const [noticeAction, setNoticeAction] = useState<{ text: string; run: () => void } | null>(null);
+  const [noticeAction, setNoticeAction] = useState<{
+    text: string;
+    label: string;
+    run: () => void;
+  } | null>(null);
+  // Once per opening (D104); the check itself decides whether a day has gone by and whether the switch is on.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkForUpdate(false)
+        .then((found) => {
+          if (!found) return;
+          const text = t("updates.notice", { version: found });
+          setNotice(text);
+          setNoticeAction({
+            text,
+            label: t("updates.download"),
+            run: () => void openUrl(downloadsPage(i18n.language)),
+          });
+        })
+        .catch(() => {});
+    }, UPDATE_CHECK_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [t, i18n]);
   // `null` until it is known whether the welcome shows: the news wait for that.
   const [welcome, setWelcome] = useState<boolean | null>(null);
   const [newsOpen, setNewsOpen] = useState(
@@ -369,6 +397,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
         setNotice(text);
         setNoticeAction({
           text,
+          label: t("invitations.notice.see"),
           run: () => {
             void setActiveLibrary(event.payload.library)
               .then(() => {
@@ -556,7 +585,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
               text={notice}
               action={
                 noticeAction?.text === notice
-                  ? { label: t("invitations.notice.see"), run: noticeAction.run }
+                  ? { label: noticeAction.label, run: noticeAction.run }
                   : undefined
               }
               desktop={desktop}

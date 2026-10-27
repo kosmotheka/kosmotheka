@@ -2284,5 +2284,16 @@
       "rpg_geek": "Libros de rol, al buscar un libro por su título. Se envía lo que escribes.",
       "game_upc": "Juegos de mesa por su código de barras. Se envía el código y, al guardarlo, qué juego era, con un identificador de tu cuenta que no dice quién eres."
     }
+  },
+  "updates": {
+    "switch": "Avisar de versiones nuevas",
+    "switchHint": "Una vez al día, la app pregunta a GitHub, donde se publican las versiones, cuál es la última. GitHub ve tu dirección de internet, nada más.",
+    "checkNow": "Buscar ahora",
+    "checking": "Mirando…",
+    "upToDate": "Tienes la última versión.",
+    "available": "Hay una versión nueva: {{version}}.",
+    "failed": "No se ha podido mirar. Comprueba la conexión.",
+    "download": "Descargar",
+    "notice": "Hay una versión nueva de Kosmotheka: {{version}}."
   }
 }

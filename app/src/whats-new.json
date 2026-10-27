@@ -1,16 +1,17 @@
 {
   "next": [
     {
+      "es": "En el ordenador, la app avisa cuando hay una versión nueva, con un enlace para descargarla. Para saberlo, una vez al día pregunta a GitHub, donde se publican las versiones, cuál es la última; GitHub ve tu dirección de internet y nada más. Puedes apagarlo aquí o en «Acerca de», donde también puedes buscarla a mano. En el móvil no cambia nada: lo actualiza Google Play.",
+      "en": "On the computer, the app tells you when a new version is out, with a link to download it. To know, once a day it asks GitHub, where versions are published, which one is the latest; GitHub sees your internet address and nothing else. You can turn it off here or in «About», where you can also check by hand. Nothing changes on the phone: Google Play updates it.",
+      "switch": "check_updates"
+    },
+    {
       "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo (al editar una ficha, un ejemplar o al añadir algo): sale del formulario y, si has escrito algo, pregunta antes. Los géneros se eligen en una hoja con casillas grandes, las listas (formato, tipo, filtros) usan el selector del propio móvil, y el código de barras de un juego, una película o un disco se puede escanear en el formulario.",
       "en": "On the phone, the back button no longer loses what you are typing (editing an item or a copy, or adding something): it leaves the form and, if you typed something, asks first. Genres are picked in a sheet with large checkboxes, lists (format, kind, filters) use the phone's own picker, and the barcode of a game, film or record can be scanned in the form."
     },
     {
-      "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto.",
-      "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute."
-    },
-    {
-      "es": "En la ficha: la cabecera dice la editorial y el ISBN, tocar un ejemplar lo abre para editarlo, y la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
-      "en": "In an item: the top shows its publisher and ISBN, tapping a copy opens it to edit, and the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
+      "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto. En la ficha: la cabecera dice la editorial y el ISBN, tocar un ejemplar lo abre para editarlo, y la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú).",
+      "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute. In an item: the top shows its publisher and ISBN, tapping a copy opens it to edit, and the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself)."
     },
     {
       "es": "Más libros llegan con su autoría: muchas ediciones en español de Open Library no la traían, y ahora se busca en su obra. Al buscar un libro por título, salen primero los que se llaman así y están en tu idioma, con sus ediciones juntas. Y la hoja de cálculo (CSV) lleva ya todos los tipos, no solo libros, con sus géneros y etiquetas, para exportar e importar.",

@@ -518,6 +518,8 @@ export interface Settings {
   disabledSources: string[];
   /** Ask Google Books through the account's server when there is no key of their own (7.8, D83). */
   googleBooksViaServer: boolean;
+  /** On the computer, ask once a day whether a newer version was published (D104). */
+  checkUpdates: boolean;
 }
 
 export function getSettings(): Promise<Settings> {
@@ -750,6 +752,19 @@ export function isMobile(): Promise<boolean> {
 /** Whether the fingerprint/face lock is on (D78). Per-device, never synced. */
 export function appLockEnabled(): Promise<boolean> {
   return invoke<boolean>("app_lock_enabled");
+}
+
+/**
+ * A newer published version, or `null` (D104). On opening (`manual` false) it asks at most once a day, with the
+ * switch on, and fails silently; from «About» it always asks and rejects when it cannot. Never on a phone or a snap.
+ */
+export function checkForUpdate(manual: boolean): Promise<string | null> {
+  return invoke<string | null>("check_for_update", { manual });
+}
+
+/** Whether this device looks for updates at all: not on a phone or a snap, whose store updates the app (D104). */
+export function checksForUpdates(): Promise<boolean> {
+  return invoke<boolean>("checks_for_updates");
 }
 
 /** The version of the app that is installed, as its package says it. */
