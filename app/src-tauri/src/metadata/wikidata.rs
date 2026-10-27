@@ -25,13 +25,27 @@ const API: &str = "https://www.wikidata.org/w/api.php";
 ///   Q142714 (card game) is kept: a real card game (Rummy, Q756011) uses it
 ///   directly, even though flashier examples (Magic: The Gathering, Skip-Bo)
 ///   use narrower subclasses this simple direct-P31 check does not reach.
+/// - comic: many well-known comics are none of the general classes. Watchmen and Maus are «limited series»
+///   (Q3297186), each Astérix album is a «comic book album» (Q2831984); «comic book» (Q1760610) and «comic strip»
+///   (Q838795) complete them. Checked on 27/10/2026 against Watchmen, Maus, Blacksad, Astérix, Mortadelo y Filemón,
+///   The Sandman and Persépolis.
 fn classes_for(kind: Kind) -> &'static [&'static str] {
     match kind {
         Kind::Film => &["Q11424", "Q24869", "Q506240"],
         Kind::TvSeries => &["Q5398426", "Q526877", "Q1259759"],
         Kind::Videogame => &["Q7889"],
         Kind::Boardgame => &["Q131436", "Q3244175", "Q142714"],
-        Kind::Comic => &["Q1004", "Q14406742", "Q8274", "Q21198342", "Q725377"],
+        Kind::Comic => &[
+            "Q1004",
+            "Q14406742",
+            "Q8274",
+            "Q21198342",
+            "Q725377",
+            "Q3297186",
+            "Q2831984",
+            "Q1760610",
+            "Q838795",
+        ],
         Kind::Book => &["Q7725634", "Q47461344", "Q571"],
         Kind::Music | Kind::Other => &[],
     }
@@ -215,7 +229,14 @@ fn parse_items(body: &Value, ids: &[String], kind: Kind, classes: &[&str]) -> Ve
                 platform_id = entity_ids(&claims, "P400").into_iter().next();
             }
             Kind::Boardgame => {
-                if let Some(designer) = entity_id(&claims, "P287") {
+                // Who designed a game is written three ways: «designed by» (Carcassonne), «creator» (Ticket to Ride)
+                // or «developer» (Pandemic today). The first one the item has, with every name in it.
+                let designers = ["P287", "P170", "P178"]
+                    .into_iter()
+                    .map(|property| entity_ids(&claims, property))
+                    .find(|ids| !ids.is_empty())
+                    .unwrap_or_default();
+                for designer in designers {
                     contributor_ids.push((ContributorRole::Designer, designer));
                 }
                 publisher_id = entity_id(&claims, "P123");
@@ -223,7 +244,9 @@ fn parse_items(body: &Value, ids: &[String], kind: Kind, classes: &[&str]) -> Ve
                 candidate.players_max = quantity_int(&claims, "P1873");
             }
             Kind::Comic => {
-                let writer = entity_id(&claims, "P50").or_else(|| entity_id(&claims, "P58"));
+                let writer = entity_id(&claims, "P50")
+                    .or_else(|| entity_id(&claims, "P58"))
+                    .or_else(|| entity_id(&claims, "P170"));
                 if let Some(writer) = writer {
                     contributor_ids.push((ContributorRole::Writer, writer));
                 }
@@ -399,6 +422,9 @@ mod tests {
     const VIDEOGAME: &str = include_str!("../../tests/fixtures/wikidata-entities-videogame.json");
     const BOARDGAME: &str = include_str!("../../tests/fixtures/wikidata-entities-boardgame.json");
     const LABELS: &str = include_str!("../../tests/fixtures/wikidata-labels.json");
+    const BOARDGAME_CREATORS: &str =
+        include_str!("../../tests/fixtures/wikidata-entities-boardgame-creators.json");
+    const COMICS: &str = include_str!("../../tests/fixtures/wikidata-entities-comics.json");
 
     #[test]
     fn reads_a_film_with_director_and_duration() {
@@ -519,6 +545,40 @@ mod tests {
                 role: ContributorRole::Designer,
             }]
         );
+    }
+
+    #[test]
+    fn a_boardgame_designer_comes_from_creator_when_designed_by_is_missing() {
+        let body: Value = serde_json::from_str(BOARDGAME_CREATORS).unwrap();
+        // Ticket to Ride has only «creator» (and «developer»); Carcassonne has «designed by».
+        let ids = vec!["Q228308".to_owned(), "Q17262".to_owned()];
+        let items = parse_items(&body, &ids, Kind::Boardgame, classes_for(Kind::Boardgame));
+
+        assert_eq!(items.len(), 2);
+        assert_eq!(
+            items[0].contributor_ids,
+            vec![(ContributorRole::Designer, "Q431402".to_owned())]
+        );
+        assert_eq!(
+            items[1].contributor_ids,
+            vec![(ContributorRole::Designer, "Q66734".to_owned())]
+        );
+    }
+
+    #[test]
+    fn a_limited_series_and_a_comic_album_are_comics() {
+        let body: Value = serde_json::from_str(COMICS).unwrap();
+        // Watchmen and an Astérix album: neither is a «comic» or a «comic book series» in Wikidata.
+        let ids = vec!["Q128444".to_owned(), "Q618719".to_owned()];
+        let items = parse_items(&body, &ids, Kind::Comic, classes_for(Kind::Comic));
+
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].candidate.title, "Watchmen");
+        assert_eq!(
+            items[0].contributor_ids,
+            vec![(ContributorRole::Writer, "Q205739".to_owned())]
+        );
+        assert_eq!(items[1].candidate.title, "Astérix el Galo");
     }
 
     #[test]

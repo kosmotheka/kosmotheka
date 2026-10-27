@@ -1,0 +1,423 @@
+{
+ "entities": {
+  "Q228308": {
+   "type": "item",
+   "id": "Q228308",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Ticket to Ride"
+    },
+    "es": {
+     "language": "es",
+     "value": "Aventureros al tren"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 131436,
+         "id": "Q131436"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P18",
+       "datavalue": {
+        "value": "Deskohraní 08-09-27 212.jpg",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P178": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P178",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 431402,
+         "id": "Q431402"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P123": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 509534,
+         "id": "Q509534"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 507269,
+         "id": "Q507269"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 2402727,
+         "id": "Q2402727"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 20049710,
+         "id": "Q20049710"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 17631651,
+         "id": "Q17631651"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 3138899,
+         "id": "Q3138899"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 4198514,
+         "id": "Q4198514"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 85986663,
+         "id": "Q85986663"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 65248386,
+         "id": "Q65248386"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P577": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P577",
+       "datavalue": {
+        "value": {
+         "time": "+2004-00-00T00:00:00Z",
+         "timezone": 0,
+         "before": 0,
+         "after": 0,
+         "precision": 9,
+         "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+        },
+        "type": "time"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1872": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1872",
+       "datavalue": {
+        "value": {
+         "amount": "+2",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1873": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1873",
+       "datavalue": {
+        "value": {
+         "amount": "+5",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P170": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P170",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 431402,
+         "id": "Q431402"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  },
+  "Q17262": {
+   "type": "item",
+   "id": "Q17262",
+   "labels": {
+    "en": {
+     "language": "en",
+     "value": "Carcassonne"
+    },
+    "es": {
+     "language": "es",
+     "value": "Carcassonne"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 3244175,
+         "id": "Q3244175"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1872": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1872",
+       "datavalue": {
+        "value": {
+         "amount": "+2",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P1873": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1873",
+       "datavalue": {
+        "value": {
+         "amount": "+6",
+         "unit": "1"
+        },
+        "type": "quantity"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P18",
+       "datavalue": {
+        "value": "Carcassone jogo-game.jpg",
+        "type": "string"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P123": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P123",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 819465,
+         "id": "Q819465"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P287": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P287",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 66734,
+         "id": "Q66734"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P577": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P577",
+       "datavalue": {
+        "value": {
+         "time": "+2000-00-00T00:00:00Z",
+         "timezone": 0,
+         "before": 0,
+         "after": 0,
+         "precision": 9,
+         "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+        },
+        "type": "time"
+       }
+      },
+      "rank": "normal"
+     }
+    ],
+    "P178": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P178",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 66734,
+         "id": "Q66734"
+        },
+        "type": "wikibase-entityid"
+       }
+      },
+      "rank": "normal"
+     }
+    ]
+   }
+  }
+ },
+ "success": 1
+}
