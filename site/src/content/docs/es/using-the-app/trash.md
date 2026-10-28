@@ -71,7 +71,7 @@ Para no tener dos iguales, la app te avisa cuando lo que añades ya está en la 
 
 La app dice qué vuelve con ella («vuelve con sus 2 ejemplares», «con sus 12 obras») y te ofrece **restaurarla**. Si prefieres empezar de cero, quien administra puede **eliminar la de la papelera y crear otra**. Quien edita solo puede restaurar o cancelar: para empezar de cero, tiene que pedir a quien administra que la elimine.
 
-En «Alta rápida» y en la foto de balda, lo que está en la papelera no se añade: se marca, y se restaura desde la papelera.
+En «Alta rápida», lo que está en la papelera no se añade otra vez: sale marcado, con «Restaurar», y si hay varios, «Restaurar las que están en la papelera» las trae todas. En la foto de balda sale sin marcar; si lo marcas, al añadir se restaura en vez de crearse otro. Lo restaurado vuelve con sus ejemplares de antes.
 
 ## Lo que puede volver distinto
 

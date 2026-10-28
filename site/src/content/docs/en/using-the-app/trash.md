@@ -71,7 +71,7 @@ So that you do not end up with two alike, the app tells you when what you are ad
 
 The app says what comes back with it ("it comes back with its 2 copies", "with its 12 works") and offers to **restore it**. If you would rather start over, whoever administers can **delete the one in the trash and create another**. Whoever edits can only restore or cancel: to start over, they have to ask whoever administers to delete it.
 
-In "Quick add" and in the shelf photo, what is in the trash is not added: it is marked, and restored from the trash.
+In "Quick add", what is in the trash is not added again: it shows marked, with "Restore", and if there are several, "Restore the ones in the trash" brings them all back. In the shelf photo it shows unticked; if you tick it, adding restores it instead of creating another. What is restored comes back with its old copies.
 
 ## What may come back different
 
