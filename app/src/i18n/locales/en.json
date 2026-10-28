@@ -537,7 +537,9 @@
     "encryptedFile": "This backup is protected. Enter its password to restore it.",
     "unlockRestore": "Unlock and restore",
     "csvReadable": "A CSV file is not protected: anyone can read it.",
-    "restoredNewId": "{{name}}: restored {{books}} books and {{copies}} copies, as a new library: it does not join the original."
+    "restoredNewId": "{{name}}: restored {{books}} books and {{copies}} copies, as a new library: it does not join the original.",
+    "restoredTrashed_one": "It brings {{count}} thing in the trash: you have 30 days to restore it.",
+    "restoredTrashed_other": "It brings {{count}} things in the trash: you have 30 days to restore them."
   },
   "devices": {
     "title": "Sharing and devices",

@@ -626,7 +626,15 @@ export interface BackupSummary {
 
 /** What a restore did, library by library. */
 export interface RestoreSummary {
-  restored: { id: string; name: string; books: number; copies: number; sameId: boolean }[];
+  restored: {
+    id: string;
+    name: string;
+    books: number;
+    copies: number;
+    sameId: boolean;
+    /** What came back in the trash: 30 days from now to restore it (D105). */
+    trashed: number;
+  }[];
   /** Libraries this device already had with content; left as they were. */
   skipped: string[];
   covers: number;

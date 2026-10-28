@@ -551,7 +551,9 @@
     "encryptedFile": "Esta copia está protegida. Escribe su contraseña para restaurarla.",
     "unlockRestore": "Desbloquear y restaurar",
     "csvReadable": "Un CSV no está protegido: cualquiera puede leerlo.",
-    "restoredNewId": "{{name}}: restaurados {{books}} libros y {{copies}} ejemplares, como biblioteca nueva: no se une a la original."
+    "restoredNewId": "{{name}}: restaurados {{books}} libros y {{copies}} ejemplares, como biblioteca nueva: no se une a la original.",
+    "restoredTrashed_one": "Trae {{count}} cosa en la papelera: tienes 30 días para restaurarla.",
+    "restoredTrashed_other": "Trae {{count}} cosas en la papelera: tienes 30 días para restaurarlas."
   },
   "devices": {
     "title": "Compartir y dispositivos",

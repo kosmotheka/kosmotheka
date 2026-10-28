@@ -280,6 +280,7 @@ export function BackupsDialog({
                 books: item.books,
                 copies: item.copies,
               })}
+              {item.trashed > 0 && ` ${t("data.restoredTrashed", { count: item.trashed })}`}
             </p>
           ))}
           {restored.skipped.map((name, index) => (

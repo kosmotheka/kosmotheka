@@ -1104,7 +1104,14 @@ mockIPC((cmd, args) => {
         if (!passphrase) throw { kind: "backup", reason: "passphrase_needed" };
         if (passphrase !== "mock") throw { kind: "backup", reason: "wrong_passphrase" };
       }
-      return { restored: [], skipped: [], covers: 0 };
+      // A backup with things in its trash, to see the 30 days it gives them (D105).
+      return {
+        restored: [
+          { id: "lib-home", name: "Casa", books: 7, copies: 12, sameId: true, trashed: 5 },
+        ],
+        skipped: [],
+        covers: 0,
+      };
     }
     case "duplicate_library": {
       const { id: fromId, name } = args as { id: string; name: string };

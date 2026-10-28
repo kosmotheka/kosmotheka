@@ -61,7 +61,10 @@
 - [x] «Restaurar» y «Eliminar definitivamente» (con confirmación; solo sale para quien puede). *Hecho (4a): en cada fila y en la barra de la selección. «Eliminar definitivamente» solo a quien administra: a un editor la app lo elimina sola a los 30 días.*
 - [x] Al borrar: aviso flotante «Movido a la papelera · Deshacer»; las confirmaciones de borrar dicen «Estará 30 días en la papelera». *Hecho (4a): `lib/notice.ts` (`notifyTrashed`) en la ficha, el ejemplar, la etiqueta y la saga. Además, `expire_trash` corre tras cada pasada de sincronización (también la de al abrir) y los textos del historial nombran las intenciones nuevas.*
 - [x] Diálogos de duplicados (punto 8 de D105). *Hecho (4b): `components/trashed-dialog.tsx` al elegir un resultado de «Añadir» (por título o por código) y al crear una saga (desde Sagas o desde una obra; si se restaura, la obra entra sin número). En las etiquetas del formulario, «Crear «x»» pasa a «Restaurar «x» de la papelera». «Alta rápida», la foto de balda y el ISBN escrito en el formulario solo avisan de que está en la papelera: son listas de muchos, y restaurar se hace desde la Papelera. Los lectores no ven la oferta: piden, y quien administra decide.*
-- [ ] i18n es y en; versión simulada; Playwright en el ordenador y en el móvil (pulsación larga con toques de verdad).
+- [x] i18n es y en; versión simulada; Playwright en el ordenador y en el móvil (pulsación larga con toques de verdad). *Hecho (4a, 4b): la versión simulada trae una papelera de ejemplo (`?emptytrash` la vacía, `?editor` entra como editor); buscar «hobbit», escribir la etiqueta «prestados» o crear la saga «Mundodisco» enseñan la oferta de restaurar. Probado con Playwright en 1280 px y 390 px, con la pulsación larga hecha con toques reales (CDP).*
+
+- [x] Restaurar una copia de seguridad dice cuántas cosas trae en la papelera y que tienen 30 días (punto 9 de D105). *Hecho (4c), con `RestoredLibrary.trashed`.*
+- [ ] **Pendiente, a decidir:** el historial dice «Movido a la papelera», pero no «por Ana» (punto 10 de D105): hoy no dice quién en ninguna entrada. Necesita que Rust dé la persona de cada operación; es un cambio del historial entero, mejor en una rama propia.
 
 ## 5. Documentación
 
