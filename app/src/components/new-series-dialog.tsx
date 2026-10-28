@@ -2,10 +2,12 @@ import { type SubmitEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListOrdered, Layers } from "lucide-react";
 
+import { useRequests } from "@/components/requests-context";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
+import { TrashedDialog } from "@/components/trashed-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createSeries } from "@/lib/api";
+import { type TrashItem, createSeries, trashedNamed } from "@/lib/api";
 import { closeOverlay, openOverlay } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +17,9 @@ export function NewSeriesDialog({ open, desktop }: { open: boolean; desktop: boo
   const [name, setName] = useState("");
   const [ordered, setOrdered] = useState(true);
   const [saving, setSaving] = useState(false);
+  // One of the same name in the trash: restore it or start over (D105).
+  const [trashed, setTrashed] = useState<TrashItem | null>(null);
+  const { myRole } = useRequests();
 
   const reset = () => {
     setName("");
@@ -22,9 +27,7 @@ export function NewSeriesDialog({ open, desktop }: { open: boolean; desktop: boo
     setSaving(false);
   };
 
-  const submit = async (event: SubmitEvent) => {
-    event.preventDefault();
-    if (!name.trim()) return;
+  const create = async () => {
     setSaving(true);
     try {
       const id = await createSeries(name.trim(), ordered);
@@ -33,6 +36,14 @@ export function NewSeriesDialog({ open, desktop }: { open: boolean; desktop: boo
     } finally {
       setSaving(false);
     }
+  };
+
+  const submit = async (event: SubmitEvent) => {
+    event.preventDefault();
+    if (!name.trim()) return;
+    const found = myRole === "reader" ? null : await trashedNamed("series", name).catch(() => null);
+    if (found) setTrashed(found);
+    else await create();
   };
 
   return (
@@ -100,6 +111,19 @@ export function NewSeriesDialog({ open, desktop }: { open: boolean; desktop: boo
           </Button>
         </div>
       </form>
+      <TrashedDialog
+        item={trashed}
+        onClose={() => setTrashed(null)}
+        onRestored={(item) => {
+          setTrashed(null);
+          reset();
+          openOverlay({ name: "series", seriesId: item.id });
+        }}
+        onStartOver={() => {
+          setTrashed(null);
+          void create();
+        }}
+      />
     </SheetOrDialog>
   );
 }

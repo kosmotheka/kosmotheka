@@ -10,6 +10,7 @@ import {
   Loader2,
   MapPin,
   Plus,
+  RotateCcw,
   ScanBarcode,
   Search,
   Tag as TagIcon,
@@ -24,6 +25,7 @@ import { useDesktop } from "@/components/shell/use-desktop";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ProviderWarnings } from "@/components/provider-warnings";
+import { useRequests } from "@/components/requests-context";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -46,6 +48,7 @@ import {
   type LookupResult,
   type RelatedWork,
   type TagSummary,
+  type TrashItem,
   addRequirement,
   contributorRoles,
   genresOfKind,
@@ -55,8 +58,10 @@ import {
   kinds,
   listBooks,
   listTags,
+  listTrash,
   lookupIsbn,
   removeRequirement,
+  restoreFromTrash,
   storeOwnCover,
 } from "@/lib/api";
 import {
@@ -630,14 +635,26 @@ function GenresField({
 function TagsField({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
   const { t } = useTranslation();
   const [allTags, setAllTags] = useState<TagSummary[]>([]);
+  // Tags in the trash: typing one's name offers it back instead of making a second one (D105). Readers
+  // cannot restore, and ask for the whole form anyway.
+  const [trashedTags, setTrashedTags] = useState<TrashItem[]>([]);
+  const { myRole } = useRequests();
+  const mayRestore = myRole === "admin" || myRole === "editor";
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   useEffect(() => {
     listTags()
       .then(setAllTags)
       .catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!mayRestore) return;
+    listTrash()
+      .then((items) => setTrashedTags(items.filter((item) => item.kind === "tag")))
+      .catch(() => {});
+  }, [mayRestore]);
 
   const add = (name: string) => {
     const trimmed = name.trim();
@@ -659,6 +676,26 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
       )
     : [];
   const exactMatch = allTags.some((tag) => tag.name.toLowerCase() === query);
+  const inTrash = exactMatch
+    ? undefined
+    : trashedTags.find((tag) => tag.title.toLowerCase() === query);
+
+  /** Brings the tag back with all its works, then puts it on this one. */
+  const restore = async (tag: TrashItem) => {
+    setRestoreError(null);
+    try {
+      await restoreFromTrash([{ kind: "tag", id: tag.id }]);
+      setTrashedTags((current) => current.filter((other) => other.id !== tag.id));
+      setAllTags((current) => [...current, { id: tag.id, name: tag.title, works: tag.count }]);
+      add(tag.title);
+    } catch (e) {
+      setRestoreError(String(e));
+    }
+  };
+  const commit = () => {
+    if (inTrash) void restore(inTrash);
+    else add(draft);
+  };
 
   return (
     <div className="space-y-2">
@@ -700,7 +737,7 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                add(draft);
+                commit();
               } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
                 onChange(value.slice(0, -1));
               }
@@ -728,21 +765,42 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
                 </span>
               </button>
             ))}
-            {!exactMatch && (
+            {inTrash ? (
               <button
                 type="button"
                 role="option"
-                className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-primary hover:bg-accent"
+                className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => add(draft)}
+                onClick={commit}
               >
-                <Plus className="size-3.5" />
-                {t("tags.create", { name: draft.trim() })}
+                <RotateCcw className="size-3.5 shrink-0" />
+                <span className="flex flex-1 flex-col">
+                  <span>{t("tags.restore", { name: inTrash.title })}</span>
+                  {inTrash.count > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {t("tags.restoreWorks", { count: inTrash.count })}
+                    </span>
+                  )}
+                </span>
               </button>
+            ) : (
+              !exactMatch && (
+                <button
+                  type="button"
+                  role="option"
+                  className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-left text-sm text-primary hover:bg-accent"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={commit}
+                >
+                  <Plus className="size-3.5" />
+                  {t("tags.create", { name: draft.trim() })}
+                </button>
+              )
             )}
           </div>
         )}
       </div>
+      {restoreError && <p className="text-[13px] text-destructive">{restoreError}</p>}
     </div>
   );
 }
@@ -1451,6 +1509,9 @@ function LookupStatus({ lookup, currentEditionId }: { lookup: Lookup; currentEdi
         <p className="font-medium text-amber-600 dark:text-amber-400">
           {t("lookup.alreadyInCatalog")}
         </p>
+      )}
+      {result.trashedEditionId !== null && result.trashedEditionId !== currentEditionId && (
+        <p className="font-medium text-amber-600 dark:text-amber-400">{t("lookup.inTrash")}</p>
       )}
       <ProviderWarnings warnings={result.warnings} />
     </div>

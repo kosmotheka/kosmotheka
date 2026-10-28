@@ -1,6 +1,13 @@
 import { type SubmitEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, CircleHelp, Copy as CopyIcon, Loader2 } from "lucide-react";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleHelp,
+  Copy as CopyIcon,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 
 import { ChoiceSelect } from "@/components/choice-select";
 import { Field } from "@/components/book-form";
@@ -21,7 +28,15 @@ import {
 } from "@/lib/api";
 
 type Status =
-  "queued" | "working" | "added" | "copyAdded" | "exists" | "notFound" | "invalid" | "failed";
+  | "queued"
+  | "working"
+  | "added"
+  | "copyAdded"
+  | "exists"
+  | "trashed"
+  | "notFound"
+  | "invalid"
+  | "failed";
 
 interface Entry {
   id: number;
@@ -91,6 +106,9 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
       const base = { title: found.title ?? undefined, coverUrl: found.coverUrl, lookup: found };
       if (found.existingEditionId) {
         update(entry.id, { ...base, status: "exists" });
+      } else if (found.trashedEditionId) {
+        // Restoring is offered one by one, from the trash or by adding it alone (D105).
+        update(entry.id, { ...base, status: "trashed" });
       } else if (!found.found || !found.title) {
         update(entry.id, { ...base, status: "notFound" });
       } else {
@@ -216,7 +234,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
         <p className="text-sm text-muted-foreground">
           {t("burst.summary", {
             added: count("added", "copyAdded"),
-            exists: count("exists"),
+            exists: count("exists", "trashed"),
             pending: count("notFound", "invalid", "failed"),
           })}
         </p>
@@ -251,6 +269,7 @@ function EntryRow({
     added: <CircleCheck className="size-4 text-green-600" />,
     copyAdded: <CircleCheck className="size-4 text-green-600" />,
     exists: <CopyIcon className="size-4 text-amber-600" />,
+    trashed: <Trash2 className="size-4 text-amber-600" />,
     notFound: <CircleHelp className="size-4 text-amber-600" />,
     invalid: <CircleAlert className="size-4 text-destructive" />,
     failed: <CircleAlert className="size-4 text-destructive" />,

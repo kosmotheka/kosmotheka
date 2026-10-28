@@ -142,7 +142,11 @@ export function ShelfPhoto({
             const match = candidate;
             setFound((all) => [
               ...all,
-              { candidate: match, read, picked: match.existingEditionId === null },
+              {
+                candidate: match,
+                read,
+                picked: match.existingEditionId === null && match.trashedEditionId === null,
+              },
             ]);
           } else if (!candidate) {
             setNotFound((all) => [...all, read]);
@@ -251,7 +255,7 @@ export function ShelfPhoto({
                 type="checkbox"
                 className="size-5 shrink-0 accent-primary"
                 checked={item.picked || item.status === "added"}
-                disabled={adding || item.status === "added"}
+                disabled={adding || item.status === "added" || candidate.trashedEditionId !== null}
                 onChange={() => toggle(index)}
               />
               <Cover url={candidate.coverUrl} alt="" kind={candidate.kind} className="h-16" />
@@ -266,6 +270,11 @@ export function ShelfPhoto({
                 {candidate.existingEditionId && (
                   <span className="text-[13px] font-medium text-primary">
                     {t("shelf.alreadyHere", { library })}
+                  </span>
+                )}
+                {candidate.trashedEditionId && (
+                  <span className="text-[13px] font-medium text-muted-foreground">
+                    {t("shelf.inTrash")}
                   </span>
                 )}
               </div>

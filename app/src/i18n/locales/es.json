@@ -413,7 +413,8 @@
     "badKey": "{{source}} ha rechazado la clave guardada. Revísala en Ajustes → Proveedores de datos.",
     "rawgData": "Datos de <link>RAWG</link>",
     "comicVineData": "Datos de <link>Comic Vine</link>",
-    "bggData": "Datos de <link>BoardGameGeek</link>"
+    "bggData": "Datos de <link>BoardGameGeek</link>",
+    "inTrash": "Hay una ficha con este ISBN en la papelera. Mejor restaurarla desde la Papelera que tener dos."
   },
   "settings": {
     "title": "Ajustes",
@@ -472,7 +473,8 @@
       "exists": "Ya estaba en el catálogo: no se añade",
       "notFound": "No encontrado online",
       "invalid": "ISBN no válido:",
-      "failed": "Error:"
+      "failed": "Error:",
+      "trashed": "Está en la papelera: no se añade. Puedes restaurarla desde la Papelera."
     }
   },
   "filters": {
@@ -892,7 +894,10 @@
     "deleteBody_other": "Se quita de las {{count}} obras que la llevan y pasa a la papelera 30 días. Las obras no se borran.",
     "delete": "Borrar etiqueta",
     "empty": "Todavía no hay etiquetas. Escribe una en una obra para crearla.",
-    "create": "Crear «{{name}}»"
+    "create": "Crear «{{name}}»",
+    "restore": "Restaurar «{{name}}» de la papelera",
+    "restoreWorks_one": "Vuelve con su obra",
+    "restoreWorks_other": "Vuelve con sus {{count}} obras, no solo con esta"
   },
   "sharing": {
     "whatGoes": "Qué bibliotecas se comparten",
@@ -1212,7 +1217,8 @@
     "resultCount_other": "{{count}} resultados",
     "alreadyHere": "Ya está en {{library}} · añadir un ejemplar",
     "gameUpcChoose": "GameUPC no está seguro de qué juego es este código. Elige el tuyo o búscalo por su nombre: al guardarlo le diremos cuál es, para que aprenda.",
-    "gameUpcSearch": "Busca el juego por su nombre. Al guardarlo le diremos a GameUPC qué juego es este código, para que aprenda."
+    "gameUpcSearch": "Busca el juego por su nombre. Al guardarlo le diremos a GameUPC qué juego es este código, para que aprenda.",
+    "inTrash": "Está en la papelera"
   },
   "shelf": {
     "onlyOnPhone": "En el ordenador no se pueden leer los lomos. Empareja un móvil Android con este dispositivo y haz la foto desde él: lo que añadas allí llega aquí solo.",
@@ -1244,7 +1250,8 @@
     "failed": "No se ha podido añadir",
     "notFound_one": "{{count}} texto sin encontrar",
     "notFound_other": "{{count}} textos sin encontrar",
-    "notFoundHint": "Algunos son la editorial o el autor; otros, títulos mal leídos. Toca uno para buscarlo tú en «Añadir»."
+    "notFoundHint": "Algunos son la editorial o el autor; otros, títulos mal leídos. Toca uno para buscarlo tú en «Añadir».",
+    "inTrash": "Está en la papelera: si la quieres, restáurala desde la Papelera"
   },
   "notices": {
     "title_one": "Un cambio tuyo ha pasado a petición",
@@ -2356,5 +2363,27 @@
     "purged_other": "Eliminados definitivamente {{count}}",
     "moved": "Movido a la papelera",
     "undo": "Deshacer"
+  },
+  "trashed": {
+    "title": {
+      "edition": "«{{title}}» está en la papelera",
+      "copy": "Este ejemplar está en la papelera",
+      "tag": "La etiqueta «{{title}}» está en la papelera",
+      "series": "«{{title}}» está en la papelera"
+    },
+    "sent": "Alguien la borró hace poco.",
+    "sentBy": "La borró {{who}}.",
+    "back": {
+      "edition_one": "Si la restauras, vuelve tal como estaba, con su ejemplar.",
+      "edition_other": "Si la restauras, vuelve tal como estaba, con sus {{count}} ejemplares.",
+      "tag_one": "Si la restauras, vuelve con su obra.",
+      "tag_other": "Si la restauras, vuelve con sus {{count}} obras, no solo con esta.",
+      "series_one": "Si la restauras, vuelve con su obra.",
+      "series_other": "Si la restauras, vuelve con sus {{count}} obras.",
+      "asItWas": "Si la restauras, vuelve tal como estaba."
+    },
+    "startOverAdmin": "Dos iguales se confundirían. Si prefieres empezar de cero, la de la papelera se eliminará definitivamente.",
+    "startOverEditor": "Dos iguales se confundirían. Si quieres empezar de cero, pide a quien administra la biblioteca que la elimine de la papelera.",
+    "startOver": "Eliminarla y empezar de cero"
   }
 }

@@ -922,9 +922,26 @@ function mockCandidates(kind: Kind, query: string): Candidate[] {
     format: null,
     expands: null,
     existingEditionId: null,
+    trashedEditionId: null,
     ...over,
   });
 
+  // «El hobbit» is in the sample trash: searching it shows the offer to restore it (D105).
+  if (kind === "book" && /hobbit/i.test(query)) {
+    const trashed = mockTrash.find((item) => item.id === "trash-ed-1");
+    return [
+      candidate({
+        source: "open_library",
+        externalId: "/works/OL262758W",
+        title: "El hobbit",
+        authors: ["J. R. R. Tolkien"],
+        publisher: "Minotauro",
+        publishedYear: 1982,
+        isbn: "9788445000656",
+        trashedEditionId: trashed ? trashed.id : null,
+      }),
+    ];
+  }
   if (kind === "book") {
     return [
       candidate({
@@ -1013,7 +1030,7 @@ let mockTrash: TrashItem[] = params.has("emptytrash")
       inTrash("edition", "trash-ed-1", "El hobbit", "book", 2, 2),
       inTrash("edition", "trash-ed-2", "Carcassonne", "boardgame", 1, 27, "Hugo"),
       inTrash("copy", "trash-copy-1", "Dune", "ebook", 0, 5),
-      inTrash("tag", "trash-tag-1", "regalos", null, 3, 12, null),
+      inTrash("tag", "trash-tag-1", "prestados", null, 3, 12, null),
       inTrash("series", "trash-series-1", "Mundodisco", null, 4, 31),
     ];
 const sendToTrash = (
@@ -1284,6 +1301,7 @@ mockIPC((cmd, args) => {
           sources: [],
           warnings: quotaWarnings,
           existingEditionId: null,
+          trashedEditionId: null,
         };
       }
       throw new Error("offline");
@@ -1305,6 +1323,7 @@ mockIPC((cmd, args) => {
           candidates: [],
           warnings: [],
           existingEditionId: null,
+          trashedEditionId: null,
           invalidIsbn: true,
           isbn: null,
           gameUpc: null,
@@ -1321,6 +1340,7 @@ mockIPC((cmd, args) => {
           candidates,
           warnings: [],
           existingEditionId: candidates[0]?.existingEditionId ?? null,
+          trashedEditionId: candidates[0]?.trashedEditionId ?? null,
           invalidIsbn: false,
           isbn: digits,
           gameUpc: null,
@@ -1332,6 +1352,7 @@ mockIPC((cmd, args) => {
           candidates: mockCandidates("music", "The Dark Side of the Moon"),
           warnings: [],
           existingEditionId: null,
+          trashedEditionId: null,
           invalidIsbn: false,
           isbn: null,
           gameUpc: null,
@@ -1350,6 +1371,7 @@ mockIPC((cmd, args) => {
           candidates: guesses,
           warnings: [],
           existingEditionId: null,
+          trashedEditionId: null,
           invalidIsbn: false,
           isbn: null,
           gameUpc: "choose",
@@ -1360,6 +1382,7 @@ mockIPC((cmd, args) => {
         candidates: [],
         warnings: [],
         existingEditionId: null,
+        trashedEditionId: null,
         invalidIsbn: false,
         isbn: null,
         gameUpc: digits === "333333333331" && mockAccount.signedIn ? "unknown" : null,

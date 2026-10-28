@@ -399,7 +399,8 @@
     "badKey": "{{source}} rejected the stored key. Check it in Settings → Data providers.",
     "rawgData": "Data from <link>RAWG</link>",
     "comicVineData": "Data from <link>Comic Vine</link>",
-    "bggData": "Data from <link>BoardGameGeek</link>"
+    "bggData": "Data from <link>BoardGameGeek</link>",
+    "inTrash": "An entry with this ISBN is in the trash. Better to restore it from the Trash than to have two."
   },
   "settings": {
     "title": "Settings",
@@ -458,7 +459,8 @@
       "exists": "Already in the catalog: not added",
       "notFound": "Not found online",
       "invalid": "Invalid ISBN:",
-      "failed": "Failed:"
+      "failed": "Failed:",
+      "trashed": "It is in the trash: not added. You can restore it from the Trash."
     }
   },
   "filters": {
@@ -878,7 +880,10 @@
     "deleteBody_other": "It is removed from the {{count}} works that have it and goes to the trash for 30 days. Works are not deleted.",
     "delete": "Delete tag",
     "empty": "No tags yet. Type one on a work to create it.",
-    "create": "Create “{{name}}”"
+    "create": "Create “{{name}}”",
+    "restore": "Restore “{{name}}” from the trash",
+    "restoreWorks_one": "It comes back with its work",
+    "restoreWorks_other": "It comes back with its {{count}} works, not only this one"
   },
   "sharing": {
     "whatGoes": "Which libraries are shared",
@@ -1198,7 +1203,8 @@
     "resultCount_other": "{{count}} results",
     "alreadyHere": "Already in {{library}} · add a copy",
     "gameUpcChoose": "GameUPC is not sure which game this code is. Pick yours or search for it by name: once you save it, we tell GameUPC which one it is, so it learns.",
-    "gameUpcSearch": "Search for the game by name. Once you save it, we tell GameUPC which game this code is, so it learns."
+    "gameUpcSearch": "Search for the game by name. Once you save it, we tell GameUPC which game this code is, so it learns.",
+    "inTrash": "In the trash"
   },
   "shelf": {
     "onlyOnPhone": "Spines cannot be read on a computer. Pair an Android phone with this device and take the photo from it: what you add there arrives here by itself.",
@@ -1230,7 +1236,8 @@
     "failed": "Could not be added",
     "notFound_one": "{{count}} text not found",
     "notFound_other": "{{count}} texts not found",
-    "notFoundHint": "Some are the publisher or the author; others, titles misread. Tap one to search for it yourself in Add."
+    "notFoundHint": "Some are the publisher or the author; others, titles misread. Tap one to search for it yourself in Add.",
+    "inTrash": "It is in the trash: to keep it, restore it from the Trash"
   },
   "notices": {
     "title_one": "A change of yours became a request",
@@ -2342,5 +2349,27 @@
     "purged_other": "{{count}} deleted for good",
     "moved": "Moved to the trash",
     "undo": "Undo"
+  },
+  "trashed": {
+    "title": {
+      "edition": "“{{title}}” is in the trash",
+      "copy": "This copy is in the trash",
+      "tag": "The tag “{{title}}” is in the trash",
+      "series": "“{{title}}” is in the trash"
+    },
+    "sent": "Somebody deleted it recently.",
+    "sentBy": "{{who}} deleted it.",
+    "back": {
+      "edition_one": "If you restore it, it comes back as it was, with its copy.",
+      "edition_other": "If you restore it, it comes back as it was, with its {{count}} copies.",
+      "tag_one": "If you restore it, it comes back with its work.",
+      "tag_other": "If you restore it, it comes back with its {{count}} works, not only this one.",
+      "series_one": "If you restore it, it comes back with its work.",
+      "series_other": "If you restore it, it comes back with its {{count}} works.",
+      "asItWas": "If you restore it, it comes back as it was."
+    },
+    "startOverAdmin": "Two alike would be confused. If you would rather start over, the one in the trash will be deleted for good.",
+    "startOverEditor": "Two alike would be confused. To start over, ask whoever administers the library to delete it from the trash.",
+    "startOver": "Delete it and start over"
   }
 }

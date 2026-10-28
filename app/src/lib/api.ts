@@ -469,6 +469,8 @@ export interface LookupResult {
   sources: Source[];
   warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
   existingEditionId: string | null;
+  /** An edition with this ISBN in the trash, when none is in the catalog: restoring it is offered (D105). */
+  trashedEditionId: string | null;
 }
 
 export function lookupIsbn(isbn: string): Promise<LookupResult> {
@@ -516,6 +518,8 @@ export interface Candidate {
   expands: CandidateExpands | null;
   /** Set when this candidate's ISBN or barcode already exists in the active library. */
   existingEditionId: string | null;
+  /** Set when it is not in the catalog but in the trash (D105). */
+  trashedEditionId: string | null;
 }
 
 export interface SearchResult {
@@ -542,6 +546,7 @@ export interface CodeResult {
   candidates: Candidate[];
   warnings: { source: Source; kind: "network" | "quota" | "bad_key" | "unexpected" }[];
   existingEditionId: string | null;
+  trashedEditionId: string | null;
   /** A number written like an ISBN whose check digit is wrong: nothing was asked anywhere (decided in Rust). */
   invalidIsbn: boolean;
   /** The ISBN-13 of a valid ISBN, found or not. */

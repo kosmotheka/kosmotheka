@@ -2,16 +2,20 @@ import { type SubmitEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Layers, ListOrdered, Plus } from "lucide-react";
 
+import { useRequests } from "@/components/requests-context";
 import { SheetOrDialog } from "@/components/shell/sheet-or-dialog";
+import { TrashedDialog } from "@/components/trashed-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   type SeriesDetail,
   type SeriesSummary,
+  type TrashItem,
   addToSeries,
   createSeries,
   getSeries,
   listSeries,
+  trashedNamed,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +46,9 @@ export function SeriesPickerDialog({
   const [position, setPosition] = useState("1");
   const [ordered, setOrdered] = useState(true);
   const [saving, setSaving] = useState(false);
+  // One of the same name in the trash: restore it or start over (D105).
+  const [trashed, setTrashed] = useState<TrashItem | null>(null);
+  const { myRole } = useRequests();
   // Render-phase resets (the same trick `BookDetailView` uses for `shownId`) instead of
   // effects whose only job would be to mirror a prop or a previous state into this one.
   const [shownOpen, setShownOpen] = useState(open);
@@ -106,13 +113,32 @@ export function SeriesPickerDialog({
     void add(step.series.id, Number.isFinite(n) && n > 0 ? n : null);
   };
 
-  const submitNew = async (event: SubmitEvent) => {
-    event.preventDefault();
-    if (!query.trim()) return;
+  const createNew = async () => {
     setSaving(true);
     try {
       const id = await createSeries(query.trim(), ordered);
       await addToSeries(id, workId, ordered ? 1 : null);
+      onAdded();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitNew = async (event: SubmitEvent) => {
+    event.preventDefault();
+    if (!query.trim()) return;
+    const found =
+      myRole === "reader" ? null : await trashedNamed("series", query).catch(() => null);
+    if (found) setTrashed(found);
+    else await createNew();
+  };
+
+  // Restored with its works: this one joins it without a number, to be placed on its page.
+  const joinRestored = async (item: TrashItem) => {
+    setTrashed(null);
+    setSaving(true);
+    try {
+      await addToSeries(item.id, workId, null);
       onAdded();
     } finally {
       setSaving(false);
@@ -283,6 +309,15 @@ export function SeriesPickerDialog({
     >
       <p className="-mt-2 text-sm text-muted-foreground">{workTitle}</p>
       {body}
+      <TrashedDialog
+        item={trashed}
+        onClose={() => setTrashed(null)}
+        onRestored={(item) => void joinRestored(item)}
+        onStartOver={() => {
+          setTrashed(null);
+          void createNew();
+        }}
+      />
     </SheetOrDialog>
   );
 }

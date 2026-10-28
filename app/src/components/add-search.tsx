@@ -20,6 +20,7 @@ import { type ProviderWarning, ProviderWarnings } from "@/components/provider-wa
 import { ResultsCredits } from "@/components/source-credits";
 import { useRequests } from "@/components/requests-context";
 import { ShelfPhoto } from "@/components/shelf-photo";
+import { TrashedDialog, trashedItem } from "@/components/trashed-dialog";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +31,7 @@ import {
   type Kind,
   type NewBook,
   type Source,
+  type TrashItem,
   gameUpcChoice,
   isMobile,
   kinds,
@@ -154,6 +156,9 @@ export function AddSearch({
   const [loading, setLoading] = useState(false);
   const [foundByCode, setFoundByCode] = useState(false);
   const [existingByCode, setExistingByCode] = useState<string | null>(null);
+  const [trashedByCode, setTrashedByCode] = useState<string | null>(null);
+  // A picked result whose edition is in the trash: restore it or start over (D105).
+  const [trashed, setTrashed] = useState<{ item: TrashItem; candidate: Candidate } | null>(null);
   // Set when a scanned/typed code has no clear kind: the "¿Qué es?" step.
   const [askCode, setAskCode] = useState<string | null>(null);
   // What Rust says of a typed number: written like an ISBN with a wrong check digit, or a valid ISBN (found or not).
@@ -185,6 +190,7 @@ export function AddSearch({
   const applyCodeResult = (trimmed: string, result: CodeResult) => {
     setFoundByCode(true);
     setExistingByCode(result.existingEditionId);
+    setTrashedByCode(result.trashedEditionId);
     setWarnings(result.warnings);
     setInvalidIsbn(result.invalidIsbn);
     setIsbnByCode(result.isbn);
@@ -296,12 +302,26 @@ export function AddSearch({
   const dupOf = (candidate: Candidate): string | null =>
     candidate.existingEditionId ?? (foundByCode ? existingByCode : null);
 
-  const pickCandidate = (candidate: Candidate) => {
+  const trashOf = (candidate: Candidate): string | null =>
+    candidate.trashedEditionId ?? (foundByCode ? trashedByCode : null);
+
+  const pickCandidate = async (candidate: Candidate) => {
     const existing = dupOf(candidate);
     if (existing) {
       openOverlay({ name: "book", editionId: existing });
       return;
     }
+    // A reader asks instead of adding, and cannot restore: the administrators see it in the request.
+    const inTrash = myRole !== "reader" ? trashOf(candidate) : null;
+    const item = inTrash ? await trashedItem("edition", inTrash).catch(() => null) : null;
+    if (item) {
+      setTrashed({ item, candidate });
+      return;
+    }
+    startFrom(candidate);
+  };
+
+  const startFrom = (candidate: Candidate) => {
     const book = newBookFromCandidate(candidate);
     const { externalId } = candidate;
     const teaches =
@@ -529,7 +549,7 @@ export function AddSearch({
           <button
             key={`${candidate.source}-${candidate.externalId ?? i}`}
             type="button"
-            onClick={() => pickCandidate(candidate)}
+            onClick={() => void pickCandidate(candidate)}
             className={cn(
               "flex items-center gap-3.5 rounded-xl p-2 text-left",
               desktop && i === 0 && "bg-muted",
@@ -555,6 +575,11 @@ export function AddSearch({
                   {t("addSearch.alreadyHere", { library })}
                 </span>
               )}
+              {!existing && trashOf(candidate) && (
+                <span className="text-[13px] font-medium text-muted-foreground">
+                  {t("addSearch.inTrash")}
+                </span>
+              )}
             </div>
             {desktop && (
               <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -569,7 +594,24 @@ export function AddSearch({
 
   // Some sources ask for an active link to them on every page where their data is used (D62): the results are such a page.
   const sourceCredits = (
-    <ResultsCredits sources={candidates.map((candidate) => candidate.source)} />
+    <>
+      <ResultsCredits sources={candidates.map((candidate) => candidate.source)} />
+      <TrashedDialog
+        item={trashed?.item ?? null}
+        onClose={() => setTrashed(null)}
+        onRestored={(item) => {
+          setTrashed(null);
+          onChanged?.();
+          openOverlay({ name: "book", editionId: item.id });
+        }}
+        onStartOver={() => {
+          const candidate = trashed?.candidate;
+          setTrashed(null);
+          onChanged?.();
+          if (candidate) startFrom(candidate);
+        }}
+      />
+    </>
   );
 
   const warningsList = <ProviderWarnings warnings={warnings} />;
