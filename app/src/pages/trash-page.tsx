@@ -50,7 +50,10 @@ export function TrashPage({
   const [purging, setPurging] = useState<TrashRef[] | null>(null);
   // One section at a time, picked like the catalog's filters: with many things, headings alone get lost.
   const [shown, setShown] = useState<TrashKind>("edition");
-  const rows = (items ?? []).filter((item) => item.kind === shown);
+  // What goes first, first: the red ones are never at the bottom of a long list.
+  const rows = (items ?? [])
+    .filter((item) => item.kind === shown)
+    .sort((a, b) => a.purgeAt.localeCompare(b.purgeAt) || a.title.localeCompare(b.title));
   const selection = useSelection(rows.map(keyOf));
 
   // Only the latest load counts: switching libraries can leave an older one in flight.

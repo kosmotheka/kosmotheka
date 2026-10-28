@@ -38,7 +38,7 @@ When you delete, a notice at the bottom says "Moved to the trash · Undo". **Und
 
 ## Restore
 
-In the trash, each thing says what it is, who deleted it, when, and how many days it has left ("Goes for good in 12 days").
+In the trash, each thing says what it is, who deleted it, when, and how many days it has left ("Goes for good in 12 days"). Those that go first come first.
 
 - **One:** tap "Restore" on its row.
 - **Several at once:** on a computer, tick their boxes; on a phone, **press and hold** one, then tap the others. A bar at the top shows how many you have picked, "Select all" and the buttons. The back button leaves the selection without doing anything.

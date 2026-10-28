@@ -38,7 +38,7 @@ Al borrar, abajo sale el aviso «Movido a la papelera · Deshacer». **Deshacer*
 
 ## Restaurar
 
-En la papelera, cada cosa dice qué es, quién la borró, cuándo, y cuántos días le quedan («Se eliminará en 12 días»).
+En la papelera, cada cosa dice qué es, quién la borró, cuándo, y cuántos días le quedan («Se eliminará en 12 días»). Primero salen las que se van antes.
 
 - **Una:** pulsa «Restaurar» en su fila.
 - **Varias a la vez:** en el ordenador, marca sus casillas; en el móvil, **mantén pulsada** una y después toca las demás. Arriba sale una barra con cuántas llevas, «Seleccionar todo» y los botones. El botón de atrás sale de la selección sin hacer nada.
