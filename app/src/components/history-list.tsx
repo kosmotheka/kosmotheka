@@ -42,7 +42,9 @@ export function HistoryList({ editionId, version }: { editionId: string; version
       {entries.map((entry) => (
         <li key={entry.operationId}>
           <p className="text-sm font-medium">{describe(entry.intent)}</p>
-          <p className="text-xs text-muted-foreground">{format(entry.timestamp)}</p>
+          <p className="text-xs text-muted-foreground">
+            {entry.who ? `${entry.who} · ${format(entry.timestamp)}` : format(entry.timestamp)}
+          </p>
         </li>
       ))}
     </ol>

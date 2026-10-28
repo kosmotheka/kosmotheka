@@ -153,6 +153,9 @@ pub struct HistoryEntry {
     pub intent: String,
     /// Milliseconds since the Unix epoch, from the operation's HLC.
     pub timestamp: u64,
+    /// The name of the person whose device made it, as that device stands now (D96, D98); `None` for a device
+    /// of nobody, or one from before people existed.
+    pub who: Option<String>,
 }
 
 /// `cover` is the file name of an already stored cover, if any.
@@ -1595,24 +1598,29 @@ pub fn book_history(
     library: &str,
     edition_id: &str,
 ) -> Result<Vec<HistoryEntry>> {
-    let mut statement = conn.prepare(
+    let mut statement = conn.prepare(&format!(
         "WITH related (id) AS (
              SELECT ?2
              UNION SELECT work_id FROM editions WHERE library_id = ?1 AND id = ?2
              UNION SELECT id FROM copies WHERE library_id = ?1 AND edition_id = ?2
          )
-         SELECT DISTINCT o.id, o.intent, o.hlc
+         SELECT DISTINCT o.id, o.intent, o.hlc,
+                (SELECT m.name FROM devices d
+                   JOIN members m ON m.library_id = d.library_id AND m.id = {}
+                  WHERE d.library_id = o.library_id AND d.id = o.device_id)
            FROM operations o, json_each(o.changes) AS change
           WHERE o.library_id = ?1
             AND json_extract(change.value, '$.id') IN (SELECT id FROM related)
           ORDER BY o.hlc",
-    )?;
+        crate::permissions::person_of("d")
+    ))?;
     let rows = statement.query_map([library, edition_id], |row| {
         let hlc: String = row.get(2)?;
         Ok(HistoryEntry {
             operation_id: row.get(0)?,
             intent: row.get(1)?,
             timestamp: hlc.parse::<Hlc>().map_or(0, |hlc| hlc.millis),
+            who: row.get(3)?,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -2183,6 +2191,52 @@ mod tests {
         let intents: Vec<&str> = history.iter().map(|entry| entry.intent.as_str()).collect();
         assert_eq!(intents, vec!["book.add", "copy.add"]);
         assert!(history[0].timestamp <= history[1].timestamp);
+    }
+
+    #[test]
+    fn history_says_whose_device_made_each_change() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let created = create_book(
+            &mut conn,
+            &lib,
+            &new_book("A", None, "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        delete_book(&mut conn, &lib, &created.edition_id).unwrap();
+        trash::restore(
+            &mut conn,
+            &lib,
+            &[TrashRef {
+                kind: TrashKind::Edition,
+                id: created.edition_id.clone(),
+            }],
+        )
+        .unwrap();
+        let me: String = conn
+            .query_row(
+                "SELECT m.name FROM members m WHERE m.library_id = ?1
+                   AND m.id = (SELECT member_id FROM devices WHERE library_id = ?1 AND id = ?2)",
+                [&lib, &ops::device_id(&conn).unwrap()],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        let history = book_history(&conn, &lib, &created.edition_id).unwrap();
+
+        let seen: Vec<(&str, Option<&str>)> = history
+            .iter()
+            .map(|entry| (entry.intent.as_str(), entry.who.as_deref()))
+            .collect();
+        assert_eq!(
+            seen,
+            vec![
+                ("book.add", Some(me.as_str())),
+                ("book.trash", Some(me.as_str())),
+                ("trash.restore", Some(me.as_str())),
+            ]
+        );
     }
 
     #[test]

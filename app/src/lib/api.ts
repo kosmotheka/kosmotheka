@@ -221,6 +221,8 @@ export interface HistoryEntry {
   intent: string;
   /** Milliseconds since the Unix epoch. */
   timestamp: number;
+  /** Whose device made it; null for a device of nobody. */
+  who: string | null;
 }
 
 export function bookHistory(editionId: string): Promise<HistoryEntry[]> {

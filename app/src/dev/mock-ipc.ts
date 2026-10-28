@@ -1676,8 +1676,13 @@ mockIPC((cmd, args) => {
         : [];
     case "dismiss_request_notices":
       return null;
+    // Who did each thing (D105): a book added, sent to the trash by Laura and restored by Ana.
     case "book_history":
-      return [];
+      return [
+        { operationId: "h1", intent: "book.add", timestamp: daysAgo(40), who: "Ana" },
+        { operationId: "h2", intent: "book.trash", timestamp: daysAgo(3), who: "Laura" },
+        { operationId: "h3", intent: "trash.restore", timestamp: daysAgo(1), who: "Ana" },
+      ];
     case "list_people":
       return people;
     case "remove_earlier_installs": {

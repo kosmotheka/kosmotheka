@@ -64,7 +64,7 @@
 - [x] i18n es y en; versión simulada; Playwright en el ordenador y en el móvil (pulsación larga con toques de verdad). *Hecho (4a, 4b): la versión simulada trae una papelera de ejemplo (`?emptytrash` la vacía, `?editor` entra como editor); buscar «hobbit», escribir la etiqueta «prestados» o crear la saga «Mundodisco» enseñan la oferta de restaurar. Probado con Playwright en 1280 px y 390 px, con la pulsación larga hecha con toques reales (CDP).*
 
 - [x] Restaurar una copia de seguridad dice cuántas cosas trae en la papelera y que tienen 30 días (punto 9 de D105). *Hecho (4c), con `RestoredLibrary.trashed`.*
-- [ ] **Pendiente, a decidir:** el historial dice «Movido a la papelera», pero no «por Ana» (punto 10 de D105): hoy no dice quién en ninguna entrada. Necesita que Rust dé la persona de cada operación; es un cambio del historial entero, mejor en una rama propia.
+- [x] El historial dice quién (punto 10 de D105): «Ficha a la papelera · Laura · fecha». *Hecho (4g), en todas las entradas, no solo las de la papelera: `HistoryEntry.who`, la persona del dispositivo que firmó, tal como está ahora (D96, D98). El maintainer pidió hacerlo en esta rama.*
 
 ## 5. Documentación
 
