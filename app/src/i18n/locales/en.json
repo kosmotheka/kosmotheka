@@ -302,10 +302,10 @@
       "sync_baseline": "Included in sync (initial state)",
       "wish_add": "Added to wishlist",
       "wish_remove": "Removed from wishlist",
-      "book_trash": "Entry moved to the trash",
+      "book_trash": "Work moved to the trash",
       "copy_trash": "Copy moved to the trash",
       "tag_trash": "Tag moved to the trash",
-      "series_trash": "Series moved to the trash",
+      "series_trash": "Saga moved to the trash",
       "book_move_out": "Moved to another library",
       "trash_restore": "Restored from the trash",
       "trash_purge": "Deleted for good",
@@ -703,6 +703,15 @@
           "On Windows, allow the app on private networks when the firewall asks.",
           "If the phone asks for \"local network\" or \"nearby devices\" permission, allow it.",
           "If nothing works, restart the app on both and create a new code."
+        ]
+      },
+      "trash": {
+        "title": "Get back something I deleted",
+        "steps": [
+          "Right after deleting, tap \"Undo\" in the notice at the bottom.",
+          "Later, open the menu and go to \"Trash\". Tap \"Restore\" next to what you want back: it returns as it was.",
+          "For several at once, on a phone press and hold one and tap the others; on a computer, tick their boxes.",
+          "What is in the trash is deleted for good after 30 days. After that, it only comes back with a backup."
         ]
       },
       "backups": {
@@ -2317,12 +2326,12 @@
     "hintAdmin": "What is deleted in this library stays here for 30 days before it goes for good. It can be restored as it was, or deleted now.",
     "holdHint": "Press and hold to select several.",
     "empty": "The trash is empty",
-    "emptyHint": "If you delete an entry, a copy, a tag or a series, it is kept here for 30 days in case you change your mind.",
+    "emptyHint": "If you delete a work, a copy, a tag or a saga, it is kept here for 30 days in case you change your mind.",
     "sections": {
-      "edition": "Entries",
+      "edition": "Works",
       "copy": "Copies",
       "tag": "Tags",
-      "series": "Series and collections"
+      "series": "Sagas and collections"
     },
     "copies_one": "with {{count}} copy",
     "copies_other": "with {{count}} copies",

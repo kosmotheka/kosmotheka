@@ -719,6 +719,15 @@
           "Si nada funciona, reinicia la app en los dos y genera un código nuevo."
         ]
       },
+      "trash": {
+        "title": "Recuperar algo que he borrado",
+        "steps": [
+          "Justo al borrar, pulsa «Deshacer» en el aviso de abajo.",
+          "Después, abre el menú y entra en «Papelera». Pulsa «Restaurar» junto a lo que quieras recuperar: vuelve tal como estaba.",
+          "Para varios a la vez, en el móvil mantén pulsado uno y toca los demás; en el ordenador, marca sus casillas.",
+          "Lo que está en la papelera se elimina para siempre a los 30 días. Después, solo vuelve con una copia de seguridad."
+        ]
+      },
       "backups": {
         "title": "Copias de seguridad",
         "steps": [

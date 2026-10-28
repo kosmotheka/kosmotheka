@@ -12,6 +12,7 @@ const TOPICS = [
   "away",
   "cloud",
   "people",
+  "trash",
   "backups",
   "lost",
 ] as const;
@@ -24,6 +25,7 @@ const PAGE: Record<(typeof TOPICS)[number], string> = {
   away: "away-from-home/",
   cloud: "the-cloud/",
   people: "people-and-permissions/",
+  trash: "trash/",
   backups: "backups/",
   lost: "lost-phone/",
 };
