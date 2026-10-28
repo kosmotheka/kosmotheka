@@ -147,21 +147,8 @@ export function TrashPage({
         {!desktop && items && items.length > 0 && ` ${t("trash.holdHint")}`}
       </p>
 
-      <SelectionBar selection={selection}>
-        <Button size="sm" variant="outline" onClick={() => void restore(picked())}>
-          <RotateCcw className="size-[15px]" />
-          {t("trash.restore")}
-        </Button>
-        {admin && (
-          <Button size="sm" variant="destructive" onClick={() => setPurging(picked())}>
-            <Trash2 className="size-[15px]" />
-            {t("trash.purge")}
-          </Button>
-        )}
-      </SelectionBar>
-
       {items?.length === 0 && (
-        <div className="flex max-w-2xl flex-col items-center gap-2 py-10 text-center">
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
           <Trash2 className="size-8 text-muted-foreground" />
           <p className="text-sm font-medium">{t("trash.empty")}</p>
           <p className="text-sm text-muted-foreground text-pretty">{t("trash.emptyHint")}</p>
@@ -172,7 +159,7 @@ export function TrashPage({
         <div
           role="radiogroup"
           aria-label={t("trash.title")}
-          className="flex max-w-2xl gap-1.5 overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)] pointer-fine:flex-wrap pointer-fine:overflow-x-visible pointer-fine:[mask-image:none]"
+          className="flex gap-1.5 overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)] pointer-fine:flex-wrap pointer-fine:overflow-x-visible pointer-fine:[mask-image:none]"
         >
           {SECTIONS.map(({ kind, icon: Icon }) => {
             const active = kind === shown;
@@ -202,14 +189,27 @@ export function TrashPage({
         </div>
       )}
 
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => void restore(picked())}>
+          <RotateCcw className="size-[15px]" />
+          {t("trash.restore")}
+        </Button>
+        {admin && (
+          <Button size="sm" variant="destructive" onClick={() => setPurging(picked())}>
+            <Trash2 className="size-[15px]" />
+            {t("trash.purge")}
+          </Button>
+        )}
+      </SelectionBar>
+
       {items && items.length > 0 && rows.length === 0 && (
-        <p className="max-w-2xl py-6 text-center text-sm text-muted-foreground">
+        <p className="py-6 text-center text-sm text-muted-foreground">
           {t(`trash.sectionEmpty.${shown}`)}
         </p>
       )}
 
       {rows.length > 0 && (
-        <div className="flex w-full max-w-2xl flex-col border-t">
+        <div className="@container flex w-full flex-col border-t">
           {rows.map((item) => {
             const Icon = SECTIONS.find((section) => section.kind === item.kind)?.icon ?? Trash2;
             const left = daysLeft(item);
@@ -251,18 +251,25 @@ export function TrashPage({
                 }
               >
                 <Icon className="size-[15px] shrink-0 text-muted-foreground" />
-                <div className="flex min-w-0 flex-1 flex-col py-2">
-                  <span className="truncate text-sm font-medium">{item.title}</span>
-                  <span className="truncate text-[13px] text-muted-foreground">{detail(item)}</span>
-                  <span className="text-[13px] text-muted-foreground">
-                    {item.trashedBy
-                      ? t("trash.sentBy", { when: when(item.trashedAt), who: item.trashedBy })
-                      : t("trash.sent", { when: when(item.trashedAt) })}
-                    {" · "}
+                {/* Stacked, and in three columns only when the list is very wide (D105). */}
+                <div className="flex min-w-0 flex-1 flex-col py-2 @5xl:grid @5xl:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1fr)] @5xl:items-center @5xl:gap-x-6">
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-medium">{item.title}</span>
+                    <span className="truncate text-[13px] text-muted-foreground">
+                      {detail(item)}
+                    </span>
+                  </div>
+                  <div className="text-[13px] text-muted-foreground @5xl:contents">
+                    <span>
+                      {item.trashedBy
+                        ? t("trash.sentBy", { when: when(item.trashedAt), who: item.trashedBy })
+                        : t("trash.sent", { when: when(item.trashedAt) })}
+                    </span>
+                    <span className="@5xl:hidden"> · </span>
                     <span className={left <= 3 ? "text-destructive" : undefined}>
                       {left === 0 ? t("trash.goesSoon") : t("trash.goesIn", { count: left })}
                     </span>
-                  </span>
+                  </div>
                 </div>
               </SelectableRow>
             );
