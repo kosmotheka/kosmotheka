@@ -11,6 +11,7 @@ import {
   Settings,
   Share2,
   SlidersHorizontal,
+  Trash2,
   Users,
 } from "lucide-react";
 
@@ -25,6 +26,8 @@ export interface NavItem {
   overlay?: Overlay;
   /** Planned in the roadmap but not built yet: shown, but disabled. */
   soon?: boolean;
+  /** Only for those who may edit the library: editors and administrators. */
+  editors?: boolean;
 }
 
 /** The three main destinations: bottom bar on mobile, top of the sidebar on desktop. */
@@ -39,6 +42,7 @@ export const libraryNav: NavItem[] = [
   { id: "requests", icon: Inbox, label: "nav.requests", section: "requests" },
   { id: "people", icon: Users, label: "nav.people", section: "people" },
   { id: "series", icon: ListOrdered, label: "nav.series", section: "series" },
+  { id: "trash", icon: Trash2, label: "nav.trash", section: "trash", editors: true },
   { id: "backups", icon: Archive, label: "nav.backups", overlay: { name: "backups" } },
   { id: "library", icon: SlidersHorizontal, label: "nav.librarySettings", section: "library" },
 ];

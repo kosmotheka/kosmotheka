@@ -301,7 +301,15 @@
       "backup_restore": "Backup restored",
       "sync_baseline": "Included in sync (initial state)",
       "wish_add": "Added to wishlist",
-      "wish_remove": "Removed from wishlist"
+      "wish_remove": "Removed from wishlist",
+      "book_trash": "Entry moved to the trash",
+      "copy_trash": "Copy moved to the trash",
+      "tag_trash": "Tag moved to the trash",
+      "series_trash": "Series moved to the trash",
+      "book_move_out": "Moved to another library",
+      "trash_restore": "Restored from the trash",
+      "trash_purge": "Deleted for good",
+      "trash_expire": "Deleted after 30 days in the trash"
     }
   },
   "book": {
@@ -314,7 +322,7 @@
     "edit": "Edit",
     "deleteConfirm": {
       "title": "Delete “{{title}}”?",
-      "body": "The edition and all its copies will be removed from the catalog. Authors and owners stay."
+      "body": "The edition and all its copies go to the trash. They stay there for 30 days, in case you want them back."
     },
     "cover": "Cover",
     "more": "More options",
@@ -357,7 +365,7 @@
     "add": "Add copy",
     "deleteConfirm": {
       "title": "Delete this copy?",
-      "body": "The edition stays in the catalog."
+      "body": "It goes to the trash, where it stays for 30 days. The edition stays in the catalog."
     },
     "editThis": "Edit the copy: {{copy}}",
     "seasonsCount_one": "season {{range}}",
@@ -640,7 +648,8 @@
     "works_other": "{{count}} items",
     "languages": "Language",
     "librarySettings": "Library settings",
-    "allLibraries": "See all ({{count}})"
+    "allLibraries": "See all ({{count}})",
+    "trash": "Trash"
   },
   "sync": {
     "local": "Only on this device",
@@ -865,8 +874,8 @@
     "mergeHint": "“{{name}}” already exists: they will merge",
     "merge": "Merge",
     "deleteTitle": "Delete “{{name}}”?",
-    "deleteBody_one": "It is removed from the {{count}} work that has it. Works are not deleted.",
-    "deleteBody_other": "It is removed from the {{count}} works that have it. Works are not deleted.",
+    "deleteBody_one": "It is removed from the {{count}} work that has it and goes to the trash for 30 days. Works are not deleted.",
+    "deleteBody_other": "It is removed from the {{count}} works that have it and goes to the trash for 30 days. Works are not deleted.",
     "delete": "Delete tag",
     "empty": "No tags yet. Type one on a work to create it.",
     "create": "Create “{{name}}”"
@@ -1461,7 +1470,7 @@
     "delete": "Delete",
     "deleteConfirm": {
       "title": "Delete “{{name}}”?",
-      "body": "Its works stay in the catalogue; only the grouping goes."
+      "body": "It goes to the trash for 30 days. Its works stay in the catalog; only the grouping goes."
     },
     "gap": "Not logged",
     "gapHint": "Number {{n}} is missing here",
@@ -2283,5 +2292,55 @@
     "failed": "Could not check. Check your connection.",
     "download": "Download",
     "notice": "A new version of Kosmotheka is out: {{version}}."
+  },
+  "selection": {
+    "toolbar": "Selection",
+    "clear": "Leave the selection",
+    "count_one": "{{count}} selected",
+    "count_other": "{{count}} selected",
+    "all": "Select all",
+    "none": "Select none"
+  },
+  "trash": {
+    "title": "Trash",
+    "breadcrumb": "Library",
+    "hint": "What is deleted in this library stays here for 30 days before it goes for good. It can be restored as it was.",
+    "hintAdmin": "What is deleted in this library stays here for 30 days before it goes for good. It can be restored as it was, or deleted now.",
+    "holdHint": "Press and hold to select several.",
+    "empty": "The trash is empty",
+    "emptyHint": "If you delete an entry, a copy, a tag or a series, it is kept here for 30 days in case you change your mind.",
+    "sections": {
+      "edition": "Entries",
+      "copy": "Copies",
+      "tag": "Tags",
+      "series": "Series and collections"
+    },
+    "copies_one": "with {{count}} copy",
+    "copies_other": "with {{count}} copies",
+    "works_one": "on {{count}} work",
+    "works_other": "on {{count}} works",
+    "copy": "Copy",
+    "copyOf": "Copy · {{format}}",
+    "today": "today",
+    "sent": "Deleted {{when}}",
+    "sentBy": "Deleted by {{who}} {{when}}",
+    "goesIn_one": "Goes for good in {{count}} day",
+    "goesIn_other": "Goes for good in {{count}} days",
+    "goesSoon": "Goes for good soon",
+    "select": "Select {{title}}",
+    "restore": "Restore",
+    "restoreAria": "Restore {{title}}",
+    "restored_one": "Restored",
+    "restored_other": "{{count}} restored",
+    "purge": "Delete for good",
+    "purgeAria": "Delete {{title}} for good",
+    "purgeTitle_one": "Delete for good?",
+    "purgeTitle_other": "Delete {{count}} things for good?",
+    "purgeBody_one": "It will be gone for good, on every device of the library. This cannot be undone.",
+    "purgeBody_other": "They will be gone for good, on every device of the library. This cannot be undone.",
+    "purged_one": "Deleted for good",
+    "purged_other": "{{count}} deleted for good",
+    "moved": "Moved to the trash",
+    "undo": "Undo"
   }
 }

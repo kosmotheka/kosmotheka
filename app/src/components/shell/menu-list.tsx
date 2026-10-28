@@ -22,9 +22,11 @@ export function MenuList({
   const requests = useRequests();
   const label = (item: NavItem) =>
     item.id === "requests" && requests.myRole === "admin" ? "nav.requestsAdmin" : item.label;
+  const editor = requests.myRole === "admin" || requests.myRole === "editor";
+  const shown = items.filter((item) => !item.editors || editor);
   return (
     <nav className="flex flex-col gap-0.5">
-      {items.map((item) => {
+      {shown.map((item) => {
         const Icon = item.icon;
         const active = item.id === activeId;
         return (

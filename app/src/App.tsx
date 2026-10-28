@@ -63,6 +63,7 @@ import {
   catalogOptions,
   checkForUpdate,
   cloudEventsWake,
+  expireTrash,
   getBook,
   lanStatus,
   listBooks,
@@ -79,6 +80,7 @@ import {
 import { refreshAccount, useAccount } from "@/lib/account";
 import { cloudNotices, refreshCloudStatus, runCloudSync, watchCloudConnection } from "@/lib/cloud";
 import { closeOverlay, navigate, openOverlay, useLocation } from "@/lib/navigation";
+import type { Notify } from "@/lib/notice";
 import { syncDevice } from "@/lib/sync-errors";
 import { downloadsPage } from "@/lib/updates";
 import { type LoadState, CatalogPage } from "@/pages/catalog-page";
@@ -91,6 +93,7 @@ import { RequestsPage } from "@/pages/requests-page";
 import { SeriesPage } from "@/pages/series-page";
 import type { CatalogView } from "@/components/catalog-views";
 import { TagsPage } from "@/pages/tags-page";
+import { TrashPage } from "@/pages/trash-page";
 
 /** Waits until typing pauses before searching. */
 function useDebounced<T>(value: T, delay: number): T {
@@ -161,6 +164,21 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     label: string;
     run: () => void;
   } | null>(null);
+  const notify: Notify = useCallback((text, action) => {
+    setNotice(text);
+    setNoticeAction(
+      action
+        ? {
+            text,
+            label: action.label,
+            run: () => {
+              setNotice(null);
+              action.run();
+            },
+          }
+        : null,
+    );
+  }, []);
   // Once per opening (D104); the check itself decides whether a day has gone by and whether the switch is on.
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -341,6 +359,9 @@ function AppShell({ news }: { news: WhatsNew | null }) {
       if (!lanOnly || received > 0) messages = await syncTheCloud(0);
       if (removed > 0) messages = [t("sharing.removed", { count: removed }), ...messages];
       if (messages.length > 0) setNotice(messages.join(" "));
+      // After syncing, so a restore that arrived counts first. Deleting records an operation, whose own
+      // `local-changed` pass sends it on and finds nothing more to delete (D105).
+      await expireTrash().catch(() => 0);
       // Reload even without changes: the sync indicator shows the new time.
       reload();
     };
@@ -366,6 +387,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     const onCloudChanged = async () => {
       const messages = await syncTheCloud(0);
       if (messages.length > 0) setNotice(messages.join(" "));
+      await expireTrash().catch(() => 0);
       reload();
     };
     // Skipped while another pass runs: that one already asks the LAN.
@@ -495,7 +517,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     ) : section === "library" ? (
       <LibraryPage desktop={desktop} />
     ) : section === "tags" ? (
-      <TagsPage desktop={desktop} version={version} onChanged={reload} />
+      <TagsPage desktop={desktop} version={version} onChanged={reload} onNotice={notify} />
     ) : section === "devices" ? (
       <DevicesPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
     ) : section === "people" ? (
@@ -504,6 +526,8 @@ function AppShell({ news }: { news: WhatsNew | null }) {
       <RequestsPage desktop={desktop} version={version} onChanged={reload} onNotice={setNotice} />
     ) : section === "series" ? (
       <SeriesPage desktop={desktop} version={version} onViewChange={onViewChange} />
+    ) : section === "trash" ? (
+      <TrashPage desktop={desktop} version={version} onChanged={reload} onNotice={notify} />
     ) : section === "help" ? (
       <HelpPage desktop={desktop} onShowWelcome={() => setWelcome(true)} />
     ) : (
@@ -563,7 +587,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
                     desktop
                     onClose={closeOverlay}
                     onChanged={reload}
-                    onNotice={setNotice}
+                    onNotice={notify}
                     onFilter={filterAndShow}
                   />
                 </div>
@@ -571,9 +595,18 @@ function AppShell({ news }: { news: WhatsNew | null }) {
             </div>
           ) : (
             <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)]">
-              {!["check", "library", "tags", "devices", "people", "requests", "series"].includes(
-                section,
-              ) && <AppBar library={library} sync={sync} onSearch={focusSearch} />}
+              {![
+                "check",
+                "library",
+                "tags",
+                "devices",
+                "people",
+                "requests",
+                "series",
+                "trash",
+              ].includes(section) && (
+                <AppBar library={library} sync={sync} onSearch={focusSearch} />
+              )}
               <main className="flex-1 overflow-y-auto px-4 pt-1 pb-24">{content}</main>
               <BottomNav section={section} />
               <NavDrawer open={overlay?.name === "drawer"} count={counts.catalog} sync={sync} />
@@ -716,6 +749,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
             desktop={desktop}
             onClose={closeOverlay}
             onChanged={reload}
+            onNotice={notify}
           />
           <NewSeriesDialog open={overlay?.name === "newSeries"} desktop={desktop} />
           {overlay?.name === "seriesPicker" && (
@@ -773,7 +807,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
               desktop={false}
               onClose={closeOverlay}
               onChanged={reload}
-              onNotice={setNotice}
+              onNotice={notify}
               onFilter={filterAndShow}
             />
           )}

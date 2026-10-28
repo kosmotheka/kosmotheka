@@ -8,7 +8,7 @@ import type { AddBookPrefill } from "@/components/add-book-dialog";
 // returns to the previous section.
 //
 // - The section is the URL hash: `#/`, `#/check`, `#/missing`, `#/library`, `#/devices`, `#/people`, `#/requests`,
-//   `#/help`.
+//   `#/series`, `#/trash`, `#/help`.
 // - An overlay (drawer, sheet, dialog) is a history entry on top of its section,
 //   with its name and data in `history.state`. Opening pushes an entry; closing
 //   goes back one; navigating from inside an overlay replaces the entry, so the
@@ -24,6 +24,7 @@ export type Section =
   | "people"
   | "requests"
   | "series"
+  | "trash"
   | "help";
 
 export type Overlay =
@@ -82,6 +83,7 @@ const SECTIONS: Record<string, Section> = {
   people: "people",
   requests: "requests",
   series: "series",
+  trash: "trash",
   help: "help",
 };
 const CHANGE = "kosmotheka:navigate";

@@ -30,6 +30,7 @@ import {
   updateSeries,
 } from "@/lib/api";
 import { navigate, openOverlay } from "@/lib/navigation";
+import { type Notify, notifyTrashed } from "@/lib/notice";
 import { cn } from "@/lib/utils";
 
 type Row = { position: number | null; entry: SeriesEntry | null };
@@ -84,11 +85,13 @@ export function SeriesDetailView({
   desktop,
   onClose,
   onChanged,
+  onNotice,
 }: {
   seriesId: string | null;
   desktop: boolean;
   onClose: () => void;
   onChanged: () => void;
+  onNotice: Notify;
 }) {
   const { t } = useTranslation();
   const [detail, setDetail] = useState<SeriesDetail | null>(null);
@@ -223,6 +226,7 @@ export function SeriesDetailView({
     setConfirmDelete(false);
     onClose();
     onChanged();
+    notifyTrashed(onNotice, t, { kind: "series", id: shown.id }, onChanged);
   };
 
   const openWork = (row: Row) => {

@@ -26,6 +26,8 @@ import type {
   SeriesDetail,
   SeriesEntry,
   Settings,
+  TrashItem,
+  TrashRef,
   TwoFactorSetup,
   WorkSeries,
 } from "@/lib/api";
@@ -694,7 +696,7 @@ const earlierInstalls = reinstalled
     ]
   : [];
 const people: People = {
-  myRole: params.has("reader") ? "reader" : "admin",
+  myRole: params.has("reader") ? "reader" : params.has("editor") ? "editor" : "admin",
   loneAdmin: true,
   people: [
     {
@@ -983,6 +985,51 @@ function mockCandidates(kind: Kind, query: string): Candidate[] {
     }),
   ];
 }
+
+// The trash (D105): one of each kind, at different ages, so «Se eliminará en N días» and the 30 days can be seen.
+// What the mock deletes lands here too.
+const trashDate = (days: number) => new Date(daysAgo(days)).toISOString();
+const inTrash = (
+  kind: TrashItem["kind"],
+  id: string,
+  title: string,
+  detail: string | null,
+  count: number,
+  days: number,
+  by: string | null = "Laura",
+): TrashItem => ({
+  kind,
+  id,
+  title,
+  detail,
+  count,
+  trashedAt: trashDate(days),
+  trashedBy: by,
+  purgeAt: new Date(daysAgo(days - 30)).toISOString(),
+});
+let mockTrash: TrashItem[] = params.has("emptytrash")
+  ? []
+  : [
+      inTrash("edition", "trash-ed-1", "El hobbit", "book", 2, 2),
+      inTrash("edition", "trash-ed-2", "Carcassonne", "boardgame", 1, 27, "Hugo"),
+      inTrash("copy", "trash-copy-1", "Dune", "ebook", 0, 5),
+      inTrash("tag", "trash-tag-1", "regalos", null, 3, 12, null),
+      inTrash("series", "trash-series-1", "Mundodisco", null, 4, 31),
+    ];
+const sendToTrash = (
+  kind: TrashItem["kind"],
+  id: string,
+  title: string,
+  detail: string | null = null,
+) => {
+  mockTrash = [
+    inTrash(kind, id, title, detail, 0, 0, mockPersonName),
+    ...mockTrash.filter((i) => i.id !== id),
+  ];
+};
+const dropFromTrash = (items: TrashRef[]) => {
+  mockTrash = mockTrash.filter((i) => !items.some((r) => r.kind === i.kind && r.id === i.id));
+};
 
 mockIPC((cmd, args) => {
   switch (cmd) {
@@ -1446,9 +1493,34 @@ mockIPC((cmd, args) => {
     case "add_copy":
       return "new-copy-id";
     case "update_copy":
-    case "delete_copy":
-    case "delete_book":
       return null;
+    case "delete_copy": {
+      const { copyId } = args as { copyId: string };
+      sendToTrash("copy", copyId, "Dune", "paperback");
+      return null;
+    }
+    case "delete_book": {
+      const { editionId } = args as { editionId: string };
+      const found = books.find((b) => b.editionId === editionId);
+      sendToTrash("edition", editionId, found?.title ?? editionId, found?.kind ?? null);
+      return null;
+    }
+    case "list_trash":
+      return mockTrash;
+    case "restore_from_trash":
+    case "purge_from_trash":
+      dropFromTrash((args as { items: TrashRef[] }).items);
+      return null;
+    case "expire_trash":
+      return 0;
+    case "trashed_named": {
+      const { kind, name } = args as { kind: TrashItem["kind"]; name: string };
+      return (
+        mockTrash.find(
+          (i) => i.kind === kind && i.title.toLowerCase() === name.trim().toLowerCase(),
+        ) ?? null
+      );
+    }
     case "list_series":
       return Object.values(seriesById).map((s) => ({
         id: s.id,
@@ -1484,8 +1556,12 @@ mockIPC((cmd, args) => {
       }
       return null;
     }
+    case "delete_series": {
+      const { id } = args as { id: string };
+      sendToTrash("series", id, seriesById[id]?.name ?? id);
+      return null;
+    }
     case "update_series":
-    case "delete_series":
     case "remove_from_series":
     case "add_requirement":
     case "remove_requirement":
@@ -1517,6 +1593,8 @@ mockIPC((cmd, args) => {
     }
     case "delete_tag": {
       const { id } = args as { id: string };
+      const tag = mockTags.find((t) => t.id === id);
+      if (tag) sendToTrash("tag", id, tag.name);
       mockTags = mockTags.filter((t) => t.id !== id);
       for (const editionId of Object.keys(workTagIds)) {
         workTagIds[editionId] = (workTagIds[editionId] ?? []).filter((i) => i !== id);

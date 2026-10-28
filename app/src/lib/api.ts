@@ -358,6 +358,52 @@ export function deleteCopy(copyId: string): Promise<void> {
   return invoke("delete_copy", { copyId });
 }
 
+// --- The trash (D105), mirrors src-tauri/src/trash.rs -----------------------------
+
+/** The four things the trash holds. Deleting any of them from the app sends it there. */
+export type TrashKind = "edition" | "copy" | "tag" | "series";
+
+export interface TrashRef {
+  kind: TrashKind;
+  id: string;
+}
+
+export interface TrashItem extends TrashRef {
+  /** The edition's title, the copy's edition's title, the tag's or the series' name. */
+  title: string;
+  /** A copy's format or an edition's kind of work, raw keys. */
+  detail: string | null;
+  /** What comes back with it: an edition's copies, a tag's or a series' works. */
+  count: number;
+  trashedAt: string;
+  /** Whoever sent it, if that person is still in the library. */
+  trashedBy: string | null;
+  /** When it goes for good, unless restored before. */
+  purgeAt: string;
+}
+
+export function listTrash(): Promise<TrashItem[]> {
+  return invoke<TrashItem[]>("list_trash");
+}
+
+export function restoreFromTrash(items: TrashRef[]): Promise<void> {
+  return invoke("restore_from_trash", { items });
+}
+
+export function purgeFromTrash(items: TrashRef[]): Promise<void> {
+  return invoke("purge_from_trash", { items });
+}
+
+/** Deletes for good what has been 30 days in the trash; called when the app opens and after syncing. */
+export function expireTrash(): Promise<number> {
+  return invoke<number>("expire_trash");
+}
+
+/** The tag or series of that name in the trash, to offer restoring it instead of making a second one. */
+export function trashedNamed(kind: "tag" | "series", name: string): Promise<TrashItem | null> {
+  return invoke<TrashItem | null>("trashed_named", { kind, name });
+}
+
 /** What asking became: kept for the administrators, or simply done (D73). */
 export interface Asked {
   requested: boolean;

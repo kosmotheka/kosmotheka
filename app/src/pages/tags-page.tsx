@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type TagSummary, deleteTag, isCommandError, listTags, renameTag } from "@/lib/api";
 import { leaveSection } from "@/lib/navigation";
+import { type Notify, notifyTrashed } from "@/lib/notice";
 
 /** Library settings › Tags (6.7): rename (merging into an existing name) and delete. */
 export function TagsPage({
   desktop,
   version,
   onChanged,
+  onNotice,
 }: {
   desktop: boolean;
   version: number;
   onChanged: () => void;
+  onNotice: Notify;
 }) {
   const { t } = useTranslation();
   const [tags, setTags] = useState<TagSummary[]>([]);
@@ -67,6 +70,10 @@ export function TagsPage({
     await deleteTag(id);
     reload();
     onChanged();
+    notifyTrashed(onNotice, t, { kind: "tag", id }, () => {
+      reload();
+      onChanged();
+    });
   };
 
   const title = t("tags.title");

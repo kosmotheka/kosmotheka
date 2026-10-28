@@ -86,6 +86,7 @@ import {
 } from "@/lib/kinds";
 import { openOverlay, useBackGuard } from "@/lib/navigation";
 import { languageName } from "@/lib/languages";
+import { type Notify, notifyTrashed } from "@/lib/notice";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -94,7 +95,7 @@ interface Props {
   onClose: () => void;
   /** Called after any change, so the catalog list can refresh. */
   onChanged: () => void;
-  onNotice: (message: string) => void;
+  onNotice: Notify;
   /** A genre or tag chip: opens the catalog filtered by it (6.7). */
   onFilter: (patch: Partial<BookFilter>) => void;
   /** Open straight on the new copy's form, if the work has no copy. */
@@ -233,6 +234,7 @@ export function BookDetailView({
       await deleteBook(editionId);
       onChanged();
       onClose();
+      notifyTrashed(onNotice, t, { kind: "edition", id: editionId }, onChanged);
     } catch (e) {
       setLoadError(String(e));
     }
@@ -958,7 +960,7 @@ function CopiesSection({
    * once: `BookDetailView` remounts this component (a fresh tab switch) to reuse it. */
   openNewCopy?: boolean;
   onChanged: () => void;
-  onNotice: (message: string) => void;
+  onNotice: Notify;
 }) {
   const { t } = useTranslation();
   const libraries = useLibraries();
@@ -1038,6 +1040,7 @@ function CopiesSection({
     try {
       await deleteCopy(copy.id);
       onChanged();
+      notifyTrashed(onNotice, t, { kind: "copy", id: copy.id }, onChanged);
     } catch (e) {
       errors.handle(e);
     }
