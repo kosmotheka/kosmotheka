@@ -6,6 +6,7 @@ import {
   CircleHelp,
   Copy as CopyIcon,
   Loader2,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 
@@ -13,6 +14,7 @@ import { ChoiceSelect } from "@/components/choice-select";
 import { Field } from "@/components/book-form";
 import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
 import { Cover } from "@/components/cover";
+import { useRequests } from "@/components/requests-context";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,7 @@ import {
   formats,
   isCommandError,
   lookupIsbn,
+  restoreFromTrash,
 } from "@/lib/api";
 
 type Status =
@@ -34,6 +37,7 @@ type Status =
   | "copyAdded"
   | "exists"
   | "trashed"
+  | "restored"
   | "notFound"
   | "invalid"
   | "failed";
@@ -81,6 +85,8 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
   const [location, setLocation] = useState("");
   const [isbn, setIsbn] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const { myRole } = useRequests();
+  const mayRestore = myRole === "admin" || myRole === "editor";
   const options = useCatalogOptions();
 
   // The queue lives in refs so fast scanning never waits for a render.
@@ -169,6 +175,25 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
     }
   };
 
+  // What is in the trash comes back as it was, with its own copies: this session's copy is not added (D105).
+  const restore = async (picked: Entry[]) => {
+    const refs = picked.flatMap((entry) =>
+      entry.lookup?.trashedEditionId
+        ? [{ kind: "edition" as const, id: entry.lookup.trashedEditionId }]
+        : [],
+    );
+    if (refs.length === 0) return;
+    for (const entry of picked) update(entry.id, { status: "working" });
+    try {
+      await restoreFromTrash(refs);
+      for (const entry of picked) update(entry.id, { status: "restored" });
+      onChanged();
+    } catch (e) {
+      for (const entry of picked) update(entry.id, { status: "failed", error: String(e) });
+    }
+  };
+  const trashed = entries.filter((entry) => entry.status === "trashed");
+
   const count = (...statuses: Status[]) =>
     entries.filter((e) => statuses.includes(e.status)).length;
 
@@ -233,11 +258,18 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
       {entries.length > 0 && (
         <p className="text-sm text-muted-foreground">
           {t("burst.summary", {
-            added: count("added", "copyAdded"),
+            added: count("added", "copyAdded", "restored"),
             exists: count("exists", "trashed"),
             pending: count("notFound", "invalid", "failed"),
           })}
         </p>
+      )}
+
+      {mayRestore && trashed.length > 1 && (
+        <Button variant="outline" className="self-start" onClick={() => void restore(trashed)}>
+          <RotateCcw className="size-4" />
+          {t("burst.restoreAll", { count: trashed.length })}
+        </Button>
       )}
 
       <ul className="-mx-2 flex-1 space-y-2 overflow-y-auto px-2">
@@ -246,6 +278,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
             key={entry.id}
             entry={entry}
             onSaveAnyway={(title) => void saveAnyway(entry, title)}
+            onRestore={mayRestore ? () => void restore([entry]) : undefined}
           />
         ))}
       </ul>
@@ -256,9 +289,12 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
 function EntryRow({
   entry,
   onSaveAnyway,
+  onRestore,
 }: {
   entry: Entry;
   onSaveAnyway: (title?: string) => void;
+  /** Only for whoever may restore: editors and administrators. */
+  onRestore?: () => void;
 }) {
   const { t } = useTranslation();
   const [title, setTitle] = useState("");
@@ -270,6 +306,7 @@ function EntryRow({
     copyAdded: <CircleCheck className="size-4 text-green-600" />,
     exists: <CopyIcon className="size-4 text-amber-600" />,
     trashed: <Trash2 className="size-4 text-amber-600" />,
+    restored: <CircleCheck className="size-4 text-green-600" />,
     notFound: <CircleHelp className="size-4 text-amber-600" />,
     invalid: <CircleAlert className="size-4 text-destructive" />,
     failed: <CircleAlert className="size-4 text-destructive" />,
@@ -287,6 +324,12 @@ function EntryRow({
           {entry.isbn} · {t(`burst.status.${entry.status}`)}
           {entry.error ? ` ${entry.error}` : ""}
         </p>
+        {entry.status === "trashed" && onRestore && (
+          <Button size="sm" variant="outline" onClick={onRestore}>
+            <RotateCcw className="size-3.5" />
+            {t("trash.restore")}
+          </Button>
+        )}
         {entry.status === "exists" && (
           <Button size="sm" variant="outline" onClick={() => onSaveAnyway()}>
             {t("burst.addCopyAnyway")}

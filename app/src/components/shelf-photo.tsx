@@ -20,6 +20,7 @@ import {
   type Format,
   type Kind,
   createBook,
+  restoreFromTrash,
   kinds,
   shelfMatch,
   shelfQueries,
@@ -177,8 +178,14 @@ export function ShelfPhoto({
       if (!item.picked || item.status === "added") continue;
       setStatus(index, "adding");
       try {
-        const book = newBookFromCandidate(item.candidate);
-        await createBook({ ...book, copy: { ...book.copy, ...copy } });
+        // Picked while in the trash: it comes back as it was, with its own copies, instead of a second one (D105).
+        const inTrash = item.candidate.trashedEditionId;
+        if (inTrash) {
+          await restoreFromTrash([{ kind: "edition", id: inTrash }]);
+        } else {
+          const book = newBookFromCandidate(item.candidate);
+          await createBook({ ...book, copy: { ...book.copy, ...copy } });
+        }
         setStatus(index, "added");
         onChanged();
       } catch {
@@ -255,7 +262,7 @@ export function ShelfPhoto({
                 type="checkbox"
                 className="size-5 shrink-0 accent-primary"
                 checked={item.picked || item.status === "added"}
-                disabled={adding || item.status === "added" || candidate.trashedEditionId !== null}
+                disabled={adding || item.status === "added"}
                 onChange={() => toggle(index)}
               />
               <Cover url={candidate.coverUrl} alt="" kind={candidate.kind} className="h-16" />

@@ -460,8 +460,11 @@
       "notFound": "Not found online",
       "invalid": "Invalid ISBN:",
       "failed": "Failed:",
-      "trashed": "It is in the trash: not added. You can restore it from the Trash."
-    }
+      "trashed": "It is in the trash: no second one is added.",
+      "restored": "Restored from the trash, with its copies"
+    },
+    "restoreAll_one": "Restore the one in the trash",
+    "restoreAll_other": "Restore the {{count}} in the trash"
   },
   "filters": {
     "search": "Search",
@@ -1248,7 +1251,7 @@
     "notFound_one": "{{count}} text not found",
     "notFound_other": "{{count}} texts not found",
     "notFoundHint": "Some are the publisher or the author; others, titles misread. Tap one to search for it yourself in Add.",
-    "inTrash": "It is in the trash: to keep it, restore it from the Trash"
+    "inTrash": "It is in the trash: tick it to restore it, with its copies"
   },
   "notices": {
     "title_one": "A change of yours became a request",

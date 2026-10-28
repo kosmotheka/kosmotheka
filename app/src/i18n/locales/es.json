@@ -474,8 +474,11 @@
       "notFound": "No encontrado online",
       "invalid": "ISBN no válido:",
       "failed": "Error:",
-      "trashed": "Está en la papelera: no se añade. Puedes restaurarla desde la Papelera."
-    }
+      "trashed": "Está en la papelera: no se añade otra.",
+      "restored": "Restaurado de la papelera, con sus ejemplares"
+    },
+    "restoreAll_one": "Restaurar la que está en la papelera",
+    "restoreAll_other": "Restaurar las {{count}} que están en la papelera"
   },
   "filters": {
     "search": "Buscar",
@@ -1262,7 +1265,7 @@
     "notFound_one": "{{count}} texto sin encontrar",
     "notFound_other": "{{count}} textos sin encontrar",
     "notFoundHint": "Algunos son la editorial o el autor; otros, títulos mal leídos. Toca uno para buscarlo tú en «Añadir».",
-    "inTrash": "Está en la papelera: si la quieres, restáurala desde la Papelera"
+    "inTrash": "Está en la papelera: si la marcas, se restaura con sus ejemplares"
   },
   "notices": {
     "title_one": "Un cambio tuyo ha pasado a petición",

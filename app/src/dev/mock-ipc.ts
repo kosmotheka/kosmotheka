@@ -1290,7 +1290,31 @@ mockIPC((cmd, args) => {
     }
     case "store_own_cover":
       return `${"0".repeat(64)}.webp`;
-    case "lookup_isbn":
+    case "lookup_isbn": {
+      // Two ISBNs of what is in the sample trash, for «Alta rápida» (D105).
+      const { isbn: asked } = args as { isbn: string };
+      const inTrash = { "9788445000656": "trash-ed-1", "9788445000663": "trash-ed-2" }[
+        asked.replace(/\D/g, "")
+      ];
+      if (inTrash && mockTrash.some((item) => item.id === inTrash)) {
+        return {
+          isbn13: asked,
+          found: true,
+          title: mockTrash.find((item) => item.id === inTrash)?.title ?? null,
+          subtitle: null,
+          authors: [],
+          publisher: null,
+          publishedYear: null,
+          language: null,
+          coverUrl: null,
+          googleBooksId: null,
+          openLibraryId: null,
+          sources: ["open_library"],
+          warnings: [],
+          existingEditionId: null,
+          trashedEditionId: inTrash,
+        };
+      }
       if (quotaWarnings.length > 0) {
         const { isbn } = args as { isbn: string };
         return {
@@ -1312,6 +1336,7 @@ mockIPC((cmd, args) => {
         };
       }
       throw new Error("offline");
+    }
     case "search_works": {
       const { kind, query } = args as { kind: Kind; query: string };
       if (query.trim().length < 2) return { candidates: [], warnings: [] };
