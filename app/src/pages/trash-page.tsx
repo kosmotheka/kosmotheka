@@ -16,6 +16,7 @@ import {
   restoreFromTrash,
 } from "@/lib/api";
 import { leaveSection } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 import type { Notify } from "@/lib/notice";
 
 const SECTIONS: { kind: TrashKind; icon: LucideIcon }[] = [
@@ -47,7 +48,10 @@ export function TrashPage({
   // When the list was read: the days are counted from then, not on every render.
   const [readAt, setReadAt] = useState(0);
   const [purging, setPurging] = useState<TrashRef[] | null>(null);
-  const selection = useSelection((items ?? []).map(keyOf));
+  // One section at a time, picked like the catalog's filters: with many things, headings alone get lost.
+  const [shown, setShown] = useState<TrashKind>("edition");
+  const rows = (items ?? []).filter((item) => item.kind === shown);
+  const selection = useSelection(rows.map(keyOf));
 
   // Only the latest load counts: switching libraries can leave an older one in flight.
   const latest = useRef(0);
@@ -65,7 +69,7 @@ export function TrashPage({
   }, [version, reloads]);
 
   const picked = (): TrashRef[] =>
-    (items ?? [])
+    rows
       .filter((item) => selection.selected.has(keyOf(item)))
       .map(({ kind, id }) => ({ kind, id }));
 
@@ -164,77 +168,107 @@ export function TrashPage({
         </div>
       )}
 
-      {SECTIONS.map(({ kind, icon: Icon }) => {
-        const rows = (items ?? []).filter((item) => item.kind === kind);
-        if (rows.length === 0) return null;
-        return (
-          <section key={kind} className="flex w-full max-w-2xl flex-col gap-2">
-            <h2 className="text-[13px] font-semibold text-muted-foreground uppercase">
-              {t(`trash.sections.${kind}`)} · {rows.length}
-            </h2>
-            <div className="flex flex-col border-t">
-              {rows.map((item) => {
-                const left = daysLeft(item);
-                return (
-                  <SelectableRow
-                    key={keyOf(item)}
-                    selection={selection}
-                    id={keyOf(item)}
-                    label={t("trash.select", { title: item.title })}
-                    desktop={desktop}
-                    actions={
-                      <>
-                        <Button
-                          variant="ghost"
-                          size={desktop ? "sm" : "icon"}
-                          aria-label={t("trash.restoreAria", { title: item.title })}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void restore([{ kind: item.kind, id: item.id }]);
-                          }}
-                        >
-                          <RotateCcw className="size-[15px]" />
-                          {desktop && t("trash.restore")}
-                        </Button>
-                        {admin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={t("trash.purgeAria", { title: item.title })}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setPurging([{ kind: item.kind, id: item.id }]);
-                            }}
-                          >
-                            <Trash2 className="size-[15px]" />
-                          </Button>
-                        )}
-                      </>
-                    }
-                  >
-                    <Icon className="size-[15px] shrink-0 text-muted-foreground" />
-                    <div className="flex min-w-0 flex-1 flex-col py-2">
-                      <span className="truncate text-sm font-medium">{item.title}</span>
-                      <span className="truncate text-[13px] text-muted-foreground">
-                        {detail(item)}
-                      </span>
-                      <span className="text-[13px] text-muted-foreground">
-                        {item.trashedBy
-                          ? t("trash.sentBy", { when: when(item.trashedAt), who: item.trashedBy })
-                          : t("trash.sent", { when: when(item.trashedAt) })}
-                        {" · "}
-                        <span className={left <= 3 ? "text-destructive" : undefined}>
-                          {left === 0 ? t("trash.goesSoon") : t("trash.goesIn", { count: left })}
-                        </span>
-                      </span>
-                    </div>
-                  </SelectableRow>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+      {items && items.length > 0 && (
+        <div
+          role="radiogroup"
+          aria-label={t("trash.title")}
+          className="flex max-w-2xl gap-1.5 overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)] pointer-fine:flex-wrap pointer-fine:overflow-x-visible pointer-fine:[mask-image:none]"
+        >
+          {SECTIONS.map(({ kind, icon: Icon }) => {
+            const active = kind === shown;
+            const count = items.filter((item) => item.kind === kind).length;
+            return (
+              <button
+                key={kind}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setShown(kind)}
+                className={cn(
+                  "flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground ring-1 ring-border ring-inset",
+                )}
+              >
+                <Icon className="size-3.5" />
+                {t(`trash.sections.${kind}`)}
+                <span className={cn("tabular-nums", !active && "text-muted-foreground")}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {items && items.length > 0 && rows.length === 0 && (
+        <p className="max-w-2xl py-6 text-center text-sm text-muted-foreground">
+          {t(`trash.sectionEmpty.${shown}`)}
+        </p>
+      )}
+
+      {rows.length > 0 && (
+        <div className="flex w-full max-w-2xl flex-col border-t">
+          {rows.map((item) => {
+            const Icon = SECTIONS.find((section) => section.kind === item.kind)?.icon ?? Trash2;
+            const left = daysLeft(item);
+            return (
+              <SelectableRow
+                key={keyOf(item)}
+                selection={selection}
+                id={keyOf(item)}
+                label={t("trash.select", { title: item.title })}
+                desktop={desktop}
+                actions={
+                  <>
+                    <Button
+                      variant="ghost"
+                      size={desktop ? "sm" : "icon"}
+                      aria-label={t("trash.restoreAria", { title: item.title })}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void restore([{ kind: item.kind, id: item.id }]);
+                      }}
+                    >
+                      <RotateCcw className="size-[15px]" />
+                      {desktop && t("trash.restore")}
+                    </Button>
+                    {admin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t("trash.purgeAria", { title: item.title })}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPurging([{ kind: item.kind, id: item.id }]);
+                        }}
+                      >
+                        <Trash2 className="size-[15px]" />
+                      </Button>
+                    )}
+                  </>
+                }
+              >
+                <Icon className="size-[15px] shrink-0 text-muted-foreground" />
+                <div className="flex min-w-0 flex-1 flex-col py-2">
+                  <span className="truncate text-sm font-medium">{item.title}</span>
+                  <span className="truncate text-[13px] text-muted-foreground">{detail(item)}</span>
+                  <span className="text-[13px] text-muted-foreground">
+                    {item.trashedBy
+                      ? t("trash.sentBy", { when: when(item.trashedAt), who: item.trashedBy })
+                      : t("trash.sent", { when: when(item.trashedAt) })}
+                    {" · "}
+                    <span className={left <= 3 ? "text-destructive" : undefined}>
+                      {left === 0 ? t("trash.goesSoon") : t("trash.goesIn", { count: left })}
+                    </span>
+                  </span>
+                </div>
+              </SelectableRow>
+            );
+          })}
+        </div>
+      )}
 
       <ConfirmButton
         open={purging !== null}

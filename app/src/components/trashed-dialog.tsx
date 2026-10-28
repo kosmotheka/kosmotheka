@@ -80,7 +80,8 @@ export function TrashedDialog({
               </AlertDialogDescription>
             </AlertDialogHeader>
             {error && <p className="text-[13px] text-destructive">{error}</p>}
-            <AlertDialogFooter>
+            {/* Three long labels do not fit side by side: one under another, «Restaurar» first. */}
+            <AlertDialogFooter className="sm:flex-col-reverse sm:justify-start">
               <AlertDialogCancel disabled={busy}>{t("form.cancel")}</AlertDialogCancel>
               {admin && (
                 <Button

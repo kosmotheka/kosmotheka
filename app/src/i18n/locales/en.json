@@ -2359,7 +2359,13 @@
     "purged_one": "Deleted for good",
     "purged_other": "{{count}} deleted for good",
     "moved": "Moved to the trash",
-    "undo": "Undo"
+    "undo": "Undo",
+    "sectionEmpty": {
+      "edition": "No works in the trash.",
+      "copy": "No single copies in the trash.",
+      "tag": "No tags in the trash.",
+      "series": "No sagas or collections in the trash."
+    }
   },
   "trashed": {
     "title": {

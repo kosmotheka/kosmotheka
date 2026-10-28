@@ -2373,7 +2373,13 @@
     "purged_one": "Eliminado definitivamente",
     "purged_other": "Eliminados definitivamente {{count}}",
     "moved": "Movido a la papelera",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "sectionEmpty": {
+      "edition": "No hay fichas en la papelera.",
+      "copy": "No hay ejemplares sueltos en la papelera.",
+      "tag": "No hay etiquetas en la papelera.",
+      "series": "No hay sagas ni colecciones en la papelera."
+    }
   },
   "trashed": {
     "title": {
