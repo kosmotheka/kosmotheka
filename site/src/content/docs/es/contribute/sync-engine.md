@@ -101,6 +101,14 @@ Algunos casos con dependientes: al borrar una obra se borran, en cadena, sus edi
 
 **En el ejemplo.** La edición de *Rayuela* tiene lápida desde las 10:10; la de Ana es de las 10:20 y se ignora. Los dos acaban sin *Rayuela*.
 
+### La papelera, antes del borrado de verdad
+
+Desde [D105](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md), «borrar» en la app no borra: una ficha, un ejemplar, una etiqueta o una saga pasan a la **papelera**, que son dos campos más de la fila, `trashed_at` (cuándo) y `trashed_by` (qué persona). Restaurar es ponerlos a `null`. Para el motor es un cambio de campos como cualquier otro, así que se fusiona igual: gana la marca más alta, y lo que cuelga de la fila no se toca, por eso vuelve entero. Si Hugo manda *Rayuela* a la papelera y Ana la edita sin saberlo, la edición de Ana se guarda, y al restaurar vuelve con ella.
+
+El borrado de verdad, con su lápida, es **eliminar definitivamente**: lo hace quien administra cuando quiere, y cualquier editor o administrador cuando la cosa lleva 30 días en la papelera. Si una persona restaura mientras otra elimina, gana eliminar, como siempre.
+
+Esos 30 días los cuenta cada dispositivo desde **la más tardía de dos fechas**: `trashed_at` y la primera vez que **él** vio esa fila en la papelera, apuntada en una tabla local que no se sincroniza (`trash_seen`). Un dispositivo con el reloj adelantado no hace así que los demás eliminen antes de tiempo, y una copia de seguridad antigua da 30 días más a lo que traiga en la papelera. Si dos dispositivos eliminan lo mismo, el segundo no cambia nada. El servidor hace lo mismo a los 60 días, como red de seguridad.
+
 ## 5. Cómo se piden lo que les falta: el vector de versiones
 
 ¿Cómo sabe un dispositivo qué operaciones le faltan al otro? Cada dispositivo calcula, para cada biblioteca y cada autor de operaciones, **cuál es la última marca que tiene**: es su **vector de versiones**. Se obtiene del registro, sin tablas extra. Una sincronización entre A y B:
@@ -180,6 +188,7 @@ Para que nadie lo dé por supuesto:
 
 - `app/src-tauri/src/sync.rs`: el vector de versiones (`version_vectors`), lo que le falta al otro (`operations_since`) y la fusión (`merge`, `apply_change`), con los tests que simulan dispositivos.
 - `app/src-tauri/src/ops.rs`: las operaciones locales, que usan las mismas reglas.
+- `app/src-tauri/src/trash.rs`: la papelera (mandar, restaurar, eliminar y lo que caduca a los 30 días).
 - `crates/domain/src/hlc.rs`, `operation.rs`, `permission.rs`, `signature.rs`: el reloj, la validación, los permisos y las firmas, sin base de datos.
 - `app/src-tauri/src/lan/`: emparejamiento, certificado y transporte por la red local.
 - `server/src/Sync/`: el servidor; `Sync/Merge/` es el motor de fusión.

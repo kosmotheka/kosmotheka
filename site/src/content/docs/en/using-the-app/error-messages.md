@@ -2,7 +2,7 @@
 title: Error messages and what to do
 description: "The notices Kosmotheka may show when something does not work, what they mean and what to do in each case."
 sidebar:
-  order: 21
+  order: 22
 ---
 
 Almost all the app's notices are fixed in a minute. Here are the ones you may really come across, written as they appear on screen, with what they mean and what you can do. If you are looking for one, use your browser's search (Ctrl+F) with the first few words.

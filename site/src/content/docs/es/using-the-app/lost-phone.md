@@ -2,7 +2,7 @@
 title: He perdido el móvil o lo he cambiado
 description: Qué hacer si pierdes el móvil o compras uno nuevo, con cuenta y sin ella, y qué no se puede recuperar.
 sidebar:
-  order: 18
+  order: 19
 ---
 
 Si has cambiado de móvil porque quieres, este es el camino fácil. Si lo has perdido o te lo han robado, ve a la sección «Si lo han perdido o robado»: además de recuperar tus cosas, hay que proteger tu cuenta.

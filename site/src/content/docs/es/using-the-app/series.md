@@ -33,7 +33,7 @@ En la lista, cada una dice si es saga o colección, cuántas tienes de cuántas 
 
 Eliges si es saga o colección al crearla. Después, la app no deja cambiarlo. Dos de una misma biblioteca no pueden llamarse igual.
 
-Dentro, «Renombrar» cambia su nombre y «Eliminar» la borra. Al borrarla, **las cosas se quedan en tu Catálogo** (la lista de todo lo que has apuntado). Solo desaparece la agrupación.
+Dentro, «Renombrar» cambia su nombre y «Eliminar» la borra. Al borrarla, **las cosas se quedan en tu Catálogo** (la lista de todo lo que has apuntado). Solo desaparece la agrupación, y pasa a la [papelera](../trash/) 30 días por si quieres restaurarla.
 
 ## Meter cosas
 

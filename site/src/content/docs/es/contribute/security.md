@@ -85,11 +85,13 @@ Tres defensas:
 - Aplica a todo lo que guarda las mismas reglas de roles que los dispositivos.
 - Si echan a una persona o retiran un dispositivo, la nube **deja de entregarles la biblioteca al momento**, aunque entren desde un móvil nuevo. Al dispositivo cortado le enseña la prueba firmada de quien administra, y el dispositivo solo borra la biblioteca si esa prueba es buena: un servidor que mintiera no podría hacer perder una biblioteca.
 
-### 6. La nube es un dispositivo más, con un solo poder
+### 6. La nube es un dispositivo más, con poderes contados
 
 **Problema:** te compras un móvil nuevo. Nadie en casa lo conoce, así que no tiene ningún rol hasta que alguien lo empareje a mano. Y si eras la única administradora y perdiste tu único móvil, nadie puede.
 
-Al subir una biblioteca, la nube entra en ella como un dispositivo más, con su propia clave guardada cifrada. Quien administra le da **un único poder**: decir «este dispositivo nuevo es de Laura» cuando Laura ha entrado en él con su cuenta. No puede cambiar roles, ni tocar el catálogo, ni quitarle un dispositivo a nadie. El identificador de la nube en una biblioteca **sale de su clave**, de modo que nadie puede presentarse con ese identificador y otra clave. Quien no se fíe de su servidor puede quitarle ese poder; entonces cada dispositivo nuevo se empareja a mano.
+Al subir una biblioteca, la nube entra en ella como un dispositivo más, con su propia clave guardada cifrada. Quien administra le da **un único poder**: decir «este dispositivo nuevo es de Laura» cuando Laura ha entrado en él con su cuenta. No puede cambiar roles, ni tocar el catálogo (salvo vaciar la papelera, abajo), ni quitarle un dispositivo a nadie. El identificador de la nube en una biblioteca **sale de su clave**, de modo que nadie puede presentarse con ese identificador y otra clave. Quien no se fíe de su servidor puede quitarle ese poder; entonces cada dispositivo nuevo se empareja a mano.
+
+Con la papelera tiene **otro, y nada más sobre el catálogo**: eliminar para siempre lo que lleva **60 días** en la papelera, por si ningún dispositivo de la biblioteca se conecta en ese tiempo. Una nube que intente eliminar antes, o algo que no está en la papelera, ve su operación rechazada como petición, en la app y en el servidor. Riesgo aceptado: una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo, pero solo lo que una persona ya había borrado.
 
 ### 7. Decir de quién es un dispositivo incluye su clave
 
@@ -122,6 +124,12 @@ El servidor apunta, en una tabla donde solo se añade, qué pasó, a qué cuenta
 - El servidor liga la vuelta al navegador que salió, con un valor de un solo uso.
 - Solo vale un correo que Google confirma, y se reconoce a la persona por su identificador de Google, no por el correo, que se puede cambiar.
 - No se guarda ningún token de Google.
+
+### 11. Un borrado se puede deshacer
+
+**Problema:** un toque equivocado, o alguien con rol de editor que borra lo que no debe, y la ficha desaparece de todos los dispositivos.
+
+Lo borrado pasa 30 días en la **papelera** antes de irse, con quién lo borró y cuándo. Un editor no puede eliminar nada para siempre antes de esos 30 días: solo quien administra. Y `trashed_by` tiene que ser la persona del dispositivo que firma, comprobado como todo lo demás, así que nadie puede culpar a otro de un borrado.
 
 ### Otras protecciones
 

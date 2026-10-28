@@ -48,6 +48,8 @@ In the "Copies" section, tap a copy to change it: its form opens. To delete it, 
 
 If you delete a copy, the book **stays in your library**: only that copy goes. To remove the whole book, use "Delete" in the menu of its page: the book and all its copies go.
 
+What you delete goes to the library's **trash**, where it stays for 30 days in case you change your mind. Right after, the notice at the bottom has "Undo". It is in [The trash](../trash/).
+
 ## Something you want and do not have
 
 Anything you note without any copy (from "Missing", with the "Add one" button on a phone or "Add" on a computer, or because you deleted all its copies) goes in the "Missing" list. When you get it, open its page and tap "I have it": it adds a copy and it stops being missing.

@@ -101,6 +101,14 @@ Some cases involve dependents: when a work is deleted, its editions and the copi
 
 **In the example.** The edition of *Rayuela* has a tombstone since 10:10; Ana's edit, from 10:20, is ignored. Both end up without *Rayuela*.
 
+### The trash, before the real deletion
+
+Since [D105](https://github.com/kosmotheka/kosmotheka/blob/main/docs/DECISIONS.md), "delete" in the app does not delete: a work's edition, a copy, a tag or a saga goes to the **trash**, which is two more fields of the row, `trashed_at` (when) and `trashed_by` (which person). Restoring sets them to `null`. For the engine it is a change of fields like any other, so it merges the same way: the highest mark wins, and what hangs from the row is not touched, which is why it comes back whole. If Hugo sends *Rayuela* to the trash and Ana edits it without knowing, Ana's edit is kept, and restoring brings it back with it.
+
+The real deletion, with its tombstone, is **deleting for good**: whoever administers does it whenever they want, and any editor or administrator once the thing has been 30 days in the trash. If one person restores while another deletes for good, the deletion wins, as always.
+
+Each device counts those 30 days from **the later of two dates**: `trashed_at` and the first time **it** saw that row in the trash, noted in a local table that is not synced (`trash_seen`). So a device with a clock ahead does not make the others delete early, and an old backup gives what it carries in the trash 30 more days. If two devices delete the same thing, the second changes nothing. The server does the same after 60 days, as a safety net.
+
 ## 5. How they ask for what they are missing: the version vector
 
 How does a device know which operations the other one lacks? For each library and each author of operations, each device computes **the latest mark it has**: its **version vector**. It is read from the log, with no extra tables. A sync between A and B goes like this:
@@ -180,6 +188,7 @@ So that nobody takes it for granted:
 
 - `app/src-tauri/src/sync.rs`: the version vector (`version_vectors`), what the other lacks (`operations_since`) and the merge (`merge`, `apply_change`), with the tests that simulate devices.
 - `app/src-tauri/src/ops.rs`: the local operations, which use the same rules.
+- `app/src-tauri/src/trash.rs`: the trash (sending, restoring, deleting for good and what expires after 30 days).
 - `crates/domain/src/hlc.rs`, `operation.rs`, `permission.rs`, `signature.rs`: the clock, the validation, the permissions and the signatures, without a database.
 - `app/src-tauri/src/lan/`: pairing, certificate and transport over the local network.
 - `server/src/Sync/`: the server; `Sync/Merge/` is the merge engine.

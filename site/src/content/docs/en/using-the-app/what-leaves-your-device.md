@@ -2,7 +2,7 @@
 title: What leaves your device and what does not
 description: What data is sent, to whom and when, and how to turn it off.
 sidebar:
-  order: 13
+  order: 14
 ---
 
 **Your books and everything else stay on your phone or computer.** Your notes, your stars, whose each thing is and your backups do not leave it on their own. Without an account, the app only uses the internet to look up the details of what you add and, on the computer, to know whether there is a new version.

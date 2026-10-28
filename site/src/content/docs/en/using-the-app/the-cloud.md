@@ -2,7 +2,7 @@
 title: "The cloud: your libraries on all your devices"
 description: How to create an account, upload a library, sign in on a new phone and invite other people.
 sidebar:
-  order: 16
+  order: 17
 ---
 
 The cloud means keeping your libraries also on the internet, on a computer called a **server**, and not only on your devices. It is **optional**. Without an account, the app works completely: your libraries are on your devices and are shared with the ones at home over Wi-Fi ([Share at home](../share-at-home/)). With an account, in addition, your libraries are updated **from anywhere**, without the devices being on the same Wi-Fi, and you can invite other people.

@@ -2,7 +2,7 @@
 title: Copias de seguridad, exportar e importar
 description: Cómo guardar una copia de tu biblioteca, recuperarla y pasar tu lista a una hoja de cálculo o desde ella.
 sidebar:
-  order: 11
+  order: 12
 ---
 
 Tus bibliotecas viven en tu móvil u ordenador. Si lo pierdes, se rompe o lo borras sin querer, solo recuperas lo que tengas en una copia de seguridad. Conviene hacerlas de vez en cuando.
@@ -38,6 +38,8 @@ Si tienes más de una biblioteca, el botón «Copia de todo el dispositivo» las
 3. Si tiene contraseña, escríbela y pulsa «Desbloquear y restaurar». Si te equivocas, no se recupera nada y puedes volver a intentarlo.
 
 Cada biblioteca del archivo vuelve con su nombre. Las que ya tienes en tu dispositivo con libros no se tocan.
+
+La copia guarda también la [papelera](../trash/). Lo que vuelva en ella tiene 30 días más desde que restauras, aunque la copia sea antigua, y el resumen dice cuántas cosas trae.
 
 **Una cosa que conviene saber.**
 

@@ -62,7 +62,7 @@ Esta opción solo sale si tienes más de una biblioteca y puedes borrar esa cosa
 
 Lo que pasa:
 
-- La cosa se **mueve con sus ejemplares, géneros, etiquetas, notas y portada**. Deja de estar en la biblioteca de origen.
+- La cosa se **mueve con sus ejemplares, géneros, etiquetas, notas y portada**. Deja de estar en la biblioteca de origen: allí queda en la [papelera](../trash/) 30 días, por si te equivocaste de biblioteca.
 - Si en la de destino ya tenías ese libro (el mismo ISBN, el número que va junto al código de barras), sus ejemplares se suman a él.
 - **No se llevan tus marcas**: si lo has leído, tus estrellas, tu favorito y «Lo deseo». Están explicadas en [Lo de cada uno](../marks/).
 - **Tampoco se lleva la serie** a la que pertenecía.

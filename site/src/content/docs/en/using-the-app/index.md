@@ -21,31 +21,32 @@ These are the guides for people who use the app. Each page answers one concrete 
 7. [Your own: to read, reading, read, stars, favorites and "I want it"](./marks/)
 8. [Sagas and collections](./series/)
 9. [Several libraries](./several-libraries/)
+10. [The trash: getting back what was deleted](./trash/)
 
 ## Sharing and keeping safe
 
-10. [Share at home: pair devices over Wi-Fi](./share-at-home/)
-11. [Backups, export and import](./backups/)
+11. [Share at home: pair devices over Wi-Fi](./share-at-home/)
+12. [Backups, export and import](./backups/)
 
 ## Your data
 
-12. [Where the details come from: public catalogs, your own keys and how to turn them off](./data-sources/)
-13. [What leaves your device and what does not](./what-leaves-your-device/)
+13. [Where the details come from: public catalogs, your own keys and how to turn them off](./data-sources/)
+14. [What leaves your device and what does not](./what-leaves-your-device/)
 
 ## People, account and cloud
 
-14. [People and permissions: who can do what](./people-and-permissions/)
-15. [Remove a person or a device from a library](./remove-someone/)
-16. [The cloud: your libraries on all your devices](./the-cloud/)
-17. [Away from home and offline: what works](./away-from-home/)
+15. [People and permissions: who can do what](./people-and-permissions/)
+16. [Remove a person or a device from a library](./remove-someone/)
+17. [The cloud: your libraries on all your devices](./the-cloud/)
+18. [Away from home and offline: what works](./away-from-home/)
 
 ## When something goes wrong
 
-18. [I lost my phone or changed it](./lost-phone/)
-19. [Delete my account and my data](./delete-account/)
-20. [Frequently asked questions](./faq/)
-21. [Error messages and what to do](./error-messages/)
-22. [What's new in each version](./whats-new/)
+19. [I lost my phone or changed it](./lost-phone/)
+20. [Delete my account and my data](./delete-account/)
+21. [Frequently asked questions](./faq/)
+22. [Error messages and what to do](./error-messages/)
+23. [What's new in each version](./whats-new/)
 
 ## On the project's website
 

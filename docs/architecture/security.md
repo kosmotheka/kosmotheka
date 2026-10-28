@@ -78,11 +78,13 @@ Y no hay un momento en que una biblioteca pase de no tener roles a tenerlos, que
 
 *Construida, también con varias cuentas en la misma biblioteca (cada una es una `membership` ligada a una persona). Nombres: `cloud_library`, `membership`.*
 
-### 6. La nube es un dispositivo más, con un solo poder
+### 6. La nube es un dispositivo más, con poderes contados
 
 **Problema:** te compras un móvil nuevo. Nadie en casa lo conoce, así que no tiene ningún rol hasta que alguien lo empareje a mano. Y si eras la única administradora y perdiste tu único móvil, nadie puede.
 
-Al subir una biblioteca, la nube entra en ella como un dispositivo más, con su propia clave, y quien administra le da **un único poder**: decir «este dispositivo nuevo es de Laura» cuando Laura ha entrado en él con su cuenta. No puede cambiar roles, ni tocar el catálogo, ni quitarle un dispositivo a nadie. Los demás dispositivos lo comprueban como comprueban todo lo demás. Quien no se fíe de su servidor puede quitarle ese poder; entonces cada dispositivo nuevo se empareja a mano.
+Al subir una biblioteca, la nube entra en ella como un dispositivo más, con su propia clave, y quien administra le da **un único poder**: decir «este dispositivo nuevo es de Laura» cuando Laura ha entrado en él con su cuenta. No puede cambiar roles, ni tocar el catálogo (salvo vaciar la papelera, abajo), ni quitarle un dispositivo a nadie. Los demás dispositivos lo comprueban como comprueban todo lo demás. Quien no se fíe de su servidor puede quitarle ese poder; entonces cada dispositivo nuevo se empareja a mano.
+
+Con la papelera (D105) tiene **otro, y nada más sobre el catálogo**: eliminar para siempre lo que lleva 60 días en la papelera, contados desde la más tardía de `trashed_at` y cuándo le llegó la fila, por si ningún dispositivo se conecta en ese tiempo. Lo hace un comando programado (`app:trash:expire`, cada día) que firma con el dispositivo de la nube (regla 16 del juez). Antes de 60 días, o sobre algo que no está en la papelera, su operación queda como petición. Riesgo aceptado: una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo, pero solo lo que una persona ya había borrado.
 
 Cada biblioteca de la nube tiene su propia clave, guardada cifrada. El identificador de «la nube» en una biblioteca sale de su clave, de modo que nadie puede presentarse con ese identificador y otra clave.
 

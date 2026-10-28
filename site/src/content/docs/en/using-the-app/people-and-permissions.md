@@ -2,7 +2,7 @@
 title: "People and permissions: who can do what"
 description: What an administrator, an editor and a reader can do in a shared library, and how changes are requested and accepted.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 When you share a library with other people, not all of them have to be able to do everything. Each person has a **role** in each library: the part they play, which decides what they can do. This page explains the three roles, how to ask for a change you cannot make yourself, and how the administrator accepts it.
@@ -14,6 +14,8 @@ Roles belong to each library: someone can administer "Home" and be a reader in "
 - **Administrator:** can do everything, including deciding who comes in, what role each person has, and what is done with the requests (the changes other people ask for).
 - **Editor:** creates and changes things, and deletes only what that same person added.
 - **Reader:** sees the library and asks for the changes they want.
+
+What is deleted goes to the [trash](../trash/) for 30 days. Whoever administers or edits sees it and restores what is in it; deleting it before its time is only for whoever administers.
 
 At home it is normal to have one or two administrators, the adults as editors and the children as readers. Nobody has to overthink it: if you do not know what to pick for someone, pick editor.
 

@@ -33,7 +33,7 @@ In the list, each one says whether it is a saga or a collection, how many you ha
 
 You choose whether it is a saga or a collection when you create it. After that, the app does not let you change it. Two in the same library cannot have the same name.
 
-Inside, "Rename" changes its name and "Delete" deletes it. When you delete it, **the things stay in your catalog** (the list of everything you have noted). Only the grouping disappears.
+Inside, "Rename" changes its name and "Delete" deletes it. When you delete it, **the things stay in your catalog** (the list of everything you have noted). Only the grouping disappears, and it goes to the [trash](../trash/) for 30 days in case you want it back.
 
 ## Put things in
 

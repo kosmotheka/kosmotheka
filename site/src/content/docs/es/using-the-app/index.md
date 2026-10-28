@@ -21,31 +21,32 @@ Aquí están las guías para quien usa la app. Cada página responde a una pregu
 7. [Lo de cada uno: por leer, leído, estrellas, favoritos y «Lo deseo»](./marks/)
 8. [Sagas y colecciones](./series/)
 9. [Varias bibliotecas](./several-libraries/)
+10. [La papelera: recuperar lo que se ha borrado](./trash/)
 
 ## Compartir y guardar
 
-10. [Compartir en casa: emparejar dispositivos por wifi](./share-at-home/)
-11. [Copias de seguridad, exportar e importar](./backups/)
+11. [Compartir en casa: emparejar dispositivos por wifi](./share-at-home/)
+12. [Copias de seguridad, exportar e importar](./backups/)
 
 ## Tus datos
 
-12. [De dónde salen los datos: catálogos públicos, claves propias y cómo apagarlos](./data-sources/)
-13. [Qué sale de tu dispositivo y qué no](./what-leaves-your-device/)
+13. [De dónde salen los datos: catálogos públicos, claves propias y cómo apagarlos](./data-sources/)
+14. [Qué sale de tu dispositivo y qué no](./what-leaves-your-device/)
 
 ## Personas, cuenta y nube
 
-14. [Personas y permisos: quién puede hacer qué](./people-and-permissions/)
-15. [Quitar a una persona o un dispositivo de una biblioteca](./remove-someone/)
-16. [La nube: tener tus bibliotecas en todos tus dispositivos](./the-cloud/)
-17. [Fuera de casa y sin conexión: qué funciona](./away-from-home/)
+15. [Personas y permisos: quién puede hacer qué](./people-and-permissions/)
+16. [Quitar a una persona o un dispositivo de una biblioteca](./remove-someone/)
+17. [La nube: tener tus bibliotecas en todos tus dispositivos](./the-cloud/)
+18. [Fuera de casa y sin conexión: qué funciona](./away-from-home/)
 
 ## Cuando algo sale mal
 
-18. [He perdido el móvil o lo he cambiado](./lost-phone/)
-19. [Borrar mi cuenta y mis datos](./delete-account/)
-20. [Preguntas frecuentes](./faq/)
-21. [Mensajes de error y qué hacer](./error-messages/)
-22. [Novedades de cada versión](./whats-new/)
+19. [He perdido el móvil o lo he cambiado](./lost-phone/)
+20. [Borrar mi cuenta y mis datos](./delete-account/)
+21. [Preguntas frecuentes](./faq/)
+22. [Mensajes de error y qué hacer](./error-messages/)
+23. [Novedades de cada versión](./whats-new/)
 
 ## En la web del proyecto
 

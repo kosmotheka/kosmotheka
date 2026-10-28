@@ -85,11 +85,13 @@ Three defences:
 - It applies to everything it stores the same role rules as the devices.
 - If a person is removed or a device withdrawn, the cloud **stops handing them the library immediately**, even if they enter from a new phone. It shows the cut-off device the signed proof from whoever administers, and the device only deletes the library if that proof is good: a server that lied could not make a library be lost.
 
-### 6. The cloud is one more device, with one single power
+### 6. The cloud is one more device, with counted powers
 
 **Problem:** you buy a new phone. Nobody at home knows it, so it has no role until someone pairs it by hand. And if you were the only administrator and lost your only phone, nobody can.
 
-When a library is uploaded, the cloud enters it as one more device, with its own key stored encrypted. Whoever administers gives it **a single power**: to say "this new device is Laura's" when Laura has entered it with her account. It cannot change roles, touch the catalog or remove a device from anyone. The cloud's identifier in a library **comes from its key**, so nobody can present that identifier with another key. Whoever does not trust their server can remove that power; then each new device is paired by hand.
+When a library is uploaded, the cloud enters it as one more device, with its own key stored encrypted. Whoever administers gives it **a single power**: to say "this new device is Laura's" when Laura has entered it with her account. It cannot change roles, touch the catalog (except emptying the trash, below) or remove a device from anyone. The cloud's identifier in a library **comes from its key**, so nobody can present that identifier with another key. Whoever does not trust their server can remove that power; then each new device is paired by hand.
+
+With the trash it has **one more, and nothing else over the catalog**: deleting for good what has been **60 days** in the trash, in case no device of the library connects in that time. A cloud that tries to delete earlier, or something that is not in the trash, has its operation turned into a request, in the app and on the server. Accepted risk: a compromised cloud could date its operation in its favour and delete early, but only what a person had already deleted.
 
 ### 7. Saying whose a device is includes its key
 
@@ -122,6 +124,12 @@ The server notes, in a table where entries are only added, what happened, which 
 - The server ties the return to the browser that left, with a single-use value.
 - Only an email that Google confirms counts, and the person is recognised by their Google identifier, not by the email, which can be changed.
 - No Google token is stored.
+
+### 11. A deletion can be undone
+
+**Problem:** a wrong tap, or someone with the editor role deleting what they should not, and the entry disappears from every device.
+
+What is deleted spends 30 days in the **trash** before it goes, with who deleted it and when. An editor cannot delete anything for good before those 30 days: only whoever administers can. And `trashed_by` must be the person of the device that signs, checked like everything else, so nobody can blame someone else for a deletion.
 
 ### Other protections
 

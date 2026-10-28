@@ -2,7 +2,7 @@
 title: "Fuera de casa y sin conexión: qué funciona"
 description: Qué puedes hacer con la app sin internet, sin la wifi de casa o de viaje, con y sin cuenta.
 sidebar:
-  order: 17
+  order: 18
 ---
 
 La app guarda tus bibliotecas **en el propio dispositivo**. Por eso casi todo funciona sin internet. Lo que cambia según dónde estés es **cuándo llegan tus cambios a los demás dispositivos**.

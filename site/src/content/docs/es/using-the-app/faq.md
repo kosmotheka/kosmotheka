@@ -2,7 +2,7 @@
 title: Preguntas frecuentes
 description: Respuestas cortas a lo que más se pregunta, con enlace a la página donde está explicado con calma.
 sidebar:
-  order: 20
+  order: 21
 ---
 
 Respuestas cortas, sin letra pequeña. Cada una te lleva a la página que la explica entera.
@@ -56,6 +56,10 @@ Libros, cómics, juegos de mesa, películas, series, videojuegos y música, cada
 ## ¿Puedo traer lo que ya tengo apuntado?
 
 Sí: importa tu hoja de cálculo (un archivo CSV, el que guardan Excel y otros programas) y la app lo convierte en tu lista de cosas. Si tu hoja tiene una columna con el tipo (libro, juego, película…), cada cosa entra con el suyo; si no, todo entra como libro, y después puedes cambiar el tipo desde su ficha. También puedes exportarlo cuando quieras. Está en [Copias de seguridad, exportar e importar](../backups/).
+
+## He borrado algo sin querer, ¿se puede recuperar?
+
+Sí, durante 30 días. Justo al borrar, pulsa «Deshacer» en el aviso de abajo. Después, está en la «Papelera» del menú de la biblioteca, con «Restaurar». Pasados 30 días, solo vuelve con una copia de seguridad. Está en [La papelera](../trash/).
 
 ## ¿Cómo borro mi cuenta?
 

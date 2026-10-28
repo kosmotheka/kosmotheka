@@ -2,7 +2,7 @@
 title: Backups, export and import
 description: How to save a backup of your library, restore it, and move your list to or from a spreadsheet.
 sidebar:
-  order: 11
+  order: 12
 ---
 
 Your libraries live on your phone or computer. If you lose it, it breaks or you delete things by mistake, you only get back what you have in a backup. It is a good idea to make them from time to time.
@@ -38,6 +38,8 @@ If you have more than one library, the "Back up the whole device" button saves t
 3. If it has a password, type it and tap "Unlock and restore". If you get it wrong, nothing is restored and you can try again.
 
 Each library in the file comes back with its name. The ones you already have on your device with books in them are left alone.
+
+The backup also keeps the [trash](../trash/). What comes back in it gets 30 more days from when you restore, even if the backup is old, and the summary says how many things it brings.
 
 **One thing worth knowing.**
 

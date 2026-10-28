@@ -69,11 +69,13 @@
 ## 5. Documentación
 
 - [x] Arquitectura: `operations.md` (intenciones), `sync.md` (la papelera frente al borrado de verdad, los relojes, la nube), `data-model.md` (los campos y la tabla local).
-- [ ] Guía (es, en): página nueva «La papelera» (qué entra y qué no, 30 días, quién la ve, restaurar y eliminar, lo que no vuelve igual, las copias de seguridad que dan 30 días más, la nube a los 60) y las páginas que borran (añadir un libro, ejemplares, etiquetas, sagas, personas y permisos, copias de seguridad), más preguntas frecuentes.
-- [ ] Guía para colaborar: `contribute/sync-engine.md` y `contribute/security.md`.
-- [ ] La Ayuda de la app, si merece tema propio.
-- [ ] Novedades: una línea para personas, que avisa de que todos los dispositivos de la biblioteca deben actualizar.
-- [ ] Comprobado que no cambia lo que sale del dispositivo ni la política de privacidad.
+- [x] Guía (es, en): página nueva «La papelera» (qué entra y qué no, 30 días, quién la ve, restaurar y eliminar, lo que no vuelve igual, las copias de seguridad que dan 30 días más, la nube a los 60) y las páginas que borran (añadir un libro, ejemplares, etiquetas, sagas, personas y permisos, copias de seguridad), más preguntas frecuentes. *Hecho (5a): `using-the-app/trash.md`, la 10 del índice (las siguientes, renumeradas); una línea en ejemplares, sagas, varias bibliotecas (mover deja en la papelera), copias de seguridad y personas y permisos, y una pregunta frecuente. Añadir un libro no la necesita: lo cuenta la página nueva.*
+- [x] Guía para colaborar: `contribute/sync-engine.md` y `contribute/security.md`. *Hecho (5a): «La papelera, antes del borrado de verdad» y la protección 11; la nube pasa a tener «poderes contados», también en `docs/architecture/security.md`.*
+- [x] La Ayuda de la app, si merece tema propio. *Hecho (5a): «Recuperar algo que he borrado», antes de las copias de seguridad.*
+- [ ] Novedades: una línea para personas, que avisa de que todos los dispositivos de la biblioteca deben actualizar. *Escrita, sin poner aún: `next` ya tiene las 5 de las ramas pendientes, y la papelera va en una versión propia. Al rebasar esta rama, cuando esas 5 tengan número, va a `next`:*
+  - es: «Lo que borras ya no se pierde: pasa a la papelera de la biblioteca (en el menú) y se queda allí 30 días, por si quieres restaurarlo tal como estaba. Al borrar, «Deshacer» lo devuelve al momento. Si añades algo que está en la papelera, la app te ofrece recuperarlo. Para que funcione, todos los dispositivos de la biblioteca tienen que tener esta versión.»
+  - en: «What you delete is no longer lost: it goes to the library's trash (in the menu) and stays there for 30 days, in case you want it back as it was. Right after deleting, "Undo" brings it back at once. If you add something that is in the trash, the app offers to restore it. For it to work, every device of the library needs this version.»
+- [x] Comprobado que no cambia lo que sale del dispositivo ni la política de privacidad. *Lo que sale es el mismo catálogo con dos campos más (cuándo y qué persona de la biblioteca), que ya viajaba en el historial; ningún servicio nuevo ni dato nuevo de fuera de la biblioteca.*
 
 ## 6. Cierre
 

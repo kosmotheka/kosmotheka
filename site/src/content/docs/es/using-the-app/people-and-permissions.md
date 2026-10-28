@@ -2,7 +2,7 @@
 title: "Personas y permisos: quién puede hacer qué"
 description: Qué puede hacer un administrador, un editor y un lector en una biblioteca compartida, y cómo se piden y se aceptan los cambios.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 Cuando compartes una biblioteca con otras personas, no todas tienen por qué poder hacerlo todo. Cada persona tiene un **rol** en cada biblioteca: el papel que se le da, que decide qué puede hacer. Esta página explica los tres roles, cómo se pide un cambio que no puedes hacer tú, y cómo lo acepta quien administra.
@@ -14,6 +14,8 @@ Los roles son de cada biblioteca: alguien puede administrar «Casa» y ser lecto
 - **Administrador:** puede hacerlo todo, incluido decidir quién entra, qué rol tiene cada uno y qué se hace con las peticiones (los cambios que otras personas piden).
 - **Editor:** crea y cambia cosas, y borra solo lo que añadió esa misma persona.
 - **Lector:** ve la biblioteca y pide lo que quiera cambiar.
+
+Lo borrado pasa a la [papelera](../trash/) 30 días. Quienes administran o editan la ven y restauran lo que haya en ella; eliminarlo antes de tiempo es solo de quien administra.
 
 Es normal que en casa haya una o dos personas administradoras, los adultos como editores y los niños como lectores. Nadie tiene que complicarse: si no sabes qué elegir para alguien, elige editor.
 

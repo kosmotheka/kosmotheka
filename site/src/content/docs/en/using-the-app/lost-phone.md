@@ -2,7 +2,7 @@
 title: I lost my phone or changed it
 description: What to do if you lose your phone or buy a new one, with and without an account, and what cannot be recovered.
 sidebar:
-  order: 18
+  order: 19
 ---
 
 If you have changed phones on purpose, this is the easy path. If you have lost it or it was stolen, go to the section "If it was lost or stolen": besides getting your things back, you must protect your account.

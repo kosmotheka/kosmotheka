@@ -2,7 +2,7 @@
 title: What's new in each version
 description: "What has changed in each version of Kosmotheka, from the newest to the oldest."
 sidebar:
-  order: 22
+  order: 23
 ---
 
 The app shows you these notes when it is updated, once only. To see them again, open **Settings › About › What's new**.

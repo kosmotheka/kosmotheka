@@ -48,6 +48,8 @@ En la sección «Ejemplares», toca un ejemplar para cambiarlo: se abre su formu
 
 Si borras un ejemplar, el libro **sigue en tu biblioteca**: solo desaparece ese ejemplar. Para quitar el libro entero, usa «Borrar» en el menú de su ficha: se van el libro y todos sus ejemplares.
 
+Lo que borras pasa a la **papelera** de la biblioteca, donde se queda 30 días por si te arrepientes. Justo después, el aviso de abajo tiene «Deshacer». Está en [La papelera](../trash/).
+
 ## Algo que quieres y no tienes
 
 Lo que apuntas sin ningún ejemplar (desde «Me falta», con el botón «Apuntar» en el móvil o «Añadir» en el ordenador, o porque has borrado todos sus ejemplares) queda en la lista «Me falta». Cuando lo consigas, abre su ficha y pulsa «Lo tengo»: añade un ejemplar y deja de faltar.

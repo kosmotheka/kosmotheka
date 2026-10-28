@@ -62,7 +62,7 @@ This option only appears if you have more than one library and you can delete th
 
 What happens:
 
-- The thing **moves with its copies, genres, tags, notes and cover**. It stops being in the original library.
+- The thing **moves with its copies, genres, tags, notes and cover**. It stops being in the original library: there it stays in the [trash](../trash/) for 30 days, in case you picked the wrong library.
 - If the destination library already had that book (the same ISBN, the number next to the barcode), its copies are added to it.
 - **Your own marks do not move**: whether you have read it, your stars, your favorite and "I want it". They are explained in [Your own: to read, reading, read, stars, favorites and "I want it"](../marks/).
 - **The series it belonged to does not move either.**

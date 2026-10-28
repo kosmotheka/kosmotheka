@@ -2,7 +2,7 @@
 title: "Share at home: pair devices over Wi-Fi"
 description: How to see your library on another phone or computer at home, with no accounts and no internet.
 sidebar:
-  order: 10
+  order: 11
 ---
 
 You can have the same library on several devices at home: your phone, your partner's, a laptop. To do that you have to **pair** them. Pairing is connecting two devices so they pass changes to each other.
