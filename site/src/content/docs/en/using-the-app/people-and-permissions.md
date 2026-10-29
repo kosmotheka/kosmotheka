@@ -65,6 +65,12 @@ Anyone, with any role, can **leave the library** ("Library settings", "Leave the
 
 Nobody who does not administer can withdraw another person's access, nor give it back to themself after leaving. **The only person who administers cannot leave**: they have to name another administrator first, or delete the library. More in [Several libraries](../several-libraries/).
 
+## Who changed what: the history
+
+Each work's page has a "History" tab with what has been done to it and its copies, oldest first: "Book added", "Copy edited", "Work moved to the trash", "Restored from the trash"… Under each one, who did it and when.
+
+"Who" is the person of the device that made the change. If that device belongs to nobody any more (its access was withdrawn, or nobody ever said whose it was), only the date shows. What was added before the history existed has no entries.
+
 ## What it cannot do
 
 - If someone takes a photo of the screen or copies what they see, the app cannot stop them. The role decides what can be changed, not what can be seen.

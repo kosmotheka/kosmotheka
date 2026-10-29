@@ -65,6 +65,12 @@ Cualquier persona, con cualquier rol, puede **salir de la biblioteca** («Ajuste
 
 Nadie puede retirarle el acceso a otra persona si no administra, ni devolvérselo a sí misma después de salir. **La única persona que administra no puede salir**: tiene que nombrar antes a otra persona como administradora, o borrar la biblioteca. Más detalles en [Varias bibliotecas](../several-libraries/).
 
+## Quién cambió qué: el historial
+
+Cada ficha tiene una pestaña «Historial» con lo que se ha hecho con ella y con sus ejemplares, del más antiguo al más reciente: «Libro añadido», «Ejemplar editado», «Ficha a la papelera», «Restaurado de la papelera»… Debajo de cada cosa, quién la hizo y cuándo.
+
+«Quién» es la persona del dispositivo que hizo el cambio. Si ese dispositivo ya no es de nadie (se le retiró el acceso, o nunca se dijo de quién era), sale solo la fecha. Lo que se añadió antes de que existiera el historial no tiene entradas.
+
 ## Lo que no se puede
 
 - Si alguien hace una foto de la pantalla o copia lo que ve, la app no puede impedirlo. El rol decide qué se puede cambiar, no qué se puede ver.

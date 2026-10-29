@@ -111,7 +111,7 @@ Ordenado en el repaso del 24/10/2026: va después de la Fase 8, antes que los de
 - Ejemplar firmado o dedicado, con foto.
 - **Estadísticas** de lectura por año y por persona.
 - **Copia automática periódica** (D58, cambiado el 03/10/2026): la app guarda su propia copia sin claves cada cierto tiempo y, al reinstalar, ofrece restaurarla. Un ajuste para activarla o desactivarla. Por decidir en detalle: dónde se guarda (solo en el dispositivo, Google Drive u otro servicio), cada cuánto y qué hacer con las portadas si no caben.
-- **Papelera** para deshacer borrados (*decidida el 27/10/2026, D105; en curso en la rama `feat/trash`, [plan](plans/papelera.md)*): lo borrado se guarda 30 días y se restaura tal cual; editores y administradores; con selección múltiple, que servirá también para añadir varios resultados de una búsqueda.
+- **Papelera** para deshacer borrados (*decidida el 27/10/2026, D105; hecha el 28/10/2026 en la rama `feat/trash`, a falta de las pruebas del maintainer en dispositivos; va en la 0.8.0. [Plan](plans/papelera.md)*): lo borrado se guarda 30 días y se restaura tal cual; editores y administradores; con selección múltiple, que servirá también para añadir varios resultados de una búsqueda.
 
 ## Herramientas de estantería (era la Fase 10)
 
