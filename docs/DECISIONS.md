@@ -2138,7 +2138,7 @@ No es un riesgo de hoy (no hay carga y el registro es nuevo), pero conviene cerr
 
 1. **Bibliotecas por cuenta: 20** de las que es dueña (D99). Una familia tiene una, dos o tres; un club, unas pocas. Contar las que **posee**, no aquellas en las que es miembro: entrar en bibliotecas ajenas no llena nada que no esté ya contado en su dueño. Variable: `CLOUD_MAX_LIBRARIES_PER_ACCOUNT`.
 2. **Crear bibliotecas: 10 al día** por cuenta (`#[RateLimit('cloud_create')]`), para que borrar y volver a crear no rodee el tope.
-3. **Operaciones guardadas por cuenta: 300.000**, sumando las bibliotecas que posee. Para hacerse una idea: añadir un libro con su ejemplar es una operación, y una biblioteca de 5.000 libros con años de uso (marcas, ediciones, préstamos) no debería pasar de unas decenas de miles. Variable: `CLOUD_MAX_OPERATIONS_PER_ACCOUNT`.
+3. **Operaciones guardadas por cuenta: 300.000**, sumando las bibliotecas que posee. Para hacerse una idea: añadir un libro con su ejemplar es una operación, y una biblioteca de 5.000 libros con años de uso (marcas, ediciones, ejemplares que cambian de sitio) no debería pasar de unas decenas de miles. Variable: `CLOUD_MAX_OPERATIONS_PER_ACCOUNT`.
 4. **Operaciones del servidor entero:** una red de seguridad como `COVERS_SERVER_MAX_BYTES`, por ejemplo 10 millones, que quien monta su servidor ajusta a su disco. Variable: `CLOUD_MAX_OPERATIONS_SERVER`.
 5. **Qué pasa al llegar:**
    - Crear una biblioteca más: error `library_limit`; la app lo dice («Has llegado al máximo de 20 bibliotecas en la nube de esta cuenta») y la biblioteca sigue en el dispositivo, como cualquiera sin nube.
