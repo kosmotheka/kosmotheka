@@ -66,9 +66,9 @@ function DialogContent({
         )}
         {...props}
         onInteractOutside={(event) => {
-          // The scanner's overlay is drawn over a dialog that stays open under the camera (lib/scanner.ts):
-          // tapping its buttons is not leaving the dialog.
-          if (event.target instanceof Element && event.target.closest("#scanner-overlay")) {
+          // The scanner's overlay is drawn over a dialog that stays open under the camera (lib/scanner.ts),
+          // and the app's notice over any dialog: tapping their buttons is not leaving the dialog.
+          if (event.target instanceof Element && event.target.closest("#scanner-overlay, #floating-notice")) {
             event.preventDefault()
           }
           props.onInteractOutside?.(event)

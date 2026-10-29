@@ -162,7 +162,8 @@ export function TrashPage({
         <div
           role="radiogroup"
           aria-label={t("trash.title")}
-          className="flex gap-1.5 overflow-x-auto [mask-image:linear-gradient(90deg,#000_85%,transparent)] pointer-fine:flex-wrap pointer-fine:overflow-x-visible pointer-fine:[mask-image:none]"
+          // Four filters wrap rather than scroll: a faded end would hide the last one's count.
+          className="flex flex-wrap gap-1.5"
         >
           {SECTIONS.map(({ kind, icon: Icon }) => {
             const active = kind === shown;

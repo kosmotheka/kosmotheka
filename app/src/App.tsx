@@ -163,6 +163,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
     text: string;
     label: string;
     run: () => void;
+    closesAfterMs?: number;
   } | null>(null);
   const notify: Notify = useCallback((text, action) => {
     setNotice(text);
@@ -171,6 +172,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
         ? {
             text,
             label: action.label,
+            closesAfterMs: action.closesAfterMs,
             run: () => {
               setNotice(null);
               action.run();
@@ -616,11 +618,7 @@ function AppShell({ news }: { news: WhatsNew | null }) {
           {notice && (
             <FloatingNotice
               text={notice}
-              action={
-                noticeAction?.text === notice
-                  ? { label: noticeAction.label, run: noticeAction.run }
-                  : undefined
-              }
+              action={noticeAction?.text === notice ? noticeAction : undefined}
               desktop={desktop}
               onClose={closeNotice}
             />

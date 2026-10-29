@@ -64,6 +64,13 @@ function SheetContent({
           className
         )}
         {...props}
+        onInteractOutside={(event) => {
+          // The app's notice is drawn over any sheet: tapping it is not leaving the sheet.
+          if (event.target instanceof Element && event.target.closest("#floating-notice")) {
+            event.preventDefault()
+          }
+          props.onInteractOutside?.(event)
+        }}
       >
         {children}
         {showCloseButton && (

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { CircleCheck, X } from "lucide-react";
 
@@ -7,10 +8,15 @@ import { cn } from "@/lib/utils";
 
 const SHOWN_FOR_MS = 60_000;
 
+/** Its id: dialogs and sheets open under it do not take a tap on it for a tap outside them. */
+export const FLOATING_NOTICE_ID = "floating-notice";
+
 /**
  * The app's notice, floating at the bottom so the page under it never moves. It goes by
- * itself after a minute, unless it carries an action the person may still want; the X
- * closes it at any time. Inverted colours, like Android's snackbar, read well in both themes.
+ * itself after a minute, unless it carries an action the person may still want (that one
+ * goes only after its own time, if it has one); the X closes it at any time. It sits over
+ * any open dialog, such as a book's page, so what was done there is said there. Inverted
+ * colours, like Android's snackbar, read well in both themes.
  */
 export function FloatingNotice({
   text,
@@ -19,24 +25,27 @@ export function FloatingNotice({
   onClose,
 }: {
   text: string;
-  action?: { label: string; run: () => void };
+  action?: { label: string; run: () => void; closesAfterMs?: number };
   desktop: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const lasts = !action;
+  const shownFor = action ? action.closesAfterMs : SHOWN_FOR_MS;
 
   useEffect(() => {
-    if (!lasts) return;
-    const timer = setTimeout(onClose, SHOWN_FOR_MS);
+    if (shownFor === undefined) return;
+    const timer = setTimeout(onClose, shownFor);
     return () => clearTimeout(timer);
-  }, [text, lasts, onClose]);
+  }, [text, shownFor, onClose]);
 
-  return (
+  // On the body, not in the app's root: an open dialog hides the root from screen readers.
+  return createPortal(
     <div
+      id={FLOATING_NOTICE_ID}
       role="status"
       className={cn(
-        "fixed z-40 flex items-start gap-3 rounded-xl bg-foreground py-2.5 pr-1.5 pl-4 text-sm text-background shadow-[0_8px_24px_-6px_oklch(0_0_0/40%)]",
+        // Over dialogs (z-50), and reachable while one is open: a modal dialog turns off the rest of the page.
+        "pointer-events-auto fixed z-[60] flex items-start gap-3 rounded-xl bg-foreground py-2.5 pr-1.5 pl-4 text-sm text-background shadow-[0_8px_24px_-6px_oklch(0_0_0/40%)]",
         desktop
           ? "bottom-6 left-1/2 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2"
           : // Above the catalog's «Add» button, which sits above the bottom bar.
@@ -66,6 +75,7 @@ export function FloatingNotice({
       >
         <X />
       </Button>
-    </div>
+    </div>,
+    document.body,
   );
 }
