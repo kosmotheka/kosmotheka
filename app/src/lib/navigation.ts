@@ -1,11 +1,12 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { exit, onBackButtonPress } from "@tauri-apps/api/app";
 
 import type { AddBookPrefill } from "@/components/add-book-dialog";
 
-// Navigation lives in the browser history, so the Android back button (which
-// Tauri maps to "go back in the webview") and the desktop back gestures behave
-// as users expect: back closes the open menu, sheet or dialog first, then
-// returns to the previous section.
+// Navigation lives in the browser history, so the Android back button (taken
+// over in `takeOverBackButton`) and the desktop back gestures behave as users
+// expect: back closes the open menu, sheet or dialog first, then returns to the
+// previous section.
 //
 // - The section is the URL hash: `#/`, `#/check`, `#/missing`, `#/library`, `#/devices`, `#/people`, `#/requests`,
 //   `#/series`, `#/trash`, `#/help`.
@@ -132,6 +133,21 @@ export function openOverlay(overlay: Overlay) {
   if (snapshot.overlay) window.history.replaceState({ overlay }, "", url);
   else window.history.pushState({ overlay }, "", url);
   refresh();
+}
+
+/**
+ * The phone's back button on Android. Left to the WebView, it skips history entries pushed without a tap, such as
+ * the one a form pushes again while asking whether to discard, and with only those left it closed the app. Here
+ * back is always one step of the app's own history; at the catalog with nothing open, it leaves the app.
+ */
+export async function takeOverBackButton() {
+  await onBackButtonPress(() => {
+    const state: unknown = window.history.state;
+    const nothingOpen = state === null || Object.keys(state as object).length === 0;
+    if (snapshot.section === "catalog" && nothingOpen) void exit(0);
+    else if (window.history.length > 1) window.history.back();
+    else navigate("catalog");
+  });
 }
 
 /** Leaves a section the way the back button would, or goes home if there is nowhere to go back to. */

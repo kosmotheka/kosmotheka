@@ -4,5 +4,9 @@
   "description": "Permissions that only exist on phones",
   "platforms": ["android", "iOS"],
   "windows": ["main"],
-  "permissions": ["barcode-scanner:default", "biometric:default"]
+  "permissions": [
+    "barcode-scanner:default",
+    "biometric:default",
+    "core:app:allow-exit"
+  ]
 }
