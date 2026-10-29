@@ -5,7 +5,9 @@
     "version": "Versión {{version}}",
     "next": "Para la próxima versión",
     "close": "Entendido",
-    "switchFailed": "No se ha podido guardar el cambio."
+    "switchFailed": "No se ha podido guardar el cambio.",
+    "detail": "Cada versión, con todo el detalle:",
+    "detailLink": "Novedades de cada versión, en la guía"
   },
   "licenses": {
     "title": "Licencias",

@@ -5,7 +5,9 @@
     "version": "Version {{version}}",
     "next": "Coming in the next version",
     "close": "Got it",
-    "switchFailed": "The change could not be saved."
+    "switchFailed": "The change could not be saved.",
+    "detail": "Every version, in full detail:",
+    "detailLink": "What's new in each version, in the guide"
   },
   "licenses": {
     "title": "Licences",

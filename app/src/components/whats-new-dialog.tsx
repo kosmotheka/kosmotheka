@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ExternalLink } from "@/components/external-link";
 import { Switch } from "@/components/people/role-parts";
 import { ResponsiveDialog } from "@/components/shell/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { languageOf } from "@/i18n";
 import { type WhatsNew, type WhatsNewLine, setWhatsNewSwitch } from "@/lib/api";
+import { guidePage } from "@/lib/guide";
 
 /** What changed since the last version this person saw. What changes what leaves the device comes first, with its switch. */
 export function WhatsNewDialog({
@@ -76,6 +78,13 @@ export function WhatsNewDialog({
             </ul>
           </section>
         ))}
+        {/* The app shows each version in short; the guide keeps every line in full. */}
+        <p className="text-muted-foreground">
+          {t("whatsNew.detail")}{" "}
+          <ExternalLink url={guidePage(i18n.language, "whats-new/")}>
+            {t("whatsNew.detailLink")}
+          </ExternalLink>
+        </p>
         <Button className="self-end" onClick={onClose}>
           {t("whatsNew.close")}
         </Button>
