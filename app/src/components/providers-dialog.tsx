@@ -400,14 +400,10 @@ export function ProvidersDialog({
                     </Button>
                   )}
                   {GET_KEY_URL[source] && (
-                    <a
-                      href={GET_KEY_URL[source]}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[13px] text-primary hover:underline"
-                    >
-                      {t("providers.getKey")}
-                    </a>
+                    // In the system browser, like every other link: a new window inside the app opens nothing.
+                    <span className="text-[13px]">
+                      <ExternalLink url={GET_KEY_URL[source]}>{t("providers.getKey")}</ExternalLink>
+                    </span>
                   )}
                   {status && status !== "testing" && (
                     <p
