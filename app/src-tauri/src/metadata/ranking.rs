@@ -62,17 +62,26 @@ fn group_works(candidates: &mut Vec<Candidate>) {
     }
 }
 
-/// Same title, and an author in common when both say who wrote them.
 fn same_work(a: &Candidate, b: &Candidate) -> bool {
-    if fold(&a.title) != fold(&b.title) {
+    same_work_by_name(&a.title, &a.authors, &b.title, &b.authors)
+}
+
+/// Same title, and an author in common when both say who wrote them.
+pub(crate) fn same_work_by_name(
+    title: &str,
+    authors: &[String],
+    other_title: &str,
+    other_authors: &[String],
+) -> bool {
+    if fold(title) != fold(other_title) {
         return false;
     }
-    if a.authors.is_empty() || b.authors.is_empty() {
+    if authors.is_empty() || other_authors.is_empty() {
         return true;
     }
-    a.authors
+    authors
         .iter()
-        .any(|x| b.authors.iter().any(|y| same_person(x, y)))
+        .any(|x| other_authors.iter().any(|y| same_person(x, y)))
 }
 
 /// Providers write «Herbert, Frank» or «Frank Herbert»: the same words in any order.

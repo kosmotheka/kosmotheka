@@ -34,7 +34,7 @@ Borrar, es decir, mandar algo a la papelera, sigue como siempre: quien administr
 
 ## Deshacer al momento
 
-Al borrar, abajo sale el aviso «Movido a la papelera · Deshacer». **Deshacer** lo restaura al momento, como si no hubiera pasado nada.
+Al borrar, abajo sale el aviso «Movido a la papelera · Deshacer». **Deshacer** lo restaura al momento, como si no hubiera pasado nada. El aviso se va solo a los 10 segundos; después, lo tienes en la papelera.
 
 ## Restaurar
 

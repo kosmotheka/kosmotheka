@@ -12,7 +12,7 @@ pub mod loc;
 mod marc;
 pub mod musicbrainz;
 pub mod openlibrary;
-mod ranking;
+pub(crate) mod ranking;
 pub mod rawg;
 pub mod tmdb;
 pub mod via_server;

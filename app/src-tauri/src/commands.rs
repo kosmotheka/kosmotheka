@@ -428,6 +428,25 @@ async fn search(
                 candidate.barcode.as_deref(),
                 Where::Trash,
             )?;
+        } // Without a code, by title and author: a work found again by its name is not added twice (D105).
+        if candidate.isbn.is_none() && candidate.barcode.is_none() {
+            let by_title = |place| {
+                catalog::edition_matching_title_in(
+                    &conn,
+                    &library,
+                    candidate.kind,
+                    &candidate.title,
+                    &candidate.authors,
+                    place,
+                )
+            };
+            let existing = by_title(Where::Catalog)?;
+            let trashed = match existing {
+                Some(_) => None,
+                None => by_title(Where::Trash)?,
+            };
+            candidate.existing_edition_id = existing;
+            candidate.trashed_edition_id = trashed;
         }
     }
     Ok(result)

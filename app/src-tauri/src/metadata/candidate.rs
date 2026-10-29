@@ -48,7 +48,8 @@ pub struct Candidate {
     pub format: Option<Format>,
     /// The base game, when this one is an expansion of it (BoardGameGeek).
     pub expands: Option<CandidateExpands>,
-    /// Set when this candidate's ISBN or barcode already exists in the active library.
+    /// Set when this candidate's ISBN or barcode already exists in the active library; without either, its title
+    /// and author (`catalog::edition_matching_title_in`).
     pub existing_edition_id: Option<String>,
     /// Set when it does not, but it is in the trash of the active library (D105).
     pub trashed_edition_id: Option<String>,

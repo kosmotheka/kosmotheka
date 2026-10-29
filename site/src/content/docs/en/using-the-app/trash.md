@@ -34,7 +34,7 @@ Deleting, that is, sending something to the trash, works as before: whoever admi
 
 ## Undo at once
 
-When you delete, a notice at the bottom says "Moved to the trash · Undo". **Undo** restores it at once, as if nothing had happened.
+When you delete, a notice at the bottom says "Moved to the trash · Undo". **Undo** restores it at once, as if nothing had happened. The notice goes by itself after 10 seconds; after that, it is in the trash.
 
 ## Restore
 

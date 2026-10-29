@@ -75,7 +75,7 @@ For the first load of your library, on an Android phone. Spines cannot be read o
 1. Choose what is on the shelf: books, comics, films… It starts with what you had chosen in Add.
 2. Tap "Take the photo", or "Choose a photo" if you already have it on the phone. Photograph **a single shelf**, from the front and up close, in good light. 15 to 20 spines per photo work best.
 3. The app reads the spines on your phone and searches each text in the catalogues. You see how it goes and what it finds.
-4. It shows you **only what it finds** as a real work, already ticked. What you already have comes unticked: if you tick it, another copy is added.
+4. It shows you **only what it finds** as a real work, already ticked. What you already have comes unticked: if you tick it, another copy is added. It knows it by its ISBN or, when the catalogue has none, by its title and authors, so it may take another edition with the same title for yours. What is in the [trash](../trash/) comes unticked too.
 5. Set the owner, the format and the location, which apply to all of them, and tap "Add".
 
 **It will not read everything.** It reads spines in plain type well; those in narrow, ornate or very small type, and those in bags or with glare, escape it. What it does not find stays under "texts not found": some are the author or the publisher, others a misread title. Tap one to search for it yourself. Add what is missing as usual.

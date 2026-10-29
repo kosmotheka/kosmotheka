@@ -75,7 +75,7 @@ Para la primera carga de tu biblioteca, en un móvil Android. En el ordenador no
 1. Elige qué hay en la balda: libros, cómics, películas… Viene marcado lo que tenías elegido en «Añadir».
 2. Pulsa «Hacer la foto», o «Elegir una foto» si ya la tienes en el móvil. Fotografía **una sola balda**, de frente y de cerca, con buena luz. Salen mejor entre 15 y 20 lomos por foto.
 3. La app lee los lomos en tu móvil y busca cada texto en los catálogos. Verás cómo avanza y lo que va encontrando.
-4. Te enseña **solo lo que encuentra** como una obra de verdad, ya marcado. Lo que ya tienes sale sin marcar: si lo marcas, se añade otro ejemplar.
+4. Te enseña **solo lo que encuentra** como una obra de verdad, ya marcado. Lo que ya tienes sale sin marcar: si lo marcas, se añade otro ejemplar. Lo reconoce por su ISBN o, si el catálogo no lo trae, por el título y la autoría; así puede marcar como tuya otra edición con el mismo título. Lo que está en la [papelera](../trash/) también sale sin marcar.
 5. Pon el propietario, el formato y la ubicación, que valen para todas, y pulsa «Añadir».
 
 **No lo leerá todo.** Lee bien los lomos con letra normal; los de letra estrecha, adornada o muy pequeña, y los que están en bolsas o con brillos, se le escapan. Lo que no encuentra queda en «textos sin encontrar»: unos son el autor o la editorial, otros un título mal leído. Toca uno para buscarlo tú. Lo que falte, lo añades como siempre.

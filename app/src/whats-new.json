@@ -20,6 +20,10 @@
     {
       "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión). En una saga, «Editar» deja ordenarlas arrastrándolas por su asa, con el ratón o con el dedo.",
       "en": "In a saga or collection, each work shows its year and formats, and warns when it needs another that nobody has (such as an expansion's base game). In a saga, «Edit» lets you put them in order by dragging them by their handle, with the mouse or your finger."
+    },
+    {
+      "es": "La foto de una balda y la búsqueda de «Añadir» reconocen lo que ya tienes aunque el catálogo no traiga ISBN: por el título y la autoría.",
+      "en": "The shelf photo and the Add search know what you already have even when the catalogue brings no ISBN: by its title and authors."
     }
   ],
   "0.7.0": [

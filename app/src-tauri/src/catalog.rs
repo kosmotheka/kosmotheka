@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
 use crate::error::{Error, Result};
+use crate::metadata::ranking::same_work_by_name;
 use crate::ops::{self, new_id};
 use crate::search;
 use crate::trash::{self, TrashKind};
@@ -1014,6 +1015,43 @@ pub fn edition_matching_candidate_in(
         Some(barcode) => edition_with_barcode_in(conn, library, barcode, place),
         None => Ok(None),
     }
+}
+
+/// For a candidate with neither ISBN nor barcode, such as one a shelf photo found by its title: an edition of the
+/// same kind with the same title (its own or its work's), and an author in common when both say who wrote it.
+/// Weaker than a code, so it is only asked when there is none.
+pub fn edition_matching_title_in(
+    conn: &Connection,
+    library: &str,
+    kind: Kind,
+    title: &str,
+    authors: &[String],
+    place: Where,
+) -> Result<Option<String>> {
+    let mut statement = conn.prepare(&format!(
+        "SELECT e.id, e.title, w.title,
+                (SELECT group_concat(p.name, char(31)) FROM work_contributors wc
+                   JOIN people p ON p.library_id = wc.library_id AND p.id = wc.person_id
+                  WHERE wc.library_id = w.library_id AND wc.work_id = w.id AND wc.role = 'author')
+           FROM editions e JOIN works w ON w.library_id = e.library_id AND w.id = e.work_id
+          WHERE e.library_id = ?1 AND w.kind = ?2 AND {}
+          ORDER BY e.id",
+        place.condition()
+    ))?;
+    let mut rows = statement.query([library, kind.as_str()])?;
+    while let Some(row) = rows.next()? {
+        let ours: Option<String> = row.get(3)?;
+        let ours: Vec<String> = ours
+            .map(|names| names.split(LIST_SEPARATOR).map(str::to_owned).collect())
+            .unwrap_or_default();
+        let found = [row.get::<_, String>(1)?, row.get::<_, String>(2)?]
+            .iter()
+            .any(|ours_title| same_work_by_name(title, authors, ours_title, &ours));
+        if found {
+            return Ok(Some(row.get(0)?));
+        }
+    }
+    Ok(None)
 }
 
 fn work_of(conn: &Connection, library: &str, edition_id: &str) -> Result<String> {
@@ -2787,6 +2825,95 @@ mod tests {
         assert_eq!(
             edition_matching_candidate(&conn, &lib, None, None).unwrap(),
             None
+        );
+    }
+
+    #[test]
+    fn edition_matching_title_checks_kind_title_and_author() {
+        let mut conn = db::open_in_memory().unwrap();
+        let lib = ops::active_library(&conn).unwrap();
+        let wind = create_book(
+            &mut conn,
+            &lib,
+            &new_book("El nombre del viento", None, "Tersoal", Format::Hardcover),
+            None,
+        )
+        .unwrap();
+        let find = |conn: &Connection, kind, title: &str, authors: &[&str], place| {
+            let authors: Vec<String> = authors.iter().map(|a| a.to_string()).collect();
+            edition_matching_title_in(conn, &lib, kind, title, &authors, place).unwrap()
+        };
+        let found = Some(wind.edition_id.clone());
+
+        // Case, accents and the order of an author's names do not matter.
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Book,
+                "EL NOMBRE DEL VIENTO.",
+                &["Rothfuss, Patrick"],
+                Where::Catalog
+            ),
+            found
+        );
+        // Without authors on one side, the title is enough.
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Book,
+                "el nombre del viento",
+                &[],
+                Where::Catalog
+            ),
+            found
+        );
+        // Another author, another title or another kind is not the same work.
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Book,
+                "El nombre del viento",
+                &["Otra Persona"],
+                Where::Catalog
+            ),
+            None
+        );
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Book,
+                "El temor de un hombre sabio",
+                &[],
+                Where::Catalog
+            ),
+            None
+        );
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Film,
+                "El nombre del viento",
+                &[],
+                Where::Catalog
+            ),
+            None
+        );
+
+        // In the trash, it is found there and no longer in the catalog (D105).
+        delete_book(&mut conn, &lib, &wind.edition_id).unwrap();
+        assert_eq!(
+            find(
+                &conn,
+                Kind::Book,
+                "El nombre del viento",
+                &[],
+                Where::Catalog
+            ),
+            None
+        );
+        assert_eq!(
+            find(&conn, Kind::Book, "El nombre del viento", &[], Where::Trash),
+            found
         );
     }
 
