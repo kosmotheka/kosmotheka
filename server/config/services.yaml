@@ -15,6 +15,8 @@ parameters:
     app.covers_dir: '%kernel.project_dir%/var/covers'
     # The most cover bytes the whole server keeps, whoever sends them (D82): the database and its backups keep their room.
     app.covers_server_max_bytes: '%env(int:COVERS_SERVER_MAX_BYTES)%'
+    # How many cloud libraries an account may own (D106): far above a family's, against whoever would fill the disk.
+    app.cloud_max_libraries_per_account: '%env(int:CLOUD_MAX_LIBRARIES_PER_ACCOUNT)%'
 
 services:
     # default configuration for services in *this* file

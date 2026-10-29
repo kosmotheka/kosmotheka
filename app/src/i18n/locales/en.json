@@ -1979,6 +1979,10 @@
     "accessWithdrawn": {
       "title": "The cloud says you no longer have access to this library.",
       "help": "Talk to whoever administers it."
+    },
+    "libraryLimit": {
+      "title": "You already have the most libraries in the cloud",
+      "help": "This account already has in the cloud as many libraries as this server allows. This one stays on your device and is shared over your home network."
     }
   },
   "invitations": {
@@ -2141,7 +2145,8 @@
       "link_not_allowed": "Only whoever administers this library can upload it. Meanwhile, it keeps sharing over your home network.",
       "events_unavailable": "This server does not send live updates: changes arrive when the app syncs.",
       "access_withdrawn": "The cloud says you no longer have access to this library.",
-      "no_cloud_device": "This server cannot give the cloud that power in this library."
+      "no_cloud_device": "This server cannot give the cloud that power in this library.",
+      "library_limit": "This account already has in the cloud as many libraries as this server allows. This one stays on your device and is shared over your home network."
     },
     "autolink": {
       "label": "The cloud can give access to new devices",

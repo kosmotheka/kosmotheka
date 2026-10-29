@@ -193,6 +193,12 @@ final class AccountException extends \RuntimeException
         return new self(AccountErrorCode::AccessWithdrawn, 403, null, ['proofs' => $proofs]);
     }
 
+    /** The account already owns as many cloud libraries as the server allows (D106). */
+    public static function libraryLimit(): self
+    {
+        return new self(AccountErrorCode::LibraryLimit, 403);
+    }
+
     /** A cloud library the account cannot reach: the same answer as one that does not exist (D84). */
     public static function notFound(): self
     {

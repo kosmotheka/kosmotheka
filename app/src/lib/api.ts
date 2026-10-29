@@ -1562,7 +1562,12 @@ type CloudErrorReason =
   | InvitationAppReason;
 
 /** Account errors that come with a cloud call and have their own text under `cloud.errors`. */
-const CLOUD_ACCOUNT_REASONS = ["link_rejected", "link_not_allowed", "events_unavailable"];
+const CLOUD_ACCOUNT_REASONS = [
+  "link_rejected",
+  "link_not_allowed",
+  "library_limit",
+  "events_unavailable",
+];
 
 export type CloudOutcome =
   | "synced"

@@ -75,6 +75,31 @@ final class CloudSyncControllerTest extends WebTestCase
         self::assertSame(1, $this->rows('membership'));
     }
 
+    public function testAnAccountCannotOwnMoreLibrariesThanTheCap(): void
+    {
+        // The test environment caps it at 5 (CLOUD_MAX_LIBRARIES_PER_ACCOUNT in .env.test); production, at 50 (D106).
+        for ($i = 0; $i < 5; ++$i) {
+            $this->createCloudLibrary($this->familySession);
+        }
+
+        $response = $this->call('POST', '/v1/cloud/libraries', $this->familySession);
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $response['status']);
+        self::assertSame(['error' => 'library_limit'], $response['body']);
+        self::assertSame(5, $this->rows('cloud_library'));
+    }
+
+    public function testTheCapCountsOnlyTheLibrariesAnAccountOwns(): void
+    {
+        for ($i = 0; $i < 5; ++$i) {
+            $this->createCloudLibrary($this->familySession);
+        }
+
+        $response = $this->call('POST', '/v1/cloud/libraries', $this->jhonnySession);
+
+        self::assertSame(Response::HTTP_CREATED, $response['status']);
+    }
+
     public function testAccountsListOnlyTheirOwnLibraries(): void
     {
         $familyCloud = $this->createCloudLibrary($this->familySession);

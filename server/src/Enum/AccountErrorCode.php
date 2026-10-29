@@ -49,6 +49,7 @@ enum AccountErrorCode: string
     case InvalidRequest = 'invalid_request';
     case LinkRejected = 'link_rejected';
     case LinkNotAllowed = 'link_not_allowed';
+    case LibraryLimit = 'library_limit';
 
     // Milestone 7.5.4b: the cloud cuts the access (D98, D71).
     case AccessWithdrawn = 'access_withdrawn';

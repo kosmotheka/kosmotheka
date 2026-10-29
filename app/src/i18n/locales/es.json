@@ -1993,6 +1993,10 @@
     "deviceKeyMismatch": {
       "title": "Tu cuenta conoce este dispositivo con otra clave.",
       "help": "Quítalo de tu cuenta desde otro dispositivo, en Cuenta › Mis dispositivos, y vuelve a entrar aquí."
+    },
+    "libraryLimit": {
+      "title": "Ya tienes el máximo de bibliotecas en la nube",
+      "help": "Esta cuenta ya tiene en la nube todas las bibliotecas que permite este servidor. Esta sigue en tu dispositivo y se comparte por la red de casa."
     }
   },
   "invitations": {
@@ -2155,7 +2159,8 @@
       "link_not_allowed": "Esta biblioteca solo puede subirla quien la administra. Mientras, sigue compartiéndose por la red de casa.",
       "events_unavailable": "Este servidor no envía avisos al momento: los cambios llegan cuando la app sincroniza.",
       "access_withdrawn": "La nube dice que ya no tienes acceso a esta biblioteca.",
-      "no_cloud_device": "Este servidor no puede dar ese poder a la nube en esta biblioteca."
+      "no_cloud_device": "Este servidor no puede dar ese poder a la nube en esta biblioteca.",
+      "library_limit": "Esta cuenta ya tiene en la nube todas las bibliotecas que permite este servidor. Esta sigue en tu dispositivo y se comparte por la red de casa."
     },
     "autolink": {
       "label": "La nube puede dar acceso a dispositivos nuevos",

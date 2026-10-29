@@ -261,6 +261,12 @@ export function accountErrorText(reason: string, totpStep = true): AccountErrorT
         titleKey: "accountErrors.linkNotAllowed.title",
         helpKey: "accountErrors.linkNotAllowed.help",
       };
+    case "library_limit":
+      return {
+        level: "info",
+        titleKey: "accountErrors.libraryLimit.title",
+        helpKey: "accountErrors.libraryLimit.help",
+      };
     case "events_unavailable":
       return {
         level: "info",
