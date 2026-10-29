@@ -111,6 +111,7 @@
 | D103 | Las instalaciones anteriores de un dispositivo: la fecha del último cambio y quitarlas de una vez | aceptada |
 | D104 | Versiones nuevas en el ordenador: primero avisar, después instalar sola en Windows y la AppImage | aceptada |
 | D105 | La papelera: lo borrado se guarda 30 días y se puede restaurar | aceptada |
+| D106 | Topes de lo que una cuenta guarda en la nube: bibliotecas y operaciones | propuesta |
 
 ---
 
@@ -2103,3 +2104,57 @@ Aceptada el 27/10/2026 por el maintainer, punto por punto. Cierra la pregunta ab
 - Tests de sincronización que convergen: restaurar frente a editar, restaurar frente a eliminar, dos que eliminan a la vez, sin conexión, y una etiqueta eliminada del todo mientras su libro sigue en la papelera.
 - Lo que sale del dispositivo no cambia; la política de privacidad, tampoco.
 - Documentación: arquitectura (`operations.md`, `sync.md`, `data-model.md`), guía (una página «La papelera» y las páginas que borran), guía para colaborar (`sync-engine.md`, `security.md`) y el glosario de `AGENTS.md`.
+
+## D106 · Topes de lo que una cuenta guarda en la nube: bibliotecas y operaciones — `propuesta`
+
+Propuesta del 29/10/2026, escrita sin el maintainer para que la mire con calma. Es el punto «Seguridad del servidor» de «Tras el lanzamiento» del ROADMAP («un tope de bibliotecas por cuenta y de operaciones por biblioteca»), y lo que la auditoría del 09/10/2026 dejó «para decidir»: «no hay límite de bibliotecas por cuenta». Toca D82 (portadas), D92 (el catálogo del servidor), D99 (dueño de una biblioteca) y la regla de proporción con el servidor (VPS pequeño y compartido).
+
+**Contexto.** Con el registro abierto, cualquiera crea una cuenta y sube bibliotecas. Lo que el servidor ya acota:
+
+| Qué | Tope | Dónde |
+|---|---|---|
+| Portadas | 2 MB cada una, 200 MB por biblioteca, 300 MB por cuenta (sumando sus bibliotecas), 5 GB todo el servidor | `CloudCovers`, `COVERS_SERVER_MAX_BYTES` |
+| Subir operaciones | 1.000 por envío y 600 envíos por hora y cuenta | `PushRequest::MAX_OPERATIONS`, `cloud_sync` |
+| Bajar | 600 por hora y cuenta; el vector, 1.000 dispositivos como mucho | `cloud_sync`, `PullRequest` |
+| Cuerpo de una petición | 16 MB | nginx |
+
+Lo que **no** tiene tope:
+
+- **Crear bibliotecas:** ni cuántas por cuenta ni cada cuánto (`POST /v1/cloud/libraries` no tiene `#[RateLimit]`). Cada una crea su fila, su dispositivo de la nube con su clave cifrada y su membresía.
+- **Las operaciones guardadas:** el registro de una biblioteca crece para siempre (es el historial y lo que reciben los dispositivos nuevos). Al ritmo permitido, una cuenta puede subir 600.000 operaciones por hora, con su catálogo, hasta llenar el disco del VPS, que es de todos.
+
+No es un riesgo de hoy (no hay carga y el registro es nuevo), pero conviene cerrarlo antes de anunciarlo a lo grande (r/selfhosted, ROADMAP).
+
+**Opciones.**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| Nada, mirar el disco a mano | Cero trabajo | Quien lo llene lo llena de noche; el VPS es compartido |
+| Solo frecuencia (más `#[RateLimit]`) | Una línea por ruta, con lo que ya se usa | Frena, no acota: con tiempo, se llena igual |
+| **Topes por cuenta: cuántas bibliotecas y cuántas operaciones guardadas, y un tope del servidor entero, como con las portadas** | Acota de verdad; es el mismo patrón que D82; una familia no lo nota nunca | Hay que elegir cifras y decir en la app qué pasa al llegar |
+| Tope en bytes por cuenta | Mide lo que llena el disco | Contar bytes de filas en PostgreSQL es caro y poco exacto; las operaciones son una buena aproximación |
+
+**Recomendación.** La tercera, con estas cifras (todas configurables por quien monta su servidor, como `BGG_DAILY_CALL_CAP`):
+
+1. **Bibliotecas por cuenta: 20** de las que es dueña (D99). Una familia tiene una, dos o tres; un club, unas pocas. Contar las que **posee**, no aquellas en las que es miembro: entrar en bibliotecas ajenas no llena nada que no esté ya contado en su dueño. Variable: `CLOUD_MAX_LIBRARIES_PER_ACCOUNT`.
+2. **Crear bibliotecas: 10 al día** por cuenta (`#[RateLimit('cloud_create')]`), para que borrar y volver a crear no rodee el tope.
+3. **Operaciones guardadas por cuenta: 300.000**, sumando las bibliotecas que posee. Para hacerse una idea: añadir un libro con su ejemplar es una operación, y una biblioteca de 5.000 libros con años de uso (marcas, ediciones, préstamos) no debería pasar de unas decenas de miles. Variable: `CLOUD_MAX_OPERATIONS_PER_ACCOUNT`.
+4. **Operaciones del servidor entero:** una red de seguridad como `COVERS_SERVER_MAX_BYTES`, por ejemplo 10 millones, que quien monta su servidor ajusta a su disco. Variable: `CLOUD_MAX_OPERATIONS_SERVER`.
+5. **Qué pasa al llegar:**
+   - Crear una biblioteca más: error `library_limit`; la app lo dice («Has llegado al máximo de 20 bibliotecas en la nube de esta cuenta») y la biblioteca sigue en el dispositivo, como cualquiera sin nube.
+   - Subir operaciones de más: las que no caben se rechazan con `cloud_full`, una a una, como ya se rechaza una operación mala sin tumbar el envío. La app avisa una vez («La nube de esta cuenta está llena: los cambios siguen en tus dispositivos y pasan por la wifi de casa») y sigue sincronizando por la red local. **Nada se pierde**: es local-first.
+   - Se mira antes de guardar y dentro de la misma transacción del envío, para que dos envíos a la vez no lo pasen.
+6. **Casos hostiles primero**, vistos fallar ([bateria-de-acceso.md](architecture/bateria-de-acceso.md)): crear la biblioteca 21; crear 11 en un día; un envío que pasaría el tope de la cuenta; dos envíos a la vez justo en el borde; y que las bibliotecas en las que una cuenta solo es miembro no cuentan para ella.
+7. **Un comando para quien administra:** `app:cloud:usage`, las cuentas más cerca de sus topes (bibliotecas, operaciones y portadas), sin ver su contenido.
+
+**Preguntas para el maintainer** (las cifras son lo único que de verdad hay que decidir):
+
+1. ¿20 bibliotecas, 300.000 operaciones por cuenta y 10 millones el servidor te parecen bien, o prefieres otras?
+2. ¿El tope de operaciones, por cuenta (como propongo) o por biblioteca?
+3. Cuando la nube de una cuenta se llena, ¿basta con avisar, o quieres además que el administrador del servidor reciba un aviso (en el registro de actividad)?
+
+**Consecuencias** (si se acepta).
+- Servidor: tres variables nuevas en `.env` (comentadas), el limitador `cloud_create`, la comprobación en `CloudLibraryCreator` y en el envío (`CloudPush`), los códigos `library_limit` y `cloud_full`, el comando y sus pruebas, con los casos hostiles antes.
+- App: los dos errores con su texto en es y en, y el aviso de «nube llena» una sola vez.
+- Documentación: `architecture/cloud.md` (la tabla de límites), la guía «Monta tu servidor» (configuración y administración) y la de «La nube» (qué pasa si se llena).
+- No cambia nada de lo que sale del dispositivo.
