@@ -68,7 +68,7 @@ Genres are a **closed list** that the app comes with, and it is different for ea
 - Music: Rock, Pop, Jazz, Classical, Electronic, Hip hop, Folk, Flamenco, Blues, Soul & funk, Metal, Soundtrack, and more.
 - Other: has no genres.
 
-If you need something that is not on the list, use a **tag**: a free word that you type yourself on a work ("for trips", "present"). You can see them and rename them in "Library settings", "Tags".
+If you need something that is not on the list, use a **tag**: a free word that you type yourself on a work ("for trips", "present"). You can see, rename and delete them in "Tags", in the menu.
 
 A genre or a tag shows you only what matches what you choose (that is called filtering). Tap the genre or the tag on the details page, or use the "Genre" and "Tag" buttons above the list.
 

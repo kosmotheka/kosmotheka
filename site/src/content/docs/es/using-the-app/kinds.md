@@ -68,7 +68,7 @@ Los géneros son una **lista cerrada** que trae la app, distinta para cada tipo.
 - Música: Rock, Pop, Jazz, Clásica, Electrónica, Hip hop, Folk, Flamenco, Blues, Soul y funk, Metal, Bandas sonoras y más.
 - Otro: no tiene géneros.
 
-Si necesitas algo que no está en la lista, usa una **etiqueta**: es una palabra libre que escribes tú en una obra («para viajes», «regalo»). Las ves y las renombras en «Ajustes de la biblioteca», «Etiquetas».
+Si necesitas algo que no está en la lista, usa una **etiqueta**: es una palabra libre que escribes tú en una obra («para viajes», «regalo»). Las ves, las renombras y las borras en «Etiquetas», en el menú.
 
 Un género o una etiqueta sirven para ver solo lo que cumple lo que eliges (eso es filtrar). Toca el género o la etiqueta en la ficha, o usa los botones «Género» y «Etiqueta» de arriba de la lista.
 

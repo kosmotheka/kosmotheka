@@ -24,6 +24,10 @@
     {
       "es": "La foto de una balda y la búsqueda de «Añadir» reconocen lo que ya tienes aunque el catálogo no traiga ISBN: por el título y la autoría.",
       "en": "The shelf photo and the Add search know what you already have even when the catalogue brings no ISBN: by its title and authors."
+    },
+    {
+      "es": "Las etiquetas tienen su sitio en el menú, junto a las sagas y colecciones: ahí las ves, las renombras y las borras.",
+      "en": "Tags have their own place in the menu, next to sagas and collections: there you see, rename and delete them."
     }
   ],
   "0.7.0": [
