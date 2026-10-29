@@ -2397,5 +2397,14 @@
     "startOverAdmin": "Two alike would be confused. If you would rather start over, the one in the trash will be deleted for good.",
     "startOverEditor": "Two alike would be confused. To start over, ask whoever administers the library to delete it from the trash.",
     "startOver": "Delete it and start over"
+  },
+  "pick": {
+    "choose": "Choose…",
+    "search": "Search or type a new one",
+    "add": "Add “{{value}}”",
+    "none": "None yet: type the first one above.",
+    "noMatch": "None match.",
+    "clear": "Leave empty",
+    "description": "Pick one from the list or type a new one."
   }
 }

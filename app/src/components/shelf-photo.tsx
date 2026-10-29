@@ -311,6 +311,7 @@ export function ShelfPhoto({
       <Field id="shelf-owner" label={t("form.fields.owner")}>
         <SuggestInput
           id="shelf-owner"
+          label={t("form.fields.owner")}
           suggestions={options.owners}
           value={owner}
           onValueChange={setOwner}
@@ -327,6 +328,7 @@ export function ShelfPhoto({
       <Field id="shelf-location" label={t("form.fields.location")}>
         <SuggestInput
           id="shelf-location"
+          label={t("form.fields.location")}
           suggestions={options.locations}
           value={location}
           onValueChange={setLocation}

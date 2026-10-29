@@ -30,8 +30,8 @@
       "en": "Tags have their own place in the menu, next to sagas and collections: there you see, rename and delete them."
     },
     {
-      "es": "En el móvil, las sugerencias al escribir la autoría, la editorial, el propietario o la ubicación salen bien debajo del campo, en vez de descolocadas y semitransparentes.",
-      "en": "On the phone, the suggestions while typing authors, publisher, owner or location show neatly under the field, instead of out of place and half transparent."
+      "es": "En el móvil, la autoría, la editorial, el propietario, la ubicación y las etiquetas se eligen en una hoja desde abajo, con todo lo que ya tienes y un buscador para filtrar o escribir uno nuevo. En el ordenador, la lista sale al entrar en el campo, sin tener que escribir.",
+      "en": "On the phone, authors, publisher, owner, location and tags are picked in a sheet from below, with everything you already have and a search box to filter or type a new one. On the computer, the list shows as soon as you enter the field, without typing."
     }
   ],
   "0.7.0": [

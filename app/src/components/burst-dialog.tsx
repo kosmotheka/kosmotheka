@@ -218,6 +218,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
         <Field id="burst-owner" label={t("form.fields.owner")}>
           <SuggestInput
             id="burst-owner"
+            label={t("form.fields.owner")}
             suggestions={options.owners}
             value={owner}
             onValueChange={setOwner}
@@ -234,6 +235,7 @@ export function BurstDialog({ open, onOpenChange, onChanged }: Props) {
         <Field id="burst-location" label={t("form.fields.location")}>
           <SuggestInput
             id="burst-location"
+            label={t("form.fields.location")}
             suggestions={options.locations}
             value={location}
             onValueChange={setLocation}

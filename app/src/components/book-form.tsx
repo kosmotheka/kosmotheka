@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { useCatalogOptions } from "@/components/catalog-options";
-import { SuggestInput, useSuggestions } from "@/components/suggest-input";
+import { PickSheet, SuggestInput, useSuggestions } from "@/components/suggest-input";
 import { ChoiceSelect } from "@/components/choice-select";
 import { Cover } from "@/components/cover";
 import { CoverChooser } from "@/components/cover-chooser";
@@ -408,18 +408,17 @@ function PeopleField({
   suggestions: string[];
 }) {
   const { t } = useTranslation();
+  const desktop = useDesktop();
   const [draft, setDraft] = useState("");
+  const [picking, setPicking] = useState(false);
 
   const add = (name: string) => {
     const trimmed = name.trim();
     if (trimmed && !values.includes(trimmed)) onChange([...values, trimmed]);
     setDraft("");
   };
-  const known = useSuggestions(
-    suggestions.filter((s) => !values.includes(s)),
-    draft,
-    add,
-  );
+  const others = suggestions.filter((s) => !values.includes(s));
+  const known = useSuggestions(others, draft, add);
 
   return (
     <div className="space-y-2">
@@ -443,32 +442,53 @@ function PeopleField({
             </Button>
           </span>
         ))}
-        <input
-          id={id}
-          {...known.inputProps}
-          className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
-          placeholder={t("form.people.add")}
-          value={draft}
-          onChange={(e) => {
-            const typed = e.target.value;
-            if (typed.includes(",")) {
-              typed.split(",").forEach(add);
-            } else {
-              setDraft(typed);
-            }
-          }}
-          onKeyDown={(e) => {
-            known.inputProps.onKeyDown(e);
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add(draft);
-            } else if (e.key === "Backspace" && draft === "" && values.length > 0) {
-              onChange(values.slice(0, -1));
-            }
-          }}
-        />
+        {/* On the phone, a sheet with every known name and a search box (PickSheet). */}
+        {!desktop && (
+          <button
+            id={id}
+            type="button"
+            className="flex h-[30px] min-w-24 flex-1 items-center gap-1 text-left text-[15px] text-muted-foreground"
+            onClick={() => setPicking(true)}
+          >
+            <Plus className="size-4" />
+            {t("form.people.add")}
+          </button>
+        )}
+        {desktop && (
+          <input
+            id={id}
+            {...known.inputProps}
+            className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+            placeholder={t("form.people.add")}
+            value={draft}
+            onChange={(e) => {
+              const typed = e.target.value;
+              if (typed.includes(",")) {
+                typed.split(",").forEach(add);
+              } else {
+                setDraft(typed);
+              }
+            }}
+            onKeyDown={(e) => {
+              known.inputProps.onKeyDown(e);
+              if (e.key === "Enter") {
+                e.preventDefault();
+                add(draft);
+              } else if (e.key === "Backspace" && draft === "" && values.length > 0) {
+                onChange(values.slice(0, -1));
+              }
+            }}
+          />
+        )}
         {known.list}
       </div>
+      <PickSheet
+        open={picking}
+        onOpenChange={setPicking}
+        title={label}
+        values={others}
+        onPick={add}
+      />
     </div>
   );
 }
@@ -641,8 +661,10 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
   const [trashedTags, setTrashedTags] = useState<TrashItem[]>([]);
   const { myRole } = useRequests();
   const mayRestore = myRole === "admin" || myRole === "editor";
+  const desktop = useDesktop();
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -697,6 +719,16 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
     if (inTrash) void restore(inTrash);
     else add(draft);
   };
+  // The phone's sheet: a name in the trash comes back from it rather than being made again.
+  const trashedNamed = (name: string) =>
+    allTags.some((tag) => tag.name.toLowerCase() === name.toLowerCase())
+      ? undefined
+      : trashedTags.find((tag) => tag.title.toLowerCase() === name.toLowerCase());
+  const pickFromSheet = (name: string) => {
+    const trashed = trashedNamed(name);
+    if (trashed) void restore(trashed);
+    else add(name);
+  };
 
   return (
     <div className="space-y-2">
@@ -724,26 +756,39 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
               </Button>
             </span>
           ))}
-          <input
-            id="tags-input"
-            className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
-            placeholder={t("form.fields.tagsPlaceholder")}
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 100)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commit();
-              } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
-                onChange(value.slice(0, -1));
-              }
-            }}
-          />
+          {!desktop && (
+            <button
+              id="tags-input"
+              type="button"
+              className="flex h-7 min-w-24 flex-1 items-center gap-1 text-left text-[15px] text-muted-foreground"
+              onClick={() => setPicking(true)}
+            >
+              <Plus className="size-4" />
+              {t("form.fields.tagsPlaceholder")}
+            </button>
+          )}
+          {desktop && (
+            <input
+              id="tags-input"
+              className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+              placeholder={t("form.fields.tagsPlaceholder")}
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onBlur={() => setTimeout(() => setOpen(false), 100)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit();
+                } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
+                  onChange(value.slice(0, -1));
+                }
+              }}
+            />
+          )}
         </div>
         {open && query && (
           <div
@@ -802,6 +847,19 @@ function TagsField({ value, onChange }: { value: string[]; onChange: (value: str
         )}
       </div>
       {restoreError && <p className="text-[13px] text-destructive">{restoreError}</p>}
+      <PickSheet
+        open={picking}
+        onOpenChange={setPicking}
+        title={t("form.fields.tags")}
+        values={allTags
+          .map((tag) => tag.name)
+          .filter((name) => !value.some((v) => v.toLowerCase() === name.toLowerCase()))}
+        onPick={pickFromSheet}
+        newLabel={(name) => {
+          const trashed = trashedNamed(name);
+          return trashed ? t("tags.restore", { name: trashed.title }) : t("tags.create", { name });
+        }}
+      />
     </div>
   );
 }
@@ -925,6 +983,7 @@ export function EditionFields({
     <Field id="publisher" label={t(labelKey)}>
       <SuggestInput
         id="publisher"
+        label={t(labelKey)}
         suggestions={options.publishers}
         value={value.publisher}
         onValueChange={(publisher) => set("publisher", publisher)}
@@ -1401,6 +1460,7 @@ export function CopyFields({
         <Field id={id("owner")} label={t("form.fields.owner")}>
           <SuggestInput
             id={id("owner")}
+            label={t("form.fields.owner")}
             suggestions={options.owners}
             value={value.owner}
             onValueChange={(owner) => set("owner", owner)}
@@ -1438,6 +1498,7 @@ export function CopyFields({
           )}
           <SuggestInput
             id={id("location")}
+            label={t("form.fields.location")}
             className="flex-1"
             placeholder={digital ? undefined : t("form.placeholders.location")}
             suggestions={locationSuggestions}

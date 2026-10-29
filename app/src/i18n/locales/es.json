@@ -2411,5 +2411,14 @@
     "startOverAdmin": "Dos iguales se confundirían. Si prefieres empezar de cero, la de la papelera se eliminará definitivamente.",
     "startOverEditor": "Dos iguales se confundirían. Si quieres empezar de cero, pide a quien administra la biblioteca que la elimine de la papelera.",
     "startOver": "Eliminarla y empezar de cero"
+  },
+  "pick": {
+    "choose": "Elegir…",
+    "search": "Buscar o escribir uno nuevo",
+    "add": "Añadir «{{value}}»",
+    "none": "Aún no hay ninguno: escribe arriba el primero.",
+    "noMatch": "Ninguno coincide.",
+    "clear": "Dejar vacío",
+    "description": "Elige uno de la lista o escribe uno nuevo."
   }
 }
