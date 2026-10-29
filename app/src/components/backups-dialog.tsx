@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  CircleCheck,
   Download,
   FileSpreadsheet,
   FileUp,
@@ -269,30 +270,31 @@ export function BackupsDialog({
       )}
       {message && <p className="text-sm">{message}</p>}
       {restored && (
-        <div className="space-y-1 text-sm">
-          {restored.restored.length === 0 && restored.skipped.length === 0 && (
-            <p>{t("data.restoreNothing")}</p>
-          )}
-          {restored.restored.map((item) => (
-            <p key={item.id}>
-              {t(item.sameId ? "data.restoredLibrary" : "data.restoredNewId", {
-                name: nameOf(item),
-                books: item.books,
-                copies: item.copies,
-              })}
-              {item.trashed > 0 && ` ${t("data.restoredTrashed", { count: item.trashed })}`}
-            </p>
-          ))}
-          {restored.skipped.map((name, index) => (
-            <p key={`skipped-${index}`} className="text-muted-foreground">
-              {t("data.skippedLibrary", { name: nameOf({ name }) })}
-            </p>
-          ))}
-          {restored.covers > 0 && (
-            <p className="text-muted-foreground">
-              {t("data.restoredCovers", { count: restored.covers })}
-            </p>
-          )}
+        // Set apart from the grey help above it, or the result reads as more of the same.
+        <div
+          role="status"
+          className="flex gap-2.5 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm"
+        >
+          <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div className="flex flex-col gap-1">
+            {restored.restored.length === 0 && restored.skipped.length === 0 && (
+              <p>{t("data.restoreNothing")}</p>
+            )}
+            {restored.restored.map((item) => (
+              <p key={item.id}>
+                {t(item.sameId ? "data.restoredLibrary" : "data.restoredNewId", {
+                  name: nameOf(item),
+                  books: item.books,
+                  copies: item.copies,
+                })}
+                {item.trashed > 0 && ` ${t("data.restoredTrashed", { count: item.trashed })}`}
+              </p>
+            ))}
+            {restored.skipped.map((name, index) => (
+              <p key={`skipped-${index}`}>{t("data.skippedLibrary", { name: nameOf({ name }) })}</p>
+            ))}
+            {restored.covers > 0 && <p>{t("data.restoredCovers", { count: restored.covers })}</p>}
+          </div>
         </div>
       )}
       <section className="mt-2 flex flex-col gap-2 border-t pt-5">
