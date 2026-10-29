@@ -2,6 +2,8 @@
 
 Primer índice de lo que tendrá **docs.kosmotheka.com** (D90, `propuesta`), montado el 13/10/2026 para que al llegar a la Fase 8 no haya que empezar de cero. No hay ninguna página escrita: esto dice qué páginas habrá, de dónde sale cada una y cuáles no tienen todavía material.
 
+> **Estado a 29/10/2026:** el índice está escrito y publicado en docs.kosmotheka.com, salvo **«Préstamos»**, que espera a que existan. Las tres partes tienen además páginas que no estaban en este índice: «Cómo buscar mejor», «La papelera», «Nombre y logos» del servidor, «Método de auditoría». Lo que va en una sola página en lugar de dos: «¿Necesito un servidor?» y «Requisitos» (`run-your-server/index.md`); el correo, Google y las claves de datos (`configuration.md`); «Por qué así y no de otra forma» (al final de `sync-engine.md`); «Añadir un campo o una entidad» (`how-to-contribute.md`); el registro de decisiones y la hoja de ruta (enlazados desde `contribute/index.md`, en español). Las tablas de abajo se quedan como estaban, para ver de dónde salió cada página.
+
 Lo que ya está decidido o propuesto en D90 y no se repite aquí: Markdown en el repo, convertido con un generador estático (Starlight propuesto), en español e inglés, alojado por nosotros, y organizado según [Diátaxis](https://diataxis.fr/).
 
 ## Cómo leer las tablas
