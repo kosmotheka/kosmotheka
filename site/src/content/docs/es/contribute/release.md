@@ -20,7 +20,7 @@ Esta página es para quien publica una versión de la app: el número, las noved
    Los archivos de bloqueo (`Cargo.lock`, `app/package-lock.json`) llevan también la versión: se actualizan al compilar o con `npm install`. Las versiones de `Cargo.toml`, `package.json` y `tauri.conf.json` las compara `npm run check:whats-new`.
 
    **Cada versión que se sube a Google Play tiene que subir de número:** Google rechaza un `versionCode` repetido. Tauri lo calcula a partir de `version` (`0.1.0` → `1000`).
-2. **Las novedades.** Las líneas de lo que cambia para la gente viven en `app/src/whats-new.json`, bajo la clave `next` mientras la versión no tiene número. Al elegirlo, renombra `next` por el número (`"0.2.1"`, por ejemplo). Después, `cd app && npm run check:whats-new` tiene que pasar: comprueba que la versión de la app tiene su entrada, no que esté completa; léela.
+2. **Las novedades.** Las líneas de lo que cambia para la gente viven en `app/src/whats-new.json`, bajo la clave `next` mientras la versión no tiene número. Al elegirlo: copia esas líneas, tal cual, a la página de la guía «Novedades de cada versión» (`using-the-app/whats-new.md`, en los dos idiomas), que guarda todo el detalle; después **condénsalas** en el fichero (como mucho 5 líneas de unos 250 caracteres: una por cosa grande y lo pequeño junto en una que empieza por «Además:»; las que llevan interruptor conservan lo que cuentan de privacidad) y renombra `next` por el número (`"0.2.1"`, por ejemplo). La app enseña el resumen y enlaza con la guía. Después, `cd app && npm run check:whats-new` tiene que pasar: comprueba que la versión de la app tiene su entrada, no que esté completa; léela.
 3. **La lista de licencias, con las versiones exactas.**
    ```bash
    cd app

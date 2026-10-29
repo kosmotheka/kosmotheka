@@ -17,7 +17,7 @@ Hoy `next` tiene 5 líneas que suman **2043 caracteres** en español (la más la
 - **Las líneas con interruptor** (lo que cambia qué sale del dispositivo) se quedan con lo que cuentan de privacidad, aunque se acorten.
 - Mientras una versión no tiene número, cada rama sigue escribiendo su línea completa en `next`, como ahora. Condensar es un paso de publicar, con el maintainer, no de cada rama.
 
-Si se acepta, va a `AGENTS.md` (la regla de novedades) y a «Publicar una versión» (`site/…/contribute/release.md`).
+**Con el detalle a mano** (idea del maintainer, 29/10/2026): resumir en la app no pierde nada, porque las líneas completas pasan a la página de la guía «Novedades de cada versión» (docs.kosmotheka.com), que ya existía con el texto de la app y pasa a ser el registro de cambios para personas, sin nada técnico. La ventana de novedades enlaza con ella («Cada versión, con todo el detalle»). Hecho en esta rama: el enlace, la regla en `AGENTS.md` y el paso en «Publicar una versión» (`site/…/contribute/release.md`). Falta que el maintainer dé por buenas las líneas condensadas de abajo.
 
 ### Las líneas de la app, condensadas (1151 caracteres en español)
 

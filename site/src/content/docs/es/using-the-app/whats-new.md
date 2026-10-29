@@ -5,11 +5,11 @@ sidebar:
   order: 23
 ---
 
-La app te enseña estas novedades al actualizarse, una sola vez. Si quieres volver a verlas, abre **Ajustes › Acerca de › Novedades**.
+Aquí está cada versión con **todo el detalle**. La app te enseña un resumen al actualizarse, una sola vez, con un enlace a esta página; si quieres volver a verlo, abre **Ajustes › Acerca de › Novedades**.
 
 Cuando una novedad cambia lo que se envía desde tu móvil u ordenador a internet, la app te enseña a la vez un **interruptor** para que decidas tú si la quieres. Aquí lo indicamos con la palabra «interruptor».
 
-Las líneas de cada versión son el texto que enseña la app, tal cual. Si una palabra no te suena: [La nube](../the-cloud/) explica la nube, el servidor y el segundo factor (el código extra al entrar, de la «app de autenticación»); [Compartir en casa](../share-at-home/), qué es emparejar; y el ISBN es el número que traen los libros junto al código de barras.
+Hasta la 0.7.0, la app enseñaba estas mismas líneas; desde la 0.8.0 enseña un resumen. Si una palabra no te suena: [La nube](../the-cloud/) explica la nube, el servidor y el segundo factor (el código extra al entrar, de la «app de autenticación»); [Compartir en casa](../share-at-home/), qué es emparejar; y el ISBN es el número que traen los libros junto al código de barras.
 
 ## Versión 0.7.0
 

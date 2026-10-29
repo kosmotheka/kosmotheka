@@ -5,7 +5,7 @@ sidebar:
   order: 23
 ---
 
-The app shows you these notes when it is updated, once only. To see them again, open **Settings › About › What's new**.
+Here is each version in **full detail**. The app shows you a summary when it is updated, once only, with a link to this page; to see it again, open **Settings › About › What's new**.
 
 When a change alters what leaves your device, the app also shows you a **switch**, so that you can decide whether you want it. Here we call it a "switch".
 

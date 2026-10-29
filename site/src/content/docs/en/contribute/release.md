@@ -20,7 +20,7 @@ This page is for whoever publishes a release of the app: the number, the what's-
    The lock files (`Cargo.lock`, `app/package-lock.json`) also carry the version: they are updated when you build or with `npm install`. `npm run check:whats-new` compares the versions in `Cargo.toml`, `package.json` and `tauri.conf.json`.
 
    **Every release uploaded to Google Play has to have a higher number:** Google rejects a repeated `versionCode`. Tauri calculates it from `version` (`0.1.0` → `1000`).
-2. **The what's-new notes.** The lines about what changes for people live in `app/src/whats-new.json`, under the key `next` while the version has no number. When you choose it, rename `next` to the number (`"0.2.1"`, for example). Then `cd app && npm run check:whats-new` has to pass: it checks that the app's version has its entry, not that the entry is complete; read it.
+2. **The what's-new notes.** The lines about what changes for people live in `app/src/whats-new.json`, under the key `next` while the version has no number. When you choose it: copy those lines, as they are, to the guide page "What's new in each version" (`using-the-app/whats-new.md`, in both languages), which keeps the full detail; then **condense** them in the file (at most 5 lines of about 250 characters: one per big thing, and the small ones together in one that starts with "Also:"; those with a switch keep what they say about privacy) and rename `next` to the number (`"0.2.1"`, for example). The app shows the summary and links to the guide. Then `cd app && npm run check:whats-new` has to pass: it checks that the app's version has its entry, not that the entry is complete; read it.
 3. **The licences list, with the exact versions.**
    ```bash
    cd app
