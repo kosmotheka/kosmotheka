@@ -15,14 +15,3 @@ export const CatalogOptionsContext = createContext<CatalogOptions>(emptyOptions)
 export function useCatalogOptions() {
   return useContext(CatalogOptionsContext);
 }
-
-/** A `<datalist>` for inputs that suggest existing values. */
-export function Suggestions({ id, values }: { id: string; values: string[] }) {
-  return (
-    <datalist id={id}>
-      {values.map((value) => (
-        <option key={value} value={value} />
-      ))}
-    </datalist>
-  );
-}

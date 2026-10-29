@@ -17,7 +17,8 @@ import {
   X,
 } from "lucide-react";
 
-import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
+import { useCatalogOptions } from "@/components/catalog-options";
+import { SuggestInput, useSuggestions } from "@/components/suggest-input";
 import { ChoiceSelect } from "@/components/choice-select";
 import { Cover } from "@/components/cover";
 import { CoverChooser } from "@/components/cover-chooser";
@@ -414,11 +415,16 @@ function PeopleField({
     if (trimmed && !values.includes(trimmed)) onChange([...values, trimmed]);
     setDraft("");
   };
+  const known = useSuggestions(
+    suggestions.filter((s) => !values.includes(s)),
+    draft,
+    add,
+  );
 
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5">
+      <div className="relative flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1.5">
         {values.map((name) => (
           <span
             key={name}
@@ -439,7 +445,7 @@ function PeopleField({
         ))}
         <input
           id={id}
-          list={`${id}-suggestions`}
+          {...known.inputProps}
           className="min-w-24 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           placeholder={t("form.people.add")}
           value={draft}
@@ -447,14 +453,12 @@ function PeopleField({
             const typed = e.target.value;
             if (typed.includes(",")) {
               typed.split(",").forEach(add);
-            } else if (suggestions.includes(typed)) {
-              // Picking a suggestion fires the same input event as typing it: add right away.
-              add(typed);
             } else {
               setDraft(typed);
             }
           }}
           onKeyDown={(e) => {
+            known.inputProps.onKeyDown(e);
             if (e.key === "Enter") {
               e.preventDefault();
               add(draft);
@@ -463,11 +467,8 @@ function PeopleField({
             }
           }}
         />
+        {known.list}
       </div>
-      <Suggestions
-        id={`${id}-suggestions`}
-        values={suggestions.filter((s) => !values.includes(s))}
-      />
     </div>
   );
 }
@@ -922,13 +923,12 @@ export function EditionFields({
 
   const publisherField = (labelKey: string) => (
     <Field id="publisher" label={t(labelKey)}>
-      <Input
+      <SuggestInput
         id="publisher"
-        list="publisher-suggestions"
+        suggestions={options.publishers}
         value={value.publisher}
-        onChange={(e) => set("publisher", e.target.value)}
+        onValueChange={(publisher) => set("publisher", publisher)}
       />
-      <Suggestions id="publisher-suggestions" values={options.publishers} />
     </Field>
   );
 
@@ -1399,13 +1399,12 @@ export function CopyFields({
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id={id("owner")} label={t("form.fields.owner")}>
-          <Input
+          <SuggestInput
             id={id("owner")}
-            list={id("known-owners")}
+            suggestions={options.owners}
             value={value.owner}
-            onChange={(e) => set("owner", e.target.value)}
+            onValueChange={(owner) => set("owner", owner)}
           />
-          <Suggestions id={id("known-owners")} values={options.owners} />
         </Field>
         <Field id={id("quantity")} label={t("form.fields.quantity")} error={errorFor("quantity")}>
           <Input
@@ -1437,16 +1436,15 @@ export function CopyFields({
           ) : (
             <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           )}
-          <Input
+          <SuggestInput
             id={id("location")}
-            list={id("known-locations")}
             className="flex-1"
             placeholder={digital ? undefined : t("form.placeholders.location")}
+            suggestions={locationSuggestions}
             value={value.location}
-            onChange={(e) => set("location", e.target.value)}
+            onValueChange={(location) => set("location", location)}
           />
         </div>
-        <Suggestions id={id("known-locations")} values={locationSuggestions} />
         {digital && (
           <p className="text-xs text-muted-foreground">{t("form.hints.locationDigital")}</p>
         )}

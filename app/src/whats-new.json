@@ -28,6 +28,10 @@
     {
       "es": "Las etiquetas tienen su sitio en el menú, junto a las sagas y colecciones: ahí las ves, las renombras y las borras.",
       "en": "Tags have their own place in the menu, next to sagas and collections: there you see, rename and delete them."
+    },
+    {
+      "es": "En el móvil, las sugerencias al escribir la autoría, la editorial, el propietario o la ubicación salen bien debajo del campo, en vez de descolocadas y semitransparentes.",
+      "en": "On the phone, the suggestions while typing authors, publisher, owner or location show neatly under the field, instead of out of place and half transparent."
     }
   ],
   "0.7.0": [

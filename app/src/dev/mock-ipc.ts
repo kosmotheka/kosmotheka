@@ -1165,8 +1165,8 @@ mockIPC((cmd, args) => {
     }
     case "catalog_options":
       return {
-        authors: [],
-        publishers: [],
+        authors: ["Frank Herbert", "Isaac Asimov", "Ursula K. Le Guin", "Patrick Rothfuss"],
+        publishers: ["Debolsillo", "Destino", "Minotauro", "Nova", "Plaza & Janés"],
         owners: ["Ana", "Laura", "Hugo"],
         locations: ["Salón", "Estudio"],
       };

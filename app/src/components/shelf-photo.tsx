@@ -7,13 +7,13 @@ import { Camera, CircleAlert, CircleCheck, ImageIcon, Loader2, Search, X } from 
 
 import { ChoiceSelect } from "@/components/choice-select";
 import { Field } from "@/components/book-form";
-import { Suggestions, useCatalogOptions } from "@/components/catalog-options";
+import { useCatalogOptions } from "@/components/catalog-options";
+import { SuggestInput } from "@/components/suggest-input";
 import { Cover } from "@/components/cover";
 import { ScreenDialogContent } from "@/components/shell/screen-dialog";
 import { ResultsCredits } from "@/components/source-credits";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { languageOf } from "@/i18n";
 import {
   type Candidate,
@@ -309,13 +309,12 @@ export function ShelfPhoto({
     <div className="grid gap-3 px-2 pt-2">
       <p className="text-sm font-medium">{t("shelf.copyDetails")}</p>
       <Field id="shelf-owner" label={t("form.fields.owner")}>
-        <Input
+        <SuggestInput
           id="shelf-owner"
-          list="shelf-known-owners"
+          suggestions={options.owners}
           value={owner}
-          onChange={(e) => setOwner(e.target.value)}
+          onValueChange={setOwner}
         />
-        <Suggestions id="shelf-known-owners" values={options.owners} />
       </Field>
       <Field id="shelf-format" label={t("form.fields.format")}>
         <ChoiceSelect
@@ -326,13 +325,12 @@ export function ShelfPhoto({
         />
       </Field>
       <Field id="shelf-location" label={t("form.fields.location")}>
-        <Input
+        <SuggestInput
           id="shelf-location"
-          list="shelf-known-locations"
+          suggestions={options.locations}
           value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          onValueChange={setLocation}
         />
-        <Suggestions id="shelf-known-locations" values={options.locations} />
       </Field>
     </div>
   );
