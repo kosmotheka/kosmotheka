@@ -22,10 +22,10 @@ Dune, por ejemplo, puede tener dos ejemplares: uno en tapa blanda que es de Ana 
   - Videojuego: Físico, Digital. Además se pide la plataforma, que es la consola o el ordenador en el que se juega.
   - Música: Vinilo, CD, Casete, Digital.
   - Otro: solo «Otro».
-- **Propietario.** De quién es. Empieza a escribir un nombre y la app te sugiere los de las personas de la biblioteca. Si lo dejas vacío, el ejemplar queda «Sin propietario».
+- **Propietario.** De quién es. La app te ofrece los nombres de las personas de la biblioteca: en el móvil, al tocar el campo se abre una lista con un buscador, donde también puedes escribir otro; en el ordenador, la lista sale debajo al entrar en el campo. Si lo dejas vacío, el ejemplar queda «Sin propietario».
 - **Unidades.** Cuántos iguales tienes juntos. Todas las unidades de un ejemplar comparten formato, dueño, ubicación y fecha de compra. Si tienes tres iguales en el salón, pon 3 en un solo ejemplar. Si uno está en otro sitio, es de otra persona o es de otro formato, apúntalo en un ejemplar aparte. Cuando un ejemplar tiene más de una unidad, la ficha lo dice («3 unidades»), y el «Lo tienes · 3 ejemplares» de arriba cuenta las unidades.
 - **Fecha de compra.** Opcional.
-- **Ubicación.** Dónde está, con las palabras que quieras: «Salón, estantería 2, balda 3». La app te sugiere las ubicaciones que ya has usado, para que no te salgan escritas de tres maneras distintas. Con los formatos digitales (ebook, PDF, audiolibro, películas o juegos en internet…) no hay estantería: di dónde lo tienes, por ejemplo «Kindle de Laura».
+- **Ubicación.** Dónde está, con las palabras que quieras: «Salón, estantería 2, balda 3». La app te ofrece las ubicaciones que ya has usado, de la misma manera, para que no te salgan escritas de tres maneras distintas. Con los formatos digitales (ebook, PDF, audiolibro, películas o juegos en internet…) no hay estantería: di dónde lo tienes, por ejemplo «Kindle de Laura».
 
 Solo el título es obligatorio. Todo lo demás puede quedarse vacío y completarse más tarde.
 

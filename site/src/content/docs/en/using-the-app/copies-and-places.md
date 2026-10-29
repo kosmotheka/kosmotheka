@@ -22,10 +22,10 @@ Dune, for example, can have two copies: a paperback that is Ana's and sits in th
   - Video game: Physical, Digital. The platform is also asked for: the console or computer you play it on.
   - Music: Vinyl, CD, Cassette, Digital.
   - Other: only "Other".
-- **Owner.** Whose it is. Start typing a name and the app suggests the people in the library. If you leave it empty, the copy is "No owner".
+- **Owner.** Whose it is. The app offers the names of the people in the library: on the phone, tapping the field opens a list with a search box, where you can also type another one; on the computer, the list shows under the field as soon as you enter it. If you leave it empty, the copy is "No owner".
 - **Quantity.** How many identical ones you have together. All the items in one copy share the format, owner, location and purchase date. If you have three identical ones in the living room, put 3 in a single copy. If one is somewhere else, belongs to someone else or is a different format, note it as a separate copy. In the app this field is labelled "Copies", and when a copy has more than one item, the page says so ("3 units"); the "You have it · 3 copies" at the top counts the items.
 - **Purchase date.** Optional.
-- **Location.** Where it is, in whatever words you like: "Living room, shelf 2, row 3". The app suggests the locations you have already used, so they do not end up written in three different ways. For digital formats (ebook, PDF, audiobook, films or games online…) there is no shelf: say where you have it, for example "Laura's Kindle".
+- **Location.** Where it is, in whatever words you like: "Living room, shelf 2, row 3". The app offers the locations you have already used, the same way, so they do not end up written in three different ways. For digital formats (ebook, PDF, audiobook, films or games online…) there is no shelf: say where you have it, for example "Laura's Kindle".
 
 Only the title is required. Everything else can stay empty and be filled in later.
 
