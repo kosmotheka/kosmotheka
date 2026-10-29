@@ -2,42 +2,29 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
-## 0.8.0 (propuesta del 29/10/2026, sin número todavía)
+## 0.8.0 (29/10/2026)
 
-**Lleva:** la cadena de ramas del 26 y 27/10, `fix/get-key-link` y la papelera (`feat/trash`, D105). **La papelera cambia el formato de los datos:** todos los dispositivos de una biblioteca necesitan esta versión, y **el servidor tiene que desplegarse antes**, con sus dos migraciones (`Version20261027213609`, `Version20261027220807`). Sin el servidor nuevo, una biblioteca en la nube no puede subir lo que se manda a la papelera.
+**Lleva:** la cadena de ramas del 26 al 29/10, la papelera (D105) y el tope de 50 bibliotecas de la nube por cuenta (D106). **Antes de publicarla, desplegar el servidor** con las dos migraciones de la papelera (`Version20261027213609`, `Version20261027220807`); el tope de bibliotecas es configuración (`CLOUD_MAX_LIBRARIES_PER_ACCOUNT`, 50 por defecto), sin migración. Sin el servidor nuevo, una biblioteca en la nube no puede subir lo que se manda a la papelera. **La papelera cambia el formato de los datos:** todos los dispositivos de una biblioteca necesitan esta versión; la línea 2 lo dice.
 
-### Lo que preocupa: la pantalla de novedades se llena
+Es la primera versión con las novedades **condensadas** (como mucho 5 líneas en la app; el detalle completo, en la guía, «Novedades de cada versión»), como se propuso aquí el 29/10/2026 y aceptó el maintainer.
 
-Hoy `next` tiene 5 líneas que suman **2043 caracteres** en español (la más larga, 606), y falta la de la papelera. Cada rama fue juntando su cambio a una línea existente para no pasar de cinco, y las líneas crecieron: se leen como listas, no como novedades.
-
-**Propuesta:** al dar número a una versión, **condensar** lo de `next`, como ya se hace con el texto de Google Play:
-
-- **Como mucho 5 líneas, de unos 250 caracteres cada una.**
-- **Lo grande, una línea cada cosa**; lo pequeño, todo junto en una última línea que empieza por «Además:».
-- **Las líneas con interruptor** (lo que cambia qué sale del dispositivo) se quedan con lo que cuentan de privacidad, aunque se acorten.
-- Mientras una versión no tiene número, cada rama sigue escribiendo su línea completa en `next`, como ahora. Condensar es un paso de publicar, con el maintainer, no de cada rama.
-
-**Con el detalle a mano** (idea del maintainer, 29/10/2026): resumir en la app no pierde nada, porque las líneas completas pasan a la página de la guía «Novedades de cada versión» (docs.kosmotheka.com), que ya existía con el texto de la app y pasa a ser el registro de cambios para personas, sin nada técnico. La ventana de novedades enlaza con ella («Cada versión, con todo el detalle»). Hecho en esta rama: el enlace, la regla en `AGENTS.md` y el paso en «Publicar una versión» (`site/…/contribute/release.md`). Falta que el maintainer dé por buenas las líneas condensadas de abajo.
-
-### Las líneas de la app, condensadas (1151 caracteres en español)
+### Las líneas de la app
 
 Español:
 
 1. En el ordenador, la app avisa cuando hay una versión nueva. Para saberlo, pregunta una vez al día a GitHub, que solo ve tu dirección de internet. Puedes apagarlo aquí o en «Acerca de». *(con su interruptor, `check_updates`)*
 2. Lo que borras va a la papelera de la biblioteca, en el menú, y se puede restaurar tal como estaba durante 30 días; justo al borrar, «Deshacer» lo devuelve. Todos los dispositivos de la biblioteca necesitan esta versión.
-3. En el móvil, el botón atrás ya no pierde lo que escribes: antes de salir de un formulario, pregunta. Las listas usan el selector del móvil, los géneros se eligen con casillas grandes y el código de barras se escanea también en el formulario.
-4. Búsquedas mejores: los libros que se llaman como escribes y están en tu idioma salen primero, con sus ediciones juntas; Open Library trae más autorías en español y Wikidata, más cómics y juegos de mesa. Y una página nueva de la guía: «Cómo buscar mejor».
-5. Además: los avisos flotan abajo y se cierran con la X; tocar un ejemplar lo abre para editarlo; las sagas se ordenan arrastrando y avisan si falta el juego base; el historial dice quién hizo cada cambio; y la hoja de cálculo (CSV) lleva todos los tipos.
+3. En el móvil, el botón atrás ya no pierde lo que escribes: antes de salir de un formulario, pregunta. La autoría, la editorial, la ubicación y las etiquetas se eligen en una hoja con buscador, los géneros con casillas grandes, y el código de barras se escanea también en el formulario.
+4. Búsquedas mejores: primero los libros que se llaman como escribes y en tu idioma, con sus ediciones juntas; Open Library trae más autorías en español y Wikidata, más cómics y juegos de mesa. La foto de balda reconoce lo que ya tienes aunque no traiga ISBN.
+5. Además: las etiquetas tienen su sitio en el menú; los avisos flotan abajo y se cierran con la X; tocar un ejemplar lo abre para editarlo; las sagas se ordenan arrastrando y avisan si falta el juego base; el historial dice quién hizo cada cambio; y la hoja de cálculo (CSV) lleva todos los tipos.
 
 English:
 
 1. On the computer, the app tells you when a new version is out. To know, it asks GitHub once a day, which only sees your internet address. You can turn it off here or in «About».
 2. What you delete goes to the library's trash, in the menu, and can be restored as it was for 30 days; right after deleting, «Undo» brings it back. Every device of the library needs this version.
-3. On the phone, the back button no longer loses what you type: it asks before leaving a form. Lists use the phone's own picker, genres are picked with large checkboxes and the barcode can also be scanned in the form.
-4. Better searches: books called as you typed and in your language come first, with their editions together; Open Library brings more authors in Spanish and Wikidata more comics and board games. And a new guide page: «How to search better».
-5. Also: notices float at the bottom and close with the X; tapping a copy opens it to edit; sagas are ordered by dragging and warn when the base game is missing; the history says who made each change; and the spreadsheet (CSV) carries every kind.
-
-Fuera, por pequeño o interno: que cerrar sesión ya no deja la pregunta abierta, la editorial y el ISBN en la cabecera de la ficha, y que «Cómo conseguir una clave» abre el navegador.
+3. On the phone, the back button no longer loses what you type: it asks before leaving a form. Authors, publisher, location and tags are picked in a sheet with a search box, genres with large checkboxes, and the barcode can also be scanned in the form.
+4. Better searches: books called as you typed and in your language come first, with their editions together; Open Library brings more authors in Spanish and Wikidata more comics and board games. The shelf photo knows what you already have even without an ISBN.
+5. Also: tags have their own place in the menu; notices float at the bottom and close with the X; tapping a copy opens it to edit; sagas are ordered by dragging and warn when the base game is missing; the history says who made each change; and the spreadsheet (CSV) carries every kind.
 
 **Texto para Google Play** (409 y 388 caracteres). Sin el aviso de versiones, que es solo del ordenador:
 

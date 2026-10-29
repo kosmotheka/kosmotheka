@@ -79,7 +79,7 @@ Añadida el 03/10/2026 (D84). La primera línea de defensa son estos tests; la a
 | `a row created already in the trash, as restoring a backup does, names a person of the library` | Al restaurar una copia de seguridad, `trashed_by` puede ser otra persona, pero de la biblioteca | ✅ |
 | `the cloud deletes for good what has been 60 days in the trash, and nothing else` | El único poder de la nube sobre el catálogo: antes de 60 días, fuera de la papelera, mandar o restaurar, petición | ✅ |
 
-Riesgo aceptado (D105): una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo lo que ya estaba en la papelera. El servidor todavía no corre estos casos: es el paso 3 del [plan](../plans/papelera.md).
+Riesgo aceptado (D105): una nube comprometida podría fechar su operación a su favor y eliminar antes de tiempo lo que ya estaba en la papelera. El servidor todavía no corre estos casos: es el paso 3 del [plan](../historico/papelera.md).
 
 **Casos hostiles de las invitaciones** (7.6, en `server/tests/Controller/InvitationControllerTest.php`; cada uno con su test antes de la defensa, visto fallar):
 

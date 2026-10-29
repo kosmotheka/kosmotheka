@@ -2059,7 +2059,7 @@ Aceptada el 27/10/2026 por el maintainer, tras el estudio [research/actualizacio
 
 ## D105 · La papelera: lo borrado se guarda 30 días y se puede restaurar — `aceptada`
 
-Aceptada el 27/10/2026 por el maintainer, punto por punto. Cierra la pregunta abierta «¿Papelera para deshacer borrados?» del ROADMAP. Toca D65 (borrar una biblioteca), D73 (peticiones), D84 (no fiarse de un id del cliente), D55 (relojes), D58 y D30 (copias de seguridad), D92 (el catálogo del servidor) y D95 (el dispositivo de la nube). Plan: [plans/papelera.md](plans/papelera.md).
+Aceptada el 27/10/2026 por el maintainer, punto por punto. Cierra la pregunta abierta «¿Papelera para deshacer borrados?» del ROADMAP. Toca D65 (borrar una biblioteca), D73 (peticiones), D84 (no fiarse de un id del cliente), D55 (relojes), D58 y D30 (copias de seguridad), D92 (el catálogo del servidor) y D95 (el dispositivo de la nube). Plan: [historico/papelera.md](historico/papelera.md).
 
 **Contexto.** Borrar es definitivo: cada dispositivo recuerda que una fila se borró (`tombstones`) para que otro que aún no se había enterado no la devuelva. En una biblioteca compartida, un toque equivocado borra la ficha en todos los dispositivos, y solo una copia de seguridad la trae de vuelta, con la biblioteca entera tal como estaba. Un «Deshacer» de unos segundos no basta solo: la ficha tiene que desaparecer de las listas mientras tanto, y eso ya es guardarla sin borrar.
 

@@ -1,37 +1,25 @@
 {
-  "next": [
+  "0.8.0": [
     {
-      "es": "En el ordenador, la app avisa cuando hay una versión nueva, con un enlace para descargarla. Para saberlo, una vez al día pregunta a GitHub, donde se publican las versiones, cuál es la última; GitHub ve tu dirección de internet y nada más. Puedes apagarlo aquí o en «Acerca de», donde también puedes buscarla a mano. En el móvil no cambia nada: lo actualiza Google Play.",
-      "en": "On the computer, the app tells you when a new version is out, with a link to download it. To know, once a day it asks GitHub, where versions are published, which one is the latest; GitHub sees your internet address and nothing else. You can turn it off here or in «About», where you can also check by hand. Nothing changes on the phone: Google Play updates it.",
+      "es": "En el ordenador, la app avisa cuando hay una versión nueva. Para saberlo, pregunta una vez al día a GitHub, que solo ve tu dirección de internet. Puedes apagarlo aquí o en «Acerca de».",
+      "en": "On the computer, the app tells you when a new version is out. To know, it asks GitHub once a day, which only sees your internet address. You can turn it off here or in «About».",
       "switch": "check_updates"
     },
     {
-      "es": "En el móvil, el botón atrás ya no pierde lo que estás escribiendo (al editar una ficha, un ejemplar o al añadir algo): sale del formulario y, si has escrito algo, pregunta antes; en «Proveedores de datos», vuelve a la lista y después a Ajustes. Los géneros se eligen en una hoja con casillas grandes, las listas (formato, tipo, filtros) usan el selector del propio móvil, y el código de barras de un juego, una película o un disco se puede escanear en el formulario.",
-      "en": "On the phone, the back button no longer loses what you are typing (editing an item or a copy, or adding something): it leaves the form and, if you typed something, asks first; in «Data providers», it goes back to the list, then to Settings. Genres are picked in a sheet with large checkboxes, lists (format, kind, filters) use the phone's own picker, and the barcode of a game, film or record can be scanned in the form."
+      "es": "Lo que borras va a la papelera de la biblioteca, en el menú, y se puede restaurar tal como estaba durante 30 días; justo al borrar, «Deshacer» lo devuelve. Todos los dispositivos de la biblioteca necesitan esta versión.",
+      "en": "What you delete goes to the library's trash, in the menu, and can be restored as it was for 30 days; right after deleting, «Undo» brings it back. Every device of the library needs this version."
     },
     {
-      "es": "Los avisos («Añadido al catálogo», lo que ha bajado de la nube…) flotan abajo sin mover la página, se leen mejor en modo oscuro, se cierran con la X y se van solos al minuto. En la ficha: la cabecera dice la editorial y el ISBN, tocar un ejemplar lo abre para editarlo, y la papelera, a su lado, lo borra (o pide que se borre, si no puedes hacerlo tú). Y al cerrar sesión o borrar la cuenta, la pregunta ya no se queda abierta después. «Novedades» enlaza con la guía, donde está cada versión con todo el detalle.",
-      "en": "Notices («Added to the catalogue», what came down from the cloud…) float at the bottom without moving the page, read better in dark mode, close with the X and go away by themselves after a minute. In an item: the top shows its publisher and ISBN, tapping a copy opens it to edit, and the bin next to it deletes it (or asks for it to be deleted, if you cannot do it yourself). And after signing out or deleting the account, the question no longer stays open. «What's new» links to the guide, where every version is in full detail."
+      "es": "En el móvil, el botón atrás ya no pierde lo que escribes: antes de salir de un formulario, pregunta. La autoría, la editorial, la ubicación y las etiquetas se eligen en una hoja con buscador, los géneros con casillas grandes, y el código de barras se escanea también en el formulario.",
+      "en": "On the phone, the back button no longer loses what you type: it asks before leaving a form. Authors, publisher, location and tags are picked in a sheet with a search box, genres with large checkboxes, and the barcode can also be scanned in the form."
     },
     {
-      "es": "Mejores resultados al buscar: muchas ediciones en español de Open Library llegan ya con su autoría; al buscar un libro por título salen primero los que se llaman así y están en tu idioma, con sus ediciones juntas; y Wikidata encuentra más cómics (como Watchmen o los álbumes de Astérix) y dice quién diseñó más juegos de mesa. Si algo no sale, «Proveedores de datos» enlaza a una página nueva de la guía, «Cómo buscar mejor», y «Cómo conseguir una clave» ya abre el navegador. Además, la hoja de cálculo (CSV) lleva ya todos los tipos, no solo libros, con sus géneros y etiquetas, para exportar e importar.",
-      "en": "Better search results: many Spanish editions from Open Library now arrive with their authors; when you search for a book by title, the ones with that title and in your language come first, with their editions together; and Wikidata finds more comics (such as Watchmen or the Astérix albums) and says who designed more board games. If something does not show up, «Data providers» links to a new page of the guide, «How to search better», and «How to get a key» now opens the browser. Also, the spreadsheet (CSV) now carries every kind, not only books, with their genres and tags, to export and import."
+      "es": "Búsquedas mejores: primero los libros que se llaman como escribes y en tu idioma, con sus ediciones juntas; Open Library trae más autorías en español y Wikidata, más cómics y juegos de mesa. La foto de balda reconoce lo que ya tienes aunque no traiga ISBN.",
+      "en": "Better searches: books called as you typed and in your language come first, with their editions together; Open Library brings more authors in Spanish and Wikidata more comics and board games. The shelf photo knows what you already have even without an ISBN."
     },
     {
-      "es": "En una saga o colección, cada obra dice su año y sus formatos, y avisa si necesita otra que no tenéis (como el juego base de una expansión). En una saga, «Editar» deja ordenarlas arrastrándolas por su asa, con el ratón o con el dedo.",
-      "en": "In a saga or collection, each work shows its year and formats, and warns when it needs another that nobody has (such as an expansion's base game). In a saga, «Edit» lets you put them in order by dragging them by their handle, with the mouse or your finger."
-    },
-    {
-      "es": "La foto de una balda y la búsqueda de «Añadir» reconocen lo que ya tienes aunque el catálogo no traiga ISBN: por el título y la autoría.",
-      "en": "The shelf photo and the Add search know what you already have even when the catalogue brings no ISBN: by its title and authors."
-    },
-    {
-      "es": "Las etiquetas tienen su sitio en el menú, junto a las sagas y colecciones: ahí las ves, las renombras y las borras.",
-      "en": "Tags have their own place in the menu, next to sagas and collections: there you see, rename and delete them."
-    },
-    {
-      "es": "En el móvil, la autoría, la editorial, el propietario, la ubicación y las etiquetas se eligen en una hoja desde abajo, con todo lo que ya tienes y un buscador para filtrar o escribir uno nuevo. En el ordenador, la lista sale al entrar en el campo, sin tener que escribir.",
-      "en": "On the phone, authors, publisher, owner, location and tags are picked in a sheet from below, with everything you already have and a search box to filter or type a new one. On the computer, the list shows as soon as you enter the field, without typing."
+      "es": "Además: las etiquetas tienen su sitio en el menú; los avisos flotan abajo y se cierran con la X; tocar un ejemplar lo abre para editarlo; las sagas se ordenan arrastrando y avisan si falta el juego base; el historial dice quién hizo cada cambio; y la hoja de cálculo (CSV) lleva todos los tipos.",
+      "en": "Also: tags have their own place in the menu; notices float at the bottom and close with the X; tapping a copy opens it to edit; sagas are ordered by dragging and warn when the base game is missing; the history says who made each change; and the spreadsheet (CSV) carries every kind."
     }
   ],
   "0.7.0": [
