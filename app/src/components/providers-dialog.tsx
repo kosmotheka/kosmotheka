@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "@/components/external-link";
 import { guidePage } from "@/lib/guide";
+import { useBackGuard } from "@/lib/navigation";
 import { BGG_URL, BggLogo, SOURCES_WITH_A_LINK } from "@/components/source-credits";
 import tmdbLogo from "@/assets/tmdb-logo.svg";
 
@@ -144,6 +145,16 @@ export function ProvidersDialog({
   const desktop = useDesktop();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedKind, setSelectedKind] = useState<Selection>(null);
+  // Opened over Settings with no history entry of its own: back leaves a kind's list first, then the dialog.
+  // One entry each, made when the person opens it: Android's back skips an entry pushed again from code.
+  useBackGuard(open, () => {
+    onOpenChange(false);
+    return false;
+  });
+  useBackGuard(open && !desktop && selectedKind !== null, () => {
+    setSelectedKind(null);
+    return false;
+  });
   const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
   const [testStatus, setTestStatus] = useState<
     Partial<Record<Source, "testing" | "ok" | "bad_key" | "failed">>
