@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const SHOWN_FOR_MS = 60_000;
 
 /** Its id: dialogs and sheets open under it do not take a tap on it for a tap outside them. */
-export const FLOATING_NOTICE_ID = "floating-notice";
+const FLOATING_NOTICE_ID = "floating-notice";
 
 /**
  * The app's notice, floating at the bottom so the page under it never moves. It goes by
