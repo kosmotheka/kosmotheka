@@ -175,14 +175,26 @@ fn warning_kind(error: &ProviderError) -> WarningKind {
     }
 }
 
-/// Candidates keep provider order: the first provider's candidates come first.
+/// Candidates keep provider order: the first provider's candidates come first. A catalogue that answers with the same
+/// ISBN twice (the BNE, with two records of one edition) shows it once: each result is still one edition, and other
+/// catalogues' results are never joined to it, as their editions differ (another publisher, year or format).
 pub fn collect_candidates(
     results: Vec<(Source, Result<Vec<Candidate>, ProviderError>)>,
 ) -> SearchResult {
     let mut result = SearchResult::default();
+    let mut seen = BTreeSet::new();
     for (source, outcome) in results {
         match outcome {
-            Ok(candidates) => result.candidates.extend(candidates),
+            Ok(candidates) => {
+                result
+                    .candidates
+                    .extend(candidates.into_iter().filter(|candidate| {
+                        candidate
+                            .isbn
+                            .clone()
+                            .is_none_or(|isbn| seen.insert((source.id(), isbn)))
+                    }))
+            }
             Err(error) => result.warnings.push(ProviderWarning {
                 source,
                 kind: warning_kind(&error),
@@ -409,6 +421,12 @@ impl Lookup {
             ),
         );
         merge(isbn, bne, loc, google, open_library)
+    }
+
+    /// The cover Open Library has for an edition, asked once a search's results are shown. A failure is no cover:
+    /// not worth a warning, the result is already there.
+    pub async fn cover(&self, isbn: &Isbn) -> Option<String> {
+        openlibrary::cover(&self.client, isbn).await.ok().flatten()
     }
 
     /// Title search: books, music, and now everything Wikidata covers (films,
@@ -833,6 +851,54 @@ mod tests {
     }
 
     #[test]
+    fn a_catalogue_that_repeats_an_isbn_shows_it_once_and_other_catalogues_keep_theirs() {
+        let edition = |source, title: &str, isbn: Option<&str>| {
+            let mut candidate = Candidate::new(Kind::Book, source, title);
+            candidate.isbn = isbn.map(str::to_owned);
+            candidate
+        };
+        let result = collect_candidates(vec![
+            (
+                Source::Bne,
+                Ok(vec![
+                    edition(Source::Bne, "El nombre del viento", Some("9788499082479")),
+                    edition(Source::Bne, "El nombre del viento", Some("9788401337208")),
+                    edition(Source::Bne, "El nombre del viento.", Some("9788499082479")),
+                    edition(Source::Bne, "Sin ISBN", None),
+                    edition(Source::Bne, "Sin ISBN", None),
+                ]),
+            ),
+            (
+                Source::OpenLibrary,
+                Ok(vec![edition(
+                    Source::OpenLibrary,
+                    "El nombre del viento",
+                    Some("9788499082479"),
+                )]),
+            ),
+        ]);
+        let shown: Vec<_> = result
+            .candidates
+            .iter()
+            .map(|c| (c.source, c.title.as_str(), c.isbn.as_deref()))
+            .collect();
+        assert_eq!(
+            shown,
+            vec![
+                (Source::Bne, "El nombre del viento", Some("9788499082479")),
+                (Source::Bne, "El nombre del viento", Some("9788401337208")),
+                (Source::Bne, "Sin ISBN", None),
+                (Source::Bne, "Sin ISBN", None),
+                (
+                    Source::OpenLibrary,
+                    "El nombre del viento",
+                    Some("9788499082479")
+                ),
+            ]
+        );
+    }
+
+    #[test]
     fn year_is_taken_from_several_date_formats() {
         assert_eq!(year_in("2007-03-27"), Some(2007));
         assert_eq!(year_in("October 1, 1988"), Some(1988));
@@ -1150,11 +1216,33 @@ mod live {
             .await;
         for candidate in &result.candidates {
             println!(
-                "{:?} · {} · {:?} · {:?}",
-                candidate.source, candidate.title, candidate.language, candidate.authors
+                "{:?} · {} · {:?} · {:?} · {:?} · {:?} · {:?} · cover {}",
+                candidate.source,
+                candidate.title,
+                candidate.language,
+                candidate.authors,
+                candidate.isbn,
+                candidate.publisher,
+                candidate.published_year,
+                candidate.cover_url.is_some()
             );
         }
         assert_eq!(result.candidates[0].language.as_deref(), Some("es"));
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
+    async fn live_open_library_cover_for_a_bne_isbn() {
+        let lookup = Lookup::new().unwrap();
+        // «El imperio final», Nova 2021: the BNE has it without a cover, Open Library with one.
+        let cover = lookup.cover(&Isbn::parse("9788418037214").unwrap()).await;
+        println!("{cover:?}");
+        assert!(cover.is_some_and(|url| url.starts_with("https://covers.openlibrary.org/b/id/")));
+        // Nova 2024, which Open Library does not have.
+        assert_eq!(
+            lookup.cover(&Isbn::parse("9788419260451").unwrap()).await,
+            None
+        );
     }
 
     #[tokio::test]

@@ -17,19 +17,9 @@ pub async fn lookup(
     client: &reqwest::Client,
     isbn: &Isbn,
 ) -> Result<Option<Metadata>, ProviderError> {
-    let response = client
-        .get(format!("{BASE}/isbn/{isbn}.json"))
-        .send()
-        .await?;
-    match response.status() {
-        StatusCode::NOT_FOUND => return Ok(None),
-        StatusCode::TOO_MANY_REQUESTS => return Err(ProviderError::Quota),
-        status if !status.is_success() => {
-            return Err(ProviderError::Unexpected(format!("HTTP {status}")));
-        }
-        _ => {}
-    }
-    let edition: Value = response.json().await?;
+    let Some(edition) = edition(client, isbn).await? else {
+        return Ok(None);
+    };
     let (mut metadata, mut author_keys) = parse_edition(&edition);
     if author_keys.is_empty()
         && let Some(work) = work_key(&edition)
@@ -47,6 +37,27 @@ pub async fn lookup(
         }
     }
     Ok(Some(metadata))
+}
+
+/// The cover of one edition, for a search result that has its ISBN and no cover. The edition's record and not the
+/// covers service by ISBN, which allows 100 of those every 5 minutes; by id, as here, it has no such limit.
+pub async fn cover(client: &reqwest::Client, isbn: &Isbn) -> Result<Option<String>, ProviderError> {
+    Ok(edition(client, isbn)
+        .await?
+        .and_then(|edition| parse_edition(&edition).0.cover_url))
+}
+
+async fn edition(client: &reqwest::Client, isbn: &Isbn) -> Result<Option<Value>, ProviderError> {
+    let response = client
+        .get(format!("{BASE}/isbn/{isbn}.json"))
+        .send()
+        .await?;
+    match response.status() {
+        StatusCode::NOT_FOUND => Ok(None),
+        StatusCode::TOO_MANY_REQUESTS => Err(ProviderError::Quota),
+        status if !status.is_success() => Err(ProviderError::Unexpected(format!("HTTP {status}"))),
+        _ => Ok(Some(response.json().await?)),
+    }
 }
 
 /// A record by its key (`/authors/OL34184A`, `/works/OL27513W`).
