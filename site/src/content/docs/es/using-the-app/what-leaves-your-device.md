@@ -11,6 +11,8 @@ sidebar:
 
 Al buscar un título o un número de código, la app pregunta a servicios públicos de internet, como el catálogo de la Biblioteca Nacional. A ellos solo les llega **lo que buscas**: el título que escribes, o el número del código (por ejemplo, el ISBN). Nunca tu lista de libros, tu nombre ni lo que tienes.
 
+Cuando un resultado trae su ISBN pero no su portada, la app le pregunta después a Open Library por ese ISBN, para enseñarte la portada en la lista. Solo si Open Library está encendido.
+
 Con «Foto de una balda», la app busca por ti cada texto que ha leído en los lomos, uno tras otro, como si lo escribieras. Así que a esos servicios les llegan también los textos que no son títulos: el nombre del autor, el de la editorial o un lomo mal leído. La foto no sale de tu móvil.
 
 La búsqueda sale mientras escribes, tras una pausa muy corta. Como cualquier página web, cada servicio ve desde qué dirección de internet le preguntas (la de tu casa). También ve que la pregunta viene de Kosmotheka y de qué versión de la app.

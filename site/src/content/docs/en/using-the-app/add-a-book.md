@@ -42,7 +42,8 @@ On a computer you cannot scan with a camera. Type or paste the number in the sea
 
 1. Pick the type of what you are looking for: Book, Comic, Board game, Film, TV series, Video game, Music or Other. "Book" is already selected.
 2. Type the title, from two letters on. Results appear as you type.
-3. Each result says which online service it comes from. Tap the one that is yours. For books, the ones with exactly that title and in the app's language come first, and the editions of one work are together.
+3. Each result says which online service it comes from. Tap the one that is yours. For books, the ones with exactly that title and in the app's language come first, and the editions of one work are together. Each result is one edition: look at the publisher and the year to pick the one of the book you have.
+4. When a book comes without a cover but with its ISBN, the app looks for it in Open Library right after; meanwhile, «Looking for covers in Open Library…» shows at the top and the covers appear in their place.
 
 With "Other" nothing is searched anywhere: you add it by hand.
 
