@@ -11,6 +11,8 @@ sidebar:
 
 When you search for a title or a code number, the app asks public online services, such as the catalog of the Spanish National Library. They only receive **what you search for**: the title you type, or the number of the code (for example, the ISBN). Never your list of books, your name or what you own.
 
+When a result has its ISBN but no cover, the app then asks Open Library for that ISBN, to show you the cover in the list. Only if Open Library is on.
+
 With "Photo of a shelf", the app searches for you each text it read on the spines, one after another, as if you typed it. So those services also receive the texts that are not titles: the author's name, the publisher's or a misread spine. The photo does not leave your phone.
 
 The search runs as you type, after a very short pause. Like any web page, each service sees which internet address you are asking from (the one at your home). It also sees that the question comes from Kosmotheka and from which version of the app.
