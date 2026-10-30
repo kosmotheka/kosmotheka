@@ -533,6 +533,11 @@ export function searchWorks(kind: Kind, query: string, language?: string): Promi
   return invoke<SearchResult>("search_works", { kind, query, language });
 }
 
+/** Open Library's cover for a search result with an ISBN and no cover; null when it has none or is off. */
+export function searchCover(isbn: string): Promise<string | null> {
+  return invoke<string | null>("search_cover", { isbn });
+}
+
 /** The shelf photo: the texts read on its spines worth searching for. Only on a phone, like the scanner. */
 export function shelfQueries(photo: string): Promise<string[]> {
   return invoke<string[]>("shelf_queries", { photo });
