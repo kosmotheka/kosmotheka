@@ -15,7 +15,7 @@ The optional authoritative server (docs/DECISIONS.md D38–D40): accounts, sever
 - **When revising a closed decision, say so out loud** and mark it in `DECISIONS.md`. A silent change is how nobody knows, three months later, what was decided and why.
 - **The `Makefile` is the source of truth for commands** (`make help`). Everything runs in Docker; never run PHP or Composer on the host, and never hand-write `docker exec … sh -c 'cd …'`.
 - **`make check` must pass** before a commit.
-- **Commits:** unlike Riddle and rpgutilities, in this repository the agent may make *local* commits, one per milestone, when the task includes it. **Never push**, open PRs, or write anything remote.
+- **Commits:** unlike Riddle, in this repository the agent may make *local* commits, one per milestone, when the task includes it. **Never push**, open PRs, or write anything remote.
 
 ## Where each class goes
 
