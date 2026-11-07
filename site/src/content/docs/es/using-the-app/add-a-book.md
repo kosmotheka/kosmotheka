@@ -42,7 +42,8 @@ En el ordenador no se escanea con cámara. Escribe o pega el número en el cuadr
 
 1. Elige el tipo de lo que buscas: Libro, Cómic, Juego de mesa, Película, Serie, Videojuego, Música u Otro. Ya viene marcado «Libro».
 2. Escribe el título, de dos letras en adelante. Los resultados salen mientras escribes.
-3. Cada resultado dice de qué servicio de internet viene. Toca el que sea el tuyo. Con los libros, salen primero los que se llaman justo así y están en el idioma de la app, y las ediciones de una misma obra van juntas.
+3. Cada resultado dice de qué servicio de internet viene. Toca el que sea el tuyo. Con los libros, salen primero los que se llaman justo así y están en el idioma de la app, y las ediciones de una misma obra van juntas. Cada resultado es una edición: fíjate en la editorial y el año para elegir la del libro que tienes.
+4. Si un libro sale sin portada pero con su ISBN, la app la busca en Open Library justo después; mientras, arriba pone «Buscando portadas en Open Library…» y las portadas van apareciendo en su sitio.
 
 Con «Otro» no se busca en ningún sitio: se añade a mano.
 

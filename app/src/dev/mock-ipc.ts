@@ -1342,6 +1342,9 @@ mockIPC((cmd, args) => {
       if (query.trim().length < 2) return { candidates: [], warnings: [] };
       return { candidates: mockCandidates(kind, query), warnings: quotaWarnings };
     }
+    case "search_cover":
+      // No cover, after a while: «Looking for covers» shows and goes, and screenshots stay stable.
+      return new Promise((resolve) => setTimeout(() => resolve(null), 1200));
     case "lookup_code": {
       const { code } = args as { code: string };
       const digits = code.replace(/\D/g, "");

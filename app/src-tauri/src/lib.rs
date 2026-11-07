@@ -170,6 +170,7 @@ pub fn run() {
             commands::mark_server_services_seen,
             commands::lookup_isbn,
             commands::search_works,
+            commands::search_cover,
             commands::lookup_code,
             commands::gameupc_choice,
             commands::get_settings,

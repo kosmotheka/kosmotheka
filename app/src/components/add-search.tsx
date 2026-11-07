@@ -36,6 +36,7 @@ import {
   isMobile,
   kinds,
   lookupCode,
+  searchCover,
   searchWorks,
 } from "@/lib/api";
 import { newBookFromCandidate } from "@/lib/candidates";
@@ -154,6 +155,9 @@ export function AddSearch({
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [warnings, setWarnings] = useState<ProviderWarning[]>([]);
   const [loading, setLoading] = useState(false);
+  // The results are shown at once; the covers they lack follow, from Open Library. Once done, the note keeps its
+  // line, so the list does not move under a finger about to tap a result.
+  const [covers, setCovers] = useState<"finding" | "done" | null>(null);
   const [foundByCode, setFoundByCode] = useState(false);
   const [existingByCode, setExistingByCode] = useState<string | null>(null);
   const [trashedByCode, setTrashedByCode] = useState<string | null>(null);
@@ -211,10 +215,28 @@ export function AddSearch({
     }
   };
 
+  // One request per ISBN, so each cover takes its place as soon as it arrives.
+  const fillCovers = async (id: number, found: Candidate[]) => {
+    const isbns = [...new Set(found.flatMap((c) => (c.isbn && !c.coverUrl ? [c.isbn] : [])))];
+    if (isbns.length === 0) return;
+    setCovers("finding");
+    await Promise.all(
+      isbns.map(async (isbn) => {
+        const url = await searchCover(isbn).catch(() => null);
+        if (url && id === requestId.current)
+          setCandidates((list) =>
+            list.map((c) => (c.isbn === isbn && !c.coverUrl ? { ...c, coverUrl: url } : c)),
+          );
+      }),
+    );
+    if (id === requestId.current) setCovers("done");
+  };
+
   const runSearch = async (forKind: Kind, text: string) => {
     const id = ++requestId.current;
     const trimmed = text.trim();
     setLoading(true);
+    setCovers(null);
     try {
       const code = codeOf(trimmed);
       if (code) {
@@ -234,6 +256,7 @@ export function AddSearch({
           if (id === requestId.current) {
             setCandidates(result.candidates);
             setWarnings(result.warnings);
+            void fillCovers(id, result.candidates);
           }
         }
       }
@@ -527,6 +550,18 @@ export function AddSearch({
           {foundByCode
             ? t("addSearch.foundByCode")
             : t("addSearch.resultCount", { count: candidates.length })}
+        </span>
+      )}
+      {covers && candidates.length > 0 && (
+        <span
+          role="status"
+          aria-hidden={covers === "done"}
+          className={cn(
+            "flex items-center gap-1.5 px-3 pb-1.5 text-xs text-muted-foreground",
+            covers === "done" && "invisible",
+          )}
+        >
+          <Loader2 className="size-3 animate-spin" /> {t("addSearch.findingCovers")}
         </span>
       )}
       {candidates.map((candidate, i) => {

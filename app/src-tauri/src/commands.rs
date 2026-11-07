@@ -351,6 +351,29 @@ pub async fn search_works(
     search(&database, &lookup, kind, &query, language.as_deref()).await
 }
 
+/// A cover for a search result that has an ISBN and none, asked once the results are shown, one result at a time so
+/// each cover appears when it arrives. Only from Open Library, and only when it is on.
+#[tauri::command]
+pub async fn search_cover(
+    database: State<'_, Database>,
+    lookup: State<'_, Lookup>,
+    isbn: String,
+) -> Result<Option<String>> {
+    let open_library_off = {
+        let conn = database.lock()?;
+        settings::load(&conn)?
+            .disabled_sources
+            .contains(Source::OpenLibrary.id())
+    };
+    let Ok(isbn) = Isbn::parse(&isbn) else {
+        return Ok(None);
+    };
+    if open_library_off {
+        return Ok(None);
+    }
+    Ok(lookup.cover(&isbn).await)
+}
+
 /// The shelf photo: one text read on a shelf, searched as if typed, and the first result whose title is what was
 /// read (`shelf::first_match`), or none. The catalogues' warnings are left out: a shelf is many searches, and one
 /// that fails is one book less, not a message each time.

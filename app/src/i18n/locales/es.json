@@ -1232,6 +1232,7 @@
     "foundByCode": "Encontrado por el código",
     "resultCount_one": "{{count}} resultado",
     "resultCount_other": "{{count}} resultados",
+    "findingCovers": "Buscando portadas en Open Library…",
     "alreadyHere": "Ya está en {{library}} · añadir un ejemplar",
     "gameUpcChoose": "GameUPC no está seguro de qué juego es este código. Elige el tuyo o búscalo por su nombre: al guardarlo le diremos cuál es, para que aprenda.",
     "gameUpcSearch": "Busca el juego por su nombre. Al guardarlo le diremos a GameUPC qué juego es este código, para que aprenda.",
