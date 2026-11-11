@@ -43,6 +43,7 @@ Esta página es para quien publica una versión de la app: el número, las noved
    - **Android:** compila el `.aab`, comprueba que va firmado y lo sube a Google Play como versión en **borrador**, a la pista que diga la variable `PLAY_TRACK` del entorno `release` (`internal` si no existe; `alpha` es la prueba cerrada).
 4. **Revisa y publica el borrador** en GitHub (*Releases*). Hasta entonces nadie lo ve, y los enlaces `…/releases/latest/download/…` siguen dando la versión anterior.
 5. **En Google Play,** abre la pista, revisa la versión en borrador, añade las notas (salen de `whats-new.json`) y envíala a revisión.
+6. **En la Snap Store** (snapcraft.io › *My snaps* › kosmotheka › *Releases*): la tienda compila sola cada push a `main` y lo deja en *edge*. Instala la revisión de la etiqueta (`sudo snap refresh kosmotheka --edge`), pruébala y pásala a *stable*. Hasta entonces, quien la tiene instalada sigue con la anterior.
 
 Para ensayar sin publicar, lanza el workflow a mano (*Actions › Release › Run workflow*): compila todo y deja los archivos como artefactos del workflow (14 días), pero no crea el *release* ni sube nada a Google Play. Sin los secretos de Android, el `.aab` sale sin firmar y el resumen lo dice.
 

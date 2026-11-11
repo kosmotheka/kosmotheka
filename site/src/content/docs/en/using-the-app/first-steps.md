@@ -10,7 +10,7 @@ This page takes you from installing the app to your first book. It takes about f
 ## Install the app
 
 - **Android:** the app is on Google's store (Google Play), but for now only a few people who are taking part in a trial can install it.
-- **Computer, with Windows or Linux:** coming soon.
+- **Computer, with Windows or Linux:** from the downloads page, or on Linux from the Snap Store (below).
 
 The [downloads page](https://kosmotheka.com/en/download.html) always shows what can be installed today.
 
@@ -28,6 +28,7 @@ Download the installer only from the downloads page on kosmotheka.com or from Gi
 
 ### On Linux
 
+- **Snap Store** (any Ubuntu, 20.04 included): search for "Kosmotheka" in Ubuntu's software centre, or in a terminal: `sudo snap install kosmotheka`. The store keeps it up to date.
 - **`.deb`** (Ubuntu, Debian, Linux Mint): the surest way is a terminal, in the folder you downloaded it to: `sudo apt install ./Kosmotheka-linux-amd64.deb`. Double-clicking depends on the version: on some (Ubuntu 22.04, for example) it opens the file without offering to install it. Without a terminal at hand, try right-click › "Open With" › "Software Install".
 - **`.rpm`** (Fedora and similar): `sudo dnf install ./Kosmotheka-linux-x86_64.rpm`.
 - **AppImage** (almost any Linux, nothing to install): allow it to run (in the file's properties, or `chmod +x Kosmotheka-linux-x86_64.AppImage`) and open it.
