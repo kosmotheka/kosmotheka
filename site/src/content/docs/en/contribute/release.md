@@ -43,6 +43,7 @@ This page is for whoever publishes a release of the app: the number, the what's-
    - **Android:** builds the `.aab`, checks that it is signed and uploads it to Google Play as a **draft** release, to the track named by the `PLAY_TRACK` variable of the `release` environment (`internal` if it does not exist; `alpha` is the closed test).
 4. **Review and publish the draft** on GitHub (*Releases*). Until then nobody sees it, and the `…/releases/latest/download/…` links still give the previous version.
 5. **In Google Play,** open the track, review the draft release, add the notes (they come from `whats-new.json`) and send it for review.
+6. **In the Snap Store** (snapcraft.io › *My snaps* › kosmotheka › *Releases*): the store builds every push to `main` by itself and puts it in *edge*. Install the tag's revision (`sudo snap refresh kosmotheka --edge`), try it and promote it to *stable*. Until then, whoever has it installed keeps the previous one.
 
 To rehearse without publishing, run the workflow by hand (*Actions › Release › Run workflow*): it builds everything and keeps the files as workflow artifacts (14 days), but creates no release and uploads nothing to Google Play. Without the Android secrets, the `.aab` is built unsigned and the summary says so.
 
