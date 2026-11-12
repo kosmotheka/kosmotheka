@@ -1202,6 +1202,24 @@ mod live {
 
     #[tokio::test]
     #[ignore = "needs network"]
+    async fn live_bne_finds_a_title_written_with_its_author() {
+        let client = http_client().unwrap();
+        let candidates = bne::search(&client, "inferno dan brown").await.unwrap();
+        for candidate in &candidates {
+            println!(
+                "bne: {} · {:?} · {:?}",
+                candidate.title, candidate.authors, candidate.isbn
+            );
+        }
+        assert!(
+            candidates
+                .iter()
+                .any(|c| c.title == "Inferno" && c.authors == ["Dan Brown"])
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "needs network"]
     async fn live_book_search_puts_the_apps_language_first() {
         let lookup = Lookup::new().unwrap();
         let result = lookup

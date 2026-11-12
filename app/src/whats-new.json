@@ -4,6 +4,10 @@
       "es": "Al buscar un libro por título, los resultados que salen sin portada pero con su ISBN la buscan después en Open Library, y la portada aparece en la lista. Además, un mismo libro ya no sale repetido.",
       "en": "When you search for a book by title, results without a cover but with their ISBN look for it in Open Library right after, and the cover appears in the list. Also, the same book no longer shows twice.",
       "switch": "source:open_library"
+    },
+    {
+      "es": "La Biblioteca Nacional encuentra un libro aunque escribas el título con su autor, como «inferno dan brown». Antes no devolvía nada.",
+      "en": "The National Library of Spain finds a book even when you type its title with its author, such as \"inferno dan brown\". Before, it found nothing."
     }
   ],
   "0.8.0": [
