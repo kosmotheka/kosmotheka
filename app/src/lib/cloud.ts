@@ -200,8 +200,9 @@ export function cloudNotices(
         ]
       : [],
   );
-  if (joined.length === 1) {
-    messages.push(t("cloud.notice.joinedOne", joined[0]));
+  const [only] = joined;
+  if (joined.length === 1 && only) {
+    messages.push(t("cloud.notice.joinedOne", only));
   } else if (joined.length > 1) {
     messages.push(
       t("cloud.notice.joinedMany", {

@@ -121,7 +121,7 @@ export function copyIcon(kind: Kind, format: Format): LucideIcon {
   return COPY_FORMAT_ICONS[format] ?? (DIGITAL_FORMATS.has(format) ? Cloud : KIND_ICONS[kind]);
 }
 
-type Translate = (key: string, options?: Record<string, unknown>) => string;
+type Translate = TFunction;
 
 /** A copy's "what" line: its format, with the video game platform or the held seasons. */
 export function copyWhatText(
