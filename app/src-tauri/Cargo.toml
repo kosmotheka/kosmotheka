@@ -19,9 +19,9 @@ tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite_migration = "2.6.0"
+rusqlite_migration = "2.7.0"
 thiserror = "2.0.21"
-rusqlite = { version = "0.40.2", features = ["bundled"] }
+rusqlite = { version = "0.41.1", features = ["bundled"] }
 uuid = { version = "1.26.1", features = ["v7"] }
 kosmotheka-domain = { version = "0.8.0", path = "../../crates/domain" }
 tokio = { version = "1.53.1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
