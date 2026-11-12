@@ -19,7 +19,7 @@ Antes de escribir, elige qué buscas: Libro, Cómic, Juego de mesa, Película…
 
 ## Qué escribir
 
-- **Solo el título**, sin el autor. Varios catálogos (la Biblioteca Nacional y la Library of Congress) solo miran el título: si añades el autor, no encuentran nada.
+- **Solo el título**, sin el autor. La Library of Congress solo mira el título: si añades el autor, no encuentra nada. La Biblioteca Nacional encuentra el libro también con el autor («inferno dan brown»), pero con el título solo salen más ediciones.
 - **Sin el subtítulo**, o solo su principio. «El nombre del viento» encuentra más que «El nombre del viento: Crónica del asesino de reyes. Primer día».
 - **Tal como sale en la portada**, con las palabras enteras.
 - **Si es una traducción**, prueba también con el título original. Algunos catálogos solo tienen la edición en su idioma.

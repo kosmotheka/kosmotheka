@@ -19,7 +19,7 @@ Before typing, pick what you are looking for: Book, Comic, Board game, Film… *
 
 ## What to type
 
-- **Only the title**, without the author. Several catalogs (the National Library of Spain and the Library of Congress) only look at the title: if you add the author, they find nothing.
+- **Only the title**, without the author. The Library of Congress only looks at the title: if you add the author, it finds nothing. The National Library of Spain also finds the book with its author ("inferno dan brown"), but the title alone brings more editions.
 - **Without the subtitle**, or only its beginning. "The Name of the Wind" finds more than "The Name of the Wind: The Kingkiller Chronicle, Day One".
 - **As it appears on the cover**, with whole words.
 - **If it is a translation**, try the original title too. Some catalogs only have the edition in their own language.
