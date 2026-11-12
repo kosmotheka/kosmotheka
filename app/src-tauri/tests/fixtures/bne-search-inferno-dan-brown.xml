@@ -1,0 +1,2331 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.2</version>
+  <numberOfRecords>14</numberOfRecords>
+  <records>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01461ngm a2200361 c 4500</leader>
+          <controlfield tag="001">991000758499708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260408094400.0</controlfield>
+          <controlfield tag="007">vd*cvaizs</controlfield>
+          <controlfield tag="008">170125s2013    sp 043 g     o   1vleng^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)971625496</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a5888285</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rdc</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">eng</subfield>
+            <subfield code="a">spa</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">ive</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">[Presentación de la novela "Inferno" de Dan Brown]</subfield>
+            <subfield code="c">[presenta Marcela Serras, de la Editorial Planeta ; interviene Dan Brown, autor del libro]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 DVD-vídeo (ca. 43 min)</subfield>
+            <subfield code="b">son., col.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Imagen (en movimiento ; bidimensional)</subfield>
+            <subfield code="2">isbdcontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">vídeo</subfield>
+            <subfield code="2">isbdmedia</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Actos culturales en la Biblioteca Nacional de España. Presentación de libros, revistas</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="518">
+            <subfield code="a">30 de mayo de 2013</subfield>
+          </datafield>
+          <datafield ind1="2" ind2=" " tag="520">
+            <subfield code="a">Rueda de prensa en que periodistas españoles y extranjeros preguntan a Dan Brown sobre su novela "Inferno", con motivo de la presentación de la edición en español por la Editorial Planeta</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="540">
+            <subfield code="a">Documento inédito</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="7" tag="600">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="t">Inferno</subfield>
+            <subfield code="l">Español</subfield>
+            <subfield code="2">embne</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Archivo de la palabra</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Serras, Marcela</subfield>
+            <subfield code="e">presentador</subfield>
+            <subfield code="4">hst</subfield>
+          </datafield>
+          <datafield ind1="2" ind2=" " tag="710">
+            <subfield code="a">Biblioteca Nacional (España)</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">APBN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a5888285</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">5888285</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">VIDEO</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">APCS/5113</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1105340553</subfield>
+            <subfield code="l">SALA_BARBI</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">MAT_ESPECI</subfield>
+            <subfield code="u">25/1/2017</subfield>
+            <subfield code="x">DVD</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991000758499708606</subfield>
+            <subfield code="8">221246656870008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNMADRID</subfield>
+            <subfield code="c">Sala Barbieri</subfield>
+            <subfield code="d">APCS/5113</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SALA_BARBI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede Central (Paseo de Recoletos)</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991000758499708606</recordIdentifier>
+      <recordPosition>1</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01611nam a2200397 c 4500</leader>
+          <controlfield tag="001">991042363979708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20251210082246.0</controlfield>
+          <controlfield tag="008">130911s2013    sp a   | |||| 000 0 spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="015">
+            <subfield code="a">MON13</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 17085-2013</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-480-1193-2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)864335671</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a5396464</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rdc</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.131.1 Dante Alighieri 7 Divina commedia.07</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73) Brown, Dan 7 Inferno.07</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Álvarez, Mónica G.</subfield>
+            <subfield code="d">1979-</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="245">
+            <subfield code="a">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="c">Mónica G. Álvarez</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">1ª ed.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">[Barcelona]</subfield>
+            <subfield code="b">Libros Cúpula</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">323 p.</subfield>
+            <subfield code="b">il., plano</subfield>
+            <subfield code="c">23 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Texto (visual)</subfield>
+            <subfield code="2">isbdcontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">isbdmedia</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Enigmas</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="504">
+            <subfield code="a">Bibliografía: p. 321-323</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="7" tag="600">
+            <subfield code="a">Dante Alighieri</subfield>
+            <subfield code="d">1265-1321</subfield>
+            <subfield code="t">La divina commedia</subfield>
+            <subfield code="2">embne</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="7" tag="600">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="t">Inferno</subfield>
+            <subfield code="2">embne</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">MON1310</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2013</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura italiana</subfield>
+            <subfield code="c">Literatura en lenguas romances</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a5396464</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">5396464</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">12/940826</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1104740119</subfield>
+            <subfield code="d">3/10/2017</subfield>
+            <subfield code="e">28/9/2017</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="n">3</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">11/9/2013</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">DL/2203009</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1104740120</subfield>
+            <subfield code="l">CONSERVACI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">NO_PRESTA</subfield>
+            <subfield code="u">11/9/2013</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991042363979708606</subfield>
+            <subfield code="8">221232333210008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">12/940826</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991042363979708606</subfield>
+            <subfield code="8">221232333190008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2203009</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991042363979708606</recordIdentifier>
+      <recordPosition>2</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>02592cam a22004572u 4500</leader>
+          <controlfield tag="001">991011155889708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423110326.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">180611s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788448011987</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788448011987</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6195591</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Álvarez, Mónica G.</subfield>
+            <subfield code="d">1979-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="4" tag="245">
+            <subfield code="a">Las claves de Inferno de Dan Brown</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Libros Cúpula</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">3601 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Enigmas y conspiraciones</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">¿Qué secretos se ocultan detrás de Inferno, la novela más ambiciosa del aclamado Dan Brown? Historia, arte, códigos y simbología analizados por una experta periodista en la materia. La reconocida periodista Mónica G. Álvarez analiza detalladamente Inferno y nos da las claves para saber interpretar el oscuro infierno de Dante, telón de fondo del bestseller de Dan Brown. Gracias a un exhaustivo trabajo de investigación, la autora nos acerca a los misterios e incógnitas que rodean a la Divina Comedia, concretamente a la primera de las tres cánticas que componen la enigmática obra: Infierno.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Misterios históricos</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=897cb49a-0a71-4658-8f9c-e9cfc2bef84a</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 13</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6195591</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6195591</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6195591-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">11/6/2018</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531392088190008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991011155889708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991011155889708606</recordIdentifier>
+      <recordPosition>3</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>02955cam a22004932u 4500</leader>
+          <controlfield tag="001">991007431039708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105903.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171229s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788408118077</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788408118077</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6090594</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="240">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Editorial Planeta</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">1393 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Planeta Internacional</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En sus bestsellers internacionales El código Da Vinci, Ángeles y demonios y El símbolo perdido, Dan Brown aunó con maestría historia, arte, códigos y símbolos. En su fascinante nuevo thriller, Inferno, Brown recupera su esencia con su novela más ambiciosa hasta la fecha.  En el corazón de Italia, el catedrático de Simbología de Harvard Robert Langdon se ve arrastrado a un mundo terrorífico centrado en una de las obras maestras de la Literatura más imperecederas y misteriosas de la Historia: el Infierno de Dante. Con este telón de fondo, Langdon se enfrenta a un adversario escalofriante y lidia con un acertijo ingenioso en un escenario de arte clásico, pasadizos secretos y ciencia futurista. Apoyándose en el oscuro poema épico de Dante, Langdon, en una carrera contrarreloj, busca respuestas y personas de confianza antes de que el mundo cambie irrevocablemente.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción moderna y contemporánea</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=09dca6cd-4abd-498e-9df9-d039722eee19</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 03</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6090594</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6090594</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6090594-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">29/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389376800008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007431039708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007431039708606</recordIdentifier>
+      <recordPosition>4</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>02829cam a22004932u 4500</leader>
+          <controlfield tag="001">991007450289708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105927.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171229s2014    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788408133612</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788408133612</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6091073</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="240">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Editorial Planeta</subfield>
+            <subfield code="c">2014</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">17172 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Planeta Internacional</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En su última y deslumbrante novela, Dan Brown lleva al lector al corazón de Italia y le guía a través de uno de los grandes clásicos de la literatura de todos los tiempos: Inferno, el oscuro poema épico de Dante Alighieri . Con su novela más apasionante y controvertida hasta la fecha, Dan Brown vuelve a elevar el listón. Una lectura endiabladamente entretenida; una novela quecautiva al lector con la belleza del arte, la historia y la literatura italianas, mientras le plantea cuestiones provocativas sobre el papel de la ciencia en nuestro futuro. Ahora en una edición ilustrada que hará las delicias de coleccionistas, amantes del arte y fans de Dan Brown.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción moderna y contemporánea</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=5b5a8071-7dfe-4ceb-b1b8-01b15aa869db</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 03</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6091073</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6091073</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6091073-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">29/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389367080008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007450289708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007450289708606</recordIdentifier>
+      <recordPosition>5</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>02335cam a22005052u 4500</leader>
+          <controlfield tag="001">991011951839708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423110903.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">180618s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788497878630</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788497878630</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6215201</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="a">cat</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="240">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="l">Catalán</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Empúries</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+            <subfield code="b">il.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">1.69 Kbytes</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Empuries narrativa</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En els seus best-sellers internacionals  El codi Da Vinci i  El símbol perdut, Dan Brown va reunir amb mestria història, art, codis i símbols. En aquest fascinant nou thriller, l'autor recupera la seva essència amb la novel·la més ambiciosa fins ara.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grup 62"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción histórica</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Roig, Esther</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="w">No</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=eaa5936c-b532-485e-aecd-51b062882da2</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 28</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6215201</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6215201</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6215201-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">18/6/2018</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389985930008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991011951839708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991011951839708606</recordIdentifier>
+      <recordPosition>6</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>04030cam a22004692u 4500</leader>
+          <controlfield tag="001">991007431079708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105905.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171229s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788408118299</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788408118299</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6090595</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno ;</subfield>
+            <subfield code="b">Ángeles y demonios</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Editorial Planeta</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">2365 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Planeta Internacional</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En sus bestsellers internacionales El código Da Vinci,  Ángeles y demonios y El símbolo perdido, Dan Brown aunó con maestría historia, arte, códigos y símbolos. En su fascinante nuevo thriller, Brown recupera su esencia con su novela más ambiciosa hasta la fecha. InfernoEn el corazón de Italia, el catedrático de Simbología de Harvard Robert Langdon se ve arrastrado a un mundo terrorífico centrado en una de las obras maestras de la Literatura más imperecederas y misteriosas de la Historia: el Infierno de Dante. Con este telón de fondo, Langdon se enfrenta a un adversario escalofriante y lidia con un acertijo ingenioso en un escenario de arte clásico, pasadizos secretos y ciencia futurista. Apoyándose en el oscuro poema épico de Dante, Langdon, en una carrera contrarreloj, busca respuestas y personas de confianza antes de que el mundo cambie irrevocablemente.Ángeles y demonios Robert Langdon es convocado a un centro de investigación suizo para analizar un misterioso símbolo marcado a fuego en el pecho de un físico asesinado. El experto en simbología descubre el resurgimiento de una antigua hermandad secreta: los illuminati, que han emergido de las sombras para llevar a cabo la fase final de su legendaria venganza contra su enemigo más odiado... la Iglesia católica. Los peores temores de Langdon se confirman cuando los illuminati anuncian que han escondido una bomba en el corazón de la Ciudad del Vaticano. Con la cuenta atrás en marcha, Langdon viaja a Roma para unir fuerzas con Vittoria Vetra, una científica bella y misteriosa. Los dos se embarcarán en una carrera contrarreloj en una búsqueda desesperada por los rincones menos conocidos del Vaticano. El arma más poderosa creada por el hombre, una organización secreta sedienta de venganza... y apenas unas horas para evitar el desastre. La eterna pugna entre ciencia y religión se ha convertido en una guerra muy real.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción moderna y contemporánea</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=a0335e7d-e8c0-4758-99be-83e32ef5730a</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 03</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6090595</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6090595</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6090595-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">29/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389379090008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007431079708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007431079708606</recordIdentifier>
+      <recordPosition>7</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>04025cam a22004812u 4500</leader>
+          <controlfield tag="001">991007431129708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105905.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171229s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788408118305</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788408118305</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6090596</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno ;</subfield>
+            <subfield code="b">El código Da Vinci</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Editorial Planeta</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">2355 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Planeta Internacional</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En sus bestsellers internacionales El código Da Vinci,  Ángeles y demonios y El símbolo perdido, Dan Brown aunó con maestría historia, arte, códigos y símbolos. En su fascinante nuevo thriller, Brown recupera su esencia con su novela más ambiciosa hasta la fecha. InfernoEn el corazón de Italia, el catedrático de Simbología de Harvard Robert Langdon se ve arrastrado a un mundo terrorífico centrado en una de las obras maestras de la Literatura más imperecederas y misteriosas de la Historia: el Infierno de Dante. Con este telón de fondo, Langdon se enfrenta a un adversario escalofriante y lidia con un acertijo ingenioso en un escenario de arte clásico, pasadizos secretos y ciencia futurista. Apoyándose en el oscuro poema épico de Dante, Langdon, en una carrera contrarreloj, busca respuestas y personas de confianza antes de que el mundo cambie irrevocablemente.El código Da VinciRobert Langdon, experto en simbología, recibe una llamada en mitad de la noche: el conservador del museo del Louvre ha sido asesinado en extrañas circunstancias, y junto a su cadáver ha aparecido un desconcertante mensaje cifrado. Al profundizar en la investigación, Langdom descubre que las pistas conducen a las obras de Leonardo Da Vinci… y que están a la vista de todos, ocultas por el ingenio del pintor.Langdon une esfuerzos con la criptóloga francesa Sophie Neveu y descubre que el conservador del museo pertenecía al Priorato de Sión, una sociedad que a lo largo de los siglos ha contado con miembros tan destacados como Sir Isaac Newton, Botticelli, Victor Hugo o el propio Da Vinci, y que ha velado por mantener en secreto una sorprendente verdad histórica. Una mezcla trepidante de aventuras, intrigas vaticanas, simbología y enigmas cifrados que provocó una extraordinaria polémica al poner en duda algunos de los dogmas sobre los que se asienta la iglesia católica.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción moderna y contemporánea</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Conde, Claudia</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Díez, Mª José</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=feb080af-a56e-4c84-b2ab-ae2f5a808bab</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 03</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6090596</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6090596</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6090596-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">29/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389375210008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007431129708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007431129708606</recordIdentifier>
+      <recordPosition>8</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>03771cam a22004932u 4500</leader>
+          <controlfield tag="001">991007431169708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423105905.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">171229s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788408118312</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788408118312</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6090597</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno ;</subfield>
+            <subfield code="b">El símbolo perdido</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Editorial Planeta</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">3359 KB</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Planeta Internacional</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">En sus bestsellers internacionales El código Da Vinci,  Ángeles y demonios y El símbolo perdido, Dan Brown aunó con maestría historia, arte, códigos y símbolos. En su fascinante nuevo thriller, Brown recupera su esencia con su novela más ambiciosa hasta la fecha. InfernoEn el corazón de Italia, el catedrático de Simbología de Harvard Robert Langdon se ve arrastrado a un mundo terrorífico centrado en una de las obras maestras de la Literatura más imperecederas y misteriosas de la Historia: el Infierno de Dante. Con este telón de fondo, Langdon se enfrenta a un adversario escalofriante y lidia con un acertijo ingenioso en un escenario de arte clásico, pasadizos secretos y ciencia futurista. Apoyándose en el oscuro poema épico de Dante, Langdon, en una carrera contrarreloj, busca respuestas y personas de confianza antes de que el mundo cambie irrevocablemente.El símbolo perdido¿Existe un secreto tan poderoso que, de salir a la luz, sea capaz de cambiar el mundo?Washington. El experto en simbología Robert Langdon es convocado inesperadamente por Peter Solomon, masón, filántropo y su antiguo mentor, para dar una conferencia en el Capitolio. Pero el secuestro de Peter y el hallazgo de una mano tatuada con cinco enigmáticos símbolos cambian drásticamente el curso de los acontecimientos. Atrapado entre las exigencias de una mente perturbada y la investigación oficial, Langdon se ve inmerso en un mundo clandestino de secretos masónicos, historia oculta y escenarios nunca antes vistos, que parecen arrastrarlo hacia una sencilla pero inconcebible verdad.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grupo Planeta"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción moderna y contemporánea</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Conde, Claudia</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Díez, Mª José</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=f95561a1-6385-4226-bd58-6695bf692c44</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 03</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6090597</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6090597</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6090597-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">29/12/2017</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389396700008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991007431169708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991007431169708606</recordIdentifier>
+      <recordPosition>9</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>03524cam a22004812u 4500</leader>
+          <controlfield tag="001">991011952409708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423110858.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">180618s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788497878845</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788497878845</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6215209</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="a">cat</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno + Àngels i dimonis (pack)</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Empúries</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+            <subfield code="b">il.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">2.95 Kbytes</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Empuries narrativa</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">INFERNO: Al cor d'Itàlia, el catedràtic de simbologia de Harvard Robert Langdon es veu arrossegat a un món terrorífic al voltant d'una de les obres mestres de la literatura més imperibles i misterioses de la història: l'Infern de Dante.Amb aquest teló de fons, Langdon s'enfronta a un adversari esgarrifós i ha de bregar amb una enginyosa endevinalla en un escenari d'art clàssic, passadissos secrets i ciència futurista. Recolzant-se en l'obscur poema èpic de Dante, Langdon, en una cursa contra rellotge, cerca respostes i persones de confiança abans que el món canviï irrevocablement. ÀNGELS I DIMONIS_ Després del fenomen literari de l´any que ha trasbalsat el món sencer, ens arriba Àngels i Dimonis, la primera entrega de les aventures de Robert Langdon. Molt abans de desxifrar el codi Da Vinci, el prestigiós simbolista és cridat a Suïssa per analitzar un criptograma trobat damunt el cadàver del físic Leonardo Vetra.La pista que hi descobrirà Langdon és sensacional: una disputa a mort entre l?Església catòlica i els il·luminats, germandat secreta que data de temps immemorials. Desesperat per salvar el Vaticà d?una conspiració funesta, el nostre protagonista unirà forces amb la filla de Vetra, Vittoria, una científica de bellesa misteriosa amb qui s?embarcarà en una cacera frenètica per Roma, a través de criptes precintades, catacumbes laberíntiques i catedrals abandonades, fins arribar a la volta més ben amagada del planeta: el refugi secret dels il·luminats.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grup 62"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción histórica</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="w">No</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=c3f6307b-5fc9-4f65-b4bc-742e6191aee6</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 28</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6215209</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6215209</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6215209-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">18/6/2018</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531389985750008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991011952409708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991011952409708606</recordIdentifier>
+      <recordPosition>10</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>04096cam a22004812u 4500</leader>
+          <controlfield tag="001">991011952339708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423110901.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">180618s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788497878838</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788497878838</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6215208</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="a">cat</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno + El Codi Da Vinci (pack)</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Empúries</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+            <subfield code="b">il.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">2.67 Kbytes</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Empuries narrativa</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">INFERNO: Al cor d'Itàlia, el catedràtic de simbologia de Harvard Robert Langdon es veu arrossegat a un món terrorífic al voltant d'una de les obres mestres de la literatura més imperibles i misterioses de la història: l'Infern de Dante.Amb aquest teló de fons, Langdon s'enfronta a un adversari esgarrifós i ha de bregar amb una enginyosa endevinalla en un escenari d'art clàssic, passadissos secrets i ciència futurista. Recolzant-se en l'obscur poema èpic de Dante, Langdon, en una cursa contra rellotge, cerca respostes i persones de confiança abans que el món canviï irrevocablement. El Codi Da Vinci: Robert Langdon, un professor de simbologia religiosa de la Universitat de Harvard que és de visita a París, rep una trucada inquietant a mitjanit a l`hotel. Algú li comunica que un vell curador del Louvre ha estat assassinat a dins del museu i que s`ha trobat una xifra misteriosa al costat del cadàver. Quan el professor Langdon, assistit per una brillant criptògrafa francesa, Sophie Neveu, intenta treure l`entrellat d`aquest misteri, descobreix amb estupor tota una sèrie de pistes amagades en les obres de Da Vinci, unes pistes ben visibles per a tothom però enginyosament amagades pel pintor.El misteri es complica quan Langdon descobreix que el vell curador del Louvre pertanyia a una societat secreta de la qual també havien format part Isaac Newton, Botticelli, Victor Hugo i el mateix Da Vinci. Langdon sospita que està resseguint les traces d`un secret de transcendència històrica, un secret enormement revelador i perillós a la vegada. Al llarg d`una persecució frenètica, Langdon i Neveu topen amb un poder sense rostre que s`anticipa als seus passos contínuament. Si no aconsegueixen desxifrar el trencaclosques del laberint en què s`han ficat, el secret de la societat de Sió s`esvairà per sempre.El codi Da Vinci trenca el motlle de la novel·la de suspens. Trepidant, intel·ligent, extraordinàriament ben documentada des de les primeres pàgines fins a la sorpresa final, El codi Da Vinci confirma Dan Brown com un narrador magistral.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grup 62"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción histórica</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="w">No</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=4321208e-58ae-4166-a55b-d2960469064e</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 28</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6215208</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6215208</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6215208-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">18/6/2018</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531390001580008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991011952339708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991011952339708606</recordIdentifier>
+      <recordPosition>11</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>03951cam a22004812u 4500</leader>
+          <controlfield tag="001">991011952489708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260423110901.0</controlfield>
+          <controlfield tag="006">m    |o  d</controlfield>
+          <controlfield tag="007">cr |n ||||||||</controlfield>
+          <controlfield tag="008">180618s2013    sp |||||o|||| ||| ||spa d</controlfield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">9788497878852</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(ES-BaLIB)9788497878852</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6215210</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">ES-BaLIB</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="d">SpMaBN</subfield>
+            <subfield code="e">local</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="a">cat</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno + El símbol perdut (pack)</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">Barcelona</subfield>
+            <subfield code="b">Empúries</subfield>
+            <subfield code="c">2013</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">1 recurso en línea</subfield>
+            <subfield code="b">il.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="347">
+            <subfield code="a">archivo de texto</subfield>
+            <subfield code="b">EPUB</subfield>
+            <subfield code="c">3.53 Kbytes</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Empuries narrativa</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">Registro generado automáticamente a partir de metadatos facilitados por Libranda</subfield>
+          </datafield>
+          <datafield ind1="3" ind2=" " tag="520">
+            <subfield code="a">INFERNO: Al cor d'Itàlia, el catedràtic de simbologia de Harvard Robert Langdon es veu arrossegat a un món terrorífic al voltant d'una de les obres mestres de la literatura més imperibles i misterioses de la història: l'Infern de Dante.Amb aquest teló de fons, Langdon s'enfronta a un adversari esgarrifós i ha de bregar amb una enginyosa endevinalla en un escenari d'art clàssic, passadissos secrets i ciència futurista. Recolzant-se en l'obscur poema èpic de Dante, Langdon, en una cursa contra rellotge, cerca respostes i persones de confiança abans que el món canviï irrevocablement. EL SIMBOL PERDUT: Washington D.C.: Robert Langdon, professor de simbologia de la Universitat de Harvard, vola cap a la capital dels Estats Units per donar una classe magistral al Capitoli. Poc després de la seva arribada, apareix al centre de la Rotonda un objecte amb un missatge desconcertant -xifrat en cinc símbols-. En aquesta enigmàtica inscripció Langdon hi reconeix de seguida una invitació atàvica, una crida misteriosa que prové d'un món esotèric i llunyà.Aquest descobriment coincideix amb el segrest del seu amic i mentor, Peter Solomon, filantrop i membre de la maçoneria. Langdon comprèn que els dos fets estan relacionats i no li queda sinó acceptar el repte de resoldre aquest estrany misteri. És una qüestió de vida o mort. A partir d'aquí, Langdon és arrossegat a una aventura que el portarà cap als túnels, temples i cambres secretes de la ciutat més important dels Estats Units. En poquíssimes hores, tot allò familiar es converteix en un món clandestí i pertorbador els secrets del qual han quedat curosament amagats en un passat de secrets maçònics i revelacions mai vistes que semblen conduir a una veritat impossible i inquietant.Una novel·la trepident carregada d'intriga. Perquè no hi ha secret més extraordinari que aquell que ens descobreix allò que ja teníem a la vista.</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="530">
+            <subfield code="a">Publicado también como texto impreso</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">"Grup 62"</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="653">
+            <subfield code="a">Ficción histórica</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">332 p.</subfield>
+            <subfield code="z">978-84-08-07965-1</subfield>
+            <subfield code="w">991010106439708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="w">No</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-11417-8</subfield>
+            <subfield code="w">991041558929708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9787-862-3</subfield>
+            <subfield code="w">991041673409708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Las claves de "Inferno" de Dan Brown</subfield>
+            <subfield code="h">323 p.</subfield>
+            <subfield code="z">978-84-480-1193-2</subfield>
+            <subfield code="w">991042363979708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-12741-3</subfield>
+            <subfield code="w">991047276799708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">635 p.</subfield>
+            <subfield code="z">978-84-9930-872-2</subfield>
+            <subfield code="w">991047278839708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">483 p.</subfield>
+            <subfield code="z">978-84-08-13308-7</subfield>
+            <subfield code="w">991048836629708606</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="776">
+            <subfield code="t">Inferno</subfield>
+            <subfield code="h">633 p.</subfield>
+            <subfield code="z">978-84-08-14701-5</subfield>
+            <subfield code="w">991053253659708606</subfield>
+          </datafield>
+          <datafield ind1="4" ind2="0" tag="856">
+            <subfield code="u">https://bnedigital.bne.es/bd/card?id=d680e4b3-302d-4919-bf2a-e60452f9dc2f</subfield>
+            <subfield code="y">BNE Digital</subfield>
+            <subfield code="z">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">Libranda 28</subfield>
+            <subfield code="a">Depósito legal electrónico</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6215210</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">1</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6215210</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">ACCESO EN LINEA</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">6215210-1001</subfield>
+            <subfield code="l">EN_LINEA</subfield>
+            <subfield code="m">BNMADRID</subfield>
+            <subfield code="r">N</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">PUB_ELEC</subfield>
+            <subfield code="u">18/6/2018</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVE">
+            <subfield code="8">531390001550008606</subfield>
+            <subfield code="e">Available</subfield>
+            <subfield code="n">Acceso restringido, disponible solo desde Biblioteca Nacional de España o los centros de conservación</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="0">991011952489708606</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991011952489708606</recordIdentifier>
+      <recordPosition>12</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01554nam a2200421 c 4500</leader>
+          <controlfield tag="001">991005700749708606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20251210204649.0</controlfield>
+          <controlfield tag="008">171025s2017    sp     | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="015">
+            <subfield code="a">MON17</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 17333-2017</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-08-17573-5</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)1050766116</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(SpMaBN)a6043477</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rdc</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="240">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="c">Dan Brown ; traducción de Aleix Montoto</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">1ª ed. en esta presentación en colección Booket</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="260">
+            <subfield code="a">[Barcelona]</subfield>
+            <subfield code="b">Booket</subfield>
+            <subfield code="c">2017</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">633 p.</subfield>
+            <subfield code="c">19 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">Texto (visual)</subfield>
+            <subfield code="2">isbdcontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">isbdmedia</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Biblioteca Dan Brown</subfield>
+            <subfield code="v">5026/6</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="546">
+            <subfield code="a">En español</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="594">
+            <subfield code="a">Título del original en inglés: Inferno</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="596">
+            <subfield code="a">En la portada: Planeta</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="901">
+            <subfield code="a">MON1805</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="915">
+            <subfield code="a">Monografías</subfield>
+            <subfield code="b">2017</subfield>
+            <subfield code="c">Literatura inglesa</subfield>
+            <subfield code="c">Literatura en lenguas germánicas</subfield>
+            <subfield code="c">Literatura</subfield>
+            <subfield code="c">Lingüística. Filología. Literatura</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="935">
+            <subfield code="a">a6043477</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="956">
+            <subfield code="a">2</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="993">
+            <subfield code="a">6043477</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">12/1196317</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1105653443</subfield>
+            <subfield code="l">SG_PETANTI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">FONDO_MODE</subfield>
+            <subfield code="u">25/10/2017</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="999">
+            <subfield code="a">DL/2525248</subfield>
+            <subfield code="w">ALPHANUM</subfield>
+            <subfield code="c">1</subfield>
+            <subfield code="i">1105653442</subfield>
+            <subfield code="l">CONSERVACI</subfield>
+            <subfield code="m">BNALCALA</subfield>
+            <subfield code="r">Y</subfield>
+            <subfield code="s">Y</subfield>
+            <subfield code="t">NO_PRESTA</subfield>
+            <subfield code="u">25/10/2017</subfield>
+            <subfield code="x">MONO_MODER</subfield>
+            <subfield code="z">DEPOSITO_LEGAL</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991005700749708606</subfield>
+            <subfield code="8">221107449870008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">12/1196317</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991005700749708606</subfield>
+            <subfield code="8">221107449830008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/2525248</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991005700749708606</recordIdentifier>
+      <recordPosition>13</recordPosition>
+    </record>
+    <record>
+      <recordSchema>marcxml</recordSchema>
+      <recordPacking>xml</recordPacking>
+      <recordData>
+        <record xmlns="http://www.loc.gov/MARC21/slim">
+          <leader>01113nam a2200337 c 4500</leader>
+          <controlfield tag="001">991061156926308606</controlfield>
+          <controlfield tag="003">SpMaBN</controlfield>
+          <controlfield tag="005">20260706111922.0</controlfield>
+          <controlfield tag="008">250807s2025    sp     | |||| 000 f spa^^</controlfield>
+          <datafield ind1=" " ind2=" " tag="017">
+            <subfield code="a">B 11673-2025</subfield>
+            <subfield code="b">Oficina Depósito Legal Barcelona</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="020">
+            <subfield code="a">978-84-08-30605-4</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="035">
+            <subfield code="a">(OCoLC)1532072636</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="040">
+            <subfield code="a">SpMaBN</subfield>
+            <subfield code="b">spa</subfield>
+            <subfield code="c">SpMaBN</subfield>
+            <subfield code="e">rda</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="041">
+            <subfield code="a">spa</subfield>
+            <subfield code="h">eng</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="080">
+            <subfield code="a">821.111(73)-31"19"</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="100">
+            <subfield code="a">Brown, Dan</subfield>
+            <subfield code="d">1964-</subfield>
+            <subfield code="e">autor</subfield>
+            <subfield code="4">aut</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="240">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="l">Español</subfield>
+          </datafield>
+          <datafield ind1="1" ind2="0" tag="245">
+            <subfield code="a">Inferno</subfield>
+            <subfield code="c">Dan Brown ; traducción de Aleix Montoto</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="250">
+            <subfield code="a">Primera edicción en esta presentación: julio de 2025</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="1" tag="264">
+            <subfield code="a">[Barcelona (España)]</subfield>
+            <subfield code="b">Booket</subfield>
+            <subfield code="c">[2025]</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="4" tag="264">
+            <subfield code="c">©2020</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="300">
+            <subfield code="a">633 páginas 20 cm</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="336">
+            <subfield code="a">texto</subfield>
+            <subfield code="2">rdacontent</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="337">
+            <subfield code="a">sin mediación</subfield>
+            <subfield code="2">rdamedia</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="338">
+            <subfield code="a">volumen</subfield>
+            <subfield code="2">rdacarrier</subfield>
+          </datafield>
+          <datafield ind1="0" ind2=" " tag="490">
+            <subfield code="a">Biblioteca Dan Brown. Serie Robert Langdon</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">En la portada: Planeta</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="500">
+            <subfield code="a">En la portada: Firmat digitalment per Dan Brown</subfield>
+          </datafield>
+          <datafield ind1=" " ind2="7" tag="655">
+            <subfield code="a">Novelas de suspense</subfield>
+            <subfield code="2">tgfbne</subfield>
+          </datafield>
+          <datafield ind1="1" ind2=" " tag="700">
+            <subfield code="a">Montoto, Aleix</subfield>
+            <subfield code="e">traductor</subfield>
+            <subfield code="4">trl</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="994">
+            <subfield code="a">MONOMODERN</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991061156926308606</subfield>
+            <subfield code="8">221374075570008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Salón General-Petición anticipada</subfield>
+            <subfield code="d">11/393422</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">SG_PETANTI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">1</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+          <datafield ind1=" " ind2=" " tag="AVA">
+            <subfield code="0">991061156926308606</subfield>
+            <subfield code="8">221374075540008606</subfield>
+            <subfield code="a">34BNE_INST</subfield>
+            <subfield code="b">BNALCALA</subfield>
+            <subfield code="c">Ejemplar de conservación</subfield>
+            <subfield code="d">DL/3027855</subfield>
+            <subfield code="e">available</subfield>
+            <subfield code="f">1</subfield>
+            <subfield code="g">0</subfield>
+            <subfield code="j">CONSERVACI</subfield>
+            <subfield code="k">4</subfield>
+            <subfield code="p">2</subfield>
+            <subfield code="q">Sede de Alcalá de Henares</subfield>
+          </datafield>
+        </record>
+      </recordData>
+      <recordIdentifier>991061156926308606</recordIdentifier>
+      <recordPosition>14</recordPosition>
+    </record>
+  </records>
+  <extraResponseData xmlns:xb="http://www.exlibris.com/repository/search/xmlbeans/">
+    <xb:exact>true</xb:exact>
+    <xb:responseDate>2026-11-12T21:51:08+0100</xb:responseDate>
+  </extraResponseData>
+</searchRetrieveResponse>
