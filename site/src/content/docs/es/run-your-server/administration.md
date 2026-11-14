@@ -101,13 +101,13 @@ Borra, en una pasada:
 - las búsquedas guardadas que han pasado su plazo (ver [la caché de búsquedas](/es/run-your-server/what-the-server-keeps/#la-caché-de-búsquedas));
 - las portadas que ya no usa ninguna obra de su biblioteca, un día después, y las carpetas de portadas de bibliotecas que ya no existen.
 
-**No hace falta lanzarla a mano**: la lanza cada hora el proceso programado (el servicio `worker` de Docker, o `kosmotheka-worker` de systemd, que montaste en la guía de instalación). Sin ese proceso corriendo, no se borra nada. Cada paso va por separado: si uno falla, los demás se hacen igual y la orden termina con un aviso de cuáles fallaron.
+**No hace falta lanzarla a mano**: se lanza cada hora con las tareas programadas que montaste en la guía de instalación (el servicio `worker` de Docker, o sin Docker `kosmotheka-worker` de systemd o la línea de cron). Sin ellas, no se borra nada. Cada paso va por separado: si uno falla, los demás se hacen igual y la orden termina con un aviso de cuáles fallaron.
 
 ### `app:trash:expire` · vaciar lo viejo de la papelera
 
 Lo que alguien borra en la app va a la papelera de su biblioteca y se puede restaurar durante 30 días. Pasado ese plazo lo eliminan los propios dispositivos. Por si en una biblioteca de la nube no se abre ningún dispositivo en mucho tiempo, el servidor elimina lo que lleva **60 días** en la papelera, firmando como el dispositivo de la nube de esa biblioteca. Los 60 días se cuentan desde que la fila llegó al servidor, así que un dispositivo con la hora mal puesta no adelanta nada.
 
-Lo lanza el mismo `worker` de las tareas programadas, una vez al día. Para lanzarlo a mano:
+Se lanza una vez al día con las mismas tareas programadas: lo hace el `worker` solo, pero **con cron necesita su propia línea** (ver [la instalación sin Docker](/es/run-your-server/without-docker/#con-cron)). Para lanzarlo a mano:
 
 ```bash
 bin/console app:trash:expire
