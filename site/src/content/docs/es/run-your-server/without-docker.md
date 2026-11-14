@@ -190,7 +190,16 @@ Debe responder un JSON con lo que ofrece el servidor (`invitations`, `events`, `
 
 ## 9. El proceso de tareas programadas
 
-El servidor tiene una tarea cada hora (borra las cuentas sin confirmar y los códigos caducados) que **no hace nada por sí sola**: solo corre mientras algo consume su cola. Es un servicio de systemd, en `/etc/systemd/system/kosmotheka-worker.service`:
+El servidor tiene dos tareas que se repiten:
+
+- **cada hora, la limpieza** (`app:accounts:purge`): cuentas sin confirmar, códigos caducados, invitaciones viejas y lo demás que cuenta [la administración](/es/run-your-server/administration/#appaccountspurge--la-limpieza-periódica);
+- **cada día, la papelera de la nube** (`app:trash:expire`): elimina lo que lleva 60 días en la papelera de las bibliotecas de la nube.
+
+Ninguna se lanza sola. Elige **una** de estas dos formas; con una basta.
+
+### Con un servicio que las lanza
+
+Un proceso siempre en marcha que lanza las dos a su hora. Es un servicio de systemd, en `/etc/systemd/system/kosmotheka-worker.service`:
 
 ```ini
 [Unit]
@@ -214,7 +223,20 @@ sudo systemctl enable --now kosmotheka-worker
 systemctl status kosmotheka-worker
 ```
 
-El `--time-limit` hace que se reinicie a sí mismo cada hora, con la memoria limpia; `Restart=always` lo levanta de nuevo. Si no quieres el servicio, puedes lanzar la purga a mano de vez en cuando: `php8.5 bin/console app:accounts:purge`.
+El `--time-limit` hace que se reinicie a sí mismo cada hora, con la memoria limpia; `Restart=always` lo levanta de nuevo.
+
+### Con cron
+
+Si prefieres no tener un proceso siempre en marcha (en un servidor con poca memoria, por ejemplo), dos líneas en `/etc/cron.d/kosmotheka`:
+
+```
+7 * * * * www-data cd /srv/kosmotheka/server && php8.5 bin/console app:accounts:purge >/dev/null
+37 4 * * * www-data cd /srv/kosmotheka/server && php8.5 bin/console app:trash:expire >/dev/null
+```
+
+**Hacen falta las dos.** Con solo la primera, la limpieza funciona pero la papelera de la nube no se vacía nunca, y nada avisa. El archivo tiene que terminar en un salto de línea: cron no lee una última línea sin él (`cat -A` enseña un `$` al final de cada línea). Lanza cada orden una vez a mano, con el mismo usuario, para ver que responde (`sudo -u www-data php8.5 bin/console app:trash:expire`).
+
+Con cron, al actualizar no hay servicio que reiniciar: pon `RESTART_UNITS="php8.5-fpm"` en `deploy/deploy.env` (ver [actualizar](/es/run-your-server/updating/)).
 
 ## 10. Avisos al momento (opcional)
 
