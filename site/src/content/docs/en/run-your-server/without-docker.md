@@ -190,7 +190,16 @@ It must answer with a JSON with what the server offers (`invitations`, `events`,
 
 ## 9. The scheduled-task process
 
-The server has a task every hour (it deletes unconfirmed accounts and expired codes) that **does nothing by itself**: it only runs while something consumes its queue. It is a systemd service, in `/etc/systemd/system/kosmotheka-worker.service`:
+The server has two tasks that repeat:
+
+- **every hour, the clean-up** (`app:accounts:purge`): unconfirmed accounts, expired codes, old invitations and the rest that [administration](/en/run-your-server/administration/#appaccountspurge--the-periodic-clean-up) lists;
+- **every day, the cloud's trash** (`app:trash:expire`): it deletes what has been 60 days in the trash of the cloud libraries.
+
+Neither runs by itself. Choose **one** of these two ways; one is enough.
+
+### With a service that runs them
+
+A process always running that launches both on time. It is a systemd service, in `/etc/systemd/system/kosmotheka-worker.service`:
 
 ```ini
 [Unit]
@@ -214,7 +223,20 @@ sudo systemctl enable --now kosmotheka-worker
 systemctl status kosmotheka-worker
 ```
 
-The `--time-limit` makes it restart itself every hour, with clean memory; `Restart=always` brings it back up. If you do not want the service, you can run the purge by hand from time to time: `php8.5 bin/console app:accounts:purge`.
+The `--time-limit` makes it restart itself every hour, with clean memory; `Restart=always` brings it back up.
+
+### With cron
+
+If you would rather not have a process always running (on a server with little memory, for example), two lines in `/etc/cron.d/kosmotheka`:
+
+```
+7 * * * * www-data cd /srv/kosmotheka/server && php8.5 bin/console app:accounts:purge >/dev/null
+37 4 * * * www-data cd /srv/kosmotheka/server && php8.5 bin/console app:trash:expire >/dev/null
+```
+
+**Both are needed.** With only the first, the clean-up works but the cloud's trash is never emptied, and nothing warns you. The file must end with a line break: cron does not read a last line without one (`cat -A` shows a `$` at the end of each line). Run each command once by hand, as the same user, to see that it answers (`sudo -u www-data php8.5 bin/console app:trash:expire`).
+
+With cron there is no service to restart when updating: set `RESTART_UNITS="php8.5-fpm"` in `deploy/deploy.env` (see [updating](/en/run-your-server/updating/)).
 
 ## 10. Instant notices (optional)
 
