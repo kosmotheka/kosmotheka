@@ -9,7 +9,7 @@ This page takes you from installing the app to your first book. It takes about f
 
 ## Install the app
 
-- **Android:** the app is on Google's store (Google Play), but for now only a few people who are taking part in a trial can install it.
+- **Android:** from [Google Play](https://play.google.com/store/apps/details?id=app.kosmotheka&hl=en), Google's store.
 - **Computer, with Windows or Linux:** from the downloads page, or on Linux from the Snap Store (below).
 
 The [downloads page](https://kosmotheka.com/en/download.html) always shows what can be installed today.
