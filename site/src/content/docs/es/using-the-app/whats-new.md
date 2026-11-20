@@ -11,6 +11,12 @@ Cuando una novedad cambia lo que se envía desde tu móvil u ordenador a interne
 
 Hasta la 0.7.0, la app enseñaba estas mismas líneas; desde la 0.8.0 enseña un resumen. Si una palabra no te suena: [La nube](../the-cloud/) explica la nube, el servidor y el segundo factor (el código extra al entrar, de la «app de autenticación»); [Compartir en casa](../share-at-home/), qué es emparejar; y el ISBN es el número que traen los libros junto al código de barras.
 
+## Versión 1.0.0
+
+- Kosmotheka sale de la prueba cerrada: ya está en Google Play para cualquiera, además de en Windows y Linux. Gracias a quienes la habéis probado y nos habéis contado qué fallaba.
+- Al buscar un libro por título, los resultados que salen sin portada pero con su ISBN la buscan después en Open Library, y la portada aparece en la lista. Además, un mismo libro ya no sale repetido. *(Con interruptor: el de Open Library en «Proveedores de datos».)*
+- La Biblioteca Nacional encuentra un libro aunque escribas el título con su autor, como «inferno dan brown». Antes no devolvía nada.
+
 ## Versión 0.8.0
 
 - En el ordenador, la app avisa cuando hay una versión nueva, con un enlace para descargarla. Para saberlo, una vez al día pregunta a GitHub, donde se publican las versiones, cuál es la última; GitHub ve tu dirección de internet y nada más. Puedes apagarlo en «Acerca de», donde también puedes buscarla a mano. En el móvil no cambia nada: lo actualiza Google Play. *(Con interruptor.)*

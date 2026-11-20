@@ -2,6 +2,17 @@
 
 > Borradores del texto «Novedades de esta versión» de Google Play (máximo 500 caracteres por idioma). El maintainer elige el número de versión y da el texto por bueno antes de publicar.
 
+## 1.0.0 (20/11/2026)
+
+**La primera versión en producción de Google Play.** Se etiqueta cuando Google apruebe el acceso a producción (pedido el 20/11/2026; puede tardar hasta 7 días): la primera línea dice que ya está en Google Play. Solo la app: el servidor no cambia. **Con ella, desplegar la web**: la página de descargas enlaza ya con la ficha de Google Play. El workflow sube el `.aab` a la pista de `PLAY_TRACK` (hoy `alpha`, la prueba cerrada); esta vez, en Play Console, se pasa de la prueba cerrada a producción. Después se decide si `PLAY_TRACK` pasa a `production`.
+
+Las líneas de la app son las tres de `whats-new.json`; ninguna pasa de 250 caracteres, así que no hace falta condensarlas.
+
+**Texto para Google Play** (346 y 353 caracteres):
+
+- es-ES: Kosmotheka sale de la prueba cerrada y ya está en Google Play para cualquiera. Gracias a quienes la habéis probado. Al buscar un libro por título, los resultados sin portada la buscan en Open Library, y un mismo libro ya no sale repetido. La Biblioteca Nacional encuentra un libro aunque escribas el título con su autor, como «inferno dan brown».
+- en-US: Kosmotheka leaves the closed test and is now on Google Play for anyone. Thanks to everyone who tried it. When you search for a book by title, results without a cover look for it in Open Library, and the same book no longer shows twice. The National Library of Spain finds a book even when you type its title with its author, such as “inferno dan brown”.
+
 ## 0.8.0 (29/10/2026)
 
 **Lleva:** la cadena de ramas del 26 al 29/10, la papelera (D105) y el tope de 50 bibliotecas de la nube por cuenta (D106). **Antes de publicarla, desplegar el servidor** con las dos migraciones de la papelera (`Version20261027213609`, `Version20261027220807`); el tope de bibliotecas es configuración (`CLOUD_MAX_LIBRARIES_PER_ACCOUNT`, 50 por defecto), sin migración. Sin el servidor nuevo, una biblioteca en la nube no puede subir lo que se manda a la papelera. **La papelera cambia el formato de los datos:** todos los dispositivos de una biblioteca necesitan esta versión; la línea 2 lo dice.

@@ -9,6 +9,12 @@ Here is each version in **full detail**. The app shows you a summary when it is 
 
 When a change alters what leaves your device, the app also shows you a **switch**, so that you can decide whether you want it. Here we call it a "switch".
 
+## Version 1.0.0
+
+- Kosmotheka leaves the closed test: it is now on Google Play for anyone, as well as on Windows and Linux. Thanks to everyone who tried it and told us what went wrong.
+- When you search for a book by title, results without a cover but with their ISBN look for it in Open Library right after, and the cover appears in the list. Also, the same book no longer shows twice. *(With a switch: Open Library's, in «Data providers».)*
+- The National Library of Spain finds a book even when you type its title with its author, such as "inferno dan brown". Before, it found nothing.
+
 ## Version 0.8.0
 
 - On the computer, the app tells you when a new version is out, with a link to download it. To know, once a day it asks GitHub, where versions are published, which one is the latest; GitHub sees your internet address and nothing else. You can turn it off in «About», where you can also check by hand. Nothing changes on the phone: Google Play updates it. *(With a switch.)*

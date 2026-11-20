@@ -9,7 +9,7 @@ Esta página te lleva de la instalación a tu primer libro. Tarda unos cinco min
 
 ## Instala la app
 
-- **Android:** la app está en la tienda de Google (Google Play), pero por ahora solo la pueden instalar unas pocas personas que participan en una prueba.
+- **Android:** desde [Google Play](https://play.google.com/store/apps/details?id=app.kosmotheka&hl=es), la tienda de Google.
 - **Ordenador, con Windows o con Linux:** desde la página de descargas, o en Linux desde la Snap Store (abajo).
 
 En la [página de descargas](https://kosmotheka.com/es/descargas.html) está siempre lo que ya se puede instalar.
