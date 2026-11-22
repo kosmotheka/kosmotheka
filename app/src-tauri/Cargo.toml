@@ -28,7 +28,7 @@ tokio = { version = "1.53.1", features = ["macros", "net", "rt-multi-thread", "s
 sha2 = "0.11.0"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 roxmltree = "0.21"
-url = "2.5.8"
+url = "2.5.9"
 zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 csv = "1.4.0"
 tauri-plugin-dialog = "2"
